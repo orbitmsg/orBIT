@@ -1,0 +1,70 @@
+{{template "header" "Orbitachat | Secure Messenger"}}
+<section class="hero glass-section">
+  <div class="wrap hero-grid">
+    <div class="hero-text">
+      <h1>Speak freely. Leave no trace.</h1>
+      <p>Orbitachat is an uncompromising, zero-bloat, end-to-end encrypted messenger. Built on a zero-knowledge architecture, ensuring your conversations remain entirely yours.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="/download">Download for Windows</a>
+        <a class="btn btn-outline" href="https://github.com/orbitachat/orbita-desktop">View on GitHub</a>
+      </div>
+    </div>
+    <div class="hero-chat-showcase">
+      <div class="chat-ui-mockup">
+        <div class="chat-header">
+          <div class="chat-avatar"></div>
+          <div class="chat-title">
+            <span class="chat-name">Alice</span>
+            <span class="chat-status">Online (E2EE Active)</span>
+          </div>
+        </div>
+        <div class="chat-messages">
+          <div class="bubble-row incoming">
+            <div class="bubble">Are we using the new Double Ratchet protocol?</div>
+          </div>
+          <div class="bubble-row outgoing">
+            <div class="bubble">Yes! Fully encrypted via X25519. No metadata logs either.</div>
+            <div class="bubble-meta">10:42 AM <svg class="check-all" viewBox="0 0 16 16"><path d="M12 4l-6 6-3-3M15 4l-6 6-1-1" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          </div>
+          <div class="bubble-row incoming ephemeral">
+            <div class="bubble">Perfect. This message will self-destruct in 5s. ⏱️</div>
+          </div>
+        </div>
+        <div class="chat-input-bar">
+          <div class="input-placeholder">Send a secure message...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="features">
+  <div class="wrap">
+    <h2 class="center">Built for absolute privacy</h2>
+    <div class="grid-3">
+      <div class="card glass-card">
+        <div class="card-icon">🔒</div>
+        <h3>Double Ratchet & X25519</h3>
+        <p>State-of-the-art cryptographic primitives guarantee perfect forward secrecy and future secrecy for every single message.</p>
+      </div>
+      <div class="card glass-card">
+        <div class="card-icon">👁️‍🗨️</div>
+        <h3>Zero-Knowledge Architecture</h3>
+        <p>We cannot read your messages, nor do we want to. Your keys never leave your device. The server only sees encrypted blobs.</p>
+      </div>
+      <div class="card glass-card">
+        <div class="card-icon">🛡️</div>
+        <h3>Zero Metadata Logging</h3>
+        <p>No phone numbers required, no email linking, no ad-tracking. Your identity and contact graphs remain completely untraceable.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="wrap">
+    <h2>Take control of your privacy</h2>
+    <a class="btn btn-primary" href="/download">Get Orbitachat Now</a>
+  </div>
+</section>
+{{template "footer" .}}

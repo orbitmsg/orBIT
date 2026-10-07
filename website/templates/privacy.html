@@ -1,0 +1,38 @@
+{{template "header" "Privacy Policy | Orbitachat"}}
+<div class="page-wrap wrap page-narrow legal-doc">
+  <div class="page-header">
+    <h1>Privacy Policy</h1>
+    <p class="subtitle">Effective Date: October 2026</p>
+  </div>
+
+  <section class="legal-section">
+    <h2>1. Zero-Log & Zero-Knowledge Architecture</h2>
+    <p>Orbitachat is built from the ground up to operate without collecting, storing, or analyzing personal data. We do not store message history, contact lists, metadata, IP addresses, or connection timestamps. Our infrastructure is architected under the principle of zero knowledge: we cannot access your communications because we do not possess the cryptographic keys to decrypt them.</p>
+  </section>
+
+  <section class="legal-section">
+    <h2>2. Cryptographic Keys and Device Storage</h2>
+    <p>All cryptographic keys (private identity keys, signed pre-keys, and ratchet keys) are generated locally on your device and are never transmitted to our servers. Your private keys never leave your custody. If you lose access to your device or local storage, your past communications cannot be recovered by anyone, including the Orbitachat project.</p>
+  </section>
+
+  <section class="legal-section">
+    <h2>3. End-to-End Encryption (E2EE)</h2>
+    <p>All direct messages, group chats, calls, and file exchanges are end-to-end encrypted using state-of-the-art cryptographic primitives: the Double Ratchet Algorithm, X25519 key exchange, and ChaCha20-Poly1305 / AES-256-GCM authenticated encryption. Neither network intermediaries, Internet Service Providers, nor Orbitachat relays can decrypt your traffic.</p>
+  </section>
+
+  <section class="legal-section">
+    <h2>4. No Phone Numbers or Identity Verification</h2>
+    <p>Creating an account or initiating a session on Orbitachat does not require a telephone number, email address, national identity, or payment method. Your identity on the network is represented solely by a cryptographically generated public identity key.</p>
+  </section>
+
+  <section class="legal-section">
+    <h2>5. Ephemeral Routing</h2>
+    <p>Relay servers process encrypted payloads purely in transient memory (RAM) to facilitate routing to the recipient device. Once a payload is delivered, it is immediately discarded. Payloads not immediately deliverable are held in temporary memory for a restricted duration and dropped permanently if undelivered.</p>
+  </section>
+
+  <section class="legal-section">
+    <h2>6. Open Source Transparency</h2>
+    <p>Our client applications and protocol specifications are fully open source. Independent security researchers are encouraged to audit our codebase, build from source, and verify the accuracy of our privacy guarantees.</p>
+  </section>
+</div>
+{{template "footer" .}}

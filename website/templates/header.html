@@ -1,0 +1,31 @@
+{{define "header"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.}}</title>
+<link rel="icon" href="/static/img/icons/icon.ico" sizes="any">
+<link rel="icon" href="/static/img/icons/32x32.png" type="image/png" sizes="32x32">
+<link rel="stylesheet" href="/static/css/style.css">
+<link rel="stylesheet" href="/static/css/chat.css">
+</head>
+<body>
+<header>
+<div class="wrap">
+<a class="brand" href="/" aria-label="orbitachat — home">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" aria-hidden="true"><defs><clipPath id="front-clip"><rect x="-600" y="0" width="1200" height="600"/></clipPath><mask id="back-ring-mask"><rect x="0" y="0" width="800" height="800" fill="white"/><circle cx="400" cy="400" r="192" fill="black"/></mask><mask id="planet-mask"><rect x="0" y="0" width="800" height="800" fill="white"/><g transform="translate(400,400) rotate(-26)"><path d="M 224 0 A 224 59 0 0 1 -224 0 L -376 0 A 376 121 0 0 0 376 0 Z" fill="black"/></g></mask><mask id="ring-hole"><rect x="-600" y="-600" width="1200" height="1200" fill="white"/><ellipse cx="0" cy="0" rx="240" ry="75" fill="black"/></mask></defs><g mask="url(#back-ring-mask)"><g transform="translate(400,400) rotate(-26)"><ellipse rx="360" ry="105" fill="var(--logo)" mask="url(#ring-hole)"/></g></g><circle cx="400" cy="400" r="175" fill="var(--logo)" mask="url(#planet-mask)"/><g transform="translate(400,400) rotate(-26)"><g clip-path="url(#front-clip)"><ellipse rx="360" ry="105" fill="var(--logo)" mask="url(#ring-hole)"/></g></g></svg>
+<span>orbitachat</span>
+</a>
+<nav class="nav-links" id="main-nav">
+<a href="/download">Download</a>
+<a href="/donate">Donate</a>
+<a href="/faq">FAQ</a>
+</nav>
+<button class="menu-toggle" id="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="main-nav">
+<svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+</button>
+</div>
+</header>
+<main>
+{{end}}

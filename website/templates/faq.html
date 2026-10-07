@@ -1,0 +1,38 @@
+{{template "header" "Frequently Asked Questions | Orbitachat"}}
+<div class="page-wrap wrap page-narrow">
+  <div class="page-header center">
+    <h1>Frequently Asked Questions</h1>
+    <p>Everything you need to know about Orbitachat's security, privacy, and technology.</p>
+  </div>
+  
+  <div class="faq-accordion">
+    <details class="faq-item" name="faq">
+      <summary class="faq-question">How does Orbitachat's End-to-End Encryption work?</summary>
+      <div class="faq-answer">
+        <p>Orbitachat uses the industry-standard Double Ratchet algorithm, combined with X25519 for key agreement. Every single message gets a unique, ephemeral encryption key. Even if your current key is compromised, past messages remain secure (Perfect Forward Secrecy), and future messages quickly heal the key stream (Future Secrecy).</p>
+      </div>
+    </details>
+
+    <details class="faq-item" name="faq">
+      <summary class="faq-question">Do you collect any metadata?</summary>
+      <div class="faq-answer">
+        <p>No. Orbitachat operates on a strict zero-metadata philosophy. We do not require phone numbers or email addresses. We do not store who you talk to, when you talk to them, or your IP addresses. Our servers are designed to route encrypted blobs from point A to point B and forget them immediately after delivery.</p>
+      </div>
+    </details>
+
+    <details class="faq-item" name="faq">
+      <summary class="faq-question">Is Orbitachat open source?</summary>
+      <div class="faq-answer">
+        <p>Yes, 100%. Our client applications and server infrastructure are fully open source. We believe that true security requires transparency. Anyone can audit our codebase, verify our cryptographic implementations, and compile the applications themselves.</p>
+      </div>
+    </details>
+
+    <details class="faq-item" name="faq">
+      <summary class="faq-question">Can I build the application from source?</summary>
+      <div class="faq-answer">
+        <p>Absolutely. You can clone our GitHub repository and build the desktop client or mobile apps using standard build tools. Detailed instructions are provided in the README files of our respective repositories.</p>
+      </div>
+    </details>
+  </div>
+</div>
+{{template "footer" .}}

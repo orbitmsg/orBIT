@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>orbitachat | поддержать</title>
+<link rel="icon" href="icons/icon.ico" sizes="any">
+<link rel="icon" href="icons/32x32.png" type="image/png" sizes="32x32">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><div class="wrap">
+<a class="brand" href="index.html" aria-label="orbitachat — на главную"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" aria-hidden="true"><defs><clipPath id="front-clip"><rect x="-600" y="0" width="1200" height="600"/></clipPath><mask id="back-ring-mask"><rect x="0" y="0" width="800" height="800" fill="white"/><circle cx="400" cy="400" r="192" fill="black"/></mask><mask id="planet-mask"><rect x="0" y="0" width="800" height="800" fill="white"/><g transform="translate(400,400) rotate(-26)"><path d="M 224 0 A 224 59 0 0 1 -224 0 L -376 0 A 376 121 0 0 0 376 0 Z" fill="black"/></g></mask><mask id="ring-hole"><rect x="-600" y="-600" width="1200" height="1200" fill="white"/><ellipse cx="0" cy="0" rx="240" ry="75" fill="black"/></mask></defs><g mask="url(#back-ring-mask)"><g transform="translate(400,400) rotate(-26)"><ellipse rx="360" ry="105" fill="var(--logo)" mask="url(#ring-hole)"/></g></g><circle cx="400" cy="400" r="175" fill="var(--logo)" mask="url(#planet-mask)"/><g transform="translate(400,400) rotate(-26)"><g clip-path="url(#front-clip)"><ellipse rx="360" ry="105" fill="var(--logo)" mask="url(#ring-hole)"/></g></g></svg><span>orbitachat</span></a>
+<div class="header-actions">
+<nav>
+<a href="download.html">Скачать</a>
+<a href="donate.html" aria-current="page">Поддержать</a>
+<a href="faq.html">FAQ</a>
+</nav>
+<div class="site-controls">
+<div class="language-picker">
+<button id="language-button" class="language-button" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="language-options" aria-label="Язык">
+<span id="language-current">Русский</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>
+</button>
+<div id="language-options" class="language-options" role="listbox" aria-labelledby="language-button">
+<div class="language-option" role="option" data-language="ru" aria-selected="true" tabindex="-1">Русский</div>
+<div class="language-option" role="option" data-language="en" aria-selected="false" tabindex="-1">English</div>
+<div class="language-option" role="option" data-language="uk" aria-selected="false" tabindex="-1">Українська</div>
+<div class="language-option" role="option" data-language="be" aria-selected="false" tabindex="-1">Беларуская</div>
+<div class="language-option" role="option" data-language="kk" aria-selected="false" tabindex="-1">Қазақша</div>
+</div>
+</div>
+<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Переключить тему">Тёмная тема</button>
+</div>
+</div>
+</div></header>
+<main>
+<div class="wrap page">
+  <h1 class="page-title">Поддержать orbitachat</h1>
+  <p class="page-subtitle">orbitachat развивается без рекламы, инвесторов и платных подписок. Ваша поддержка помогает нам оплачивать инфраструктуру серверов и сохранять полную независимость проекта.</p>
+
+  <div class="crypto-grid">
+    <div class="crypto-card">
+      <div class="crypto-header">
+        <span class="crypto-name">Monero (XMR)</span>
+      </div>
+      <p class="crypto-desc">Приватные пожертвования без отслеживания.</p>
+      <div class="crypto-row">
+        <code>888tNkZrPN6JsEgekjMnABU4TBzc2Dt29EPAvkRk2qB2d...</code>
+        <button class="btn-copy" data-copy="888tNkZrPN6JsEgekjMnABU4TBzc2Dt29EPAvkRk2qB2d" aria-label="Скопировать адрес Monero">Скопировать</button>
+      </div>
+    </div>
+
+    <div class="crypto-card">
+      <div class="crypto-header">
+        <span class="crypto-name">Bitcoin (BTC)</span>
+      </div>
+      <p class="crypto-desc">Прямой перевод в сети Bitcoin.</p>
+      <div class="crypto-row">
+        <code>bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</code>
+        <button class="btn-copy" data-copy="bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh" aria-label="Скопировать адрес Bitcoin">Скопировать</button>
+      </div>
+    </div>
+
+    <div class="crypto-card">
+      <div class="crypto-header">
+        <span class="crypto-name">USDT (TRC20)</span>
+      </div>
+      <p class="crypto-desc">Пожертвования в стабильной валюте.</p>
+      <div class="crypto-row">
+        <code>TNPeeaaFB7K9cmo4uQpcU32zLQ3YhRsXmn</code>
+        <button class="btn-copy" data-copy="TNPeeaaFB7K9cmo4uQpcU32zLQ3YhRsXmn" aria-label="Скопировать адрес USDT">Скопировать</button>
+      </div>
+    </div>
+
+    <div class="crypto-card">
+      <div class="crypto-header">
+        <span class="crypto-name">TON (The Open Network)</span>
+      </div>
+      <p class="crypto-desc">Быстрый перевод с минимальной комиссией.</p>
+      <div class="crypto-row">
+        <code>EQD4g3P__z3R-xG_g2oJm0s2GfG0fXZ7vP_98kLsM</code>
+        <button class="btn-copy" data-copy="EQD4g3P__z3R-xG_g2oJm0s2GfG0fXZ7vP_98kLsM" aria-label="Скопировать адрес TON">Скопировать</button>
+      </div>
+    </div>
+  </div>
+</div>
+</main>
+<footer><div class="wrap">
+<p>© 2026 orbitachat. Все права защищены.</p>
+<div><h3>Скачать</h3><ul><li><a href="download.html">Для компьютера</a></li><li><a href="https://github.com/orbitachat/orbita-desktop/releases">Все версии на GitHub</a></li></ul></div>
+<div><h3>Проект</h3><ul><li><a href="donate.html">Поддержать</a></li><li><a href="faq.html">FAQ</a></li><li><a href="https://github.com/orbitachat">GitHub</a></li></ul></div>
+<div><h3>Информация</h3><ul><li><a href="privacy.html">Конфиденциальность</a></li><li><a href="terms.html">Условия</a></li></ul></div>
+</div></footer>
+<div id="toast" class="toast" aria-live="polite">Скопировано!</div>
+<script src="i18n.js"></script>
+<script src="protect.js"></script>
+<script src="main.js"></script>
+</body>
+</html>

@@ -1,28 +1,16 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const menuToggle = document.getElementById('menu-toggle');
-  const mainNav = document.getElementById('main-nav');
+document.addEventListener('DOMContentLoaded', function () {
+  var copyButtons = document.querySelectorAll('.btn-copy');
+  var toast = document.getElementById('toast');
 
-  if (menuToggle && mainNav) {
-    menuToggle.addEventListener('click', () => {
-      const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
-      menuToggle.setAttribute('aria-expanded', !isExpanded);
-      mainNav.classList.toggle('open');
-    });
-  }
-
-  const copyButtons = document.querySelectorAll('.btn-copy');
-  const toast = document.getElementById('toast');
-
-  copyButtons.forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const textToCopy = btn.getAttribute('data-copy');
+  copyButtons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var textToCopy = btn.getAttribute('data-copy');
       if (!textToCopy) return;
 
-      try {
-        await navigator.clipboard.writeText(textToCopy);
-        showToast();
-      } catch (err) {
-        const textarea = document.createElement('textarea');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textToCopy).then(showToast);
+      } else {
+        var textarea = document.createElement('textarea');
         textarea.value = textToCopy;
         textarea.style.position = 'fixed';
         textarea.style.opacity = '0';
@@ -37,9 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function showToast() {
     if (!toast) return;
-    toast.classList.add('show');
-    setTimeout(() => {
-      toast.classList.remove('show');
+    toast.classList.add('is-show');
+    setTimeout(function () {
+      toast.classList.remove('is-show');
     }, 2000);
   }
 });

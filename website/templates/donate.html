@@ -1,59 +1,52 @@
-{{template "header" "Support Orbitachat | Donate"}}
-<div class="page-wrap wrap">
-  <div class="page-header center">
-    <h1>Support Orbitachat</h1>
-    <p>We rely entirely on user donations to keep our servers running and development independent. No ads, no investors, just community support.</p>
-  </div>
-  
-  <div class="donate-grid">
-    <div class="card glass-card donate-card">
-      <h3>Monero (XMR)</h3>
-      <p>The most private way to support us.</p>
-      <div class="qr-placeholder"><img src="/static/img/icons/icon.icns" alt="" style="width:100px;opacity:0.2;"></div>
-      <div class="crypto-address">
-        <code id="xmr-address">888tNkZrPN6JsEgekjMnABU4TBzc2Dt29EPAvkR...</code>
-        <button class="btn-copy" data-copy="888tNkZrPN6JsEgekjMnABU4TBzc2Dt29EPAvkR" aria-label="Copy Monero address">
-          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-        </button>
+{{template "header" "orbitachat | поддержать проект"}}
+<div class="wrap page">
+  <h1 class="page-title">Поддержать orbitachat</h1>
+  <p class="page-subtitle">orbitachat развивается без рекламы, инвесторов и платных подписок. Ваша поддержка помогает нам оплачивать инфраструктуру серверов и сохранять полную независимость проекта.</p>
+
+  <div class="crypto-grid">
+    <div class="crypto-card">
+      <div class="crypto-header">
+        <span class="crypto-name">Monero (XMR)</span>
+      </div>
+      <p class="crypto-desc">Приватные пожертвования без отслеживания.</p>
+      <div class="crypto-row">
+        <code>888tNkZrPN6JsEgekjMnABU4TBzc2Dt29EPAvkRk2qB2d...</code>
+        <button class="btn-copy" data-copy="888tNkZrPN6JsEgekjMnABU4TBzc2Dt29EPAvkRk2qB2d" aria-label="Скопировать адрес Monero">Скопировать</button>
       </div>
     </div>
 
-    <div class="card glass-card donate-card">
-      <h3>Bitcoin (BTC)</h3>
-      <p>Standard on-chain donations.</p>
-      <div class="qr-placeholder"><img src="/static/img/icons/icon.icns" alt="" style="width:100px;opacity:0.2;"></div>
-      <div class="crypto-address">
-        <code id="btc-address">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</code>
-        <button class="btn-copy" data-copy="bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh" aria-label="Copy Bitcoin address">
-          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-        </button>
+    <div class="crypto-card">
+      <div class="crypto-header">
+        <span class="crypto-name">Bitcoin (BTC)</span>
+      </div>
+      <p class="crypto-desc">Прямой перевод в сети Bitcoin.</p>
+      <div class="crypto-row">
+        <code>bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</code>
+        <button class="btn-copy" data-copy="bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh" aria-label="Скопировать адрес Bitcoin">Скопировать</button>
       </div>
     </div>
 
-    <div class="card glass-card donate-card">
-      <h3>USDT (TRC20)</h3>
-      <p>Stablecoin contributions.</p>
-      <div class="qr-placeholder"><img src="/static/img/icons/icon.icns" alt="" style="width:100px;opacity:0.2;"></div>
-      <div class="crypto-address">
-        <code id="usdt-address">TNPeeaaFB7K9cmo4uQpcU32zLQ3YhR...</code>
-        <button class="btn-copy" data-copy="TNPeeaaFB7K9cmo4uQpcU32zLQ3YhR" aria-label="Copy USDT address">
-          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-        </button>
+    <div class="crypto-card">
+      <div class="crypto-header">
+        <span class="crypto-name">USDT (TRC20)</span>
+      </div>
+      <p class="crypto-desc">Пожертвования в стабильной валюте.</p>
+      <div class="crypto-row">
+        <code>TNPeeaaFB7K9cmo4uQpcU32zLQ3YhRsXmn</code>
+        <button class="btn-copy" data-copy="TNPeeaaFB7K9cmo4uQpcU32zLQ3YhRsXmn" aria-label="Скопировать адрес USDT">Скопировать</button>
       </div>
     </div>
 
-    <div class="card glass-card donate-card">
-      <h3>TON (The Open Network)</h3>
-      <p>Fast and low fee donations.</p>
-      <div class="qr-placeholder"><img src="/static/img/icons/icon.icns" alt="" style="width:100px;opacity:0.2;"></div>
-      <div class="crypto-address">
-        <code id="ton-address">EQD4g3P__z3R-xG_g2oJm0s2GfG0fX...</code>
-        <button class="btn-copy" data-copy="EQD4g3P__z3R-xG_g2oJm0s2GfG0fX" aria-label="Copy TON address">
-          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-        </button>
+    <div class="crypto-card">
+      <div class="crypto-header">
+        <span class="crypto-name">TON (The Open Network)</span>
+      </div>
+      <p class="crypto-desc">Быстрый перевод с минимальной комиссией.</p>
+      <div class="crypto-row">
+        <code>EQD4g3P__z3R-xG_g2oJm0s2GfG0fXZ7vP_98kLsM</code>
+        <button class="btn-copy" data-copy="EQD4g3P__z3R-xG_g2oJm0s2GfG0fXZ7vP_98kLsM" aria-label="Скопировать адрес TON">Скопировать</button>
       </div>
     </div>
   </div>
 </div>
-<div id="toast" class="toast" aria-live="polite">Copied!</div>
 {{template "footer" .}}

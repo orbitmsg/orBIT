@@ -261,14 +261,12 @@ export const TgsPlayer: React.FC<TgsPlayerProps> = ({
       try {
         anim = lottie.loadAnimation({
           container: containerRef.current,
-          renderer: 'canvas',
+          renderer: 'svg',
           loop,
           autoplay: false,
           animationData: animData,
           rendererSettings: {
             preserveAspectRatio: 'xMidYMid meet',
-            clearCanvas: true,
-            progressiveLoad: true,
           },
         });
         anim.setSubframe(false);

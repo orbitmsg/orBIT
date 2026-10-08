@@ -216,7 +216,6 @@ export const TgsPlayer: React.FC<TgsPlayerProps> = ({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<AnimationItem | null>(null);
-  const [isInView, setIsInView] = useState<boolean>(false);
   const [shouldLoad, setShouldLoad] = useState<boolean>(() => !!getFromCache(src));
   const [animData, setAnimData] = useState<any>(() => getFromCache(src));
   const [isReady, setIsReady] = useState(false);
@@ -248,7 +247,7 @@ export const TgsPlayer: React.FC<TgsPlayerProps> = ({
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || !animData || !isInView) return;
+    if (!container || !animData) return;
 
     if (animRef.current) {
       animRef.current.destroy();
@@ -327,12 +326,11 @@ export const TgsPlayer: React.FC<TgsPlayerProps> = ({
       isPlayingRef.current = false;
       setIsReady(false);
     };
-  }, [animData, loop, autoplay, isInView]);
+  }, [animData, loop, autoplay]);
 
   useEffect(() => {
     const el = wrapperRef.current;
     if (!el) {
-      setIsInView(true);
       setShouldLoad(true);
       isIntersectingRef.current = true;
       return;
@@ -341,7 +339,6 @@ export const TgsPlayer: React.FC<TgsPlayerProps> = ({
     return observeElement(el, (isIntersecting) => {
       isIntersectingRef.current = isIntersecting;
       if (isIntersecting) {
-        setIsInView(true);
         setShouldLoad(true);
         const isAppVis = appVisibility.getIsVisible() && !document.hidden;
         if (isAppVis && animRef.current) {
@@ -357,21 +354,10 @@ export const TgsPlayer: React.FC<TgsPlayerProps> = ({
           }
         }
       } else {
-        setIsInView(false);
         isPlayingRef.current = false;
         if (animRef.current) {
-          animRef.current.destroy();
-          animRef.current = null;
+          animRef.current.pause();
         }
-        if (containerRef.current) {
-          const canvases = containerRef.current.querySelectorAll('canvas');
-          canvases.forEach((c) => {
-            c.width = 0;
-            c.height = 0;
-          });
-          containerRef.current.innerHTML = '';
-        }
-        setIsReady(false);
       }
     });
   }, [loop, autoplay]);

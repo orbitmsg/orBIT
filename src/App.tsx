@@ -377,6 +377,7 @@ function App() {
   }, [setProxyActive]);
 
   useEffect(() => {
+    if (isAppLocked) return;
     const root = document.documentElement;
     const fontVal = FONT_MAP[fontFamily] || FONT_MAP['system'];
     root.style.setProperty('--main-font', fontVal);
@@ -388,7 +389,7 @@ function App() {
         (window as any).orbita.setFontForElectron(fontFamily);
       }
     } catch (e) {}
-  }, [fontFamily]);
+  }, [fontFamily, isAppLocked]);
 
   useEffect(() => {
     const root = document.documentElement;

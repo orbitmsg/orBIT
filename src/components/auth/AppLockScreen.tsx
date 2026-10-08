@@ -63,13 +63,13 @@ export const AppLockScreen: React.FC<AppLockScreenProps> = ({ onUnlocked }) => {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.2 }}
-        className="flex flex-col items-center p-8 max-w-sm w-full relative z-10"
+        className="flex flex-col items-center p-8 max-w-2xl w-full relative z-10"
       >
         {/* User Profile Avatar */}
         <div className="mb-6 flex flex-col items-center">
-          <div className="w-24 h-24 rounded-full mb-4 flex items-center justify-center overflow-hidden"
+          <div className="w-48 h-48 rounded-full mb-4 flex items-center justify-center overflow-hidden"
             style={{ 
-              border: '2px solid var(--accent-color, #7C3AED)',
+              border: 'none',
               boxShadow: '0 4px 14px rgba(0,0,0,0.4)',
               background: userProfile.avatarUrl ? 'transparent' : 'linear-gradient(135deg, var(--accent-color), #4f46e5)'
             }}
@@ -77,23 +77,23 @@ export const AppLockScreen: React.FC<AppLockScreenProps> = ({ onUnlocked }) => {
             {userProfile.avatarUrl ? (
               <img src={userProfile.avatarUrl} alt="" className="w-full h-full object-cover" />
             ) : userProfile.nickname ? (
-              <span className="text-3xl font-bold text-white uppercase">{userProfile.nickname.charAt(0)}</span>
+              <span className="text-6xl font-bold text-white uppercase">{userProfile.nickname.charAt(0)}</span>
             ) : (
               <User size={40} className="text-white opacity-80" />
             )}
           </div>
           
-          <h2 className="text-xl font-bold text-[var(--text-main)] text-center mb-1">
+          <h2 className="text-xl font-bold text-[var(--text-main)] text-center mb-1 whitespace-nowrap">
             {userProfile.nickname 
               ? t('appLock.welcome_back', 'С возвращением, {{name}}!', { name: userProfile.nickname })
               : t('appLock.welcome_back_generic', 'С возвращением!')}
           </h2>
-          <p className="text-sm text-[var(--text-dim)] text-center">
+          <p className="text-sm text-[var(--text-dim)] text-center whitespace-nowrap">
             {t('appLock.enter_pin_to_unlock', 'Введите пароль для разблокировки Orbita')}
           </p>
         </div>
 
-        <form onSubmit={handleUnlock} className="w-full flex flex-col gap-4">
+        <form onSubmit={handleUnlock} className="w-full max-w-sm flex flex-col gap-4">
           <div className="flex flex-col gap-1.5 w-full">
             <div className="relative flex items-center w-full">
               <input
@@ -112,6 +112,7 @@ export const AppLockScreen: React.FC<AppLockScreenProps> = ({ onUnlocked }) => {
                   borderBottom: `1px solid ${errorMsg ? '#ef4444' : 'var(--border-color, rgba(255,255,255,0.15))'}`,
                   borderRadius: '0px',
                   color: 'var(--text-main, #ffffff)',
+                  fontFamily: 'var(--main-font, inherit)',
                 }}
                 onFocus={(e) => (e.currentTarget.style.borderBottomColor = errorMsg ? '#ef4444' : 'var(--accent-color, #7C3AED)')}
                 onBlur={(e) => (e.currentTarget.style.borderBottomColor = errorMsg ? '#ef4444' : 'var(--border-color, rgba(255,255,255,0.15))')}
@@ -144,6 +145,7 @@ export const AppLockScreen: React.FC<AppLockScreenProps> = ({ onUnlocked }) => {
               backgroundColor: 'var(--accent-color)',
               color: '#ffffff',
               opacity: !password || isSubmitting ? 0.6 : 1,
+              fontFamily: 'var(--main-font, inherit)',
             }}
           >
             {isSubmitting && <Loader2 size={18} className="animate-spin" />}

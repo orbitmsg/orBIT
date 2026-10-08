@@ -3509,18 +3509,21 @@ ipcMain.handle('orbita:get-os-info', () => {
 function createSplashWindow() {
   const icon = loadNativeAppIcon();
   splashWindow = new BrowserWindow({
-    width: 296,
-    height: 336,
+    width: 1200,
+    height: 800,
+    minWidth: 360,
+    minHeight: 600,
     frame: false,
-    transparent: true,
-    resizable: false,
-    maximizable: false,
-    minimizable: false,
+    titleBarStyle: 'hidden',
+    transparent: false,
+    resizable: true,
+    maximizable: true,
+    minimizable: true,
     center: true,
     alwaysOnTop: true,
     skipTaskbar: false,
-    backgroundColor: '#00000000',
-    hasShadow: false,
+    backgroundColor: '#121212',
+    hasShadow: true,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -3537,6 +3540,12 @@ function createSplashWindow() {
 
   splashWindow.on('closed', () => {
     splashWindow = null;
+  });
+
+  splashWindow.once('ready-to-show', () => {
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      splashWindow.maximize();
+    }
   });
 }
 

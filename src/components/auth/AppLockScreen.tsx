@@ -105,17 +105,15 @@ export const AppLockScreen: React.FC<AppLockScreenProps> = ({ onUnlocked }) => {
                 }}
                 placeholder={t('appLock.placeholder', 'Пароль')}
                 autoFocus
-                className="w-full px-1 py-2.5 outline-none text-sm transition-all pr-10"
+                className="w-full px-5 py-3.5 outline-none text-sm transition-all pr-12 rounded-full"
                 style={{
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  borderBottom: `1px solid ${errorMsg ? '#ef4444' : 'var(--border-color, rgba(255,255,255,0.15))'}`,
-                  borderRadius: '0px',
+                  backgroundColor: 'var(--surface-container-strong, #323232)',
+                  border: `2px solid ${errorMsg ? '#ef4444' : 'transparent'}`,
                   color: 'var(--text-main, #ffffff)',
                   fontFamily: 'var(--main-font, inherit)',
                 }}
-                onFocus={(e) => (e.currentTarget.style.borderBottomColor = errorMsg ? '#ef4444' : 'var(--accent-color, #7C3AED)')}
-                onBlur={(e) => (e.currentTarget.style.borderBottomColor = errorMsg ? '#ef4444' : 'var(--border-color, rgba(255,255,255,0.15))')}
+                onFocus={(e) => (e.currentTarget.style.borderColor = errorMsg ? '#ef4444' : 'var(--accent-color, #7C3AED)')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = errorMsg ? '#ef4444' : 'transparent')}
               />
               <button
                 type="button"
@@ -140,7 +138,7 @@ export const AppLockScreen: React.FC<AppLockScreenProps> = ({ onUnlocked }) => {
           <button
             type="submit"
             disabled={!password || isSubmitting}
-            className="w-full py-3 rounded-xl font-semibold text-sm transition-all cursor-pointer flex items-center justify-center gap-2 mt-2"
+            className="w-full py-3.5 rounded-full font-semibold text-sm transition-all cursor-pointer flex items-center justify-center gap-2 mt-4"
             style={{
               backgroundColor: 'var(--accent-color)',
               color: '#ffffff',

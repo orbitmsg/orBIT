@@ -62,7 +62,10 @@
       "unlock_button": "Разблокировать",
       "done_button": "Готово",
       "wrong_password": "Неверный пароль. Попробуйте еще раз.",
-      "decrypting": "Расшифровка данных и загрузка чатов..."
+      "decrypting": "Расшифровка данных и загрузка чатов...",
+      "welcome_back": "С возвращением, {{name}}!",
+      "welcome_back_generic": "С возвращением!",
+      "enter_pin_to_unlock": "Введите пароль для разблокировки Orbita"
     },
     "qrModal": {
       "title": "Получить QR-код",

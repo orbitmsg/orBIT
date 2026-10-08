@@ -144,6 +144,18 @@ function App() {
   const activeAccountId = useAccountStore((state) => state.activeAccountId);
   const isAddingSecondAccount = useAccountStore((state) => state.isAddingSecondAccount);
   const accounts = useAccountStore((state) => state.accounts);
+  
+  const nickname = useAuthStore((state) => state.nickname);
+  const avatarUrl = useAuthStore((state) => state.avatarUrl);
+
+  useEffect(() => {
+    try {
+      if (nickname) {
+        localStorage.setItem('orbita_lock_user_profile', JSON.stringify({ nickname, avatarUrl }));
+      }
+    } catch {}
+  }, [nickname, avatarUrl]);
+
   const registeredAccountId = accounts.find((a) => a.id === activeAccountId && a.isRegistered)?.id || 'account_1';
   const hasRegisteredAccount = accounts.some((a) => a.isRegistered && a.id === 'account_1') || (isHydrated && step === 'main');
 
@@ -188,7 +200,6 @@ function App() {
     }
   }, [isHydrated, step]);
 
-  const nickname = useAuthStore((state) => state.nickname);
   const currentTheme = useChatStore((state) => state.currentTheme);
   const setProxyActive = useChatStore((state) => state.setProxyActive);
   const fontFamily = useChatStore((state) => state.fontFamily);

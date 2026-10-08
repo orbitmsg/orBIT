@@ -746,7 +746,9 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
   const senderStr = currentItem?.sender || '';
 
   const userFontFamily = useChatStore((s) => s.fontFamily);
-  const activeFont = FONT_MAP[userFontFamily as FontFamily] || 'var(--main-font, inherit)';
+  const activeFont = (userFontFamily && userFontFamily !== 'system' && FONT_MAP[userFontFamily as FontFamily]) 
+    ? FONT_MAP[userFontFamily as FontFamily] 
+    : 'var(--main-font, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif)';
 
   return typeof document !== 'undefined' && createPortal(
     <div
@@ -772,7 +774,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
       <style>{`
         #telegram-media-viewer-root,
         #telegram-media-viewer-root * {
-          font-family: inherit;
+          font-family: var(--main-font, inherit) !important;
         }
         @keyframes tgSpinner {
           to { transform: rotate(360deg); }

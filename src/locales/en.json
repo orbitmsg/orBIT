@@ -62,7 +62,10 @@
       "unlock_button": "Unlock",
       "done_button": "Done",
       "wrong_password": "Incorrect password. Please try again.",
-      "decrypting": "Decrypting data and loading chats..."
+      "decrypting": "Decrypting data and loading chats...",
+      "welcome_back": "Welcome back, {{name}}!",
+      "welcome_back_generic": "Welcome back!",
+      "enter_pin_to_unlock": "Enter password to unlock Orbita"
     },
     "qrModal": {
       "title": "Get QR Code",

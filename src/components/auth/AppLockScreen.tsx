@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { securityService } from '../../services/securityService';
 
@@ -14,6 +14,22 @@ export const AppLockScreen: React.FC<AppLockScreenProps> = ({ onUnlocked }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [userProfile] = useState<{ nickname: string; avatarUrl: string | null }>(() => {
+    try {
+      const raw = localStorage.getItem('orbita_lock_user_profile');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          return {
+            nickname: parsed.nickname || '',
+            avatarUrl: parsed.avatarUrl || null,
+          };
+        }
+      }
+    } catch {}
+    return { nickname: '', avatarUrl: null };
+  });
 
   const handleUnlock = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -39,6 +55,7 @@ export const AppLockScreen: React.FC<AppLockScreenProps> = ({ onUnlocked }) => {
       style={{
         backgroundColor: 'var(--bg-primary, #121212)',
         color: 'var(--text-main, #ffffff)',
+        fontFamily: 'var(--main-font, inherit)',
       }}
     >
       <motion.div
@@ -48,11 +65,36 @@ export const AppLockScreen: React.FC<AppLockScreenProps> = ({ onUnlocked }) => {
         transition={{ duration: 0.2 }}
         className="flex flex-col items-center p-8 max-w-sm w-full relative z-10"
       >
+        {/* User Profile Avatar */}
+        <div className="mb-6 flex flex-col items-center">
+          <div className="w-24 h-24 rounded-full mb-4 flex items-center justify-center overflow-hidden"
+            style={{ 
+              border: '2px solid var(--accent-color, #7C3AED)',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.4)',
+              background: userProfile.avatarUrl ? 'transparent' : 'linear-gradient(135deg, var(--accent-color), #4f46e5)'
+            }}
+          >
+            {userProfile.avatarUrl ? (
+              <img src={userProfile.avatarUrl} alt="" className="w-full h-full object-cover" />
+            ) : userProfile.nickname ? (
+              <span className="text-3xl font-bold text-white uppercase">{userProfile.nickname.charAt(0)}</span>
+            ) : (
+              <User size={40} className="text-white opacity-80" />
+            )}
+          </div>
+          
+          <h2 className="text-xl font-bold text-[var(--text-main)] text-center mb-1">
+            {userProfile.nickname 
+              ? t('appLock.welcome_back', 'С возвращением, {{name}}!', { name: userProfile.nickname })
+              : t('appLock.welcome_back_generic', 'С возвращением!')}
+          </h2>
+          <p className="text-sm text-[var(--text-dim)] text-center">
+            {t('appLock.enter_pin_to_unlock', 'Введите пароль для разблокировки Orbita')}
+          </p>
+        </div>
+
         <form onSubmit={handleUnlock} className="w-full flex flex-col gap-4">
           <div className="flex flex-col gap-1.5 w-full">
-            <label className="text-base font-bold text-[var(--text-main)] text-left pl-1 mb-0.5">
-              {t('appLock.enter_password_label', 'Введите пароль')}
-            </label>
             <div className="relative flex items-center w-full">
               <input
                 type={showPassword ? 'text' : 'password'}

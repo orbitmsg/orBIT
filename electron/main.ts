@@ -2357,6 +2357,10 @@ const FONT_MAP: Record<string, string> = {
 ipcMain.on('orbita:set-current-font', (_event, font: string) => {
   currentFontFamily = font;
   setKvValue('selected-font-family', font).catch(() => {});
+  try {
+    const p = path.join(app.getPath('userData'), 'orbita_open_font.json');
+    fs.writeFileSync(p, JSON.stringify({ fontFamily: font }), 'utf8');
+  } catch {}
   if (callWindow && !callWindow.isDestroyed()) {
     callWindow.webContents.send('orbita:font-changed', font);
   }
@@ -4135,6 +4139,16 @@ app.whenReady().then(async () => {
   registerDownloadsIpcHandlers();
   await initStorageDb();
   registerStorageIpcHandlers();
+
+  try {
+    const openFontPath = path.join(app.getPath('userData'), 'orbita_open_font.json');
+    if (fs.existsSync(openFontPath)) {
+      const parsed = JSON.parse(fs.readFileSync(openFontPath, 'utf8'));
+      if (parsed?.fontFamily) {
+        currentFontFamily = parsed.fontFamily;
+      }
+    }
+  } catch {}
 
   try {
     const savedFont = await getKvValue('selected-font-family');

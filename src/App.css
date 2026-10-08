@@ -116,11 +116,6 @@ h6 {
   font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif !important;
 }
 
-button,
-.btn {
-  border-radius: 9999px !important;
-}
-
 .font-picker-item {
   font-family: var(--item-font), 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif !important;
 }

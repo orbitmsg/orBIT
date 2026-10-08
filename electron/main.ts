@@ -3524,6 +3524,7 @@ function createSplashWindow() {
     skipTaskbar: false,
     backgroundColor: '#121212',
     hasShadow: true,
+    show: false,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -3545,6 +3546,7 @@ function createSplashWindow() {
   splashWindow.once('ready-to-show', () => {
     if (splashWindow && !splashWindow.isDestroyed()) {
       splashWindow.maximize();
+      splashWindow.show();
     }
   });
 }

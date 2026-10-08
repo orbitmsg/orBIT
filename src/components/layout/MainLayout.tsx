@@ -5959,8 +5959,8 @@ export const MainLayout = () => {
                                       {user.nickname}
                                     </span>
                                     {isMe && (
-                                      <span className="px-1.5 py-0.5 rounded bg-[var(--accent-color)]/20 text-[var(--accent-color)] text-[10px] font-bold">
-                                        {t('common.you', 'Вы')}
+                                      <span className="px-2 py-0.5 rounded-full bg-[var(--accent-color)] text-white text-[10px] font-bold">
+                                        {t('common.this_is_you', 'Это вы')}
                                       </span>
                                     )}
                                   </div>

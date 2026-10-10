@@ -2571,6 +2571,7 @@ const OrbitaSelect = ({
             transition={{ duration: 0.12, ease: 'easeOut' }}
             role="listbox"
             aria-label={ariaLabel}
+            className="custom-chat-scrollbar"
             style={{
               position: 'absolute',
               top: 'calc(100% + 6px)',
@@ -2578,10 +2579,10 @@ const OrbitaSelect = ({
               width: width === '100%' ? '100%' : 'max-content',
               minWidth: '100%',
               maxWidth: 320,
-              maxHeight: 240,
+              maxHeight: 164,
               overflowY: 'auto',
               backgroundColor: 'var(--md-surface, #2a253b)',
-              border: 'none',
+              border: '1px solid rgba(255,255,255,0.05)',
               borderRadius: 10,
               boxShadow: '0 12px 32px rgba(0, 0, 0, 0.65)',
               display: 'flex',
@@ -2611,15 +2612,16 @@ const OrbitaSelect = ({
                     borderRadius: 7,
                     fontSize: 13,
                     fontWeight: isSelected ? 600 : 400,
-                    color: isSelected ? MD3.primary : MD3.onSurface,
-                    backgroundColor: isSelected ? 'rgba(155, 125, 212, 0.12)' : 'transparent',
+                    color: isSelected ? '#ffffff' : MD3.onSurface,
+                    backgroundColor: isSelected ? 'var(--accent-color, #7C3AED)' : 'transparent',
                     cursor: 'pointer',
                     transition: 'background-color 0.12s ease',
                     gap: 8,
+                    flexShrink: 0,
                   }}
                   onMouseEnter={(e) => {
                     if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                      e.currentTarget.style.backgroundColor = 'rgba(130, 130, 130, 0.2)';
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -2642,7 +2644,7 @@ const OrbitaSelect = ({
                     <Check
                       size={15}
                       style={{
-                        color: MD3.primary,
+                        color: '#ffffff',
                         flexShrink: 0,
                       }}
                     />
@@ -3409,8 +3411,10 @@ export const SettingsScreen = () => {
               aria-label={t('call.peer_volume')}
               style={{
                 width: '100%',
-                height: 6,
+                height: 8,
                 accentColor: peerVolume > 100 ? '#f59e0b' : 'var(--accent-color, #7C3AED)',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                borderRadius: 4,
                 cursor: 'pointer',
               }}
             />
@@ -3448,8 +3452,10 @@ export const SettingsScreen = () => {
               aria-label={t('call.mic_volume')}
               style={{
                 width: '100%',
-                height: 6,
+                height: 8,
                 accentColor: micVolume > 100 ? '#f59e0b' : 'var(--accent-color, #7C3AED)',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                borderRadius: 4,
                 cursor: 'pointer',
               }}
             />

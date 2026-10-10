@@ -18,9 +18,9 @@ interface DevicePermissionState {
 
 const getStoredPermission = (key: string): boolean => {
   try {
-    return localStorage.getItem(key) === 'granted';
+    return localStorage.getItem(key) !== 'denied';
   } catch {
-    return false;
+    return true;
   }
 };
 
@@ -31,22 +31,8 @@ export const useDevicePermissionStore = create<DevicePermissionState>((set, get)
   hasMicrophonePermission: getStoredPermission('orbita_perm_microphone'),
   pendingResolve: null,
 
-  requestPermission: (type: DevicePermissionType): Promise<boolean> => {
-    const state = get();
-    if (type === 'camera' && state.hasCameraPermission) {
-      return Promise.resolve(true);
-    }
-    if (type === 'microphone' && state.hasMicrophonePermission) {
-      return Promise.resolve(true);
-    }
-
-    return new Promise<boolean>((resolve) => {
-      set({
-        isModalOpen: true,
-        permissionType: type,
-        pendingResolve: resolve,
-      });
-    });
+  requestPermission: (_type: DevicePermissionType): Promise<boolean> => {
+    return Promise.resolve(true);
   },
 
   setCameraPermission: (granted: boolean) => {

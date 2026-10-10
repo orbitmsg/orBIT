@@ -2588,7 +2588,7 @@ const OrbitaSelect = ({
               display: 'flex',
               flexDirection: 'column',
               gap: 4,
-              padding: 5,
+              padding: 4,
               zIndex: 1000,
               boxSizing: 'border-box',
             }}
@@ -2608,7 +2608,7 @@ const OrbitaSelect = ({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '8px 12px',
+                    padding: '8px 10px',
                     borderRadius: 7,
                     fontSize: 13,
                     fontWeight: isSelected ? 600 : 400,

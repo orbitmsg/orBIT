@@ -371,7 +371,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
 
             <MessageText
               text={parsed.body}
-              timeNode={!hasLinkPreview ? timeBadge : undefined}
+              timeNode={(!hasLinkPreview && !hasReactions) ? timeBadge : undefined}
               themeColor={isOwn ? '#ffffff' : (themeColor || 'var(--accent-color)')}
               isOwn={isOwn}
               isEmojiOnly={isEmoji && emojiCount >= 4}
@@ -433,7 +433,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                 </div>
               )}
 
-              {hasLinkPreview && (
+              {hasLinkPreview && !hasReactions && (
                 <div
                   className="flex justify-end items-center select-none message-time-badge"
                   style={{
@@ -449,13 +449,35 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
               )}
 
               {hasReactions && (
-                <div className="flex items-center mt-1 min-w-0 w-full select-none" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
+                <div
+                  className="flex items-end justify-between mt-1 min-w-0 w-full select-none"
+                  style={{
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    gap: '10px',
+                    marginBottom: '-2px',
+                  }}
+                >
                   <MessageReactions
                     reactions={msg.reactions}
                     onToggleReaction={(emoji) => onToggleReaction?.(emoji)}
                     isOwn={isOwn}
                     isSmallMessage={isShortMessage}
                   />
+                  <div
+                    className="flex-shrink-0 select-none message-time-badge ml-auto"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      userSelect: 'none',
+                      WebkitUserSelect: 'none',
+                      lineHeight: 1,
+                      alignSelf: 'flex-end',
+                      marginBottom: '-1px',
+                    }}
+                  >
+                    {timeBadge}
+                  </div>
                 </div>
               )}
             </div>

@@ -223,37 +223,41 @@ export const MessageText: React.FC<MessageTextProps> = ({
     >
       <span className="selectable-message-text" style={{ userSelect: 'text', WebkitUserSelect: 'text', cursor: 'text' }}>
         {processedNodes}
+        {Boolean(timeNode) && (
+          <span
+            aria-hidden
+            style={{
+              display: 'inline-block',
+              width: spacerWidth,
+              height: 1,
+              pointerEvents: 'none',
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+            }}
+          />
+        )}
+      </span>
+      {Boolean(timeNode) && (
         <span
           aria-hidden
+          className="flex-shrink-0 select-none message-time-badge"
           style={{
-            display: 'inline-block',
-            width: spacerWidth,
-            height: 1,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
             pointerEvents: 'none',
             userSelect: 'none',
             WebkitUserSelect: 'none',
+            lineHeight: 1,
+            position: 'absolute',
+            bottom: '0px',
+            right: '0px',
+            whiteSpace: 'nowrap',
           }}
-        />
-      </span>
-      <span
-        aria-hidden
-        className="flex-shrink-0 select-none message-time-badge"
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '4px',
-          pointerEvents: 'none',
-          userSelect: 'none',
-          WebkitUserSelect: 'none',
-          lineHeight: 1,
-          position: 'absolute',
-          bottom: '0px',
-          right: '0px',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {timeNode}
-      </span>
+        >
+          {timeNode}
+        </span>
+      )}
     </div>
   );
 };

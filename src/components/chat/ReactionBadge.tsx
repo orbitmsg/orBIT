@@ -156,14 +156,14 @@ export const MessageReactions: React.FC<MessageReactionsProps> = React.memo(({
 
   return (
     <div
-      className="flex flex-wrap gap-1 mt-1 z-10 select-none items-center"
+      className="flex flex-wrap gap-1 z-10 select-none items-center"
       style={{
         display: 'flex',
         flexWrap: 'wrap',
         gap: '4px',
         maxWidth: isSmallMessage ? '170px' : '230px',
         width: 'fit-content',
-        justifyContent: isOwn ? 'flex-end' : 'flex-start',
+        justifyContent: 'flex-start',
       }}
     >
       {entries.map(([emoji, users]) => (

@@ -455,7 +455,6 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                     userSelect: 'none',
                     WebkitUserSelect: 'none',
                     gap: '10px',
-                    marginBottom: '-2px',
                   }}
                 >
                   <MessageReactions
@@ -473,7 +472,8 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                       WebkitUserSelect: 'none',
                       lineHeight: 1,
                       alignSelf: 'flex-end',
-                      marginBottom: '-1px',
+                      marginRight: isOwn ? '-9px' : '-6px',
+                      marginBottom: '-4.5px',
                     }}
                   >
                     {timeBadge}

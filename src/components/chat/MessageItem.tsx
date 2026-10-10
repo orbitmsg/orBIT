@@ -83,7 +83,7 @@ const MessageText = ({
           style={{
             float: 'right',
             marginLeft: '10px',
-            marginRight: isOwn ? '-9px' : '-6px',
+            marginRight: isOwn ? '-9px' : '-7px',
             marginBottom: '-4.5px',
             marginTop: isEmojiOnly ? '16px' : '6px',
             display: 'inline-flex',
@@ -229,7 +229,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
             className="flex flex-col"
             style={{
               width: 'fit-content',
-              minWidth: hasReactions ? (isOwn ? 130 : 100) : 50,
+              minWidth: hasReactions ? (isOwn ? 140 : 120) : 50,
               maxWidth: hasLinkPreview ? 'min(480px, 85vw)' : 'min(440px, 75vw)',
             }}
           >
@@ -437,7 +437,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                 <div
                   className="flex justify-end items-center select-none message-time-badge"
                   style={{
-                    marginRight: isOwn ? '-9px' : '-6px',
+                    marginRight: isOwn ? '-9px' : '-7px',
                     marginBottom: '-4.5px',
                     marginTop: '4px',
                     userSelect: 'none',
@@ -473,7 +473,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                       WebkitUserSelect: 'none',
                       lineHeight: 1,
                       alignSelf: 'flex-end',
-                      marginRight: isOwn ? '-9px' : '-6px',
+                      marginRight: isOwn ? '-9px' : '-7px',
                       marginBottom: '-4.5px',
                     }}
                   >

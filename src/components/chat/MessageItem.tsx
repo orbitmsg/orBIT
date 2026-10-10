@@ -450,7 +450,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
 
               {hasReactions && (
                 <div
-                  className="flex items-end justify-between mt-1 w-full select-none"
+                  className="flex items-center justify-between mt-1 w-full select-none"
                   style={{
                     userSelect: 'none',
                     WebkitUserSelect: 'none',
@@ -472,9 +472,6 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                       userSelect: 'none',
                       WebkitUserSelect: 'none',
                       lineHeight: 1,
-                      alignSelf: 'flex-end',
-                      marginRight: isOwn ? '-9px' : '-7px',
-                      marginBottom: '-4.5px',
                     }}
                   >
                     {timeBadge}

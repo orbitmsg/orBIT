@@ -229,7 +229,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
             className="flex flex-col"
             style={{
               width: 'fit-content',
-              minWidth: 50,
+              minWidth: hasReactions ? (isOwn ? 130 : 100) : 50,
               maxWidth: hasLinkPreview ? 'min(480px, 85vw)' : 'min(440px, 75vw)',
             }}
           >
@@ -450,11 +450,12 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
 
               {hasReactions && (
                 <div
-                  className="flex items-end justify-between mt-1 min-w-0 w-full select-none"
+                  className="flex items-end justify-between mt-1 w-full select-none"
                   style={{
                     userSelect: 'none',
                     WebkitUserSelect: 'none',
                     gap: '10px',
+                    flexWrap: 'nowrap',
                   }}
                 >
                   <MessageReactions

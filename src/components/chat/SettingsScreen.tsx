@@ -36,6 +36,7 @@ import { EmojiAvatarModal } from '../settings/EmojiAvatarModal';
 import { AvatarCropperModal } from '../settings/AvatarCropperModal';
 import { formatBirthday, parseBirthday, serializeBirthday, MONTH_FULL_RU, MONTH_FULL_EN } from '../../utils/birthday';
 import { mediaManager } from '../../services/mediaManager';
+import { uiSounds } from '../../utils/uiSounds';
 
 const QrCodeMiniIcon: React.FC<{ size?: number; color?: string }> = ({ size = 20, color = 'currentColor' }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={size} height={size}>
@@ -334,7 +335,18 @@ export const M3Switch = memo(({
   checked, onChange, disabled,
 }: { checked: boolean; onChange: () => void; disabled?: boolean }) => (
   <div
-    onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!disabled) onChange(); }}
+    onClick={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!disabled) {
+        if (!checked) {
+          uiSounds.playSwitchOn();
+        } else {
+          uiSounds.playSwitchOff();
+        }
+        onChange();
+      }
+    }}
     style={{
       width: '42px',
       height: '24px',
@@ -2511,7 +2523,14 @@ const OrbitaSelect = ({
     >
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (!isOpen) {
+            uiSounds.playTick();
+          } else {
+            uiSounds.playPop();
+          }
+          setIsOpen(!isOpen);
+        }}
         aria-label={ariaLabel || selectedOption?.label}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
@@ -2601,6 +2620,7 @@ const OrbitaSelect = ({
                   role="option"
                   aria-selected={isSelected}
                   onClick={() => {
+                    uiSounds.playSwitchOn();
                     onChange(opt.value);
                     setIsOpen(false);
                   }}

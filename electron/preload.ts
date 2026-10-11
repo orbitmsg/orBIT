@@ -413,7 +413,7 @@ contextBridge.exposeInMainWorld('orbita', {
   },
   scanUsbKey: () => ipcRenderer.invoke('orbita:scanUsbKey'),
   getRemovableDrives: () => ipcRenderer.invoke('orbita:getRemovableDrives'),
-  writeUsbKey: (targetDir: string, keyData: string) => ipcRenderer.invoke('orbita:writeUsbKey', targetDir, keyData),
+  writeUsbKey: (targetDir: string, keyData: any) => ipcRenderer.invoke('orbita:writeUsbKey', targetDir, keyData),
   readKeyFile: (filePath: string) => ipcRenderer.invoke('orbita:readKeyFile', filePath),
   notifyAppReady: () => ipcRenderer.send('orbita:app-ready'),
 });

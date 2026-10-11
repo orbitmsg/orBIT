@@ -1986,7 +1986,7 @@ ipcMain.handle('orbita:scanUsbKey', async () => {
       const keyFile = path.join(root, 'orbita.key');
       try {
         if (fs.existsSync(keyFile)) {
-          const content = fs.readFileSync(keyFile, 'utf8');
+          const content = fs.readFileSync(keyFile);
           return { found: true, keyData: content, path: keyFile, drive: root };
         }
       } catch {}
@@ -2009,14 +2009,15 @@ ipcMain.handle('orbita:getRemovableDrives', async () => {
   }
 });
 
-ipcMain.handle('orbita:writeUsbKey', async (_event, targetDir: string, keyData: string) => {
+ipcMain.handle('orbita:writeUsbKey', async (_event, targetDir: string, keyData: any) => {
   try {
     if (!targetDir || !keyData) return { success: false, error: 'invalid_arguments' };
     if (!fs.existsSync(targetDir)) {
       await fs.promises.mkdir(targetDir, { recursive: true });
     }
     const fullPath = path.join(targetDir, 'orbita.key');
-    await fs.promises.writeFile(fullPath, keyData, 'utf8');
+    const buf = typeof keyData === 'string' ? Buffer.from(keyData, 'utf8') : Buffer.from(keyData);
+    await fs.promises.writeFile(fullPath, buf);
     return { success: true, path: fullPath };
   } catch (err: any) {
     return { success: false, error: err?.message };
@@ -2026,7 +2027,7 @@ ipcMain.handle('orbita:writeUsbKey', async (_event, targetDir: string, keyData: 
 ipcMain.handle('orbita:readKeyFile', async (_event, filePath: string) => {
   try {
     if (!filePath || !fs.existsSync(filePath)) return null;
-    return await fs.promises.readFile(filePath, 'utf8');
+    return await fs.promises.readFile(filePath);
   } catch {
     return null;
   }

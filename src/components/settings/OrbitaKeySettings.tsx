@@ -81,7 +81,7 @@ export const OrbitaKeySettings: React.FC<OrbitaKeySettingsProps> = ({ onBack }) 
 
     setIsSubmitting(true);
     try {
-      const { payload, jsonString } = await orbitaKeyService.generateKeyData(
+      const { payload, binaryBytes } = await orbitaKeyService.generateKeyData(
         isPasswordSet ? currentPassword : undefined,
         selectedDrivePath || undefined
       );
@@ -94,24 +94,24 @@ export const OrbitaKeySettings: React.FC<OrbitaKeySettingsProps> = ({ onBack }) 
       }
 
       if (downloadOnly) {
-        orbitaKeyService.downloadKeyFile(jsonString);
+        orbitaKeyService.downloadKeyFile(binaryBytes);
         setSuccessMsg(t('security.orbita_key_success_created'));
         setKeyInfo(orbitaKeyService.getKeyInfo());
         setCurrentPassword('');
       } else if (selectedDrivePath) {
-        const ok = await orbitaKeyService.writeKeyToFolder(selectedDrivePath, jsonString);
+        const ok = await orbitaKeyService.writeKeyToFolder(selectedDrivePath, binaryBytes);
         if (ok) {
           setSuccessMsg(t('security.orbita_key_success_created'));
           setKeyInfo(orbitaKeyService.getKeyInfo());
           setCurrentPassword('');
         } else {
-          orbitaKeyService.downloadKeyFile(jsonString);
+          orbitaKeyService.downloadKeyFile(binaryBytes);
           setSuccessMsg(t('security.orbita_key_success_created'));
           setKeyInfo(orbitaKeyService.getKeyInfo());
           setCurrentPassword('');
         }
       } else {
-        orbitaKeyService.downloadKeyFile(jsonString);
+        orbitaKeyService.downloadKeyFile(binaryBytes);
         setSuccessMsg(t('security.orbita_key_success_created'));
         setKeyInfo(orbitaKeyService.getKeyInfo());
         setCurrentPassword('');

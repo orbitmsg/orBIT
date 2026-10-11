@@ -5494,17 +5494,17 @@ export const MainLayout = () => {
                     if (currentView !== 'chats') setCurrentView('chats');
                   }}
                   aria-label={t('folderManager.all_chats', 'Все чаты')}
-                  className={`flex flex-col items-center justify-center cursor-pointer transition-colors rounded-xl ${
+                  className={`flex flex-col items-center justify-center cursor-pointer transition-colors ${
                     isAllActive
-                      ? 'bg-[rgba(255,255,255,0.08)] text-white'
-                      : 'bg-transparent text-[var(--text-dim,#8e8e93)] hover:text-white hover:bg-[rgba(255,255,255,0.04)]'
+                      ? 'text-white'
+                      : 'text-[var(--text-dim,#8e8e93)] hover:text-white'
                   }`}
                   style={{
                     width: '64px',
                     padding: '8px 2px',
                     margin: '2px 0',
                     border: 'none',
-                    borderRadius: '12px',
+                    background: 'transparent',
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
@@ -5545,17 +5545,17 @@ export const MainLayout = () => {
                     if (currentView !== 'chats') setCurrentView('chats');
                   }}
                   aria-label={folder.name}
-                  className={`flex flex-col items-center justify-center cursor-pointer transition-colors rounded-xl relative ${
+                  className={`flex flex-col items-center justify-center cursor-pointer transition-colors relative ${
                     isFolderActive
-                      ? 'bg-[rgba(255,255,255,0.08)] text-white'
-                      : 'bg-transparent text-[var(--text-dim,#8e8e93)] hover:text-white hover:bg-[rgba(255,255,255,0.04)]'
+                      ? 'text-white'
+                      : 'text-[var(--text-dim,#8e8e93)] hover:text-white'
                   }`}
                   style={{
                     width: '64px',
                     padding: '8px 2px',
                     margin: '2px 0',
                     border: 'none',
-                    borderRadius: '12px',
+                    background: 'transparent',
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}

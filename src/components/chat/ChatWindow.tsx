@@ -7092,8 +7092,8 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
             position: 'absolute',
             right: '7px',
             bottom: '16px',
-            width: '46px',
-            height: '46px',
+            width: '36px',
+            height: '36px',
             borderRadius: '50%',
             backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
             color: 'var(--text-main)',
@@ -7115,15 +7115,15 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               style={{
                 position: 'absolute',
                 top: '-5px',
-                right: unreadCount >= 10 ? '-6px' : '-2px',
+                right: unreadCount >= 10 ? '-6px' : '-3px',
                 backgroundColor: 'var(--accent-color, #7C3AED)',
                 color: '#ffffff',
-                fontSize: '11px',
+                fontSize: '10px',
                 fontWeight: 600,
-                minWidth: '18px',
-                height: '18px',
+                minWidth: '16px',
+                height: '16px',
                 borderRadius: unreadCount >= 10 ? '9999px' : '50%',
-                padding: unreadCount >= 10 ? '0 6px' : '0',
+                padding: unreadCount >= 10 ? '0 5px' : '0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -7136,7 +7136,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               {unreadCount > 99 ? '99+' : unreadCount}
             </div>
           )}
-          <ChevronDown size={24} style={{ color: 'var(--text-main)' }} />
+          <ChevronDown size={18} style={{ color: 'var(--text-main)' }} />
         </button>
       </div>
 

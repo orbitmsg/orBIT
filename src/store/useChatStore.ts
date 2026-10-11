@@ -130,6 +130,12 @@ export interface ForwardedFrom {
   isAnonymous?: boolean;
 }
 
+export interface ChatFolder {
+  id: string;
+  name: string;
+  chatIds: string[];
+}
+
 export interface Message {
   id?: string;
   senderId?: string;
@@ -692,6 +698,12 @@ interface ChatState {
     subscribersCount?: number;
     isSubscribed?: boolean;
   }) => void;
+  folders: ChatFolder[];
+  activeFolderId: string | null;
+  createFolder: (name: string, chatIds: string[]) => string;
+  updateFolder: (id: string, name: string, chatIds: string[]) => void;
+  deleteFolder: (id: string) => void;
+  setActiveFolderId: (id: string | null) => void;
 }
 
 export const useChatStore = create<ChatState>()(
@@ -719,6 +731,24 @@ export const useChatStore = create<ChatState>()(
       pinnedChatIds: [],
       deletedChatIds: [],
       deletedChatSessions: {},
+      folders: [],
+      activeFolderId: null,
+      createFolder: (name: string, chatIds: string[]) => {
+        const id = 'folder_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+        const newFolder: ChatFolder = { id, name: name.trim(), chatIds };
+        set((state) => ({ folders: [...(state.folders || []), newFolder] }));
+        return id;
+      },
+      updateFolder: (id: string, name: string, chatIds: string[]) =>
+        set((state) => ({
+          folders: (state.folders || []).map((f) => (f.id === id ? { ...f, name: name.trim(), chatIds } : f)),
+        })),
+      deleteFolder: (id: string) =>
+        set((state) => ({
+          folders: (state.folders || []).filter((f) => f.id !== id),
+          activeFolderId: state.activeFolderId === id ? null : state.activeFolderId,
+        })),
+      setActiveFolderId: (id: string | null) => set({ activeFolderId: id }),
       activeChatId: null,
       activeProfileChatId: null,
       messagesByChatId: {},
@@ -2135,6 +2165,8 @@ export const useChatStore = create<ChatState>()(
         selectedSpeakerId: state.selectedSpeakerId,
         screenProtectionEnabled: state.screenProtectionEnabled,
         hideMenuBar: state.hideMenuBar,
+        folders: state.folders || [],
+        activeFolderId: state.activeFolderId,
       }),
       version: 37,
       migrate: (persistedState: any, version: number) => {

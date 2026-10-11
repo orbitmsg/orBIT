@@ -36,6 +36,7 @@ import { QrCodeView } from './QrCodeView';
 import { CHAT_COLOR_PRESETS, DEFAULT_CHAT_COLOR, type ThemeId } from '../../theme';
 import { EmojiAvatarModal } from '../settings/EmojiAvatarModal';
 import { AvatarCropperModal } from '../settings/AvatarCropperModal';
+import { ChatFoldersSettings, FolderSvgIcon } from '../settings/ChatFoldersSettings';
 import { formatBirthday, parseBirthday, serializeBirthday, MONTH_FULL_RU, MONTH_FULL_EN } from '../../utils/birthday';
 import { mediaManager } from '../../services/mediaManager';
 import { uiSounds } from '../../utils/uiSounds';
@@ -2732,7 +2733,7 @@ const HotkeySwitch = ({
   );
 };
 
-type TabId = 'main' | 'myAccount' | 'security' | 'connection' | 'chats' | 'calls' | 'font' | 'dataMemory' | 'energy' | 'notifications' | 'language' | 'preferences' | 'password' | 'qrCode' | 'backup' | 'cloudBackup' | 'pcBackup' | 'orbitaKey';
+type TabId = 'main' | 'myAccount' | 'security' | 'connection' | 'chats' | 'calls' | 'font' | 'dataMemory' | 'energy' | 'notifications' | 'language' | 'preferences' | 'password' | 'qrCode' | 'backup' | 'cloudBackup' | 'pcBackup' | 'orbitaKey' | 'folders';
 
 export const SettingsScreen = () => {
   const { t, i18n } = useTranslation();
@@ -2819,6 +2820,7 @@ export const SettingsScreen = () => {
   const { appVersion } = useDeviceStore();
   const { proxyEnabled, activeProxyId, proxies } = useConnectionStore();
   const activeProxy = proxies.find((p) => p.id === activeProxyId);
+  const folders = useChatStore((s) => s.folders || []);
   const initialSettingsTab = useChatStore((s) => s.initialSettingsTab) as TabId | undefined;
   const [tabStack, setTabStack] = useState<TabId[]>(() => [initialSettingsTab || 'main']);
   const activeTab = tabStack[tabStack.length - 1];
@@ -3290,6 +3292,7 @@ export const SettingsScreen = () => {
     cloudBackup:   t('backup.title', 'Резервные копии'),
     pcBackup:      t('backup.title', 'Резервные копии'),
     orbitaKey:     t('security.orbita_key_screen_title', 'Настройка Orbita Key'),
+    folders:       t('settings.chat_folders', 'Папки с чатами'),
   };
 
   const languageDisplayOptions = [
@@ -4265,6 +4268,19 @@ export const SettingsScreen = () => {
         />
 
         <MenuItem
+          icon={<FolderSvgIcon size={20} style={{ color: MD3.onSurface }} />}
+          label={t('settings.chat_folders', 'Папки с чатами')}
+          onClick={() => pushTab('folders')}
+          rightElement={
+            folders.length > 0 ? (
+              <span style={{ fontSize: 13, color: MD3.onSurfaceVar }}>
+                {folders.length}
+              </span>
+            ) : undefined
+          }
+        />
+
+        <MenuItem
           icon={
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
@@ -4418,6 +4434,8 @@ export const SettingsScreen = () => {
         );
       case 'font':
         return renderFont();
+      case 'folders':
+        return <ChatFoldersSettings onBack={handleBack} />;
       case 'dataMemory':
         return renderDataMemory();
       case 'energy':

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import i18n from 'i18next';
-import { useChatStore, type Chat, type Message, type IncomingFriendRequest, isMessageOutgoing } from '../../store/useChatStore';
+import { useChatStore, type Chat, type Message, type IncomingFriendRequest, type ChatFolder, isMessageOutgoing } from '../../store/useChatStore';
 import { useAuthStore, getInitialNumericId } from '../../store/useAuthStore';
 import { DeveloperBadge, revalidateDevelopersOnConnection } from '../ui/DeveloperBadge';
 import { X, Trash, WifiOff, LogOut, RotateCw, Archive, ArrowLeft } from 'lucide-react';
@@ -804,9 +804,15 @@ export const MainLayout = () => {
     closeInChatSearch,
     addChannelChat,
     deletedChatSessions,
+    folders,
+    activeFolderId,
+    setActiveFolderId,
     _hasHydrated,
   } = useChatStore(useShallow(state => ({
     chats: state.chats,
+    folders: state.folders,
+    activeFolderId: state.activeFolderId,
+    setActiveFolderId: state.setActiveFolderId,
     activeChatId: state.activeChatId,
     setActiveChat: state.setActiveChat,
     currentView: state.currentView,
@@ -5049,8 +5055,24 @@ export const MainLayout = () => {
     if (isViewingArchive) {
       return archivedChats;
     }
-    return filteredChats.filter(chat => !chat.isArchived);
-  }, [filteredChats, archivedChats, isViewingArchive]);
+    const nonArchived = filteredChats.filter(chat => !chat.isArchived);
+    if (!activeFolderId) return nonArchived;
+    const folder = (folders || []).find(f => f.id === activeFolderId);
+    if (!folder) return nonArchived;
+    const setIds = new Set(folder.chatIds || []);
+    return nonArchived.filter(chat => setIds.has(chat.id));
+  }, [filteredChats, archivedChats, isViewingArchive, activeFolderId, folders]);
+
+  const getFolderUnreadCount = useCallback((folder: ChatFolder) => {
+    const idSet = new Set(folder.chatIds || []);
+    let count = 0;
+    for (const chat of chats) {
+      if (idSet.has(chat.id) && (chat.unreadCount || 0) > 0) {
+        count += chat.unreadCount!;
+      }
+    }
+    return count;
+  }, [chats]);
 
   useEffect(() => {
     if (isViewingArchive && archivedChats.length === 0) {
@@ -5438,24 +5460,142 @@ export const MainLayout = () => {
             </button>
           </div>
 
-          <button
-            type="button"
-            aria-label={t('common.all_chats', 'Все чаты')}
-            className="w-full flex items-center justify-center cursor-pointer transition-all text-[var(--text-dim)] hover:text-[var(--text-main)]"
-            style={{
-              height: '64px',
-              border: 'none',
-              borderRadius: 0,
-              backgroundColor: 'var(--surface-container-strong)',
-              outline: 'none',
-              boxSizing: 'border-box',
-            }}
+          <div
+            className="flex-1 w-full flex flex-col items-center overflow-y-auto no-scrollbar py-1"
+            style={{ boxSizing: 'border-box' }}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24" height="24">
-              <path fill="currentColor" d="M1.5 22C1.5 10.678 10.678 1.5 22 1.5c10.994 0 19.966 8.654 20.477 19.521A15.43 15.43 0 0 0 34 18.5c-8.56 0-15.5 6.94-15.5 15.5c0 3.129.927 6.041 2.521 8.477a20.4 20.4 0 0 1-9.602-2.915c-2.081.838-4.47 1.709-6.657 2.316c-1.657.46-3.15-.965-2.73-2.645c.566-2.27 1.438-4.722 2.304-6.823A20.4 20.4 0 0 1 1.5 22"/>
-              <path fill="currentColor" d="M34 21.5c6.904 0 12.5 5.596 12.5 12.5c0 2.3-.622 4.458-1.707 6.31c.4.871.795 1.858 1.112 2.912c.507 1.681-1.023 3.133-2.675 2.593a29 29 0 0 1-2.802-1.093A12.44 12.44 0 0 1 34 46.5c-6.904 0-12.5-5.596-12.5-12.5S27.096 21.5 34 21.5"/>
-            </svg>
-          </button>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveFolderId(null);
+                if (currentView !== 'chats') setCurrentView('chats');
+              }}
+              aria-label={t('folderManager.all_chats', 'Все чаты')}
+              className="flex flex-col items-center justify-center cursor-pointer transition-all rounded-xl"
+              style={{
+                width: '60px',
+                padding: '8px 4px',
+                margin: '2px 0',
+                border: 'none',
+                borderRadius: '12px',
+                backgroundColor: 'transparent',
+                outline: 'none',
+                boxSizing: 'border-box',
+                color: activeFolderId === null && currentView === 'chats' ? '#ffffff' : 'var(--text-dim, #8e8e93)',
+              }}
+              onMouseEnter={(e) => {
+                if (!(activeFolderId === null && currentView === 'chats')) {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.04)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!(activeFolderId === null && currentView === 'chats')) {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24" height="24">
+                <path fill="currentColor" d="M1.5 22C1.5 10.678 10.678 1.5 22 1.5c10.994 0 19.966 8.654 20.477 19.521A15.43 15.43 0 0 0 34 18.5c-8.56 0-15.5 6.94-15.5 15.5c0 3.129.927 6.041 2.521 8.477a20.4 20.4 0 0 1-9.602-2.915c-2.081.838-4.47 1.709-6.657 2.316c-1.657.46-3.15-.965-2.73-2.645c.566-2.27 1.438-4.722 2.304-6.823A20.4 20.4 0 0 1 1.5 22"/>
+                <path fill="currentColor" d="M34 21.5c6.904 0 12.5 5.596 12.5 12.5c0 2.3-.622 4.458-1.707 6.31c.4.871.795 1.858 1.112 2.912c.507 1.681-1.023 3.133-2.675 2.593a29 29 0 0 1-2.802-1.093A12.44 12.44 0 0 1 34 46.5c-6.904 0-12.5-5.596-12.5-12.5S27.096 21.5 34 21.5"/>
+              </svg>
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  marginTop: '4px',
+                  textAlign: 'center',
+                  lineHeight: 1.1,
+                  userSelect: 'none',
+                }}
+              >
+                {t('folderManager.all_chats', 'Все чаты')}
+              </span>
+            </button>
+
+            {(folders || []).map((folder) => {
+              const isFolderActive = activeFolderId === folder.id && currentView === 'chats';
+              const unreadCount = getFolderUnreadCount(folder);
+              return (
+                <button
+                  key={folder.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveFolderId(folder.id);
+                    if (currentView !== 'chats') setCurrentView('chats');
+                  }}
+                  aria-label={folder.name}
+                  className="flex flex-col items-center justify-center cursor-pointer transition-all rounded-xl"
+                  style={{
+                    width: '60px',
+                    padding: '8px 4px',
+                    margin: '2px 0',
+                    border: 'none',
+                    borderRadius: '12px',
+                    backgroundColor: 'transparent',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    color: isFolderActive ? '#ffffff' : 'var(--text-dim, #8e8e93)',
+                    position: 'relative',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isFolderActive) {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.04)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isFolderActive) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
+                >
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">
+                      <path fill="currentColor" fillRule="evenodd" d="M13.56 4.995h5.69A2.755 2.755 0 0 1 22 7.745v7.505A2.755 2.755 0 0 1 19.25 18H7.75A2.755 2.755 0 0 1 5 15.25V5.745a2.755 2.755 0 0 1 2.75-2.75h3.81zM3.5 7v11.25c0 .69.56 1.25 1.25 1.25H19V21H4.75A2.755 2.755 0 0 1 2 18.25V7z" clipRule="evenodd"/>
+                    </svg>
+                    {unreadCount > 0 && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: '-4px',
+                          right: '-7px',
+                          backgroundColor: 'var(--accent-color, #7C3AED)',
+                          color: '#ffffff',
+                          fontSize: '10px',
+                          fontWeight: 600,
+                          minWidth: '16px',
+                          height: '16px',
+                          borderRadius: '9999px',
+                          padding: '0 4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          lineHeight: 1,
+                        }}
+                      >
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 500,
+                      marginTop: '4px',
+                      maxWidth: '56px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      textAlign: 'center',
+                      lineHeight: 1.1,
+                      userSelect: 'none',
+                    }}
+                  >
+                    {folder.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -5887,8 +6027,23 @@ export const MainLayout = () => {
                         <div className="w-full">
                           <div
                             onClick={() => handleSelectFoundChannel(searchChannelResult)}
-                            className="flex items-center gap-3 px-3.5 py-2 hover:bg-[var(--surface-container-strong)] transition-colors cursor-pointer w-full"
-                            style={{ borderRadius: 0, width: '100%', boxSizing: 'border-box' }}
+                            className="flex items-center gap-3 cursor-pointer transition-colors"
+                            style={{
+                              borderRadius: '12px',
+                              margin: '2px 8px',
+                              width: 'calc(100% - 16px)',
+                              padding: '8px 10px',
+                              boxSizing: 'border-box',
+                              backgroundColor: 'transparent',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = isLightTheme
+                                ? 'rgba(0, 0, 0, 0.04)'
+                                : 'rgba(255, 255, 255, 0.04)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
                           >
                             <Avatar
                               src={searchChannelResult.avatarUrl}
@@ -5930,8 +6085,23 @@ export const MainLayout = () => {
                         <div className="w-full">
                           <div
                             onClick={handleSelectFoundSupport}
-                            className="flex items-center gap-3 px-3.5 py-2 hover:bg-[var(--surface-container-strong)] transition-colors cursor-pointer w-full"
-                            style={{ borderRadius: 0, width: '100%', boxSizing: 'border-box' }}
+                            className="flex items-center gap-3 cursor-pointer transition-colors"
+                            style={{
+                              borderRadius: '12px',
+                              margin: '2px 8px',
+                              width: 'calc(100% - 16px)',
+                              padding: '8px 10px',
+                              boxSizing: 'border-box',
+                              backgroundColor: 'transparent',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = isLightTheme
+                                ? 'rgba(0, 0, 0, 0.04)'
+                                : 'rgba(255, 255, 255, 0.04)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
                           >
                             <BotAvatar className="w-12 h-12" />
                             <div className="flex-1 min-w-0">
@@ -5981,8 +6151,23 @@ export const MainLayout = () => {
                               <div
                                 key={user.user_code}
                                 onClick={() => handleSelectFoundUser(user)}
-                                className="flex items-center gap-3 px-3.5 py-2 hover:bg-[var(--surface-container-strong)] transition-colors cursor-pointer w-full"
-                                style={{ borderRadius: 0, width: '100%', boxSizing: 'border-box' }}
+                                className="flex items-center gap-3 cursor-pointer transition-colors"
+                                style={{
+                                  borderRadius: '12px',
+                                  margin: '2px 8px',
+                                  width: 'calc(100% - 16px)',
+                                  padding: '8px 10px',
+                                  boxSizing: 'border-box',
+                                  backgroundColor: 'transparent',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = isLightTheme
+                                    ? 'rgba(0, 0, 0, 0.04)'
+                                    : 'rgba(255, 255, 255, 0.04)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                }}
                               >
                                 <Avatar
                                   src={user.avatar_url}
@@ -6019,6 +6204,13 @@ export const MainLayout = () => {
                               </div>
                             );
                           })}
+                        </div>
+                      )}
+                      {activeFolderId && !searchQuery.trim() && visibleChats.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                          <span className="text-sm text-[var(--text-dim)]">
+                            {t('folderManager.no_chats_in_folder', 'В этой папке пока нет чатов')}
+                          </span>
                         </div>
                       )}
                       {searchQuery.trim().length >= 2 && visibleChats.length === 0 && !searchChannelResult && !isSupportFound && globalFoundUsers.length === 0 && (

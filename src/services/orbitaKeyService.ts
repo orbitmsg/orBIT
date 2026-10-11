@@ -306,16 +306,26 @@ export const orbitaKeyService = {
   async scanForUsbKey(): Promise<{ found: boolean; keyPayload?: OrbitaKeyPayload; drive?: string; path?: string; error?: string }> {
     if (typeof window !== 'undefined' && (window as any).orbita?.scanUsbKey) {
       try {
-        const res = await (window as any).orbita.scanUsbKey();
-        if (res && res.found && res.keyData) {
-          const payload = await parseRawKeyData(res.keyData);
-          if (payload && payload.orbitaKey === true) {
-            return {
-              found: true,
-              keyPayload: payload,
-              drive: res.drive,
-              path: res.path,
-            };
+        const preferred = localStorage.getItem(STORAGE_KEY_LABEL) || undefined;
+        const res = await (window as any).orbita.scanUsbKey(preferred);
+        if (res && res.found) {
+          const expectedKeyId = localStorage.getItem(STORAGE_KEY_ID);
+          const candidates: Array<{ keyData: any; path: string; drive: string }> = Array.isArray(res.candidates) && res.candidates.length > 0
+            ? res.candidates
+            : (res.keyData ? [{ keyData: res.keyData, path: res.path, drive: res.drive }] : []);
+
+          for (const cand of candidates) {
+            const payload = await parseRawKeyData(cand.keyData);
+            if (payload && payload.orbitaKey === true) {
+              if (!expectedKeyId || payload.keyId === expectedKeyId) {
+                return {
+                  found: true,
+                  keyPayload: payload,
+                  drive: cand.drive,
+                  path: cand.path,
+                };
+              }
+            }
           }
         }
       } catch (err: any) {

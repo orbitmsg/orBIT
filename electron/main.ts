@@ -1979,21 +1979,45 @@ function getPotentialUsbDriveRoots(): string[] {
   return roots;
 }
 
-ipcMain.handle('orbita:scanUsbKey', async () => {
+ipcMain.handle('orbita:scanUsbKey', async (_event, preferredDrive?: string) => {
   try {
-    const roots = getPotentialUsbDriveRoots();
-    for (const root of roots) {
+    const rawRoots = getPotentialUsbDriveRoots();
+    const orderedRoots: string[] = [];
+    if (preferredDrive && typeof preferredDrive === 'string') {
+      const cleanPref = preferredDrive.trim();
+      if (cleanPref) {
+        orderedRoots.push(cleanPref);
+      }
+    }
+    for (const r of rawRoots) {
+      if (!orderedRoots.includes(r)) {
+        orderedRoots.push(r);
+      }
+    }
+
+    const candidates: Array<{ keyData: Buffer; path: string; drive: string }> = [];
+    for (const root of orderedRoots) {
       const keyFile = path.join(root, 'orbita.key');
       try {
         if (fs.existsSync(keyFile)) {
           const content = fs.readFileSync(keyFile);
-          return { found: true, keyData: content, path: keyFile, drive: root };
+          candidates.push({ keyData: content, path: keyFile, drive: root });
         }
       } catch {}
     }
-    return { found: false };
+
+    if (candidates.length > 0) {
+      return {
+        found: true,
+        candidates,
+        keyData: candidates[0].keyData,
+        path: candidates[0].path,
+        drive: candidates[0].drive,
+      };
+    }
+    return { found: false, candidates: [] };
   } catch (err: any) {
-    return { found: false, error: err?.message };
+    return { found: false, candidates: [], error: err?.message };
   }
 });
 

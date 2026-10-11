@@ -85,7 +85,7 @@ export const AppLockScreen: React.FC<AppLockScreenProps> = ({ onUnlocked }) => {
             setUsbStatus('success');
             setTimeout(() => {
               if (isMounted) onUnlocked();
-            }, 600);
+            }, 350);
             return;
           } else {
             setUsbError(t('appLock.usb_mode_invalid'));
@@ -95,7 +95,7 @@ export const AppLockScreen: React.FC<AppLockScreenProps> = ({ onUnlocked }) => {
       } catch {}
 
       if (isMounted) {
-        timer = setTimeout(checkUsb, 1200);
+        timer = setTimeout(checkUsb, 450);
       }
     };
 

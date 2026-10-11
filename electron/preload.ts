@@ -411,7 +411,7 @@ contextBridge.exposeInMainWorld('orbita', {
     ipcRenderer.on('orbita:updateStatus', handler);
     return () => ipcRenderer.removeListener('orbita:updateStatus', handler);
   },
-  scanUsbKey: () => ipcRenderer.invoke('orbita:scanUsbKey'),
+  scanUsbKey: (preferredDrive?: string) => ipcRenderer.invoke('orbita:scanUsbKey', preferredDrive),
   getRemovableDrives: () => ipcRenderer.invoke('orbita:getRemovableDrives'),
   writeUsbKey: (targetDir: string, keyData: any) => ipcRenderer.invoke('orbita:writeUsbKey', targetDir, keyData),
   readKeyFile: (filePath: string) => ipcRenderer.invoke('orbita:readKeyFile', filePath),

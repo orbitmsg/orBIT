@@ -236,7 +236,7 @@ const TogglePill = ({
   </button>
 );
 
-const SectionHeader = ({ title }: { title: string }) => (
+const SectionHeader = ({ title, style }: { title: string; style?: React.CSSProperties }) => (
   <div
     style={{
       fontSize: 12,
@@ -246,6 +246,7 @@ const SectionHeader = ({ title }: { title: string }) => (
       marginBottom: 8,
       userSelect: 'none',
       letterSpacing: '0.01em',
+      ...style,
     }}
   >
     {title}
@@ -288,12 +289,12 @@ const SettingsRow = ({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '12px 16px',
-      borderRadius: 0,
+      padding: '12px 14px',
+      borderRadius: onClick ? '12px' : 0,
+      margin: onClick ? '2px 6px' : 0,
       cursor: onClick ? 'pointer' : 'default',
       transition: 'background 150ms',
       backgroundColor: 'transparent',
-      width: '100%',
       boxSizing: 'border-box',
       userSelect: 'none',
     }}
@@ -380,12 +381,12 @@ const MenuItem = ({
       display: 'flex',
       alignItems: 'center',
       gap: 16,
-      padding: '12px 16px',
-      borderRadius: 0,
+      padding: '12px 14px',
+      borderRadius: '12px',
+      margin: '2px 6px',
       cursor: 'pointer',
       transition: 'background 150ms',
       backgroundColor: 'transparent',
-      width: '100%',
       boxSizing: 'border-box',
       userSelect: 'none',
     }}
@@ -1234,7 +1235,6 @@ const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup, onOpenOrbitaKey }
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderTop: '1px solid rgba(255, 255, 255, 0.04)',
           }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>{t('settings.typing_indicators_title')}</div>
@@ -1248,7 +1248,6 @@ const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup, onOpenOrbitaKey }
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderTop: '1px solid rgba(255, 255, 255, 0.04)',
           }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>{t('settings.link_previews_title', 'Предпросмотр ссылок')}</div>
@@ -1272,13 +1271,20 @@ const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup, onOpenOrbitaKey }
         <Block>
           <div
             onClick={onOpenPassword}
-            className="cursor-pointer transition-colors hover:brightness-110"
             style={{
-              padding: '16px 20px',
+              padding: '14px 14px',
+              borderRadius: '12px',
+              margin: '2px 6px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              cursor: 'pointer',
+              transition: 'background 150ms',
+              backgroundColor: 'transparent',
+              boxSizing: 'border-box',
             }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(202,196,208,0.08)')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>
@@ -1292,14 +1298,20 @@ const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup, onOpenOrbitaKey }
           </div>
           <div
             onClick={onOpenOrbitaKey}
-            className="cursor-pointer transition-colors hover:brightness-110"
             style={{
-              padding: '16px 20px',
+              padding: '14px 14px',
+              borderRadius: '12px',
+              margin: '2px 6px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              borderTop: '1px solid rgba(255, 255, 255, 0.04)',
+              cursor: 'pointer',
+              transition: 'background 150ms',
+              backgroundColor: 'transparent',
+              boxSizing: 'border-box',
             }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(202,196,208,0.08)')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1318,6 +1330,24 @@ const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup, onOpenOrbitaKey }
             </div>
             <ChevronRight size={20} style={{ color: MD3.onSurfaceVar }} />
           </div>
+          <div style={{
+            padding: '14px 14px',
+            margin: '2px 6px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            boxSizing: 'border-box',
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>
+                {t('settings.screen_protection')}
+              </div>
+              <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>
+                {t('settings.screen_protection_desc')}
+              </div>
+            </div>
+            <M3Switch checked={screenProtectionEnabled} onChange={handleToggleScreenProtection} />
+          </div>
         </Block>
       </div>
 
@@ -1334,13 +1364,20 @@ const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup, onOpenOrbitaKey }
         <Block>
           <div
             onClick={onOpenBackup}
-            className="cursor-pointer transition-colors hover:brightness-110"
             style={{
-              padding: '16px 20px',
+              padding: '14px 14px',
+              borderRadius: '12px',
+              margin: '2px 6px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              cursor: 'pointer',
+              transition: 'background 150ms',
+              backgroundColor: 'transparent',
+              boxSizing: 'border-box',
             }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(202,196,208,0.08)')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>
@@ -1351,36 +1388,6 @@ const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup, onOpenOrbitaKey }
               </div>
             </div>
             <ChevronRight size={20} style={{ color: MD3.onSurfaceVar }} />
-          </div>
-        </Block>
-      </div>
-
-      <div style={{ marginBottom: 24 }}>
-        <div style={{
-          fontSize: 12,
-          fontWeight: 600,
-          color: MD3.onSurfaceVar,
-          padding: '0 20px',
-          marginBottom: 8,
-        }}>
-          {t('settings.app_section', 'Приложение')}
-        </div>
-        <Block>
-          <div style={{
-            padding: '16px 20px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>
-                {t('settings.screen_protection')}
-              </div>
-              <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>
-                {t('settings.screen_protection_desc')}
-              </div>
-            </div>
-            <M3Switch checked={screenProtectionEnabled} onChange={handleToggleScreenProtection} />
           </div>
         </Block>
       </div>
@@ -1993,8 +2000,6 @@ const SignalChatColorPicker: React.FC = () => {
           </div>
         </div>
       </div>
-
-      <div style={{ height: 1, backgroundColor: 'var(--border-color, rgba(255,255,255,0.08))', width: '100%' }} />
 
       <div
         style={{
@@ -2663,7 +2668,7 @@ const DeviceSelect = ({
   ];
 
   return (
-    <div style={{ padding: '14px 0', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+    <div style={{ padding: '14px 0' }}>
       <div style={{ fontSize: 12, fontWeight: 600, color: MD3.onSurfaceVar, marginBottom: 8 }}>
         {label}
       </div>
@@ -3424,7 +3429,6 @@ export const SettingsScreen = () => {
               flexDirection: 'column',
               padding: '14px 0',
               gap: 8,
-              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -3524,13 +3528,16 @@ export const SettingsScreen = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 16,
-                  padding: '12px 20px',
+                  padding: '12px 16px',
+                  borderRadius: '12px',
+                  margin: '2px 6px',
                   cursor: 'pointer',
                   transition: 'background 150ms',
                   backgroundColor: isSelected ? 'rgba(197,180,227,0.12)' : 'transparent',
                   userSelect: 'none',
                   contentVisibility: 'auto',
                   containIntrinsicSize: '48px',
+                  boxSizing: 'border-box',
                 }}
                 onMouseEnter={(e) => {
                   if (!isSelected) {
@@ -3602,13 +3609,16 @@ export const SettingsScreen = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 16,
-                  padding: '12px 20px',
+                  padding: '12px 16px',
+                  borderRadius: '12px',
+                  margin: '2px 6px',
                   cursor: 'pointer',
                   transition: 'background 150ms',
                   backgroundColor: isSelected ? 'rgba(197,180,227,0.12)' : 'transparent',
                   userSelect: 'none',
                   contentVisibility: 'auto',
                   containIntrinsicSize: '48px',
+                  boxSizing: 'border-box',
                 }}
                 onMouseEnter={(e) => {
                   if (!isSelected) {
@@ -4466,6 +4476,7 @@ export const SettingsScreen = () => {
               label={t('settings.volume') || 'Громкость'}
               formatValue={(v) => `${Math.round(v)}%`}
               valuePlacement="right"
+              containerStyle={{ marginTop: 22 }}
               ariaLabel={t('settings.volume') || 'Громкость'}
             />
 
@@ -4474,7 +4485,7 @@ export const SettingsScreen = () => {
                 backgroundColor: 'var(--surface-container, var(--bg-secondary, #1c182a))',
                 borderRadius: '16px',
                 padding: '12px 16px',
-                margin: '0 10px 14px 10px',
+                margin: '4px 10px 18px 10px',
                 width: 'calc(100% - 20px)',
                 minHeight: '82px',
                 display: 'flex',
@@ -4497,7 +4508,7 @@ export const SettingsScreen = () => {
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', margin: '0 20px 20px 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', margin: '0 20px 24px 20px' }}>
               <TogglePill
                 active={notificationShowName}
                 label={t('settings.name') || 'Имя'}
@@ -4510,9 +4521,7 @@ export const SettingsScreen = () => {
               />
             </div>
 
-            <div style={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.06)', margin: '4px 0 8px 0' }} />
-
-            <SectionHeader title={t('settings.system_integration') || 'Взаимодействие с системой'} />
+            <SectionHeader title={t('settings.system_integration') || 'Взаимодействие с системой'} style={{ marginTop: 8 }} />
             <Block style={{ marginBottom: 8 }}>
               <SettingsRow
                 label={t('settings.use_windows_notifications') || 'Использовать уведомления Windows'}
@@ -4534,11 +4543,7 @@ export const SettingsScreen = () => {
               />
             </Block>
 
-            {/* Separator */}
-            <div style={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.06)', margin: '4px 0 8px 0' }} />
-
-            {/* 3. Расположение на экране */}
-            <SectionHeader title={t('settings.screen_position') || 'Расположение на экране'} />
+            <SectionHeader title={t('settings.screen_position') || 'Расположение на экране'} style={{ marginTop: 16 }} />
             <div style={{ margin: '8px 0 16px 0' }}>
               <NotificationMonitor
                 count={notificationCount}
@@ -4631,7 +4636,6 @@ export const SettingsScreen = () => {
                   justifyContent: 'space-between',
                   padding: '14px 0',
                   gap: 16,
-                  borderTop: '1px solid rgba(255, 255, 255, 0.08)',
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>

@@ -144,7 +144,7 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
             flexDirection: 'column',
           }}
         >
-          {proxies.map((proxy, idx) => {
+          {proxies.map((proxy) => {
             const isSelected = proxy.id === activeProxyId;
             const hasMenu = activeMenuId === proxy.id;
 
@@ -155,17 +155,19 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '12px 16px',
-                  borderBottom: idx < proxies.length - 1 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none',
-                  backgroundColor: isSelected && proxyEnabled ? 'rgba(255, 255, 255, 0.04)' : 'transparent',
+                  padding: '12px 14px',
+                  borderRadius: '12px',
+                  margin: '2px 6px',
+                  borderBottom: 'none',
+                  backgroundColor: isSelected && proxyEnabled ? 'rgba(255, 255, 255, 0.06)' : 'transparent',
                   cursor: 'pointer',
                   position: 'relative',
+                  boxSizing: 'border-box',
                 }}
                 onClick={() => {
                   setActiveProxy(proxy.id);
                 }}
               >
-                {/* Left: Radio + Name/Host */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
                   <div
                     style={{
@@ -370,7 +372,9 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
-              padding: '12px 16px',
+              padding: '12px 14px',
+              borderRadius: '12px',
+              margin: '2px 6px',
               background: 'none',
               border: 'none',
               color: 'var(--accent-color, #9b7dd4)',
@@ -378,7 +382,7 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
               fontWeight: 500,
               cursor: 'pointer',
               textAlign: 'left',
-              borderTop: proxies.length > 0 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none',
+              boxSizing: 'border-box',
             }}
           >
             <Plus size={16} />
@@ -407,7 +411,7 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '12px 16px',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+              borderBottom: 'none',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', paddingRight: '12px' }}>
@@ -431,7 +435,7 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '12px 16px',
-              borderBottom: '1px solid var(--border-color)',
+              borderBottom: 'none',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', paddingRight: '12px' }}>

@@ -579,7 +579,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '12px 16px',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+                    borderBottom: 'none',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>

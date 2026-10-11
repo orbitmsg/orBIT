@@ -797,7 +797,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
           style={{
             marginTop: '28px',
             paddingTop: '16px',
-            borderTop: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
+            borderTop: 'none',
             fontSize: '12.5px',
             lineHeight: 1.5,
             color: 'var(--text-dim, rgba(255, 255, 255, 0.5))',

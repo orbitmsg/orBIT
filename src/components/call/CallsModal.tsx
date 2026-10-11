@@ -383,11 +383,12 @@ export const CallsModal: React.FC<CallsModalProps> = ({ isOpen, onClose }) => {
                       onClick={() => handleSelectContact(item.chatId)}
                       className="group relative cursor-pointer"
                       style={{
-                        borderRadius: 0,
-                        width: '100%',
+                        borderRadius: '12px',
+                        width: 'calc(100% - 16px)',
+                        margin: '2px 8px',
                         backgroundColor: 'transparent',
                         border: 'none',
-                        padding: '8px 16px',
+                        padding: '8px 12px',
                         minHeight: 48,
                         boxSizing: 'border-box',
                         display: 'flex',

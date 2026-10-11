@@ -111,11 +111,15 @@ const MessageRowWrapper = memo(
   ({ index, msg, renderFn }: { index: number; msg: Message; renderFn: (i: number, m: Message) => React.ReactNode }) =>
     renderFn(index, msg) as React.ReactElement,
   (prev, next) =>
+    prev.index === next.index &&
     prev.msg.id === next.msg.id &&
     prev.msg.status === next.msg.status &&
     prev.msg.text === next.msg.text &&
     prev.msg.reactions === next.msg.reactions &&
     prev.msg.time === next.msg.time &&
+    prev.msg.mediaUrl === next.msg.mediaUrl &&
+    prev.msg.mediaType === next.msg.mediaType &&
+    prev.msg.uploading === next.msg.uploading &&
     prev.renderFn === next.renderFn
 );
 MessageRowWrapper.displayName = 'MessageRowWrapper';

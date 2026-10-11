@@ -18,7 +18,7 @@ import {
   StickerItem,
   searchStickers,
 } from '../../lib/stickers-and-gifs';
-import { TgsPlayer, clearTgsCache } from './TgsPlayer';
+import { TgsPlayer } from './TgsPlayer';
 
 interface EmojiPickerProps {
   onSelect: (emoji: string) => void;
@@ -59,9 +59,9 @@ const StickerGridButton: React.FC<{
       {isTgs ? (
         <TgsPlayer
           src={sticker.url}
-          loop={false}
+          loop={true}
           autoplay={true}
-          playOnHover={true}
+          playOnHover={false}
           className="w-full h-full select-none pointer-events-none"
         />
       ) : (
@@ -115,12 +115,6 @@ export const EmojiPicker = ({
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      clearTgsCache();
-    };
   }, []);
 
   const handleSelectEmoji = useCallback(
@@ -318,12 +312,10 @@ export const EmojiPicker = ({
 
   const [renderedEmojiCount, setRenderedEmojiCount] = useState(25);
   const [renderedGifCount, setRenderedGifCount] = useState(12);
-  const [renderedStickerCount, setRenderedStickerCount] = useState(24);
 
   useEffect(() => {
     setRenderedEmojiCount(25);
     setRenderedGifCount(12);
-    setRenderedStickerCount(24);
   }, [searchQuery, activeTab]);
 
   const visibleEmojiRows = useMemo(() => {
@@ -360,12 +352,97 @@ export const EmojiPicker = ({
     }
   }, [renderedGifCount, gifRows.length]);
 
+  const stickersScrollRef = useRef<HTMLDivElement>(null);
+  const [stickerScrollTop, setStickerScrollTop] = useState(0);
+
   const handleStickerScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const el = e.currentTarget;
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 350) {
-      setRenderedStickerCount((prev) => prev + 20);
-    }
+    setStickerScrollTop(e.currentTarget.scrollTop);
   }, []);
+
+  useEffect(() => {
+    setStickerScrollTop(0);
+    if (stickersScrollRef.current) {
+      stickersScrollRef.current.scrollTop = 0;
+    }
+  }, [activeTab, searchQuery]);
+
+  const { stickerVirtualItems, stickerOffsets, stickerTotalHeight, packScrollOffsets } = useMemo(() => {
+    type VirtualItem =
+      | { type: 'header'; packId: string; title: string; height: number }
+      | { type: 'row'; id: string; packId: string; stickers: StickerItem[]; height: number }
+      | { type: 'spacer'; id: string; height: number };
+
+    const items: VirtualItem[] = [];
+    const offsets: number[] = [];
+    const pOffsets: Record<string, number> = {};
+    let currentOffset = 0;
+
+    for (const pack of STICKER_PACKS) {
+      pOffsets[pack.id] = currentOffset;
+      items.push({ type: 'header', packId: pack.id, title: pack.title, height: 28 });
+      offsets.push(currentOffset);
+      currentOffset += 28;
+
+      for (let i = 0; i < pack.stickers.length; i += 4) {
+        items.push({
+          type: 'row',
+          id: `${pack.id}-row-${i}`,
+          packId: pack.id,
+          stickers: pack.stickers.slice(i, i + 4),
+          height: 82,
+        });
+        offsets.push(currentOffset);
+        currentOffset += 82;
+      }
+
+      items.push({ type: 'spacer', id: `${pack.id}-spacer`, height: 12 });
+      offsets.push(currentOffset);
+      currentOffset += 12;
+    }
+
+    return {
+      stickerVirtualItems: items,
+      stickerOffsets: offsets,
+      stickerTotalHeight: currentOffset,
+      packScrollOffsets: pOffsets,
+    };
+  }, []);
+
+  const { visibleStickerItems, stickerTopSpacer, stickerBottomSpacer } = useMemo(() => {
+    if (stickerVirtualItems.length === 0) {
+      return { visibleStickerItems: [], stickerTopSpacer: 0, stickerBottomSpacer: 0 };
+    }
+
+    const minOffset = Math.max(0, stickerScrollTop - 250);
+    const maxOffset = stickerScrollTop + 900;
+
+    let startIndex = 0;
+    while (
+      startIndex < stickerVirtualItems.length - 1 &&
+      stickerOffsets[startIndex] + stickerVirtualItems[startIndex].height < minOffset
+    ) {
+      startIndex++;
+    }
+
+    let endIndex = startIndex;
+    while (
+      endIndex < stickerVirtualItems.length - 1 &&
+      stickerOffsets[endIndex] < maxOffset
+    ) {
+      endIndex++;
+    }
+
+    const topSpacer = stickerOffsets[startIndex];
+    const lastItem = stickerVirtualItems[endIndex];
+    const renderedBottom = stickerOffsets[endIndex] + lastItem.height;
+    const bottomSpacer = Math.max(0, stickerTotalHeight - renderedBottom);
+
+    return {
+      visibleStickerItems: stickerVirtualItems.slice(startIndex, endIndex + 1),
+      stickerTopSpacer: topSpacer,
+      stickerBottomSpacer: bottomSpacer,
+    };
+  }, [stickerScrollTop, stickerVirtualItems, stickerOffsets, stickerTotalHeight]);
 
   const filteredStickers = useMemo(() => {
     if (activeTab !== 'stickers') return [];
@@ -373,6 +450,35 @@ export const EmojiPicker = ({
     if (!q) return [];
     return searchStickers(q);
   }, [activeTab, searchQuery]);
+
+  const filteredStickerRows = useMemo(() => {
+    const rows: StickerItem[][] = [];
+    for (let i = 0; i < filteredStickers.length; i += 4) {
+      rows.push(filteredStickers.slice(i, i + 4));
+    }
+    return rows;
+  }, [filteredStickers]);
+
+  const { visibleFilteredRows, filteredTopSpacer, filteredBottomSpacer } = useMemo(() => {
+    if (filteredStickerRows.length === 0) {
+      return { visibleFilteredRows: [], filteredTopSpacer: 0, filteredBottomSpacer: 0 };
+    }
+    const rowHeight = 82;
+    const minOffset = Math.max(0, stickerScrollTop - 250);
+    const maxOffset = stickerScrollTop + 900;
+
+    const startIndex = Math.max(0, Math.floor(minOffset / rowHeight));
+    const endIndex = Math.min(filteredStickerRows.length - 1, Math.ceil(maxOffset / rowHeight));
+
+    const topSpacer = startIndex * rowHeight;
+    const bottomSpacer = Math.max(0, (filteredStickerRows.length - 1 - endIndex) * rowHeight);
+
+    return {
+      visibleFilteredRows: filteredStickerRows.slice(startIndex, endIndex + 1),
+      filteredTopSpacer: topSpacer,
+      filteredBottomSpacer: bottomSpacer,
+    };
+  }, [filteredStickerRows, stickerScrollTop]);
 
   const tabs: Array<{ id: TabType; label: string }> = [
     { id: 'emoji', label: t('emojiPicker.emojis', 'Эмодзи') },
@@ -540,12 +646,14 @@ export const EmojiPicker = ({
 
             {activeTab === 'stickers' && (
               <div
+                ref={stickersScrollRef}
                 onScroll={handleStickerScroll}
                 className="custom-chat-scrollbar h-full overflow-y-auto overflow-x-hidden"
                 style={{
                   padding: '0 8px 10px 8px',
                   overscrollBehaviorY: 'contain',
                   transform: 'translateZ(0)',
+                  willChange: 'scroll-position',
                 }}
               >
                 {searchQuery.trim() ? (
@@ -554,45 +662,45 @@ export const EmojiPicker = ({
                       <div className="text-white/40 text-sm">{t('emojiPicker.no_stickers_found', 'Стикеры не найдены')}</div>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-4 gap-2 pt-1">
-                      {filteredStickers.slice(0, renderedStickerCount).map((sticker) => (
-                        <StickerGridButton
-                          key={sticker.id}
-                          sticker={sticker}
-                          onSelect={handleSelectSticker}
-                        />
+                    <div className="pt-1">
+                      {filteredTopSpacer > 0 && <div style={{ height: `${filteredTopSpacer}px` }} />}
+                      {visibleFilteredRows.map((row, rIdx) => (
+                        <div key={`filtered-row-${rIdx}`} className="grid grid-cols-4 gap-2 mb-2">
+                          {row.map((sticker) => (
+                            <StickerGridButton
+                              key={sticker.id}
+                              sticker={sticker}
+                              onSelect={handleSelectSticker}
+                            />
+                          ))}
+                        </div>
                       ))}
+                      {filteredBottomSpacer > 0 && <div style={{ height: `${filteredBottomSpacer}px` }} />}
                     </div>
                   )
                 ) : (
-                  (() => {
-                    let cumulativeCount = 0;
-                    return STICKER_PACKS.map((pack) => {
-                      const packStart = cumulativeCount;
-                      cumulativeCount += pack.stickers.length;
-                      const packVisibleStickers = pack.stickers.slice(
-                        0,
-                        Math.max(0, renderedStickerCount - packStart)
-                      );
-                      if (packVisibleStickers.length === 0 && packStart >= renderedStickerCount) {
+                  <div>
+                    {stickerTopSpacer > 0 && <div style={{ height: `${stickerTopSpacer}px` }} />}
+                    {visibleStickerItems.map((item) => {
+                      if (item.type === 'header') {
                         return (
-                          <div key={pack.id} id={`sticker-pack-${pack.id}`} className="mb-3">
-                            <div className="px-1 pt-2 pb-1 text-xs font-semibold text-white/40 select-none">
-                              {pack.title}
-                            </div>
-                            <div style={{ height: `${Math.ceil(pack.stickers.length / 4) * 78}px` }} />
+                          <div
+                            key={`header-${item.packId}`}
+                            id={`sticker-pack-${item.packId}`}
+                            className="px-1 pt-2 pb-1 text-xs font-semibold text-white/40 select-none flex items-center"
+                            style={{ height: `${item.height}px` }}
+                          >
+                            {item.title}
                           </div>
                         );
                       }
-                      const unrenderedCount = pack.stickers.length - packVisibleStickers.length;
-                      const placeholderHeight = unrenderedCount > 0 ? Math.ceil(unrenderedCount / 4) * 78 : 0;
-                      return (
-                        <div key={pack.id} className="mb-3" id={`sticker-pack-${pack.id}`}>
-                          <div className="px-1 pt-2 pb-1 text-xs font-semibold text-white/40 select-none">
-                            {pack.title}
-                          </div>
-                          <div className="grid grid-cols-4 gap-2">
-                            {packVisibleStickers.map((sticker) => (
+                      if (item.type === 'row') {
+                        return (
+                          <div
+                            key={item.id}
+                            className="grid grid-cols-4 gap-2 mb-2"
+                          >
+                            {item.stickers.map((sticker) => (
                               <StickerGridButton
                                 key={sticker.id}
                                 sticker={sticker}
@@ -600,11 +708,12 @@ export const EmojiPicker = ({
                               />
                             ))}
                           </div>
-                          {placeholderHeight > 0 && <div style={{ height: `${placeholderHeight}px` }} />}
-                        </div>
-                      );
-                    });
-                  })()
+                        );
+                      }
+                      return <div key={item.id} style={{ height: `${item.height}px` }} />;
+                    })}
+                    {stickerBottomSpacer > 0 && <div style={{ height: `${stickerBottomSpacer}px` }} />}
+                  </div>
                 )}
               </div>
             )}
@@ -666,8 +775,10 @@ export const EmojiPicker = ({
                       key={pack.id}
                       type="button"
                       onClick={() => {
-                        const el = document.getElementById(`sticker-pack-${pack.id}`);
-                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        const targetOffset = packScrollOffsets[pack.id];
+                        if (typeof targetOffset === 'number' && stickersScrollRef.current) {
+                          stickersScrollRef.current.scrollTo({ top: targetOffset, behavior: 'smooth' });
+                        }
                       }}
                       className="w-7 h-7 rounded-md overflow-hidden p-0.5 hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center flex-shrink-0 bg-transparent border-0 cursor-pointer"
                       aria-label={pack.title}

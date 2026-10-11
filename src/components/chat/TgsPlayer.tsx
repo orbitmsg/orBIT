@@ -12,17 +12,13 @@ interface TgsPlayerProps {
   onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
-const MAX_CACHE_SIZE = 12;
+const MAX_CACHE_SIZE = 256;
 const tgsCache = new Map<string, any>();
 const pendingRequests = new Map<string, Promise<any>>();
 
 export function clearTgsCache(): void {
   tgsCache.clear();
   pendingRequests.clear();
-  lottieInitQueue.length = 0;
-  try {
-    (lottie as any).destroy?.();
-  } catch {}
 }
 
 function getFromCache(key: string): any {
@@ -45,7 +41,7 @@ function addToCache(key: string, data: any): void {
   tgsCache.set(key, data);
 }
 
-const MAX_CONCURRENT_DECOMPRESSIONS = 2;
+const MAX_CONCURRENT_DECOMPRESSIONS = 8;
 let activeDecompressions = 0;
 const decompressionQueue: Array<() => void> = [];
 
@@ -87,7 +83,7 @@ function getSharedObserver(): IntersectionObserver | null {
           }
         }
       },
-      { rootMargin: '40px 0px 40px 0px', threshold: 0.01 }
+      { rootMargin: '120px 0px 120px 0px', threshold: 0.01 }
     );
   }
   return sharedObserver;
@@ -166,7 +162,7 @@ export async function loadTgsAnimation(src: string): Promise<any> {
     return cached;
   }
   if (pendingRequests.has(src)) {
-    return pendingRequests.get(src);
+    return pendingRequests.get(src)!;
   }
 
   const promise = (async () => {
@@ -176,22 +172,97 @@ export async function loadTgsAnimation(src: string): Promise<any> {
       if (existing) {
         return existing;
       }
-      let res = await fetch(src).catch(() => null);
-      if (!res || !res.ok) {
-        const alt = src.startsWith('./')
-          ? src.slice(1)
-          : src.startsWith('/')
-          ? `.${src}`
-          : `/${src}`;
-        res = await fetch(alt).catch(() => null);
+
+      const candidateUrls: string[] = [];
+      candidateUrls.push(src);
+      if (src.startsWith('./')) {
+        candidateUrls.push(src.slice(2));
+        candidateUrls.push('/' + src.slice(2));
+      } else if (src.startsWith('/')) {
+        candidateUrls.push('.' + src);
+        candidateUrls.push(src.slice(1));
+      } else if (!src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('data:') && !src.startsWith('blob:')) {
+        candidateUrls.push('./' + src);
+        candidateUrls.push('/' + src);
       }
-      if (!res || !res.ok || !res.body) {
-        throw new Error(`Failed to fetch sticker: ${src}`);
+      if (typeof window !== 'undefined' && window.location?.href) {
+        try {
+          candidateUrls.push(new URL(src, window.location.href).href);
+        } catch {}
       }
 
-      const decompressed = res.body.pipeThrough(new DecompressionStream('gzip'));
-      const text = await new Response(decompressed).text();
-      const json = JSON.parse(text);
+      let buffer: ArrayBuffer | null = null;
+      for (const url of candidateUrls) {
+        try {
+          const res = await fetch(url);
+          if (res && (res.ok || res.status === 0)) {
+            const b = await res.arrayBuffer();
+            if (b && b.byteLength > 0) {
+              buffer = b;
+              break;
+            }
+          }
+        } catch {}
+
+        try {
+          const b = await new Promise<ArrayBuffer>((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.responseType = 'arraybuffer';
+            xhr.onload = () => {
+              if ((xhr.status === 200 || xhr.status === 0) && xhr.response && (xhr.response as ArrayBuffer).byteLength > 0) {
+                resolve(xhr.response as ArrayBuffer);
+              } else {
+                reject(new Error(`Status ${xhr.status}`));
+              }
+            };
+            xhr.onerror = () => reject(new Error('XHR error'));
+            xhr.send();
+          });
+          if (b && b.byteLength > 0) {
+            buffer = b;
+            break;
+          }
+        } catch {}
+      }
+
+      if (!buffer) {
+        throw new Error(`Failed to load sticker binary: ${src}`);
+      }
+
+      let json: any = null;
+      if (typeof DecompressionStream !== 'undefined') {
+        try {
+          const ds = new DecompressionStream('gzip');
+          const blob = new Blob([buffer]);
+          const decompressedStream = blob.stream().pipeThrough(ds);
+          const decompressedBuffer = await new Response(decompressedStream).arrayBuffer();
+          const text = new TextDecoder().decode(decompressedBuffer);
+          json = JSON.parse(text);
+        } catch {
+          try {
+            const ds2 = new DecompressionStream('deflate');
+            const blob2 = new Blob([buffer]);
+            const decompressedStream2 = blob2.stream().pipeThrough(ds2);
+            const decompressedBuffer2 = await new Response(decompressedStream2).arrayBuffer();
+            const text2 = new TextDecoder().decode(decompressedBuffer2);
+            json = JSON.parse(text2);
+          } catch {
+            try {
+              const text = new TextDecoder().decode(buffer);
+              json = JSON.parse(text);
+            } catch {}
+          }
+        }
+      } else {
+        const text = new TextDecoder().decode(buffer);
+        json = JSON.parse(text);
+      }
+
+      if (!json) {
+        throw new Error(`Failed to parse sticker: ${src}`);
+      }
+
       addToCache(src, json);
       return json;
     } finally {
@@ -256,34 +327,41 @@ export const TgsPlayer: React.FC<TgsPlayerProps> = ({
 
     let anim: AnimationItem | null = null;
     const cancelSchedule = scheduleLottieInit(() => {
-      if (!containerRef.current || !isIntersectingRef.current) return;
+      if (!containerRef.current) return;
       try {
         anim = lottie.loadAnimation({
           container: containerRef.current,
           renderer: 'svg',
           loop,
           autoplay: false,
-          animationData: typeof structuredClone === 'function' ? structuredClone(animData) : JSON.parse(JSON.stringify(animData)),
+          animationData: animData,
           rendererSettings: {
             preserveAspectRatio: 'xMidYMid meet',
-            idPrefix: `tgs-${Math.random().toString(36).slice(2, 11)}-`,
-          } as any,
+            progressiveLoad: true,
+          },
         });
         anim.setSubframe(false);
-        anim.addEventListener('DOMLoaded', () => {
+        const handleReady = () => {
           setIsReady(true);
           const canPlay = appVisibility.getIsVisible() && !document.hidden && isIntersectingRef.current;
           if (!canPlay) {
-            anim?.goToAndStop(0, true);
-          } else if (loop) {
-            isPlayingRef.current = true;
-            anim?.play();
-          } else if (autoplay && !hasPlayedRef.current) {
-            hasPlayedRef.current = true;
+            isPlayingRef.current = false;
+            anim?.pause();
+          } else if (autoplay) {
             isPlayingRef.current = true;
             anim?.goToAndPlay(0, true);
           }
-        });
+        };
+        anim.addEventListener('DOMLoaded', handleReady);
+        anim.addEventListener('data_ready', handleReady);
+        if ((anim as any).isLoaded) {
+          handleReady();
+        }
+        setTimeout(() => {
+          if (animRef.current) {
+            setIsReady(true);
+          }
+        }, 60);
         anim.addEventListener('complete', () => {
           if (!loop) {
             isPlayingRef.current = false;
@@ -293,13 +371,15 @@ export const TgsPlayer: React.FC<TgsPlayerProps> = ({
 
         const isAppVis = appVisibility.getIsVisible() && !document.hidden;
         if (isIntersectingRef.current && isAppVis) {
-          if (loop) {
+          if (loop && autoplay) {
             isPlayingRef.current = true;
             anim.play();
           } else if (!hasPlayedRef.current && autoplay) {
             hasPlayedRef.current = true;
             isPlayingRef.current = true;
             anim.goToAndPlay(0, true);
+          } else {
+            anim.goToAndStop(0, true);
           }
         } else {
           anim.goToAndStop(0, true);
@@ -342,7 +422,7 @@ export const TgsPlayer: React.FC<TgsPlayerProps> = ({
         setShouldLoad(true);
         const isAppVis = appVisibility.getIsVisible() && !document.hidden;
         if (isAppVis && animRef.current) {
-          if (loop) {
+          if (loop && autoplay) {
             isPlayingRef.current = true;
             animRef.current.play();
           } else if (!hasPlayedRef.current && autoplay) {
@@ -351,13 +431,13 @@ export const TgsPlayer: React.FC<TgsPlayerProps> = ({
             animRef.current.goToAndPlay(0, true);
           } else if (isPlayingRef.current) {
             animRef.current.play();
+          } else {
+            animRef.current.goToAndStop(0, true);
           }
         }
       } else {
         isPlayingRef.current = false;
-        if (animRef.current) {
-          animRef.current.pause();
-        }
+        animRef.current?.pause();
       }
     });
   }, [loop, autoplay]);
@@ -375,7 +455,7 @@ export const TgsPlayer: React.FC<TgsPlayerProps> = ({
           (lottie as any).unfreeze?.();
         } catch {}
         if (isIntersectingRef.current && animRef.current) {
-          if (loop) {
+          if (loop && autoplay) {
             isPlayingRef.current = true;
             animRef.current.play();
           } else if (!hasPlayedRef.current && autoplay) {
@@ -384,6 +464,8 @@ export const TgsPlayer: React.FC<TgsPlayerProps> = ({
             animRef.current.goToAndPlay(0, true);
           } else if (isPlayingRef.current) {
             animRef.current.play();
+          } else {
+            animRef.current.goToAndStop(0, true);
           }
         }
       }

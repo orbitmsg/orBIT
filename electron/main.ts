@@ -1924,6 +1924,114 @@ ipcMain.handle('orbita:saveBackupFile', async (_event, folderPath: string, fileN
   }
 });
 
+function getPotentialUsbDriveRoots(): string[] {
+  const roots: string[] = [];
+  if (process.platform === 'win32') {
+    for (let i = 68; i <= 90; i++) {
+      const letter = String.fromCharCode(i);
+      const rootPath = `${letter}:\\`;
+      try {
+        if (fs.existsSync(rootPath)) {
+          roots.push(rootPath);
+        }
+      } catch {}
+    }
+    try {
+      if (fs.existsSync('C:\\')) {
+        roots.push('C:\\');
+      }
+    } catch {}
+  } else if (process.platform === 'darwin') {
+    const vol = '/Volumes';
+    try {
+      if (fs.existsSync(vol)) {
+        const dirs = fs.readdirSync(vol);
+        for (const d of dirs) {
+          roots.push(path.join(vol, d));
+        }
+      }
+    } catch {}
+  } else {
+    const user = process.env.USER || '';
+    const candidates = ['/media', '/run/media', '/mnt'];
+    for (const c of candidates) {
+      try {
+        if (fs.existsSync(c)) {
+          const list = fs.readdirSync(c);
+          for (const item of list) {
+            const sub = path.join(c, item);
+            try {
+              if (fs.statSync(sub).isDirectory()) {
+                roots.push(sub);
+                if (item === user) {
+                  const userDirs = fs.readdirSync(sub);
+                  for (const ud of userDirs) {
+                    roots.push(path.join(sub, ud));
+                  }
+                }
+              }
+            } catch {}
+          }
+        }
+      } catch {}
+    }
+  }
+  return roots;
+}
+
+ipcMain.handle('orbita:scanUsbKey', async () => {
+  try {
+    const roots = getPotentialUsbDriveRoots();
+    for (const root of roots) {
+      const keyFile = path.join(root, 'orbita.key');
+      try {
+        if (fs.existsSync(keyFile)) {
+          const content = fs.readFileSync(keyFile, 'utf8');
+          return { found: true, keyData: content, path: keyFile, drive: root };
+        }
+      } catch {}
+    }
+    return { found: false };
+  } catch (err: any) {
+    return { found: false, error: err?.message };
+  }
+});
+
+ipcMain.handle('orbita:getRemovableDrives', async () => {
+  try {
+    const roots = getPotentialUsbDriveRoots();
+    return roots.map((r) => ({
+      path: r,
+      label: path.basename(r) || r,
+    }));
+  } catch {
+    return [];
+  }
+});
+
+ipcMain.handle('orbita:writeUsbKey', async (_event, targetDir: string, keyData: string) => {
+  try {
+    if (!targetDir || !keyData) return { success: false, error: 'invalid_arguments' };
+    if (!fs.existsSync(targetDir)) {
+      await fs.promises.mkdir(targetDir, { recursive: true });
+    }
+    const fullPath = path.join(targetDir, 'orbita.key');
+    await fs.promises.writeFile(fullPath, keyData, 'utf8');
+    return { success: true, path: fullPath };
+  } catch (err: any) {
+    return { success: false, error: err?.message };
+  }
+});
+
+ipcMain.handle('orbita:readKeyFile', async (_event, filePath: string) => {
+  try {
+    if (!filePath || !fs.existsSync(filePath)) return null;
+    return await fs.promises.readFile(filePath, 'utf8');
+  } catch {
+    return null;
+  }
+});
+
 // -----------------------------------------------------------------------------
 // 7.1 Native Rust Cryptography Handlers (Hardware-Accelerated)
 // -----------------------------------------------------------------------------

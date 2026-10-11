@@ -1,6 +1,8 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2, Trash2, Database, ChevronRight, ChevronDown, Check, Eye, EyeOff, CheckCircle2, XCircle, Bell, RefreshCw, Download, RotateCcw, User, Key, AtSign, Gift, Plus } from 'lucide-react';
 import { securityService } from '../../services/securityService';
+import { orbitaKeyService } from '../../services/orbitaKeyService';
+import { OrbitaKeySettings } from '../settings/OrbitaKeySettings';
 import { useState, useRef, type ReactNode, useEffect, useCallback, memo } from 'react';
 import {
   useChatStore,
@@ -1139,7 +1141,7 @@ const broadcastProfileUpdate = (updates: {
   });
 };
 
-const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup }: { onOpenPassword: () => void; onOpenBackup?: () => void }) => {
+const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup, onOpenOrbitaKey }: { onOpenPassword: () => void; onOpenBackup?: () => void; onOpenOrbitaKey?: () => void }) => {
   const { t } = useTranslation();
   const {
     voiceCallsEnabled,
@@ -1166,9 +1168,11 @@ const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup }: { onOpenPasswor
   })));
 
   const [isPasswordSet, setIsPasswordSet] = useState(() => securityService.isPasswordSet());
+  const [isKeyConfigured, setIsKeyConfigured] = useState(() => orbitaKeyService.isKeyConfigured());
 
   useEffect(() => {
     setIsPasswordSet(securityService.isPasswordSet());
+    setIsKeyConfigured(orbitaKeyService.isKeyConfigured());
   }, []);
 
   const handleToggleScreenProtection = async () => {
@@ -1329,6 +1333,36 @@ const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup }: { onOpenPasswor
             </div>
             <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>
               {t('security.password_subtitle', 'Поставить пароль для разблокировки Orbita.')}
+            </div>
+          </div>
+          <ChevronRight size={20} style={{ color: MD3.onSurfaceVar }} />
+        </div>
+        <div
+          onClick={onOpenOrbitaKey}
+          className="cursor-pointer transition-colors hover:brightness-110"
+          style={{
+            backgroundColor: MD3.surface,
+            borderRadius: 0,
+            padding: '16px 20px',
+            marginTop: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>{t('security.orbita_key_title', 'Orbita Key (USB-флешка)')}</span>
+              {isKeyConfigured && (
+                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontWeight: 600 }}>
+                  {t('security.orbita_key_active', 'Активен')}
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>
+              {isKeyConfigured
+                ? t('security.orbita_key_subtitle_configured', 'Ключ привязан. Разблокировка по флешке настроена.')
+                : t('security.orbita_key_subtitle_not_configured', 'Настроить разблокировку с помощью USB-накопителя.')}
             </div>
           </div>
           <ChevronRight size={20} style={{ color: MD3.onSurfaceVar }} />
@@ -2765,7 +2799,7 @@ const HotkeySwitch = ({
   );
 };
 
-type TabId = 'main' | 'myAccount' | 'security' | 'connection' | 'chats' | 'calls' | 'font' | 'dataMemory' | 'energy' | 'notifications' | 'language' | 'preferences' | 'password' | 'qrCode' | 'backup' | 'cloudBackup' | 'pcBackup';
+type TabId = 'main' | 'myAccount' | 'security' | 'connection' | 'chats' | 'calls' | 'font' | 'dataMemory' | 'energy' | 'notifications' | 'language' | 'preferences' | 'password' | 'qrCode' | 'backup' | 'cloudBackup' | 'pcBackup' | 'orbitaKey';
 
 export const SettingsScreen = () => {
   const { t, i18n } = useTranslation();
@@ -3312,6 +3346,7 @@ export const SettingsScreen = () => {
     backup:        t('backup.title', 'Резервные копии'),
     cloudBackup:   t('backup.title', 'Резервные копии'),
     pcBackup:      t('backup.title', 'Резервные копии'),
+    orbitaKey:     t('security.orbita_key_screen_title', 'Настройка Orbita Key'),
   };
 
   const languageDisplayOptions = [
@@ -4382,7 +4417,15 @@ export const SettingsScreen = () => {
       case 'myAccount':
         return renderMyAccount();
       case 'security':
-        return <PrivacySettingsScreen onOpenPassword={() => pushTab('password')} onOpenBackup={() => pushTab('backup')} />;
+        return (
+          <PrivacySettingsScreen
+            onOpenPassword={() => pushTab('password')}
+            onOpenBackup={() => pushTab('backup')}
+            onOpenOrbitaKey={() => pushTab('orbitaKey')}
+          />
+        );
+      case 'orbitaKey':
+        return <OrbitaKeySettings onBack={handleBack} />;
       case 'backup':
         return (
           <AccountBackupScreen

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Volume2, Trash2, Database, ChevronRight, ChevronDown, Check, Eye, EyeOff, CheckCircle2, XCircle, Bell, RefreshCw, Download, RotateCcw, User, Key, AtSign, Gift, Plus } from 'lucide-react';
+import { Volume2, Trash2, Database, ChevronRight, ChevronDown, Check, Eye, EyeOff, CheckCircle2, XCircle, Bell, RefreshCw, Download, RotateCcw, User } from 'lucide-react';
 import { securityService } from '../../services/securityService';
 import { orbitaKeyService } from '../../services/orbitaKeyService';
 import { OrbitaKeySettings } from '../settings/OrbitaKeySettings';
@@ -299,12 +299,13 @@ const SettingsRow = ({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '12px 20px',
-      borderRadius: 0,
+      padding: '10px 14px',
+      margin: '2px 10px',
+      width: 'calc(100% - 20px)',
+      borderRadius: '12px',
       cursor: onClick ? 'pointer' : 'default',
       transition: 'background 150ms',
       backgroundColor: 'transparent',
-      width: '100%',
       boxSizing: 'border-box',
       userSelect: 'none',
     }}
@@ -391,12 +392,13 @@ const MenuItem = ({
       display: 'flex',
       alignItems: 'center',
       gap: 16,
-      padding: '12px 20px',
-      borderRadius: 0,
+      padding: '10px 14px',
+      margin: '2px 10px',
+      width: 'calc(100% - 20px)',
+      borderRadius: '12px',
       cursor: 'pointer',
       transition: 'background 150ms',
       backgroundColor: 'transparent',
-      width: '100%',
       boxSizing: 'border-box',
       userSelect: 'none',
     }}
@@ -556,7 +558,7 @@ export const NameEditModal = ({ open, onClose, currentNickname, onSave }: NameEd
                 aria-label={t('common.cancel', 'Отмена')}
                 style={{
                   padding: '8px 16px',
-                  borderRadius: '20px',
+                  borderRadius: '9999px',
                   border: 'none',
                   backgroundColor: 'transparent',
                   color: 'var(--accent-color, #9b7dd4)',
@@ -573,7 +575,7 @@ export const NameEditModal = ({ open, onClose, currentNickname, onSave }: NameEd
                 aria-label={t('common.save', 'Сохранить')}
                 style={{
                   padding: '8px 16px',
-                  borderRadius: '20px',
+                  borderRadius: '9999px',
                   border: 'none',
                   backgroundColor: 'var(--accent-color, #7C3AED)',
                   color: '#fff',
@@ -802,7 +804,7 @@ export const UsernameEditModal = ({ open, onClose, currentUsername, onSave }: Us
                 aria-label={t('common.cancel', 'Отмена')}
                 style={{
                   padding: '8px 16px',
-                  borderRadius: '20px',
+                  borderRadius: '9999px',
                   border: 'none',
                   backgroundColor: 'transparent',
                   color: 'var(--accent-color, #9b7dd4)',
@@ -820,7 +822,7 @@ export const UsernameEditModal = ({ open, onClose, currentUsername, onSave }: Us
                 aria-label={t('common.save', 'Сохранить')}
                 style={{
                   padding: '8px 16px',
-                  borderRadius: '20px',
+                  borderRadius: '9999px',
                   border: 'none',
                   backgroundColor: status === 'checking' || status === 'taken' ? 'rgba(124, 58, 237, 0.4)' : 'var(--accent-color, #7C3AED)',
                   color: '#fff',
@@ -1033,7 +1035,7 @@ export const BirthdayEditModal = ({ open, onClose, currentBirthday, onSave }: Bi
                   aria-label={t('common.cancel', 'Отмена')}
                   style={{
                     padding: '8px 16px',
-                    borderRadius: '20px',
+                    borderRadius: '9999px',
                     border: 'none',
                     backgroundColor: 'transparent',
                     color: 'var(--accent-color, #9b7dd4)',
@@ -1050,7 +1052,7 @@ export const BirthdayEditModal = ({ open, onClose, currentBirthday, onSave }: Bi
                   aria-label={t('common.save', 'Сохранить')}
                   style={{
                     padding: '8px 16px',
-                    borderRadius: '20px',
+                    borderRadius: '9999px',
                     border: 'none',
                     backgroundColor: 'var(--accent-color, #7C3AED)',
                     color: '#fff',
@@ -2882,7 +2884,6 @@ export const SettingsScreen = () => {
     setBio: s.setBio,
     setBirthday: s.setBirthday,
   })));
-  const prepareAddSecondAccount = useAccountStore((s) => s.prepareAddSecondAccount);
   const setCurrentView = useChatStore((state) => state.setCurrentView);
   const { appVersion } = useDeviceStore();
   const { proxyEnabled, activeProxyId, proxies } = useConnectionStore();
@@ -3130,7 +3131,7 @@ export const SettingsScreen = () => {
   };
 
   const handleBioChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = e.target.value.slice(0, 140);
+    const val = e.target.value.slice(0, 70);
     setLocalBio(val);
   };
 
@@ -3946,7 +3947,7 @@ export const SettingsScreen = () => {
           value={localBio}
           onChange={handleBioChange}
           onBlur={handleBioBlur}
-          maxLength={140}
+          maxLength={70}
           rows={localBio ? 2 : 1}
           placeholder={t('profile.bio_placeholder', 'О себе')}
           aria-label={t('profile.bio_placeholder', 'О себе')}
@@ -3968,7 +3969,7 @@ export const SettingsScreen = () => {
           }}
         />
         <span style={{ fontSize: '13px', color: MD3.onSurfaceVar, flexShrink: 0, userSelect: 'none', paddingTop: 1 }}>
-          {140 - localBio.length}
+          {70 - localBio.length}
         </span>
       </div>
 
@@ -3982,14 +3983,10 @@ export const SettingsScreen = () => {
           userSelect: 'none',
           width: '100%',
           boxSizing: 'border-box',
+          whiteSpace: 'pre-line',
         }}
       >
-        <div style={{ margin: '0 0 2px' }}>
-          {t('profile.bio_hint', 'Любые подробности, например: возраст, род занятий или город.')}
-        </div>
-        <div style={{ margin: 0, opacity: 0.8 }}>
-          {t('profile.bio_example', 'Пример: 23 года, дизайнер из Санкт-Петербурга.')}
-        </div>
+        {t('profile.bio_hint_full', 'Расскажите о себе любые факты. Например: то, чем вы занимаетесь и что вас интересует.\nПример: Занимаюсь разработкой приложений, интересуюсь миром кода.')}
       </div>
 
       <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -3999,29 +3996,26 @@ export const SettingsScreen = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '12px 20px',
+            padding: '11px 14px',
+            margin: '2px 10px',
+            width: 'calc(100% - 20px)',
+            borderRadius: '12px',
             cursor: 'pointer',
             transition: 'background 150ms',
             backgroundColor: 'transparent',
-            width: '100%',
             boxSizing: 'border-box',
             userSelect: 'none',
           }}
           onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)')}
           onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <User size={18} color={MD3.onSurfaceVar} style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: '14.5px', fontWeight: 500, color: MD3.onSurface }}>
-              {t('profile.name', 'Имя')}
-            </span>
-          </div>
+          <span style={{ fontSize: '14.5px', fontWeight: 500, color: MD3.onSurface }}>
+            {t('profile.name', 'Имя')}
+          </span>
           <span style={{ fontSize: '14.5px', fontWeight: 500, color: MD3.onSurface, maxWidth: '55%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {nickname || 'User'}
           </span>
         </div>
-
-        <div style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginLeft: 52 }} />
 
         <div
           onClick={handleCopyCode}
@@ -4029,29 +4023,26 @@ export const SettingsScreen = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '12px 20px',
+            padding: '11px 14px',
+            margin: '2px 10px',
+            width: 'calc(100% - 20px)',
+            borderRadius: '12px',
             cursor: 'pointer',
             transition: 'background 150ms',
             backgroundColor: 'transparent',
-            width: '100%',
             boxSizing: 'border-box',
             userSelect: 'none',
           }}
           onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)')}
           onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <Key size={18} color={MD3.onSurfaceVar} style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: '14.5px', fontWeight: 500, color: MD3.onSurface }}>
-              {t('profile.account_id', 'ID аккаунта')}
-            </span>
-          </div>
+          <span style={{ fontSize: '14.5px', fontWeight: 500, color: MD3.onSurface }}>
+            {t('profile.account_id', 'ID аккаунта')}
+          </span>
           <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--accent-color, #9b7dd4)', fontFamily: '"JetBrains Mono", Consolas, monospace', maxWidth: '55%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {myCode || userId || '------'}
           </span>
         </div>
-
-        <div style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginLeft: 52 }} />
 
         <div
           onClick={() => setUsernameEditOpen(true)}
@@ -4059,23 +4050,22 @@ export const SettingsScreen = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '12px 20px',
+            padding: '11px 14px',
+            margin: '2px 10px',
+            width: 'calc(100% - 20px)',
+            borderRadius: '12px',
             cursor: 'pointer',
             transition: 'background 150ms',
             backgroundColor: 'transparent',
-            width: '100%',
             boxSizing: 'border-box',
             userSelect: 'none',
           }}
           onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)')}
           onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <AtSign size={18} color={MD3.onSurfaceVar} style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: '14.5px', fontWeight: 500, color: MD3.onSurface }}>
-              {t('profile.username_label', 'Имя пользователя')}
-            </span>
-          </div>
+          <span style={{ fontSize: '14.5px', fontWeight: 500, color: MD3.onSurface }}>
+            {t('profile.username_label', 'Имя пользователя')}
+          </span>
           <span style={{ fontSize: '14.5px', fontWeight: 500, color: username ? 'var(--accent-color, #9b7dd4)' : MD3.onSurfaceVar, maxWidth: '55%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {username ? `@${username}` : t('profile.username_not_set', 'Не установлено')}
           </span>
@@ -4104,23 +4094,22 @@ export const SettingsScreen = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '12px 20px',
+            padding: '11px 14px',
+            margin: '2px 10px',
+            width: 'calc(100% - 20px)',
+            borderRadius: '12px',
             cursor: 'pointer',
             transition: 'background 150ms',
             backgroundColor: 'transparent',
-            width: '100%',
             boxSizing: 'border-box',
             userSelect: 'none',
           }}
           onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)')}
           onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <Gift size={18} color={MD3.onSurfaceVar} style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: '14.5px', fontWeight: 500, color: MD3.onSurface }}>
-              {t('profile.birthday_label', 'День рождения')}
-            </span>
-          </div>
+          <span style={{ fontSize: '14.5px', fontWeight: 500, color: MD3.onSurface }}>
+            {t('profile.birthday_label', 'День рождения')}
+          </span>
           <span style={{ fontSize: '14.5px', fontWeight: 500, color: birthday ? 'var(--accent-color, #9b7dd4)' : MD3.onSurfaceVar }}>
             {birthday ? formatBirthday(birthday, i18n.language) : t('profile.birthday_not_set', 'Не указан')}
           </span>
@@ -4141,48 +4130,6 @@ export const SettingsScreen = () => {
       >
         {t('profile.birthday_hint', 'В настройках можно выбрать, кто будет видеть Ваш день рождения.')}
       </div>
-
-      <div
-        onClick={async () => {
-          await prepareAddSecondAccount();
-          setCurrentView('chats');
-        }}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 16,
-          padding: '14px 20px',
-          cursor: 'pointer',
-          transition: 'background 150ms',
-          backgroundColor: 'transparent',
-          width: '100%',
-          boxSizing: 'border-box',
-          userSelect: 'none',
-        }}
-        onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)')}
-        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-      >
-        <div
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: '50%',
-            backgroundColor: 'var(--accent-color, #7c3aed)',
-            color: '#ffffff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
-        >
-          <Plus size={16} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent-color, #9b7dd4)', margin: 0 }}>
-            {t('mainMenu.add_account', 'Добавить аккаунт')}
-          </p>
-        </div>
-      </div>
     </motion.div>
   );
 
@@ -4199,10 +4146,13 @@ export const SettingsScreen = () => {
           display: 'flex',
           alignItems: 'center',
           gap: '16px',
-          padding: '12px 20px 16px',
+          padding: '12px 14px 16px',
+          margin: '2px 10px',
+          width: 'calc(100% - 20px)',
           userSelect: 'none',
           cursor: 'pointer',
-          borderRadius: 0,
+          borderRadius: '16px',
+          boxSizing: 'border-box',
           transition: 'background 150ms',
         }}
         onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(202,196,208,0.08)')}

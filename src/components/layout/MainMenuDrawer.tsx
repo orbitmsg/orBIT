@@ -203,9 +203,8 @@ export const MainMenuDrawer: React.FC<MainMenuDrawerProps> = ({
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.18, ease: 'easeOut' }}
-                  className="overflow-hidden flex flex-col"
+                  className="overflow-hidden flex flex-col py-1"
                   style={{
-                    borderBottom: '1px solid var(--border-color)',
                     backgroundColor: 'rgba(0, 0, 0, 0.05)',
                   }}
                 >
@@ -217,11 +216,16 @@ export const MainMenuDrawer: React.FC<MainMenuDrawerProps> = ({
                         switchAccount(otherAccount.id);
                       }}
                       aria-label={t('mainMenu.switch_account', 'Переключить аккаунт')}
-                      className="w-full flex items-center gap-4 px-5 py-3 text-left transition-colors cursor-pointer text-[var(--text-main)]"
+                      className="flex items-center gap-4 text-left transition-colors cursor-pointer text-[var(--text-main)]"
                       style={{
                         border: 'none',
                         background: 'transparent',
                         outline: 'none',
+                        borderRadius: '12px',
+                        margin: '2px 10px',
+                        width: 'calc(100% - 20px)',
+                        padding: '10px 14px',
+                        boxSizing: 'border-box',
                       }}
                       onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-container-strong)'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -250,11 +254,16 @@ export const MainMenuDrawer: React.FC<MainMenuDrawerProps> = ({
                         prepareAddSecondAccount();
                       }}
                       aria-label={t('mainMenu.add_account', 'Добавить аккаунт')}
-                      className="w-full flex items-center gap-4 px-5 py-3 text-left transition-colors cursor-pointer text-[var(--text-main)]"
+                      className="flex items-center gap-4 text-left transition-colors cursor-pointer text-[var(--text-main)]"
                       style={{
                         border: 'none',
                         background: 'transparent',
                         outline: 'none',
+                        borderRadius: '12px',
+                        margin: '2px 10px',
+                        width: 'calc(100% - 20px)',
+                        padding: '10px 14px',
+                        boxSizing: 'border-box',
                       }}
                       onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-container-strong)'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -277,28 +286,21 @@ export const MainMenuDrawer: React.FC<MainMenuDrawerProps> = ({
               )}
             </AnimatePresence>
 
-            <div
-              style={{
-                height: '1px',
-                backgroundColor: 'var(--border-color)',
-                width: '100%',
-                flexShrink: 0,
-                marginTop: '6px',
-                marginBottom: '6px',
-              }}
-            />
-
-            <div className="flex-1 overflow-y-auto overflow-x-hidden py-0 px-0 flex flex-col custom-scrollbar">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden py-1 px-0 flex flex-col custom-scrollbar">
               <button
                 type="button"
                 onClick={onOpenProfile}
                 aria-label={t('mainMenu.my_profile', 'Мой профиль')}
-                className="w-full flex items-center gap-4 px-5 py-3 text-left transition-colors cursor-pointer text-[var(--text-main)]"
+                className="flex items-center gap-4 text-left transition-colors cursor-pointer text-[var(--text-main)]"
                 style={{
                   border: 'none',
                   background: 'transparent',
                   outline: 'none',
-                  borderRadius: 0,
+                  borderRadius: '12px',
+                  margin: '2px 10px',
+                  width: 'calc(100% - 20px)',
+                  padding: '10px 14px',
+                  boxSizing: 'border-box',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-container-strong)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -309,27 +311,20 @@ export const MainMenuDrawer: React.FC<MainMenuDrawerProps> = ({
                 </span>
               </button>
 
-              <div
-                style={{
-                  height: '1px',
-                  backgroundColor: 'var(--border-color)',
-                  width: '100%',
-                  flexShrink: 0,
-                  marginTop: '6px',
-                  marginBottom: '6px',
-                }}
-              />
-
               <button
                 type="button"
                 onClick={onOpenCreateGroup}
                 aria-label={t('mainMenu.create_group', 'Создать группу')}
-                className="w-full flex items-center gap-4 px-5 py-3 text-left transition-colors cursor-pointer text-[var(--text-main)]"
+                className="flex items-center gap-4 text-left transition-colors cursor-pointer text-[var(--text-main)]"
                 style={{
                   border: 'none',
                   background: 'transparent',
                   outline: 'none',
-                  borderRadius: 0,
+                  borderRadius: '12px',
+                  margin: '2px 10px',
+                  width: 'calc(100% - 20px)',
+                  padding: '10px 14px',
+                  boxSizing: 'border-box',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-container-strong)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -344,12 +339,16 @@ export const MainMenuDrawer: React.FC<MainMenuDrawerProps> = ({
                 type="button"
                 onClick={onOpenCreateChannel}
                 aria-label={t('mainMenu.create_channel', 'Создать канал')}
-                className="w-full flex items-center gap-4 px-5 py-3 text-left transition-colors cursor-pointer text-[var(--text-main)]"
+                className="flex items-center gap-4 text-left transition-colors cursor-pointer text-[var(--text-main)]"
                 style={{
                   border: 'none',
                   background: 'transparent',
                   outline: 'none',
-                  borderRadius: 0,
+                  borderRadius: '12px',
+                  margin: '2px 10px',
+                  width: 'calc(100% - 20px)',
+                  padding: '10px 14px',
+                  boxSizing: 'border-box',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-container-strong)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -364,12 +363,16 @@ export const MainMenuDrawer: React.FC<MainMenuDrawerProps> = ({
                 type="button"
                 onClick={onOpenCreateChat}
                 aria-label={t('mainMenu.add_friend', 'Добавить друга')}
-                className="w-full flex items-center gap-4 px-5 py-3 text-left transition-colors cursor-pointer text-[var(--text-main)]"
+                className="flex items-center gap-4 text-left transition-colors cursor-pointer text-[var(--text-main)]"
                 style={{
                   border: 'none',
                   background: 'transparent',
                   outline: 'none',
-                  borderRadius: 0,
+                  borderRadius: '12px',
+                  margin: '2px 10px',
+                  width: 'calc(100% - 20px)',
+                  padding: '10px 14px',
+                  boxSizing: 'border-box',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-container-strong)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -384,12 +387,16 @@ export const MainMenuDrawer: React.FC<MainMenuDrawerProps> = ({
                 type="button"
                 onClick={onOpenCalls}
                 aria-label={t('mainMenu.calls', 'Звонки')}
-                className="w-full flex items-center gap-4 px-5 py-3 text-left transition-colors cursor-pointer text-[var(--text-main)]"
+                className="flex items-center gap-4 text-left transition-colors cursor-pointer text-[var(--text-main)]"
                 style={{
                   border: 'none',
                   background: 'transparent',
                   outline: 'none',
-                  borderRadius: 0,
+                  borderRadius: '12px',
+                  margin: '2px 10px',
+                  width: 'calc(100% - 20px)',
+                  padding: '10px 14px',
+                  boxSizing: 'border-box',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-container-strong)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -404,12 +411,16 @@ export const MainMenuDrawer: React.FC<MainMenuDrawerProps> = ({
                 type="button"
                 onClick={onOpenSavedMessages}
                 aria-label={t('mainMenu.saved_messages', 'Заметки для себя')}
-                className="w-full flex items-center gap-4 px-5 py-3 text-left transition-colors cursor-pointer text-[var(--text-main)]"
+                className="flex items-center gap-4 text-left transition-colors cursor-pointer text-[var(--text-main)]"
                 style={{
                   border: 'none',
                   background: 'transparent',
                   outline: 'none',
-                  borderRadius: 0,
+                  borderRadius: '12px',
+                  margin: '2px 10px',
+                  width: 'calc(100% - 20px)',
+                  padding: '10px 14px',
+                  boxSizing: 'border-box',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-container-strong)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -424,12 +435,16 @@ export const MainMenuDrawer: React.FC<MainMenuDrawerProps> = ({
                 type="button"
                 onClick={onOpenSettings}
                 aria-label={t('mainMenu.settings', 'Настройки')}
-                className="w-full flex items-center gap-4 px-5 py-3 text-left transition-colors cursor-pointer text-[var(--text-main)]"
+                className="flex items-center gap-4 text-left transition-colors cursor-pointer text-[var(--text-main)]"
                 style={{
                   border: 'none',
                   background: 'transparent',
                   outline: 'none',
-                  borderRadius: 0,
+                  borderRadius: '12px',
+                  margin: '2px 10px',
+                  width: 'calc(100% - 20px)',
+                  padding: '10px 14px',
+                  boxSizing: 'border-box',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-container-strong)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -444,12 +459,16 @@ export const MainMenuDrawer: React.FC<MainMenuDrawerProps> = ({
                 type="button"
                 onClick={toggleNightMode}
                 aria-label={t('mainMenu.night_mode', 'Ночной режим')}
-                className="w-full flex items-center justify-between gap-4 px-5 py-3 text-left transition-colors cursor-pointer text-[var(--text-main)]"
+                className="flex items-center justify-between gap-4 text-left transition-colors cursor-pointer text-[var(--text-main)]"
                 style={{
                   border: 'none',
                   background: 'transparent',
                   outline: 'none',
-                  borderRadius: 0,
+                  borderRadius: '12px',
+                  margin: '2px 10px',
+                  width: 'calc(100% - 20px)',
+                  padding: '10px 14px',
+                  boxSizing: 'border-box',
                   overflow: 'hidden',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-container-strong)'; }}

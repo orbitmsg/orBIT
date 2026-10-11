@@ -2612,13 +2612,20 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                 <div
                   onClick={() => handleCopyChannelKey(`@${chat.username}`)}
                   style={{
-                    padding: '12px 20px',
+                    padding: '10px 14px',
+                    margin: '2px 10px',
+                    width: 'calc(100% - 20px)',
+                    borderRadius: '12px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     gap: '12px',
                     cursor: 'pointer',
+                    boxSizing: 'border-box',
+                    transition: 'background-color 0.15s ease',
                   }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-container-strong)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                 >
                   <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
                     <span
@@ -2665,13 +2672,20 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                 <div
                   onClick={() => handleCopyChannelKey(profileId)}
                   style={{
-                    padding: '12px 20px',
+                    padding: '10px 14px',
+                    margin: '2px 10px',
+                    width: 'calc(100% - 20px)',
+                    borderRadius: '12px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     gap: '12px',
                     cursor: 'pointer',
+                    boxSizing: 'border-box',
+                    transition: 'background-color 0.15s ease',
                   }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-container-strong)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                 >
                   <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
                     <span
@@ -3053,9 +3067,10 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                   display: 'flex',
                   alignItems: 'center',
                   gap: '16px',
-                  width: '100%',
-                  padding: '12px 20px',
-                  borderRadius: 0,
+                  width: 'calc(100% - 20px)',
+                  margin: '2px 10px',
+                  padding: '10px 14px',
+                  borderRadius: '12px',
                   backgroundColor: 'transparent',
                   border: 'none',
                   color: 'var(--text-main)',

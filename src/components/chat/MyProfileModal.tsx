@@ -912,13 +912,14 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                 <div
                   style={{
                     backgroundColor: 'var(--md-surface, #211c2e)',
-                    width: '100%',
-                    padding: '12px 20px',
+                    width: 'calc(100% - 20px)',
+                    margin: '2px 10px',
+                    borderRadius: '12px',
+                    padding: '10px 14px',
                     display: 'flex',
                     flexDirection: 'column',
                     userSelect: 'text',
                     boxSizing: 'border-box',
-                    borderBottom: (bio || (myCode || userId) || birthday) ? '1px solid var(--border-color, rgba(255, 255, 255, 0.06))' : 'none',
                   }}
                 >
                   <div style={{ fontSize: '14px', color: 'var(--accent-color, #9b7dd4)', lineHeight: '1.35', fontWeight: 500 }}>
@@ -934,13 +935,14 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                 <div
                   style={{
                     backgroundColor: 'var(--md-surface, #211c2e)',
-                    width: '100%',
-                    padding: '12px 20px',
+                    width: 'calc(100% - 20px)',
+                    margin: '2px 10px',
+                    borderRadius: '12px',
+                    padding: '10px 14px',
                     display: 'flex',
                     flexDirection: 'column',
                     userSelect: 'text',
                     boxSizing: 'border-box',
-                    borderBottom: ((myCode || userId) || birthday) ? '1px solid var(--border-color, rgba(255, 255, 255, 0.06))' : 'none',
                   }}
                 >
                   <div style={{ fontSize: '14px', color: 'var(--text-main, #ffffff)', lineHeight: '1.35', wordBreak: 'break-word' }}>
@@ -956,8 +958,10 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                 <div
                   style={{
                     backgroundColor: 'var(--md-surface, #211c2e)',
-                    width: '100%',
-                    padding: '12px 20px',
+                    width: 'calc(100% - 20px)',
+                    margin: '2px 10px',
+                    borderRadius: '12px',
+                    padding: '10px 14px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
@@ -965,8 +969,10 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                     cursor: 'pointer',
                     userSelect: 'none',
                     boxSizing: 'border-box',
-                    borderBottom: birthday ? '1px solid var(--border-color, rgba(255, 255, 255, 0.06))' : 'none',
+                    transition: 'background-color 0.15s ease',
                   }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-container-strong)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--md-surface, #211c2e)'; }}
                   onClick={handleCopyLink}
                 >
                   <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
@@ -1004,8 +1010,10 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                 <div
                   style={{
                     backgroundColor: 'var(--md-surface, #211c2e)',
-                    width: '100%',
-                    padding: '12px 20px',
+                    width: 'calc(100% - 20px)',
+                    margin: '2px 10px',
+                    borderRadius: '12px',
+                    padding: '10px 14px',
                     display: 'flex',
                     flexDirection: 'column',
                     userSelect: 'text',

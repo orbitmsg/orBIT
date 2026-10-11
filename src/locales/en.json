@@ -1095,6 +1095,7 @@
       "not_set": "None",
       "bio_hint": "Any details, such as age, occupation or city.",
       "bio_example": "Example: 23 y.o., designer from Saint Petersburg.",
+      "bio_hint_full": "Tell any facts about yourself. For example: what you do and what interests you.\nExample: I develop applications, interested in coding.",
       "bio_placeholder": "About me",
       "username_hint": "With a username, other people can contact you without knowing your account ID.",
       "birthday_hint": "In settings you can choose who can see your birthday.",

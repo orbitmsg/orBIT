@@ -4,6 +4,7 @@ import { useChatStore } from '../store/useChatStore';
 import { ablyService } from './ablyService';
 import { generateRandomCode } from '../lib/codes';
 import { generateMasterSeedHex, deriveAccountKeys } from '../lib/zkAccountCrypto';
+import { securityService } from './securityService';
 
 export interface AccountMeta {
   id: 'account_1' | 'account_2';
@@ -33,6 +34,12 @@ const storageGet = async (key: string): Promise<string | null> => {
       const val = await (window as any).orbita.storageGet(key);
       if (val !== null && val !== undefined) return val;
     } catch {}
+    if (securityService.isPasswordSet()) {
+      return null;
+    }
+  }
+  if (securityService.isPasswordSet()) {
+    return null;
   }
   return localStorage.getItem(key);
 };
@@ -43,6 +50,15 @@ const storageSet = async (key: string, value: string): Promise<void> => {
     try {
       await (window as any).orbita.storageSet(key, value);
     } catch {}
+    if (securityService.isPasswordSet()) {
+      try {
+        localStorage.removeItem(key);
+      } catch {}
+      return;
+    }
+  }
+  if (securityService.isPasswordSet()) {
+    return;
   }
   try {
     localStorage.setItem(key, value);

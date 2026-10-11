@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { useChatStore } from './useChatStore';
+import { securityService } from '../services/securityService';
 
 type AuthStep = 'welcome' | 'nickname' | 'main';
 
@@ -113,15 +114,20 @@ const ipcStorage: StateStorage = {
       try {
         val = await (window as any).orbita.storageGet(name);
       } catch {}
+      if (securityService.isPasswordSet() && !val) {
+        return null;
+      }
     }
     const localVal = localStorage.getItem(name);
     if (!val || (!hasExistingAccount(val) && hasExistingAccount(localVal))) {
-      val = localVal;
-      if (val && (window as any).orbita?.storageSet) {
-        (window as any).orbita.storageSet(name, val).catch(() => {});
+      if (!securityService.isPasswordSet()) {
+        val = localVal;
+        if (val && (window as any).orbita?.storageSet) {
+          (window as any).orbita.storageSet(name, val).catch(() => {});
+        }
       }
     }
-    if (val && !localVal) {
+    if (val && !localVal && !securityService.isPasswordSet()) {
       try {
         localStorage.setItem(name, val);
       } catch {}
@@ -144,7 +150,7 @@ const ipcStorage: StateStorage = {
     }
 
     lastSavedAuthValues[name] = value;
-    if (!(window as any).orbita?.storageSet) {
+    if (!(window as any).orbita?.storageSet && !securityService.isPasswordSet()) {
       try {
         localStorage.setItem(name, value);
       } catch {}

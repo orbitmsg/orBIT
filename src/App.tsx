@@ -147,6 +147,7 @@ function App() {
   
   const nickname = useAuthStore((state) => state.nickname);
   const avatarUrl = useAuthStore((state) => state.avatarUrl);
+  const [isAppLocked, setIsAppLocked] = useState(() => securityService.isPasswordSet());
 
   useEffect(() => {
     try {
@@ -160,10 +161,10 @@ function App() {
   const hasRegisteredAccount = accounts.some((a) => a.isRegistered && a.id === 'account_1') || (isHydrated && step === 'main');
 
   useEffect(() => {
-    if (isHydrated) {
+    if (isHydrated && !isAppLocked) {
       useAccountStore.getState().init().catch(() => {});
     }
-  }, [isHydrated]);
+  }, [isHydrated, isAppLocked]);
 
   useEffect(() => {
     initAutoBackupListener();
@@ -190,7 +191,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (isHydrated && step === 'main') {
+    if (isHydrated && step === 'main' && !isAppLocked) {
       accountSyncService.init();
       
       const activeId = useAuthStore.getState().userId;
@@ -198,7 +199,7 @@ function App() {
         initializeIdentityKeys(activeId).catch(console.error);
       }
     }
-  }, [isHydrated, step]);
+  }, [isHydrated, step, isAppLocked]);
 
   const currentTheme = useChatStore((state) => state.currentTheme);
   const setProxyActive = useChatStore((state) => state.setProxyActive);
@@ -215,15 +216,15 @@ function App() {
   const setShowInSystemTray = useChatStore((state) => state.setShowInSystemTray);
   const setAutoLaunch = useChatStore((state) => state.setAutoLaunch);
 
-  const [isAppLocked, setIsAppLocked] = useState(() => securityService.isPasswordSet());
-
   const handleUnlockApp = () => {
     setIsAppLocked(false);
     useAuthStore.persist.rehydrate();
     useChatStore.persist.rehydrate();
+    useAccountStore.getState().init().catch(() => {});
   };
 
   useEffect(() => {
+    securityService.cleanUnencryptedLocalStorage();
     securityService.isStorageLocked().then((locked) => {
       if (locked) {
         setIsAppLocked(true);
@@ -231,10 +232,12 @@ function App() {
         setIsAppLocked(false);
         useAuthStore.persist.rehydrate();
         useChatStore.persist.rehydrate();
+        useAccountStore.getState().init().catch(() => {});
       }
     }).catch(() => {
       useAuthStore.persist.rehydrate();
       useChatStore.persist.rehydrate();
+      useAccountStore.getState().init().catch(() => {});
     });
   }, []);
 
@@ -377,18 +380,27 @@ function App() {
   }, [setProxyActive]);
 
   useEffect(() => {
-    if (isAppLocked) return;
+    const savedFont = (() => {
+      try {
+        return localStorage.getItem('orbita_font_family') || fontFamily || 'system';
+      } catch {
+        return fontFamily || 'system';
+      }
+    })();
+    const activeFont = (!isAppLocked && fontFamily) ? fontFamily : savedFont;
     const root = document.documentElement;
-    const fontVal = FONT_MAP[fontFamily] || FONT_MAP['system'];
+    const fontVal = (FONT_MAP as Record<string, string>)[activeFont] || FONT_MAP['system'];
     root.style.setProperty('--main-font', fontVal);
-    try {
-      localStorage.setItem('orbita_font_family', fontFamily);
-    } catch {}
+    if (!isAppLocked && fontFamily) {
+      try {
+        localStorage.setItem('orbita_font_family', fontFamily);
+      } catch {}
+    }
     try {
       if (typeof window !== 'undefined' && (window as any).orbita?.setFontForElectron) {
-        (window as any).orbita.setFontForElectron(fontFamily);
+        (window as any).orbita.setFontForElectron(activeFont);
       }
-    } catch (e) {}
+    } catch {}
   }, [fontFamily, isAppLocked]);
 
   useEffect(() => {

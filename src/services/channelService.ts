@@ -5,6 +5,7 @@ import { generateChannelId } from '../lib/codes';
 import { getVercelBaseUrl } from './gatewayManager';
 import { deriveChannelKey, encryptMessage, decryptMessage } from '../lib/crypto';
 import { mediaManager } from './mediaManager';
+import { securityService } from './securityService';
 
 export interface ChannelInfo {
   id: string;
@@ -42,6 +43,30 @@ export interface ChannelPost {
 const W = getVercelBaseUrl();
 const CHANNELS_SUPABASE_URL = 'https://rugqiezexuknqcppicma.supabase.co';
 const CHANNELS_SUPABASE_KEY = 'sb_publishable_XYjE7C93LWA-P1OHZqNONg_QHlyZ9sZ';
+const getChannelPostsStorage = async (channelId: string): Promise<string | null> => {
+  if (typeof window !== 'undefined' && (window as any).orbita?.storageGet) {
+    try {
+      const val = await (window as any).orbita.storageGet(`orbita_channel_posts_${channelId}`);
+      if (val !== null && val !== undefined) return val;
+    } catch {}
+  }
+  if (!securityService.isPasswordSet()) {
+    return localStorage.getItem(`orbita_channel_posts_${channelId}`);
+  }
+  return null;
+};
+
+const setChannelPostsStorage = async (channelId: string, val: string): Promise<void> => {
+  if (typeof window !== 'undefined' && (window as any).orbita?.storageSet) {
+    try {
+      await (window as any).orbita.storageSet(`orbita_channel_posts_${channelId}`, val);
+      return;
+    } catch {}
+  }
+  if (!securityService.isPasswordSet()) {
+    localStorage.setItem(`orbita_channel_posts_${channelId}`, val);
+  }
+};
 
 class ChannelService {
   async getFeaturedChannels(): Promise<ChannelInfo[]> {
@@ -343,9 +368,7 @@ class ChannelService {
 
     if (decryptedPosts.length > 0) {
       try {
-        if (typeof window !== 'undefined' && window.localStorage) {
-          window.localStorage.setItem(`orbita_channel_posts_${cleanId}`, JSON.stringify(decryptedPosts));
-        }
+        await setChannelPostsStorage(cleanId, JSON.stringify(decryptedPosts));
       } catch {}
 
       decryptedPosts.forEach((p) => {
@@ -357,13 +380,11 @@ class ChannelService {
     }
 
     try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const cachedStr = window.localStorage.getItem(`orbita_channel_posts_${cleanId}`);
-        if (cachedStr) {
-          const cached = JSON.parse(cachedStr);
-          if (Array.isArray(cached) && cached.length > 0) {
-            return cached;
-          }
+      const cachedStr = await getChannelPostsStorage(cleanId);
+      if (cachedStr) {
+        const cached = JSON.parse(cachedStr);
+        if (Array.isArray(cached) && cached.length > 0) {
+          return cached;
         }
       }
     } catch {}
@@ -529,14 +550,12 @@ class ChannelService {
     };
 
     try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const cachedStr = window.localStorage.getItem(`orbita_channel_posts_${cleanId}`);
-        const cachedList = cachedStr ? JSON.parse(cachedStr) : [];
-        if (Array.isArray(cachedList) && !cachedList.some((p: any) => p.id === postObj.id)) {
-          cachedList.push(postObj);
-          cachedList.sort((a: any, b: any) => a.time - b.time);
-          window.localStorage.setItem(`orbita_channel_posts_${cleanId}`, JSON.stringify(cachedList));
-        }
+      const cachedStr = await getChannelPostsStorage(cleanId);
+      const cachedList = cachedStr ? JSON.parse(cachedStr) : [];
+      if (Array.isArray(cachedList) && !cachedList.some((p: any) => p.id === postObj.id)) {
+        cachedList.push(postObj);
+        cachedList.sort((a: any, b: any) => a.time - b.time);
+        await setChannelPostsStorage(cleanId, JSON.stringify(cachedList));
       }
     } catch {}
 
@@ -554,13 +573,11 @@ class ChannelService {
     const cleanChanId = channelId.trim();
     const cleanPostId = postId.trim();
     try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const cached = window.localStorage.getItem(`orbita_channel_posts_${cleanChanId}`);
-        if (cached) {
-          const posts = JSON.parse(cached);
-          if (Array.isArray(posts)) {
-            window.localStorage.setItem(`orbita_channel_posts_${cleanChanId}`, JSON.stringify(posts.filter((p: any) => p.id !== cleanPostId)));
-          }
+      const cached = await getChannelPostsStorage(cleanChanId);
+      if (cached) {
+        const posts = JSON.parse(cached);
+        if (Array.isArray(posts)) {
+          await setChannelPostsStorage(cleanChanId, JSON.stringify(posts.filter((p: any) => p.id !== cleanPostId)));
         }
       }
     } catch {}

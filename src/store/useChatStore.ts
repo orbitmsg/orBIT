@@ -5,6 +5,7 @@ import { RatchetState } from '../lib/double-ratchet';
 import { generateChatId as genChatId } from '../lib/crypto';
 import { mediaManager } from '../services/mediaManager';
 import { supabaseService } from '../services/supabaseService';
+import { securityService } from '../services/securityService';
 import type { NoiseSuppressionMode } from '../services/neuralAudioProcessor';
 
 export type RotationSpeed = 600 | 3600 | 10800 | 18000 | 36000 | 0;
@@ -362,13 +363,13 @@ const ipcStorage: StateStorage = {
     let val = null;
     if ((window as any).orbita?.storageGet) {
       val = await (window as any).orbita.storageGet(name);
-      if (!val) {
+      if (!val && !securityService.isPasswordSet()) {
         val = localStorage.getItem(name);
         if (val) {
           (window as any).orbita.storageSet(name, val).catch(() => {});
         }
       }
-    } else {
+    } else if (!securityService.isPasswordSet()) {
       val = localStorage.getItem(name);
     }
     if (val !== null) lastSavedValues[name] = val;
@@ -392,7 +393,7 @@ const ipcStorage: StateStorage = {
 
     lastSavedValues[name] = value;
 
-    if (!(window as any).orbita?.storageSet) {
+    if (!(window as any).orbita?.storageSet && !securityService.isPasswordSet()) {
       try {
         localStorage.setItem(name, value);
       } catch {}
@@ -1627,16 +1628,18 @@ export const useChatStore = create<ChatState>()(
         };
         set((state) => ({ chats: [...state.chats, newChat] }));
         try {
-          const groupRegistry = JSON.parse(localStorage.getItem('orbita-group-registry') || '{}');
-          groupRegistry[inviteCode] = {
-            chatId,
-            name,
-            sharedSecret,
-            inviteCodeTTL: Date.now() + ttl * 1000,
-            ownerNickname: nickname,
-            ownerUserId: userId,
-          };
-          localStorage.setItem('orbita-group-registry', JSON.stringify(groupRegistry));
+          if (!securityService.isPasswordSet()) {
+            const groupRegistry = JSON.parse(localStorage.getItem('orbita-group-registry') || '{}');
+            groupRegistry[inviteCode] = {
+              chatId,
+              name,
+              sharedSecret,
+              inviteCodeTTL: Date.now() + ttl * 1000,
+              ownerNickname: nickname,
+              ownerUserId: userId,
+            };
+            localStorage.setItem('orbita-group-registry', JSON.stringify(groupRegistry));
+          }
         } catch {}
       },
       joinGroupByCode: (inviteCode, callback) => {

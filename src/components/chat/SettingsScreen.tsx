@@ -239,10 +239,11 @@ const TogglePill = ({
 const SectionHeader = ({ title }: { title: string }) => (
   <div
     style={{
-      fontSize: '13px',
+      fontSize: 12,
       fontWeight: 600,
-      color: 'var(--accent-color, #9b7dd4)',
-      padding: '16px 20px 8px 20px',
+      color: MD3.onSurfaceVar,
+      padding: '0 20px',
+      marginBottom: 8,
       userSelect: 'none',
       letterSpacing: '0.01em',
     }}
@@ -266,19 +267,6 @@ export const Block = ({ children, style }: { children: ReactNode; style?: React.
       ...style,
     }}
   >
-    {children}
-  </div>
-);
-
-const Surface = ({ children, style }: { children: ReactNode; style?: React.CSSProperties }) => (
-  <div style={{
-    backgroundColor: 'transparent',
-    padding: '0',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-    ...style,
-  }}>
     {children}
   </div>
 );
@@ -1196,27 +1184,25 @@ const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup, onOpenOrbitaKey }
           fontSize: 12,
           fontWeight: 600,
           color: MD3.onSurfaceVar,
-          letterSpacing: '0.05em',
           padding: '0 20px',
           marginBottom: 8,
         }}>
-          {t('settings.voice_calls_beta')}
+          {t('settings.voice_calls_group', 'Звонки')}
         </div>
-        <div style={{
-          backgroundColor: MD3.surface,
-          borderRadius: 0,
-          padding: '16px 20px',
-          margin: '0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>{t('settings.voice_calls')}</div>
-            <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>{t('settings.voice_calls_desc')}</div>
+        <Block>
+          <div style={{
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>{t('settings.voice_calls')}</div>
+              <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>{t('settings.voice_calls_desc')}</div>
+            </div>
+            <M3Switch checked={voiceCallsEnabled} onChange={() => setVoiceCallsEnabled(!voiceCallsEnabled)} />
           </div>
-          <M3Switch checked={voiceCallsEnabled} onChange={() => setVoiceCallsEnabled(!voiceCallsEnabled)} />
-        </div>
+        </Block>
       </div>
 
       <div style={{ marginBottom: 24 }}>
@@ -1224,27 +1210,53 @@ const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup, onOpenOrbitaKey }
           fontSize: 12,
           fontWeight: 600,
           color: MD3.onSurfaceVar,
-          letterSpacing: '0.05em',
           padding: '0 20px',
           marginBottom: 8,
         }}>
-          {t('settings.read_receipts_group')}
+          {t('settings.communication_group', 'Общение')}
         </div>
-        <div style={{
-          backgroundColor: MD3.surface,
-          borderRadius: 0,
-          padding: '16px 20px',
-          margin: '0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>{t('settings.read_receipts_title')}</div>
-            <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>{t('settings.read_receipts_desc')}</div>
+        <Block>
+          <div style={{
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>{t('settings.read_receipts_title')}</div>
+              <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>{t('settings.read_receipts_desc')}</div>
+            </div>
+            <M3Switch checked={readReceiptsEnabled} onChange={() => setReadReceiptsEnabled(!readReceiptsEnabled)} />
           </div>
-          <M3Switch checked={readReceiptsEnabled} onChange={() => setReadReceiptsEnabled(!readReceiptsEnabled)} />
-        </div>
+
+          <div style={{
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderTop: '1px solid rgba(255, 255, 255, 0.04)',
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>{t('settings.typing_indicators_title')}</div>
+              <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>{t('settings.typing_indicators_desc')}</div>
+            </div>
+            <M3Switch checked={typingIndicatorsEnabled} onChange={() => setTypingIndicatorsEnabled(!typingIndicatorsEnabled)} />
+          </div>
+
+          <div style={{
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderTop: '1px solid rgba(255, 255, 255, 0.04)',
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>{t('settings.link_previews_title', 'Предпросмотр ссылок')}</div>
+              <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>{t('settings.link_previews_desc', 'Генерировать предпросмотр для отправляемых ссылок (анонимно на стороне отправителя)')}</div>
+            </div>
+            <M3Switch checked={linkPreviewsEnabled} onChange={() => setLinkPreviewsEnabled(!linkPreviewsEnabled)} />
+          </div>
+        </Block>
       </div>
 
       <div style={{ marginBottom: 24 }}>
@@ -1252,122 +1264,61 @@ const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup, onOpenOrbitaKey }
           fontSize: 12,
           fontWeight: 600,
           color: MD3.onSurfaceVar,
-          letterSpacing: '0.05em',
-          padding: '0 20px',
-          marginBottom: 8,
-        }}>
-          {t('settings.typing_indicators_group')}
-        </div>
-        <div style={{
-          backgroundColor: MD3.surface,
-          borderRadius: 0,
-          padding: '16px 20px',
-          margin: '0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>{t('settings.typing_indicators_title')}</div>
-            <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>{t('settings.typing_indicators_desc')}</div>
-          </div>
-          <M3Switch checked={typingIndicatorsEnabled} onChange={() => setTypingIndicatorsEnabled(!typingIndicatorsEnabled)} />
-        </div>
-      </div>
-
-      {/* Link Previews */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{
-          fontSize: 12,
-          fontWeight: 600,
-          color: MD3.onSurfaceVar,
-          letterSpacing: '0.05em',
-          padding: '0 20px',
-          marginBottom: 8,
-        }}>
-          {t('settings.link_previews_group', 'ПРЕДПРОСМОТР ССЫЛОК')}
-        </div>
-        <div style={{
-          backgroundColor: MD3.surface,
-          borderRadius: 0,
-          padding: '16px 20px',
-          margin: '0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>{t('settings.link_previews_title', 'Предпросмотр ссылок')}</div>
-            <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>{t('settings.link_previews_desc', 'Генерировать предпросмотр для отправляемых ссылок (анонимно на стороне отправителя)')}</div>
-          </div>
-          <M3Switch checked={linkPreviewsEnabled} onChange={() => setLinkPreviewsEnabled(!linkPreviewsEnabled)} />
-        </div>
-      </div>
-
-      <div style={{ marginBottom: 24 }}>
-        <div style={{
-          fontSize: 12,
-          fontWeight: 600,
-          color: MD3.onSurfaceVar,
-          letterSpacing: '0.05em',
           padding: '0 20px',
           marginBottom: 8,
         }}>
           {t('security.group_title', 'Безопасность')}
         </div>
-        <div
-          onClick={onOpenPassword}
-          className="cursor-pointer transition-colors hover:brightness-110"
-          style={{
-            backgroundColor: MD3.surface,
-            borderRadius: 0,
-            padding: '16px 20px',
-            margin: '0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>
-              {isPasswordSet ? t('security.change_password', 'Изменить пароль') : t('security.set_password', 'Поставить пароль')}
+        <Block>
+          <div
+            onClick={onOpenPassword}
+            className="cursor-pointer transition-colors hover:brightness-110"
+            style={{
+              padding: '16px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>
+                {isPasswordSet ? t('security.change_password', 'Изменить пароль') : t('security.set_password', 'Поставить пароль')}
+              </div>
+              <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>
+                {t('security.password_subtitle', 'Поставить пароль для разблокировки Orbita.')}
+              </div>
             </div>
-            <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>
-              {t('security.password_subtitle', 'Поставить пароль для разблокировки Orbita.')}
-            </div>
+            <ChevronRight size={20} style={{ color: MD3.onSurfaceVar }} />
           </div>
-          <ChevronRight size={20} style={{ color: MD3.onSurfaceVar }} />
-        </div>
-        <div
-          onClick={onOpenOrbitaKey}
-          className="cursor-pointer transition-colors hover:brightness-110"
-          style={{
-            backgroundColor: MD3.surface,
-            borderRadius: 0,
-            padding: '16px 20px',
-            marginTop: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span>{t('security.orbita_key_title', 'Orbita Key (USB-флешка)')}</span>
-              {isKeyConfigured && (
-                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontWeight: 600 }}>
-                  {t('security.orbita_key_active', 'Активен')}
-                </span>
-              )}
+          <div
+            onClick={onOpenOrbitaKey}
+            className="cursor-pointer transition-colors hover:brightness-110"
+            style={{
+              padding: '16px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              borderTop: '1px solid rgba(255, 255, 255, 0.04)',
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>{t('security.orbita_key_title', 'Orbita Key (USB-флешка)')}</span>
+                {isKeyConfigured && (
+                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontWeight: 600 }}>
+                    {t('security.orbita_key_active', 'Активен')}
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>
+                {isKeyConfigured
+                  ? t('security.orbita_key_subtitle_configured', 'Ключ привязан. Разблокировка по флешке настроена.')
+                  : t('security.orbita_key_subtitle_not_configured', 'Настроить разблокировку с помощью USB-накопителя.')}
+              </div>
             </div>
-            <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>
-              {isKeyConfigured
-                ? t('security.orbita_key_subtitle_configured', 'Ключ привязан. Разблокировка по флешке настроена.')
-                : t('security.orbita_key_subtitle_not_configured', 'Настроить разблокировку с помощью USB-накопителя.')}
-            </div>
+            <ChevronRight size={20} style={{ color: MD3.onSurfaceVar }} />
           </div>
-          <ChevronRight size={20} style={{ color: MD3.onSurfaceVar }} />
-        </div>
+        </Block>
       </div>
 
       <div style={{ marginBottom: 24 }}>
@@ -1375,35 +1326,33 @@ const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup, onOpenOrbitaKey }
           fontSize: 12,
           fontWeight: 600,
           color: MD3.onSurfaceVar,
-          letterSpacing: '0.05em',
           padding: '0 20px',
           marginBottom: 8,
         }}>
-          {t('backup.group_title', 'РЕЗЕРВНОЕ КОПИРОВАНИЕ')}
+          {t('backup.main_group_title', 'Резервное копирование')}
         </div>
-        <div
-          onClick={onOpenBackup}
-          className="cursor-pointer transition-colors hover:brightness-110"
-          style={{
-            backgroundColor: MD3.surface,
-            borderRadius: 0,
-            padding: '16px 20px',
-            margin: '0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>
-              {t('backup.create_title', 'Создать резервную копию')}
+        <Block>
+          <div
+            onClick={onOpenBackup}
+            className="cursor-pointer transition-colors hover:brightness-110"
+            style={{
+              padding: '16px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>
+                {t('backup.create_title', 'Создать резервную копию')}
+              </div>
+              <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>
+                {t('backup.create_desc', 'Зашифровать аккаунт, настройки и список чатов секретной фразой из 12 слов.')}
+              </div>
             </div>
-            <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>
-              {t('backup.create_desc', 'Зашифровать аккаунт, настройки и список чатов секретной фразой из 12 слов.')}
-            </div>
+            <ChevronRight size={20} style={{ color: MD3.onSurfaceVar }} />
           </div>
-          <ChevronRight size={20} style={{ color: MD3.onSurfaceVar }} />
-        </div>
+        </Block>
       </div>
 
       <div style={{ marginBottom: 24 }}>
@@ -1411,31 +1360,29 @@ const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup, onOpenOrbitaKey }
           fontSize: 12,
           fontWeight: 600,
           color: MD3.onSurfaceVar,
-          letterSpacing: '0.05em',
           padding: '0 20px',
           marginBottom: 8,
         }}>
-          {t('settings.app_section')}
+          {t('settings.app_section', 'Приложение')}
         </div>
-        <div style={{
-          backgroundColor: MD3.surface,
-          borderRadius: 0,
-          padding: '16px 20px',
-          margin: '0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>
-              {t('settings.screen_protection')}
+        <Block>
+          <div style={{
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>
+                {t('settings.screen_protection')}
+              </div>
+              <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>
+                {t('settings.screen_protection_desc')}
+              </div>
             </div>
-            <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>
-              {t('settings.screen_protection_desc')}
-            </div>
+            <M3Switch checked={screenProtectionEnabled} onChange={handleToggleScreenProtection} />
           </div>
-          <M3Switch checked={screenProtectionEnabled} onChange={handleToggleScreenProtection} />
-        </div>
+        </Block>
       </div>
     </motion.div>
   );
@@ -1545,20 +1492,14 @@ const PasswordSettingsScreen = ({ onSaved }: { onSaved?: () => void }) => {
             fontSize: 12,
             fontWeight: 600,
             color: MD3.onSurfaceVar,
-            letterSpacing: '0.05em',
             padding: '0 20px',
             marginBottom: 8,
           }}>
             {t('security.password_group', 'Пароль')}
           </div>
 
-          <div style={{
-            backgroundColor: MD3.surface,
-            borderRadius: 0,
+          <Block style={{
             padding: '20px',
-            margin: '0',
-            display: 'flex',
-            flexDirection: 'column',
             gap: '14px',
           }}>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: MD3.onSurface, margin: 0 }}>
@@ -1652,29 +1593,22 @@ const PasswordSettingsScreen = ({ onSaved }: { onSaved?: () => void }) => {
                 </button>
               </div>
             </div>
-          </div>
+          </Block>
         </div>
 
-        {/* Block 2: Strength Indicator */}
         <div style={{ marginBottom: 24 }}>
           <div style={{
             fontSize: 12,
             fontWeight: 600,
             color: MD3.onSurfaceVar,
-            letterSpacing: '0.05em',
             padding: '0 20px',
             marginBottom: 8,
           }}>
             {t('security.strength_group', 'Надёжность')}
           </div>
 
-          <div style={{
-            backgroundColor: MD3.surface,
-            borderRadius: 0,
+          <Block style={{
             padding: '20px',
-            margin: '0',
-            display: 'flex',
-            flexDirection: 'column',
             gap: '14px',
           }}>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: MD3.onSurface, margin: 0 }}>
@@ -1749,7 +1683,7 @@ const PasswordSettingsScreen = ({ onSaved }: { onSaved?: () => void }) => {
                 </span>
               </div>
             </div>
-          </div>
+          </Block>
         </div>
 
         {errorMsg && (
@@ -1908,7 +1842,8 @@ const SignalChatColorPicker: React.FC = () => {
   return (
     <div
       style={{
-        margin: '0 20px 16px',
+        margin: '0 10px 16px',
+        width: 'calc(100% - 20px)',
         backgroundColor: 'var(--surface-container, #262626)',
         borderRadius: 16,
         padding: '16px',
@@ -2453,22 +2388,14 @@ const PreferencesGroup = ({
       fontSize: 12,
       fontWeight: 600,
       color: MD3.onSurfaceVar,
-      letterSpacing: '0.05em',
       padding: '0 20px',
       marginBottom: 8,
     }}>
       {title}
     </div>
-    <div style={{
-      backgroundColor: MD3.surface,
-      borderRadius: 0,
-      padding: '0 20px',
-      margin: 0,
-      width: '100%',
-      boxSizing: 'border-box',
-    }}>
+    <Block style={{ padding: '0 16px' }}>
       {children}
-    </div>
+    </Block>
   </div>
 );
 
@@ -4377,20 +4304,22 @@ export const SettingsScreen = () => {
               <p style={{ fontSize: 14, fontWeight: 500, color: MD3.onSurface, margin: '0 0 8px', userSelect: 'none', padding: '0 20px' }}>{t('settings.chat_color')}</p>
               <SignalChatColorPicker />
             </div>
-            <SettingsRow
-              label={t('settings.font')}
-              onClick={() => pushTab('font')}
-              right={
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                  <span style={{ fontSize: 13, color: MD3.onSurfaceVar }}>
-                    {FONT_OPTIONS.find(o => o.value === fontFamily)?.label || fontFamily}
-                  </span>
-                  <ChevronRight size={16} color={MD3.onSurfaceVar} />
-                </div>
-              }
-            />
-            <SettingsRow label={t('settings.bubble_radius')} />
-            <BubbleRadiusControl />
+            <Block>
+              <SettingsRow
+                label={t('settings.font')}
+                onClick={() => pushTab('font')}
+                right={
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                    <span style={{ fontSize: 13, color: MD3.onSurfaceVar }}>
+                      {FONT_OPTIONS.find(o => o.value === fontFamily)?.label || fontFamily}
+                    </span>
+                    <ChevronRight size={16} color={MD3.onSurfaceVar} />
+                  </div>
+                }
+              />
+              <SettingsRow label={t('settings.bubble_radius')} />
+              <BubbleRadiusControl />
+            </Block>
 
           </motion.div>
         );
@@ -4401,19 +4330,18 @@ export const SettingsScreen = () => {
       case 'energy':
         return (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }}>
-            <Surface style={{ marginBottom: 8 }}>
+            <Block style={{ marginBottom: 8 }}>
               <SettingsRow label={t('settings.battery_saver')} right={<M3Switch checked={false} onChange={() => {}} />} />
               <SettingsRow label={t('settings.background_usage')} right={<M3Switch checked={true} onChange={() => {}} />} />
               <SettingsRow label={t('settings.auto_dark')} right={<M3Switch checked={false} onChange={() => {}} />} />
-            </Surface>
+            </Block>
           </motion.div>
         );
       case 'notifications':
         return (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }}>
-            {/* 1. Общие настройки */}
             <SectionHeader title={t('settings.general_settings') || 'Общие настройки'} />
-            <Surface style={{ marginBottom: 4 }}>
+            <Block style={{ marginBottom: 4 }}>
               <SettingsRow
                 label={t('settings.desktop_notifications') || 'Уведомления на рабочем столе'}
                 icon={<Bell size={18} />}
@@ -4444,7 +4372,7 @@ export const SettingsScreen = () => {
                   />
                 }
               />
-            </Surface>
+            </Block>
 
             <BubbleSlider
               value={notificationVolume}
@@ -4458,19 +4386,20 @@ export const SettingsScreen = () => {
               ariaLabel={t('settings.volume') || 'Громкость'}
             />
 
-            {/* Notification Preview Card */}
             <div
               style={{
                 backgroundColor: 'var(--surface-container, var(--bg-secondary, #1c182a))',
-                borderRadius: '0px',
-                padding: '11px 38px 11px 11px',
-                margin: '0 20px 14px 20px',
+                borderRadius: '16px',
+                padding: '12px 16px',
+                margin: '0 10px 14px 10px',
+                width: 'calc(100% - 20px)',
                 minHeight: '82px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
                 border: 'none',
                 boxShadow: 'none',
+                boxSizing: 'border-box',
                 fontFamily: 'var(--main-font), "Apple Color Emoji", "Segoe UI Emoji", sans-serif',
               }}
             >
@@ -4485,7 +4414,6 @@ export const SettingsScreen = () => {
               </div>
             </div>
 
-            {/* Pill Toggles for Name and Text */}
             <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', margin: '0 20px 20px 20px' }}>
               <TogglePill
                 active={notificationShowName}
@@ -4499,12 +4427,10 @@ export const SettingsScreen = () => {
               />
             </div>
 
-            {/* Separator */}
             <div style={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.06)', margin: '4px 0 8px 0' }} />
 
-            {/* 2. Взаимодействие с системой */}
             <SectionHeader title={t('settings.system_integration') || 'Взаимодействие с системой'} />
-            <Surface style={{ marginBottom: 8 }}>
+            <Block style={{ marginBottom: 8 }}>
               <SettingsRow
                 label={t('settings.use_windows_notifications') || 'Использовать уведомления Windows'}
                 right={
@@ -4523,7 +4449,7 @@ export const SettingsScreen = () => {
                   />
                 }
               />
-            </Surface>
+            </Block>
 
             {/* Separator */}
             <div style={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.06)', margin: '4px 0 8px 0' }} />

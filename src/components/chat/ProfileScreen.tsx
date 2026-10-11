@@ -2072,7 +2072,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
             gap: '4px',
             background: 'var(--surface-container, #282828)',
             border: 'none',
-            borderRadius: '12px',
+            borderRadius: '9999px',
             padding: '0',
             color: 'var(--text-main)',
             cursor: 'pointer',
@@ -2101,7 +2101,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
             gap: '4px',
             background: 'var(--surface-container, #282828)',
             border: 'none',
-            borderRadius: '12px',
+            borderRadius: '9999px',
             padding: '0',
             color: 'var(--text-main)',
             cursor: 'pointer',
@@ -2189,7 +2189,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                   gap: '4px',
                   background: 'var(--surface-container, #282828)',
                   border: 'none',
-                  borderRadius: '12px',
+                  borderRadius: '9999px',
                   padding: '0',
                   color: 'var(--text-main)',
                   cursor: 'pointer',
@@ -2216,7 +2216,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                   gap: '4px',
                   background: 'var(--surface-container, #282828)',
                   border: 'none',
-                  borderRadius: '12px',
+                  borderRadius: '9999px',
                   padding: '0',
                   color: 'var(--text-main)',
                   cursor: !voiceCallsEnabled ? 'not-allowed' : 'pointer',
@@ -2249,7 +2249,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                 gap: '4px',
                 background: 'var(--surface-container, #282828)',
                 border: 'none',
-                borderRadius: '12px',
+                borderRadius: '9999px',
                 padding: '0',
                 color: 'var(--text-main)',
                 cursor: 'pointer',
@@ -2276,7 +2276,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
               gap: '4px',
               background: 'var(--surface-container, #282828)',
               border: 'none',
-              borderRadius: '12px',
+              borderRadius: '9999px',
               padding: '0',
               color: 'var(--text-main)',
               cursor: 'pointer',
@@ -2307,7 +2307,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
               gap: '4px',
               background: 'var(--surface-container, #282828)',
               border: 'none',
-              borderRadius: '12px',
+              borderRadius: '9999px',
               padding: '0',
               color: 'var(--text-main)',
               cursor: (!voiceCallsEnabled || chatId === 'notes') ? 'not-allowed' : 'pointer',
@@ -2323,15 +2323,16 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         )}
       </div>
 
-      {(isChannel || isGroup || Boolean(profileId) || Boolean(chat.description)) && (
+      {(isChannel || isGroup || Boolean(profileId) || Boolean(chat.description) || Boolean(chat.username) || Boolean(chat.birthday)) && (
         <div
           style={{
             backgroundColor: 'var(--md-surface, #211c2e)',
-            width: '100%',
-            borderRadius: 0,
+            width: 'calc(100% - 20px)',
+            margin: '0 10px 16px 10px',
+            borderRadius: '16px',
+            overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
-            marginBottom: '16px',
             boxSizing: 'border-box',
           }}
         >
@@ -2610,25 +2611,18 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
             <>
               {chat.username && (
                 <div
-                  onClick={() => handleCopyChannelKey(`@${chat.username}`)}
                   style={{
-                    padding: '10px 14px',
-                    margin: '2px 10px',
-                    width: 'calc(100% - 20px)',
-                    borderRadius: '12px',
+                    padding: '12px 16px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     gap: '12px',
-                    cursor: 'pointer',
                     boxSizing: 'border-box',
-                    transition: 'background-color 0.15s ease',
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-container-strong)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                 >
                   <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
                     <span
+                      onClick={() => handleCopyChannelKey(`@${chat.username}`)}
                       style={{
                         fontSize: '14px',
                         fontWeight: 500,
@@ -2636,7 +2630,15 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                         wordBreak: 'break-all',
                         lineHeight: 1.3,
                         fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
+                        cursor: 'pointer',
+                        width: 'fit-content',
+                        borderRadius: '6px',
+                        padding: '2px 6px',
+                        margin: '-2px -6px',
+                        transition: 'background-color 0.15s ease',
                       }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                     >
                       @{chat.username}
                     </span>
@@ -2644,7 +2646,10 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                       {t('profile.username', 'Имя пользователя')}
                     </span>
                   </div>
-                  <div style={{ flexShrink: 0, color: copiedKey ? 'var(--accent-color, #9b7dd4)' : 'var(--text-dim, #8e8e93)', display: 'flex', alignItems: 'center' }}>
+                  <div
+                    style={{ flexShrink: 0, color: copiedKey ? 'var(--accent-color, #9b7dd4)' : 'var(--text-dim, #8e8e93)', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                    onClick={() => handleCopyChannelKey(`@${chat.username}`)}
+                  >
                     {copiedKey ? <Check size={18} /> : <Copy size={18} />}
                   </div>
                 </div>
@@ -2653,7 +2658,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
               {chat.description && (
                 <div
                   style={{
-                    padding: '12px 20px',
+                    padding: '12px 16px',
                     borderBottom: 'none',
                     display: 'flex',
                     flexDirection: 'column',
@@ -2670,41 +2675,45 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
 
               {!isGroup && profileId ? (
                 <div
-                  onClick={() => handleCopyChannelKey(profileId)}
                   style={{
-                    padding: '10px 14px',
-                    margin: '2px 10px',
-                    width: 'calc(100% - 20px)',
-                    borderRadius: '12px',
+                    padding: '12px 16px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     gap: '12px',
-                    cursor: 'pointer',
                     boxSizing: 'border-box',
-                    transition: 'background-color 0.15s ease',
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-container-strong)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                 >
                   <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
                     <span
+                      onClick={() => handleCopyChannelKey(profileId)}
                       style={{
-                        fontSize: '14px',
+                        fontSize: '13.5px',
                         fontWeight: 500,
                         color: 'var(--accent-color, #9b7dd4)',
                         wordBreak: 'break-all',
                         lineHeight: 1.3,
                         fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
+                        cursor: 'pointer',
+                        width: 'fit-content',
+                        borderRadius: '6px',
+                        padding: '2px 6px',
+                        margin: '-2px -6px',
+                        transition: 'background-color 0.15s ease',
                       }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                     >
                       {formattedProfileId}
                     </span>
                     <span style={{ fontSize: '11px', color: 'var(--text-dim, #8e8e93)', marginTop: '3px' }}>
-                      ID
+                      {t('profile.account_id', 'ID аккаунта')}
                     </span>
                   </div>
-                  <div style={{ flexShrink: 0, color: copiedKey ? 'var(--accent-color, #9b7dd4)' : 'var(--text-dim, #8e8e93)', display: 'flex', alignItems: 'center' }}>
+                  <div
+                    style={{ flexShrink: 0, color: copiedKey ? 'var(--accent-color, #9b7dd4)' : 'var(--text-dim, #8e8e93)', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                    onClick={() => handleCopyChannelKey(profileId)}
+                  >
                     {copiedKey ? <Check size={18} /> : <Copy size={18} />}
                   </div>
                 </div>
@@ -2713,7 +2722,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
               {chat.birthday && formatBirthday(chat.birthday, i18n.language) && (
                 <div
                   style={{
-                    padding: '12px 20px',
+                    padding: '12px 16px',
                     borderBottom: 'none',
                     display: 'flex',
                     flexDirection: 'column',
@@ -2736,10 +2745,12 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         <div
           style={{
             backgroundColor: 'var(--md-surface, #211c2e)',
-            width: '100%',
+            width: 'calc(100% - 20px)',
+            margin: '0 10px 16px 10px',
+            borderRadius: '16px',
+            overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
-            marginBottom: '16px',
             boxSizing: 'border-box',
           }}
         >
@@ -3044,11 +3055,12 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
       {availableSections.length > 0 && (
         <div style={{
           backgroundColor: 'var(--md-surface, #211c2e)',
-          width: '100%',
+          width: 'calc(100% - 20px)',
+          margin: '0 10px 16px 10px',
           display: 'flex',
           flexDirection: 'column',
-          borderRadius: 0,
-          margin: 0,
+          borderRadius: '16px',
+          overflow: 'hidden',
           padding: '4px 0',
           boxSizing: 'border-box',
         }}>

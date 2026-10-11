@@ -123,6 +123,7 @@
       "copied": "QR code copied to clipboard"
     },
     "common": {
+      "lock_app": "Lock app",
       "you": "You",
       "link_copied": "Link copied",
       "image_copied": "Image copied to clipboard",

@@ -224,6 +224,14 @@ function App() {
   };
 
   useEffect(() => {
+    const handleLock = () => {
+      setIsAppLocked(true);
+    };
+    window.addEventListener('orbita:lock-app', handleLock);
+    return () => window.removeEventListener('orbita:lock-app', handleLock);
+  }, []);
+
+  useEffect(() => {
     securityService.cleanUnencryptedLocalStorage();
     securityService.isStorageLocked().then((locked) => {
       if (locked) {

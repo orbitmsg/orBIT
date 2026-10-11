@@ -756,6 +756,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     isOpen: boolean;
     type: ConfirmActionType | null;
     messageIndex?: number;
+    messageId?: string;
     selectedIndices?: number[];
   }>({
     isOpen: false,
@@ -3286,13 +3287,16 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     }
   };
 
-  const triggerDeleteMessage = (index: number) => {
+  const triggerDeleteMessage = (indexOrId: number | string) => {
     if (!activeChatId) return;
     if (activeChat?.type === 'channel' && !isChannelOwner) return;
-    const targetMsg = messages[index];
-    const targetMsgId = targetMsg?.id;
+    const targetMsg = (typeof indexOrId === 'string' ? messages.find(m => m.id === indexOrId) : null)
+      || (typeof indexOrId === 'number' && indexOrId >= 0 ? messages[indexOrId] : null)
+      || (contextMenu.messageId ? messages.find(m => m.id === contextMenu.messageId) : null);
+    const targetMsgId = targetMsg?.id || (typeof indexOrId === 'string' ? indexOrId : undefined);
+    const resolvedIndex = targetMsg ? messages.findIndex(m => m.id === targetMsg.id) : (typeof indexOrId === 'number' ? indexOrId : -1);
     if (activeChatId === 'notes') {
-      const updatedMessages = messages.filter((_, i) => i !== index);
+      const updatedMessages = messages.filter((m, i) => targetMsgId ? m.id !== targetMsgId : i !== resolvedIndex);
       useChatStore.setState((state) => ({
         messagesByChatId: {
           ...state.messagesByChatId,
@@ -3306,7 +3310,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     if (targetMsgId) {
       useChatStore.getState().deleteMessage(activeChatId, targetMsgId);
     } else {
-      const updatedMessages = messages.filter((_, i) => i !== index);
+      const updatedMessages = messages.filter((m, i) => targetMsgId ? m.id !== targetMsgId : i !== resolvedIndex);
       useChatStore.setState((state) => ({
         messagesByChatId: {
           ...state.messagesByChatId,
@@ -3323,7 +3327,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
       text: '',
       type: 'delete-message',
       targetMessageId: targetMsgId,
-      deleteIndex: index,
+      deleteIndex: resolvedIndex >= 0 ? resolvedIndex : 0,
     };
 
     ablyService.sendMessage(activeChatId, payload).catch(() => {});
@@ -3359,10 +3363,12 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     setContextMenu(prev => ({ ...prev, visible: false }));
   };
 
-  const triggerPinMessage = (index: number) => {
+  const triggerPinMessage = (indexOrId: number | string) => {
     if (!activeChatId || !sharedSecret) return;
     if (activeChat?.type === 'channel' && !isChannelOwner) return;
-    const pinnedMsg = messages[index];
+    const pinnedMsg = (typeof indexOrId === 'string' ? messages.find(m => m.id === indexOrId) : null)
+      || (typeof indexOrId === 'number' && indexOrId >= 0 ? messages[indexOrId] : null)
+      || (contextMenu.messageId ? messages.find(m => m.id === contextMenu.messageId) : null);
     if (!pinnedMsg) return;
     const pinData = {
       id: pinnedMsg.id,
@@ -3410,13 +3416,18 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     if (channel.subscribed) send(); else channel.bind('pusher:subscription_succeeded', send);
   };
 
-  const requestDeleteMessage = (index: number) => {
+  const requestDeleteMessage = (indexOrId: number | string) => {
     if (activeChat?.type === 'channel' && !isChannelOwner) return;
+    const msg = (typeof indexOrId === 'string' ? messages.find(m => m.id === indexOrId) : null)
+      || (contextMenu.messageId ? messages.find(m => m.id === contextMenu.messageId) : null)
+      || (typeof indexOrId === 'number' && indexOrId >= 0 ? messages[indexOrId] : null);
+    const realIndex = msg ? messages.findIndex(m => m.id === msg.id) : (typeof indexOrId === 'number' ? indexOrId : undefined);
     setContextMenu(prev => ({ ...prev, visible: false }));
     setConfirmModal({
       isOpen: true,
       type: 'delete_message',
-      messageIndex: index,
+      messageIndex: realIndex,
+      messageId: msg?.id || (typeof indexOrId === 'string' ? indexOrId : contextMenu.messageId),
     });
   };
 
@@ -3437,13 +3448,18 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     });
   };
 
-  const requestPinMessage = (index: number) => {
+  const requestPinMessage = (indexOrId: number | string) => {
     if (activeChat?.type === 'channel' && !isChannelOwner) return;
+    const msg = (typeof indexOrId === 'string' ? messages.find(m => m.id === indexOrId) : null)
+      || (contextMenu.messageId ? messages.find(m => m.id === contextMenu.messageId) : null)
+      || (typeof indexOrId === 'number' && indexOrId >= 0 ? messages[indexOrId] : null);
+    const realIndex = msg ? messages.findIndex(m => m.id === msg.id) : (typeof indexOrId === 'number' ? indexOrId : undefined);
     setContextMenu(prev => ({ ...prev, visible: false }));
     setConfirmModal({
       isOpen: true,
       type: 'pin_message',
-      messageIndex: index,
+      messageIndex: realIndex,
+      messageId: msg?.id || (typeof indexOrId === 'string' ? indexOrId : contextMenu.messageId),
     });
   };
 
@@ -3464,11 +3480,15 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
           triggerDeleteMessage(idx);
         }
         selection.exitSelectionMode();
+      } else if (confirmModal.messageId !== undefined) {
+        triggerDeleteMessage(confirmModal.messageId);
       } else if (confirmModal.messageIndex !== undefined) {
         triggerDeleteMessage(confirmModal.messageIndex);
       }
     } else if (confirmModal.type === 'pin_message') {
-      if (confirmModal.messageIndex !== undefined) {
+      if (confirmModal.messageId !== undefined) {
+        triggerPinMessage(confirmModal.messageId);
+      } else if (confirmModal.messageIndex !== undefined) {
         triggerPinMessage(confirmModal.messageIndex);
       }
     } else if (confirmModal.type === 'unpin_message') {
@@ -4320,28 +4340,37 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     return 'text';
   }, []);
 
-  const handleContextMenu = (e: React.MouseEvent, index: number, isOwn: boolean) => {
+  const handleContextMenu = (e: React.MouseEvent, target: Message | number, isOwn: boolean) => {
     e.preventDefault();
     e.stopPropagation();
     const { x, y } = clampMenuPosition(e.clientX, e.clientY, 224, 280);
-    const msg = messages[index];
+    const msg = typeof target === 'number' ? messages[target] : target;
+    if (!msg) return;
+    const realIndex = messages.findIndex(m => m.id === msg.id);
+    const index = realIndex >= 0 ? realIndex : (typeof target === 'number' ? target : -1);
     const type = getMessageMenuType(msg);
     const hasMultipleImages = msg.mediaItems ? msg.mediaItems.filter(item => item.type === 'photo').length > 1 : false;
-    setContextMenu({ visible: true, x, y, messageIndex: index, messageId: msg?.id, isOwn, type, hasMultipleImages });
+    setContextMenu({ visible: true, x, y, messageIndex: index, messageId: msg.id, isOwn, type, hasMultipleImages });
   };
 
-  const handleReply = (index: number) => {
+  const handleReply = (indexOrId?: number | string) => {
     if (activeChat?.type === 'channel' && !isChannelOwner) return;
-    const originalMessage = messages[index];
+    const originalMessage = (typeof indexOrId === 'string'
+      ? messages.find(m => m.id === indexOrId)
+      : (typeof indexOrId === 'number' && indexOrId >= 0 ? messages[indexOrId] : null))
+      || (contextMenu.messageId ? messages.find(m => m.id === contextMenu.messageId) : null)
+      || (contextMenu.messageIndex >= 0 ? messages[contextMenu.messageIndex] : null);
+    if (!originalMessage) return;
     let cleanText = originalMessage.text.replace(/^↩\s(?:\[id:.+?\]\s)?.+?:.+?,\s\d{2}:\d{2}\n/, '').replace(/\n/g, ' ').trim();
     if (/^\[Sticker\]/i.test(cleanText) || cleanText.includes('/stickers/') || cleanText.includes('\\stickers\\') || cleanText.includes('.stickers')) {
       cleanText = '[Sticker]';
     }
     const originalSenderId = originalMessage.senderId || (originalMessage.sender === myNickname ? myCode : activeChat?.peerCode);
+    const realIndex = messages.findIndex(m => m.id === originalMessage.id);
     setReplyingTo({
       id: originalMessage.id,
       senderId: originalSenderId,
-      index,
+      index: realIndex >= 0 ? realIndex : (typeof indexOrId === 'number' ? indexOrId : 0),
       sender: originalMessage.sender,
       text: cleanText,
       time: originalMessage.time,
@@ -4349,9 +4378,15 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     setContextMenu(prev => ({ ...prev, visible: false }));
   };
 
-  const handleEdit = (index: number) => {
+  const handleEdit = (indexOrId?: number | string) => {
     if (activeChat?.type === 'channel' && !isChannelOwner) return;
-    const msg = messages[index];
+    const msg = (typeof indexOrId === 'string' ? messages.find(m => m.id === indexOrId) : null)
+      || (typeof indexOrId === 'number' && indexOrId >= 0 ? messages[indexOrId] : null)
+      || (contextMenu.messageId ? messages.find(m => m.id === contextMenu.messageId) : null)
+      || (contextMenu.messageIndex >= 0 ? messages[contextMenu.messageIndex] : null);
+    if (!msg) return;
+    const realIndex = messages.findIndex(m => m.id === msg.id);
+    const index = realIndex >= 0 ? realIndex : (typeof indexOrId === 'number' ? indexOrId : 0);
     if (msg.mediaType) {
       const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v', 'mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a', 'opus', 'wma', 'ape', 'alac', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'rtf', 'odt', 'ods', 'odp', 'csv', 'md', 'log', 'json', 'xml', 'yaml', 'yml', 'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'exe', 'dmg', 'apk', 'iso'];
       window.orbita.pickFile(allowedExtensions).then(async (raw) => {
@@ -4384,7 +4419,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
           const result = await window.orbita.uploadToCloudinary(tempPath, publicId);
           window.orbita.deleteTempFile(tempPath);
           if (result.success && result.secure_url) {
-            triggerDeleteMessage(index);
+            triggerDeleteMessage(msg.id || index);
             const prefix = { photo: '[Photo]', video: '[Video]', audio: '[Audio]', document: '[File]' }[fileType];
             const text = `${prefix} ${fileName}`;
             triggerMessage(text, {
@@ -4402,12 +4437,17 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
       return;
     }
     setEditingIndex(index);
-    setEditText(messages[index].text);
+    setEditText(msg.text);
     setContextMenu(prev => ({ ...prev, visible: false }));
   };
 
-  const handleCopy = (index: number) => {
-    const cleanText = messages[index].text.replace(/^↩\s.+?:.+?,\s\d{2}:\d{2}\n/, '').replace(/\n/g, ' ').trim();
+  const handleCopy = (indexOrId?: number | string) => {
+    const msg = (typeof indexOrId === 'string' ? messages.find(m => m.id === indexOrId) : null)
+      || (typeof indexOrId === 'number' && indexOrId >= 0 ? messages[indexOrId] : null)
+      || (contextMenu.messageId ? messages.find(m => m.id === contextMenu.messageId) : null)
+      || (contextMenu.messageIndex >= 0 ? messages[contextMenu.messageIndex] : null);
+    if (!msg) return;
+    const cleanText = msg.text.replace(/^↩\s.+?:.+?,\s\d{2}:\d{2}\n/, '').replace(/\n/g, ' ').trim();
     navigator.clipboard.writeText(cleanText);
     setContextMenu(prev => ({ ...prev, visible: false }));
   };
@@ -4461,8 +4501,11 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     });
   };
 
-  const handleSaveAs = async (index: number) => {
-    const msg = messages[index];
+  const handleSaveAs = async (indexOrId?: number | string) => {
+    const msg = (typeof indexOrId === 'string' ? messages.find(m => m.id === indexOrId) : null)
+      || (typeof indexOrId === 'number' && indexOrId >= 0 ? messages[indexOrId] : null)
+      || (contextMenu.messageId ? messages.find(m => m.id === contextMenu.messageId) : null)
+      || (contextMenu.messageIndex >= 0 ? messages[contextMenu.messageIndex] : null);
     if (!msg) {
       setContextMenu(prev => ({ ...prev, visible: false }));
       return;
@@ -4580,9 +4623,22 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     setContextMenu(prev => ({ ...prev, visible: false }));
   };
 
-  const isMessagePinned = (index: number): boolean => {
+  const isMessagePinned = (indexOrMsgOrId?: number | Message | string): boolean => {
     if (!pinnedMessage) return false;
-    const msg = messages[index];
+    let msg: Message | undefined;
+    if (typeof indexOrMsgOrId === 'object' && indexOrMsgOrId !== null) {
+      msg = indexOrMsgOrId;
+    } else if (typeof indexOrMsgOrId === 'string') {
+      msg = messages.find(m => m.id === indexOrMsgOrId);
+    } else if (typeof indexOrMsgOrId === 'number' && indexOrMsgOrId >= 0) {
+      msg = messages[indexOrMsgOrId];
+    }
+    if (!msg && contextMenu.messageId) {
+      msg = messages.find(m => m.id === contextMenu.messageId);
+    }
+    if (!msg && contextMenu.messageIndex >= 0) {
+      msg = messages[contextMenu.messageIndex];
+    }
     if (!msg) return false;
     if (pinnedMessage.id && msg.id) return msg.id === pinnedMessage.id;
     if (pinnedMessage.messageId && msg.id) return msg.id === pinnedMessage.messageId;
@@ -4591,7 +4647,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
 
   const isRatchetReady = useMemo(() => {
     if (!activeChat) return false;
-    // Always allow typing; actual E2EE guard is inside triggerMessage
     return true;
   }, [activeChat]);
 
@@ -5869,8 +5924,8 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
   }, []);
 
   const handleSelectFromMenu = () => {
-    const index = contextMenu.messageIndex;
-    const msg = messages[index];
+    const msg = (contextMenu.messageId ? messages.find(m => m.id === contextMenu.messageId) : null)
+      || (contextMenu.messageIndex >= 0 ? messages[contextMenu.messageIndex] : null);
     if (!msg || !msg.id) return;
     selection.enterSelectionMode(msg.id);
     setContextMenu(prev => ({ ...prev, visible: false }));
@@ -5889,7 +5944,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
 
 
 
-  const renderMediaGroup = useCallback((msg: Message, index: number, customRadius?: string, overrideItems?: MediaItem[]) => {
+  const renderMediaGroup = useCallback((msg: Message, _index: number, customRadius?: string, overrideItems?: MediaItem[]) => {
     const mediaItems = overrideItems || msg.mediaItems;
     if (!mediaItems || mediaItems.length === 0) return null;
 
@@ -5916,7 +5971,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
           items={mediaItems}
           sharedSecret={sharedSecret}
           msg={msg}
-          timeNode={timeBadge(msg, isMessagePinned(index))}
+          timeNode={timeBadge(msg, isMessagePinned(msg))}
           isOwn={isOwn}
           onCancelUpload={msg.uploading ? () => {
             if (activeChatId && msg.id) {
@@ -5961,7 +6016,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
           items={itemsToRender}
           sharedSecret={sharedSecret}
           msg={msg}
-          timeNode={timeBadge(msg, isMessagePinned(index))}
+          timeNode={timeBadge(msg, isMessagePinned(msg))}
           customRadius={customRadius}
           isOwn={isOwn}
           onMediaClick={(tileIdx) => {
@@ -6054,7 +6109,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               {msg.text}
             </div>
             <div className="flex items-center justify-end gap-1 flex-shrink-0 select-none">
-              {timeBadge(msg, isMessagePinned(index))}
+              {timeBadge(msg, isMessagePinned(msg))}
             </div>
           </div>
         ) : (
@@ -6071,7 +6126,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               lineHeight: 1,
             }}
           >
-            {timeBadge(msg, isMessagePinned(index))}
+            {timeBadge(msg, isMessagePinned(msg))}
           </div>
         )}
       </div>
@@ -6421,7 +6476,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
                     transition: 'filter 0.15s ease',
                   }}
                   onClick={(e) => handleMessageClick(e, msg.id!)}
-                  onContextMenu={(e) => handleContextMenu(e, index, isOwn)}
+                  onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}
                 >
                   <div
                     className="relative"
@@ -6447,7 +6502,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
       }
 
     if (!media.type) {
-      const isPinned = isMessagePinned(index);
+      const isPinned = isMessagePinned(msg);
       return (
         <div style={{ ...highlightWrapperStyle }} data-datelabel={getDateLabel(msg.time)}>
           {wrapWithGroupAvatar(
@@ -6455,7 +6510,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               msg={msg}
               isOwn={isOwn}
               isPinned={isPinned}
-              onContextMenu={(e) => handleContextMenu(e, index, isOwn)}
+              onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}
               themeColor={themeColor}
               bubbleRadius={customRadius}
               currentUserId={myUserId || myNickname}
@@ -6487,7 +6542,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
       if (emojiCount === 1) fontSize = '48px';
       else if (emojiCount <= 3) fontSize = '32px';
 
-      const spacerWidth = isOwn ? (isMessagePinned(index) ? '72px' : '60px') : (isMessagePinned(index) ? '52px' : '40px');
+      const spacerWidth = isOwn ? (isMessagePinned(msg) ? '72px' : '60px') : (isMessagePinned(msg) ? '52px' : '40px');
 
       return (
         <div style={{ ...highlightWrapperStyle }} data-datelabel={getDateLabel(msg.time)}>
@@ -6507,11 +6562,11 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
                   transition: 'filter 0.15s ease',
                 }}
                 onClick={(e) => handleMessageClick(e, msg.id!)}
-                onContextMenu={(e) => handleContextMenu(e, index, isOwn)}
+                onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}
               >
                 <div
                   className="max-w-[min(440px, 75%)] min-w-[60px] w-fit relative"
-                  style={bubbleStyle(isOwn, isMessagePinned(index) ? { outline: '1px solid color-mix(in srgb, var(--md-sys-color-primary) 35%, transparent)' } : {})}
+                  style={bubbleStyle(isOwn, isMessagePinned(msg) ? { outline: '1px solid color-mix(in srgb, var(--md-sys-color-primary) 35%, transparent)' } : {})}
                 >
                   <div
                     className="select-text"
@@ -6555,7 +6610,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      {timeBadge(msg, isMessagePinned(index))}
+                      {timeBadge(msg, isMessagePinned(msg))}
                     </span>
                   </div>
                 </div>
@@ -6584,14 +6639,14 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               transition: 'filter 0.15s ease',
             }}
             onClick={(e) => handleMessageClick(e, msg.id!)}
-            onContextMenu={(e) => handleContextMenu(e, index, isOwn)}
+            onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}
           >
             {media.type === 'sticker' && (
               <div
                 className={`relative w-fit flex flex-col ${isOwn ? 'items-end' : 'items-start'} group select-none`}
                 style={{ padding: '0px', overflowAnchor: 'none' }}
                 onClick={(e) => handleMessageClick(e, msg.id!)}
-                onContextMenu={(e) => handleContextMenu(e, index, isOwn)}
+                onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}
               >
                 <div className="relative w-[180px] h-[180px] max-w-[min(180px,70vw)] max-h-[min(180px,70vw)] flex items-center justify-center">
                   {media.url && media.url.toLowerCase().endsWith('.tgs') ? (
@@ -6661,9 +6716,9 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
                   isOwn={isOwn}
                   fileSize={msg.fileSize || (msg as any).size}
                   blurPreview={msg.blurPreview || msg.thumbnail}
-                  timeNode={!(msg.text?.trim() && msg.text.trim().replace(/^\[(?:Photo|GIF|Sticker|Video)\]\s*https?:\/\/[^\s]+$/i, '').trim()) ? timeBadge(msg, isMessagePinned(index)) : undefined}
+                  timeNode={!(msg.text?.trim() && msg.text.trim().replace(/^\[(?:Photo|GIF|Sticker|Video)\]\s*https?:\/\/[^\s]+$/i, '').trim()) ? timeBadge(msg, isMessagePinned(msg)) : undefined}
                   onClick={() => openMediaViewer(media.url!, msg.id)}
-                  onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, index, isOwn)}
+                  onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, msg, isOwn)}
                 />
               </div>
             )}
@@ -6692,31 +6747,31 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
                   isOwn={isOwn}
                   fileSize={msg.fileSize || (msg as any).size}
                   blurPreview={msg.blurPreview || msg.thumbnail}
-                  timeNode={!(msg.text?.trim() && msg.text.trim().replace(/^\[(?:Photo|GIF|Sticker|Video)\]\s*https?:\/\/[^\s]+$/i, '').trim()) ? timeBadge(msg, isMessagePinned(index)) : undefined}
+                  timeNode={!(msg.text?.trim() && msg.text.trim().replace(/^\[(?:Photo|GIF|Sticker|Video)\]\s*https?:\/\/[^\s]+$/i, '').trim()) ? timeBadge(msg, isMessagePinned(msg)) : undefined}
                   onClick={() => openMediaViewer(media.url!, msg.id)}
-                  onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, index, isOwn)}
+                  onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, msg, isOwn)}
                 />
               </div>
             )}
 
             {(media.type === 'image' || media.type === 'video') && msg.text?.trim() && msg.text.trim().replace(/^\[(?:Photo|GIF|Sticker|Video)\]\s*https?:\/\/[^\s]+$/i, '').trim() && (
               <div
-                onContextMenu={(e) => handleContextMenu(e, index, isOwn)}
+                onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}
                 className="max-w-[min(440px, 75%)] min-w-[60px] w-fit mt-1"
-                style={bubbleStyle(isOwn, isMessagePinned(index) ? { outline: '1px solid color-mix(in srgb, var(--md-sys-color-primary) 35%, transparent)' } : {})}
+                style={bubbleStyle(isOwn, isMessagePinned(msg) ? { outline: '1px solid color-mix(in srgb, var(--md-sys-color-primary) 35%, transparent)' } : {})}
               >
-                <MessageText text={msg.text.replace(/^\[(?:Photo|GIF|Sticker|Video)\]\s*https?:\/\/[^\s]+/i, '').trim() || msg.text} timeNode={timeBadge(msg, isMessagePinned(index))} themeColor={themeColor} isOwn={isOwn} isPinned={isMessagePinned(index)} onLinkClick={handleLinkClick} />
+                <MessageText text={msg.text.replace(/^\[(?:Photo|GIF|Sticker|Video)\]\s*https?:\/\/[^\s]+/i, '').trim() || msg.text} timeNode={timeBadge(msg, isMessagePinned(msg))} themeColor={themeColor} isOwn={isOwn} isPinned={isMessagePinned(msg)} onLinkClick={handleLinkClick} />
               </div>
             )}
 
             {!media.type && !isEmojiOnlyMessage && (
               <div
-                onContextMenu={(e) => handleContextMenu(e, index, isOwn)}
+                onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}
                 className="max-w-[min(440px, 75%)] min-w-[60px] w-fit relative"
                 style={bubbleStyle(isOwn, {
                   borderRadius: customRadius,
                   ...(editingIndex === index ? { outline: '1px solid color-mix(in srgb, var(--md-sys-color-primary) 50%, transparent)' } : {}),
-                  ...(isMessagePinned(index) ? { outline: '1px solid color-mix(in srgb, var(--md-sys-color-primary) 35%, transparent)' } : {}),
+                  ...(isMessagePinned(msg) ? { outline: '1px solid color-mix(in srgb, var(--md-sys-color-primary) 35%, transparent)' } : {}),
                 })}
               >
                 {editingIndex === index ? (
@@ -6756,10 +6811,10 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
                         </div>
                       </div>
                     ))}
-                    <MessageText text={mainText} timeNode={timeBadge(msg, isMessagePinned(index))} themeColor={themeColor} isOwn={isOwn} onLinkClick={handleLinkClick} />
+                    <MessageText text={mainText} timeNode={timeBadge(msg, isMessagePinned(msg))} themeColor={themeColor} isOwn={isOwn} onLinkClick={handleLinkClick} />
                   </div>
                 ) : (
-                  <MessageText text={mainText} timeNode={timeBadge(msg, isMessagePinned(index))} themeColor={themeColor} isOwn={isOwn} onLinkClick={handleLinkClick} />
+                  <MessageText text={mainText} timeNode={timeBadge(msg, isMessagePinned(msg))} themeColor={themeColor} isOwn={isOwn} onLinkClick={handleLinkClick} />
                 )}
               </div>
             )}
@@ -6770,8 +6825,8 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
                 chatId={activeChatId || undefined}
                 sharedSecret={msg.mediaKey || sharedSecret}
                 bubbleRadius={customRadius}
-                onContextMenu={(e) => handleContextMenu(e, index, isOwn)}
-                timeNode={timeBadge(msg, isMessagePinned(index))}
+                onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}
+                timeNode={timeBadge(msg, isMessagePinned(msg))}
                 isOwn={isOwn}
                 onCancelUpload={msg.uploading ? () => {
                   if (activeChatId && msg.id) {
@@ -6782,7 +6837,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
             )}
 
             {media.type === 'voice' && (
-              <div onContextMenu={(e) => handleContextMenu(e, index, isOwn)}>
+              <div onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}>
                 <VoiceMessagePlayer
                   url={media.url!}
                   fileName={media.fileName}
@@ -6791,7 +6846,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
                   chatId={activeChatId || undefined}
                   messageId={msg.id}
                   msg={msg}
-                  timeNode={timeBadge(msg, isMessagePinned(index))}
+                  timeNode={timeBadge(msg, isMessagePinned(msg))}
                   isOwn={isOwn}
                   customRadius={customRadius}
                 />
@@ -6799,7 +6854,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
             )}
 
             {media.type === 'file' && (
-              <div onContextMenu={(e) => handleContextMenu(e, index, isOwn)}>
+              <div onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}>
                 <FileMessage
                   url={media.url!}
                   fileName={media.fileName}
@@ -6807,7 +6862,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
                   chatId={activeChatId || undefined}
                   messageId={msg.id}
                   size={media.size || msg.fileSize || (msg as any).size}
-                  timeNode={timeBadge(msg, isMessagePinned(index))}
+                  timeNode={timeBadge(msg, isMessagePinned(msg))}
                   isOwn={isOwn}
                   customRadius={customRadius}
                 />
@@ -6815,7 +6870,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
             )}
 
             {media.type === 'call' && (
-              <div onContextMenu={(e) => handleContextMenu(e, index, isOwn)}>
+              <div onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}>
                 <CallMessage msg={msg} chatId={activeChatId!} onCall={handleCallPress} isOwn={isOwn} customRadius={customRadius} />
               </div>
             )}
@@ -7303,14 +7358,14 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
             <MessageContextMenu
               menu={contextMenu}
               setMenu={setContextMenu}
-              onReply={() => handleReply(contextMenu.messageIndex)}
-              onEdit={() => handleEdit(contextMenu.messageIndex)}
-              onPin={() => isMessagePinned(contextMenu.messageIndex) ? requestUnpinMessage() : requestPinMessage(contextMenu.messageIndex)}
-              onDelete={() => requestDeleteMessage(contextMenu.messageIndex)}
-              isPinned={isMessagePinned(contextMenu.messageIndex)}
-              onCopy={contextMenu.type === 'text' ? () => handleCopy(contextMenu.messageIndex) : undefined}
+              onReply={() => handleReply(contextMenu.messageId || contextMenu.messageIndex)}
+              onEdit={() => handleEdit(contextMenu.messageId || contextMenu.messageIndex)}
+              onPin={() => isMessagePinned(contextMenu.messageId || contextMenu.messageIndex) ? requestUnpinMessage() : requestPinMessage(contextMenu.messageId || contextMenu.messageIndex)}
+              onDelete={() => requestDeleteMessage(contextMenu.messageId || contextMenu.messageIndex)}
+              isPinned={isMessagePinned(contextMenu.messageId || contextMenu.messageIndex)}
+              onCopy={contextMenu.type === 'text' ? () => handleCopy(contextMenu.messageId || contextMenu.messageIndex) : undefined}
               onCopyImage={contextMenu.type === 'singleImage' ? async () => {
-                const msg = messages[contextMenu.messageIndex];
+                const msg = (contextMenu.messageId ? messages.find(m => m.id === contextMenu.messageId) : null) || messages[contextMenu.messageIndex];
                 if (!msg) return;
                 const media = parseMedia(msg);
                 const mediaUrl = media.url || msg.mediaUrl;
@@ -7327,7 +7382,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
                   handleCopyImage(mediaUrl);
                 }
               } : undefined}
-              onSaveAs={() => handleSaveAs(contextMenu.messageIndex)}
+              onSaveAs={() => handleSaveAs(contextMenu.messageId || contextMenu.messageIndex)}
               onSelect={handleSelectFromMenu}
               onSelectReaction={(emoji) => triggerReactionMessage(contextMenu.messageId ?? contextMenu.messageIndex, emoji)}
               canManageMessages={activeChat?.type !== 'channel' || isChannelOwner}

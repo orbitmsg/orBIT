@@ -3235,6 +3235,17 @@ export const SettingsScreen = () => {
     }
   };
 
+  const handleCopyUsername = useCallback(async () => {
+    if (!username) return;
+    try {
+      await navigator.clipboard.writeText(`@${username}`);
+      setCopyToastOpen(true);
+      setTimeout(() => setCopyToastOpen(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy username:', err);
+    }
+  }, [username]);
+
   const handleCacheSizeLimitChange = async (value: number) => {
     setCacheSizeLimit(value);
     if (typeof window !== 'undefined' && window.orbita?.mediaSetLimit) {
@@ -3919,101 +3930,173 @@ export const SettingsScreen = () => {
 
       <Block>
         <div
-          onClick={() => setNameEditOpen(true)}
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '12px 16px',
-            cursor: 'pointer',
-            transition: 'background 150ms',
             backgroundColor: 'transparent',
             width: '100%',
             boxSizing: 'border-box',
             userSelect: 'none',
           }}
-          onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)')}
-          onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
         >
           <span style={{ fontSize: '14.5px', fontWeight: 500, color: MD3.onSurface }}>
             {t('profile.name', 'Имя')}
           </span>
-          <span style={{ fontSize: '14.5px', fontWeight: 500, color: MD3.onSurface, maxWidth: '55%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span
+            onClick={() => setNameEditOpen(true)}
+            style={{
+              fontSize: '14.5px',
+              fontWeight: 500,
+              color: MD3.onSurface,
+              maxWidth: '55%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              cursor: 'pointer',
+              borderRadius: '6px',
+              padding: '2px 6px',
+              margin: '-2px -6px',
+              transition: 'background-color 0.15s ease',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
             {nickname || 'User'}
           </span>
         </div>
 
         <div
-          onClick={handleCopyCode}
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '12px 16px',
-            cursor: 'pointer',
-            transition: 'background 150ms',
             backgroundColor: 'transparent',
             width: '100%',
             boxSizing: 'border-box',
             userSelect: 'none',
           }}
-          onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)')}
-          onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
         >
           <span style={{ fontSize: '14.5px', fontWeight: 500, color: MD3.onSurface }}>
             {t('profile.account_id', 'ID аккаунта')}
           </span>
-          <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--accent-color, #9b7dd4)', fontFamily: '"JetBrains Mono", Consolas, monospace', maxWidth: '55%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span
+            onClick={handleCopyCode}
+            style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              color: 'var(--accent-color, #9b7dd4)',
+              fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
+              maxWidth: '55%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              cursor: 'pointer',
+              borderRadius: '6px',
+              padding: '2px 6px',
+              margin: '-2px -6px',
+              transition: 'background-color 0.15s ease',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
             {myCode || userId || '------'}
           </span>
         </div>
 
         <div
-          onClick={() => setUsernameEditOpen(true)}
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '12px 16px',
-            cursor: 'pointer',
-            transition: 'background 150ms',
             backgroundColor: 'transparent',
             width: '100%',
             boxSizing: 'border-box',
             userSelect: 'none',
           }}
-          onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)')}
-          onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
         >
           <span style={{ fontSize: '14.5px', fontWeight: 500, color: MD3.onSurface }}>
             {t('profile.username_label', 'Имя пользователя')}
           </span>
-          <span style={{ fontSize: '14.5px', fontWeight: 500, color: username ? 'var(--accent-color, #9b7dd4)' : MD3.onSurfaceVar, maxWidth: '55%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {username ? `@${username}` : t('profile.username_not_set', 'Не установлено')}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', maxWidth: '55%' }}>
+            <span
+              onClick={username ? handleCopyUsername : () => setUsernameEditOpen(true)}
+              style={{
+                fontSize: '14px',
+                fontWeight: 500,
+                color: username ? 'var(--accent-color, #9b7dd4)' : MD3.onSurfaceVar,
+                fontFamily: username ? '"JetBrains Mono", Consolas, Menlo, monospace' : 'inherit',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                cursor: 'pointer',
+                borderRadius: '6px',
+                padding: '2px 6px',
+                margin: '-2px -6px',
+                transition: 'background-color 0.15s ease',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+            >
+              {username ? `@${username}` : t('profile.username_not_set', 'Не установлено')}
+            </span>
+            {username && (
+              <button
+                type="button"
+                onClick={() => setUsernameEditOpen(true)}
+                aria-label={t('common.edit', 'Изменить')}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: MD3.onSurfaceVar,
+                  cursor: 'pointer',
+                  padding: '2px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
 
         <div
-          onClick={() => setBirthdayEditOpen(true)}
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '12px 16px',
-            cursor: 'pointer',
-            transition: 'background 150ms',
             backgroundColor: 'transparent',
             width: '100%',
             boxSizing: 'border-box',
             userSelect: 'none',
           }}
-          onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)')}
-          onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
         >
           <span style={{ fontSize: '14.5px', fontWeight: 500, color: MD3.onSurface }}>
             {t('profile.birthday_label', 'День рождения')}
           </span>
-          <span style={{ fontSize: '14.5px', fontWeight: 500, color: birthday ? 'var(--accent-color, #9b7dd4)' : MD3.onSurfaceVar }}>
+          <span
+            onClick={() => setBirthdayEditOpen(true)}
+            style={{
+              fontSize: '14px',
+              fontWeight: 500,
+              color: birthday ? 'var(--text-main, #ffffff)' : MD3.onSurfaceVar,
+              cursor: 'pointer',
+              borderRadius: '6px',
+              padding: '2px 6px',
+              margin: '-2px -6px',
+              transition: 'background-color 0.15s ease',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
             {birthday ? formatBirthday(birthday, i18n.language) : t('profile.birthday_not_set', 'Не указан')}
           </span>
         </div>

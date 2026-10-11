@@ -437,7 +437,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
             style={{
               backgroundColor: 'var(--md-surface, #2a253b)',
               padding: '16px 18px',
-              borderRadius: '14px',
+              borderRadius: '16px',
               display: 'flex',
               flexDirection: 'column',
               gap: '12px',
@@ -519,7 +519,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
             style={{
               backgroundColor: 'var(--md-surface, #2a253b)',
               padding: '16px 18px',
-              borderRadius: '14px',
+              borderRadius: '16px',
               display: 'flex',
               flexDirection: 'column',
               gap: '12px',

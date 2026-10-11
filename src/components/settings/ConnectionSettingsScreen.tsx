@@ -84,7 +84,7 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
       <div
         style={{
           backgroundColor: 'var(--surface-container-soft, rgba(255,255,255,0.03))',
-          borderRadius: '10px',
+          borderRadius: '16px',
           padding: '14px 16px',
           display: 'flex',
           alignItems: 'center',
@@ -110,7 +110,7 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 8px' }}>
-          <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.45)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--md-on-surface-var, #9f96b3)' }}>
             {t('proxy.saved_proxies')}
           </span>
           <button
@@ -138,7 +138,7 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
         <div
           style={{
             backgroundColor: 'var(--surface-container-soft, rgba(255,255,255,0.03))',
-            borderRadius: '10px',
+            borderRadius: '16px',
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
@@ -388,14 +388,14 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.45)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '0 8px' }}>
+        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--md-on-surface-var, #9f96b3)', padding: '0 8px' }}>
           {t('proxy.security_and_calls')}
         </span>
 
         <div
           style={{
             backgroundColor: 'var(--surface-container-soft, rgba(255,255,255,0.03))',
-            borderRadius: '10px',
+            borderRadius: '16px',
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',

@@ -2376,23 +2376,22 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
               ) : null}
 
               <div
-                onClick={() => {
-                  navigator.clipboard.writeText(chat.id);
-                  setCopiedKey(true);
-                  setTimeout(() => setCopiedKey(false), 2000);
-                }}
                 style={{
                   padding: '12px 20px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: '12px',
-                  cursor: 'pointer',
                   borderBottom: 'none',
                 }}
               >
                 <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <span
+                    onClick={() => {
+                      navigator.clipboard.writeText(chat.id);
+                      setCopiedKey(true);
+                      setTimeout(() => setCopiedKey(false), 2000);
+                    }}
                     style={{
                       fontSize: '13.5px',
                       fontWeight: 600,
@@ -2400,7 +2399,15 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                       wordBreak: 'break-all',
                       lineHeight: 1.3,
                       fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
+                      cursor: 'pointer',
+                      width: 'fit-content',
+                      borderRadius: '6px',
+                      padding: '2px 6px',
+                      margin: '-2px -6px',
+                      transition: 'background-color 0.15s ease',
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                   >
                     {chat.id}
                   </span>
@@ -2408,7 +2415,14 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                     {t('groupSettings.group_id', 'ID')}
                   </span>
                 </div>
-                <div style={{ flexShrink: 0, color: copiedKey ? 'var(--accent-color, #9b7dd4)' : 'var(--text-dim, #8e8e93)', display: 'flex', alignItems: 'center' }}>
+                <div
+                  style={{ flexShrink: 0, color: copiedKey ? 'var(--accent-color, #9b7dd4)' : 'var(--text-dim, #8e8e93)', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                  onClick={() => {
+                    navigator.clipboard.writeText(chat.id);
+                    setCopiedKey(true);
+                    setTimeout(() => setCopiedKey(false), 2000);
+                  }}
+                >
                   {copiedKey ? <Check size={18} /> : <Copy size={18} />}
                 </div>
               </div>
@@ -2423,22 +2437,21 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                 }}
               >
                 <div
-                  onClick={() => {
-                    const link = buildGroupInviteLink(chat.inviteCode || chat.id, chat.name, chat.creatorNickname);
-                    navigator.clipboard.writeText(link);
-                    setCopiedKey(true);
-                    setTimeout(() => setCopiedKey(false), 2000);
-                  }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     gap: '12px',
-                    cursor: 'pointer',
                   }}
                 >
                   <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
                     <span
+                      onClick={() => {
+                        const link = buildGroupInviteLink(chat.inviteCode || chat.id, chat.name, chat.creatorNickname);
+                        navigator.clipboard.writeText(link);
+                        setCopiedKey(true);
+                        setTimeout(() => setCopiedKey(false), 2000);
+                      }}
                       style={{
                         fontSize: '13.5px',
                         fontWeight: 500,
@@ -2447,7 +2460,15 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                         wordBreak: 'break-all',
                         lineHeight: 1.3,
                         fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
+                        cursor: 'pointer',
+                        width: 'fit-content',
+                        borderRadius: '6px',
+                        padding: '2px 6px',
+                        margin: '-2px -6px',
+                        transition: 'background-color 0.15s ease',
                       }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                     >
                       {buildGroupInviteLink(chat.inviteCode || chat.id, chat.name, chat.creatorNickname)}
                     </span>
@@ -2467,7 +2488,15 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                       )}
                     </div>
                   </div>
-                  <div style={{ flexShrink: 0, color: copiedKey ? 'var(--accent-color, #9b7dd4)' : 'var(--text-dim, #8e8e93)', display: 'flex', alignItems: 'center' }}>
+                  <div
+                    style={{ flexShrink: 0, color: copiedKey ? 'var(--accent-color, #9b7dd4)' : 'var(--text-dim, #8e8e93)', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                    onClick={() => {
+                      const link = buildGroupInviteLink(chat.inviteCode || chat.id, chat.name, chat.creatorNickname);
+                      navigator.clipboard.writeText(link);
+                      setCopiedKey(true);
+                      setTimeout(() => setCopiedKey(false), 2000);
+                    }}
+                  >
                     {copiedKey ? <Check size={18} /> : <Copy size={18} />}
                   </div>
                 </div>

@@ -547,11 +547,11 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
       <div style={{ marginTop: 8, marginBottom: 24 }}>
         <div
           style={{
-            fontSize: 13,
+            fontSize: 12,
             fontWeight: 600,
-            color: 'var(--accent-color, #9b7dd4)',
-            padding: '0 20px 8px 20px',
-            letterSpacing: '0.01em',
+            color: MD3.onSurfaceVar,
+            padding: '0 20px',
+            marginBottom: 8,
           }}
         >
           {t('settings.chats_storage_header')}
@@ -729,11 +729,11 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
       <div style={{ marginBottom: 12 }}>
         <div
           style={{
-            fontSize: 13,
+            fontSize: 12,
             fontWeight: 600,
-            color: 'var(--accent-color, #9b7dd4)',
-            padding: '0 20px 8px 20px',
-            letterSpacing: '0.01em',
+            color: MD3.onSurfaceVar,
+            padding: '0 20px',
+            marginBottom: 8,
           }}
         >
           {t('settings.limits_section_title')}

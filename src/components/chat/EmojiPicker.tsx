@@ -48,11 +48,14 @@ const StickerGridButton: React.FC<{
   onSelect: (s: StickerItem) => void;
 }> = ({ sticker, onSelect }) => {
   const isTgs = sticker.url.endsWith('.tgs');
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <button
       type="button"
       onClick={() => onSelect(sticker)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className="relative aspect-square flex items-center justify-center p-1.5 rounded-lg hover:bg-white/10 active:scale-95 transition-all cursor-pointer bg-transparent border-0"
       aria-label={sticker.name}
     >
@@ -60,8 +63,8 @@ const StickerGridButton: React.FC<{
         <TgsPlayer
           src={sticker.url}
           loop={true}
-          autoplay={true}
-          playOnHover={false}
+          autoplay={false}
+          isPlaying={isHovered}
           className="w-full h-full select-none pointer-events-none"
         />
       ) : (

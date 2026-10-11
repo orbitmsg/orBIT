@@ -8,6 +8,7 @@ interface TgsPlayerProps {
   style?: React.CSSProperties;
   loop?: boolean;
   autoplay?: boolean;
+  isPlaying?: boolean;
   playOnHover?: boolean;
   onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
@@ -281,12 +282,15 @@ export const TgsPlayer: React.FC<TgsPlayerProps> = ({
   style,
   loop = true,
   autoplay = true,
+  isPlaying,
   playOnHover = false,
   onClick,
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<AnimationItem | null>(null);
+  const isPlayingPropRef = useRef(isPlaying);
+  isPlayingPropRef.current = isPlaying;
   const [shouldLoad, setShouldLoad] = useState<boolean>(() => !!getFromCache(src));
   const [animData, setAnimData] = useState<any>(() => getFromCache(src));
   const [isReady, setIsReady] = useState(false);
@@ -347,6 +351,14 @@ export const TgsPlayer: React.FC<TgsPlayerProps> = ({
           if (!canPlay) {
             isPlayingRef.current = false;
             anim?.pause();
+          } else if (isPlayingPropRef.current !== undefined) {
+            if (isPlayingPropRef.current) {
+              isPlayingRef.current = true;
+              anim?.goToAndPlay(0, true);
+            } else {
+              isPlayingRef.current = false;
+              anim?.goToAndStop(0, true);
+            }
           } else if (autoplay) {
             isPlayingRef.current = true;
             anim?.goToAndPlay(0, true);
@@ -371,7 +383,15 @@ export const TgsPlayer: React.FC<TgsPlayerProps> = ({
 
         const isAppVis = appVisibility.getIsVisible() && !document.hidden;
         if (isIntersectingRef.current && isAppVis) {
-          if (loop && autoplay) {
+          if (isPlayingPropRef.current !== undefined) {
+            if (isPlayingPropRef.current) {
+              isPlayingRef.current = true;
+              anim.goToAndPlay(0, true);
+            } else {
+              isPlayingRef.current = false;
+              anim.goToAndStop(0, true);
+            }
+          } else if (loop && autoplay) {
             isPlayingRef.current = true;
             anim.play();
           } else if (!hasPlayedRef.current && autoplay) {
@@ -422,7 +442,15 @@ export const TgsPlayer: React.FC<TgsPlayerProps> = ({
         setShouldLoad(true);
         const isAppVis = appVisibility.getIsVisible() && !document.hidden;
         if (isAppVis && animRef.current) {
-          if (loop && autoplay) {
+          if (isPlayingPropRef.current !== undefined) {
+            if (isPlayingPropRef.current) {
+              isPlayingRef.current = true;
+              animRef.current.goToAndPlay(0, true);
+            } else {
+              isPlayingRef.current = false;
+              animRef.current.goToAndStop(0, true);
+            }
+          } else if (loop && autoplay) {
             isPlayingRef.current = true;
             animRef.current.play();
           } else if (!hasPlayedRef.current && autoplay) {
@@ -474,6 +502,17 @@ export const TgsPlayer: React.FC<TgsPlayerProps> = ({
     return appVisibility.subscribe(handleVisibility);
   }, [loop, autoplay]);
 
+  useEffect(() => {
+    if (isPlaying === undefined || !animRef.current) return;
+    if (isPlaying) {
+      isPlayingRef.current = true;
+      animRef.current.goToAndPlay(0, true);
+    } else {
+      isPlayingRef.current = false;
+      animRef.current.goToAndStop(0, true);
+    }
+  }, [isPlaying]);
+
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (onClick) {
       onClick(e);
@@ -491,12 +530,20 @@ export const TgsPlayer: React.FC<TgsPlayerProps> = ({
     }
   };
 
+  const handleMouseLeave = () => {
+    if (playOnHover && animRef.current) {
+      isPlayingRef.current = false;
+      animRef.current.goToAndStop(0, true);
+    }
+  };
+
   return (
     <div
       ref={wrapperRef}
       className={className}
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       style={{
         width: '100%',
         height: '100%',

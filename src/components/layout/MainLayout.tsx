@@ -404,6 +404,26 @@ const formatUnreadCount = (count: number): string => {
   return count.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 };
 
+const RailFolderIcon: React.FC<{ size?: number; className?: string; style?: React.CSSProperties }> = ({
+  size = 20,
+  className,
+  style,
+}) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 512 512"
+    width={size}
+    height={size}
+    className={className}
+    style={style}
+  >
+    <path
+      fill="currentColor"
+      d="M64 480h384c35.3 0 64-28.7 64-64V160c0-35.3-28.7-64-64-64H288c-10.1 0-19.6-4.7-25.6-12.8l-19.2-25.6C231.1 41.5 212.1 32 192 32H64C28.7 32 0 60.7 0 96v320c0 35.3 28.7 64 64 64"
+    />
+  </svg>
+);
+
 const ChatListItem = React.memo(({
   chat,
   isActive,
@@ -5464,53 +5484,54 @@ export const MainLayout = () => {
             className="flex-1 w-full flex flex-col items-center overflow-y-auto no-scrollbar py-1"
             style={{ boxSizing: 'border-box' }}
           >
-            <button
-              type="button"
-              onClick={() => {
-                setActiveFolderId(null);
-                if (currentView !== 'chats') setCurrentView('chats');
-              }}
-              aria-label={t('folderManager.all_chats', 'Все чаты')}
-              className="flex flex-col items-center justify-center cursor-pointer transition-all rounded-xl"
-              style={{
-                width: '60px',
-                padding: '8px 4px',
-                margin: '2px 0',
-                border: 'none',
-                borderRadius: '12px',
-                backgroundColor: 'transparent',
-                outline: 'none',
-                boxSizing: 'border-box',
-                color: activeFolderId === null && currentView === 'chats' ? '#ffffff' : 'var(--text-dim, #8e8e93)',
-              }}
-              onMouseEnter={(e) => {
-                if (!(activeFolderId === null && currentView === 'chats')) {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.04)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!(activeFolderId === null && currentView === 'chats')) {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }
-              }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24" height="24">
-                <path fill="currentColor" d="M1.5 22C1.5 10.678 10.678 1.5 22 1.5c10.994 0 19.966 8.654 20.477 19.521A15.43 15.43 0 0 0 34 18.5c-8.56 0-15.5 6.94-15.5 15.5c0 3.129.927 6.041 2.521 8.477a20.4 20.4 0 0 1-9.602-2.915c-2.081.838-4.47 1.709-6.657 2.316c-1.657.46-3.15-.965-2.73-2.645c.566-2.27 1.438-4.722 2.304-6.823A20.4 20.4 0 0 1 1.5 22"/>
-                <path fill="currentColor" d="M34 21.5c6.904 0 12.5 5.596 12.5 12.5c0 2.3-.622 4.458-1.707 6.31c.4.871.795 1.858 1.112 2.912c.507 1.681-1.023 3.133-2.675 2.593a29 29 0 0 1-2.802-1.093A12.44 12.44 0 0 1 34 46.5c-6.904 0-12.5-5.596-12.5-12.5S27.096 21.5 34 21.5"/>
-              </svg>
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 500,
-                  marginTop: '4px',
-                  textAlign: 'center',
-                  lineHeight: 1.1,
-                  userSelect: 'none',
-                }}
-              >
-                {t('folderManager.all_chats', 'Все чаты')}
-              </span>
-            </button>
+            {(() => {
+              const isAllActive = activeFolderId === null && currentView === 'chats';
+              return (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveFolderId(null);
+                    if (currentView !== 'chats') setCurrentView('chats');
+                  }}
+                  aria-label={t('folderManager.all_chats', 'Все чаты')}
+                  className={`flex flex-col items-center justify-center cursor-pointer transition-colors rounded-xl ${
+                    isAllActive
+                      ? 'bg-[rgba(255,255,255,0.08)] text-white'
+                      : 'bg-transparent text-[var(--text-dim,#8e8e93)] hover:text-white hover:bg-[rgba(255,255,255,0.04)]'
+                  }`}
+                  style={{
+                    width: '64px',
+                    padding: '8px 2px',
+                    margin: '2px 0',
+                    border: 'none',
+                    borderRadius: '12px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24" height="24">
+                    <path fill="currentColor" d="M1.5 22C1.5 10.678 10.678 1.5 22 1.5c10.994 0 19.966 8.654 20.477 19.521A15.43 15.43 0 0 0 34 18.5c-8.56 0-15.5 6.94-15.5 15.5c0 3.129.927 6.041 2.521 8.477a20.4 20.4 0 0 1-9.602-2.915c-2.081.838-4.47 1.709-6.657 2.316c-1.657.46-3.15-.965-2.73-2.645c.566-2.27 1.438-4.722 2.304-6.823A20.4 20.4 0 0 1 1.5 22"/>
+                    <path fill="currentColor" d="M34 21.5c6.904 0 12.5 5.596 12.5 12.5c0 2.3-.622 4.458-1.707 6.31c.4.871.795 1.858 1.112 2.912c.507 1.681-1.023 3.133-2.675 2.593a29 29 0 0 1-2.802-1.093A12.44 12.44 0 0 1 34 46.5c-6.904 0-12.5-5.596-12.5-12.5S27.096 21.5 34 21.5"/>
+                  </svg>
+                  <span
+                    style={{
+                      fontSize: '10.5px',
+                      fontWeight: 500,
+                      marginTop: '4px',
+                      textAlign: 'center',
+                      lineHeight: 1.1,
+                      userSelect: 'none',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      maxWidth: '64px',
+                    }}
+                  >
+                    {t('folderManager.all_chats', 'Все чаты')}
+                  </span>
+                </button>
+              );
+            })()}
 
             {(folders || []).map((folder) => {
               const isFolderActive = activeFolderId === folder.id && currentView === 'chats';
@@ -5524,34 +5545,23 @@ export const MainLayout = () => {
                     if (currentView !== 'chats') setCurrentView('chats');
                   }}
                   aria-label={folder.name}
-                  className="flex flex-col items-center justify-center cursor-pointer transition-all rounded-xl"
+                  className={`flex flex-col items-center justify-center cursor-pointer transition-colors rounded-xl relative ${
+                    isFolderActive
+                      ? 'bg-[rgba(255,255,255,0.08)] text-white'
+                      : 'bg-transparent text-[var(--text-dim,#8e8e93)] hover:text-white hover:bg-[rgba(255,255,255,0.04)]'
+                  }`}
                   style={{
-                    width: '60px',
-                    padding: '8px 4px',
+                    width: '64px',
+                    padding: '8px 2px',
                     margin: '2px 0',
                     border: 'none',
                     borderRadius: '12px',
-                    backgroundColor: 'transparent',
                     outline: 'none',
                     boxSizing: 'border-box',
-                    color: isFolderActive ? '#ffffff' : 'var(--text-dim, #8e8e93)',
-                    position: 'relative',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isFolderActive) {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.04)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isFolderActive) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }
                   }}
                 >
                   <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">
-                      <path fill="currentColor" fillRule="evenodd" d="M13.56 4.995h5.69A2.755 2.755 0 0 1 22 7.745v7.505A2.755 2.755 0 0 1 19.25 18H7.75A2.755 2.755 0 0 1 5 15.25V5.745a2.755 2.755 0 0 1 2.75-2.75h3.81zM3.5 7v11.25c0 .69.56 1.25 1.25 1.25H19V21H4.75A2.755 2.755 0 0 1 2 18.25V7z" clipRule="evenodd"/>
-                    </svg>
+                    <RailFolderIcon size={20} />
                     {unreadCount > 0 && (
                       <span
                         style={{
@@ -5578,10 +5588,10 @@ export const MainLayout = () => {
                   </div>
                   <span
                     style={{
-                      fontSize: '11px',
+                      fontSize: '10.5px',
                       fontWeight: 500,
                       marginTop: '4px',
-                      maxWidth: '56px',
+                      maxWidth: '64px',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',

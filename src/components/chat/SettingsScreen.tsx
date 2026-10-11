@@ -36,7 +36,7 @@ import { QrCodeView } from './QrCodeView';
 import { CHAT_COLOR_PRESETS, DEFAULT_CHAT_COLOR, type ThemeId } from '../../theme';
 import { EmojiAvatarModal } from '../settings/EmojiAvatarModal';
 import { AvatarCropperModal } from '../settings/AvatarCropperModal';
-import { ChatFoldersSettings, FolderSvgIcon } from '../settings/ChatFoldersSettings';
+import { ChatFoldersSettings, SettingsFolderIcon } from '../settings/ChatFoldersSettings';
 import { formatBirthday, parseBirthday, serializeBirthday, MONTH_FULL_RU, MONTH_FULL_EN } from '../../utils/birthday';
 import { mediaManager } from '../../services/mediaManager';
 import { uiSounds } from '../../utils/uiSounds';
@@ -4268,7 +4268,7 @@ export const SettingsScreen = () => {
         />
 
         <MenuItem
-          icon={<FolderSvgIcon size={20} style={{ color: MD3.onSurface }} />}
+          icon={<SettingsFolderIcon size={20} style={{ color: MD3.onSurface }} />}
           label={t('settings.chat_folders', 'Папки с чатами')}
           onClick={() => pushTab('folders')}
           rightElement={

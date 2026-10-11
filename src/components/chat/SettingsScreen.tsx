@@ -255,11 +255,12 @@ export const Block = ({ children, style }: { children: ReactNode; style?: React.
   <div
     style={{
       backgroundColor: MD3.surface,
-      width: '100%',
+      width: 'calc(100% - 20px)',
+      margin: '0 10px',
+      borderRadius: '16px',
+      overflow: 'hidden',
       display: 'flex',
       flexDirection: 'column',
-      borderRadius: 0,
-      margin: 0,
       padding: '4px 0',
       boxSizing: 'border-box',
       ...style,
@@ -299,13 +300,12 @@ const SettingsRow = ({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '10px 14px',
-      margin: '2px 10px',
-      width: 'calc(100% - 20px)',
-      borderRadius: '12px',
+      padding: '12px 16px',
+      borderRadius: 0,
       cursor: onClick ? 'pointer' : 'default',
       transition: 'background 150ms',
       backgroundColor: 'transparent',
+      width: '100%',
       boxSizing: 'border-box',
       userSelect: 'none',
     }}
@@ -392,13 +392,12 @@ const MenuItem = ({
       display: 'flex',
       alignItems: 'center',
       gap: 16,
-      padding: '10px 14px',
-      margin: '2px 10px',
-      width: 'calc(100% - 20px)',
-      borderRadius: '12px',
+      padding: '12px 16px',
+      borderRadius: 0,
       cursor: 'pointer',
       transition: 'background 150ms',
       backgroundColor: 'transparent',
+      width: '100%',
       boxSizing: 'border-box',
       userSelect: 'none',
     }}
@@ -3976,12 +3975,14 @@ export const SettingsScreen = () => {
       <div
         style={{
           backgroundColor: MD3.surface,
-          padding: '10px 20px',
+          padding: '12px 16px',
+          margin: '0 10px',
+          borderRadius: '16px',
           fontSize: '13px',
           color: MD3.onSurfaceVar,
           lineHeight: '1.45',
           userSelect: 'none',
-          width: '100%',
+          width: 'calc(100% - 20px)',
           boxSizing: 'border-box',
           whiteSpace: 'pre-line',
         }}
@@ -3989,20 +3990,18 @@ export const SettingsScreen = () => {
         {t('profile.bio_hint_full', 'Расскажите о себе любые факты. Например: то, чем вы занимаетесь и что вас интересует.\nПример: Занимаюсь разработкой приложений, интересуюсь миром кода.')}
       </div>
 
-      <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Block>
         <div
           onClick={() => setNameEditOpen(true)}
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '11px 14px',
-            margin: '2px 10px',
-            width: 'calc(100% - 20px)',
-            borderRadius: '12px',
+            padding: '12px 16px',
             cursor: 'pointer',
             transition: 'background 150ms',
             backgroundColor: 'transparent',
+            width: '100%',
             boxSizing: 'border-box',
             userSelect: 'none',
           }}
@@ -4023,13 +4022,11 @@ export const SettingsScreen = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '11px 14px',
-            margin: '2px 10px',
-            width: 'calc(100% - 20px)',
-            borderRadius: '12px',
+            padding: '12px 16px',
             cursor: 'pointer',
             transition: 'background 150ms',
             backgroundColor: 'transparent',
+            width: '100%',
             boxSizing: 'border-box',
             userSelect: 'none',
           }}
@@ -4050,13 +4047,11 @@ export const SettingsScreen = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '11px 14px',
-            margin: '2px 10px',
-            width: 'calc(100% - 20px)',
-            borderRadius: '12px',
+            padding: '12px 16px',
             cursor: 'pointer',
             transition: 'background 150ms',
             backgroundColor: 'transparent',
+            width: '100%',
             boxSizing: 'border-box',
             userSelect: 'none',
           }}
@@ -4070,37 +4065,18 @@ export const SettingsScreen = () => {
             {username ? `@${username}` : t('profile.username_not_set', 'Не установлено')}
           </span>
         </div>
-      </div>
 
-      <div
-        style={{
-          backgroundColor: MD3.surface,
-          padding: '10px 20px',
-          fontSize: '13px',
-          color: MD3.onSurfaceVar,
-          lineHeight: '1.45',
-          userSelect: 'none',
-          width: '100%',
-          boxSizing: 'border-box',
-        }}
-      >
-        {t('profile.username_hint', 'С помощью имени пользователя другие люди смогут связаться с вами, не зная вашего ID аккаунта.')}
-      </div>
-
-      <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
         <div
           onClick={() => setBirthdayEditOpen(true)}
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '11px 14px',
-            margin: '2px 10px',
-            width: 'calc(100% - 20px)',
-            borderRadius: '12px',
+            padding: '12px 16px',
             cursor: 'pointer',
             transition: 'background 150ms',
             backgroundColor: 'transparent',
+            width: '100%',
             boxSizing: 'border-box',
             userSelect: 'none',
           }}
@@ -4114,21 +4090,19 @@ export const SettingsScreen = () => {
             {birthday ? formatBirthday(birthday, i18n.language) : t('profile.birthday_not_set', 'Не указан')}
           </span>
         </div>
-      </div>
+      </Block>
 
       <div
         style={{
-          backgroundColor: MD3.surface,
-          padding: '10px 20px',
-          fontSize: '13px',
+          padding: '0 24px',
+          fontSize: '12.5px',
           color: MD3.onSurfaceVar,
-          lineHeight: '1.45',
+          lineHeight: '1.4',
           userSelect: 'none',
-          width: '100%',
           boxSizing: 'border-box',
         }}
       >
-        {t('profile.birthday_hint', 'В настройках можно выбрать, кто будет видеть Ваш день рождения.')}
+        {t('profile.username_hint', 'С помощью имени пользователя другие люди смогут связаться с вами, не зная вашего ID аккаунта.')}
       </div>
     </motion.div>
   );

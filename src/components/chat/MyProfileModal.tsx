@@ -908,124 +908,123 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                 </p>
               </div>
 
-              {username && (
+              {(username || bio || (myCode || userId) || birthday) && (
                 <div
                   style={{
                     backgroundColor: 'var(--md-surface, #211c2e)',
                     width: 'calc(100% - 20px)',
-                    margin: '2px 10px',
-                    borderRadius: '12px',
-                    padding: '10px 14px',
+                    margin: '0 10px',
+                    borderRadius: '16px',
+                    overflow: 'hidden',
                     display: 'flex',
                     flexDirection: 'column',
-                    userSelect: 'text',
                     boxSizing: 'border-box',
                   }}
                 >
-                  <div style={{ fontSize: '14px', color: 'var(--accent-color, #9b7dd4)', lineHeight: '1.35', fontWeight: 500 }}>
-                    @{username}
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-dim, #8e8e93)', marginTop: '3px' }}>
-                    {t('profile.username_label', 'Имя пользователя')}
-                  </div>
-                </div>
-              )}
-
-              {bio && (
-                <div
-                  style={{
-                    backgroundColor: 'var(--md-surface, #211c2e)',
-                    width: 'calc(100% - 20px)',
-                    margin: '2px 10px',
-                    borderRadius: '12px',
-                    padding: '10px 14px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    userSelect: 'text',
-                    boxSizing: 'border-box',
-                  }}
-                >
-                  <div style={{ fontSize: '14px', color: 'var(--text-main, #ffffff)', lineHeight: '1.35', wordBreak: 'break-word' }}>
-                    {bio}
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-dim, #8e8e93)', marginTop: '3px' }}>
-                    {t('profile.bio', 'О себе')}
-                  </div>
-                </div>
-              )}
-
-              {(myCode || userId) && (
-                <div
-                  style={{
-                    backgroundColor: 'var(--md-surface, #211c2e)',
-                    width: 'calc(100% - 20px)',
-                    margin: '2px 10px',
-                    borderRadius: '12px',
-                    padding: '10px 14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '14px',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    boxSizing: 'border-box',
-                    transition: 'background-color 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-container-strong)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--md-surface, #211c2e)'; }}
-                  onClick={handleCopyLink}
-                >
-                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                    <span
+                  {username && (
+                    <div
                       style={{
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        color: 'var(--accent-color, #9b7dd4)',
-                        wordBreak: 'break-all',
-                        lineHeight: 1.3,
-                        fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
+                        padding: '12px 16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        userSelect: 'text',
+                        boxSizing: 'border-box',
                       }}
                     >
-                      {myCode || userId}
-                    </span>
-                    <span style={{ fontSize: '11px', color: 'var(--text-dim, #8e8e93)', marginTop: '3px' }}>
-                      {t('profile.account_id', 'ID аккаунта')}
-                    </span>
-                  </div>
+                      <div style={{ fontSize: '14px', color: 'var(--accent-color, #9b7dd4)', lineHeight: '1.35', fontWeight: 500 }}>
+                        @{username}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-dim, #8e8e93)', marginTop: '3px' }}>
+                        {t('profile.username_label', 'Имя пользователя')}
+                      </div>
+                    </div>
+                  )}
 
-                  <div
-                    style={{ flexShrink: 0, color: 'var(--text-dim)', display: 'flex', alignItems: 'center' }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveSection('qrCode');
-                    }}
-                    aria-label={t('qrModal.title', 'Получить QR-код')}
-                  >
-                    <QrCodeMiniIcon size={20} />
-                  </div>
-                </div>
-              )}
+                  {bio && (
+                    <div
+                      style={{
+                        padding: '12px 16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        userSelect: 'text',
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      <div style={{ fontSize: '14px', color: 'var(--text-main, #ffffff)', lineHeight: '1.35', wordBreak: 'break-word' }}>
+                        {bio}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-dim, #8e8e93)', marginTop: '3px' }}>
+                        {t('profile.bio', 'О себе')}
+                      </div>
+                    </div>
+                  )}
 
-              {birthday && (
-                <div
-                  style={{
-                    backgroundColor: 'var(--md-surface, #211c2e)',
-                    width: 'calc(100% - 20px)',
-                    margin: '2px 10px',
-                    borderRadius: '12px',
-                    padding: '10px 14px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    userSelect: 'text',
-                    boxSizing: 'border-box',
-                  }}
-                >
-                  <div style={{ fontSize: '14px', color: 'var(--accent-color, #9b7dd4)', lineHeight: '1.35', fontWeight: 500 }}>
-                    {formatBirthday(birthday, i18n.language)}
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-dim, #8e8e93)', marginTop: '3px' }}>
-                    {t('profile.birthday', 'День рождения')}
-                  </div>
+                  {(myCode || userId) && (
+                    <div
+                      style={{
+                        padding: '12px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '14px',
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                        boxSizing: 'border-box',
+                        transition: 'background-color 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-container-strong)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                      onClick={handleCopyLink}
+                    >
+                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                        <span
+                          style={{
+                            fontSize: '13px',
+                            fontWeight: 500,
+                            color: 'var(--accent-color, #9b7dd4)',
+                            wordBreak: 'break-all',
+                            lineHeight: 1.3,
+                            fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
+                          }}
+                        >
+                          {myCode || userId}
+                        </span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-dim, #8e8e93)', marginTop: '3px' }}>
+                          {t('profile.account_id', 'ID аккаунта')}
+                        </span>
+                      </div>
+
+                      <div
+                        style={{ flexShrink: 0, color: 'var(--text-dim)', display: 'flex', alignItems: 'center' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveSection('qrCode');
+                        }}
+                        aria-label={t('qrModal.title', 'Получить QR-код')}
+                      >
+                        <QrCodeMiniIcon size={20} />
+                      </div>
+                    </div>
+                  )}
+
+                  {birthday && (
+                    <div
+                      style={{
+                        padding: '12px 16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        userSelect: 'text',
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      <div style={{ fontSize: '14px', color: 'var(--accent-color, #9b7dd4)', lineHeight: '1.35', fontWeight: 500 }}>
+                        {formatBirthday(birthday, i18n.language)}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-dim, #8e8e93)', marginTop: '3px' }}>
+                        {t('profile.birthday', 'День рождения')}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </>

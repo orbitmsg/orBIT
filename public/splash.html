@@ -18,15 +18,58 @@
       width: 100vw;
       height: 100vh;
       display: flex;
-      justify-content: center;
-      align-items: center;
-      background: transparent;
+      flex-direction: column;
+      background: #121212;
       overflow: hidden;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", Roboto, sans-serif;
     }
+    .orbita-titlebar {
+      height: 30px;
+      width: 100%;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-shrink: 0;
+      -webkit-app-region: drag;
+      user-select: none;
+    }
+    .orbita-titlebar-controls {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      -webkit-app-region: no-drag;
+    }
+    .orbita-titlebar-btn {
+      width: 30px;
+      height: 30px;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: #9f96b3;
+      cursor: pointer;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.12s ease, color 0.12s ease;
+      -webkit-app-region: no-drag;
+      user-select: none;
+    }
+    .orbita-titlebar-btn:hover {
+      background-color: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+    .orbita-titlebar-btn:active {
+      background-color: rgba(255, 255, 255, 0.16);
+    }
+    .orbita-titlebar-btn:focus {
+      outline: none;
+    }
     .splash-card {
-      width: 100vw;
-      height: 100vh;
+      flex: 1;
+      width: 100%;
       border-radius: 0;
       background: #121212;
       border: none;
@@ -35,7 +78,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 24px 20px;
+      padding: 0 20px 30px;
       position: relative;
     }
     .logo-container {
@@ -69,6 +112,29 @@
   </style>
 </head>
 <body>
+  <div class="orbita-titlebar" id="orbita-titlebar">
+    <div class="orbita-titlebar-controls">
+      <button id="btn-minimize" class="orbita-titlebar-btn" aria-label="Minimize">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 5H10" stroke="currentColor" stroke-width="1" stroke-linecap="square" />
+        </svg>
+      </button>
+      <button id="btn-maximize" class="orbita-titlebar-btn" aria-label="Maximize">
+        <svg id="icon-maximize" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0.5" y="0.5" width="9" height="9" stroke="currentColor" stroke-width="1" />
+        </svg>
+        <svg id="icon-restore" style="display: none;" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2.5 0.5H9.5V7.5" stroke="currentColor" stroke-width="1" stroke-linecap="square" />
+          <rect x="0.5" y="2.5" width="7" height="7" stroke="currentColor" stroke-width="1" fill="#121212" />
+        </svg>
+      </button>
+      <button id="btn-close" class="orbita-titlebar-btn" aria-label="Close">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1 1L9 9M9 1L1 9" stroke="currentColor" stroke-width="1" stroke-linecap="square" />
+        </svg>
+      </button>
+    </div>
+  </div>
   <div class="splash-card">
     <div class="logo-container">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="100%" height="100%">
@@ -186,6 +252,55 @@
         el.style.fontSize = '14px';
       }
     };
+
+    (function() {
+      var btnMin = document.getElementById('btn-minimize');
+      var btnMax = document.getElementById('btn-maximize');
+      var btnClose = document.getElementById('btn-close');
+      var iconMax = document.getElementById('icon-maximize');
+      var iconRestore = document.getElementById('icon-restore');
+      var titlebar = document.getElementById('orbita-titlebar');
+
+      function updateMaxState(isMax) {
+        if (iconMax && iconRestore) {
+          iconMax.style.display = isMax ? 'none' : 'block';
+          iconRestore.style.display = isMax ? 'block' : 'none';
+        }
+      }
+
+      if (window.orbita) {
+        if (typeof window.orbita.isWindowMaximized === 'function') {
+          window.orbita.isWindowMaximized().then(updateMaxState).catch(function() {});
+        }
+        if (typeof window.orbita.onWindowStateChange === 'function') {
+          window.orbita.onWindowStateChange(updateMaxState);
+        }
+        if (btnMin) {
+          btnMin.addEventListener('click', function(e) {
+            e.currentTarget.blur();
+            if (window.orbita.minimizeWindow) window.orbita.minimizeWindow();
+          });
+        }
+        if (btnMax) {
+          btnMax.addEventListener('click', function(e) {
+            e.currentTarget.blur();
+            if (window.orbita.maximizeWindow) window.orbita.maximizeWindow();
+          });
+        }
+        if (btnClose) {
+          btnClose.addEventListener('click', function(e) {
+            e.currentTarget.blur();
+            if (window.orbita.closeWindow) window.orbita.closeWindow();
+          });
+        }
+        if (titlebar) {
+          titlebar.addEventListener('dblclick', function(e) {
+            if (e.target && e.target.closest && e.target.closest('.orbita-titlebar-controls')) return;
+            if (window.orbita.doubleClickTitleBar) window.orbita.doubleClickTitleBar();
+          });
+        }
+      }
+    })();
   </script>
 </body>
 </html>

@@ -3647,7 +3647,8 @@ function createSplashWindow() {
     minWidth: 360,
     minHeight: 600,
     title: 'Orbita Desktop',
-    frame: true,
+    frame: false,
+    titleBarStyle: 'hidden',
     transparent: false,
     resizable: true,
     maximizable: true,
@@ -3655,19 +3656,17 @@ function createSplashWindow() {
     center: true,
     alwaysOnTop: false,
     skipTaskbar: false,
-    autoHideMenuBar: true,
     backgroundColor: '#121212',
     hasShadow: true,
     show: false,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      preload: path.join(__dirname, 'preload.cjs'),
       devTools: false,
     },
     icon: icon && !icon.isEmpty() ? icon : undefined,
   });
-
-  splashWindow.setMenu(null);
 
   if (isPackaged) {
     splashWindow.loadFile(path.join(__dirname, '../dist/splash.html'));
@@ -3684,6 +3683,9 @@ function createSplashWindow() {
   splashWindow.on('closed', () => {
     splashWindow = null;
   });
+
+  splashWindow.on('maximize', () => splashWindow?.webContents.send('window:state-changed', true));
+  splashWindow.on('unmaximize', () => splashWindow?.webContents.send('window:state-changed', false));
 
   splashWindow.once('ready-to-show', () => {
     if (splashWindow && !splashWindow.isDestroyed()) {

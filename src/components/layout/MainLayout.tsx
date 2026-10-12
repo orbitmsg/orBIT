@@ -5528,7 +5528,7 @@ export const MainLayout = () => {
 
           <div
             className="flex-1 w-full flex flex-col items-center overflow-y-auto no-scrollbar"
-            style={{ boxSizing: 'border-box', paddingTop: '7px', paddingBottom: '7px' }}
+            style={{ boxSizing: 'border-box', paddingTop: '0px', paddingBottom: '7px' }}
           >
             {(() => {
               const isAllActive = activeFolderId === null && currentView === 'chats';

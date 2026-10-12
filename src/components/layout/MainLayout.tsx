@@ -5206,7 +5206,25 @@ export const MainLayout = () => {
     };
   }, [searchQuery]);
 
-  const isLightTheme = document.documentElement.getAttribute('data-theme-light') === 'true';
+  const currentTheme = useChatStore((s) => s.currentTheme);
+  const [isLightTheme, setIsLightTheme] = useState<boolean>(() => {
+    return typeof document !== 'undefined'
+      ? document.documentElement.getAttribute('data-theme-light') === 'true'
+      : false;
+  });
+
+  useEffect(() => {
+    const updateThemeMode = () => {
+      setIsLightTheme(document.documentElement.getAttribute('data-theme-light') === 'true');
+    };
+    updateThemeMode();
+    const observer = new MutationObserver(updateThemeMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme-light', 'data-theme'],
+    });
+    return () => observer.disconnect();
+  }, [currentTheme]);
 
   const handleOpenSettings = () => {
     useChatStore.getState().openSettings('main');
@@ -5477,7 +5495,7 @@ export const MainLayout = () => {
         <div
           className="flex flex-col items-center shrink-0 select-none"
           style={{
-            width: '72px',
+            width: '78px',
             backgroundColor: 'var(--chat-list-bg, #1e1e1e)',
             borderRight: 'none',
           }}
@@ -5522,19 +5540,36 @@ export const MainLayout = () => {
                     if (currentView !== 'chats') setCurrentView('chats');
                   }}
                   aria-label={t('folderManager.all_chats', 'Все чаты')}
-                  className={`flex flex-col items-center justify-center cursor-pointer transition-colors ${
-                    isAllActive
-                      ? 'text-white'
-                      : 'text-[var(--text-dim,#8e8e93)] hover:text-white'
-                  }`}
+                  className="flex flex-col items-center justify-center cursor-pointer select-none"
                   style={{
-                    width: '64px',
-                    padding: '8px 2px',
-                    margin: '2px 0',
+                    width: '66px',
+                    padding: '7px 4px',
+                    margin: '3px 0',
+                    borderRadius: '12px',
                     border: 'none',
-                    background: 'transparent',
                     outline: 'none',
                     boxSizing: 'border-box',
+                    backgroundColor: isAllActive
+                      ? (isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)')
+                      : 'transparent',
+                    color: isAllActive
+                      ? (isLightTheme ? '#000000' : '#ffffff')
+                      : 'var(--text-dim, #8e8e93)',
+                    transition: 'background-color 0.12s ease, color 0.12s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isAllActive) {
+                      e.currentTarget.style.backgroundColor = isLightTheme
+                        ? 'rgba(0, 0, 0, 0.04)'
+                        : 'rgba(255, 255, 255, 0.04)';
+                      e.currentTarget.style.color = isLightTheme ? '#000000' : '#ffffff';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isAllActive) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = 'var(--text-dim, #8e8e93)';
+                    }
                   }}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24" height="24">
@@ -5552,7 +5587,7 @@ export const MainLayout = () => {
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
-                      maxWidth: '64px',
+                      maxWidth: '62px',
                     }}
                   >
                     {t('folderManager.all_chats', 'Все чаты')}
@@ -5573,19 +5608,36 @@ export const MainLayout = () => {
                     if (currentView !== 'chats') setCurrentView('chats');
                   }}
                   aria-label={folder.name}
-                  className={`flex flex-col items-center justify-center cursor-pointer transition-colors relative ${
-                    isFolderActive
-                      ? 'text-white'
-                      : 'text-[var(--text-dim,#8e8e93)] hover:text-white'
-                  }`}
+                  className="flex flex-col items-center justify-center cursor-pointer select-none relative"
                   style={{
-                    width: '64px',
-                    padding: '8px 2px',
-                    margin: '2px 0',
+                    width: '66px',
+                    padding: '7px 4px',
+                    margin: '3px 0',
+                    borderRadius: '12px',
                     border: 'none',
-                    background: 'transparent',
                     outline: 'none',
                     boxSizing: 'border-box',
+                    backgroundColor: isFolderActive
+                      ? (isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)')
+                      : 'transparent',
+                    color: isFolderActive
+                      ? (isLightTheme ? '#000000' : '#ffffff')
+                      : 'var(--text-dim, #8e8e93)',
+                    transition: 'background-color 0.12s ease, color 0.12s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isFolderActive) {
+                      e.currentTarget.style.backgroundColor = isLightTheme
+                        ? 'rgba(0, 0, 0, 0.04)'
+                        : 'rgba(255, 255, 255, 0.04)';
+                      e.currentTarget.style.color = isLightTheme ? '#000000' : '#ffffff';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isFolderActive) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = 'var(--text-dim, #8e8e93)';
+                    }
                   }}
                 >
                   <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -5619,7 +5671,7 @@ export const MainLayout = () => {
                       fontSize: '10.5px',
                       fontWeight: 500,
                       marginTop: '4px',
-                      maxWidth: '64px',
+                      maxWidth: '62px',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',

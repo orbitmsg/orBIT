@@ -38,7 +38,6 @@ import { callSoundService } from '../../services/callSoundService';
 import { ResizableSidebar } from './ResizableSidebar';
 import { supabaseService, type OfflineMessageRecord, type UserDirectoryRecord } from '../../services/supabaseService';
 import { mediaManager } from '../../services/mediaManager';
-import { securityService } from '../../services/securityService';
 import { gatewayManager } from '../../services/gatewayManager';
 import { Avatar } from '../common/Avatar';
 import { NotesAvatar } from '../common/NotesAvatar';
@@ -5703,7 +5702,7 @@ export const MainLayout = () => {
                             color: 'var(--text-main, #e0e0e0)',
                             fontSize: '13px',
                             paddingLeft: '14px',
-                            paddingRight: searchQuery ? '58px' : '36px',
+                            paddingRight: searchQuery ? '32px' : '14px',
                             boxSizing: 'border-box',
                           }}
                         />
@@ -5713,7 +5712,7 @@ export const MainLayout = () => {
                             aria-label={t('common.close', 'Закрыть')}
                             style={{
                               position: 'absolute',
-                              right: '32px',
+                              right: '8px',
                               top: '50%',
                               transform: 'translateY(-50%)',
                               background: 'none',
@@ -5730,40 +5729,6 @@ export const MainLayout = () => {
                             <X size={18} />
                           </button>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (securityService.isPasswordSet()) {
-                              window.dispatchEvent(new CustomEvent('orbita:lock-app'));
-                            } else {
-                              useChatStore.getState().openSettings('password');
-                            }
-                          }}
-                          aria-label={t('common.lock_app', 'Заблокировать приложение')}
-                          style={{
-                            position: 'absolute',
-                            right: '8px',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: 'var(--text-dim, #9ca3af)',
-                            padding: '2px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            zIndex: 1,
-                          }}
-                          className="hover:text-[var(--text-main)] transition-colors active:scale-95"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
-                            <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
-                              <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-                              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                            </g>
-                          </svg>
-                        </button>
                       </div>
                     </>
                   )}

@@ -574,14 +574,15 @@ const ProfileFileListItem = memo(({ msg, sharedSecret, i18nLang }: { msg: Messag
 
   return (
     <div
-      className="group flex items-center gap-3 w-full transition-colors hover:bg-[var(--surface-container-strong,rgba(255,255,255,0.06))]"
+      className="group flex items-center gap-3 transition-colors hover:bg-[var(--surface-container-strong,rgba(255,255,255,0.06))]"
       style={{
         minHeight: '52px',
         contain: 'layout paint',
-        padding: '6px 16px',
-        borderRadius: 0,
+        padding: '6px 10px',
+        borderRadius: '12px',
+        margin: '2px 8px',
         cursor: 'pointer',
-        width: '100%',
+        width: 'calc(100% - 16px)',
         boxSizing: 'border-box',
       }}
       onClick={handleOpenFile}
@@ -675,14 +676,15 @@ const ProfileAudioListItem = memo(({ msg, sharedSecret, i18nLang }: { msg: Messa
 
   return (
     <div
-      className="group flex items-center gap-3 w-full transition-colors hover:bg-[var(--surface-container-strong,rgba(255,255,255,0.06))]"
+      className="group flex items-center gap-3 transition-colors hover:bg-[var(--surface-container-strong,rgba(255,255,255,0.06))]"
       style={{
         minHeight: '52px',
         contain: 'layout paint',
-        padding: '6px 16px',
-        borderRadius: 0,
+        padding: '6px 10px',
+        borderRadius: '12px',
+        margin: '2px 8px',
         cursor: 'pointer',
-        width: '100%',
+        width: 'calc(100% - 16px)',
         boxSizing: 'border-box',
       }}
       onClick={handlePlayClick}
@@ -784,14 +786,15 @@ const ProfileVoiceListItem = memo(({ msg, sharedSecret, i18nLang }: { msg: Messa
 
   return (
     <div
-      className="group flex items-center gap-3 w-full transition-colors hover:bg-[var(--surface-container-strong,rgba(255,255,255,0.06))]"
+      className="group flex items-center gap-3 transition-colors hover:bg-[var(--surface-container-strong,rgba(255,255,255,0.06))]"
       style={{
         minHeight: '52px',
         contain: 'layout paint',
-        padding: '6px 16px',
-        borderRadius: 0,
+        padding: '6px 10px',
+        borderRadius: '12px',
+        margin: '2px 8px',
         cursor: 'pointer',
-        width: '100%',
+        width: 'calc(100% - 16px)',
         boxSizing: 'border-box',
       }}
     >
@@ -852,12 +855,13 @@ const ProfileLinkListItem = memo(({
   return (
     <div
       onClick={handleLinkClick}
-      className="group flex items-start gap-3 w-full cursor-pointer transition-colors hover:bg-[var(--surface-container-strong,rgba(255,255,255,0.06))] select-none"
+      className="group flex items-start gap-3 cursor-pointer transition-colors hover:bg-[var(--surface-container-strong,rgba(255,255,255,0.06))] select-none"
       style={{
         contain: 'layout paint',
-        padding: '8px 16px',
-        borderRadius: 0,
-        width: '100%',
+        padding: '8px 10px',
+        borderRadius: '12px',
+        margin: '2px 8px',
+        width: 'calc(100% - 16px)',
         boxSizing: 'border-box',
       }}
     >
@@ -2909,10 +2913,17 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                 <div
                   key={memberCode || `${member.nickname}_${index}`}
                   onClick={handleMemberClick}
-                  className={`w-full flex items-center justify-between px-5 py-2.5 transition-colors ${
+                  className={`flex items-center justify-between transition-colors ${
                     isSelf ? 'cursor-default' : 'cursor-pointer hover:bg-[var(--surface-container-strong,rgba(255,255,255,0.06))]'
                   }`}
-                  style={{ gap: '12px', borderRadius: 0, boxSizing: 'border-box' }}
+                  style={{
+                    gap: '12px',
+                    borderRadius: '12px',
+                    margin: '2px 8px',
+                    width: 'calc(100% - 16px)',
+                    padding: '8px 12px',
+                    boxSizing: 'border-box',
+                  }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
                     <Avatar

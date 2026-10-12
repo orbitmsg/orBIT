@@ -699,11 +699,12 @@ const ArchiveListItem = React.memo(({
       onClick={onOpenArchive}
       className="group relative cursor-pointer"
       style={{
-        borderRadius: 0,
-        width: '100%',
+        borderRadius: '12px',
+        margin: '2px 8px',
+        width: 'calc(100% - 16px)',
         backgroundColor: 'transparent',
         border: 'none',
-        padding: '8px 11px 8px 14px',
+        padding: '8px 10px',
         minHeight: 48,
         boxSizing: 'border-box',
         transition: 'background-color 0.12s ease',

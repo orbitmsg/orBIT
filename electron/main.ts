@@ -1767,7 +1767,7 @@ async function cloudinaryUploadWithProgress(event: Electron.IpcMainInvokeEvent, 
 
       fields = {
         public_id: publicId,
-        timestamp,
+        timestamp: signed.timestamp,
         api_key: signed.apiKey,
         signature: signed.signature,
       };

@@ -7090,10 +7090,10 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
           aria-label={t('chatWindow.scroll_down', 'Прокрутить вниз')}
           style={{
             position: 'absolute',
-            right: '7px',
+            right: isMobileView ? '12px' : '20px',
             bottom: '16px',
-            width: '46px',
-            height: '46px',
+            width: '42px',
+            height: '42px',
             borderRadius: '50%',
             backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
             color: 'var(--text-main)',
@@ -7136,7 +7136,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               {unreadCount > 99 ? '99+' : unreadCount}
             </div>
           )}
-          <ChevronDown size={24} style={{ color: 'var(--text-main)' }} />
+          <ChevronDown size={22} style={{ color: 'var(--text-main)' }} />
         </button>
       </div>
 

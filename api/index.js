@@ -1004,13 +1004,24 @@ module.exports = async function handler(req, res) {
       if (error) return sendError(res, error.message, 500);
       if (!data) return sendJson(res, { user: null });
 
+      let bannerUrl = data.banner_url || null;
+      let bio = data.bio || null;
+      if (bio && typeof bio === 'string') {
+        const bannerMatch = bio.match(/<!--banner:(.*?)-->/);
+        if (bannerMatch) {
+          if (!bannerUrl) bannerUrl = bannerMatch[1];
+          bio = bio.replace(/<!--banner:.*?-->/g, '').trim() || null;
+        }
+      }
+
       return sendJson(res, {
         user: {
           user_code: data.sender_code || data.chat_id,
           nickname: data.nickname || 'User',
           avatar_url: data.avatar_url,
+          banner_url: bannerUrl,
           username: data.username,
-          bio: data.bio,
+          bio: bio,
           birthday: data.birthday,
           updated_at: data.updated_at,
         }
@@ -1072,13 +1083,24 @@ module.exports = async function handler(req, res) {
       if (error) return sendError(res, error.message, 500);
       if (!data) return sendJson(res, { user: null });
 
+      let bannerUrl = data.banner_url || null;
+      let bio = data.bio || null;
+      if (bio && typeof bio === 'string') {
+        const bannerMatch = bio.match(/<!--banner:(.*?)-->/);
+        if (bannerMatch) {
+          if (!bannerUrl) bannerUrl = bannerMatch[1];
+          bio = bio.replace(/<!--banner:.*?-->/g, '').trim() || null;
+        }
+      }
+
       return sendJson(res, {
         user: {
           user_code: data.sender_code || data.chat_id,
           nickname: data.nickname || 'User',
           avatar_url: data.avatar_url,
+          banner_url: bannerUrl,
           username: data.username,
-          bio: data.bio,
+          bio: bio,
           birthday: data.birthday,
           updated_at: data.updated_at,
         }

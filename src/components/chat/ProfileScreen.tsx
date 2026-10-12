@@ -1055,15 +1055,19 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
   const myNickname = useAuthStore((state) => state.nickname) || 'YOU';
   const myUserId = useAuthStore((state) => state.userId);
   const myBannerUrl = useAuthStore((state) => state.bannerUrl);
-  const effectiveBannerUrl = chatId === 'notes' ? myBannerUrl : chat?.bannerUrl;
+  const [loadedBannerUrl, setLoadedBannerUrl] = useState<string | null>(null);
+  const effectiveBannerUrl = chatId === 'notes' ? myBannerUrl : (chat?.bannerUrl || loadedBannerUrl);
   const voiceCallsEnabled = useChatStore((state) => state.voiceCallsEnabled);
 
   useEffect(() => {
     if (!chatId || chatId === 'notes' || !chat) return;
     const peer = chat.peerCode || chat.originalPeerCode || (chat.name && chat.name.length === 36 ? chat.name : null);
     const updateFriendBanner = (url?: string | null) => {
-      if (url && url !== chat.bannerUrl) {
-        useChatStore.getState().updateChat(chatId, { bannerUrl: url });
+      if (url) {
+        setLoadedBannerUrl(url);
+        if (url !== chat.bannerUrl) {
+          useChatStore.getState().updateChat(chatId, { bannerUrl: url });
+        }
       }
     };
     if (peer) {
@@ -1278,23 +1282,23 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
 
         if (update && !isMyOwnUpdate) {
           if (update.nickname) updateNick = update.nickname;
-          if (update.avatar_url !== undefined) updateAvatar = update.avatar_url || undefined;
-          if (update.banner_url !== undefined) updateBanner = update.banner_url || undefined;
+          if (update.avatar_url) updateAvatar = update.avatar_url;
+          if (update.banner_url) updateBanner = update.banner_url;
         }
 
         if (targetCode) {
           const pub = await supabaseService.lookupPublicProfile(targetCode);
           if (pub?.nickname && !updateNick) updateNick = pub.nickname;
-          if (pub?.avatar_url !== undefined && !updateAvatar) updateAvatar = pub.avatar_url || undefined;
-          if (pub?.banner_url !== undefined && !updateBanner) updateBanner = pub.banner_url || undefined;
+          if (pub?.avatar_url && !updateAvatar) updateAvatar = pub.avatar_url;
+          if (pub?.banner_url && !updateBanner) updateBanner = pub.banner_url;
           if (pub?.numeric_id) pubNumericId = pub.numeric_id;
         }
 
         if (chat.username && !updateBanner) {
           const pubByUname = await supabaseService.lookupProfileByUsername(chat.username);
           if (pubByUname?.nickname && !updateNick) updateNick = pubByUname.nickname;
-          if (pubByUname?.avatar_url !== undefined && !updateAvatar) updateAvatar = pubByUname.avatar_url || undefined;
-          if (pubByUname?.banner_url !== undefined && !updateBanner) updateBanner = pubByUname.banner_url || undefined;
+          if (pubByUname?.avatar_url && !updateAvatar) updateAvatar = pubByUname.avatar_url;
+          if (pubByUname?.banner_url && !updateBanner) updateBanner = pubByUname.banner_url;
           if (pubByUname?.numeric_id && !pubNumericId) pubNumericId = pubByUname.numeric_id;
         }
 
@@ -1316,11 +1320,14 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         if (updateNick && updateNick !== chat.name) {
           chatUpdates.name = updateNick;
         }
-        if (updateAvatar !== undefined && updateAvatar !== chat.avatarUrl) {
+        if (updateAvatar && updateAvatar !== chat.avatarUrl) {
           chatUpdates.avatarUrl = updateAvatar;
         }
-        if (updateBanner !== undefined && updateBanner !== chat.bannerUrl) {
-          chatUpdates.bannerUrl = updateBanner;
+        if (updateBanner) {
+          setLoadedBannerUrl(updateBanner);
+          if (updateBanner !== chat.bannerUrl) {
+            chatUpdates.bannerUrl = updateBanner;
+          }
         }
         if (Object.keys(chatUpdates).length > 0) {
           updateChat(chat.id, chatUpdates);

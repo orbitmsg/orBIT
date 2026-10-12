@@ -965,7 +965,20 @@ class SupabaseService {
         const res = await fetch(`${relay.url}/relay/resolve-username?username=${encodeURIComponent(cleanUsername)}`);
         if (res.ok) {
           const data = await res.json();
-          if (data?.user) return data.user;
+          if (data?.user) {
+            const parsed = this.parseProfileRow(data.user);
+            return {
+              user_code: data.user.user_code || data.user.sender_code || data.user.chat_id,
+              numeric_id: data.user.numeric_id || null,
+              nickname: data.user.nickname,
+              avatar_url: data.user.avatar_url,
+              banner_url: parsed?.banner_url || data.user.banner_url || null,
+              username: data.user.username,
+              bio: parsed?.bio || data.user.bio,
+              birthday: data.user.birthday,
+              updated_at: data.user.updated_at,
+            };
+          }
         }
       } catch {}
     }

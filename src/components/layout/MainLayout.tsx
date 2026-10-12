@@ -2655,8 +2655,8 @@ export const MainLayout = () => {
 
         if (update && !isMyOwnUpdate) {
           if (update.nickname && update.nickname !== chat.name) updates.name = update.nickname;
-          if (update.avatar_url !== undefined && update.avatar_url !== chat.avatarUrl) updates.avatarUrl = update.avatar_url || undefined;
-          if (update.banner_url !== undefined && update.banner_url !== chat.bannerUrl) updates.bannerUrl = update.banner_url || undefined;
+          if (update.avatar_url && update.avatar_url !== chat.avatarUrl) updates.avatarUrl = update.avatar_url;
+          if (update.banner_url && update.banner_url !== chat.bannerUrl) updates.bannerUrl = update.banner_url;
           if (update.sender_code && update.sender_code !== myCode && !chat.peerCode) {
             updates.peerCode = update.sender_code;
           }
@@ -2666,8 +2666,8 @@ export const MainLayout = () => {
           const pub = await supabaseService.lookupPublicProfile(targetPeerCode);
           if (pub) {
             if (pub.nickname && pub.nickname !== chat.name && !updates.name) updates.name = pub.nickname;
-            if (pub.avatar_url !== undefined && pub.avatar_url !== chat.avatarUrl && !updates.avatarUrl) updates.avatarUrl = pub.avatar_url || undefined;
-            if (pub.banner_url !== undefined && pub.banner_url !== chat.bannerUrl && !updates.bannerUrl) updates.bannerUrl = pub.banner_url || undefined;
+            if (pub.avatar_url && pub.avatar_url !== chat.avatarUrl && !updates.avatarUrl) updates.avatarUrl = pub.avatar_url;
+            if (pub.banner_url && pub.banner_url !== chat.bannerUrl && !updates.bannerUrl) updates.bannerUrl = pub.banner_url;
           }
         }
 
@@ -2675,8 +2675,8 @@ export const MainLayout = () => {
           const pubByUname = await supabaseService.lookupProfileByUsername(chat.username);
           if (pubByUname) {
             if (pubByUname.nickname && pubByUname.nickname !== chat.name && !updates.name) updates.name = pubByUname.nickname;
-            if (pubByUname.avatar_url !== undefined && pubByUname.avatar_url !== chat.avatarUrl && !updates.avatarUrl) updates.avatarUrl = pubByUname.avatar_url || undefined;
-            if (pubByUname.banner_url !== undefined && pubByUname.banner_url !== chat.bannerUrl && !updates.bannerUrl) updates.bannerUrl = pubByUname.banner_url || undefined;
+            if (pubByUname.avatar_url && pubByUname.avatar_url !== chat.avatarUrl && !updates.avatarUrl) updates.avatarUrl = pubByUname.avatar_url;
+            if (pubByUname.banner_url && pubByUname.banner_url !== chat.bannerUrl && !updates.bannerUrl) updates.bannerUrl = pubByUname.banner_url;
           }
         }
         if (Object.keys(updates).length > 0) {

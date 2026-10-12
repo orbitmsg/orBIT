@@ -897,13 +897,24 @@ export default {
         if (error) return errorResponse(error.message, 500);
         if (!data) return jsonResponse({ user: null });
 
+        let bannerUrl = data.banner_url || null;
+        let bio = data.bio || null;
+        if (bio && typeof bio === 'string') {
+          const bannerMatch = bio.match(/<!--banner:(.*?)-->/);
+          if (bannerMatch) {
+            if (!bannerUrl) bannerUrl = bannerMatch[1];
+            bio = bio.replace(/<!--banner:.*?-->/g, '').trim() || null;
+          }
+        }
+
         return jsonResponse({
           user: {
             user_code: data.sender_code || data.chat_id,
             nickname: data.nickname || 'User',
             avatar_url: data.avatar_url,
+            banner_url: bannerUrl,
             username: data.username,
-            bio: data.bio,
+            bio: bio,
             birthday: data.birthday,
             updated_at: data.updated_at,
           }

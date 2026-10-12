@@ -1021,8 +1021,14 @@ export const useChatStore = create<ChatState>()(
           const currentDeleted = (state.deletedChatIds || []).filter(id => id !== chatEntry.id);
           const exists = state.chats.find(c => c.id === chatEntry.id);
           if (exists) {
+            const merged: Chat = { ...exists };
+            for (const k of Object.keys(chatEntry) as (keyof Chat)[]) {
+              if (chatEntry[k] !== undefined) {
+                (merged as any)[k] = chatEntry[k];
+              }
+            }
             return {
-              chats: state.chats.map(c => c.id === chatEntry.id ? { ...c, ...chatEntry } : c),
+              chats: state.chats.map(c => c.id === chatEntry.id ? merged : c),
               deletedChatIds: currentDeleted,
             };
           }
@@ -1080,6 +1086,11 @@ export const useChatStore = create<ChatState>()(
           } catch {}
 
           const cleanUpdates = { ...updates };
+          for (const key of Object.keys(cleanUpdates)) {
+            if ((cleanUpdates as any)[key] === undefined) {
+              delete (cleanUpdates as any)[key];
+            }
+          }
           const target = state.chats[targetIndex];
 
           if (target.type === 'private' && chatId !== 'notes') {

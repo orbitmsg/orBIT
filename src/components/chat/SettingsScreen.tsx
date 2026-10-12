@@ -3298,6 +3298,14 @@ export const SettingsScreen = () => {
       setBannerUrl(dataUrl);
       let finalUrl = dataUrl;
       const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+      try {
+        const binaryStr = atob(base64);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+        const bannerBlob = new Blob([bytes], { type: 'image/jpeg' });
+        mediaManager.setDirectDecryptedMedia(dataUrl, '', bannerBlob, 'image/jpeg');
+      } catch {}
+
       if (typeof window !== 'undefined' && window.orbita?.writeTempFile && window.orbita?.uploadToCloudinary) {
         const tempPath = await window.orbita.writeTempFile(base64, 'jpg');
         if (tempPath) {
@@ -3305,6 +3313,13 @@ export const SettingsScreen = () => {
           const result = await window.orbita.uploadToCloudinary(tempPath, publicId);
           if (result.success && result.secure_url) {
             finalUrl = result.secure_url;
+            try {
+              const binaryStr = atob(base64);
+              const bytes = new Uint8Array(binaryStr.length);
+              for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+              const bannerBlob = new Blob([bytes], { type: 'image/jpeg' });
+              mediaManager.setDirectDecryptedMedia(finalUrl, '', bannerBlob, 'image/jpeg');
+            } catch {}
             setBannerUrl(finalUrl);
           }
           await window.orbita.deleteTempFile(tempPath);

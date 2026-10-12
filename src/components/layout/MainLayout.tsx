@@ -865,9 +865,10 @@ export const MainLayout = () => {
   const [isNetworkOnline, setIsNetworkOnline] = useState<boolean>(() => {
     return typeof navigator !== 'undefined' ? navigator.onLine : true;
   });
-  const { nickname, avatarUrl, step, username, bio, birthday } = useAuthStore(useShallow(state => ({
+  const { nickname, avatarUrl, bannerUrl, step, username, bio, birthday } = useAuthStore(useShallow(state => ({
     nickname: state.nickname,
     avatarUrl: state.avatarUrl,
+    bannerUrl: state.bannerUrl,
     step: state.step,
     username: state.username,
     bio: state.bio,
@@ -1268,6 +1269,7 @@ export const MainLayout = () => {
         isChatInitiator: false,
         ratchetState: ratchet.getState(),
         avatarUrl: data.avatarUrl ?? undefined,
+        bannerUrl: data.bannerUrl ?? undefined,
         peerCode: data.senderCode,
         originalPeerCode: data.senderCode,
         numericId: senderNumericId,
@@ -1287,6 +1289,7 @@ export const MainLayout = () => {
           publicKey: myKeys?.publicKey,
           chatId,
           avatarUrl,
+          bannerUrl,
           senderCode: myCode,
           numericId: myCurrentNumericId,
           username: myCurrentUsername,
@@ -1302,6 +1305,7 @@ export const MainLayout = () => {
             publicKey: myKeys?.publicKey,
             chatId,
             avatarUrl,
+            bannerUrl,
             senderCode: myCode,
             numericId: myCurrentNumericId,
             username: myCurrentUsername,
@@ -1353,6 +1357,7 @@ export const MainLayout = () => {
       const updates: Partial<Chat> = {
         name: data.nickname || existing.name,
         avatarUrl: data.avatarUrl ?? existing.avatarUrl,
+        bannerUrl: data.bannerUrl ?? existing.bannerUrl,
         peerCode: peerCode,
         originalPeerCode: peerCode || existing.originalPeerCode || existing.peerCode,
         numericId: data.numericId || data.numeric_id || existing.numericId || (peerCode ? getInitialNumericId(peerCode) : undefined),
@@ -1504,6 +1509,7 @@ export const MainLayout = () => {
       if (!chat) {
         let senderNick = data.sender || 'User';
         let senderAvatar = data.avatarUrl;
+        let senderBanner = data.bannerUrl;
         let senderUsername: string | undefined = undefined;
         let senderBio: string | undefined = undefined;
         let senderBirthday: string | undefined = undefined;
@@ -1516,6 +1522,7 @@ export const MainLayout = () => {
             if (pub) {
               if (pub.nickname) senderNick = pub.nickname;
               if (pub.avatar_url) senderAvatar = pub.avatar_url;
+              if (pub.banner_url) senderBanner = pub.banner_url;
               if (pub.username) senderUsername = pub.username;
               if (pub.bio) senderBio = pub.bio;
               if (pub.birthday) senderBirthday = pub.birthday;
@@ -1532,6 +1539,7 @@ export const MainLayout = () => {
           peerCode: data.senderCode || data.senderId,
           originalPeerCode: data.senderCode || data.senderId,
           avatarUrl: senderAvatar,
+          bannerUrl: senderBanner,
           username: senderUsername,
           description: senderBio,
           birthday: senderBirthday,
@@ -1646,6 +1654,7 @@ export const MainLayout = () => {
       isChatInitiator: false,
       ratchetState: ratchet.getState(),
       avatarUrl: req.avatarUrl ?? undefined,
+      bannerUrl: req.bannerUrl ?? undefined,
       peerCode: req.senderCode,
       originalPeerCode: req.senderCode,
       username: req.username || undefined,
@@ -1960,6 +1969,7 @@ export const MainLayout = () => {
           if (!chat) {
             let senderNick = record.sender_id;
             let senderAvatar: string | undefined = undefined;
+            let senderBanner: string | undefined = undefined;
             let senderUsername: string | undefined = undefined;
             let senderBio: string | undefined = undefined;
             let senderBirthday: string | undefined = undefined;
@@ -1970,6 +1980,7 @@ export const MainLayout = () => {
                 const parsed = JSON.parse(record.ciphertext);
                 if (parsed.sender) senderNick = parsed.sender;
                 if (parsed.avatarUrl) senderAvatar = parsed.avatarUrl;
+                if (parsed.bannerUrl) senderBanner = parsed.bannerUrl;
               } catch {}
             }
 
@@ -1982,6 +1993,7 @@ export const MainLayout = () => {
               if (pub) {
                 if (pub.nickname) senderNick = pub.nickname;
                 if (pub.avatar_url) senderAvatar = pub.avatar_url;
+                if (pub.banner_url) senderBanner = pub.banner_url;
                 if (pub.username) senderUsername = pub.username;
                 if (pub.bio) senderBio = pub.bio;
                 if (pub.birthday) senderBirthday = pub.birthday;
@@ -1996,6 +2008,7 @@ export const MainLayout = () => {
               peerCode: record.sender_id,
               originalPeerCode: record.sender_id,
               avatarUrl: senderAvatar,
+              bannerUrl: senderBanner,
               username: senderUsername,
               description: senderBio,
               birthday: senderBirthday,
@@ -2559,6 +2572,9 @@ export const MainLayout = () => {
             if (profile.avatar_url && profile.avatar_url !== 'undefined' && profile.avatar_url !== 'null' && profile.avatar_url.trim()) {
               recoveredAvatar = profile.avatar_url.trim();
             }
+            if (profile.banner_url && profile.banner_url !== 'undefined' && profile.banner_url !== 'null' && profile.banner_url.trim()) {
+              updates.bannerUrl = profile.banner_url.trim();
+            }
           }
         } catch {}
       }
@@ -2639,6 +2655,7 @@ export const MainLayout = () => {
         if (update && !isMyOwnUpdate) {
           if (update.nickname && update.nickname !== chat.name) updates.name = update.nickname;
           if (update.avatar_url !== undefined && update.avatar_url !== chat.avatarUrl) updates.avatarUrl = update.avatar_url || undefined;
+          if (update.banner_url !== undefined && update.banner_url !== chat.bannerUrl) updates.bannerUrl = update.banner_url || undefined;
           if (update.sender_code && update.sender_code !== myCode && !chat.peerCode) {
             updates.peerCode = update.sender_code;
           }
@@ -2649,6 +2666,7 @@ export const MainLayout = () => {
           if (pub) {
             if (pub.nickname && pub.nickname !== chat.name && !updates.name) updates.name = pub.nickname;
             if (pub.avatar_url !== undefined && pub.avatar_url !== chat.avatarUrl && !updates.avatarUrl) updates.avatarUrl = pub.avatar_url || undefined;
+            if (pub.banner_url !== undefined && pub.banner_url !== chat.bannerUrl && !updates.bannerUrl) updates.bannerUrl = pub.banner_url || undefined;
           }
         }
         if (Object.keys(updates).length > 0) {
@@ -2869,6 +2887,7 @@ export const MainLayout = () => {
           senderCode: myCode,
           publicKey: myKeys.publicKey,
           avatarUrl,
+          bannerUrl,
           chatId,
           numericId: myNumericId,
           username: myUsername,
@@ -2916,6 +2935,7 @@ export const MainLayout = () => {
             sharedSecret: sharedSecret,
             ratchetState: ratchet.getState(),
             avatarUrl: data.avatarUrl ?? undefined,
+            bannerUrl: data.bannerUrl ?? undefined,
             peerCode: peerCode,
             originalPeerCode: peerCode || friendCode,
             numericId: peerNumericId,
@@ -2934,6 +2954,7 @@ export const MainLayout = () => {
             isChatInitiator: true,
             ratchetState: ratchet.getState(),
             avatarUrl: data.avatarUrl ?? undefined,
+            bannerUrl: data.bannerUrl ?? undefined,
             peerCode: peerCode,
             originalPeerCode: peerCode || friendCode,
             numericId: peerNumericId,
@@ -2971,6 +2992,7 @@ export const MainLayout = () => {
 
       const initialName = initialProfile?.nickname || friendCode;
       const initialAvatar = initialProfile?.avatar_url || undefined;
+      const initialBanner = initialProfile?.banner_url || undefined;
       const initialUsername = initialProfile?.username || undefined;
       const initialBio = initialProfile?.bio || undefined;
       const initialBirthday = initialProfile?.birthday || undefined;
@@ -2985,6 +3007,7 @@ export const MainLayout = () => {
         isChatInitiator: true,
         sharedSecret: myKeys.privateKey,
         avatarUrl: initialAvatar,
+        bannerUrl: initialBanner,
         peerCode: friendCode,
         originalPeerCode: friendCode,
         numericId: initialNumeric,
@@ -3022,6 +3045,7 @@ export const MainLayout = () => {
             updateChat(chatId, {
               name: friendProfile.nickname,
               avatarUrl: friendProfile.avatar_url ?? undefined,
+              bannerUrl: friendProfile.banner_url ?? undefined,
               username: friendProfile.username ?? undefined,
               description: friendProfile.bio ?? undefined,
               birthday: friendProfile.birthday ?? undefined,
@@ -3036,6 +3060,7 @@ export const MainLayout = () => {
             updateChat(chatId, {
               name: friendProfile.nickname,
               avatarUrl: friendProfile.avatar_url ?? undefined,
+              bannerUrl: friendProfile.banner_url ?? undefined,
               username: friendProfile.username ?? undefined,
               description: friendProfile.bio ?? undefined,
               birthday: friendProfile.birthday ?? undefined,
@@ -5405,6 +5430,7 @@ export const MainLayout = () => {
       type: 'private',
       name: user.nickname || 'User',
       avatarUrl: user.avatar_url || undefined,
+      bannerUrl: user.banner_url || undefined,
       username: user.username || undefined,
       numericId: user.numeric_id || getInitialNumericId(user.user_code),
       description: user.bio || undefined,

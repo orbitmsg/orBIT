@@ -686,7 +686,7 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                       )}
                       <div
                         style={{
-                          padding: bannerUrl ? '0 0 16px' : '20px 0 16px',
+                          padding: bannerUrl ? '15px 0 16px' : '20px 0 16px',
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
@@ -702,8 +702,8 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                             width: 96,
                             height: 96,
                             marginBottom: 10,
-                            marginTop: bannerUrl ? -48 : 0,
-                            zIndex: 10,
+                            marginTop: 0,
+                            flexShrink: 0,
                           }}
                         >
                           <div
@@ -712,8 +712,8 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                               height: 96,
                               cursor: avatarUrl ? 'pointer' : 'default',
                               borderRadius: '50%',
-                              border: bannerUrl ? '4px solid var(--settings-bg, var(--bg-secondary))' : 'none',
-                              boxSizing: 'border-box',
+                              overflow: 'hidden',
+                              flexShrink: 0,
                             }}
                             onClick={() => {
                               if (avatarUrl) {

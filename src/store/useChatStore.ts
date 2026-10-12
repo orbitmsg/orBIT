@@ -295,6 +295,7 @@ export interface IncomingFriendRequest {
   senderCode: string;
   senderPublicKey: string;
   avatarUrl?: string | null;
+  bannerUrl?: string | null;
   username?: string | null;
   numericId?: string | null;
   bio?: string | null;

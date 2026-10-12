@@ -772,17 +772,28 @@ class SupabaseService {
           await this.client.from('profile_updates').delete().eq('chat_id', chatId).eq('sender_code', senderCode);
         }
       } catch {}
-      const { error } = await this.client
+      const insertPayload: Record<string, any> = {
+        chat_id: chatId,
+        nickname,
+        avatar_url: avatarUrl,
+        sender_code: senderCode || null,
+        bio: bio || null,
+        username: cleanUsername,
+        birthday: birthday || null,
+        banner_url: bannerUrl !== undefined ? bannerUrl : null,
+      };
+
+      let { error } = await this.client
         .from('profile_updates')
-        .insert({
-          chat_id: chatId,
-          nickname,
-          avatar_url: avatarUrl,
-          sender_code: senderCode || null,
-          bio: bio || null,
-          username: cleanUsername,
-          birthday: birthday || null,
-        });
+        .insert(insertPayload);
+
+      if (error && (error.message?.includes('banner_url') || error.code === 'PGRST204')) {
+        delete insertPayload.banner_url;
+        const retryRes = await this.client
+          .from('profile_updates')
+          .insert(insertPayload);
+        error = retryRes.error;
+      }
 
       if (error) {
         console.error('[Supabase] Failed to save profile update:', error);
@@ -951,6 +962,7 @@ class SupabaseService {
             numeric_id: data.numeric_id || null,
             nickname: data.nickname,
             avatar_url: data.avatar_url,
+            banner_url: data.banner_url,
             username: data.username,
             bio: data.bio,
             birthday: data.birthday,
@@ -1012,6 +1024,7 @@ class SupabaseService {
                 user_code: userCode,
                 nickname: row.nickname || 'User',
                 avatar_url: row.avatar_url,
+                banner_url: row.banner_url,
                 username: row.username,
                 bio: row.bio,
                 birthday: row.birthday,

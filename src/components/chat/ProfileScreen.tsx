@@ -2007,7 +2007,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
   const renderMainContent = () => (
     <div
       style={{
-        padding: effectiveBannerUrl ? '0 0 24px' : '16px 0 24px',
+        padding: effectiveBannerUrl ? '15px 0 24px' : '16px 0 24px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -2054,8 +2054,8 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
           transformOrigin: 'top center',
           pointerEvents: scrollOffset > 60 ? 'none' : 'auto',
           transition: 'none',
-          marginTop: effectiveBannerUrl ? -48 : 0,
-          zIndex: 10,
+          marginTop: 0,
+          flexShrink: 0,
         }}
       >
         <div
@@ -2066,8 +2066,8 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
             marginTop: 0,
             cursor: chat.avatarUrl ? 'pointer' : 'default',
             borderRadius: '50%',
-            border: effectiveBannerUrl ? '4px solid var(--settings-bg, var(--bg-secondary))' : 'none',
-            boxSizing: 'border-box',
+            overflow: 'hidden',
+            flexShrink: 0,
           }}
           onClick={() => {
             if (chat.avatarUrl) {

@@ -5527,8 +5527,8 @@ export const MainLayout = () => {
           </div>
 
           <div
-            className="flex-1 w-full flex flex-col items-center overflow-y-auto no-scrollbar py-1"
-            style={{ boxSizing: 'border-box' }}
+            className="flex-1 w-full flex flex-col items-center overflow-y-auto no-scrollbar"
+            style={{ boxSizing: 'border-box', paddingTop: '7px', paddingBottom: '7px' }}
           >
             {(() => {
               const isAllActive = activeFolderId === null && currentView === 'chats';
@@ -5543,12 +5543,15 @@ export const MainLayout = () => {
                   className="flex flex-col items-center justify-center cursor-pointer select-none"
                   style={{
                     width: '66px',
-                    padding: '7px 4px',
-                    margin: '3px 0',
+                    height: '64px',
+                    minHeight: '64px',
+                    padding: '6px 4px',
+                    margin: '2px 0',
                     borderRadius: '12px',
                     border: 'none',
                     outline: 'none',
                     boxSizing: 'border-box',
+                    flexShrink: 0,
                     backgroundColor: isAllActive
                       ? (isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)')
                       : 'transparent',
@@ -5611,12 +5614,15 @@ export const MainLayout = () => {
                   className="flex flex-col items-center justify-center cursor-pointer select-none relative"
                   style={{
                     width: '66px',
-                    padding: '7px 4px',
-                    margin: '3px 0',
+                    height: '64px',
+                    minHeight: '64px',
+                    padding: '6px 4px',
+                    margin: '2px 0',
                     borderRadius: '12px',
                     border: 'none',
                     outline: 'none',
                     boxSizing: 'border-box',
+                    flexShrink: 0,
                     backgroundColor: isFolderActive
                       ? (isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)')
                       : 'transparent',

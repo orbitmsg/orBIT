@@ -4112,11 +4112,22 @@ export const SettingsScreen = () => {
           </AnimatePresence>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: 2 }}>
+        <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 2 }}>
           <span style={{ fontSize: '18px', fontWeight: 700, color: MD3.onSurface }}>
             {nickname || 'User'}
           </span>
-          <DeveloperBadge userId={myCode} size={24} onClick={triggerDevToast} />
+          <div
+            style={{
+              position: 'absolute',
+              left: 'calc(100% + 5px)',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              display: 'inline-flex',
+              alignItems: 'center',
+            }}
+          >
+            <DeveloperBadge userId={myCode} size={34} onClick={triggerDevToast} />
+          </div>
         </div>
 
         <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--accent-color, #9b7dd4)' }}>

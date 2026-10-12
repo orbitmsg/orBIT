@@ -1847,8 +1847,8 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
       const modalCenterX = Math.max(0, parentW / 2 - 20);
       const rowEl = titleRowRef.current;
       const statusEl = statusSpanRef.current;
-      const rowW = rowEl ? Math.ceil(rowEl.scrollWidth || rowEl.offsetWidth) : 0;
-      const statusW = statusEl ? Math.ceil(statusEl.scrollWidth || statusEl.offsetWidth) : 0;
+      const rowW = rowEl ? Math.ceil(rowEl.offsetWidth) : 0;
+      const statusW = statusEl ? Math.ceil(statusEl.offsetWidth || statusEl.scrollWidth) : 0;
       if (rowW > 0) {
         setRowShiftX(Math.max(0, Math.round(modalCenterX - rowW / 2)));
       }
@@ -1858,6 +1858,9 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
     };
     updateAlign();
     const timer = setTimeout(updateAlign, 50);
+    if (typeof document !== 'undefined' && document.fonts?.ready) {
+      document.fonts.ready.then(updateAlign).catch(() => {});
+    }
     window.addEventListener('resize', updateAlign);
     return () => {
       clearTimeout(timer);
@@ -3771,12 +3774,14 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                   <div
                     ref={titleRowRef}
                     style={{
+                      position: 'relative',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
                       width: 'fit-content',
                       maxWidth: '100%',
                       minWidth: 0,
+                      pointerEvents: 'auto',
                       transform: `translateX(${Math.round((1 - Math.min(1, Math.max(0, scrollOffset / (effectiveBannerUrl ? 190 : 112)))) * rowShiftX)}px)`,
                       transition: 'none',
                     }}
@@ -3798,12 +3803,23 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                     {chat.type === 'bot' && (
                       <VerifiedBadge size={18} className="flex-shrink-0" />
                     )}
-                    <DeveloperBadge
-                      userId={chat.peerCode || (chat.name && chat.name.length === 36 ? chat.name : undefined) || (chatId !== 'notes' ? chatId : undefined)}
-                      nickname={chat.name}
-                      size={24}
-                      onClick={triggerDevToast}
-                    />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: 'calc(100% + 5px)',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <DeveloperBadge
+                        userId={chat.peerCode || (chat.name && chat.name.length === 36 ? chat.name : undefined) || (chatId !== 'notes' ? chatId : undefined)}
+                        nickname={chat.name}
+                        size={34}
+                        onClick={triggerDevToast}
+                      />
+                    </div>
                   </div>
                   {statusText && (
                     <span

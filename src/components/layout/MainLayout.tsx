@@ -5450,7 +5450,7 @@ export const MainLayout = () => {
           className="flex flex-col items-center shrink-0 select-none"
           style={{
             width: '72px',
-            backgroundColor: 'var(--bg-primary)',
+            backgroundColor: 'var(--chat-list-bg, #1e1e1e)',
             borderRight: 'none',
           }}
         >

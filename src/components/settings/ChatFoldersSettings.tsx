@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Plus, Trash2, Pencil, Check, Search } from 'lucide-react';
-import { useChatStore, ChatFolder } from '../../store/useChatStore';
+import { useChatStore, ChatFolder, Chat } from '../../store/useChatStore';
 import { Avatar } from '../common/Avatar';
 import { Block } from '../chat/SettingsScreen';
 
@@ -55,7 +55,7 @@ interface ChatFoldersSettingsProps {
 }
 
 export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const folders = useChatStore((s) => s.folders || []);
   const chats = useChatStore((s) => s.chats || []);
   const createFolder = useChatStore((s) => s.createFolder);
@@ -122,10 +122,71 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
     return chats.filter((c) => (c.name || '').toLowerCase().includes(q));
   }, [chats, chatSearchQuery]);
 
-  const getChatCountLabel = (count: number) => {
-    if (count === 1) return t('folderManager.chatCount', { count: 1 });
-    if (count >= 2 && count <= 4) return t('folderManager.chatCount_plural', { count });
-    return t('folderManager.chatCount_2', { count });
+  const getPluralForm = (count: number, oneKey: string, fewKey: string, manyKey: string) => {
+    if (i18n.language?.startsWith('ru')) {
+      const mod10 = count % 10;
+      const mod100 = count % 100;
+      if (mod10 === 1 && mod100 !== 11) {
+        return t(oneKey, { count });
+      }
+      if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) {
+        return t(fewKey, { count });
+      }
+      return t(manyKey, { count });
+    }
+    return count === 1 ? t(oneKey, { count }) : t(manyKey, { count });
+  };
+
+  const getFolderChatsSummary = (folder: ChatFolder) => {
+    const chatIds = folder.chatIds || [];
+    if (chatIds.length === 0) {
+      return getPluralForm(0, 'folderManager.chatCount_one', 'folderManager.chatCount_few', 'folderManager.chatCount_many');
+    }
+
+    const folderChats = chatIds.map((id) => chats.find((c) => c.id === id)).filter(Boolean) as Chat[];
+    if (folderChats.length === 0) {
+      return getPluralForm(chatIds.length, 'folderManager.chatCount_one', 'folderManager.chatCount_few', 'folderManager.chatCount_many');
+    }
+
+    let personalCount = 0;
+    let groupCount = 0;
+    let channelCount = 0;
+
+    for (const c of folderChats) {
+      if (c.type === 'channel') {
+        channelCount++;
+      } else if (c.type === 'group') {
+        groupCount++;
+      } else {
+        personalCount++;
+      }
+    }
+
+    if (folderChats.length < chatIds.length) {
+      personalCount += (chatIds.length - folderChats.length);
+    }
+
+    const parts: string[] = [];
+    if (personalCount > 0) {
+      parts.push(getPluralForm(personalCount, 'folderManager.personalCount_one', 'folderManager.personalCount_few', 'folderManager.personalCount_many'));
+    }
+    if (groupCount > 0) {
+      parts.push(getPluralForm(groupCount, 'folderManager.groupCount_one', 'folderManager.groupCount_few', 'folderManager.groupCount_many'));
+    }
+    if (channelCount > 0) {
+      parts.push(getPluralForm(channelCount, 'folderManager.channelCount_one', 'folderManager.channelCount_few', 'folderManager.channelCount_many'));
+    }
+
+    if (parts.length === 0) {
+      return getPluralForm(chatIds.length, 'folderManager.chatCount_one', 'folderManager.chatCount_few', 'folderManager.chatCount_many');
+    }
+    if (parts.length === 1) {
+      return parts[0];
+    }
+    if (parts.length === 2) {
+      return `${parts[0]} ${t('folderManager.and', 'и')} ${parts[1]}`;
+    }
+    return `${parts.slice(0, -1).join(', ')} ${t('folderManager.and', 'и')} ${parts[parts.length - 1]}`;
   };
 
   return (
@@ -141,30 +202,15 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
             style={{
               backgroundColor: 'var(--surface-container, rgba(255, 255, 255, 0.04))',
               borderRadius: '16px',
-              padding: '20px 18px',
+              padding: '16px 18px',
               margin: '0 10px 4px 10px',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               textAlign: 'center',
-              gap: 10,
               boxSizing: 'border-box',
             }}
           >
-            <div
-              style={{
-                width: 52,
-                height: 52,
-                borderRadius: '16px',
-                backgroundColor: 'rgba(155, 125, 212, 0.15)',
-                color: 'var(--accent-color, #9b7dd4)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <SettingsFolderIcon size={26} />
-            </div>
             <div style={{ fontSize: 13.5, color: MD3.onSurfaceVar, lineHeight: 1.45, maxWidth: 360 }}>
               {t('folderManager.desc', 'Вы можете создать папки с нужными чатами и переключаться между ними.')}
             </div>
@@ -187,7 +233,6 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
               ) : (
                 folders.map((folder) => {
                   const isHovered = hoveredFolderId === folder.id;
-                  const count = (folder.chatIds || []).length;
                   return (
                     <div
                       key={folder.id}
@@ -233,7 +278,7 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
                             {folder.name}
                           </div>
                           <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>
-                            {getChatCountLabel(count)}
+                            {getFolderChatsSummary(folder)}
                           </div>
                         </div>
                       </div>

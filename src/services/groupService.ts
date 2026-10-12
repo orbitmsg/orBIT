@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getVercelBaseUrl } from './gatewayManager';
 import { getPusher, getGroupPusher } from '../utils/pusher';
 import { supabaseService } from './supabaseService';
-import { generateGroupInviteCode } from '../lib/codes';
+import { generateGroupInviteCode, generateGroupId } from '../lib/codes';
 import {
   deriveGroupKey,
   deriveGroupId,
@@ -60,10 +60,10 @@ class GroupService {
     creatorUserId?: string,
     creatorAvatarUrl?: string | null
   ): Promise<{ group: GroupInfo; sharedSecret: string } | null> {
-    const secretCode = generateGroupInviteCode(); // The secret never sent to server
-    const id = deriveGroupId(secretCode);
-    const code = id; // Store the hash as code too to satisfy DB if needed
-    const sharedSecret = deriveGroupKey(secretCode);
+    const secretCode = generateGroupInviteCode();
+    const id = generateGroupId();
+    const code = secretCode;
+    const sharedSecret = deriveGroupKey(id);
 
     const initialMember: GroupMemberInfo = {
       nickname: creatorNickname,
@@ -195,7 +195,7 @@ class GroupService {
           maxMembers: g.max_members || 10,
           members,
           createdAt: new Date(g.created_at).getTime(),
-          sharedSecret: secret ? deriveGroupKey(secret) : (g.code ? deriveGroupKey(g.code) : undefined),
+          sharedSecret: deriveGroupKey(g.id),
           inviteActive,
           inviteExpiresAt: expiresAt,
         };
@@ -233,14 +233,14 @@ class GroupService {
       throw new Error('INVALID_CODE');
     }
 
-    const groupId = deriveGroupId(secret);
+    const derivedId = deriveGroupId(secret);
     let groupRow: any = null;
 
     try {
       const { data } = await this.supabase
         .from('groups')
         .select('*')
-        .or(`id.eq.${groupId},code.eq.${secret},code.eq.${raw}`)
+        .or(`id.eq.${derivedId},code.eq.${secret},code.eq.${raw}`)
         .maybeSingle();
       if (data) {
         groupRow = data;
@@ -249,7 +249,17 @@ class GroupService {
 
     if (!groupRow) {
       try {
-        const res = await fetch(`${this.getWorkerUrl()}/groups/get?code=${encodeURIComponent(groupId)}`);
+        const res = await fetch(`${this.getWorkerUrl()}/groups/get?code=${encodeURIComponent(secret)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.group) groupRow = data.group;
+        }
+      } catch {}
+    }
+
+    if (!groupRow) {
+      try {
+        const res = await fetch(`${this.getWorkerUrl()}/groups/get?code=${encodeURIComponent(derivedId)}`);
         if (res.ok) {
           const data = await res.json();
           if (data.group) groupRow = data.group;
@@ -281,15 +291,15 @@ class GroupService {
       throw new Error('INVITE_EXPIRED');
     }
 
-    // groupId is already declared
-    const sharedSecret = deriveGroupKey(secret);
+    const realGroupId = groupRow.id || derivedId;
+    const sharedSecret = deriveGroupKey(realGroupId);
     const candidateId = meta?.userId || userCode;
     const memberCode = userCode || candidateId || nickname;
     const nowIso = new Date().toISOString();
 
     let currentMembers: any[] = [];
     try {
-      const { data: membersRows } = await this.supabase.from('group_members').select('*').eq('group_id', groupId);
+      const { data: membersRows } = await this.supabase.from('group_members').select('*').eq('group_id', realGroupId);
       currentMembers = membersRows || [];
     } catch {}
 
@@ -307,7 +317,7 @@ class GroupService {
 
       try {
         await this.supabase.from('group_members').upsert({
-          group_id: groupId,
+          group_id: realGroupId,
           user_code: memberCode,
           user_id: meta?.userId || candidateId || memberCode,
           nickname,
@@ -323,7 +333,7 @@ class GroupService {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            id: groupId,
+            id: realGroupId,
             code: secret,
             nickname,
             userCode: memberCode,
@@ -338,15 +348,15 @@ class GroupService {
 
     if (!isAlreadyMember) {
       if (inviterNickname) {
-        this.sendSystemMessage(groupId, sharedSecret, 'invite', inviterNickname, nickname);
+        this.sendSystemMessage(realGroupId, sharedSecret, 'invite', inviterNickname, nickname);
       } else {
-        this.sendSystemMessage(groupId, sharedSecret, 'join', nickname, nickname);
+        this.sendSystemMessage(realGroupId, sharedSecret, 'join', nickname, nickname);
       }
     }
 
     let formattedMembers: GroupMemberInfo[] = [];
     try {
-      const { data: updatedMembers } = await this.supabase.from('group_members').select('*').eq('group_id', groupId);
+      const { data: updatedMembers } = await this.supabase.from('group_members').select('*').eq('group_id', realGroupId);
       formattedMembers = (updatedMembers || currentMembers).map((m: any) => ({
         nickname: m.nickname,
         userCode: m.user_code,
@@ -369,7 +379,7 @@ class GroupService {
     }
 
     const resultGroup: GroupInfo = {
-      id: groupRow.id || groupId,
+      id: realGroupId,
       code: groupRow.code || secret,
       name: groupRow.name,
       description: groupRow.description || '',
@@ -406,12 +416,13 @@ class GroupService {
         inviterNickname
       );
       if (result?.group) {
+        const canonicalId = result.group.id || groupId;
         try {
           const groupPusher = getGroupPusher();
-          const channel = groupPusher.subscribe(`presence-group-${groupId}`);
+          const channel = groupPusher.subscribe(`presence-group-${canonicalId}`);
           const joinData = {
             type: 'member-joined',
-            groupId,
+            groupId: canonicalId,
             nickname,
             userCode,
             userId: userCode,

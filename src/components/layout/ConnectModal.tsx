@@ -13,6 +13,7 @@ import { useToastStore } from '../../store/useToastStore';
 import { AvatarCropperModal } from '../settings/AvatarCropperModal';
 import { isStaticImageFile, MAX_AVATAR_BANNER_SIZE } from '../../utils/staticImageValidation';
 import { supabaseService, type UserDirectoryRecord } from '../../services/supabaseService';
+import { getGroupPusher } from '../../utils/pusher';
 import { Avatar } from '../common/Avatar';
 
 export type CreateModalType = 'group' | 'channel' | 'friend';
@@ -184,6 +185,23 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                 isExplicitJoin: true,
               } as any);
             }
+            try {
+              const grpChannel = getGroupPusher().subscribe(`presence-group-${result.group.id}`);
+              const joinPayload = {
+                type: 'member-joined',
+                nickname: myNickname,
+                userCode: myCode,
+                chatId: result.group.id,
+                members: result.group.members,
+                membersCount: result.group.membersCount,
+              };
+              const sendJoinEvent = () => {
+                try { grpChannel.trigger('client-message', joinPayload); } catch {}
+                try { grpChannel.trigger('member-joined', joinPayload); } catch {}
+              };
+              if (grpChannel.subscribed) sendJoinEvent();
+              else grpChannel.bind('pusher:subscription_succeeded', sendJoinEvent);
+            } catch {}
             setActiveChat(result.group.id);
             onClose();
           } else {

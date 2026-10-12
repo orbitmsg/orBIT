@@ -846,7 +846,7 @@ class SupabaseService {
       let queryBuilder = this.client
         .from('profile_updates')
         .select('*')
-        .eq('chat_id', chatId);
+        .or(`chat_id.eq.${chatId},sender_code.eq.${chatId}`);
 
       if (excludeCode) {
         queryBuilder = queryBuilder.neq('sender_code', excludeCode);

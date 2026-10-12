@@ -2645,11 +2645,13 @@ export const MainLayout = () => {
         );
         const targetPeerCode = (chat.peerCode && chat.peerCode !== myCode)
           ? chat.peerCode
-          : (update?.sender_code && update.sender_code !== myCode)
-            ? update.sender_code
-            : (chat.name && chat.name.length === 36 && chat.name !== myCode)
-              ? chat.name
-              : undefined;
+          : (chat.originalPeerCode && chat.originalPeerCode !== myCode)
+            ? chat.originalPeerCode
+            : (update?.sender_code && update.sender_code !== myCode)
+              ? update.sender_code
+              : (chat.name && chat.name.length === 36 && chat.name !== myCode)
+                ? chat.name
+                : undefined;
 
         if (update && !isMyOwnUpdate) {
           if (update.nickname && update.nickname !== chat.name) updates.name = update.nickname;
@@ -2666,6 +2668,15 @@ export const MainLayout = () => {
             if (pub.nickname && pub.nickname !== chat.name && !updates.name) updates.name = pub.nickname;
             if (pub.avatar_url !== undefined && pub.avatar_url !== chat.avatarUrl && !updates.avatarUrl) updates.avatarUrl = pub.avatar_url || undefined;
             if (pub.banner_url !== undefined && pub.banner_url !== chat.bannerUrl && !updates.bannerUrl) updates.bannerUrl = pub.banner_url || undefined;
+          }
+        }
+
+        if (chat.username && !updates.bannerUrl) {
+          const pubByUname = await supabaseService.lookupProfileByUsername(chat.username);
+          if (pubByUname) {
+            if (pubByUname.nickname && pubByUname.nickname !== chat.name && !updates.name) updates.name = pubByUname.nickname;
+            if (pubByUname.avatar_url !== undefined && pubByUname.avatar_url !== chat.avatarUrl && !updates.avatarUrl) updates.avatarUrl = pubByUname.avatar_url || undefined;
+            if (pubByUname.banner_url !== undefined && pubByUname.banner_url !== chat.bannerUrl && !updates.bannerUrl) updates.bannerUrl = pubByUname.banner_url || undefined;
           }
         }
         if (Object.keys(updates).length > 0) {
@@ -3160,9 +3171,15 @@ export const MainLayout = () => {
                 nickname: nick,
                 userCode: uCode,
                 chatId: result.group.id,
+                members: result.group.members,
+                membersCount: result.group.membersCount,
               };
-              if (grpChannel.subscribed) grpChannel.trigger('client-message', joinPayload);
-              else grpChannel.bind('pusher:subscription_succeeded', () => grpChannel.trigger('client-message', joinPayload));
+              const sendJoinEvent = () => {
+                try { grpChannel.trigger('client-message', joinPayload); } catch {}
+                try { grpChannel.trigger('member-joined', joinPayload); } catch {}
+              };
+              if (grpChannel.subscribed) sendJoinEvent();
+              else grpChannel.bind('pusher:subscription_succeeded', sendJoinEvent);
             } catch {}
           }
         } catch {}

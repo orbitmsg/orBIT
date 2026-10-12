@@ -941,16 +941,25 @@ module.exports = async function handler(req, res) {
         effectiveBio = effectiveBio ? `${effectiveBio}\n<!--banner:${body.bannerUrl}-->` : `<!--banner:${body.bannerUrl}-->`;
       }
 
-      const { data, error } = await supabase.from('profile_updates').insert({
+      const insertPayload = {
         chat_id: body.chatId,
         nickname: body.nickname || null,
         avatar_url: body.avatarUrl || null,
+        banner_url: body.bannerUrl !== undefined ? body.bannerUrl : null,
         hide_profile_id: body.hideProfileId !== undefined ? body.hideProfileId : null,
         sender_code: body.senderCode || null,
         bio: effectiveBio,
         username: cleanUsername,
         birthday: body.birthday || null,
-      }).select();
+      };
+
+      let { data, error } = await supabase.from('profile_updates').insert(insertPayload).select();
+      if (error && (error.message?.includes('banner_url') || error.code === 'PGRST204')) {
+        delete insertPayload.banner_url;
+        const retryRes = await supabase.from('profile_updates').insert(insertPayload).select();
+        error = retryRes.error;
+        data = retryRes.data;
+      }
       if (error) return sendError(res, error.message, 500);
       return sendJson(res, { status: 'ok', data });
     }
@@ -1218,7 +1227,7 @@ module.exports = async function handler(req, res) {
       let queryBuilder = supabase
         .from('profile_updates')
         .select('*')
-        .eq('chat_id', chatId);
+        .or(`chat_id.eq.${chatId},sender_code.eq.${chatId}`);
       if (query.excludeCode) {
         queryBuilder = queryBuilder.neq('sender_code', query.excludeCode);
       }
@@ -2148,12 +2157,7 @@ module.exports = async function handler(req, res) {
       const supabase = getGroupsSupabaseClient();
       if (supabase) {
         try {
-          let queryBuilder = supabase.from('groups').select('*');
-          if (code.startsWith('grp_')) {
-            queryBuilder = queryBuilder.eq('id', code);
-          } else {
-            queryBuilder = queryBuilder.eq('code', code);
-          }
+          let queryBuilder = supabase.from('groups').select('*').or(`id.eq.${code},code.eq.${code}`);
           const { data: groupData } = await queryBuilder.maybeSingle();
           if (groupData) {
             const { data: membersData } = await supabase
@@ -2202,8 +2206,10 @@ module.exports = async function handler(req, res) {
       if (supabase) {
         try {
           let queryBuilder = supabase.from('groups').select('*');
-          if (code) {
-            queryBuilder = queryBuilder.eq('code', code);
+          if (code && id) {
+            queryBuilder = queryBuilder.or(`id.eq.${id},code.eq.${code}`);
+          } else if (code) {
+            queryBuilder = queryBuilder.or(`id.eq.${code},code.eq.${code}`);
           } else if (id) {
             queryBuilder = queryBuilder.eq('id', id);
           }

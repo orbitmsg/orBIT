@@ -785,19 +785,32 @@ export default {
           effectiveBio = effectiveBio ? `${effectiveBio}\n<!--banner:${(body as any).bannerUrl}-->` : `<!--banner:${(body as any).bannerUrl}-->`;
         }
 
-        const { data, error } = await supabase
+        const insertPayload: Record<string, any> = {
+          chat_id: body.chatId,
+          nickname: body.nickname || null,
+          avatar_url: body.avatarUrl || null,
+          banner_url: (body as any).bannerUrl !== undefined ? (body as any).bannerUrl : null,
+          hide_profile_id: body.hideProfileId !== undefined ? body.hideProfileId : null,
+          sender_code: body.senderCode || null,
+          bio: effectiveBio,
+          username: cleanUsername,
+          birthday: body.birthday || null,
+        };
+
+        let { data, error } = await supabase
           .from('profile_updates')
-          .insert({
-            chat_id: body.chatId,
-            nickname: body.nickname || null,
-            avatar_url: body.avatarUrl || null,
-            hide_profile_id: body.hideProfileId !== undefined ? body.hideProfileId : null,
-            sender_code: body.senderCode || null,
-            bio: effectiveBio,
-            username: cleanUsername,
-            birthday: body.birthday || null,
-          })
+          .insert(insertPayload)
           .select();
+
+        if (error && (error.message?.includes('banner_url') || error.code === 'PGRST204')) {
+          delete insertPayload.banner_url;
+          const retryRes = await supabase
+            .from('profile_updates')
+            .insert(insertPayload)
+            .select();
+          error = retryRes.error;
+          data = retryRes.data;
+        }
 
         if (error) return errorResponse(error.message, 500);
         return jsonResponse({ status: 'ok', data });
@@ -993,7 +1006,7 @@ export default {
         let query = supabase
           .from('profile_updates')
           .select('*')
-          .eq('chat_id', chatId);
+          .or(`chat_id.eq.${chatId},sender_code.eq.${chatId}`);
 
         if (excludeCode) {
           query = query.neq('sender_code', excludeCode);

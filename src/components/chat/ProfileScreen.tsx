@@ -1060,7 +1060,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
 
   useEffect(() => {
     if (!chatId || chatId === 'notes' || !chat) return;
-    const peer = chat.peerCode || (chat.name && chat.name.length === 36 ? chat.name : null);
+    const peer = chat.peerCode || chat.originalPeerCode || (chat.name && chat.name.length === 36 ? chat.name : null);
     const updateFriendBanner = (url?: string | null) => {
       if (url && url !== chat.bannerUrl) {
         useChatStore.getState().updateChat(chatId, { bannerUrl: url });
@@ -1071,10 +1071,15 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         if (p?.banner_url) updateFriendBanner(p.banner_url);
       }).catch(() => {});
     }
+    if (chat.username) {
+      supabaseService.lookupProfileByUsername(chat.username).then((p) => {
+        if (p?.banner_url) updateFriendBanner(p.banner_url);
+      }).catch(() => {});
+    }
     supabaseService.getLatestProfileUpdate(chatId, myUserId || undefined).then((u) => {
       if (u?.banner_url) updateFriendBanner(u.banner_url);
     }).catch(() => {});
-  }, [chatId, chat?.peerCode]);
+  }, [chatId, chat?.peerCode, chat?.originalPeerCode, chat?.username]);
 
   const isChannel = chat?.type === 'channel';
   const isGroup = chat?.type === 'group';
@@ -1250,9 +1255,11 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
     const myCode = useChatStore.getState().myCode;
     const targetCode = (chat.peerCode && chat.peerCode !== myCode)
       ? chat.peerCode
-      : (chat.name && chat.name.length === 36 && chat.name !== myCode)
-        ? chat.name
-        : undefined;
+      : (chat.originalPeerCode && chat.originalPeerCode !== myCode)
+        ? chat.originalPeerCode
+        : (chat.name && chat.name.length === 36 && chat.name !== myCode)
+          ? chat.name
+          : undefined;
 
     let isMounted = true;
     (async () => {
@@ -1281,6 +1288,14 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
           if (pub?.avatar_url !== undefined && !updateAvatar) updateAvatar = pub.avatar_url || undefined;
           if (pub?.banner_url !== undefined && !updateBanner) updateBanner = pub.banner_url || undefined;
           if (pub?.numeric_id) pubNumericId = pub.numeric_id;
+        }
+
+        if (chat.username && !updateBanner) {
+          const pubByUname = await supabaseService.lookupProfileByUsername(chat.username);
+          if (pubByUname?.nickname && !updateNick) updateNick = pubByUname.nickname;
+          if (pubByUname?.avatar_url !== undefined && !updateAvatar) updateAvatar = pubByUname.avatar_url || undefined;
+          if (pubByUname?.banner_url !== undefined && !updateBanner) updateBanner = pubByUname.banner_url || undefined;
+          if (pubByUname?.numeric_id && !pubNumericId) pubNumericId = pubByUname.numeric_id;
         }
 
         if (!isMounted) return;

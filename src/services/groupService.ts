@@ -155,7 +155,12 @@ class GroupService {
     const groupId = isIdOnly ? raw : deriveGroupId(secret);
 
     try {
-      let query = this.supabase.from('groups').select('*').eq('id', groupId);
+      let query = this.supabase.from('groups').select('*');
+      if (isIdOnly) {
+        query = query.eq('id', raw);
+      } else {
+        query = query.or(`id.eq.${groupId},code.eq.${secret},code.eq.${raw}`);
+      }
       const { data: g } = await query.maybeSingle();
       if (g) {
         const { data: membersRows } = await this.supabase.from('group_members').select('*').eq('group_id', g.id);
@@ -181,7 +186,7 @@ class GroupService {
 
         return {
           id: g.id,
-          code: secret || '', // If we don't have the secret, return empty
+          code: g.code || secret || '',
           name: g.name,
           description: g.description || '',
           avatarUrl: g.avatar_url || null,
@@ -191,7 +196,7 @@ class GroupService {
           maxMembers: g.max_members || 10,
           members,
           createdAt: new Date(g.created_at).getTime(),
-          sharedSecret: secret ? deriveGroupKey(secret) : undefined, // Only derive if we know the secret
+          sharedSecret: secret ? deriveGroupKey(secret) : (g.code ? deriveGroupKey(g.code) : undefined),
           inviteActive,
           inviteExpiresAt: expiresAt,
         };
@@ -237,7 +242,11 @@ class GroupService {
     let groupRow: any = null;
 
     try {
-      const { data } = await this.supabase.from('groups').select('*').eq('id', groupId).maybeSingle();
+      const { data } = await this.supabase
+        .from('groups')
+        .select('*')
+        .or(`id.eq.${groupId},code.eq.${secret},code.eq.${raw}`)
+        .maybeSingle();
       if (data) {
         groupRow = data;
       }
@@ -365,8 +374,8 @@ class GroupService {
     }
 
     const resultGroup: GroupInfo = {
-      id: groupId,
-      code: secret,
+      id: groupRow.id || groupId,
+      code: groupRow.code || secret,
       name: groupRow.name,
       description: groupRow.description || '',
       avatarUrl: groupRow.avatar_url || null,
@@ -428,11 +437,43 @@ class GroupService {
     return null;
   }
 
-  async resetInviteLink(_groupId: string): Promise<string | null> {
-    // In Zero-Knowledge groups, the invite code is the master key. 
-    // Resetting it would lose access to all old messages. 
-    // We only allow revoking (closing the invite link).
-    return null;
+  async resetInviteLink(groupId: string): Promise<string | null> {
+    const newCode = generateGroupInviteCode();
+    const nowIso = new Date().toISOString();
+    try {
+      const { data: existing } = await this.supabase
+        .from('groups')
+        .select('id, creator_id')
+        .or(`id.eq.${groupId},code.eq.${groupId}`)
+        .maybeSingle();
+
+      const realId = existing?.id || groupId;
+      let meta: any = { active: true, expiresAt: null };
+      if (existing?.creator_id && typeof existing.creator_id === 'string' && existing.creator_id.startsWith('{')) {
+        try { meta = { ...JSON.parse(existing.creator_id), active: true }; } catch {}
+      }
+
+      await this.supabase.from('groups').update({
+        code: newCode,
+        creator_id: JSON.stringify(meta),
+        updated_at: nowIso,
+      }).eq('id', realId);
+
+      fetch(`${this.getWorkerUrl()}/groups/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ groupId: realId, code: newCode, inviteActive: true }),
+      }).catch(() => {});
+
+      useChatStore.getState().updateChat(groupId, { inviteCode: newCode, inviteActive: true });
+      if (realId !== groupId) {
+        useChatStore.getState().updateChat(realId, { inviteCode: newCode, inviteActive: true });
+      }
+      return newCode;
+    } catch {
+      useChatStore.getState().updateChat(groupId, { inviteCode: newCode, inviteActive: true });
+      return newCode;
+    }
   }
 
   async revokeInviteLink(groupId: string): Promise<boolean> {
@@ -954,7 +995,8 @@ class GroupService {
       }).catch(() => {});
     } catch {}
 
-    const secret = deriveGroupKey(groupId);
+    const chatSecret = useChatStore.getState().chats.find(c => c.id === groupId)?.sharedSecret;
+    const secret = chatSecret || deriveGroupKey(groupId);
     this.sendSystemMessage(groupId, secret, 'call', hostNickname);
   }
 
@@ -971,7 +1013,8 @@ class GroupService {
       }).catch(() => {});
     } catch {}
 
-    const secret = deriveGroupKey(groupId);
+    const chatSecret = useChatStore.getState().chats.find(c => c.id === groupId)?.sharedSecret;
+    const secret = chatSecret || deriveGroupKey(groupId);
     await this.sendSystemMessage(groupId, secret, 'call_ended', actorNickname || '');
   }
 

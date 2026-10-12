@@ -925,6 +925,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
   });
 
   const [copiedKey, setCopiedKey] = useState(false);
+  const [isResettingLink, setIsResettingLink] = useState(false);
   const [devToastOpen, setDevToastOpen] = useState(false);
 
   const triggerDevToast = useCallback(() => {
@@ -2583,11 +2584,18 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                     <button
                       type="button"
                       aria-label={t('groupSettings.reset_link', 'Обновить ссылку')}
+                      disabled={isResettingLink}
                       onClick={async (e) => {
                         e.stopPropagation();
-                        const newCode = await groupService.resetInviteLink(chat.id);
-                        if (newCode) {
-                          useChatStore.getState().updateChat(chat.id, { inviteCode: newCode, inviteActive: true });
+                        if (isResettingLink) return;
+                        setIsResettingLink(true);
+                        try {
+                          const newCode = await groupService.resetInviteLink(chat.id);
+                          if (newCode) {
+                            useChatStore.getState().updateChat(chat.id, { inviteCode: newCode, inviteActive: true });
+                          }
+                        } finally {
+                          setTimeout(() => setIsResettingLink(false), 300);
                         }
                       }}
                       style={{
@@ -2598,13 +2606,14 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                         color: 'var(--text-main, #ffffff)',
                         fontSize: '11.5px',
                         fontWeight: 500,
-                        cursor: 'pointer',
+                        cursor: isResettingLink ? 'default' : 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '5px',
+                        opacity: isResettingLink ? 0.7 : 1,
                       }}
                     >
-                      <RefreshCw size={13} />
+                      <RefreshCw size={13} style={{ transform: isResettingLink ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }} />
                       <span>{t('groupSettings.reset_link', 'Обновить ссылку')}</span>
                     </button>
 

@@ -595,44 +595,57 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
   }, [activeChatId, activeChat?.type]);
 
   const [memberAvatars, setMemberAvatars] = useState<Record<string, string>>({});
+  const checkedMembersRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!activeChat || activeChat.type !== 'group' || !activeChat.members) return;
     let isMounted = true;
+    const allChats = useChatStore.getState().chats || [];
+    const usersById = useChatStore.getState().usersById || {};
+
     activeChat.members.forEach((m) => {
       const code = m.userId || (m as any).userCode;
       const nick = m.nickname?.toLowerCase().trim();
-      if (!code && !nick) return;
+      const lookupKey = code || nick;
+      if (!lookupKey || checkedMembersRef.current.has(lookupKey)) return;
       if (m.avatarUrl || (m as any).avatar_url) return;
       if (code && memberAvatars[code]) return;
       if (nick && memberAvatars[nick]) return;
 
-      const lookupKey = code || m.nickname;
-      if (lookupKey) {
-        supabaseService.lookupPublicProfile(lookupKey).then((profile) => {
-          if (isMounted && profile?.avatar_url) {
-            setMemberAvatars((prev) => {
-              const next = { ...prev };
-              if (code) next[code] = profile.avatar_url!;
-              if (nick) next[nick] = profile.avatar_url!;
-              return next;
-            });
-            const updatedMembers = (activeChat.members || []).map((mem) => {
-              const memCode = mem.userId || (mem as any).userCode;
-              if ((code && memCode === code) || (nick && mem.nickname?.toLowerCase().trim() === nick)) {
-                return { ...mem, avatarUrl: profile.avatar_url };
-              }
-              return mem;
-            });
-            useChatStore.getState().updateChat(activeChat.id, { members: updatedMembers });
-          }
-        }).catch(() => {});
+      checkedMembersRef.current.add(lookupKey);
+
+      let localAvatar = '';
+      if (code && usersById[code]?.avatarUrl) {
+        localAvatar = usersById[code].avatarUrl;
       }
+      if (!localAvatar && nick) {
+        const directChat = allChats.find(c => c.type === 'private' && c.name?.toLowerCase().trim() === nick);
+        if (directChat?.avatarUrl) localAvatar = directChat.avatarUrl;
+      }
+
+      if (localAvatar) {
+        setMemberAvatars(prev => ({
+          ...prev,
+          ...(code ? { [code]: localAvatar } : {}),
+          ...(nick ? { [nick]: localAvatar } : {}),
+        }));
+        return;
+      }
+
+      supabaseService.lookupPublicProfile(lookupKey).then((profile) => {
+        if (isMounted && profile?.avatar_url) {
+          setMemberAvatars((prev) => ({
+            ...prev,
+            ...(code ? { [code]: profile.avatar_url! } : {}),
+            ...(nick ? { [nick]: profile.avatar_url! } : {}),
+          }));
+        }
+      }).catch(() => {});
     });
     return () => {
       isMounted = false;
     };
-  }, [activeChat?.id, activeChat?.type, activeChat?.members, memberAvatars]);
+  }, [activeChat?.id, activeChat?.type, activeChat?.members?.length]);
 
   const handleOpenDirectChat = useCallback((senderId?: string, senderName?: string, memberObj?: any) => {
     const chatStore = useChatStore.getState();
@@ -3642,75 +3655,96 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
 
     if (activeChat?.type === 'group') {
       const targetGroupId = activeChatId;
-      const groupSecret = activeChat.sharedSecret ||
-        (activeChat.inviteCode && isValidGroupCode(activeChat.inviteCode) ? deriveGroupKey(activeChat.inviteCode) : undefined) ||
-        (activeChat.code && isValidGroupCode(activeChat.code) ? deriveGroupKey(activeChat.code) : undefined);
-
-      if (groupSecret && !activeChat.sharedSecret) {
-        useChatStore.getState().updateChat(targetGroupId, { sharedSecret: groupSecret });
-      }
+      const candidateSecrets = [
+        activeChat.sharedSecret,
+        activeChat.inviteCode && isValidGroupCode(activeChat.inviteCode) ? deriveGroupKey(activeChat.inviteCode) : undefined,
+        activeChat.code && isValidGroupCode(activeChat.code) ? deriveGroupKey(activeChat.code) : undefined,
+        deriveGroupKey(targetGroupId),
+      ].filter(Boolean) as string[];
 
       groupService.fetchGroupMessages(targetGroupId).then(async (serverMsgs) => {
         if (useChatStore.getState().activeChatId !== targetGroupId) return;
         if (!Array.isArray(serverMsgs) || serverMsgs.length === 0) return;
-        const secret = groupSecret || (await groupService.getGroup(targetGroupId))?.sharedSecret;
-        if (!secret) return;
         const current = useChatStore.getState().messagesByChatId[targetGroupId] || [];
         const existingIds = new Set(current.map((m) => m.id));
-        const newMessages: Message[] = [];
-        for (const row of serverMsgs) {
-          if (existingIds.has(row.id)) continue;
-          let text = row.ciphertext;
-          let parsedData: any = null;
-          try {
-            const dec = await decryptMessage(row.ciphertext, secret);
-            if (dec && dec !== '[ENCRYPTED MESSAGE]') {
+        const rowsToProcess = serverMsgs.filter((row) => !existingIds.has(row.id));
+        if (rowsToProcess.length === 0) return;
+
+        const newMessages = await Promise.all(
+          rowsToProcess.map(async (row) => {
+            const isSystem = row.media_type === 'system' || row.sender_nickname === 'system';
+            let text = row.ciphertext || '';
+            let parsedData: any = null;
+
+            if (isSystem && text && text.startsWith('{')) {
               try {
-                parsedData = JSON.parse(dec);
-                text = parsedData.text !== undefined ? parsedData.text : dec;
-              } catch {
-                text = dec;
+                parsedData = JSON.parse(text);
+                text = parsedData.text !== undefined ? parsedData.text : text;
+              } catch {}
+            }
+
+            if (!parsedData && text) {
+              for (const sec of candidateSecrets) {
+                try {
+                  const dec = await decryptMessage(text, sec);
+                  if (dec && dec !== '[ENCRYPTED MESSAGE]') {
+                    try {
+                      parsedData = JSON.parse(dec);
+                      text = parsedData.text !== undefined ? parsedData.text : dec;
+                    } catch {
+                      text = dec;
+                    }
+                    break;
+                  }
+                } catch {}
               }
             }
-          } catch {}
 
-          const isOutgoing = Boolean(
-            (myUserId && (row.sender_id === myUserId || row.sender_code === myUserId)) ||
-            (myCode && (row.sender_code === myCode || row.sender_id === myCode)) ||
-            (row.sender_nickname === myNickname)
-          );
+            if (isSystem && (!text || text === '[ENCRYPTED MESSAGE]' || text === row.ciphertext)) {
+              text = row.sender_nickname ? `${row.sender_nickname} в группе` : 'Системное сообщение';
+            }
 
-          const msgItem: Message = {
-            id: row.id,
-            senderId: row.sender_code || row.sender_id,
-            sender: row.sender_nickname,
-            isOutgoing,
-            text,
-            time: new Date(row.created_at).getTime(),
-            read: true,
-            status: 'sent',
-            mediaType: parsedData?.mediaType || row.media_type || undefined,
-            mediaUrl: parsedData?.mediaUrl || row.media_url || undefined,
-            mediaName: parsedData?.mediaName || row.media_name || undefined,
-            mediaKey: parsedData?.mediaKey || row.media_key || undefined,
-            mime: parsedData?.mime || row.mime || undefined,
-            mediaItems: parsedData?.mediaItems || undefined,
-            width: parsedData?.width || (row as any).width || undefined,
-            height: parsedData?.height || (row as any).height || undefined,
-            duration: parsedData?.duration || row.duration || undefined,
-            waveform: parsedData?.waveform || row.waveform || undefined,
-            audioMetadata: parsedData?.audioMetadata || row.audio_metadata || undefined,
-            linkPreview: parsedData?.linkPreview || row.link_preview || undefined,
-            reactions: row.reactions || undefined,
-            systemType: parsedData?.systemType || undefined,
-            actorNickname: parsedData?.actorNickname || undefined,
-            targetNickname: parsedData?.targetNickname || undefined,
-          };
-          newMessages.push(msgItem);
+            const isOutgoing = Boolean(
+              (myUserId && (row.sender_id === myUserId || row.sender_code === myUserId)) ||
+              (myCode && (row.sender_code === myCode || row.sender_id === myCode)) ||
+              (row.sender_nickname === myNickname)
+            );
+
+            const msgItem: Message = {
+              id: row.id,
+              senderId: row.sender_code || row.sender_id,
+              sender: row.sender_nickname,
+              isOutgoing,
+              text,
+              time: new Date(row.created_at).getTime(),
+              read: true,
+              status: 'sent',
+              mediaType: parsedData?.mediaType || row.media_type || undefined,
+              mediaUrl: parsedData?.mediaUrl || row.media_url || undefined,
+              mediaName: parsedData?.mediaName || row.media_name || undefined,
+              mediaKey: parsedData?.mediaKey || row.media_key || undefined,
+              mime: parsedData?.mime || row.mime || undefined,
+              mediaItems: parsedData?.mediaItems || undefined,
+              width: parsedData?.width || (row as any).width || undefined,
+              height: parsedData?.height || (row as any).height || undefined,
+              duration: parsedData?.duration || row.duration || undefined,
+              waveform: parsedData?.waveform || row.waveform || undefined,
+              audioMetadata: parsedData?.audioMetadata || row.audio_metadata || undefined,
+              linkPreview: parsedData?.linkPreview || row.link_preview || undefined,
+              reactions: row.reactions || undefined,
+              systemType: parsedData?.systemType || undefined,
+              actorNickname: parsedData?.actorNickname || undefined,
+              targetNickname: parsedData?.targetNickname || undefined,
+            };
+            return msgItem;
+          })
+        );
+
+        newMessages.forEach((msgItem) => {
           try {
-            (window as any).orbita?.storageAddMessage?.(targetGroupId, row.id, msgItem);
+            (window as any).orbita?.storageAddMessage?.(targetGroupId, msgItem.id, msgItem);
           } catch {}
-        }
+        });
         if (newMessages.length > 0) {
           if (useChatStore.getState().activeChatId !== targetGroupId) return;
           const el = messagesContainerRef.current;
@@ -3945,28 +3979,63 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         if (isSelf) return;
         const rawCipher = data.ciphertext || data.text;
         if (!rawCipher) return;
-        const sec = activeChat.sharedSecret ||
-          (activeChat.inviteCode && isValidGroupCode(activeChat.inviteCode) ? deriveGroupKey(activeChat.inviteCode) : undefined) ||
-          (activeChat.code && isValidGroupCode(activeChat.code) ? deriveGroupKey(activeChat.code) : undefined) ||
-          deriveGroupKey(activeChatId);
-        if (sec) {
-          decryptMessage(rawCipher, sec).then((dec) => {
-            if (useChatStore.getState().activeChatId !== activeChatId) return;
-            let parsed: any;
-            if (dec && dec !== '[ENCRYPTED MESSAGE]') {
-              try { parsed = JSON.parse(dec); } catch { parsed = { text: dec }; }
-            } else {
-              parsed = { text: dec || rawCipher };
+        const isSystem = data.mediaType === 'system' || data.systemType || data.sender === 'system' || data.senderNickname === 'system';
+        const candidateKeys = [
+          activeChat.sharedSecret,
+          activeChat.inviteCode && isValidGroupCode(activeChat.inviteCode) ? deriveGroupKey(activeChat.inviteCode) : undefined,
+          activeChat.code && isValidGroupCode(activeChat.code) ? deriveGroupKey(activeChat.code) : undefined,
+          deriveGroupKey(activeChatId),
+        ].filter(Boolean) as string[];
+
+        (async () => {
+          let parsed: any = null;
+          let dec: string | null = null;
+
+          if (isSystem && data.text) {
+            dec = data.text;
+            parsed = { text: data.text };
+          } else if (rawCipher && rawCipher.startsWith('{')) {
+            try {
+              parsed = JSON.parse(rawCipher);
+              dec = parsed.text !== undefined ? parsed.text : rawCipher;
+            } catch {}
+          }
+
+          if (!parsed && rawCipher) {
+            for (const key of candidateKeys) {
+              try {
+                const res = await decryptMessage(rawCipher, key);
+                if (res && res !== '[ENCRYPTED MESSAGE]') {
+                  dec = res;
+                  try { parsed = JSON.parse(res); } catch { parsed = { text: res }; }
+                  if (activeChat.sharedSecret !== key) {
+                    useChatStore.getState().updateChat(activeChatId, { sharedSecret: key });
+                  }
+                  break;
+                }
+              } catch {}
             }
-            const mid = parsed?.id || data.messageId || data.id || `msg_${Date.now()}`;
-            const existing = (useChatStore.getState().messagesByChatId[activeChatId] || []).some(m => m.id === mid);
-            if (existing) return;
-            const isVisible = typeof document !== 'undefined' && document.visibilityState === 'visible';
-            const item: Message = {
-              id: mid,
-              sender: data.sender,
-              senderId: data.senderCode || data.senderId,
-              text: parsed?.text !== undefined ? parsed.text : dec,
+          }
+
+          if (isSystem && (!dec || dec === '[ENCRYPTED MESSAGE]')) {
+            dec = data.text || 'Системное сообщение';
+            parsed = { text: dec };
+          }
+
+          if (!parsed) {
+            parsed = { text: dec || rawCipher };
+          }
+
+          if (useChatStore.getState().activeChatId !== activeChatId) return;
+          const mid = parsed?.id || data.messageId || data.id || `msg_${Date.now()}`;
+          const existing = (useChatStore.getState().messagesByChatId[activeChatId] || []).some(m => m.id === mid);
+          if (existing) return;
+          const isVisible = typeof document !== 'undefined' && document.visibilityState === 'visible';
+          const item: Message = {
+            id: mid,
+            sender: data.sender || data.senderNickname,
+            senderId: data.senderCode || data.senderId,
+            text: parsed?.text !== undefined ? parsed.text : (dec || rawCipher),
               time: data.time || Date.now(),
               read: isVisible,
               status: isVisible ? 'read' : 'delivered',
@@ -4003,12 +4072,11 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
             if (isVisible) {
               notifyPeerReadBatch(mid, data.time || Date.now(), [mid]);
             }
-          });
+          })();
+          return;
         }
-        return;
-      }
 
-      if (data.type === 'read') {
+        if (data.type === 'read') {
         const isSelf = Boolean(
           (myUserId && (data.senderUserId === myUserId || data.userId === myUserId || data.senderId === myUserId)) ||
           (myCode && (data.senderCode === myCode || data.senderId === myCode)) ||
@@ -6243,27 +6311,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
       if (msg.senderId && memberAvatars[msg.senderId]) return memberAvatars[msg.senderId];
       if (senderMember?.userId && memberAvatars[senderMember.userId]) return memberAvatars[senderMember.userId];
       if ((senderMember as any)?.userCode && memberAvatars[(senderMember as any).userCode]) return memberAvatars[(senderMember as any).userCode];
-
-      const allChats = useChatStore.getState().chats || [];
-      const directChat = allChats.find((c) =>
-        c.type === 'private' && (
-          (c.name && nickKey && c.name.toLowerCase().trim() === nickKey) ||
-          (msg.senderId && (c.peerCode === msg.senderId || c.originalPeerCode === msg.senderId)) ||
-          (senderMember?.userId && (c.peerCode === senderMember.userId || c.originalPeerCode === senderMember.userId)) ||
-          ((senderMember as any)?.userCode && (c.peerCode === (senderMember as any).userCode || c.originalPeerCode === (senderMember as any).userCode))
-        )
-      );
-      if (directChat?.avatarUrl) return directChat.avatarUrl;
-
-      const usersById = useChatStore.getState().usersById || {};
-      if (msg.senderId && usersById[msg.senderId]?.avatarUrl) return usersById[msg.senderId].avatarUrl;
-      if (senderMember?.userId && usersById[senderMember.userId]?.avatarUrl) return usersById[senderMember.userId].avatarUrl;
-      const matchedUser = Object.values(usersById).find((u: any) =>
-        (u.nickname && nickKey && u.nickname.toLowerCase().trim() === nickKey) ||
-        (msg.senderId && u.id === msg.senderId)
-      );
-      if ((matchedUser as any)?.avatarUrl) return (matchedUser as any).avatarUrl;
-
       return null;
     })();
 

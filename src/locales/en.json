@@ -969,7 +969,7 @@
       "invite_link": "Invite link",
       "copy_link": "Copy link",
       "copied_link": "Link copied",
-      "reset_link": "Revoke link",
+      "reset_link": "Reset link",
       "close_link": "Disable link",
       "open_link": "Enable link",
       "link_revoked": "Link revoked",

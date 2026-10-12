@@ -2063,10 +2063,11 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
           style={{
             width: 96,
             height: 96,
-            marginBottom: effectiveBannerUrl ? 20 : 10,
+            marginBottom: 10,
             marginTop: 0,
             borderRadius: '50%',
-            boxShadow: effectiveBannerUrl ? '0 0 0 15px var(--settings-bg, var(--bg-secondary))' : 'none',
+            backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
+            boxShadow: effectiveBannerUrl ? '0 0 0 6px var(--settings-bg, var(--bg-secondary))' : 'none',
             flexShrink: 0,
           }}
         >
@@ -2078,6 +2079,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
               borderRadius: '50%',
               overflow: 'hidden',
               flexShrink: 0,
+              backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
             }}
             onClick={() => {
               if (chat.avatarUrl) {
@@ -2115,6 +2117,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                 src={chat.avatarUrl}
                 alt={chat.name}
                 className="w-24 h-24 rounded-full"
+                style={{ backgroundColor: 'var(--settings-bg, var(--bg-secondary))' }}
               />
             )}
           </div>
@@ -3682,7 +3685,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                 zIndex: 30,
                 backgroundColor: subTab !== null
                   ? 'transparent'
-                  : `color-mix(in srgb, var(--settings-bg, var(--bg-secondary)) ${Math.min(100, Math.round((Math.max(0, scrollOffset - 90) / 22) * 100))}%, transparent)`,
+                  : `color-mix(in srgb, var(--settings-bg, var(--bg-secondary)) ${Math.min(100, Math.round((Math.max(0, scrollOffset - (effectiveBannerUrl ? 160 : 90)) / 22) * 100))}%, transparent)`,
                 borderBottom: 'none',
                 pointerEvents: 'none',
                 boxSizing: 'border-box',
@@ -3702,10 +3705,10 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                     alignItems: 'flex-start',
                     minWidth: 0,
                     width: 'calc(100% - 40px)',
-                    maxWidth: scrollOffset >= 110 ? 'calc(100% - 90px)' : 'calc(100% - 40px)',
-                    transform: `translateY(${Math.max(0, 112 - scrollOffset)}px) scale(${1 - Math.min(1, Math.max(0, scrollOffset / 112)) * 0.18})`,
+                    maxWidth: scrollOffset >= (effectiveBannerUrl ? 180 : 110) ? 'calc(100% - 90px)' : 'calc(100% - 40px)',
+                    transform: `translateY(${Math.max(0, (effectiveBannerUrl ? 190 : 112) - scrollOffset)}px) scale(${1 - Math.min(1, Math.max(0, scrollOffset / (effectiveBannerUrl ? 190 : 112))) * 0.18})`,
                     transformOrigin: 'left top',
-                    pointerEvents: scrollOffset >= 110 ? 'auto' : 'none',
+                    pointerEvents: scrollOffset >= (effectiveBannerUrl ? 180 : 110) ? 'auto' : 'none',
                     transition: 'none',
                   }}
                 >
@@ -3718,7 +3721,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                       width: 'fit-content',
                       maxWidth: '100%',
                       minWidth: 0,
-                      transform: `translateX(${Math.round((1 - Math.min(1, Math.max(0, scrollOffset / 112))) * rowShiftX)}px)`,
+                      transform: `translateX(${Math.round((1 - Math.min(1, Math.max(0, scrollOffset / (effectiveBannerUrl ? 190 : 112)))) * rowShiftX)}px)`,
                       transition: 'none',
                     }}
                   >
@@ -3759,7 +3762,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                         fontWeight: (!isChannel && chatId !== 'notes' && chat.online) ? 600 : 400,
                         lineHeight: 1.2,
                         marginTop: '3px',
-                        transform: `translateX(${Math.round((1 - Math.min(1, Math.max(0, scrollOffset / 112))) * statusShiftX)}px)`,
+                        transform: `translateX(${Math.round((1 - Math.min(1, Math.max(0, scrollOffset / (effectiveBannerUrl ? 190 : 112)))) * statusShiftX)}px)`,
                         transition: 'none',
                       }}
                     >
@@ -3787,11 +3790,11 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                     onClick={() => setIsEditingChannel(true)}
                     aria-label={isGroup ? t('groupSettings.edit_group', 'Редактировать группу') : t('channel.edit_channel', 'Редактировать канал')}
                     style={{
-                      background: (effectiveBannerUrl && scrollOffset < 90) ? 'rgba(0, 0, 0, 0.45)' : 'none',
-                      backdropFilter: (effectiveBannerUrl && scrollOffset < 90) ? 'blur(8px)' : 'none',
-                      WebkitBackdropFilter: (effectiveBannerUrl && scrollOffset < 90) ? 'blur(8px)' : 'none',
+                      background: (effectiveBannerUrl && scrollOffset < 160) ? 'rgba(0, 0, 0, 0.45)' : 'none',
+                      backdropFilter: (effectiveBannerUrl && scrollOffset < 160) ? 'blur(8px)' : 'none',
+                      WebkitBackdropFilter: (effectiveBannerUrl && scrollOffset < 160) ? 'blur(8px)' : 'none',
                       border: 'none',
-                      color: (effectiveBannerUrl && scrollOffset < 90) ? '#ffffff' : 'var(--text-dim)',
+                      color: (effectiveBannerUrl && scrollOffset < 160) ? '#ffffff' : 'var(--text-dim)',
                       cursor: 'pointer',
                       padding: '6px',
                       borderRadius: '50%',
@@ -3802,12 +3805,12 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                       transition: 'color 150ms, background 150ms',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = (effectiveBannerUrl && scrollOffset < 90) ? 'rgba(0, 0, 0, 0.65)' : 'rgba(255,255,255,0.08)';
+                      e.currentTarget.style.backgroundColor = (effectiveBannerUrl && scrollOffset < 160) ? 'rgba(0, 0, 0, 0.65)' : 'rgba(255,255,255,0.08)';
                       e.currentTarget.style.color = 'var(--text-main)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = (effectiveBannerUrl && scrollOffset < 90) ? 'rgba(0, 0, 0, 0.45)' : 'transparent';
-                      e.currentTarget.style.color = (effectiveBannerUrl && scrollOffset < 90) ? '#ffffff' : 'var(--text-dim)';
+                      e.currentTarget.style.backgroundColor = (effectiveBannerUrl && scrollOffset < 160) ? 'rgba(0, 0, 0, 0.45)' : 'transparent';
+                      e.currentTarget.style.color = (effectiveBannerUrl && scrollOffset < 160) ? '#ffffff' : 'var(--text-dim)';
                     }}
                   >
                     <Pencil size={18} />
@@ -3820,11 +3823,11 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                     onClick={onClose}
                     aria-label={t('common.close', 'Закрыть')}
                     style={{
-                      background: (effectiveBannerUrl && scrollOffset < 90) ? 'rgba(0, 0, 0, 0.45)' : 'none',
-                      backdropFilter: (effectiveBannerUrl && scrollOffset < 90) ? 'blur(8px)' : 'none',
-                      WebkitBackdropFilter: (effectiveBannerUrl && scrollOffset < 90) ? 'blur(8px)' : 'none',
+                      background: (effectiveBannerUrl && scrollOffset < 160) ? 'rgba(0, 0, 0, 0.45)' : 'none',
+                      backdropFilter: (effectiveBannerUrl && scrollOffset < 160) ? 'blur(8px)' : 'none',
+                      WebkitBackdropFilter: (effectiveBannerUrl && scrollOffset < 160) ? 'blur(8px)' : 'none',
                       border: 'none',
-                      color: (effectiveBannerUrl && scrollOffset < 90) ? '#ffffff' : 'var(--text-dim)',
+                      color: (effectiveBannerUrl && scrollOffset < 160) ? '#ffffff' : 'var(--text-dim)',
                       cursor: 'pointer',
                       padding: '6px',
                       borderRadius: '50%',
@@ -3834,12 +3837,12 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                       transition: 'color 150ms, background 150ms',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = (effectiveBannerUrl && scrollOffset < 90) ? 'rgba(0, 0, 0, 0.65)' : 'rgba(255,255,255,0.08)';
+                      e.currentTarget.style.backgroundColor = (effectiveBannerUrl && scrollOffset < 160) ? 'rgba(0, 0, 0, 0.65)' : 'rgba(255,255,255,0.08)';
                       e.currentTarget.style.color = 'var(--text-main)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = (effectiveBannerUrl && scrollOffset < 90) ? 'rgba(0, 0, 0, 0.45)' : 'transparent';
-                      e.currentTarget.style.color = (effectiveBannerUrl && scrollOffset < 90) ? '#ffffff' : 'var(--text-dim)';
+                      e.currentTarget.style.backgroundColor = (effectiveBannerUrl && scrollOffset < 160) ? 'rgba(0, 0, 0, 0.45)' : 'transparent';
+                      e.currentTarget.style.color = (effectiveBannerUrl && scrollOffset < 160) ? '#ffffff' : 'var(--text-dim)';
                     }}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">

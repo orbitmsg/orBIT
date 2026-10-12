@@ -713,7 +713,8 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                               height: 96,
                               cursor: avatarUrl ? 'pointer' : 'default',
                               borderRadius: '50%',
-                              boxShadow: bannerUrl ? '0 0 0 15px var(--settings-bg, var(--bg-secondary))' : 'none',
+                              backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
+                              boxShadow: bannerUrl ? '0 0 0 6px var(--settings-bg, var(--bg-secondary))' : 'none',
                               flexShrink: 0,
                             }}
                             onClick={() => {
@@ -745,13 +746,14 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                                 borderRadius: '50%',
                                 overflow: 'hidden',
                                 flexShrink: 0,
+                                backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
                               }}
                             >
                               <Avatar
                                 src={avatarUrl}
                                 alt={nickname || 'User'}
                                 className="w-24 h-24 rounded-full"
-                                style={{ width: '96px', height: '96px' }}
+                                style={{ width: '96px', height: '96px', backgroundColor: 'var(--settings-bg, var(--bg-secondary))' }}
                               />
                             </div>
                           </div>

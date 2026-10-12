@@ -32,11 +32,11 @@ export const generateGroupId = (): string => {
 };
 
 export const generateGroupInviteCode = (): string => {
-  const chars = '0123456789abcdefghijklmnopqrstuvwxyz';
-  const array = new Uint8Array(16);
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const array = new Uint8Array(32);
   crypto.getRandomValues(array);
-  let code = 'join_';
-  for (let i = 0; i < 16; i++) {
+  let code = '';
+  for (let i = 0; i < 32; i++) {
     code += chars[array[i] % chars.length];
   }
   return code;

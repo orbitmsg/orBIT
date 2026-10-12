@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RotateCw, Crop, FlipHorizontal } from 'lucide-react';
+import { isAnimatedMedia } from '../../utils/staticImageValidation';
 
 interface AvatarCropperModalProps {
   isOpen: boolean;
@@ -146,6 +147,12 @@ export const AvatarCropperModal: React.FC<AvatarCropperModalProps> = ({
   };
 
   const handleSaveCrop = () => {
+    if (imageSrc && isAnimatedMedia(imageSrc)) {
+      onSave(imageSrc);
+      onClose();
+      return;
+    }
+
     if (!imgRef.current) return;
     const img = imgRef.current;
 

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RotateCw, FlipHorizontal } from 'lucide-react';
+import { isAnimatedMedia } from '../../utils/staticImageValidation';
 
 interface BannerCropperModalProps {
   isOpen: boolean;
@@ -139,6 +140,12 @@ export const BannerCropperModal: React.FC<BannerCropperModalProps> = ({
   };
 
   const handleSaveCrop = () => {
+    if (imageSrc && isAnimatedMedia(imageSrc)) {
+      onSave(imageSrc);
+      onClose();
+      return;
+    }
+
     if (!imgRef.current) return;
     const img = imgRef.current;
 
@@ -167,6 +174,7 @@ export const BannerCropperModal: React.FC<BannerCropperModalProps> = ({
 
     const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
     onSave(dataUrl);
+    onClose();
   };
 
   if (!isOpen || !imageSrc) return null;

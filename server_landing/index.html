@@ -390,14 +390,23 @@
 
     function getTarget() {
       const url = new URL(window.location.href);
+      const hash = window.location.hash ? window.location.hash.substring(1) : '';
+
+      if (hash) {
+        const cleanHash = decodeURIComponent(hash).trim().replace(/^#+/, '');
+        if (cleanHash) {
+          return { type: 'group', code: cleanHash };
+        }
+      }
+
       const pathname = url.pathname;
 
-      const directJoinMatch = pathname.match(/\/(join_[a-zA-Z0-9_-]{6,20})/i);
+      const directJoinMatch = pathname.match(/\/(join_[a-zA-Z0-9_-]{6,32})/i);
       if (directJoinMatch && directJoinMatch[1]) {
         return { type: 'group', code: directJoinMatch[1] };
       }
 
-      const groupMatch = pathname.match(/\/(?:g|group|join|invite)(?:\/group)?\/([^\/?#]+)/i);
+      const groupMatch = pathname.match(/\/(?:g|group|groups|join|invite)(?:\/group)?\/([^\/?#]+)/i);
       if (groupMatch && groupMatch[1]) {
         return { type: 'group', code: decodeURIComponent(groupMatch[1]).trim() };
       }
@@ -415,7 +424,7 @@
       const q = url.searchParams.get('code') || url.searchParams.get('id') || url.searchParams.get('token') || '';
       if (q.trim()) {
         const val = q.trim();
-        if (val.startsWith('join_') || val.length === 54) {
+        if (val.startsWith('join_') || val.length >= 28) {
           return { type: 'group', code: val };
         }
         return { type: 'user', code: val };

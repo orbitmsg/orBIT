@@ -11,7 +11,7 @@ import { extractGroupCode, isValidGroupCode } from '../../lib/groupCrypto';
 import { generateChannelId } from '../../lib/codes';
 import { useToastStore } from '../../store/useToastStore';
 import { AvatarCropperModal } from '../settings/AvatarCropperModal';
-import { isStaticImageFile } from '../../utils/staticImageValidation';
+import { isStaticImageFile, MAX_AVATAR_BANNER_SIZE } from '../../utils/staticImageValidation';
 import { supabaseService, type UserDirectoryRecord } from '../../services/supabaseService';
 import { Avatar } from '../common/Avatar';
 
@@ -115,9 +115,15 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > MAX_AVATAR_BANNER_SIZE) {
+        useToastStore.getState().showToast(t('settings.file_too_large_3mb'));
+        if (e.target) e.target.value = '';
+        return;
+      }
       const check = await isStaticImageFile(file);
-      if (!check.ok) {
-        useToastStore.getState().showToast(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
+      const isAnim = file.type.startsWith('video/') || file.type === 'image/gif' || file.name.match(/\.(gif|mp4|webm|mov)$/i);
+      if (!check.ok && !isAnim) {
+        useToastStore.getState().showToast(t('settings.static_images_only'));
         if (e.target) e.target.value = '';
         return;
       }
@@ -424,7 +430,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                   className="w-14 h-14 rounded-full bg-[#3B82F6] flex items-center justify-center cursor-pointer overflow-hidden relative border-none outline-none"
                 >
                   {avatarUrl ? (
-                    <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                    <Avatar src={avatarUrl} style={{ width: '100%', height: '100%' }} />
                   ) : (
                     <Camera size={26} className="text-white" />
                   )}
@@ -432,7 +438,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/png,image/jpeg,image/webp"
+                  accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
                   className="hidden"
                   style={{ display: 'none' }}
                   onChange={handleFileChange}

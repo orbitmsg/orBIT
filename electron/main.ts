@@ -55,16 +55,22 @@ const envPath = app.isPackaged
 dotenv.config({ path: envPath });
 
 const VERCEL_URL = process.env.VITE_VERCEL_URL || 'https://orbitad.vercel.app';
+const CLOUDINARY_SERVERS = [
+  {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME || 'djyohgr19',
+    apiKey: process.env.CLOUDINARY_API_KEY || '357947577811974',
+    apiSecret: process.env.CLOUDINARY_API_SECRET || '',
+  },
+  {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME_2 || 'mediaflows_57409556-98cb-406c-8978-f56a056f78ff',
+    apiKey: process.env.CLOUDINARY_API_KEY_2 || '531946219769413',
+    apiSecret: process.env.CLOUDINARY_API_SECRET_2 || 'HQk5CME0BmhhBQWeSJxfraJh-8A',
+  },
+];
+let cloudinaryServerIndex = 0;
 const {
-  CLOUDINARY_API_KEY,
-  CLOUDINARY_API_SECRET,
-  CLOUDINARY_CLOUD_NAME,
   SYNC_SERVER_PORT = '49832',
 } = process.env;
-
-if (!CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET || !CLOUDINARY_CLOUD_NAME) {
-  console.log('[App] Cloudinary credentials not in local .env, using Vercel signing gateway');
-}
 
 if (process.platform === 'win32') {
   app.setName('Orbita Desktop');
@@ -1742,79 +1748,85 @@ function uploadToCloudinaryWithProgress(
   });
 }
 
-async function cloudinaryUploadWithProgress(event: Electron.IpcMainInvokeEvent, filePath: string, publicId: string) {
-  let fields: Record<string, string>;
-  let uploadUrl: string;
-
-  if (CLOUDINARY_API_KEY && CLOUDINARY_API_SECRET && CLOUDINARY_CLOUD_NAME) {
+async function getCloudinarySignForServer(srv: typeof CLOUDINARY_SERVERS[0], publicId: string) {
+  if (srv.apiKey && srv.apiSecret && srv.cloudName) {
     const timestamp = Math.floor(Date.now() / 1000).toString();
-    const strToSign = `public_id=${publicId}&timestamp=${timestamp}${CLOUDINARY_API_SECRET}`;
+    const strToSign = `public_id=${publicId}&timestamp=${timestamp}${srv.apiSecret}`;
     const signature = crypto.createHash('sha1').update(strToSign).digest('hex');
-
-    fields = {
-      public_id: publicId,
-      timestamp,
-      api_key: CLOUDINARY_API_KEY,
-      signature,
-    };
-    uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
-  } else {
-    try {
-      const resp = await fetch(`${VERCEL_URL}/cloudinary/sign`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ publicId }),
-      });
-
-      if (!resp.ok) throw new Error(`Gateway signing failed: ${resp.statusText}`);
-      const signed = await resp.json();
-
-      fields = {
+    return {
+      fields: {
         public_id: publicId,
-        timestamp: signed.timestamp,
-        api_key: signed.apiKey,
-        signature: signed.signature,
-      };
-      uploadUrl = signed.uploadUrl;
-    } catch (e: any) {
-      console.error('[Cloudinary] Failed to get signature from worker:', e);
-      return { success: false, error: `Failed to sign upload: ${e?.message || e}` };
-    }
-  }
-
-  try {
-    let lastProgressSent = 0;
-    const { statusCode, body } = await uploadToCloudinaryWithProgress(
-      filePath,
-      uploadUrl,
-      fields,
-      'file',
-      (uploadedBytes, totalBytes) => {
-        const now = Date.now();
-        if (uploadedBytes < totalBytes && now - lastProgressSent < 90) return;
-        lastProgressSent = now;
-        if (event.sender && !event.sender.isDestroyed()) {
-          try {
-            event.sender.send('orbita:uploadProgress', {
-              publicId,
-              uploadedBytes,
-              totalBytes,
-            });
-          } catch {}
-        }
+        timestamp,
+        api_key: srv.apiKey,
+        signature,
       },
-      publicId
-    );
-
-    const parsed = JSON.parse(body);
-    if (statusCode === 200 && parsed.secure_url) {
-      return { success: true, secure_url: parsed.secure_url, bytes: parsed.bytes };
-    } else {
-      return { success: false, error: parsed.error?.message || `HTTP ${statusCode}` };
-    }
-  } catch (err) {
-    return { success: false, error: String(err) };
+      uploadUrl: `https://api.cloudinary.com/v1_1/${srv.cloudName}/auto/upload`,
+    };
   }
+  const resp = await fetch(`${VERCEL_URL}/cloudinary/sign`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ publicId, cloudName: srv.cloudName }),
+  });
+  if (!resp.ok) throw new Error(`Gateway signing failed: ${resp.statusText}`);
+  const signed = await resp.json();
+  return {
+    fields: {
+      public_id: publicId,
+      timestamp: signed.timestamp,
+      api_key: signed.apiKey,
+      signature: signed.signature,
+    },
+    uploadUrl: signed.uploadUrl,
+  };
+}
+
+async function cloudinaryUploadWithProgress(event: Electron.IpcMainInvokeEvent, filePath: string, publicId: string) {
+  const chosenIndex = cloudinaryServerIndex;
+  cloudinaryServerIndex = (cloudinaryServerIndex + 1) % CLOUDINARY_SERVERS.length;
+  const serversToTry = [
+    CLOUDINARY_SERVERS[chosenIndex],
+    CLOUDINARY_SERVERS[(chosenIndex + 1) % CLOUDINARY_SERVERS.length],
+  ];
+
+  let lastError = '';
+  for (const srv of serversToTry) {
+    try {
+      const { fields, uploadUrl } = await getCloudinarySignForServer(srv, publicId);
+      let lastProgressSent = 0;
+      const { statusCode, body } = await uploadToCloudinaryWithProgress(
+        filePath,
+        uploadUrl,
+        fields,
+        'file',
+        (uploadedBytes, totalBytes) => {
+          const now = Date.now();
+          if (uploadedBytes < totalBytes && now - lastProgressSent < 90) return;
+          lastProgressSent = now;
+          if (event.sender && !event.sender.isDestroyed()) {
+            try {
+              event.sender.send('orbita:uploadProgress', {
+                publicId,
+                uploadedBytes,
+                totalBytes,
+              });
+            } catch {}
+          }
+        },
+        publicId
+      );
+
+      const parsed = JSON.parse(body);
+      if (statusCode === 200 && parsed.secure_url) {
+        return { success: true, secure_url: parsed.secure_url, bytes: parsed.bytes };
+      }
+      lastError = parsed.error?.message || `HTTP ${statusCode}`;
+    } catch (err: any) {
+      lastError = String(err?.message || err);
+    }
+  }
+
+  return { success: false, error: lastError || 'Upload failed on all Cloudinary servers' };
 }
 
 ipcMain.handle('orbita:cancel-upload', async (_event, publicId?: string) => {
@@ -2274,33 +2286,32 @@ ipcMain.handle('orbita:upload', async (event, { filePath, publicId }: { filePath
 ipcMain.handle('orbita:destroyCloudinaryMedia', async (_event, publicId: string, resourceType: string = 'image') => {
   if (!publicId) return { success: false };
   try {
-    if (CLOUDINARY_API_KEY && CLOUDINARY_API_SECRET && CLOUDINARY_CLOUD_NAME) {
-      const timestamp = Math.floor(Date.now() / 1000).toString();
-      const strToSign = `public_id=${publicId}&timestamp=${timestamp}${CLOUDINARY_API_SECRET}`;
-      const signature = crypto.createHash('sha1').update(strToSign).digest('hex');
-
-      const formData = new URLSearchParams();
-      formData.append('public_id', publicId);
-      formData.append('api_key', CLOUDINARY_API_KEY);
-      formData.append('timestamp', timestamp);
-      formData.append('signature', signature);
-
-      const rTypes = ['image', 'video', 'raw'];
-      for (const rt of rTypes) {
-        fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${rt}/destroy`, {
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    for (const srv of CLOUDINARY_SERVERS) {
+      if (srv.apiKey && srv.apiSecret && srv.cloudName) {
+        const strToSign = `public_id=${publicId}&timestamp=${timestamp}${srv.apiSecret}`;
+        const signature = crypto.createHash('sha1').update(strToSign).digest('hex');
+        const formData = new URLSearchParams();
+        formData.append('public_id', publicId);
+        formData.append('api_key', srv.apiKey);
+        formData.append('timestamp', timestamp);
+        formData.append('signature', signature);
+        const rTypes = ['image', 'video', 'raw'];
+        for (const rt of rTypes) {
+          fetch(`https://api.cloudinary.com/v1_1/${srv.cloudName}/${rt}/destroy`, {
+            method: 'POST',
+            body: formData,
+          }).catch(() => {});
+        }
+      } else {
+        fetch(`${VERCEL_URL}/cloudinary/destroy`, {
           method: 'POST',
-          body: formData,
-        }).catch(() => { });
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ public_id: publicId, resourceType, cloudName: srv.cloudName }),
+        }).catch(() => {});
       }
-      return { success: true };
-    } else {
-      fetch(`${VERCEL_URL}/cloudinary/destroy`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ public_id: publicId, resourceType }),
-      }).catch(() => { });
-      return { success: true };
     }
+    return { success: true };
   } catch (e) {
     return { success: false, error: String(e) };
   }

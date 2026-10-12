@@ -16,9 +16,12 @@ const ENV = {
   PUSHER_SECRET: process.env.PUSHER_SECRET || '',
   PUSHER_APP_ID: process.env.PUSHER_APP_ID || '2142120',
   PUSHER_CLUSTER: process.env.PUSHER_CLUSTER || 'eu',
-  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || '',
+  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || '357947577811974',
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || '',
-  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || '',
+  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || 'djyohgr19',
+  CLOUDINARY_API_KEY_2: process.env.CLOUDINARY_API_KEY_2 || '531946219769413',
+  CLOUDINARY_API_SECRET_2: process.env.CLOUDINARY_API_SECRET_2 || 'HQk5CME0BmhhBQWeSJxfraJh-8A',
+  CLOUDINARY_CLOUD_NAME_2: process.env.CLOUDINARY_CLOUD_NAME_2 || 'mediaflows_57409556-98cb-406c-8978-f56a056f78ff',
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
   GROUPS_SUPABASE_URL: process.env.GROUPS_SUPABASE_URL || 'https://vxjaybyveerulkdqhggr.supabase.co',
   GROUPS_SUPABASE_KEY: process.env.GROUPS_SUPABASE_SECRET_KEY || process.env.GROUPS_SUPABASE_KEY || process.env.GROUPS_SUPABASE_PUBLISHABLE_KEY || '',
@@ -646,13 +649,38 @@ module.exports = async function handler(req, res) {
     if (pathname === '/cloudinary/sign' || pathname === '/cloudinary-sign') {
       const publicId = query.public_id || query.publicId || body.publicId || body.public_id || '';
       const timestamp = (query.timestamp || body.timestamp || Math.floor(Date.now() / 1000)).toString();
+      const reqCloud = query.cloudName || body.cloudName || '';
 
       if (!publicId) return sendError(res, 'Missing publicId parameter', 400);
 
+      const servers = [
+        {
+          key: ENV.CLOUDINARY_API_KEY,
+          secret: ENV.CLOUDINARY_API_SECRET,
+          cloud: ENV.CLOUDINARY_CLOUD_NAME,
+        },
+        {
+          key: ENV.CLOUDINARY_API_KEY_2,
+          secret: ENV.CLOUDINARY_API_SECRET_2,
+          cloud: ENV.CLOUDINARY_CLOUD_NAME_2,
+        },
+      ];
+
+      let chosen = servers.find((s) => s.cloud === reqCloud);
+      if (!chosen) {
+        if (!global.__cloudinaryTurn) global.__cloudinaryTurn = 0;
+        chosen = servers[global.__cloudinaryTurn % servers.length];
+        global.__cloudinaryTurn = (global.__cloudinaryTurn + 1) % servers.length;
+      }
+
+      if (!chosen.secret) {
+        chosen = servers.find((s) => Boolean(s.secret)) || chosen;
+      }
+
       const signResult = signCloudinaryUpload(
-        ENV.CLOUDINARY_API_KEY,
-        ENV.CLOUDINARY_API_SECRET,
-        ENV.CLOUDINARY_CLOUD_NAME,
+        chosen.key,
+        chosen.secret,
+        chosen.cloud,
         publicId,
         timestamp
       );
@@ -662,22 +690,42 @@ module.exports = async function handler(req, res) {
     if (pathname === '/cloudinary/destroy' || pathname === '/cloudinary-destroy') {
       const publicId = body.public_id || body.publicId || query.public_id || query.publicId || '';
       const resourceType = body.resourceType || body.resource_type || 'image';
-      if (!publicId || !ENV.CLOUDINARY_API_KEY || !ENV.CLOUDINARY_API_SECRET || !ENV.CLOUDINARY_CLOUD_NAME) {
+      const reqCloud = body.cloudName || query.cloudName || '';
+
+      if (!publicId) {
         return sendJson(res, { success: false });
       }
+
+      const servers = [
+        {
+          key: ENV.CLOUDINARY_API_KEY,
+          secret: ENV.CLOUDINARY_API_SECRET,
+          cloud: ENV.CLOUDINARY_CLOUD_NAME,
+        },
+        {
+          key: ENV.CLOUDINARY_API_KEY_2,
+          secret: ENV.CLOUDINARY_API_SECRET_2,
+          cloud: ENV.CLOUDINARY_CLOUD_NAME_2,
+        },
+      ];
+
+      const targets = reqCloud ? servers.filter((s) => s.cloud === reqCloud) : servers;
       try {
         const timestamp = Math.floor(Date.now() / 1000).toString();
-        const paramsToSign = `public_id=${publicId}&timestamp=${timestamp}${ENV.CLOUDINARY_API_SECRET}`;
-        const signature = crypto.createHash('sha1').update(paramsToSign).digest('hex');
-        const formData = new URLSearchParams();
-        formData.append('public_id', publicId);
-        formData.append('api_key', ENV.CLOUDINARY_API_KEY);
-        formData.append('timestamp', timestamp);
-        formData.append('signature', signature);
-        await fetch(`https://api.cloudinary.com/v1_1/${ENV.CLOUDINARY_CLOUD_NAME}/${resourceType}/destroy`, {
-          method: 'POST',
-          body: formData,
-        });
+        for (const srv of targets) {
+          if (!srv.secret || !srv.key || !srv.cloud) continue;
+          const paramsToSign = `public_id=${publicId}&timestamp=${timestamp}${srv.secret}`;
+          const signature = crypto.createHash('sha1').update(paramsToSign).digest('hex');
+          const formData = new URLSearchParams();
+          formData.append('public_id', publicId);
+          formData.append('api_key', srv.key);
+          formData.append('timestamp', timestamp);
+          formData.append('signature', signature);
+          fetch(`https://api.cloudinary.com/v1_1/${srv.cloud}/${resourceType}/destroy`, {
+            method: 'POST',
+            body: formData,
+          }).catch(() => {});
+        }
         return sendJson(res, { success: true });
       } catch {
         return sendJson(res, { success: false });

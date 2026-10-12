@@ -19,7 +19,8 @@ import { handleScrollbarThumbMouseDown, handleScrollbarTrackMouseDown } from '..
 import { mediaManager } from '../../services/mediaManager';
 import { supabaseService } from '../../services/supabaseService';
 import { formatBirthday } from '../../utils/birthday';
-import { isStaticImageDataUrl, isStaticImageFile } from '../../utils/staticImageValidation';
+import { isStaticImageDataUrl, isStaticImageFile, MAX_AVATAR_BANNER_SIZE, isAnimatedMedia, getMediaInfoFromDataUrl, SUPPORTED_MEDIA_EXTENSIONS } from '../../utils/staticImageValidation';
+import { OptimizedBanner } from '../common/OptimizedBanner';
 
 const sendProfileUpdate = (updates: {
   avatarUrl?: string | null;
@@ -268,16 +269,17 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
       setAvatarUrl(dataUrl);
       let finalUrl = dataUrl;
       const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+      const { ext, mime } = getMediaInfoFromDataUrl(dataUrl);
       try {
         const binaryStr = atob(base64);
         const bytes = new Uint8Array(binaryStr.length);
         for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-        const avatarBlob = new Blob([bytes], { type: 'image/png' });
-        mediaManager.setDirectDecryptedMedia(dataUrl, '', avatarBlob, 'image/png');
+        const avatarBlob = new Blob([bytes], { type: mime });
+        mediaManager.setDirectDecryptedMedia(dataUrl, '', avatarBlob, mime);
       } catch { }
 
       if (typeof window !== 'undefined' && window.orbita?.writeTempFile && window.orbita?.uploadToCloudinary) {
-        const tempPath = await window.orbita.writeTempFile(base64, 'png');
+        const tempPath = await window.orbita.writeTempFile(base64, ext);
         if (tempPath) {
           const publicId = `avatar_${Date.now()}`;
           const result = await window.orbita.uploadToCloudinary(tempPath, publicId);
@@ -287,8 +289,8 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
               const binaryStr = atob(base64);
               const bytes = new Uint8Array(binaryStr.length);
               for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-              const avatarBlob = new Blob([bytes], { type: 'image/png' });
-              mediaManager.setDirectDecryptedMedia(finalUrl, '', avatarBlob, 'image/png');
+              const avatarBlob = new Blob([bytes], { type: mime });
+              mediaManager.setDirectDecryptedMedia(finalUrl, '', avatarBlob, mime);
             } catch { }
             setAvatarUrl(finalUrl);
           }
@@ -308,28 +310,21 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
     setAvatarMenuOpen(false);
     try {
       if (window.orbita?.pickFile) {
-        const raw = await window.orbita.pickFile(['jpg', 'jpeg', 'png', 'webp']);
+        const raw = await window.orbita.pickFile(SUPPORTED_MEDIA_EXTENSIONS);
         if (!raw) return;
         const filePath = Array.isArray(raw) ? raw[0] : raw;
         if (!filePath) return;
 
-        const check = await isStaticImageFile(filePath);
-        if (!check.ok) {
-          alert(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
-          return;
-        }
-
         const sizeBytes = await window.orbita.getFileSize(filePath);
-        const sizeMB = sizeBytes / (1024 * 1024);
-        if (sizeMB > 10) {
-          alert('Файл слишком большой. Максимальный размер: 10 МБ.');
+        if (sizeBytes > MAX_AVATAR_BANNER_SIZE) {
+          alert(t('settings.file_too_large_3mb'));
           return;
         }
 
         const dataUrl = await window.orbita.readFileAsDataURL(filePath);
         if (dataUrl) {
-          if (!isStaticImageDataUrl(dataUrl)) {
-            alert(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
+          if (!isStaticImageDataUrl(dataUrl) && !isAnimatedMedia(dataUrl)) {
+            alert(t('settings.static_images_only'));
             return;
           }
           setCropperImageSrc(dataUrl);
@@ -338,20 +333,25 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
       } else {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = 'image/png,image/jpeg,image/webp';
+        input.accept = 'image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime';
         input.onchange = async (e: any) => {
           const file = e.target.files?.[0];
           if (file) {
+            if (file.size > MAX_AVATAR_BANNER_SIZE) {
+              alert(t('settings.file_too_large_3mb'));
+              return;
+            }
             const check = await isStaticImageFile(file);
-            if (!check.ok) {
-              alert(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
+            const isAnim = file.type.startsWith('video/') || file.type === 'image/gif' || file.name.match(/\.(gif|mp4|webm|mov)$/i);
+            if (!check.ok && !isAnim) {
+              alert(t('settings.static_images_only'));
               return;
             }
             const reader = new FileReader();
             reader.onload = () => {
               const res = reader.result as string;
-              if (!isStaticImageDataUrl(res)) {
-                alert(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
+              if (!isStaticImageDataUrl(res) && !isAnimatedMedia(res)) {
+                alert(t('settings.static_images_only'));
                 return;
               }
               setCropperImageSrc(res);
@@ -393,8 +393,8 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
       }
 
       if (dataUrl) {
-        if (!isStaticImageDataUrl(dataUrl)) {
-          alert(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
+        if (!isStaticImageDataUrl(dataUrl) && !isAnimatedMedia(dataUrl)) {
+          alert(t('settings.static_images_only'));
           return;
         }
         setCropperImageSrc(dataUrl);
@@ -672,9 +672,8 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                             userSelect: 'none',
                           }}
                         >
-                          <img
+                          <OptimizedBanner
                             src={bannerUrl}
-                            alt=""
                             style={{
                               width: '100%',
                               height: '100%',

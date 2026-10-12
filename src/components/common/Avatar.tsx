@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 
 export const AVATAR_GRADIENTS = [
   'linear-gradient(135deg, #06b6d4, #3b82f6)',
@@ -56,9 +56,51 @@ export const Avatar = ({ src, alt = '', className = '', style }: AvatarProps) =>
 
   const isVideo = useMemo(() => {
     if (!cleanSrc || videoError) return false;
-    const ext = cleanSrc.split('.').pop()?.toLowerCase();
+    const lower = cleanSrc.toLowerCase();
+    if (lower.startsWith('data:video/')) return true;
+    if (lower.includes('/video/')) return true;
+    const ext = lower.split('.').pop()?.split('?')[0];
     return ['mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v'].includes(ext || '');
   }, [cleanSrc, videoError]);
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (!isVideo || !cleanSrc) return;
+    const el = videoRef.current;
+    if (!el) return;
+
+    let isVisible = false;
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        el.pause();
+      } else if (isVisible) {
+        el.play().catch(() => {});
+      }
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        isVisible = Boolean(entry && entry.isIntersecting);
+        if (isVisible && !document.hidden) {
+          el.play().catch(() => {});
+        } else {
+          el.pause();
+        }
+      },
+      { threshold: 0.05 }
+    );
+
+    observer.observe(el);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [isVideo, cleanSrc]);
 
   const gradient = useMemo(() => getAvatarGradient(cleanAlt), [cleanAlt]);
 
@@ -144,11 +186,12 @@ export const Avatar = ({ src, alt = '', className = '', style }: AvatarProps) =>
   if (isVideo) {
     return (
       <video
+        ref={videoRef}
         src={cleanSrc}
-        autoPlay
         muted
         loop
         playsInline
+        preload="metadata"
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
         className={`object-cover rounded-full flex-shrink-0 select-none ${className}`}
@@ -156,6 +199,7 @@ export const Avatar = ({ src, alt = '', className = '', style }: AvatarProps) =>
           borderRadius: '50%',
           overflow: 'hidden',
           transform: 'translateZ(0)',
+          willChange: 'transform',
           ...noDragStyle,
           ...style,
         }}
@@ -177,6 +221,7 @@ export const Avatar = ({ src, alt = '', className = '', style }: AvatarProps) =>
         borderRadius: '50%',
         overflow: 'hidden',
         transform: 'translateZ(0)',
+        willChange: 'transform',
         ...noDragStyle,
         ...style,
       }}

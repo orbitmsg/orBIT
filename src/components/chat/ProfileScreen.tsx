@@ -16,7 +16,8 @@ import { AddGroupMemberModal } from './AddGroupMemberModal';
 import { DeleteGroupModal } from './DeleteGroupModal';
 import { arrayBufferToBase64, formatLastSeen } from '../../utils/messageUtils';
 import { formatBirthday } from '../../utils/birthday';
-import { isStaticImageFile } from '../../utils/staticImageValidation';
+import { isStaticImageFile, MAX_AVATAR_BANNER_SIZE, getMediaInfoFromDataUrl } from '../../utils/staticImageValidation';
+import { OptimizedBanner } from '../common/OptimizedBanner';
 import {
   Picture as GravityPictureIcon,
   Video as GravityVideoIcon,
@@ -1320,9 +1321,15 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
   const handleAvatarFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > MAX_AVATAR_BANNER_SIZE) {
+        alert(t('settings.file_too_large_3mb'));
+        if (e.target) e.target.value = '';
+        return;
+      }
       const check = await isStaticImageFile(file);
-      if (!check.ok) {
-        alert(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
+      const isAnim = file.type.startsWith('video/') || file.type === 'image/gif' || file.name.match(/\.(gif|mp4|webm|mov)$/i);
+      if (!check.ok && !isAnim) {
+        alert(t('settings.static_images_only'));
         if (e.target) e.target.value = '';
         return;
       }
@@ -1360,9 +1367,10 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
       let finalAvatarUrl = initialAvatar;
       if (initialAvatar && initialAvatar.startsWith('data:')) {
         const base64 = initialAvatar.includes(',') ? initialAvatar.split(',')[1] : initialAvatar;
+        const { ext } = getMediaInfoFromDataUrl(initialAvatar);
         if (typeof window !== 'undefined' && window.orbita?.writeTempFile && window.orbita?.uploadToCloudinary) {
           try {
-            const tempPath = await window.orbita.writeTempFile(base64, 'png');
+            const tempPath = await window.orbita.writeTempFile(base64, ext);
             if (tempPath) {
               const publicId = `channel_avatar_${chat.id}_${Date.now()}`;
               const result = await window.orbita.uploadToCloudinary(tempPath, publicId);
@@ -2031,9 +2039,8 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
             userSelect: 'none',
           }}
         >
-          <img
+          <OptimizedBanner
             src={effectiveBannerUrl}
-            alt=""
             style={{
               width: '100%',
               height: '100%',
@@ -3423,7 +3430,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/png,image/jpeg,image/webp"
+          accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
           style={{ display: 'none' }}
           onChange={handleAvatarFileChange}
         />

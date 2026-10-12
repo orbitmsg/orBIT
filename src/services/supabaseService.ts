@@ -772,12 +772,16 @@ class SupabaseService {
           await this.client.from('profile_updates').delete().eq('chat_id', chatId).eq('sender_code', senderCode);
         }
       } catch {}
+      let effectiveBio = bio || null;
+      if (bannerUrl) {
+        effectiveBio = effectiveBio ? `${effectiveBio}\n<!--banner:${bannerUrl}-->` : `<!--banner:${bannerUrl}-->`;
+      }
       const insertPayload: Record<string, any> = {
         chat_id: chatId,
         nickname,
         avatar_url: avatarUrl,
         sender_code: senderCode || null,
-        bio: bio || null,
+        bio: effectiveBio,
         username: cleanUsername,
         birthday: birthday || null,
         banner_url: bannerUrl !== undefined ? bannerUrl : null,
@@ -801,6 +805,26 @@ class SupabaseService {
     }
   }
 
+  private parseProfileRow(row: any): ProfileUpdateRecord | null {
+    if (!row) return null;
+    let bannerUrl = row.banner_url || null;
+    let bio = row.bio || null;
+    if (bio && typeof bio === 'string') {
+      const bannerMatch = bio.match(/<!--banner:(.*?)-->/);
+      if (bannerMatch) {
+        if (!bannerUrl) {
+          bannerUrl = bannerMatch[1];
+        }
+        bio = bio.replace(/<!--banner:.*?-->/g, '').trim() || null;
+      }
+    }
+    return {
+      ...row,
+      banner_url: bannerUrl,
+      bio,
+    };
+  }
+
   async getLatestProfileUpdate(chatId: string, excludeCode?: string): Promise<ProfileUpdateRecord | null> {
     if (!chatId || chatId === 'notes') return null;
     const nodes = relayRouter.getNodes();
@@ -811,7 +835,7 @@ class SupabaseService {
         const res = await fetch(`${relay.url}/relay/profile?chatId=${encodeURIComponent(chatId)}${queryParam}`);
         if (res.ok) {
           const data = (await res.json()) as { profile: ProfileUpdateRecord | null };
-          if (data?.profile) return data.profile;
+          if (data?.profile) return this.parseProfileRow(data.profile);
         }
       } catch (err) {
         console.warn(`[Relay] Failed to get profile update from ${relay.url}:`, err);
@@ -838,7 +862,7 @@ class SupabaseService {
         return null;
       }
 
-      return data || null;
+      return this.parseProfileRow(data);
     }
 
     return null;
@@ -957,14 +981,15 @@ class SupabaseService {
           .maybeSingle();
 
         if (!error && data && data.nickname) {
+          const parsed = this.parseProfileRow(data);
           return {
             user_code: data.sender_code || data.chat_id,
             numeric_id: data.numeric_id || null,
             nickname: data.nickname,
             avatar_url: data.avatar_url,
-            banner_url: data.banner_url,
+            banner_url: parsed?.banner_url || data.banner_url || null,
             username: data.username,
-            bio: data.bio,
+            bio: parsed?.bio || data.bio,
             birthday: data.birthday,
             updated_at: data.updated_at,
           };
@@ -996,7 +1021,12 @@ class SupabaseService {
               const code = u.user_code;
               if (code && !seen.has(code)) {
                 seen.add(code);
-                results.push(u);
+                const parsed = this.parseProfileRow(u);
+                results.push({
+                  ...u,
+                  banner_url: parsed?.banner_url || u.banner_url || null,
+                  bio: parsed?.bio || u.bio,
+                });
               }
             }
           }
@@ -1020,13 +1050,14 @@ class SupabaseService {
             const userCode = row.sender_code || row.chat_id;
             if (userCode && !seen.has(userCode)) {
               seen.add(userCode);
+              const parsed = this.parseProfileRow(row);
               results.push({
                 user_code: userCode,
                 nickname: row.nickname || 'User',
                 avatar_url: row.avatar_url,
-                banner_url: row.banner_url,
+                banner_url: parsed?.banner_url || row.banner_url || null,
                 username: row.username,
-                bio: row.bio,
+                bio: parsed?.bio || row.bio,
                 birthday: row.birthday,
                 updated_at: row.updated_at,
                 numeric_id: row.numeric_id || null,

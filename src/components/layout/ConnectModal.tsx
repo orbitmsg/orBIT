@@ -152,7 +152,8 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
     }
 
     if (type === 'friend') {
-      const groupCode = extractGroupCode(trimmed);
+      const isExplicitGroup = trimmed.includes('group') || trimmed.includes('join') || trimmed.includes('#') || trimmed.startsWith('join_');
+      const groupCode = isExplicitGroup ? extractGroupCode(trimmed) : '';
       if (groupCode && isValidGroupCode(groupCode)) {
         setIsLoading(true);
         groupService.joinGroup(trimmed, myNickname, myCode, { userId: useAuthStore.getState().userId, avatarUrl: useAuthStore.getState().avatarUrl || undefined }).then((result) => {

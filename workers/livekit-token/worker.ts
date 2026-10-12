@@ -780,6 +780,11 @@ export default {
           }
         } catch {}
 
+        let effectiveBio = body.bio || null;
+        if ((body as any).bannerUrl) {
+          effectiveBio = effectiveBio ? `${effectiveBio}\n<!--banner:${(body as any).bannerUrl}-->` : `<!--banner:${(body as any).bannerUrl}-->`;
+        }
+
         const { data, error } = await supabase
           .from('profile_updates')
           .insert({
@@ -788,7 +793,7 @@ export default {
             avatar_url: body.avatarUrl || null,
             hide_profile_id: body.hideProfileId !== undefined ? body.hideProfileId : null,
             sender_code: body.senderCode || null,
-            bio: body.bio || null,
+            bio: effectiveBio,
             username: cleanUsername,
             birthday: body.birthday || null,
           })
@@ -1000,7 +1005,18 @@ export default {
           .maybeSingle();
 
         if (error) return errorResponse(error.message, 500);
-        return jsonResponse({ profile: data || null });
+        let profile = data || null;
+        if (profile && profile.bio && typeof profile.bio === 'string') {
+          const bannerMatch = profile.bio.match(/<!--banner:(.*?)-->/);
+          if (bannerMatch) {
+            profile = {
+              ...profile,
+              banner_url: profile.banner_url || bannerMatch[1],
+              bio: profile.bio.replace(/<!--banner:.*?-->/g, '').trim() || null,
+            };
+          }
+        }
+        return jsonResponse({ profile });
       }
 
       // 10. Public Channels (Сообщества / Публичные каналы)

@@ -936,13 +936,18 @@ module.exports = async function handler(req, res) {
         }
       } catch {}
 
+      let effectiveBio = body.bio || null;
+      if (body.bannerUrl) {
+        effectiveBio = effectiveBio ? `${effectiveBio}\n<!--banner:${body.bannerUrl}-->` : `<!--banner:${body.bannerUrl}-->`;
+      }
+
       const { data, error } = await supabase.from('profile_updates').insert({
         chat_id: body.chatId,
         nickname: body.nickname || null,
         avatar_url: body.avatarUrl || null,
         hide_profile_id: body.hideProfileId !== undefined ? body.hideProfileId : null,
         sender_code: body.senderCode || null,
-        bio: body.bio || null,
+        bio: effectiveBio,
         username: cleanUsername,
         birthday: body.birthday || null,
       }).select();
@@ -1222,7 +1227,18 @@ module.exports = async function handler(req, res) {
         .limit(1)
         .maybeSingle();
       if (error) return sendError(res, error.message, 500);
-      return sendJson(res, { profile: data || null });
+      let profile = data || null;
+      if (profile && profile.bio && typeof profile.bio === 'string') {
+        const bannerMatch = profile.bio.match(/<!--banner:(.*?)-->/);
+        if (bannerMatch) {
+          profile = {
+            ...profile,
+            banner_url: profile.banner_url || bannerMatch[1],
+            bio: profile.bio.replace(/<!--banner:.*?-->/g, '').trim() || null,
+          };
+        }
+      }
+      return sendJson(res, { profile });
     }
 
     if (pathname === '/support/ticket' && req.method === 'POST') {

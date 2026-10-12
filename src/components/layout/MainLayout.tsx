@@ -1060,10 +1060,9 @@ export const MainLayout = () => {
 
   useEffect(() => {
     if (step === 'main' && nickname && myCode) {
-      const myKeys = generateKeyPair();
-      supabaseService.publishPublicProfile(myCode, nickname, avatarUrl || null, myKeys.publicKey, bio, username, birthday).catch(() => {});
+      supabaseService.publishPublicProfile(myCode, nickname, avatarUrl || null, null, bio, username, birthday, bannerUrl).catch(() => {});
     }
-  }, [step, nickname, myCode, avatarUrl, bio, username, birthday]);
+  }, [step, nickname, myCode, avatarUrl, bio, username, birthday, bannerUrl]);
 
   useEffect(() => {
     const pusher = getPusher();

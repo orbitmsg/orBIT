@@ -1058,6 +1058,24 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
   const effectiveBannerUrl = chatId === 'notes' ? myBannerUrl : chat?.bannerUrl;
   const voiceCallsEnabled = useChatStore((state) => state.voiceCallsEnabled);
 
+  useEffect(() => {
+    if (!chatId || chatId === 'notes' || !chat) return;
+    const peer = chat.peerCode || (chat.name && chat.name.length === 36 ? chat.name : null);
+    const updateFriendBanner = (url?: string | null) => {
+      if (url && url !== chat.bannerUrl) {
+        useChatStore.getState().updateChat(chatId, { bannerUrl: url });
+      }
+    };
+    if (peer) {
+      supabaseService.lookupPublicProfile(peer).then((p) => {
+        if (p?.banner_url) updateFriendBanner(p.banner_url);
+      }).catch(() => {});
+    }
+    supabaseService.getLatestProfileUpdate(chatId, myUserId || undefined).then((u) => {
+      if (u?.banner_url) updateFriendBanner(u.banner_url);
+    }).catch(() => {});
+  }, [chatId, chat?.peerCode]);
+
   const isChannel = chat?.type === 'channel';
   const isGroup = chat?.type === 'group';
   const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);

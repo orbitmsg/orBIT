@@ -3701,7 +3701,8 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
             }
 
             if (isSystem && (!text || text === '[ENCRYPTED MESSAGE]' || text === row.ciphertext)) {
-              text = row.sender_nickname ? `${row.sender_nickname} в группе` : 'Системное сообщение';
+              const actor = parsedData?.actorNickname || (row as any).actor_nickname || (row as any).actorNickname || (row.sender_nickname && row.sender_nickname !== 'system' ? row.sender_nickname : '');
+              text = actor ? `${actor} вступил(а) в группу` : 'Участник вступил(а) в группу';
             }
 
             const isOutgoing = Boolean(

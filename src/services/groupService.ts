@@ -9,7 +9,6 @@ import {
   extractGroupCode,
   isValidGroupCode,
 } from '../lib/groupCrypto';
-import { encryptMessage } from '../lib/crypto';
 import { useChatStore, type Message } from '../store/useChatStore';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -232,10 +231,6 @@ class GroupService {
 
     if (!secret || !isValidGroupCode(secret)) {
       throw new Error('INVALID_CODE');
-    }
-
-    if (raw.length === 36 && /^[0-9A-Z]{36}$/i.test(raw) && !raw.startsWith('join_')) {
-      throw new Error('LINK_REQUIRED');
     }
 
     const groupId = deriveGroupId(secret);
@@ -819,7 +814,7 @@ class GroupService {
 
   async sendSystemMessage(
     groupId: string,
-    sharedSecret: string,
+    _sharedSecret: string,
     eventType: 'join' | 'title' | 'avatar' | 'admin' | 'unadmin' | 'call' | 'call_ended' | 'kick' | 'create' | 'invite' | 'leave',
     actorNickname: string,
     targetNickname?: string
@@ -847,10 +842,7 @@ class GroupService {
       actorNickname: actor,
       targetNickname,
     });
-    let ciphertext = payload;
-    try {
-      ciphertext = await encryptMessage(payload, sharedSecret);
-    } catch {}
+    const ciphertext = payload;
 
     const systemMsg: Message = {
       id: msgId,
@@ -876,7 +868,7 @@ class GroupService {
         messageId: msgId,
         chatId: groupId,
         sender: 'system',
-        senderNickname: 'system',
+        senderNickname: actor || 'system',
         senderCode: 'system',
         ciphertext,
         type: 'message',
@@ -896,7 +888,7 @@ class GroupService {
     await this.sendGroupMessage({
       id: msgId,
       groupId,
-      senderNickname: 'system',
+      senderNickname: actor || 'system',
       senderCode: 'system',
       ciphertext,
       mediaType: 'system',

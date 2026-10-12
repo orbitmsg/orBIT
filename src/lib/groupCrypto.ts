@@ -85,7 +85,7 @@ export function extractGroupCode(input: string): string {
     return trimmed;
   }
 
-  if (trimmed.length >= 8 && trimmed.length <= 64 && /^[0-9A-Za-z_-]{8,64}$/.test(trimmed)) {
+  if (/^[a-z0-9]{32}$/.test(trimmed)) {
     return trimmed;
   }
 

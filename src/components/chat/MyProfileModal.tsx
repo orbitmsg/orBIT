@@ -19,9 +19,11 @@ import { handleScrollbarThumbMouseDown, handleScrollbarTrackMouseDown } from '..
 import { mediaManager } from '../../services/mediaManager';
 import { supabaseService } from '../../services/supabaseService';
 import { formatBirthday } from '../../utils/birthday';
+import { isStaticImageDataUrl, isStaticImageFile } from '../../utils/staticImageValidation';
 
 const sendProfileUpdate = (updates: {
   avatarUrl?: string | null;
+  bannerUrl?: string | null;
   nickname?: string;
   bio?: string | null;
   username?: string | null;
@@ -29,6 +31,7 @@ const sendProfileUpdate = (updates: {
 }) => {
   const currentNickname = useAuthStore.getState().nickname;
   const currentAvatar = useAuthStore.getState().avatarUrl;
+  const currentBanner = useAuthStore.getState().bannerUrl;
   const currentUserId = useAuthStore.getState().userId;
   const currentBio = useAuthStore.getState().bio;
   const currentUsername = useAuthStore.getState().username;
@@ -37,6 +40,7 @@ const sendProfileUpdate = (updates: {
   const myCode = useChatStore.getState().myCode;
   const finalNickname = updates.nickname !== undefined ? updates.nickname : currentNickname;
   const finalAvatar = updates.avatarUrl !== undefined ? updates.avatarUrl : currentAvatar;
+  const finalBanner = updates.bannerUrl !== undefined ? updates.bannerUrl : currentBanner;
   const finalBio = updates.bio !== undefined ? updates.bio : currentBio;
   const finalUsername = updates.username !== undefined ? updates.username : currentUsername;
   const finalBirthday = updates.birthday !== undefined ? updates.birthday : currentBirthday;
@@ -50,6 +54,7 @@ const sendProfileUpdate = (updates: {
     numericId: currentNumericId,
     senderId: currentUserId || myCode,
     avatarUrl: finalAvatar,
+    bannerUrl: finalBanner,
     nickname: finalNickname,
     bio: finalBio,
     username: finalUsername,
@@ -57,13 +62,13 @@ const sendProfileUpdate = (updates: {
   };
 
   if (myCode) {
-    supabaseService.publishPublicProfile(myCode, finalNickname, finalAvatar, null, finalBio, finalUsername, finalBirthday).catch(() => { });
+    supabaseService.publishPublicProfile(myCode, finalNickname, finalAvatar, null, finalBio, finalUsername, finalBirthday, finalBanner).catch(() => { });
   }
 
   const chats = useChatStore.getState().chats;
   chats.forEach((chat) => {
     if (chat.type === 'private' && chat.id !== 'notes') {
-      supabaseService.saveProfileUpdate(chat.id, finalNickname, finalAvatar, myCode, finalBio, finalUsername, finalBirthday).catch(() => { });
+      supabaseService.saveProfileUpdate(chat.id, finalNickname, finalAvatar, myCode, finalBio, finalUsername, finalBirthday, finalBanner).catch(() => { });
       ablyService.sendMessage(chat.id, payload).catch(() => { });
       const pusher = getPusher();
       const channel = pusher.subscribe(`private-chat-${chat.id}`);
@@ -105,9 +110,10 @@ interface MyProfileModalProps {
 
 export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onClose, isMobileView = false }) => {
   const { t, i18n } = useTranslation();
-  const { nickname, avatarUrl, username, bio, birthday, userId, setNickname, setAvatarUrl } = useAuthStore(useShallow((s) => ({
+  const { nickname, avatarUrl, bannerUrl, username, bio, birthday, userId, setNickname, setAvatarUrl } = useAuthStore(useShallow((s) => ({
     nickname: s.nickname,
     avatarUrl: s.avatarUrl,
+    bannerUrl: s.bannerUrl,
     username: s.username,
     bio: s.bio,
     birthday: s.birthday,
@@ -302,10 +308,16 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
     setAvatarMenuOpen(false);
     try {
       if (window.orbita?.pickFile) {
-        const raw = await window.orbita.pickFile(['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi', 'webm']);
+        const raw = await window.orbita.pickFile(['jpg', 'jpeg', 'png', 'webp']);
         if (!raw) return;
         const filePath = Array.isArray(raw) ? raw[0] : raw;
         if (!filePath) return;
+
+        const check = await isStaticImageFile(filePath);
+        if (!check.ok) {
+          alert(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
+          return;
+        }
 
         const sizeBytes = await window.orbita.getFileSize(filePath);
         const sizeMB = sizeBytes / (1024 * 1024);
@@ -316,19 +328,33 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
 
         const dataUrl = await window.orbita.readFileAsDataURL(filePath);
         if (dataUrl) {
+          if (!isStaticImageDataUrl(dataUrl)) {
+            alert(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
+            return;
+          }
           setCropperImageSrc(dataUrl);
           setCropperModalOpen(true);
         }
       } else {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = 'image/*';
-        input.onchange = (e: any) => {
+        input.accept = 'image/png,image/jpeg,image/webp';
+        input.onchange = async (e: any) => {
           const file = e.target.files?.[0];
           if (file) {
+            const check = await isStaticImageFile(file);
+            if (!check.ok) {
+              alert(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
+              return;
+            }
             const reader = new FileReader();
             reader.onload = () => {
-              setCropperImageSrc(reader.result as string);
+              const res = reader.result as string;
+              if (!isStaticImageDataUrl(res)) {
+                alert(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
+                return;
+              }
+              setCropperImageSrc(res);
               setCropperModalOpen(true);
             };
             reader.readAsDataURL(file);
@@ -367,6 +393,10 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
       }
 
       if (dataUrl) {
+        if (!isStaticImageDataUrl(dataUrl)) {
+          alert(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
+          return;
+        }
         setCropperImageSrc(dataUrl);
         setCropperModalOpen(true);
       } else {
@@ -514,8 +544,8 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                   right: 12,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '4px',
-                  zIndex: 30,
+                  gap: '6px',
+                  zIndex: 40,
                 }}
               >
                 <button
@@ -526,11 +556,14 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                   }}
                   aria-label={t('common.edit')}
                   style={{
-                    background: 'none',
+                    background: bannerUrl ? 'rgba(0, 0, 0, 0.45)' : 'none',
+                    backdropFilter: bannerUrl ? 'blur(8px)' : 'none',
+                    WebkitBackdropFilter: bannerUrl ? 'blur(8px)' : 'none',
                     border: 'none',
-                    color: 'var(--text-dim)',
+                    color: bannerUrl ? '#ffffff' : 'var(--text-dim)',
                     cursor: 'pointer',
-                    padding: '6px',
+                    width: '32px',
+                    height: '32px',
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
@@ -539,26 +572,29 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                     transition: 'color 150ms, background 150ms',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
+                    e.currentTarget.style.backgroundColor = bannerUrl ? 'rgba(0, 0, 0, 0.65)' : 'rgba(255,255,255,0.08)';
                     e.currentTarget.style.color = 'var(--text-main)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.color = 'var(--text-dim)';
+                    e.currentTarget.style.backgroundColor = bannerUrl ? 'rgba(0, 0, 0, 0.45)' : 'transparent';
+                    e.currentTarget.style.color = bannerUrl ? '#ffffff' : 'var(--text-dim)';
                   }}
                 >
-                  <Pencil size={19} />
+                  <Pencil size={18} />
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
                   aria-label={t('common.close')}
                   style={{
-                    background: 'none',
+                    background: bannerUrl ? 'rgba(0, 0, 0, 0.45)' : 'none',
+                    backdropFilter: bannerUrl ? 'blur(8px)' : 'none',
+                    WebkitBackdropFilter: bannerUrl ? 'blur(8px)' : 'none',
                     border: 'none',
-                    color: 'var(--text-dim)',
+                    color: bannerUrl ? '#ffffff' : 'var(--text-dim)',
                     cursor: 'pointer',
-                    padding: '6px',
+                    width: '32px',
+                    height: '32px',
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
@@ -567,15 +603,15 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                     transition: 'color 150ms, background 150ms',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
+                    e.currentTarget.style.backgroundColor = bannerUrl ? 'rgba(0, 0, 0, 0.65)' : 'rgba(255,255,255,0.08)';
                     e.currentTarget.style.color = 'var(--text-main)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.color = 'var(--text-dim)';
+                    e.currentTarget.style.backgroundColor = bannerUrl ? 'rgba(0, 0, 0, 0.45)' : 'transparent';
+                    e.currentTarget.style.color = bannerUrl ? '#ffffff' : 'var(--text-dim)';
                   }}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
                     <path fill="currentColor" d="M6.225 4.811a1 1 0 0 0-1.414 1.414L10.586 12L4.81 17.775a1 1 0 1 0 1.414 1.414L12 13.414l5.775 5.775a1 1 0 0 0 1.414-1.414L13.414 12l5.775-5.775a1 1 0 0 0-1.414-1.414L12 10.586z" />
                   </svg>
                 </button>
@@ -623,9 +659,34 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                     <QrCodeView userId={myCode} avatarUrl={avatarUrl} nickname={nickname} />
                   ) : (
                     <>
+                      {bannerUrl && (
+                        <div
+                          style={{
+                            width: '100%',
+                            height: '135px',
+                            minHeight: '135px',
+                            maxHeight: '135px',
+                            overflow: 'hidden',
+                            position: 'relative',
+                            flexShrink: 0,
+                            userSelect: 'none',
+                          }}
+                        >
+                          <img
+                            src={bannerUrl}
+                            alt=""
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                              display: 'block',
+                            }}
+                          />
+                        </div>
+                      )}
                       <div
                         style={{
-                          padding: '20px 0 16px',
+                          padding: bannerUrl ? '0 0 16px' : '20px 0 16px',
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
@@ -636,10 +697,24 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                         }}
                       >
                         <div
-                          style={{ position: 'relative', width: 96, height: 96, marginBottom: 10, marginTop: 0 }}
+                          style={{
+                            position: 'relative',
+                            width: 96,
+                            height: 96,
+                            marginBottom: 10,
+                            marginTop: bannerUrl ? -48 : 0,
+                            zIndex: 10,
+                          }}
                         >
                           <div
-                            style={{ width: 96, height: 96, cursor: avatarUrl ? 'pointer' : 'default', borderRadius: '50%' }}
+                            style={{
+                              width: 96,
+                              height: 96,
+                              cursor: avatarUrl ? 'pointer' : 'default',
+                              borderRadius: '50%',
+                              border: bannerUrl ? '4px solid var(--settings-bg, var(--bg-secondary))' : 'none',
+                              boxSizing: 'border-box',
+                            }}
                             onClick={() => {
                               if (avatarUrl) {
                                 const orbita = (window as any).orbita;

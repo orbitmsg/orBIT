@@ -16,6 +16,7 @@ import { AddGroupMemberModal } from './AddGroupMemberModal';
 import { DeleteGroupModal } from './DeleteGroupModal';
 import { arrayBufferToBase64, formatLastSeen } from '../../utils/messageUtils';
 import { formatBirthday } from '../../utils/birthday';
+import { isStaticImageFile } from '../../utils/staticImageValidation';
 import {
   Picture as GravityPictureIcon,
   Video as GravityVideoIcon,
@@ -1051,6 +1052,8 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
   const startCall = useCallStore((state) => state.startCall);
   const myNickname = useAuthStore((state) => state.nickname) || 'YOU';
   const myUserId = useAuthStore((state) => state.userId);
+  const myBannerUrl = useAuthStore((state) => state.bannerUrl);
+  const effectiveBannerUrl = chatId === 'notes' ? myBannerUrl : chat?.bannerUrl;
   const voiceCallsEnabled = useChatStore((state) => state.voiceCallsEnabled);
 
   const isChannel = chat?.type === 'channel';
@@ -1236,6 +1239,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
       try {
         let updateNick: string | undefined = undefined;
         let updateAvatar: string | undefined = undefined;
+        let updateBanner: string | undefined = undefined;
         let pubNumericId: string | null | undefined = undefined;
 
         const update = await supabaseService.getLatestProfileUpdate(chat.id, myCode || undefined);
@@ -1248,12 +1252,14 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         if (update && !isMyOwnUpdate) {
           if (update.nickname) updateNick = update.nickname;
           if (update.avatar_url !== undefined) updateAvatar = update.avatar_url || undefined;
+          if (update.banner_url !== undefined) updateBanner = update.banner_url || undefined;
         }
 
         if (targetCode) {
           const pub = await supabaseService.lookupPublicProfile(targetCode);
           if (pub?.nickname && !updateNick) updateNick = pub.nickname;
           if (pub?.avatar_url !== undefined && !updateAvatar) updateAvatar = pub.avatar_url || undefined;
+          if (pub?.banner_url !== undefined && !updateBanner) updateBanner = pub.banner_url || undefined;
           if (pub?.numeric_id) pubNumericId = pub.numeric_id;
         }
 
@@ -1277,6 +1283,9 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         }
         if (updateAvatar !== undefined && updateAvatar !== chat.avatarUrl) {
           chatUpdates.avatarUrl = updateAvatar;
+        }
+        if (updateBanner !== undefined && updateBanner !== chat.bannerUrl) {
+          chatUpdates.bannerUrl = updateBanner;
         }
         if (Object.keys(chatUpdates).length > 0) {
           updateChat(chat.id, chatUpdates);
@@ -1308,9 +1317,15 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
     }
   }, [chat?.name, chat?.description, chat?.avatarUrl]);
 
-  const handleAvatarFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const check = await isStaticImageFile(file);
+      if (!check.ok) {
+        alert(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
+        if (e.target) e.target.value = '';
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (event) => {
         setCropperImageSrc(event.target?.result as string);
@@ -1318,7 +1333,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
       };
       reader.readAsDataURL(file);
     }
-  }, []);
+  }, [t]);
 
   const handleSaveChannel = useCallback(async () => {
     if (!chat || isSavingChannel) return;
@@ -1992,7 +2007,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
   const renderMainContent = () => (
     <div
       style={{
-        padding: '16px 0 24px',
+        padding: effectiveBannerUrl ? '0 0 24px' : '16px 0 24px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -2002,6 +2017,32 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         flexShrink: 0,
       }}
     >
+      {effectiveBannerUrl && (
+        <div
+          style={{
+            width: '100%',
+            height: '135px',
+            minHeight: '135px',
+            maxHeight: '135px',
+            overflow: 'hidden',
+            position: 'relative',
+            flexShrink: 0,
+            marginBottom: '0',
+            userSelect: 'none',
+          }}
+        >
+          <img
+            src={effectiveBannerUrl}
+            alt=""
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              display: 'block',
+            }}
+          />
+        </div>
+      )}
       <div
         style={{
           display: 'flex',
@@ -2013,10 +2054,21 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
           transformOrigin: 'top center',
           pointerEvents: scrollOffset > 60 ? 'none' : 'auto',
           transition: 'none',
+          marginTop: effectiveBannerUrl ? -48 : 0,
+          zIndex: 10,
         }}
       >
         <div
-          style={{ width: 96, height: 96, marginBottom: 10, marginTop: 0, cursor: chat.avatarUrl ? 'pointer' : 'default' }}
+          style={{
+            width: 96,
+            height: 96,
+            marginBottom: 10,
+            marginTop: 0,
+            cursor: chat.avatarUrl ? 'pointer' : 'default',
+            borderRadius: '50%',
+            border: effectiveBannerUrl ? '4px solid var(--settings-bg, var(--bg-secondary))' : 'none',
+            boxSizing: 'border-box',
+          }}
           onClick={() => {
             if (chat.avatarUrl) {
               const avatarItems = [{
@@ -3357,7 +3409,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/png,image/jpeg,image/webp"
           style={{ display: 'none' }}
           onChange={handleAvatarFileChange}
         />
@@ -3724,9 +3776,11 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                     onClick={() => setIsEditingChannel(true)}
                     aria-label={isGroup ? t('groupSettings.edit_group', 'Редактировать группу') : t('channel.edit_channel', 'Редактировать канал')}
                     style={{
-                      background: 'none',
+                      background: (effectiveBannerUrl && scrollOffset < 90) ? 'rgba(0, 0, 0, 0.45)' : 'none',
+                      backdropFilter: (effectiveBannerUrl && scrollOffset < 90) ? 'blur(8px)' : 'none',
+                      WebkitBackdropFilter: (effectiveBannerUrl && scrollOffset < 90) ? 'blur(8px)' : 'none',
                       border: 'none',
-                      color: 'var(--text-dim)',
+                      color: (effectiveBannerUrl && scrollOffset < 90) ? '#ffffff' : 'var(--text-dim)',
                       cursor: 'pointer',
                       padding: '6px',
                       borderRadius: '50%',
@@ -3737,12 +3791,12 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                       transition: 'color 150ms, background 150ms',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
+                      e.currentTarget.style.backgroundColor = (effectiveBannerUrl && scrollOffset < 90) ? 'rgba(0, 0, 0, 0.65)' : 'rgba(255,255,255,0.08)';
                       e.currentTarget.style.color = 'var(--text-main)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = 'var(--text-dim)';
+                      e.currentTarget.style.backgroundColor = (effectiveBannerUrl && scrollOffset < 90) ? 'rgba(0, 0, 0, 0.45)' : 'transparent';
+                      e.currentTarget.style.color = (effectiveBannerUrl && scrollOffset < 90) ? '#ffffff' : 'var(--text-dim)';
                     }}
                   >
                     <Pencil size={18} />
@@ -3755,9 +3809,11 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                     onClick={onClose}
                     aria-label={t('common.close', 'Закрыть')}
                     style={{
-                      background: 'none',
+                      background: (effectiveBannerUrl && scrollOffset < 90) ? 'rgba(0, 0, 0, 0.45)' : 'none',
+                      backdropFilter: (effectiveBannerUrl && scrollOffset < 90) ? 'blur(8px)' : 'none',
+                      WebkitBackdropFilter: (effectiveBannerUrl && scrollOffset < 90) ? 'blur(8px)' : 'none',
                       border: 'none',
-                      color: 'var(--text-dim)',
+                      color: (effectiveBannerUrl && scrollOffset < 90) ? '#ffffff' : 'var(--text-dim)',
                       cursor: 'pointer',
                       padding: '6px',
                       borderRadius: '50%',
@@ -3767,12 +3823,12 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                       transition: 'color 150ms, background 150ms',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
+                      e.currentTarget.style.backgroundColor = (effectiveBannerUrl && scrollOffset < 90) ? 'rgba(0, 0, 0, 0.65)' : 'rgba(255,255,255,0.08)';
                       e.currentTarget.style.color = 'var(--text-main)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = 'var(--text-dim)';
+                      e.currentTarget.style.backgroundColor = (effectiveBannerUrl && scrollOffset < 90) ? 'rgba(0, 0, 0, 0.45)' : 'transparent';
+                      e.currentTarget.style.color = (effectiveBannerUrl && scrollOffset < 90) ? '#ffffff' : 'var(--text-dim)';
                     }}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">

@@ -10,6 +10,7 @@ export interface AccountMeta {
   id: 'account_1' | 'account_2';
   nickname: string;
   avatarUrl: string | null;
+  bannerUrl?: string | null;
   myCode: string | null;
   userId: string;
   isRegistered: boolean;
@@ -241,6 +242,10 @@ export const useAccountStore = create<AccountStoreState>((set, get) => ({
     }
     if (currentAccount.avatarUrl !== auth.avatarUrl) {
       currentAccount.avatarUrl = auth.avatarUrl;
+      changed = true;
+    }
+    if (currentAccount.bannerUrl !== auth.bannerUrl) {
+      currentAccount.bannerUrl = auth.bannerUrl;
       changed = true;
     }
     if (chat.myCode && currentAccount.myCode !== chat.myCode) {

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Volume2, Trash2, Database, ChevronRight, ChevronDown, Check, Eye, EyeOff, CheckCircle2, XCircle, Bell, RefreshCw, Download, RotateCcw, User } from 'lucide-react';
+import { Volume2, Trash2, Database, ChevronRight, ChevronDown, Check, Eye, EyeOff, CheckCircle2, XCircle, Bell, RefreshCw, Download, RotateCcw, User, Image as ImageIcon } from 'lucide-react';
 import { securityService } from '../../services/securityService';
 import { orbitaKeyService } from '../../services/orbitaKeyService';
 import { OrbitaKeySettings } from '../settings/OrbitaKeySettings';
@@ -36,6 +36,8 @@ import { QrCodeView } from './QrCodeView';
 import { CHAT_COLOR_PRESETS, DEFAULT_CHAT_COLOR, type ThemeId } from '../../theme';
 import { EmojiAvatarModal } from '../settings/EmojiAvatarModal';
 import { AvatarCropperModal } from '../settings/AvatarCropperModal';
+import { BannerCropperModal } from '../settings/BannerCropperModal';
+import { isStaticImageFile, isStaticImageDataUrl } from '../../utils/staticImageValidation';
 import { ChatFoldersSettings, SettingsFolderIcon } from '../settings/ChatFoldersSettings';
 import { formatBirthday, parseBirthday, serializeBirthday, MONTH_FULL_RU, MONTH_FULL_EN } from '../../utils/birthday';
 import { mediaManager } from '../../services/mediaManager';
@@ -1063,6 +1065,7 @@ export const BirthdayEditModal = ({ open, onClose, currentBirthday, onSave }: Bi
 
 const broadcastProfileUpdate = (updates: {
   avatarUrl?: string | null;
+  bannerUrl?: string | null;
   nickname?: string;
   bio?: string | null;
   username?: string | null;
@@ -1070,6 +1073,7 @@ const broadcastProfileUpdate = (updates: {
 }) => {
   const currentNickname = useAuthStore.getState().nickname;
   const currentAvatar = useAuthStore.getState().avatarUrl;
+  const currentBanner = useAuthStore.getState().bannerUrl;
   const currentUserId = useAuthStore.getState().userId;
   const currentBio = useAuthStore.getState().bio;
   const currentUsername = useAuthStore.getState().username;
@@ -1078,6 +1082,7 @@ const broadcastProfileUpdate = (updates: {
   const myCode = useChatStore.getState().myCode;
   const finalNickname = updates.nickname !== undefined ? updates.nickname : currentNickname;
   const finalAvatar = updates.avatarUrl !== undefined ? updates.avatarUrl : currentAvatar;
+  const finalBanner = updates.bannerUrl !== undefined ? updates.bannerUrl : currentBanner;
   const finalBio = updates.bio !== undefined ? updates.bio : currentBio;
   const finalUsername = updates.username !== undefined ? updates.username : currentUsername;
   const finalBirthday = updates.birthday !== undefined ? updates.birthday : currentBirthday;
@@ -1091,6 +1096,7 @@ const broadcastProfileUpdate = (updates: {
     numericId: currentNumericId,
     senderId: currentUserId || myCode,
     avatarUrl: finalAvatar,
+    bannerUrl: finalBanner,
     nickname: finalNickname,
     bio: finalBio,
     username: finalUsername,
@@ -1098,13 +1104,13 @@ const broadcastProfileUpdate = (updates: {
   };
 
   if (myCode) {
-    supabaseService.publishPublicProfile(myCode, finalNickname, finalAvatar, null, finalBio, finalUsername, finalBirthday).catch(() => {});
+    supabaseService.publishPublicProfile(myCode, finalNickname, finalAvatar, null, finalBio, finalUsername, finalBirthday, finalBanner).catch(() => {});
   }
 
   const chats = useChatStore.getState().chats;
   chats.forEach((chat) => {
     if (chat.type === 'private' && chat.id !== 'notes') {
-      supabaseService.saveProfileUpdate(chat.id, finalNickname, finalAvatar, myCode, finalBio, finalUsername, finalBirthday).catch(() => {});
+      supabaseService.saveProfileUpdate(chat.id, finalNickname, finalAvatar, myCode, finalBio, finalUsername, finalBirthday, finalBanner).catch(() => {});
       ablyService.sendMessage(chat.id, payload).catch(() => {});
       const pusher = getPusher();
       const channel = pusher.subscribe(`private-chat-${chat.id}`);
@@ -2803,15 +2809,17 @@ export const SettingsScreen = () => {
   const micVolume = useCallStore((state) => state.micVolume);
   const setPeerVolume = useCallStore((state) => state.setPeerVolume);
   const setMicVolume = useCallStore((state) => state.setMicVolume);
-  const { nickname, avatarUrl, username, bio, birthday, userId, setNickname, setAvatarUrl, setUsername, setBio, setBirthday } = useAuthStore(useShallow((s) => ({
+  const { nickname, avatarUrl, bannerUrl, username, bio, birthday, userId, setNickname, setAvatarUrl, setBannerUrl, setUsername, setBio, setBirthday } = useAuthStore(useShallow((s) => ({
     nickname: s.nickname,
     avatarUrl: s.avatarUrl,
+    bannerUrl: s.bannerUrl,
     username: s.username,
     bio: s.bio,
     birthday: s.birthday,
     userId: s.userId,
     setNickname: s.setNickname,
     setAvatarUrl: s.setAvatarUrl,
+    setBannerUrl: s.setBannerUrl,
     setUsername: s.setUsername,
     setBio: s.setBio,
     setBirthday: s.setBirthday,
@@ -3031,6 +3039,8 @@ export const SettingsScreen = () => {
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [cropperModalOpen, setCropperModalOpen] = useState(false);
   const [cropperImageSrc, setCropperImageSrc] = useState<string | null>(null);
+  const [bannerCropperOpen, setBannerCropperOpen] = useState(false);
+  const [bannerCropperImageSrc, setBannerCropperImageSrc] = useState<string | null>(null);
   const [emojiModalOpen, setEmojiModalOpen] = useState(false);
   const [localBio, setLocalBio] = useState(bio || '');
   const cameraBtnRef = useRef<HTMLButtonElement>(null);
@@ -3134,7 +3144,7 @@ export const SettingsScreen = () => {
     setAvatarMenuOpen(false);
     try {
       if (window.orbita?.pickFile) {
-        const raw = await window.orbita.pickFile(['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi', 'webm']);
+        const raw = await window.orbita.pickFile(['jpg', 'jpeg', 'png', 'webp']);
         if (!raw) return;
         const filePath = Array.isArray(raw) ? raw[0] : raw;
         if (!filePath) return;
@@ -3148,19 +3158,33 @@ export const SettingsScreen = () => {
 
         const dataUrl = await window.orbita.readFileAsDataURL(filePath);
         if (dataUrl) {
+          if (!isStaticImageDataUrl(dataUrl)) {
+            alert(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
+            return;
+          }
           setCropperImageSrc(dataUrl);
           setCropperModalOpen(true);
         }
       } else {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = 'image/*';
-        input.onchange = (e: any) => {
+        input.accept = 'image/png,image/jpeg,image/webp';
+        input.onchange = async (e: any) => {
           const file = e.target.files?.[0];
           if (file) {
+            const check = await isStaticImageFile(file);
+            if (!check.ok) {
+              alert(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
+              return;
+            }
             const reader = new FileReader();
             reader.onload = () => {
-              setCropperImageSrc(reader.result as string);
+              const res = reader.result as string;
+              if (!isStaticImageDataUrl(res)) {
+                alert(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
+                return;
+              }
+              setCropperImageSrc(res);
               setCropperModalOpen(true);
             };
             reader.readAsDataURL(file);
@@ -3199,6 +3223,10 @@ export const SettingsScreen = () => {
       }
 
       if (dataUrl) {
+        if (!isStaticImageDataUrl(dataUrl)) {
+          alert(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
+          return;
+        }
         setCropperImageSrc(dataUrl);
         setCropperModalOpen(true);
       } else {
@@ -3208,6 +3236,91 @@ export const SettingsScreen = () => {
       console.error('Error pasting clipboard image:', err);
       alert('Не удалось прочитать изображение из буфера обмена.');
     }
+  };
+
+  const handlePickBanner = async () => {
+    try {
+      if (window.orbita?.pickFile) {
+        const raw = await window.orbita.pickFile(['jpg', 'jpeg', 'png', 'webp']);
+        if (!raw) return;
+        const filePath = Array.isArray(raw) ? raw[0] : raw;
+        if (!filePath) return;
+        const sizeBytes = await window.orbita.getFileSize(filePath);
+        if (sizeBytes / (1024 * 1024) > 15) {
+          alert('Файл слишком большой. Максимальный размер: 15 МБ.');
+          return;
+        }
+        const dataUrl = await window.orbita.readFileAsDataURL(filePath);
+        if (dataUrl) {
+          if (!isStaticImageDataUrl(dataUrl)) {
+            alert(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
+            return;
+          }
+          setBannerCropperImageSrc(dataUrl);
+          setBannerCropperOpen(true);
+        }
+      } else {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/png,image/jpeg,image/webp';
+        input.onchange = async (e: any) => {
+          const file = e.target.files?.[0];
+          if (file) {
+            const check = await isStaticImageFile(file);
+            if (!check.ok) {
+              alert(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
+              return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+              const res = reader.result as string;
+              if (!isStaticImageDataUrl(res)) {
+                alert(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
+                return;
+              }
+              setBannerCropperImageSrc(res);
+              setBannerCropperOpen(true);
+            };
+            reader.readAsDataURL(file);
+          }
+        };
+        input.click();
+      }
+    } catch (err) {
+      console.error('Error picking banner file:', err);
+    }
+  };
+
+  const handleBannerSave = async (dataUrl: string) => {
+    setBannerCropperOpen(false);
+    setBannerCropperImageSrc(null);
+    try {
+      setBannerUrl(dataUrl);
+      let finalUrl = dataUrl;
+      const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+      if (typeof window !== 'undefined' && window.orbita?.writeTempFile && window.orbita?.uploadToCloudinary) {
+        const tempPath = await window.orbita.writeTempFile(base64, 'jpg');
+        if (tempPath) {
+          const publicId = `banner_${Date.now()}`;
+          const result = await window.orbita.uploadToCloudinary(tempPath, publicId);
+          if (result.success && result.secure_url) {
+            finalUrl = result.secure_url;
+            setBannerUrl(finalUrl);
+          }
+          await window.orbita.deleteTempFile(tempPath);
+        }
+      }
+      broadcastProfileUpdate({ bannerUrl: finalUrl });
+    } catch (err) {
+      console.error('Banner save error:', err);
+      setBannerUrl(dataUrl);
+      broadcastProfileUpdate({ bannerUrl: dataUrl });
+    }
+  };
+
+  const handleDeleteBanner = () => {
+    setBannerUrl(null);
+    broadcastProfileUpdate({ bannerUrl: null });
   };
 
   const handleOpenEmojiAvatar = () => {
@@ -3682,6 +3795,108 @@ export const SettingsScreen = () => {
       transition={{ duration: 0.18 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 24 }}
     >
+      <Block>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 16px',
+            boxSizing: 'border-box',
+            width: '100%',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+            {bannerUrl ? (
+              <div
+                style={{
+                  width: '56px',
+                  height: '36px',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  flexShrink: 0,
+                  backgroundColor: 'rgba(255,255,255,0.06)',
+                  border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
+                }}
+              >
+                <img src={bannerUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+            ) : (
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: 'rgba(255,255,255,0.06)',
+                  color: MD3.onSurfaceVar,
+                  flexShrink: 0,
+                }}
+              >
+                <ImageIcon size={20} />
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+              <span style={{ fontSize: '14.5px', fontWeight: 600, color: MD3.onSurface }}>
+                {t('settings.banner', 'Баннер')}
+              </span>
+              <span style={{ fontSize: '12px', color: MD3.onSurfaceVar, marginTop: '2px' }}>
+                {bannerUrl
+                  ? t('settings.banner_active', 'Установлен')
+                  : t('settings.banner_description', 'Статичное изображение в шапке профиля')}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={handlePickBanner}
+              aria-label={bannerUrl ? t('common.edit', 'Изменить') : t('settings.set_banner', 'Поставить')}
+              style={{
+                background: 'var(--accent-color, #7C3AED)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '6px 14px',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'opacity 0.15s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+            >
+              {bannerUrl ? t('common.edit', 'Изменить') : t('settings.set_banner', 'Поставить')}
+            </button>
+            {bannerUrl && (
+              <button
+                type="button"
+                onClick={handleDeleteBanner}
+                aria-label={t('settings.delete_banner', 'Удалить баннер')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--md-error, #ff595a)',
+                  cursor: 'pointer',
+                  padding: '6px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255,89,90,0.12)')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+      </Block>
+
       <div
         style={{
           display: 'flex',
@@ -5083,6 +5298,15 @@ export const SettingsScreen = () => {
         }}
         imageSrc={cropperImageSrc}
         onSave={handleAvatarSave}
+      />
+      <BannerCropperModal
+        isOpen={bannerCropperOpen}
+        onClose={() => {
+          setBannerCropperOpen(false);
+          setBannerCropperImageSrc(null);
+        }}
+        imageSrc={bannerCropperImageSrc}
+        onSave={handleBannerSave}
       />
       <NicknameEditModal open={nicknameEditOpen} onClose={() => setNicknameEditOpen(false)} currentNickname={nickname || ''} onSave={handleNicknameSave} />
       <DeleteAccountModal

@@ -2352,6 +2352,7 @@ export const MainLayout = () => {
               }
               const updates: Partial<Chat> = {};
               if (messageData.avatarUrl !== undefined) updates.avatarUrl = messageData.avatarUrl;
+              if (messageData.bannerUrl !== undefined) updates.bannerUrl = messageData.bannerUrl;
               if (messageData.nickname !== undefined) updates.name = messageData.nickname;
               if (messageData.bio !== undefined) updates.description = messageData.bio;
               if (messageData.username !== undefined) updates.username = messageData.username;
@@ -4268,6 +4269,7 @@ export const MainLayout = () => {
         }
         const updates: Partial<Chat> = {};
         if (data.avatarUrl !== undefined) updates.avatarUrl = data.avatarUrl;
+        if (data.bannerUrl !== undefined) updates.bannerUrl = data.bannerUrl;
         if (data.nickname !== undefined) updates.name = data.nickname;
         if (data.bio !== undefined) updates.description = data.bio;
         if (data.username !== undefined) updates.username = data.username;

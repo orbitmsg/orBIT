@@ -187,6 +187,7 @@ export interface UserProfile {
   id: string;
   nickname: string;
   avatarUrl?: string | null;
+  bannerUrl?: string | null;
   username?: string | null;
   bio?: string | null;
   birthday?: string | null;
@@ -259,6 +260,7 @@ export interface Chat {
   lastReadTimestamp?: number;
   isChatInitiator?: boolean;
   avatarUrl?: string;
+  bannerUrl?: string | null;
   isArchived?: boolean;
   muted?: boolean;
   notificationsEnabled?: boolean;

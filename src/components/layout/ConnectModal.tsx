@@ -11,6 +11,7 @@ import { extractGroupCode, isValidGroupCode } from '../../lib/groupCrypto';
 import { generateChannelId } from '../../lib/codes';
 import { useToastStore } from '../../store/useToastStore';
 import { AvatarCropperModal } from '../settings/AvatarCropperModal';
+import { isStaticImageFile } from '../../utils/staticImageValidation';
 import { supabaseService, type UserDirectoryRecord } from '../../services/supabaseService';
 import { Avatar } from '../common/Avatar';
 
@@ -111,9 +112,15 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
     fileInputRef.current?.click();
   }, []);
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const check = await isStaticImageFile(file);
+      if (!check.ok) {
+        useToastStore.getState().showToast(t('settings.static_images_only', 'Поддерживаются только статичные изображения (PNG, JPEG, WebP)'));
+        if (e.target) e.target.value = '';
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (event) => {
         setCropperImageSrc(event.target?.result as string);
@@ -121,7 +128,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
       };
       reader.readAsDataURL(file);
     }
-  }, []);
+  }, [t]);
 
   const handleSubmit = useCallback(async () => {
     if (isLoading) return;
@@ -425,7 +432,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/png,image/jpeg,image/webp"
                   className="hidden"
                   style={{ display: 'none' }}
                   onChange={handleFileChange}

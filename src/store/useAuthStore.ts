@@ -12,6 +12,7 @@ interface AuthState {
   numericId: string;
   nickname: string;
   avatarUrl: string | null;
+  bannerUrl: string | null;
   username: string | null;
   bio: string | null;
   birthday: string | null;
@@ -33,6 +34,7 @@ interface AuthState {
   setStep: (step: AuthStep) => void;
   setNickname: (name: string) => void;
   setAvatarUrl: (url: string | null) => void;
+  setBannerUrl: (url: string | null) => void;
   setUsername: (username: string | null) => void;
   setBio: (bio: string | null) => void;
   setBirthday: (birthday: string | null) => void;
@@ -186,6 +188,7 @@ export const useAuthStore = create<AuthState>()(
       numericId: '',
       nickname: '',
       avatarUrl: null,
+      bannerUrl: null,
       username: null,
       bio: null,
       birthday: null,
@@ -232,6 +235,16 @@ export const useAuthStore = create<AuthState>()(
         const uid = get().userId;
         if (uid) {
           useChatStore.getState().setUserProfile(uid, { avatarUrl });
+        }
+        if (typeof window !== 'undefined') {
+          import('../services/accountManager').then((m) => m.useAccountStore.getState().syncCurrentAccountMeta()).catch(() => {});
+        }
+      },
+      setBannerUrl: (bannerUrl) => {
+        set({ bannerUrl });
+        const uid = get().userId;
+        if (uid) {
+          useChatStore.getState().setUserProfile(uid, { bannerUrl });
         }
         if (typeof window !== 'undefined') {
           import('../services/accountManager').then((m) => m.useAccountStore.getState().syncCurrentAccountMeta()).catch(() => {});
@@ -301,6 +314,7 @@ export const useAuthStore = create<AuthState>()(
               numericId: getInitialNumericId(newUid),
               nickname: '',
               avatarUrl: null,
+              bannerUrl: null,
               username: null,
               bio: null,
               birthday: null,
@@ -326,6 +340,7 @@ export const useAuthStore = create<AuthState>()(
         numericId: get().numericId || getInitialNumericId(get().userId),
         nickname: get().nickname,
         avatarUrl: get().avatarUrl,
+        bannerUrl: get().bannerUrl,
         username: get().username,
         bio: get().bio,
         birthday: get().birthday,
@@ -350,6 +365,7 @@ export const useAuthStore = create<AuthState>()(
           numericId: data?.numericId || getInitialNumericId(uid),
           nickname: data?.nickname || '',
           avatarUrl: data?.avatarUrl || null,
+          bannerUrl: data?.bannerUrl || null,
           username: data?.username || null,
           bio: data?.bio || null,
           birthday: data?.birthday || null,
@@ -395,6 +411,7 @@ export const useAuthStore = create<AuthState>()(
         numericId: state.numericId || getInitialNumericId(state.userId),
         nickname: state.nickname,
         avatarUrl: state.avatarUrl,
+        bannerUrl: state.bannerUrl,
         username: state.username,
         bio: state.bio,
         birthday: state.birthday,

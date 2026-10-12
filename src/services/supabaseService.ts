@@ -35,6 +35,7 @@ export interface ProfileUpdateRecord {
   sender_id?: string | null;
   nickname: string | null;
   avatar_url: string | null;
+  banner_url?: string | null;
   sender_code?: string | null;
   numeric_id?: string | null;
   bio?: string | null;
@@ -48,6 +49,7 @@ export interface UserDirectoryRecord {
   numeric_id?: string | null;
   nickname: string;
   avatar_url: string | null;
+  banner_url?: string | null;
   username?: string | null;
   bio?: string | null;
   birthday?: string | null;
@@ -726,7 +728,8 @@ class SupabaseService {
     senderCode?: string | null,
     bio?: string | null,
     username?: string | null,
-    birthday?: string | null
+    birthday?: string | null,
+    bannerUrl?: string | null
   ): Promise<void> {
     if (!chatId || chatId === 'notes') return;
 
@@ -750,7 +753,7 @@ class SupabaseService {
         const res = await fetch(`${relay.url}/relay/profile`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chatId, nickname, avatarUrl, senderCode, bio, username: cleanUsername, birthday }),
+          body: JSON.stringify({ chatId, nickname, avatarUrl, bannerUrl, senderCode, bio, username: cleanUsername, birthday }),
         });
         if (res.status === 409) {
           throw new Error('USERNAME_TAKEN');
@@ -844,11 +847,12 @@ class SupabaseService {
     _publicKey?: string | null,
     bio?: string | null,
     username?: string | null,
-    birthday?: string | null
+    birthday?: string | null,
+    bannerUrl?: string | null
   ): Promise<void> {
     if (!userCode || !nickname) return;
     try {
-      await this.saveProfileUpdate(userCode, nickname, avatarUrl, userCode, bio, username, birthday);
+      await this.saveProfileUpdate(userCode, nickname, avatarUrl, userCode, bio, username, birthday, bannerUrl);
     } catch (e) {
       console.warn('[Directory] Failed to publish profile update:', e);
     }
@@ -865,6 +869,7 @@ class SupabaseService {
           numeric_id: update.numeric_id || null,
           nickname: update.nickname,
           avatar_url: update.avatar_url,
+          banner_url: update.banner_url,
           username: update.username,
           bio: update.bio,
           birthday: update.birthday,

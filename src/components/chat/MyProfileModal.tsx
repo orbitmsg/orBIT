@@ -686,7 +686,7 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                       )}
                       <div
                         style={{
-                          padding: bannerUrl ? '15px 0 16px' : '20px 0 16px',
+                          padding: bannerUrl ? '0 0 16px' : '20px 0 16px',
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
@@ -701,8 +701,9 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                             position: 'relative',
                             width: 96,
                             height: 96,
-                            marginBottom: 10,
-                            marginTop: 0,
+                            marginBottom: bannerUrl ? 20 : 10,
+                            marginTop: bannerUrl ? -48 : 0,
+                            zIndex: 10,
                             flexShrink: 0,
                           }}
                         >
@@ -712,7 +713,7 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                               height: 96,
                               cursor: avatarUrl ? 'pointer' : 'default',
                               borderRadius: '50%',
-                              overflow: 'hidden',
+                              boxShadow: bannerUrl ? '0 0 0 15px var(--settings-bg, var(--bg-secondary))' : 'none',
                               flexShrink: 0,
                             }}
                             onClick={() => {
@@ -737,12 +738,22 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                               }
                             }}
                           >
-                            <Avatar
-                              src={avatarUrl}
-                              alt={nickname || 'User'}
-                              className="w-24 h-24 rounded-full"
-                              style={{ width: '96px', height: '96px' }}
-                            />
+                            <div
+                              style={{
+                                width: 96,
+                                height: 96,
+                                borderRadius: '50%',
+                                overflow: 'hidden',
+                                flexShrink: 0,
+                              }}
+                            >
+                              <Avatar
+                                src={avatarUrl}
+                                alt={nickname || 'User'}
+                                className="w-24 h-24 rounded-full"
+                                style={{ width: '96px', height: '96px' }}
+                              />
+                            </div>
                           </div>
                           <button
                             ref={cameraBtnRef}

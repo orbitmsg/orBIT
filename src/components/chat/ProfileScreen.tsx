@@ -2007,7 +2007,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
   const renderMainContent = () => (
     <div
       style={{
-        padding: effectiveBannerUrl ? '15px 0 24px' : '16px 0 24px',
+        padding: effectiveBannerUrl ? '0 0 24px' : '16px 0 24px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -2054,7 +2054,8 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
           transformOrigin: 'top center',
           pointerEvents: scrollOffset > 60 ? 'none' : 'auto',
           transition: 'none',
-          marginTop: 0,
+          marginTop: effectiveBannerUrl ? -48 : 0,
+          zIndex: 10,
           flexShrink: 0,
         }}
       >
@@ -2062,51 +2063,61 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
           style={{
             width: 96,
             height: 96,
-            marginBottom: 10,
+            marginBottom: effectiveBannerUrl ? 20 : 10,
             marginTop: 0,
-            cursor: chat.avatarUrl ? 'pointer' : 'default',
             borderRadius: '50%',
-            overflow: 'hidden',
+            boxShadow: effectiveBannerUrl ? '0 0 0 15px var(--settings-bg, var(--bg-secondary))' : 'none',
             flexShrink: 0,
           }}
-          onClick={() => {
-            if (chat.avatarUrl) {
-              const avatarItems = [{
-                id: 'avatar',
-                url: chat.avatarUrl,
-                directUrl: chat.avatarUrl,
-                type: 'photo' as const,
-                name: `${chat.name || 'Avatar'}.jpg`,
-                sender: chat.name,
-                time: Date.now(),
-              }];
-              const orbita = (window as any).orbita;
-              if (orbita?.openMediaWindow) {
-                orbita.openMediaWindow({
+        >
+          <div
+            style={{
+              width: 96,
+              height: 96,
+              cursor: chat.avatarUrl ? 'pointer' : 'default',
+              borderRadius: '50%',
+              overflow: 'hidden',
+              flexShrink: 0,
+            }}
+            onClick={() => {
+              if (chat.avatarUrl) {
+                const avatarItems = [{
+                  id: 'avatar',
+                  url: chat.avatarUrl,
+                  directUrl: chat.avatarUrl,
+                  type: 'photo' as const,
+                  name: `${chat.name || 'Avatar'}.jpg`,
+                  sender: chat.name,
+                  time: Date.now(),
+                }];
+                const orbita = (window as any).orbita;
+                if (orbita?.openMediaWindow) {
+                  orbita.openMediaWindow({
+                    items: avatarItems,
+                    initialIndex: 0,
+                    sharedSecret: chat.sharedSecret,
+                    chatId: chat.id,
+                  });
+                  return;
+                }
+                setViewerState({
+                  isOpen: true,
                   items: avatarItems,
                   initialIndex: 0,
-                  sharedSecret: chat.sharedSecret,
-                  chatId: chat.id,
                 });
-                return;
               }
-              setViewerState({
-                isOpen: true,
-                items: avatarItems,
-                initialIndex: 0,
-              });
-            }
-          }}
-        >
-          {chatId === 'notes' ? (
-            <NotesAvatar className="w-24 h-24" />
-          ) : (
-            <Avatar
-              src={chat.avatarUrl}
-              alt={chat.name}
-              className="w-24 h-24 rounded-full"
-            />
-          )}
+            }}
+          >
+            {chatId === 'notes' ? (
+              <NotesAvatar className="w-24 h-24" />
+            ) : (
+              <Avatar
+                src={chat.avatarUrl}
+                alt={chat.name}
+                className="w-24 h-24 rounded-full"
+              />
+            )}
+          </div>
         </div>
       </div>
 

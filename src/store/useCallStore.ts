@@ -103,14 +103,11 @@ const INCOMING_AUTO_REJECT_MS = 60000;
 const CONNECTING_TIMEOUT_MS = 25000;
 const SIGNAL_RETRY_TIMES = 3;
 const SIGNAL_RETRY_DELAY_MS = 1500;
-const PEER_TIMEOUT_DISCONNECT_MS = 15000;
-
 let durationTimer: ReturnType<typeof setInterval> | null = null;
 let noAnswerTimer: ReturnType<typeof setTimeout> | null = null;
 let incomingAutoRejectTimer: ReturnType<typeof setTimeout> | null = null;
 let connectingTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
 let ringingOfferIntervalTimer: ReturnType<typeof setInterval> | null = null;
-let peerDeadCheckTimer: ReturnType<typeof setInterval> | null = null;
 let listenersAttached = false;
 let activationInProgress = false;
 
@@ -223,7 +220,6 @@ function clearAllTimers() {
   if (incomingAutoRejectTimer) { clearTimeout(incomingAutoRejectTimer); incomingAutoRejectTimer = null; }
   if (connectingTimeoutTimer) { clearTimeout(connectingTimeoutTimer); connectingTimeoutTimer = null; }
   if (ringingOfferIntervalTimer) { clearInterval(ringingOfferIntervalTimer); ringingOfferIntervalTimer = null; }
-  if (peerDeadCheckTimer) { clearInterval(peerDeadCheckTimer); peerDeadCheckTimer = null; }
   prefetchedToken = null;
 }
 
@@ -280,34 +276,6 @@ export const useCallStore = create<CallStore>((set, get) => {
         set({ duration: Math.max(0, Math.floor((Date.now() - s.activeCall.startTime) / 1000)) });
       }
     }, 1000);
-  };
-
-  const startPeerDeadCheckTimer = () => {
-    if (peerDeadCheckTimer) { clearInterval(peerDeadCheckTimer); peerDeadCheckTimer = null; }
-    let disconnectedSince = 0;
-    peerDeadCheckTimer = setInterval(() => {
-      const s = get();
-      if (s.callState !== 'connected' || !s.activeCall) {
-        if (peerDeadCheckTimer) { clearInterval(peerDeadCheckTimer); peerDeadCheckTimer = null; }
-        return;
-      }
-      const isGrp = s.activeCall.chatType === 'group' ||
-        useChatStore.getState().chats.find((c) => c.id === s.activeCall?.chatId)?.type === 'group';
-      const svc = isGrp ? groupLiveKitService : liveKitService;
-      if (!isGrp) {
-        const hasRemotes = svc.remoteParticipants.length > 0;
-        if (!hasRemotes) {
-          if (disconnectedSince === 0) {
-            disconnectedSince = Date.now();
-          } else if (Date.now() - disconnectedSince >= PEER_TIMEOUT_DISCONNECT_MS) {
-            if (peerDeadCheckTimer) { clearInterval(peerDeadCheckTimer); peerDeadCheckTimer = null; }
-            s.endCall(false);
-          }
-        } else {
-          disconnectedSince = 0;
-        }
-      }
-    }, 2000);
   };
 
   const activateConnected = async (syncedConnectedAt?: number) => {
@@ -395,7 +363,6 @@ export const useCallStore = create<CallStore>((set, get) => {
       });
 
       startDurationTimer();
-      startPeerDeadCheckTimer();
     } finally {
       activationInProgress = false;
     }
@@ -1124,6 +1091,7 @@ export const useCallStore = create<CallStore>((set, get) => {
       const state = get();
       if (!state.activeCall || (roomName && state.activeCall.roomName !== roomName)) return;
       clearSignalRetryTimers();
+      if (ringingOfferIntervalTimer) { clearInterval(ringingOfferIntervalTimer); ringingOfferIntervalTimer = null; }
       console.log(`${LOG_PREFIX} handleAccept: callee accepted`);
       callSoundService.stop();
       set({ callState: 'connecting', statusMessage: i18n.t('call.connecting') });

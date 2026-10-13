@@ -1185,6 +1185,9 @@ export const CallWindowView = () => {
         }
         if (cancelled || !token || !url) return;
         if (svc.isConnected || svc.isCurrentlyConnecting) return;
+        if (micEnabledRef.current) {
+          void svc.enableMicrophone();
+        }
         await svc.connect(roomName, token, url, sessionKey);
         if (micEnabledRef.current) {
           await svc.enableMicrophone();
@@ -1378,6 +1381,10 @@ export const CallWindowView = () => {
         setIsRemoteVideoActive(true);
         if (remoteVideoRef.current) rTrack.attach(remoteVideoRef.current);
         if (bgVideoRef.current && (!sTrack || sTrack.isMuted)) rTrack.attach(bgVideoRef.current);
+      }
+      if (micEnabledRef.current) {
+        const svc = isGroupCall ? groupLiveKitService : liveKitService;
+        svc.enableMicrophone().catch(() => {});
       }
       if (liveKitService.remoteParticipants.length > 0) {
         sendAction('activateConnected');

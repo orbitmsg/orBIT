@@ -87,7 +87,7 @@ export class GroupLiveKitService extends EventEmitter {
           params.encodings.forEach((enc: any) => {
             enc.priority = 'high';
             enc.networkPriority = 'high';
-            enc.maxBitrate = 40000;
+            enc.maxBitrate = 64000;
           });
           sender.setParameters(params).catch(() => {});
         }
@@ -183,11 +183,11 @@ export class GroupLiveKitService extends EventEmitter {
             },
           },
           publishDefaults: {
-            dtx: true,
-            red: true,
+            dtx: false,
+            red: false,
             forceStereo: false,
             audioPreset: {
-              maxBitrate: 36000,
+              maxBitrate: 64000,
               priority: 'high',
             },
             videoCodec: 'h264',
@@ -344,14 +344,6 @@ export class GroupLiveKitService extends EventEmitter {
   private onTrackSubscribed(track: RemoteTrack, _publication: any, participant: any): void {
     if (track.kind === Track.Kind.Audio) {
       const key = `${participant.identity}-${track.sid}`;
-      const receiver = (track as any).receiver as RTCRtpReceiver | undefined;
-      if (receiver) {
-        try {
-          if ('playoutDelayHint' in receiver) {
-            (receiver as any).playoutDelayHint = 0.04;
-          }
-        } catch {}
-      }
       let el = this.attachedAudioElements.get(key);
       if (!el) {
         el = document.createElement('audio');
@@ -519,11 +511,11 @@ export class GroupLiveKitService extends EventEmitter {
         channelCount: 1,
         sampleRate: 48000,
       }, {
-        dtx: true,
-        red: true,
+        dtx: false,
+        red: false,
         forceStereo: false,
         audioPreset: {
-          maxBitrate: 36000,
+          maxBitrate: 64000,
           priority: 'high',
         },
       });
@@ -790,8 +782,8 @@ export class GroupLiveKitService extends EventEmitter {
             source: Track.Source.ScreenShareAudio,
             name: 'screen_share_audio',
             forceStereo: true,
-            dtx: true,
-            red: true,
+            dtx: false,
+            red: false,
             audioPreset: {
               maxBitrate: 48000,
               priority: 'low',

@@ -701,7 +701,7 @@ export const useCallStore = create<CallStore>((set, get) => {
         return;
       }
       lastSeenOfferRoom = call.roomName;
-      set({ incomingCall: call, callState: 'ringing', isMinimized: false });
+      set({ incomingCall: call, callState: 'ringing', isMinimized: false, isMicEnabled: true });
       try { useAudioStore.getState().pause(); } catch {}
       callSoundService.play('incoming');
         const myNick = get().myNickname || useAuthStore.getState().nickname;
@@ -916,10 +916,32 @@ export const useCallStore = create<CallStore>((set, get) => {
       const chat = useChatStore.getState().chats.find((c) => c.id === chatId);
       const verificationSecret = chat?.type === 'private' ? chat.sharedSecret : undefined;
       const isVideo = callType === 'video';
+      const { identity: myLivekitIdentity, name: myLivekitName } = getLivekitParticipantIdentity(myNickname);
+      let initialToken: string | undefined = undefined;
+      let initialUrl: string | undefined = undefined;
+      if (
+        prefetchedToken &&
+        prefetchedToken.roomName === roomName &&
+        prefetchedToken.identity === myLivekitIdentity &&
+        Date.now() - prefetchedToken.fetchedAt < 45000
+      ) {
+        initialToken = prefetchedToken.token;
+        initialUrl = prefetchedToken.url;
+        prefetchedToken = null;
+      }
+
       set({
         myNickname, incomingCall: null, callState: 'connecting', statusMessage: i18n.t('call.connecting'),
-        activeCall: { chatId, roomName, direction: 'incoming', callType: callType || 'audio', startTime: 0, participants: [], isMuted: false, isVideoEnabled: isVideo, isScreenSharing: false, connectionQuality: 'unknown', endedStatus: null, verificationSecret, verificationSalt, verificationEmojis: undefined },
-        isMicEnabled: true, isVideoEnabled: isVideo, isScreenSharing: false, isScreenPickerOpen: false, remoteScreenShareTrack: null, remoteScreenShareIdentity: null, duration: 0, isEnding: false,
+        activeCall: {
+          chatId, roomName, direction: 'incoming', callType: callType || 'audio', startTime: 0,
+          participants: [], isMuted: false, isVideoEnabled: isVideo, isScreenSharing: false,
+          connectionQuality: 'unknown', endedStatus: null, verificationSecret, verificationSalt,
+          verificationEmojis: undefined,
+          token: initialToken,
+          url: initialUrl,
+        },
+        isMicEnabled: true, isVideoEnabled: isVideo, isScreenSharing: false, isScreenPickerOpen: false,
+        remoteScreenShareTrack: null, remoteScreenShareIdentity: null, duration: 0, isEnding: false,
       });
       callSoundService.stop();
 
@@ -937,25 +959,15 @@ export const useCallStore = create<CallStore>((set, get) => {
 
       try {
         const sessionKey = verificationSecret ? (verificationSalt ? `${verificationSecret}:${verificationSalt}` : verificationSecret) : undefined;
-        const { identity: myLivekitIdentity, name: myLivekitName } = getLivekitParticipantIdentity(myNickname);
-        let token: string;
-        let url: string;
-        if (
-          prefetchedToken &&
-          prefetchedToken.roomName === roomName &&
-          prefetchedToken.identity === myLivekitIdentity &&
-          Date.now() - prefetchedToken.fetchedAt < 45000
-        ) {
-          token = prefetchedToken.token;
-          url = prefetchedToken.url;
-          prefetchedToken = null;
-        } else {
+        let token = initialToken;
+        let url = initialUrl;
+        if (!token || !url) {
           const res = await fetchLivekitToken(roomName, myLivekitIdentity, myLivekitName);
           token = res.token;
           url = res.url;
+          const actCurrent = get().activeCall;
+          if (actCurrent) set({ activeCall: { ...actCurrent, token, url } });
         }
-        const actCurrent = get().activeCall;
-        if (actCurrent) set({ activeCall: { ...actCurrent, token, url } });
         const isElectronSeparateCallWindow = typeof window !== 'undefined' && !!(window as any).orbita?.openCallWindow;
         if (!isElectronSeparateCallWindow) {
           console.log(`${LOG_PREFIX} Answering, connecting to LiveKit:`, url);

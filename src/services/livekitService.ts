@@ -106,7 +106,7 @@ class LiveKitService extends EventEmitter {
           params.encodings.forEach((enc: any) => {
             enc.priority = 'high';
             enc.networkPriority = 'high';
-            enc.maxBitrate = 40000;
+            enc.maxBitrate = 64000;
           });
           sender.setParameters(params).catch(() => {});
         }
@@ -285,11 +285,11 @@ class LiveKitService extends EventEmitter {
         },
       },
       publishDefaults: {
-        dtx: true,
-        red: true,
+        dtx: false,
+        red: false,
         forceStereo: false,
         audioPreset: {
-          maxBitrate: 36000,
+          maxBitrate: 64000,
           priority: 'high',
         },
         videoCodec: 'h264',
@@ -431,15 +431,15 @@ class LiveKitService extends EventEmitter {
   public async enableMicrophone(): Promise<boolean> {
     this.desiredMicEnabled = true;
 
-    if (!this.localParticipant) {
-      return false;
-    }
-
     const granted = await useDevicePermissionStore.getState().requestPermission('microphone');
     if (!granted) {
       this.desiredMicEnabled = false;
       this.emit('micChanged', false);
       return false;
+    }
+
+    if (!this.localParticipant) {
+      return true;
     }
 
     try {
@@ -452,11 +452,11 @@ class LiveKitService extends EventEmitter {
         channelCount: 1,
         sampleRate: 48000,
       }, {
-        dtx: true,
-        red: true,
+        dtx: false,
+        red: false,
         forceStereo: false,
         audioPreset: {
-          maxBitrate: 36000,
+          maxBitrate: 64000,
           priority: 'high',
         },
       });
@@ -517,11 +517,11 @@ class LiveKitService extends EventEmitter {
           channelCount: 1,
           sampleRate: 48000,
         }, {
-          dtx: true,
-          red: true,
+          dtx: false,
+          red: false,
           forceStereo: false,
           audioPreset: {
-            maxBitrate: 36000,
+            maxBitrate: 64000,
             priority: 'high',
           },
         });
@@ -825,8 +825,8 @@ class LiveKitService extends EventEmitter {
             source: Track.Source.ScreenShareAudio,
             name: 'screen_share_audio',
             forceStereo: true,
-            dtx: true,
-            red: true,
+            dtx: false,
+            red: false,
             audioPreset: {
               maxBitrate: 48000,
               priority: 'low',
@@ -951,14 +951,6 @@ class LiveKitService extends EventEmitter {
             const key = `${p.identity}:${pub.track.sid}`;
             if (!this.attachedAudioElements.has(key)) {
               try {
-                const receiver = (pub.track as any).receiver as RTCRtpReceiver | undefined;
-                if (receiver) {
-                  try {
-                    if ('playoutDelayHint' in receiver) {
-                      (receiver as any).playoutDelayHint = 0.04;
-                    }
-                  } catch {}
-                }
                 const el = (pub.track as RemoteTrack).attach();
                 el.id = `livekit-audio-${p.identity}`;
                 el.autoplay = true;
@@ -980,6 +972,9 @@ class LiveKitService extends EventEmitter {
       }
     }
     this.connectedAt = Date.now();
+    if (this.desiredMicEnabled) {
+      void this.enableMicrophone();
+    }
     this.emit('connected');
     console.log(`${LOG_PREFIX} Connected to room`);
   }
@@ -1027,14 +1022,6 @@ class LiveKitService extends EventEmitter {
     if (track.kind === Track.Kind.Audio) {
       const key = `${participant.identity}:${track.sid}`;
       try {
-        const receiver = (track as any).receiver as RTCRtpReceiver | undefined;
-        if (receiver) {
-          try {
-            if ('playoutDelayHint' in receiver) {
-              (receiver as any).playoutDelayHint = 0.04;
-            }
-          } catch {}
-        }
         const el = track.attach();
         el.id = `livekit-audio-${participant.identity}`;
         el.autoplay = true;

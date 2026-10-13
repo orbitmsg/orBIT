@@ -1255,6 +1255,22 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
   }, [chat?.id, chat?.type, updateChat]);
 
   useEffect(() => {
+    if (!chat || chat.type !== 'group') return;
+    groupService.getGroup(chat.id).then((info) => {
+      if (info && info.members && info.members.length > 0) {
+        updateChat(chat.id, {
+          name: info.name,
+          description: info.description || '',
+          avatarUrl: info.avatarUrl || undefined,
+          members: info.members as any[],
+          membersCount: Math.max(info.membersCount || 0, info.members.length),
+          creatorNickname: info.creatorNickname,
+        });
+      }
+    }).catch(() => {});
+  }, [chat?.id, chat?.type, updateChat]);
+
+  useEffect(() => {
     if (!chat || chat.type !== 'private' || chatId === 'notes') return;
     const myCode = useChatStore.getState().myCode;
     const targetCode = (chat.peerCode && chat.peerCode !== myCode)

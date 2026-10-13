@@ -14,10 +14,11 @@ import { AvatarCropperModal } from '../settings/AvatarCropperModal';
 import { TelegramMediaViewer } from './TelegramMediaViewer';
 import { QrCodeView } from './QrCodeView';
 import { ablyService } from '../../services/ablyService';
-import { getPusher } from '../../utils/pusher';
+import { getPusher, getGroupPusher } from '../../utils/pusher';
 import { handleScrollbarThumbMouseDown, handleScrollbarTrackMouseDown } from '../../utils/scrollbarDrag';
 import { mediaManager } from '../../services/mediaManager';
 import { supabaseService } from '../../services/supabaseService';
+import { groupService } from '../../services/groupService';
 import { formatBirthday } from '../../utils/birthday';
 import { isStaticImageDataUrl, isStaticImageFile, MAX_AVATAR_BANNER_SIZE, isAnimatedMedia, getMediaInfoFromDataUrl, SUPPORTED_MEDIA_EXTENSIONS } from '../../utils/staticImageValidation';
 import { OptimizedBanner } from '../common/OptimizedBanner';
@@ -66,6 +67,18 @@ const sendProfileUpdate = (updates: {
     supabaseService.publishPublicProfile(myCode, finalNickname, finalAvatar, null, finalBio, finalUsername, finalBirthday, finalBanner).catch(() => { });
   }
 
+  if (currentUserId || myCode) {
+    useChatStore.getState().setUserProfile(currentUserId || myCode, {
+      nickname: finalNickname,
+      avatarUrl: finalAvatar,
+      bio: finalBio,
+      username: finalUsername,
+      bannerUrl: finalBanner,
+    });
+  }
+
+  groupService.updateMemberProfile(currentUserId, myCode, finalNickname, finalAvatar).catch(() => { });
+
   const chats = useChatStore.getState().chats;
   chats.forEach((chat) => {
     if (chat.type === 'private' && chat.id !== 'notes') {
@@ -93,6 +106,54 @@ const sendProfileUpdate = (updates: {
           `prof_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
         ).catch(() => { });
       }
+    } else if (chat.type === 'group') {
+      const groupPayload = {
+        type: 'member-profile-updated',
+        groupId: chat.id,
+        chatId: chat.id,
+        userId: currentUserId,
+        userCode: myCode,
+        oldNickname: currentNickname,
+        nickname: finalNickname,
+        avatarUrl: finalAvatar,
+        bannerUrl: finalBanner,
+        bio: finalBio,
+        username: finalUsername,
+        sender: finalNickname,
+        senderUserId: currentUserId,
+        senderCode: myCode,
+        senderId: currentUserId || myCode,
+      };
+
+      try {
+        const groupPusher = getGroupPusher();
+        const grpChan = groupPusher.subscribe(`presence-group-${chat.id}`);
+        const sendGrp = () => {
+          try { grpChan.trigger('member-profile-updated', groupPayload); } catch { }
+          try { grpChan.trigger('client-message', groupPayload); } catch { }
+        };
+        if (grpChan.subscribed) sendGrp();
+        else grpChan.bind('pusher:subscription_succeeded', sendGrp);
+      } catch { }
+
+      ablyService.sendMessage(chat.id, groupPayload).catch(() => { });
+
+      const isSelfMember = (m: any) => {
+        const mId = m.userId || m.userCode;
+        if (currentUserId && mId) return mId === currentUserId;
+        if (myCode && mId) return mId === myCode;
+        return m.nickname === currentNickname;
+      };
+      const updatedMembers = (chat.members || []).map((m: any) =>
+        isSelfMember(m)
+          ? { ...m, nickname: finalNickname, avatarUrl: finalAvatar || null }
+          : m
+      );
+      const updates: any = { members: updatedMembers };
+      if (chat.creatorNickname && currentNickname && chat.creatorNickname === currentNickname) {
+        updates.creatorNickname = finalNickname;
+      }
+      useChatStore.getState().updateChat(chat.id, updates);
     }
   });
 };

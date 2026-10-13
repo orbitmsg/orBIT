@@ -1149,6 +1149,60 @@ class GroupService {
       }).catch(() => {});
     } catch {}
   }
+
+  async updateMemberProfile(
+    userId: string,
+    userCode: string,
+    newNickname: string,
+    newAvatarUrl: string | null
+  ): Promise<void> {
+    const filters: string[] = [];
+    if (userId) {
+      filters.push(`user_id.eq.${userId}`);
+      filters.push(`user_code.eq.${userId}`);
+    }
+    if (userCode && userCode !== userId) {
+      filters.push(`user_code.eq.${userCode}`);
+      filters.push(`user_id.eq.${userCode}`);
+    }
+    const updateData: { nickname?: string; avatar_url: string | null } = {
+      avatar_url: newAvatarUrl || null,
+    };
+    if (newNickname) {
+      updateData.nickname = newNickname.trim();
+    }
+
+    if (filters.length > 0) {
+      try {
+        await this.supabase
+          .from('group_members')
+          .update(updateData)
+          .or(filters.join(','));
+      } catch {}
+    }
+
+    if (newNickname && userCode) {
+      try {
+        await this.supabase
+          .from('groups')
+          .update({ creator_nickname: newNickname.trim() })
+          .eq('creator_code', userCode);
+      } catch {}
+    }
+
+    try {
+      fetch(`${this.getWorkerUrl()}/groups/update-member`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId || null,
+          userCode: userCode || null,
+          nickname: newNickname,
+          avatarUrl: newAvatarUrl || null,
+        }),
+      }).catch(() => {});
+    } catch {}
+  }
 }
 
 export const groupService = new GroupService();

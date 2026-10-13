@@ -4178,6 +4178,19 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
             },
           }));
         }
+      } else if (data.type === 'member-profile-updated' || data.type === 'profile-update') {
+        const targetCode = data.userId || data.senderUserId || data.userCode || data.senderCode;
+        const targetNick = (data.nickname || data.sender || '').toLowerCase().trim();
+        const oldNick = (data.oldNickname || '').toLowerCase().trim();
+        const newAvatar = data.avatarUrl;
+        if (newAvatar) {
+          setMemberAvatars((prev) => ({
+            ...prev,
+            ...(targetCode ? { [targetCode]: newAvatar } : {}),
+            ...(targetNick ? { [targetNick]: newAvatar } : {}),
+            ...(oldNick ? { [oldNick]: newAvatar } : {}),
+          }));
+        }
       }
     };
 
@@ -4360,6 +4373,8 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     channel.bind('client-group-call-started', handleGroupCallStarted);
     channel.bind('group-call-ended', handleGroupCallEnded);
     channel.bind('client-group-call-ended', handleGroupCallEnded);
+    channel.bind('member-profile-updated', handleClientMessage);
+    channel.bind('profile-update', handleClientMessage);
 
     return () => {
       unsubAbly();
@@ -4375,6 +4390,8 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
       channel.unbind('client-group-call-started', handleGroupCallStarted);
       channel.unbind('group-call-ended', handleGroupCallEnded);
       channel.unbind('client-group-call-ended', handleGroupCallEnded);
+      channel.unbind('member-profile-updated', handleClientMessage);
+      channel.unbind('profile-update', handleClientMessage);
     };
   }, [activeChatId, activeChat?.type, myNickname]);
 

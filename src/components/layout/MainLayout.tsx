@@ -2757,6 +2757,27 @@ export const MainLayout = () => {
         }
       }).catch(() => {});
     }
+
+    const currentGroups = useChatStore.getState().chats.filter((c) => c.type === 'group');
+    for (const grp of currentGroups) {
+      const lastCheck = lastProfileCheckTimeRef.current.get(grp.id) || 0;
+      if (now - lastCheck < PROFILE_TTL) {
+        continue;
+      }
+      lastProfileCheckTimeRef.current.set(grp.id, now);
+      groupService.getGroup(grp.id).then((info) => {
+        if (info && info.members && info.members.length > 0) {
+          useChatStore.getState().updateChat(grp.id, {
+            name: info.name,
+            description: info.description || '',
+            avatarUrl: info.avatarUrl || undefined,
+            members: info.members as any[],
+            membersCount: Math.max(info.membersCount || 0, info.members.length),
+            creatorNickname: info.creatorNickname,
+          });
+        }
+      }).catch(() => {});
+    }
   }, [updateChat]);
 
   const loadPendingHandshakesRef = useRef(loadPendingHandshakes);
@@ -3333,6 +3354,81 @@ export const MainLayout = () => {
         updateChat(chatId, { members: updatedMembers, membersCount: updatedMembers.length });
         return;
       }
+      if (data.type === 'member-profile-updated' || data.type === 'profile-update') {
+        const currentChat = useChatStore.getState().chats.find((c) => c.id === chatId);
+        if (!currentChat) return;
+
+        const targetUserId = data.userId || data.senderUserId;
+        const targetUserCode = data.userCode || data.senderCode;
+        const targetOldNick = data.oldNickname;
+        const targetNick = data.nickname || data.sender;
+        const newAvatar = data.avatarUrl;
+        const newNickname = data.nickname || data.sender;
+
+        const isTarget = (member: any) => {
+          const mId = member.userId || member.userCode;
+          if (targetUserId && mId) return mId === targetUserId;
+          if (targetUserCode && mId) return mId === targetUserCode;
+          if (targetOldNick && member.nickname) return member.nickname.toLowerCase().trim() === targetOldNick.toLowerCase().trim();
+          if (targetNick && member.nickname) return member.nickname.toLowerCase().trim() === targetNick.toLowerCase().trim();
+          return false;
+        };
+
+        const updatedMembers = (currentChat.members || []).map((member: any) => {
+          if (isTarget(member)) {
+            return {
+              ...member,
+              nickname: newNickname || member.nickname,
+              avatarUrl: newAvatar !== undefined ? newAvatar : member.avatarUrl,
+            };
+          }
+          return member;
+        });
+
+        const chatUpdates: any = { members: updatedMembers };
+        if (currentChat.creatorNickname && targetOldNick && currentChat.creatorNickname.toLowerCase().trim() === targetOldNick.toLowerCase().trim() && newNickname) {
+          chatUpdates.creatorNickname = newNickname;
+        }
+        updateChat(chatId, chatUpdates);
+
+        if (targetUserId || targetUserCode) {
+          const profileKey = targetUserId || targetUserCode;
+          if (profileKey) {
+            useChatStore.getState().setUserProfile(profileKey, {
+              nickname: newNickname,
+              avatarUrl: newAvatar,
+            });
+          }
+        }
+
+        const groupMessages = useChatStore.getState().messagesByChatId[chatId];
+        if (groupMessages && groupMessages.length > 0) {
+          const updatedMessages = groupMessages.map((msg) => {
+            const isMsgTarget = (
+              (targetUserId && msg.senderId && msg.senderId === targetUserId) ||
+              (targetUserCode && msg.senderId && msg.senderId === targetUserCode) ||
+              (targetOldNick && msg.sender && msg.sender.toLowerCase().trim() === targetOldNick.toLowerCase().trim()) ||
+              (targetNick && msg.sender && msg.sender.toLowerCase().trim() === targetNick.toLowerCase().trim())
+            );
+            if (isMsgTarget && !msg.isOutgoing) {
+              return {
+                ...msg,
+                sender: newNickname || msg.sender,
+                senderAvatar: newAvatar !== undefined ? newAvatar : (msg as any).senderAvatar,
+                avatarUrl: newAvatar !== undefined ? newAvatar : (msg as any).avatarUrl,
+              };
+            }
+            return msg;
+          });
+          useChatStore.setState((state) => ({
+            messagesByChatId: {
+              ...state.messagesByChatId,
+              [chatId]: updatedMessages,
+            },
+          }));
+        }
+        return;
+      }
       if (data.type === 'group-deleted' || (data.type === 'system' && data.action === 'group-deleted')) {
         useChatStore.getState().deleteChat(chatId);
         if (useChatStore.getState().activeChatId === chatId) {
@@ -3811,6 +3907,12 @@ export const MainLayout = () => {
         isTarget(m) ? { ...m, role: data.role } : m
       );
       useChatStore.getState().updateChat(chatId, { members: updated });
+    });
+    channel.bind('member-profile-updated', (data: any) => {
+      handleMessage({ ...data, type: 'member-profile-updated' });
+    });
+    channel.bind('profile-update', (data: any) => {
+      handleMessage({ ...data, type: 'member-profile-updated' });
     });
     activeSubscriptions.current.set(chatId, { channel, handler: handleMessage });
     if (!ablyMessageUnsubscribes.current.has(chatId)) {

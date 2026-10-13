@@ -571,7 +571,8 @@
       "volume": "Volume",
       "peer_volume": "Contact volume",
       "mic_volume": "Microphone level",
-      "volume_boost": "Volume boost"
+      "volume_boost": "Volume boost",
+      "group_call_in_progress": "Group call in progress"
     },
     "permission": {
       "camera_title": "Allow access to your device camera?",

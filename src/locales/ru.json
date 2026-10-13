@@ -571,7 +571,8 @@
       "volume": "Звук",
       "peer_volume": "Громкость собеседника",
       "mic_volume": "Громкость микрофона",
-      "volume_boost": "Усиление"
+      "volume_boost": "Усиление",
+      "group_call_in_progress": "Идёт групповой звонок"
     },
     "permission": {
       "camera_title": "Разрешить доступ к камере устройства?",

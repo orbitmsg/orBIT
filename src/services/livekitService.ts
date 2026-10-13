@@ -106,7 +106,7 @@ class LiveKitService extends EventEmitter {
           params.encodings.forEach((enc: any) => {
             enc.priority = 'high';
             enc.networkPriority = 'high';
-            enc.maxBitrate = 128000;
+            enc.maxBitrate = 40000;
           });
           sender.setParameters(params).catch(() => {});
         }
@@ -274,13 +274,12 @@ class LiveKitService extends EventEmitter {
         noiseSuppression: true,
         channelCount: 1,
         sampleRate: 48000,
-        sampleSize: 16,
       },
       videoCaptureDefaults: {
         deviceId: selectedCamId || undefined,
         resolution: {
-          width: 854,
-          height: 480,
+          width: 640,
+          height: 360,
           frameRate: 15,
           aspectRatio: 16 / 9,
         },
@@ -290,18 +289,18 @@ class LiveKitService extends EventEmitter {
         red: true,
         forceStereo: false,
         audioPreset: {
-          maxBitrate: 64000,
+          maxBitrate: 36000,
           priority: 'high',
         },
         videoCodec: 'h264',
         videoEncoding: {
-          maxBitrate: 450000,
+          maxBitrate: 280000,
           maxFramerate: 15,
-          priority: 'medium',
+          priority: 'low',
         },
-        degradationPreference: 'maintain-resolution',
+        degradationPreference: 'maintain-framerate',
         screenShareEncoding: {
-          maxBitrate: 550000,
+          maxBitrate: 450000,
           maxFramerate: 15,
           priority: 'low',
         },
@@ -452,12 +451,12 @@ class LiveKitService extends EventEmitter {
         noiseSuppression: true,
         channelCount: 1,
         sampleRate: 48000,
-        sampleSize: 16,
       }, {
-        dtx: false,
+        dtx: true,
+        red: true,
         forceStereo: false,
         audioPreset: {
-          maxBitrate: 128000,
+          maxBitrate: 36000,
           priority: 'high',
         },
       });
@@ -515,14 +514,14 @@ class LiveKitService extends EventEmitter {
           autoGainControl: true,
           echoCancellation: true,
           noiseSuppression: true,
-          channelCount: 2,
+          channelCount: 1,
           sampleRate: 48000,
-          sampleSize: 16,
         }, {
-          dtx: false,
-          forceStereo: true,
+          dtx: true,
+          red: true,
+          forceStereo: false,
           audioPreset: {
-            maxBitrate: 128000,
+            maxBitrate: 36000,
             priority: 'high',
           },
         });
@@ -544,9 +543,8 @@ class LiveKitService extends EventEmitter {
           noiseSuppression: true,
           echoCancellation: true,
           autoGainControl: true,
-          channelCount: 2,
+          channelCount: 1,
           sampleRate: 48000,
-          sampleSize: 16,
         });
       } catch {}
     }
@@ -634,19 +632,19 @@ class LiveKitService extends EventEmitter {
       await this.localParticipant.setCameraEnabled(true, {
         deviceId: selectedCamId || undefined,
         resolution: {
-          width: 854,
-          height: 480,
+          width: 640,
+          height: 360,
           frameRate: 15,
           aspectRatio: 16 / 9,
         },
       }, {
         videoCodec: 'h264',
         videoEncoding: {
-          maxBitrate: 450000,
+          maxBitrate: 280000,
           maxFramerate: 15,
-          priority: 'medium',
+          priority: 'low',
         },
-        degradationPreference: 'maintain-resolution',
+        degradationPreference: 'maintain-framerate',
         simulcast: false,
       });
       const pub = this.localParticipant.getTrackPublication(Track.Source.Camera);
@@ -756,7 +754,7 @@ class LiveKitService extends EventEmitter {
     const width = 1280;
     const height = 720;
     const frameRate = 15;
-    const maxBitrate = 550000;
+    const maxBitrate = 450000;
     const includeAudio = !!options?.audio;
 
     try {
@@ -827,9 +825,10 @@ class LiveKitService extends EventEmitter {
             source: Track.Source.ScreenShareAudio,
             name: 'screen_share_audio',
             forceStereo: true,
-            dtx: false,
+            dtx: true,
+            red: true,
             audioPreset: {
-              maxBitrate: 128000,
+              maxBitrate: 48000,
               priority: 'low',
             },
           });
@@ -956,10 +955,7 @@ class LiveKitService extends EventEmitter {
                 if (receiver) {
                   try {
                     if ('playoutDelayHint' in receiver) {
-                      (receiver as any).playoutDelayHint = 0;
-                    }
-                    if ('jitterBufferTarget' in receiver) {
-                      (receiver as any).jitterBufferTarget = 0;
+                      (receiver as any).playoutDelayHint = 0.04;
                     }
                   } catch {}
                 }
@@ -1035,10 +1031,7 @@ class LiveKitService extends EventEmitter {
         if (receiver) {
           try {
             if ('playoutDelayHint' in receiver) {
-              (receiver as any).playoutDelayHint = 0;
-            }
-            if ('jitterBufferTarget' in receiver) {
-              (receiver as any).jitterBufferTarget = 0;
+              (receiver as any).playoutDelayHint = 0.04;
             }
           } catch {}
         }

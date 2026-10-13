@@ -87,7 +87,7 @@ export class GroupLiveKitService extends EventEmitter {
           params.encodings.forEach((enc: any) => {
             enc.priority = 'high';
             enc.networkPriority = 'high';
-            enc.maxBitrate = 64000;
+            enc.maxBitrate = 40000;
           });
           sender.setParameters(params).catch(() => {});
         }
@@ -172,13 +172,12 @@ export class GroupLiveKitService extends EventEmitter {
             noiseSuppression: true,
             channelCount: 1,
             sampleRate: 48000,
-            sampleSize: 16,
           },
           videoCaptureDefaults: {
             deviceId: selectedCamId || undefined,
             resolution: {
-              width: 854,
-              height: 480,
+              width: 640,
+              height: 360,
               frameRate: 15,
               aspectRatio: 16 / 9,
             },
@@ -188,18 +187,18 @@ export class GroupLiveKitService extends EventEmitter {
             red: true,
             forceStereo: false,
             audioPreset: {
-              maxBitrate: 64000,
+              maxBitrate: 36000,
               priority: 'high',
             },
             videoCodec: 'h264',
             videoEncoding: {
-              maxBitrate: 450000,
+              maxBitrate: 280000,
               maxFramerate: 15,
-              priority: 'medium',
+              priority: 'low',
             },
-            degradationPreference: 'maintain-resolution',
+            degradationPreference: 'maintain-framerate',
             screenShareEncoding: {
-              maxBitrate: 550000,
+              maxBitrate: 450000,
               maxFramerate: 15,
               priority: 'low',
             },
@@ -349,10 +348,7 @@ export class GroupLiveKitService extends EventEmitter {
       if (receiver) {
         try {
           if ('playoutDelayHint' in receiver) {
-            (receiver as any).playoutDelayHint = 0;
-          }
-          if ('jitterBufferTarget' in receiver) {
-            (receiver as any).jitterBufferTarget = 0;
+            (receiver as any).playoutDelayHint = 0.04;
           }
         } catch {}
       }
@@ -522,13 +518,12 @@ export class GroupLiveKitService extends EventEmitter {
         noiseSuppression: true,
         channelCount: 1,
         sampleRate: 48000,
-        sampleSize: 16,
       }, {
         dtx: true,
         red: true,
         forceStereo: false,
         audioPreset: {
-          maxBitrate: 64000,
+          maxBitrate: 36000,
           priority: 'high',
         },
       });
@@ -603,19 +598,19 @@ export class GroupLiveKitService extends EventEmitter {
       await this.localParticipant.setCameraEnabled(true, {
         deviceId: selectedCamId || undefined,
         resolution: {
-          width: 854,
-          height: 480,
+          width: 640,
+          height: 360,
           frameRate: 15,
           aspectRatio: 16 / 9,
         },
       }, {
         videoCodec: 'h264',
         videoEncoding: {
-          maxBitrate: 450000,
+          maxBitrate: 280000,
           maxFramerate: 15,
-          priority: 'medium',
+          priority: 'low',
         },
-        degradationPreference: 'maintain-resolution',
+        degradationPreference: 'maintain-framerate',
         simulcast: false,
       });
 
@@ -724,7 +719,7 @@ export class GroupLiveKitService extends EventEmitter {
     const width = 1280;
     const height = 720;
     const frameRate = 15;
-    const maxBitrate = 550000;
+    const maxBitrate = 450000;
     const includeAudio = !!options?.audio;
 
     try {
@@ -798,7 +793,7 @@ export class GroupLiveKitService extends EventEmitter {
             dtx: true,
             red: true,
             audioPreset: {
-              maxBitrate: 64000,
+              maxBitrate: 48000,
               priority: 'low',
             },
           });

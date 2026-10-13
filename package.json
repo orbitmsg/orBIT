@@ -1,6 +1,6 @@
 {
   "name": "orbita",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Orbita",
   "author": "Saizzi",
   "main": "dist-electron/main.cjs",

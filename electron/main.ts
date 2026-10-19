@@ -27,7 +27,7 @@ import * as crypto from 'crypto';
 import * as sqlite3 from 'sqlite3';
 import { autoUpdater } from 'electron-updater';
 import { spawn } from 'child_process';
-import { getLocalKey, isPinLocked, isPinSet, unlockWithPin, setupPin, removePin } from './localKey';
+import { getLocalKey, isPinLocked, isPinSet, unlockWithPin, setupPin, removePin, setNativeModule } from './localKey';
 
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=384 --expose-gc');
@@ -109,6 +109,7 @@ for (const candidate of candidatePaths) {
   if (fs.existsSync(candidate)) {
     try {
       nativeModule = loadNativeAddon(candidate);
+      setNativeModule(nativeModule);
       console.log('Native module loaded successfully from:', candidate);
       break;
     } catch (e) {
@@ -298,6 +299,11 @@ function getMasterKey(): Buffer | null {
 function encryptData(data: Buffer): Buffer {
   const key = getMasterKey();
   if (!key) throw new Error('Storage is locked');
+  if (nativeModule && nativeModule.rustEncryptData) {
+    try {
+      return nativeModule.rustEncryptData(data, key.toString('hex'));
+    } catch {}
+  }
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
   const ciphertext = Buffer.concat([cipher.update(data), cipher.final()]);
@@ -308,6 +314,12 @@ function encryptData(data: Buffer): Buffer {
 function decryptData(data: Buffer): Buffer | null {
   const key = getMasterKey();
   if (!key || data.length < 28) return null;
+  if (nativeModule && nativeModule.rustDecryptData) {
+    try {
+      const dec = nativeModule.rustDecryptData(data, key.toString('hex'));
+      if (dec) return dec;
+    } catch {}
+  }
   const iv = data.subarray(0, 12);
   const authTag = data.subarray(data.length - 16);
   const ciphertext = data.subarray(12, data.length - 16);
@@ -1275,6 +1287,14 @@ function getAppDbPath(): string {
 }
 
 function initStorageDb(): Promise<void> {
+  if (nativeModule && nativeModule.rustStorageInitDb) {
+    try {
+      nativeModule.rustStorageInitDb(getAppDbPath());
+    } catch (e) {
+      console.error('[RustStorage] rustStorageInitDb error:', e);
+    }
+  }
+
   return new Promise((resolve, reject) => {
     const dbPath = getAppDbPath();
     appDbInstance = new sqlite3.Database(dbPath);
@@ -1318,9 +1338,14 @@ function initStorageDb(): Promise<void> {
 }
 
 function closeStorageDb(): Promise<void> {
+  flushKvWritesSync();
+  if (nativeModule && nativeModule.rustStorageCloseDb) {
+    try {
+      nativeModule.rustStorageCloseDb(getAppDbPath());
+    } catch {}
+  }
   return new Promise((resolve, reject) => {
     if (appDbInstance) {
-      flushKvWritesSync();
       appDbInstance.run('PRAGMA wal_checkpoint(TRUNCATE);', () => {
         appDbInstance!.close((err) => {
           appDbInstance = null;
@@ -1384,20 +1409,39 @@ function deleteVaultShadow(key: string) {
 const kvWriteQueue = new Map<string, { value: string; timer?: NodeJS.Timeout }>();
 
 function flushKvWritesSync() {
+  const masterKey = getMasterKey();
   for (const [key, item] of kvWriteQueue.entries()) {
     if (item.timer) clearTimeout(item.timer);
     try {
-      const encrypted = encryptData(Buffer.from(item.value, 'utf8')).toString('base64');
-      getDb().run(`INSERT OR REPLACE INTO ${KV_TABLE} (key, value) VALUES (?, ?)`, [key, encrypted]);
+      if (nativeModule && nativeModule.rustStorageKvSet && masterKey) {
+        nativeModule.rustStorageKvSet(getAppDbPath(), key, item.value, masterKey.toString('hex'), getVaultDir());
+      } else {
+        const encrypted = encryptData(Buffer.from(item.value, 'utf8')).toString('base64');
+        getDb().run(`INSERT OR REPLACE INTO ${KV_TABLE} (key, value) VALUES (?, ?)`, [key, encrypted]);
+      }
     } catch {}
   }
   kvWriteQueue.clear();
+  if (nativeModule && nativeModule.rustStorageKvFlush) {
+    try {
+      nativeModule.rustStorageKvFlush(getAppDbPath());
+    } catch {}
+  }
 }
 
 function getKvValue(key: string): Promise<string | null> {
   const pending = kvWriteQueue.get(key);
   if (pending) {
     return Promise.resolve(pending.value);
+  }
+  const masterKey = getMasterKey();
+  if (nativeModule && nativeModule.rustStorageKvGet && masterKey) {
+    try {
+      const res = nativeModule.rustStorageKvGet(getAppDbPath(), key, masterKey.toString('hex'), getVaultDir());
+      if (res !== undefined && res !== null) {
+        return Promise.resolve(res);
+      }
+    } catch {}
   }
   return new Promise((resolve) => {
     getDb().get(`SELECT value FROM ${KV_TABLE} WHERE key = ?`, [key], (err, row: any) => {
@@ -1423,18 +1467,24 @@ function getKvValue(key: string): Promise<string | null> {
 
 function setKvValue(key: string, value: string): Promise<void> {
   const isCritical = key.includes('auth') || key.includes('chat') || key.includes('registry') || key.includes('account');
-  if (isCritical) {
-    writeVaultShadow(key, value);
-  }
+  const masterKey = getMasterKey();
 
-  return new Promise((resolve, reject) => {
+  if (isCritical) {
     const existing = kvWriteQueue.get(key);
     if (existing && existing.timer) {
       clearTimeout(existing.timer);
     }
+    kvWriteQueue.delete(key);
 
-    if (isCritical) {
-      kvWriteQueue.delete(key);
+    if (nativeModule && nativeModule.rustStorageKvSet && masterKey) {
+      try {
+        nativeModule.rustStorageKvSet(getAppDbPath(), key, value, masterKey.toString('hex'), getVaultDir());
+        return Promise.resolve();
+      } catch {}
+    }
+
+    writeVaultShadow(key, value);
+    return new Promise((resolve, reject) => {
       try {
         const encrypted = encryptData(Buffer.from(value, 'utf8')).toString('base64');
         getDb().run(`INSERT OR REPLACE INTO ${KV_TABLE} (key, value) VALUES (?, ?)`, [key, encrypted], (err) => {
@@ -1444,12 +1494,23 @@ function setKvValue(key: string, value: string): Promise<void> {
       } catch (e) {
         reject(e);
       }
-      return;
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const existing = kvWriteQueue.get(key);
+    if (existing && existing.timer) {
+      clearTimeout(existing.timer);
     }
 
     const timer = setTimeout(() => {
       kvWriteQueue.delete(key);
       try {
+        const currentKey = getMasterKey();
+        if (nativeModule && nativeModule.rustStorageKvSet && currentKey) {
+          nativeModule.rustStorageKvSet(getAppDbPath(), key, value, currentKey.toString('hex'), getVaultDir());
+          return;
+        }
         const encrypted = encryptData(Buffer.from(value, 'utf8')).toString('base64');
         getDb().run(`INSERT OR REPLACE INTO ${KV_TABLE} (key, value) VALUES (?, ?)`, [key, encrypted], (err) => {
           if (err) reject(err);
@@ -1466,12 +1527,20 @@ function setKvValue(key: string, value: string): Promise<void> {
 }
 
 function deleteKvValue(key: string): Promise<void> {
-  deleteVaultShadow(key);
   const existing = kvWriteQueue.get(key);
   if (existing && existing.timer) {
     clearTimeout(existing.timer);
   }
   kvWriteQueue.delete(key);
+
+  if (nativeModule && nativeModule.rustStorageKvRemove) {
+    try {
+      nativeModule.rustStorageKvRemove(getAppDbPath(), key, getVaultDir());
+      return Promise.resolve();
+    } catch {}
+  }
+
+  deleteVaultShadow(key);
   return new Promise((resolve, reject) => {
     getDb().run(`DELETE FROM ${KV_TABLE} WHERE key = ?`, [key], (err) => {
       if (err) reject(err);
@@ -1481,6 +1550,28 @@ function deleteKvValue(key: string): Promise<void> {
 }
 
 function getMessages(chatId: string, limit?: number, offset?: number): Promise<any[]> {
+  const masterKey = getMasterKey();
+  if (nativeModule && nativeModule.rustStorageGetMessages && masterKey) {
+    try {
+      const jsonList: string[] = nativeModule.rustStorageGetMessages(
+        getAppDbPath(),
+        chatId,
+        masterKey.toString('hex'),
+        limit !== undefined ? limit : null,
+        offset !== undefined ? offset : null
+      );
+      if (Array.isArray(jsonList)) {
+        const items: any[] = [];
+        for (const s of jsonList) {
+          try {
+            items.push(JSON.parse(s));
+          } catch {}
+        }
+        return Promise.resolve(items);
+      }
+    } catch {}
+  }
+
   return new Promise((resolve, reject) => {
     let sql: string;
     let params: any[];
@@ -1524,6 +1615,23 @@ function getMessages(chatId: string, limit?: number, offset?: number): Promise<a
 }
 
 function addMessage(chatId: string, messageId: string, messageData: any): Promise<void> {
+  const masterKey = getMasterKey();
+  if (nativeModule && nativeModule.rustStorageAddMessage && masterKey) {
+    try {
+      const json = JSON.stringify(messageData);
+      const createdAt = messageData?.time || Date.now();
+      nativeModule.rustStorageAddMessage(
+        getAppDbPath(),
+        chatId,
+        messageId,
+        json,
+        masterKey.toString('hex'),
+        createdAt
+      );
+      return Promise.resolve();
+    } catch {}
+  }
+
   return new Promise((resolve, reject) => {
     const json = JSON.stringify(messageData);
     const enc = encryptData(Buffer.from(json, 'utf8')).toString('base64');
@@ -1540,8 +1648,22 @@ function addMessage(chatId: string, messageId: string, messageData: any): Promis
 }
 
 function addMessagesBatch(chatId: string, messages: Array<{ id: string; messageData: any }>): Promise<void> {
+  if (!messages || messages.length === 0) return Promise.resolve();
+  const masterKey = getMasterKey();
+  if (nativeModule && nativeModule.rustStorageAddMessagesBatch && masterKey) {
+    try {
+      const json = JSON.stringify(messages);
+      nativeModule.rustStorageAddMessagesBatch(
+        getAppDbPath(),
+        chatId,
+        json,
+        masterKey.toString('hex')
+      );
+      return Promise.resolve();
+    } catch {}
+  }
+
   return new Promise((resolve, reject) => {
-    if (!messages || messages.length === 0) return resolve();
     const db = getDb();
     db.serialize(() => {
       db.run('BEGIN TRANSACTION;');
@@ -1564,6 +1686,21 @@ function addMessagesBatch(chatId: string, messages: Array<{ id: string; messageD
 }
 
 function getAllRecentMessages(scopePrefix?: string, limitPerChat: number = 30): Promise<Record<string, any[]>> {
+  const masterKey = getMasterKey();
+  if (nativeModule && nativeModule.rustStorageGetAllRecentMessages && masterKey) {
+    try {
+      const jsonStr: string = nativeModule.rustStorageGetAllRecentMessages(
+        getAppDbPath(),
+        scopePrefix || null,
+        limitPerChat,
+        masterKey.toString('hex')
+      );
+      if (jsonStr) {
+        return Promise.resolve(JSON.parse(jsonStr));
+      }
+    } catch {}
+  }
+
   return new Promise((resolve) => {
     const isAccount2 = scopePrefix === 'account_2';
     const sql = isAccount2
@@ -1603,6 +1740,13 @@ function getAllRecentMessages(scopePrefix?: string, limitPerChat: number = 30): 
 }
 
 function deleteMessagesByChat(chatId: string): Promise<void> {
+  if (nativeModule && nativeModule.rustStorageDeleteMessages) {
+    try {
+      nativeModule.rustStorageDeleteMessages(getAppDbPath(), chatId);
+      return Promise.resolve();
+    } catch {}
+  }
+
   return new Promise((resolve, reject) => {
     let sql: string;
     let params: any[];
@@ -1627,6 +1771,13 @@ function deleteMessagesByChat(chatId: string): Promise<void> {
 }
 
 function deleteMessageById(id: string): Promise<void> {
+  if (nativeModule && nativeModule.rustStorageDeleteMessage) {
+    try {
+      nativeModule.rustStorageDeleteMessage(getAppDbPath(), id);
+      return Promise.resolve();
+    } catch {}
+  }
+
   return new Promise((resolve, reject) => {
     let sql: string;
     let params: any[];
@@ -2265,6 +2416,39 @@ ipcMain.handle('orbita:rustDecryptMessage', async (_event, key: Uint8Array, ciph
       );
     } catch (e) {
       console.error('[RustCrypto] decryptMessage failed:', e);
+      return null;
+    }
+  }
+  return null;
+});
+
+ipcMain.handle('orbita:rustGetDirectChatId', async (_event, userAUuid: string, userBUuid: string) => {
+  if (nativeModule && nativeModule.getDirectChatId) {
+    try {
+      return nativeModule.getDirectChatId(userAUuid, userBUuid);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+});
+
+ipcMain.handle('orbita:rustDeriveChannelKey', async (_event, channelId: string) => {
+  if (nativeModule && nativeModule.deriveChannelKey) {
+    try {
+      return nativeModule.deriveChannelKey(channelId);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+});
+
+ipcMain.handle('orbita:rustDeriveTicketKey', async (_event, ticketNumber: string) => {
+  if (nativeModule && nativeModule.deriveTicketKey) {
+    try {
+      return nativeModule.deriveTicketKey(ticketNumber);
+    } catch {
       return null;
     }
   }

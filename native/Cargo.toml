@@ -26,6 +26,8 @@ image = { version = "0.25", default-features = false, features = ["jpeg", "png",
 memmap2 = "0.9"
 rusqlite = { version = "0.32", features = ["bundled"] }
 zeroize = { version = "1.8", features = ["zeroize_derive"] }
+base64 = "0.22"
+hmac = "0.12"
 
 [build-dependencies]
 napi-build = "2"

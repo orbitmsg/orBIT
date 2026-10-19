@@ -390,6 +390,12 @@ contextBridge.exposeInMainWorld('orbita', {
     ipcRenderer.invoke('orbita:rustDeriveSharedSecret', myPrivateKeyHex, otherPublicKeyHex),
   rustDeriveRootKey: (sharedSecretHex: string) =>
     ipcRenderer.invoke('orbita:rustDeriveRootKey', sharedSecretHex),
+  rustGetDirectChatId: (userAUuid: string, userBUuid: string) =>
+    ipcRenderer.invoke('orbita:rustGetDirectChatId', userAUuid, userBUuid),
+  rustDeriveChannelKey: (channelId: string) =>
+    ipcRenderer.invoke('orbita:rustDeriveChannelKey', channelId),
+  rustDeriveTicketKey: (ticketNumber: string) =>
+    ipcRenderer.invoke('orbita:rustDeriveTicketKey', ticketNumber),
   rustGenerateKeyPair: () =>
     ipcRenderer.invoke('orbita:rustGenerateKeyPair'),
   rustDerivePublicKey: (privateKeyHex: string) =>

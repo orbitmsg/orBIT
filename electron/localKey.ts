@@ -8,6 +8,11 @@ const KEY_BACKUP = 'local_key.bak';
 const PIN_KEY_FILE = 'local_key_pin.enc';
 
 let localKey: Buffer | null = null;
+let nativeModuleRef: any = null;
+
+export function setNativeModule(mod: any) {
+  nativeModuleRef = mod;
+}
 
 function getPinFilePath(): string {
   return path.join(app.getPath('userData'), PIN_KEY_FILE);
@@ -35,6 +40,15 @@ export function unlockWithPin(pin: string): boolean {
 
   try {
     const raw = fs.readFileSync(pinPath, 'utf8');
+
+    if (nativeModuleRef && nativeModuleRef.rustUnlockWithPin) {
+      const hexKey = nativeModuleRef.rustUnlockWithPin(pin, raw);
+      if (hexKey) {
+        localKey = Buffer.from(hexKey, 'hex');
+        return true;
+      }
+    }
+
     const parsed = JSON.parse(raw);
     const salt = Buffer.from(parsed.salt, 'hex');
     const iv = Buffer.from(parsed.iv, 'hex');
@@ -66,19 +80,28 @@ export function setupPin(pin: string): boolean {
       localKey = keyToProtect;
     }
 
-    const salt = randomBytes(16);
-    const iv = randomBytes(12);
-    const derivedKey = pbkdf2Sync(pin, salt, 100000, 32, 'sha256');
-    const cipher = createCipheriv('aes-256-gcm', derivedKey, iv);
-    const encrypted = Buffer.concat([cipher.update(keyToProtect), cipher.final()]);
-    const tag = cipher.getAuthTag();
+    let payload: string | null = null;
+    if (nativeModuleRef && nativeModuleRef.rustSetupPin) {
+      try {
+        payload = nativeModuleRef.rustSetupPin(pin, keyToProtect.toString('hex'));
+      } catch {}
+    }
 
-    const payload = JSON.stringify({
-      salt: salt.toString('hex'),
-      iv: iv.toString('hex'),
-      tag: tag.toString('hex'),
-      data: encrypted.toString('hex'),
-    });
+    if (!payload) {
+      const salt = randomBytes(16);
+      const iv = randomBytes(12);
+      const derivedKey = pbkdf2Sync(pin, salt, 100000, 32, 'sha256');
+      const cipher = createCipheriv('aes-256-gcm', derivedKey, iv);
+      const encrypted = Buffer.concat([cipher.update(keyToProtect), cipher.final()]);
+      const tag = cipher.getAuthTag();
+
+      payload = JSON.stringify({
+        salt: salt.toString('hex'),
+        iv: iv.toString('hex'),
+        tag: tag.toString('hex'),
+        data: encrypted.toString('hex'),
+      });
+    }
 
     fs.writeFileSync(getPinFilePath(), payload, 'utf8');
 

@@ -144,6 +144,9 @@ declare global {
       rustDecryptFile?: (data: Uint8Array | ArrayBuffer, sharedSecretHex: string) => Promise<Uint8Array | null>;
       rustDeriveSharedSecret?: (myPrivateKeyHex: string, otherPublicKeyHex: string) => Promise<string | null>;
       rustDeriveRootKey?: (sharedSecretHex: string) => Promise<string | null>;
+      rustGetDirectChatId?: (userAUuid: string, userBUuid: string) => Promise<string | null>;
+      rustDeriveChannelKey?: (channelId: string) => Promise<string | null>;
+      rustDeriveTicketKey?: (ticketNumber: string) => Promise<string | null>;
       rustGenerateKeyPair?: () => Promise<{ public_key: string; private_key: string } | null>;
       rustDerivePublicKey?: (privateKeyHex: string) => Promise<string | null>;
       rustEncryptMessage?: (key: Uint8Array, plaintext: Uint8Array, nonce?: Uint8Array, associatedData?: Uint8Array) => Promise<{ ciphertext: Uint8Array; nonce: Uint8Array; tag: Uint8Array } | null>;

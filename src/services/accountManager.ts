@@ -130,6 +130,16 @@ export const useAccountStore = create<AccountStoreState>((set, get) => ({
       }
     } catch {}
 
+    if (useChatStore?.persist && !useChatStore.persist.hasHydrated()) {
+      await new Promise<void>((resolve) => {
+        const unsub = useChatStore.persist.onFinishHydration(() => {
+          unsub();
+          resolve();
+        });
+        setTimeout(resolve, 800);
+      });
+    }
+
     const auth = useAuthStore.getState();
     const chat = useChatStore.getState();
 
@@ -154,9 +164,15 @@ export const useAccountStore = create<AccountStoreState>((set, get) => ({
       try {
         const parsed = JSON.parse(account1ChatRaw);
         if (parsed?.myCode && !chat.myCode) chat.setMyCode(parsed.myCode);
-        const hasChats = (chat.chats && chat.chats.length > 0) || (chat.messagesByChatId && Object.keys(chat.messagesByChatId).length > 0);
-        if (!hasChats && parsed) {
+        const liveChats = useChatStore.getState().chats || [];
+        if (liveChats.length === 0 && parsed?.chats && Array.isArray(parsed.chats) && parsed.chats.length > 0) {
           chat.importChatState(parsed);
+        } else if (parsed?.chats && Array.isArray(parsed.chats) && parsed.chats.length > 0) {
+          const liveIds = new Set(liveChats.map((c) => c.id));
+          const missing = parsed.chats.filter((c: any) => c && c.id && !liveIds.has(c.id));
+          if (missing.length > 0) {
+            useChatStore.setState((s) => ({ chats: [...s.chats, ...missing] }));
+          }
         }
       } catch {}
     }

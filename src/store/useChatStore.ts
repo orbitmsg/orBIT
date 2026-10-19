@@ -349,22 +349,19 @@ export function clampTextScale(value: number): number {
   return Math.min(TEXT_SCALE_MAX, Math.max(TEXT_SCALE_MIN, n));
 }
 
-let setItemTimer: any = null;
-const pendingStorageMap = new Map<string, string>();
 let lastSavedValues: Record<string, string> = {};
 
-const flushStorageSet = () => {
-  if (setItemTimer) {
-    clearTimeout(setItemTimer);
-    setItemTimer = null;
-  }
-  if (pendingStorageMap.size > 0) {
-    const entries = Array.from(pendingStorageMap.entries());
-    pendingStorageMap.clear();
-    for (const [key, val] of entries) {
-      if (typeof window !== 'undefined' && (window as any).orbita?.storageSet) {
-        (window as any).orbita.storageSet(key, val).catch(() => {});
-      }
+export const flushStorageSet = () => {
+  if (typeof window === 'undefined') return;
+  const current = lastSavedValues['orbita-chat-storage'];
+  if (current) {
+    if (!securityService.isPasswordSet()) {
+      try {
+        localStorage.setItem('orbita-chat-storage', current);
+      } catch {}
+    }
+    if ((window as any).orbita?.storageSet) {
+      (window as any).orbita.storageSet('orbita-chat-storage', current).catch(() => {});
     }
   }
 };
@@ -379,7 +376,9 @@ const isBlankChatState = (jsonStr: string): boolean => {
     const data = JSON.parse(jsonStr);
     const s = data?.state || data;
     const chats = s?.chats || [];
-    return !s?.myCode && chats.length <= 1;
+    const realChats = chats.filter((c: any) => c && c.id !== 'notes');
+    if (realChats.length > 0) return false;
+    return chats.length === 0;
   } catch {
     return false;
   }
@@ -388,64 +387,62 @@ const isBlankChatState = (jsonStr: string): boolean => {
 const ipcStorage: StateStorage = {
   getItem: async (name: string): Promise<string | null> => {
     if (typeof window === 'undefined') return null;
-    let val = null;
+    let val: string | null = null;
     if ((window as any).orbita?.storageGet) {
-      val = await (window as any).orbita.storageGet(name);
-      if (!val && !securityService.isPasswordSet()) {
-        val = localStorage.getItem(name);
-        if (val) {
+      try {
+        val = await (window as any).orbita.storageGet(name);
+      } catch {}
+    }
+    const localVal = !securityService.isPasswordSet() ? localStorage.getItem(name) : null;
+    if (!val || (isBlankChatState(val) && localVal && !isBlankChatState(localVal))) {
+      if (localVal) {
+        val = localVal;
+        if ((window as any).orbita?.storageSet) {
           (window as any).orbita.storageSet(name, val).catch(() => {});
         }
       }
-    } else if (!securityService.isPasswordSet()) {
-      val = localStorage.getItem(name);
+    }
+    if (val && !localVal && !securityService.isPasswordSet()) {
+      try {
+        localStorage.setItem(name, val);
+      } catch {}
     }
     if (val !== null) lastSavedValues[name] = val;
     return val;
   },
-  setItem: (name: string, value: string): Promise<void> => {
-    if (typeof window === 'undefined') return Promise.resolve();
+  setItem: async (name: string, value: string): Promise<void> => {
+    if (typeof window === 'undefined') return;
 
     if (useChatStore?.persist && !useChatStore.persist.hasHydrated()) {
-      return Promise.resolve();
+      return;
     }
 
     if (lastSavedValues[name] === value) {
-      return Promise.resolve();
+      return;
     }
 
-    const previousSaved = lastSavedValues[name];
+    const previousSaved = lastSavedValues[name] || (!securityService.isPasswordSet() ? localStorage.getItem(name) : null);
     if (previousSaved && isBlankChatState(value) && !isBlankChatState(previousSaved)) {
-      return Promise.resolve();
+      return;
     }
 
     lastSavedValues[name] = value;
 
-    if (!(window as any).orbita?.storageSet && !securityService.isPasswordSet()) {
+    if (!securityService.isPasswordSet()) {
       try {
         localStorage.setItem(name, value);
       } catch {}
-    } else {
-      try {
-        localStorage.removeItem(name);
-      } catch {}
     }
 
-    pendingStorageMap.set(name, value);
-    if (setItemTimer) clearTimeout(setItemTimer);
-    setItemTimer = setTimeout(() => {
-      flushStorageSet();
-    }, 1000);
-    return Promise.resolve();
+    if ((window as any).orbita?.storageSet) {
+      try {
+        await (window as any).orbita.storageSet(name, value);
+      } catch {}
+    }
   },
   removeItem: async (name: string): Promise<void> => {
     if (typeof window === 'undefined') return;
-    pendingStorageMap.delete(name);
     delete lastSavedValues[name];
-    if (setItemTimer && pendingStorageMap.size === 0) {
-      clearTimeout(setItemTimer);
-      setItemTimer = null;
-    }
     if ((window as any).orbita?.storageRemove) {
       await (window as any).orbita.storageRemove(name);
     } else {
@@ -454,7 +451,6 @@ const ipcStorage: StateStorage = {
   },
 };
 
-// Инициализация миграции при загрузке стора
 if (typeof window !== 'undefined' && (window as any).orbita?.storageMigrate) {
   (window as any).orbita.storageMigrate().catch((err: any) => {
     console.error('[Migration] Failed to migrate from localStorage:', err);
@@ -982,7 +978,7 @@ export const useChatStore = create<ChatState>()(
           }
           if (prevChat && prevChat.isDraft) {
             const msgs = state.messagesByChatId[previousActiveId] || [];
-            if (msgs.length === 0) {
+            if (msgs.length === 0 && !prevChat.peerCode) {
               nextChats = nextChats.filter(c => c.id !== previousActiveId);
               chatsChanged = true;
             }
@@ -1057,7 +1053,9 @@ export const useChatStore = create<ChatState>()(
               return state;
             }
           }
-          const currentDeleted = (state.deletedChatIds || []).filter(id => id !== chatEntry.id);
+          const currentDeleted = (state.deletedChatIds || []).filter(
+            id => id !== chatEntry.id && (!chatEntry.peerCode || id !== chatEntry.peerCode)
+          );
           const exists = state.chats.find(c => c.id === chatEntry.id);
           if (exists) {
             const merged: Chat = { ...exists };
@@ -1076,6 +1074,7 @@ export const useChatStore = create<ChatState>()(
             deletedChatIds: currentDeleted,
           };
         });
+        flushStorageSet();
       },
       addChannelChat: (channel) => {
         const chatEntry: Chat = {
@@ -2303,7 +2302,6 @@ export const useChatStore = create<ChatState>()(
         if (state && Array.isArray(state.chats)) {
           state.chats = state.chats
             .filter((c) => !(c.type === 'channel' && !c.isOwner && c.isSubscribed === false))
-            .filter((c) => !(c.type === 'private' && c.id !== 'notes' && c.peerCode && c.peerCode.length === 64))
             .map((c) => ({
               ...c,
               online: false,

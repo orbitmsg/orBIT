@@ -3221,6 +3221,7 @@ ipcMain.on('orbita:tray-menu-action', (_event, action: string) => {
     showMainWindow();
   } else if (action === 'quit') {
     isQuitting = true;
+    flushKvWritesSync();
     app.quit();
   }
 });
@@ -3821,6 +3822,7 @@ ipcMain.handle('window:close', (event) => {
       if (showInTraySetting) {
         mainWindow.hide();
       } else {
+        flushKvWritesSync();
         app.quit();
       }
     } else {

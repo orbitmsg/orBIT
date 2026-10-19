@@ -1005,14 +1005,13 @@ export const MainLayout = () => {
 
   const isLoadingPendingRef = useRef(false);
 
-  // Создаём чат "Заметки для себя" при старте, если его нет
   useEffect(() => {
+    if (!_hasHydrated) return;
     const notes = chats.find(c => c.id === 'notes');
     if (!notes) {
       const array = new Uint8Array(32);
       crypto.getRandomValues(array);
       const sharedSecret = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
-      // Notes chat: self-only, use initForNotes which bootstraps both chain keys internally
       const notesRootKey = deriveRootKey(sharedSecret);
       const notesRatchet = DoubleRatchet.initForNotes(notesRootKey);
       addChat({
@@ -1027,13 +1026,12 @@ export const MainLayout = () => {
         avatarUrl: undefined,
       });
     } else {
-      // Если чат заметок уже есть, но имя не совпадает с локализацией, обновляем
       const expectedName = t('connectModal.notes');
       if (notes.name !== expectedName) {
         updateChat('notes', { name: expectedName });
       }
     }
-  }, [chats, addChat, updateChat, t]);
+  }, [_hasHydrated, chats, addChat, updateChat, t]);
 
   useEffect(() => {
     const store = useChatStore.getState();
@@ -1898,9 +1896,10 @@ export const MainLayout = () => {
         const currentChats = useChatStore.getState().chats;
         const existing = currentChats.find(c => c.id === conf.chat_id);
 
-        if (!existing || useChatStore.getState().deletedChatIds?.includes(conf.chat_id)) {
-          console.warn('[Handshake] Confirmation received but chat not found or deleted, consuming:', conf.chat_id);
-          await supabaseService.markHandshakeConsumed(conf.id).catch(() => {});
+        if (!existing) {
+          if (useChatStore.getState().deletedChatIds?.includes(conf.chat_id)) {
+            await supabaseService.markHandshakeConsumed(conf.id).catch(() => {});
+          }
           continue;
         }
 
@@ -5515,7 +5514,7 @@ export const MainLayout = () => {
       if (chat.id === 'notes') {
         return hasNotesMessages;
       }
-      if (chat.isDraft) {
+      if (chat.isDraft && !chat.peerCode) {
         return false;
       }
       return true;
@@ -5868,7 +5867,7 @@ export const MainLayout = () => {
       unreadCount: 0,
       createdAt: Date.now(),
       notificationsEnabled: true,
-      isDraft: true,
+      isDraft: false,
       isChatInitiator: true,
       peerPublicKey: user.public_key || null,
     };

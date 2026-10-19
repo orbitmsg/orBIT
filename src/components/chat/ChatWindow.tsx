@@ -541,7 +541,10 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
           useChatStore.getState().deleteChat(user.user_code);
         }
 
-        const newChatId = generateChatId();
+        const myUid = useAuthStore.getState().userId;
+        const newChatId = (myUid && user.user_code && user.user_code.length === 36)
+          ? getDirectChatId(myUid, user.user_code)
+          : generateChatId();
         const draftChat = {
           id: newChatId,
           type: 'private' as const,
@@ -559,7 +562,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
           unreadCount: 0,
           createdAt: Date.now(),
           notificationsEnabled: true,
-          isDraft: true,
+          isDraft: false,
           isChatInitiator: true,
           peerPublicKey: user.public_key || null,
         };

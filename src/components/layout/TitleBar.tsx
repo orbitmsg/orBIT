@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useChatStore } from '../../store/useChatStore';
+import { useChatStore, flushStorageSet } from '../../store/useChatStore';
 
 export const isElectronApp = (): boolean => {
   if (typeof window === 'undefined') return false;
@@ -91,6 +91,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
       window.dispatchEvent(new CustomEvent('orbita:request-exit-app-upload'));
       return;
     }
+    flushStorageSet();
     try { ((window as any).orbita?.closeWindow?.()); } catch {}
   };
 

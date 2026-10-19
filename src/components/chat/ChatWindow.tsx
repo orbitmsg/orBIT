@@ -649,17 +649,13 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     };
   }, []);
 
-  const draftsByChatId = useChatStore((s) => s.draftsByChatId);
-  const setDraft = useChatStore((s) => s.setDraft);
-  const clearDraft = useChatStore((s) => s.clearDraft);
-
   useEffect(() => {
     if (draftDebounceTimerRef.current) {
       clearTimeout(draftDebounceTimerRef.current);
       draftDebounceTimerRef.current = null;
     }
     if (activeChatId) {
-      const savedDraft = draftsByChatId[activeChatId] || '';
+      const savedDraft = useChatStore.getState().draftsByChatId[activeChatId] || '';
       setInputText(savedDraft);
     } else {
       setInputText('');
@@ -865,28 +861,28 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
 
   const handleSetInputText = useCallback((text: string) => {
     setInputText(text);
-    if (activeChatId) {
-      const currentActiveId = activeChatId;
-      if (text) {
+    const currentActiveId = activeChatId || useChatStore.getState().activeChatId;
+    if (currentActiveId) {
+      if (text.trim()) {
         if (draftDebounceTimerRef.current) clearTimeout(draftDebounceTimerRef.current);
         draftDebounceTimerRef.current = setTimeout(() => {
           if (useChatStore.getState().activeChatId === currentActiveId) {
-            setDraft(currentActiveId, text);
+            useChatStore.getState().setDraft(currentActiveId, text);
           }
         }, 500);
 
-        if (activeChatId !== 'notes' && typingIndicatorsEnabled) {
+        if (currentActiveId !== 'notes' && typingIndicatorsEnabled) {
           const now = Date.now();
           if (!isTypingSentRef.current || now - lastTypingSentTimeRef.current >= 1500) {
-            ablyService.sendTyping(activeChatId, true, myNickname);
+            ablyService.sendTyping(currentActiveId, true, myNickname);
             isTypingSentRef.current = true;
             lastTypingSentTimeRef.current = now;
           }
 
           if (!typingHeartbeatRef.current) {
             typingHeartbeatRef.current = setInterval(() => {
-              if (activeChatId && activeChatId !== 'notes' && isTypingSentRef.current) {
-                ablyService.sendTyping(activeChatId, true, myNickname);
+              if (currentActiveId && currentActiveId !== 'notes' && isTypingSentRef.current) {
+                ablyService.sendTyping(currentActiveId, true, myNickname);
                 lastTypingSentTimeRef.current = Date.now();
               }
             }, 2000);
@@ -902,11 +898,11 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
           clearTimeout(draftDebounceTimerRef.current);
           draftDebounceTimerRef.current = null;
         }
-        clearDraft(activeChatId);
+        useChatStore.getState().clearDraft(currentActiveId);
         stopTyping();
       }
     }
-  }, [activeChatId, setDraft, clearDraft, typingIndicatorsEnabled, stopTyping, myNickname]);
+  }, [activeChatId, typingIndicatorsEnabled, stopTyping, myNickname]);
 
   useEffect(() => {
     return () => {
@@ -3656,8 +3652,11 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
       clearTimeout(draftDebounceTimerRef.current);
       draftDebounceTimerRef.current = null;
     }
-    if (activeChatId) clearDraft(activeChatId);
-    if (inputText !== '') setInputText('');
+    const currentId = activeChatId || useChatStore.getState().activeChatId;
+    if (currentId) {
+      useChatStore.getState().clearDraft(currentId);
+    }
+    setInputText('');
     stopTyping();
     if (replyingTo) {
       let cleanText = replyingTo.text.replace(/^↩\s(?:\[id:.+?\]\s)?.+?:.+?,\s\d{2}:\d{2}\n/, '').replace(/\n/g, ' ').trim();
@@ -3679,7 +3678,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     requestAnimationFrame(() => {
       scrollToBottom(false);
     });
-  }, [inputText, activeChatId, clearDraft, stopTyping, replyingTo, triggerMessage, scrollToBottom]);
+  }, [inputText, activeChatId, stopTyping, replyingTo, triggerMessage, scrollToBottom]);
 
   const handleSendAsTxt = async (_caption: string) => {
     if (!activeChatId || !inputText.trim()) return;
@@ -3708,7 +3707,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         clearTimeout(draftDebounceTimerRef.current);
         draftDebounceTimerRef.current = null;
       }
-      if (activeChatId) clearDraft(activeChatId);
+      if (activeChatId) useChatStore.getState().clearDraft(activeChatId);
       setAttachedFiles([txtFile]);
       setIsAttachmentModalOpen(true);
       setInputText('');
@@ -5596,7 +5595,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
       clearTimeout(draftDebounceTimerRef.current);
       draftDebounceTimerRef.current = null;
     }
-    if (activeChatId) clearDraft(activeChatId);
+    if (activeChatId) useChatStore.getState().clearDraft(activeChatId);
     setAttachedFiles([]);
     setIsAttachmentModalOpen(false);
     setIsSendingFiles(false);
@@ -7390,6 +7389,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         ) : null
       ) : (
         <MessageInput
+          key={activeChatId || 'empty'}
           inputText={inputText}
           setInputText={handleSetInputText}
           editingIndex={editingIndex}

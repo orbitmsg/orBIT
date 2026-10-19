@@ -330,6 +330,15 @@ export const MessageInput = memo<MessageInputProps>(({
   const syncDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    return () => {
+      if (syncDebounceTimerRef.current) {
+        clearTimeout(syncDebounceTimerRef.current);
+        syncDebounceTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (isInternalInputRef.current) {
       isInternalInputRef.current = false;
       return;
@@ -402,6 +411,19 @@ export const MessageInput = memo<MessageInputProps>(({
       setSlashQuery('');
     }
 
+    if (empty) {
+      if (syncDebounceTimerRef.current) {
+        clearTimeout(syncDebounceTimerRef.current);
+        syncDebounceTimerRef.current = null;
+      }
+      setCurrentText('');
+      const currentChatId = activeChatId || useChatStore.getState().activeChatId;
+      if (currentChatId) {
+        useChatStore.getState().clearDraft(currentChatId);
+      }
+      return;
+    }
+
     if (syncDebounceTimerRef.current) clearTimeout(syncDebounceTimerRef.current);
     syncDebounceTimerRef.current = setTimeout(() => {
       syncEditorToState();
@@ -421,7 +443,12 @@ export const MessageInput = memo<MessageInputProps>(({
       editorRef.current.innerHTML = '';
       setIsEditorEmpty(true);
     }
+    isInternalInputRef.current = false;
     setCurrentText('');
+    const targetChatId = activeChatId || useChatStore.getState().activeChatId;
+    if (targetChatId) {
+      useChatStore.getState().clearDraft(targetChatId);
+    }
     if (!textToSend.trim()) return;
     if (editingIndex !== null) {
       onEditMessage(textToSend);

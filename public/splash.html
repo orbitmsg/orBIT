@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orbita Desktop</title>
+  <link rel="icon" type="image/x-icon" href="/icons/icon.ico" />
+  <link rel="stylesheet" href="fonts/offline-fonts.css" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #121212;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", Roboto, sans-serif;
+    }
+    .orbita-titlebar {
+      height: 30px;
+      width: 100%;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-shrink: 0;
+      -webkit-app-region: drag;
+      user-select: none;
+    }
+    .orbita-titlebar-controls {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      -webkit-app-region: no-drag;
+    }
+    .orbita-titlebar-btn {
+      width: 30px;
+      height: 30px;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: #9f96b3;
+      cursor: pointer;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.12s ease, color 0.12s ease;
+      -webkit-app-region: no-drag;
+      user-select: none;
+    }
+    .orbita-titlebar-btn:hover {
+      background-color: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+    .orbita-titlebar-btn:active {
+      background-color: rgba(255, 255, 255, 0.16);
+    }
+    .orbita-titlebar-btn:focus {
+      outline: none;
+    }
+    .splash-card {
+      flex: 1;
+      width: 100%;
+      border-radius: 0;
+      background: #121212;
+      border: none;
+      box-shadow: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 20px 30px;
+      position: relative;
+    }
+    .logo-container {
+      width: 220px;
+      height: 220px;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: scale(0.92);
+      animation: logo-reveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    @keyframes logo-reveal {
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    .status-text {
+      margin-top: 22px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #8e8e93;
+      text-align: center;
+      letter-spacing: 0.2px;
+      height: 20px;
+      line-height: 20px;
+      transition: opacity 0.2s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="orbita-titlebar" id="orbita-titlebar">
+    <div class="orbita-titlebar-controls">
+      <button id="btn-minimize" class="orbita-titlebar-btn" aria-label="Minimize">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 5H10" stroke="currentColor" stroke-width="1" stroke-linecap="square" />
+        </svg>
+      </button>
+      <button id="btn-maximize" class="orbita-titlebar-btn" aria-label="Maximize">
+        <svg id="icon-maximize" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0.5" y="0.5" width="9" height="9" stroke="currentColor" stroke-width="1" />
+        </svg>
+        <svg id="icon-restore" style="display: none;" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2.5 0.5H9.5V7.5" stroke="currentColor" stroke-width="1" stroke-linecap="square" />
+          <rect x="0.5" y="2.5" width="7" height="7" stroke="currentColor" stroke-width="1" fill="#121212" />
+        </svg>
+      </button>
+      <button id="btn-close" class="orbita-titlebar-btn" aria-label="Close">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1 1L9 9M9 1L1 9" stroke="currentColor" stroke-width="1" stroke-linecap="square" />
+        </svg>
+      </button>
+    </div>
+  </div>
+  <div class="splash-card">
+    <div class="logo-container">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="100%" height="100%">
+        <defs>
+          <clipPath id="front-clip">
+            <rect x="-600" y="0" width="1200" height="600" />
+          </clipPath>
+          <mask id="back-ring-mask">
+            <rect x="0" y="0" width="800" height="800" fill="white" />
+            <circle cx="400" cy="400" r="192" fill="black" />
+          </mask>
+          <mask id="planet-mask">
+            <rect x="0" y="0" width="800" height="800" fill="white" />
+            <g transform="translate(400, 400) rotate(-26)">
+              <path d="M 224 0 A 224 59 0 0 1 -224 0 L -376 0 A 376 121 0 0 0 376 0 Z" fill="black" />
+            </g>
+          </mask>
+          <mask id="ring-hole">
+            <rect x="-600" y="-600" width="1200" height="1200" fill="white" />
+            <ellipse cx="0" cy="0" rx="240" ry="75" fill="black" />
+          </mask>
+          <mask id="rotating-gap">
+            <rect x="0" y="0" width="800" height="800" fill="white" />
+            <g>
+              <animateTransform
+                attributeName="transform"
+                type="rotate"
+                from="-26 400 400"
+                to="334 400 400"
+                dur="1s"
+                repeatCount="indefinite" />
+              <path d="M 400 400 L 400 -200 A 600 600 0 0 1 824.26 -24.26 Z" fill="black" />
+            </g>
+          </mask>
+        </defs>
+        <g mask="url(#rotating-gap)">
+          <rect x="0" y="0" width="800" height="800" fill="transparent" pointer-events="none" />
+          <g mask="url(#back-ring-mask)">
+            <g transform="translate(400, 400) rotate(-26)">
+              <ellipse cx="0" cy="0" rx="360" ry="105" fill="#BCC0C3" mask="url(#ring-hole)" />
+            </g>
+          </g>
+        </g>
+        <circle cx="400" cy="400" r="175" fill="#BCC0C3" mask="url(#planet-mask)" />
+        <g mask="url(#rotating-gap)">
+          <rect x="0" y="0" width="800" height="800" fill="transparent" pointer-events="none" />
+          <g transform="translate(400, 400) rotate(-26)">
+            <g clip-path="url(#front-clip)">
+              <ellipse cx="0" cy="0" rx="360" ry="105" fill="#BCC0C3" mask="url(#ring-hole)" />
+            </g>
+          </g>
+        </g>
+      </svg>
+    </div>
+    <div id="status-text" class="status-text" style="display: none;"></div>
+  </div>
+  <script>
+    (function() {
+      try {
+        var savedFont = localStorage.getItem('orbita_font_family');
+        if (savedFont && savedFont !== 'system') {
+          var fontMap = {
+            'Segoe UI': "'Segoe UI', 'Segoe', system-ui, sans-serif",
+            'Segoe UI Black': "'Segoe UI Black', 'Segoe UI', system-ui, sans-serif",
+            'Inter': "'Inter', system-ui, sans-serif",
+            'Roboto': "'Roboto', sans-serif",
+            'Open Sans': "'Open Sans', sans-serif",
+            'Lato': "'Lato', sans-serif",
+            'Montserrat': "'Montserrat', sans-serif",
+            'Poppins': "'Poppins', sans-serif",
+            'Nunito': "'Nunito', sans-serif",
+            'Rubik': "'Rubik', sans-serif",
+            'Fira Sans': "'Fira Sans', sans-serif",
+            'Ubuntu': "'Ubuntu', sans-serif",
+            'Manrope': "'Manrope', sans-serif",
+            'Arial': "Arial, Helvetica, sans-serif",
+            'Arial Black': "'Arial Black', 'Arial Bold', sans-serif",
+            'Trebuchet MS': "'Trebuchet MS', sans-serif",
+            'Verdana': "Verdana, Geneva, sans-serif",
+            'Tahoma': "Tahoma, Geneva, sans-serif",
+            'Georgia': "Georgia, serif",
+            'Times New Roman': "'Times New Roman', Times, serif",
+            'Merriweather': "'Merriweather', Georgia, serif",
+            'Playfair Display': "'Playfair Display', Georgia, serif",
+            'Fira Code': "'Fira Code', monospace",
+            'JetBrains Mono': "'JetBrains Mono', monospace",
+            'Consolas': "Consolas, 'Courier New', monospace",
+            'Courier New': "'Courier New', Courier, monospace",
+            'Comic Sans MS': "'Comic Sans MS', 'Comic Sans', cursive",
+            'Caveat': "'Caveat', cursive",
+            'Pacifico': "'Pacifico', cursive"
+          };
+          var css = fontMap[savedFont] || fontMap['system'] || 'system-ui, sans-serif';
+          document.body.style.fontFamily = css;
+          var el = document.getElementById('status-text');
+          if (el) el.style.fontFamily = css;
+        }
+      } catch(e) {}
+    })();
+
+    window.setStatus = function(text) {
+      var el = document.getElementById('status-text');
+      if (el) {
+        el.textContent = text;
+        el.style.fontWeight = '700';
+        el.style.fontSize = '14px';
+      }
+    };
+    window.setFont = function(fontCss) {
+      if (document.body) document.body.style.fontFamily = fontCss;
+      var el = document.getElementById('status-text');
+      if (el) {
+        el.style.fontFamily = fontCss;
+        el.style.fontWeight = '700';
+        el.style.fontSize = '14px';
+      }
+    };
+
+    (function() {
+      var btnMin = document.getElementById('btn-minimize');
+      var btnMax = document.getElementById('btn-maximize');
+      var btnClose = document.getElementById('btn-close');
+      var iconMax = document.getElementById('icon-maximize');
+      var iconRestore = document.getElementById('icon-restore');
+      var titlebar = document.getElementById('orbita-titlebar');
+
+      function updateMaxState(isMax) {
+        if (iconMax && iconRestore) {
+          iconMax.style.display = isMax ? 'none' : 'block';
+          iconRestore.style.display = isMax ? 'block' : 'none';
+        }
+      }
+
+      if (window.orbita) {
+        if (typeof window.orbita.isWindowMaximized === 'function') {
+          window.orbita.isWindowMaximized().then(updateMaxState).catch(function() {});
+        }
+        if (typeof window.orbita.onWindowStateChange === 'function') {
+          window.orbita.onWindowStateChange(updateMaxState);
+        }
+        if (btnMin) {
+          btnMin.addEventListener('click', function(e) {
+            e.currentTarget.blur();
+            if (window.orbita.minimizeWindow) window.orbita.minimizeWindow();
+          });
+        }
+        if (btnMax) {
+          btnMax.addEventListener('click', function(e) {
+            e.currentTarget.blur();
+            if (window.orbita.maximizeWindow) window.orbita.maximizeWindow();
+          });
+        }
+        if (btnClose) {
+          btnClose.addEventListener('click', function(e) {
+            e.currentTarget.blur();
+            if (window.orbita.closeWindow) window.orbita.closeWindow();
+          });
+        }
+        if (titlebar) {
+          titlebar.addEventListener('dblclick', function(e) {
+            if (e.target && e.target.closest && e.target.closest('.orbita-titlebar-controls')) return;
+            if (window.orbita.doubleClickTitleBar) window.orbita.doubleClickTitleBar();
+          });
+        }
+      }
+    })();
+  </script>
+</body>
+</html>

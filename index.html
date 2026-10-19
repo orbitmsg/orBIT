@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/x-icon" href="/icons/icon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/256x256.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Orbita Desktop</title>
+    <link rel="preload" href="/fonts/AppleColorEmoji.ttf" as="font" type="font/ttf" crossorigin />
+    <link rel="preload" href="/fonts/font_37_tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/font_33_tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxTcwhsk.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/fonts/offline-fonts.css" />
+    <script>
+      (function() {
+        try {
+          var savedFont = localStorage.getItem('orbita_font_family');
+          if (savedFont && savedFont !== 'system') {
+            var fontMap = {
+              'Segoe UI': "'Segoe UI', 'Segoe', system-ui, sans-serif",
+              'Segoe UI Black': "'Segoe UI Black', 'Segoe UI', system-ui, sans-serif",
+              'Inter': "'Inter', system-ui, sans-serif",
+              'Roboto': "'Roboto', sans-serif",
+              'Open Sans': "'Open Sans', sans-serif",
+              'Lato': "'Lato', sans-serif",
+              'Montserrat': "'Montserrat', sans-serif",
+              'Poppins': "'Poppins', sans-serif",
+              'Nunito': "'Nunito', sans-serif",
+              'Rubik': "'Rubik', sans-serif",
+              'Fira Sans': "'Fira Sans', sans-serif",
+              'Ubuntu': "'Ubuntu', sans-serif",
+              'Manrope': "'Manrope', sans-serif",
+              'Arial': "Arial, Helvetica, sans-serif",
+              'Arial Black': "'Arial Black', 'Arial Bold', sans-serif",
+              'Trebuchet MS': "'Trebuchet MS', sans-serif",
+              'Verdana': "Verdana, Geneva, sans-serif",
+              'Tahoma': "Tahoma, Geneva, sans-serif",
+              'Georgia': "Georgia, serif",
+              'Times New Roman': "'Times New Roman', Times, serif",
+              'Merriweather': "'Merriweather', Georgia, serif",
+              'Playfair Display': "'Playfair Display', Georgia, serif",
+              'Fira Code': "'Fira Code', monospace",
+              'JetBrains Mono': "'JetBrains Mono', monospace",
+              'Consolas': "Consolas, 'Courier New', monospace",
+              'Courier New': "'Courier New', Courier, monospace",
+              'Comic Sans MS': "'Comic Sans MS', 'Comic Sans', cursive",
+              'Caveat': "'Caveat', cursive",
+              'Pacifico': "'Pacifico', cursive"
+            };
+            var css = fontMap[savedFont] || fontMap['system'] || 'system-ui, sans-serif';
+            document.documentElement.style.setProperty('--main-font', css);
+            document.documentElement.style.fontFamily = css;
+          }
+        } catch(e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <span aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden; opacity: 0; pointer-events: none; font-family: 'Apple Color Emoji', sans-serif;">😀🎉🚀</span>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.0/jsmediatags.min.js"></script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

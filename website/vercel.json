@@ -1,0 +1,7 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/groups", "destination": "/groups/index.html" },
+    { "source": "/groups/(.*)", "destination": "/groups/index.html" }
+  ]
+}

@@ -1,0 +1,5420 @@
+import { motion, AnimatePresence } from 'framer-motion';
+import { Volume2, Trash2, Database, ChevronRight, ChevronDown, Check, Eye, EyeOff, CheckCircle2, XCircle, Bell, RefreshCw, Download, RotateCcw, User, Image as ImageIcon } from 'lucide-react';
+import { securityService } from '../../services/securityService';
+import { orbitaKeyService } from '../../services/orbitaKeyService';
+import { OrbitaKeySettings } from '../settings/OrbitaKeySettings';
+import { useState, useRef, type ReactNode, useEffect, useCallback, memo } from 'react';
+import {
+  useChatStore,
+  FONT_MAP,
+  type FontFamily,
+  type Language,
+} from '../../store/useChatStore';
+import { useShallow } from 'zustand/react/shallow';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useDeviceStore } from '../../store/useDeviceStore';
+import { useTranslation } from 'react-i18next';
+import { NotificationMonitor, NotificationCountSelector } from '../settings/NotificationPreview';
+import { MessageStatus } from '../MessageStatus';
+import { getPusher, getGroupPusher } from '../../utils/pusher';
+import { Avatar } from '../common/Avatar';
+import { ablyService } from '../../services/ablyService';
+import { liveKitService } from '../../services/livekitService';
+import { supabaseService } from '../../services/supabaseService';
+import { groupService } from '../../services/groupService';
+import { handleScrollbarThumbMouseDown, handleScrollbarTrackMouseDown } from '../../utils/scrollbarDrag';
+import { DeleteAccountModal } from '../common/DeleteAccountModal';
+import { useAccountStore } from '../../services/accountManager';
+import { AccountBackupScreen } from '../settings/AccountBackupScreen';
+import { ConnectionSettingsScreen } from '../settings/ConnectionSettingsScreen';
+import { DataMemorySettings } from '../settings/DataMemorySettings';
+import { useConnectionStore } from '../../store/useConnectionStore';
+import { useCallStore } from '../../store/useCallStore';
+import { useDevicePermissionStore } from '../../store/useDevicePermissionStore';
+import { DeveloperBadge, DeveloperToast } from '../ui/DeveloperBadge';
+import { LinkCopiedToast } from '../common/LinkCopiedToast';
+import { QrCodeView } from './QrCodeView';
+import { CHAT_COLOR_PRESETS, DEFAULT_CHAT_COLOR, type ThemeId } from '../../theme';
+import { EmojiAvatarModal } from '../settings/EmojiAvatarModal';
+import { AvatarCropperModal } from '../settings/AvatarCropperModal';
+import { BannerCropperModal } from '../settings/BannerCropperModal';
+import { isStaticImageFile, isStaticImageDataUrl, MAX_AVATAR_BANNER_SIZE, isAnimatedMedia, getMediaInfoFromDataUrl, SUPPORTED_MEDIA_EXTENSIONS } from '../../utils/staticImageValidation';
+import { OptimizedBanner } from '../common/OptimizedBanner';
+import { ChatFoldersSettings, SettingsFolderIcon } from '../settings/ChatFoldersSettings';
+import { formatBirthday, parseBirthday, serializeBirthday, MONTH_FULL_RU, MONTH_FULL_EN } from '../../utils/birthday';
+import { mediaManager } from '../../services/mediaManager';
+import { uiSounds } from '../../utils/uiSounds';
+
+const QrCodeMiniIcon: React.FC<{ size?: number; color?: string }> = ({ size = 20, color = 'currentColor' }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={size} height={size}>
+    <path fill={color} d="M5 11h4c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2m0-6h4v4H5zm0 16h4c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2m0-6h4v4H5zm8-10v4c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2m6 4h-4V5h4zm2 11.5v-1c0-.28-.22-.5-.5-.5h-1c-.28 0-.5.22-.5.5v1c0 .28.22.5.5.5h1c.28 0 .5-.22.5-.5m-8-7v1c0 .28.22.5.5.5h1c.28 0 .5-.22.5-.5v-1c0-.28-.22-.5-.5-.5h-1c-.28 0-.5.22-.5.5m3.5 1.5h-1c-.28 0-.5.22-.5.5v1c0 .28.22.5.5.5h1c.28 0 .5-.22.5-.5v-1c0-.28-.22-.5-.5-.5M13 17.5v1c0 .28.22.5.5.5h1c.28 0 .5-.22.5-.5v-1c0-.28-.22-.5-.5-.5h-1c-.28 0-.5.22-.5.5m2.5 3.5h1c.28 0 .5-.22.5-.5v-1c0-.28-.22-.5-.5-.5h-1c-.28 0-.5.22-.5.5v1c0 .28.22.5.5.5m2-2h1c.28 0 .5-.22.5-.5v-1c0-.28-.22-.5-.5-.5h-1c-.28 0-.5.22-.5.5v1c0 .28.22.5.5.5m1-6h-1c-.28 0-.5.22-.5.5v1c0 .28.22.5.5.5h1c.28 0 .5-.22.5-.5v-1c0-.28-.22-.5-.5-.5m1 4h1c.28 0 .5-.22.5-.5v-1c0-.28-.22-.5-.5-.5h-1c-.28 0-.5.22-.5.5v1c0 .28.22.5.5.5"/>
+  </svg>
+);
+
+export const MD3 = {
+  bg:            'var(--md-bg,            #211d2f)',
+  surface:       'var(--md-surface,       #2a253b)',
+  surfaceVar:    'var(--md-surface-var,   #342e47)',
+  outline:       'var(--md-outline,       rgba(255,255,255,0.12))',
+  outlineMed:    'var(--md-outline-med,   rgba(255,255,255,0.20))',
+  onSurface:     'var(--md-on-surface,    #ffffff)',
+  onSurfaceVar:  'var(--md-on-surface-var,#9f96b3)',
+  primary:       'var(--md-primary,       #9b7dd4)',
+  onPrimary:     'var(--md-on-primary,    #ffffff)',
+  primaryCont:   'var(--md-primary-cont,  #42345e)',
+  error:         'var(--md-error,         #ff595a)',
+  errorCont:    'var(--md-error-cont,    rgba(255,89,90,0.12))',
+};
+
+const GLOBAL_CSS = `
+  .m3-switch-root {
+    position: relative; display: inline-flex;
+    align-items: center; width: 52px; height: 32px;
+    cursor: pointer; user-select: none;
+    -webkit-tap-highlight-color: transparent !important;
+    outline: none; flex-shrink: 0;
+  }
+  .m3-switch-root * {
+    -webkit-tap-highlight-color: transparent !important;
+  }
+  .m3-switch-root input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+
+  .m3-track {
+    position: absolute; inset: 0; border-radius: 16px;
+    background: var(--switch-bg, rgba(255, 255, 255, 0.12));
+    border: 2px solid var(--switch-border, rgba(255, 255, 255, 0.25));
+    transition: background 200ms cubic-bezier(0.2, 0, 0, 1), border-color 200ms cubic-bezier(0.2, 0, 0, 1);
+    box-sizing: border-box; will-change: background, border-color;
+  }
+  .m3-switch-root input:checked ~ .m3-track {
+    background: var(--accent-color, var(--md-primary, #c5b4e3));
+    border-color: var(--accent-color, var(--md-primary, #c5b4e3));
+  }
+
+  .m3-thumb-wrap {
+    position: absolute; left: 0; top: 4px;
+    width: 24px; height: 24px;
+    transform: translateX(4px);
+    transition: transform 200ms cubic-bezier(0.2, 0, 0, 1);
+    display: flex; align-items: center; justify-content: center; z-index: 1;
+    will-change: transform;
+  }
+  .m3-switch-root input:checked ~ .m3-track ~ .m3-thumb-wrap { transform: translateX(24px); }
+
+  .m3-thumb {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--md-on-surface-var, #cac4d0);
+    transform: scale(0.6666);
+    transition: transform 200ms cubic-bezier(0.2, 0, 0, 1), background 200ms cubic-bezier(0.2, 0, 0, 1);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.35); will-change: transform, background;
+  }
+  .m3-switch-root input:checked ~ .m3-track ~ .m3-thumb-wrap .m3-thumb {
+    transform: scale(1); background: var(--bg-primary, #1c1b1f);
+  }
+  .m3-switch-root:active .m3-thumb { transform: scale(1.1666); }
+
+  .m3-thumb svg { opacity: 0; transform: scale(0.5); transition: opacity 150ms ease, transform 150ms ease; width: 14px; height: 14px; stroke: var(--accent-color, var(--md-primary, #c5b4e3)); will-change: opacity, transform; }
+  .m3-switch-root input:checked ~ .m3-track ~ .m3-thumb-wrap .m3-thumb svg { opacity: 1; transform: scale(1); }
+
+  .m3-switch-root input:focus-visible ~ .m3-track { outline: 2px solid var(--accent-color, #c5b4e3); outline-offset: 2px; }
+  .m3-switch-root input:disabled ~ * { opacity: .38; }
+
+  input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--md-primary); cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.4); margin-top: -8px; }
+  input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: transparent; }
+  input[type=range]::-moz-range-thumb { width: 20px; height: 20px; border: none; border-radius: 50%; background: var(--md-primary); cursor: pointer; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse-dot { 0%,100% { opacity:1 } 50% { opacity:.35 } }
+  @keyframes qr-glow { 0%,100% { box-shadow: 0 0 20px var(--qr-glow-color, rgba(197,180,227,0.3)); } 50% { box-shadow: 0 0 40px var(--qr-glow-color, rgba(197,180,227,0.5)), 0 0 80px var(--qr-glow-color, rgba(197,180,227,0.15)); } }
+  @keyframes badge-in { 0% { opacity:0; transform: scale(0.6) translateY(4px); } 100% { opacity:1; transform: scale(1) translateY(0); } }
+  .spin { animation: spin 1s linear infinite; }
+  .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+  .qr-glow-anim { animation: qr-glow 3s ease-in-out infinite; }
+
+  .pill-btn {
+    transition: background 150ms, border-color 150ms, color 150ms;
+  }
+`;
+
+const TuxAvatar = () => (
+  <div
+    style={{
+      width: '60px',
+      height: '60px',
+      borderRadius: '50%',
+      overflow: 'hidden',
+      flexShrink: 0,
+      WebkitMaskImage: '-webkit-radial-gradient(white, black)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#000000',
+    }}
+  >
+    <img
+      src="./tux.png"
+      alt="Tux"
+      style={{
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        borderRadius: '50%',
+        display: 'block',
+      }}
+    />
+  </div>
+);
+
+const OrbitaLogoAvatar = () => (
+  <img
+    src="./icons/128x128.png"
+    alt="Orbita"
+    style={{
+      width: '60px',
+      height: '60px',
+      objectFit: 'contain',
+      flexShrink: 0,
+      display: 'block',
+    }}
+  />
+);
+
+const TaskbarIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="3" width="16" height="14" rx="2" />
+    <line x1="2" y1="13" x2="18" y2="13" />
+    <line x1="6" y1="15" x2="8" y2="15" />
+    <line x1="10" y1="15" x2="14" y2="15" />
+  </svg>
+);
+
+const TogglePill = ({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '8px',
+      padding: '7px 18px',
+      borderRadius: '20px',
+      backgroundColor: 'var(--surface-container, #231e34)',
+      border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
+      color: active ? 'var(--text-main, #ffffff)' : 'var(--text-dim, #8a82a2)',
+      fontSize: '13.5px',
+      fontWeight: 500,
+      cursor: 'pointer',
+      userSelect: 'none',
+      transition: 'all 150ms ease',
+    }}
+  >
+    <div
+      style={{
+        width: '17px',
+        height: '17px',
+        borderRadius: '50%',
+        backgroundColor: active ? 'var(--text-main, #ffffff)' : 'transparent',
+        border: active ? 'none' : '1.5px solid var(--text-dim, #6b6385)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'all 150ms ease',
+      }}
+    >
+      {active && (
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="var(--bg-secondary, #231e34)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="2.5 6 5 8.5 9.5 3.5" />
+        </svg>
+      )}
+    </div>
+    <span>{label}</span>
+  </button>
+);
+
+const SectionHeader = ({ title, style }: { title: string; style?: React.CSSProperties }) => (
+  <div
+    style={{
+      fontSize: 12,
+      fontWeight: 600,
+      color: MD3.onSurfaceVar,
+      padding: '0 20px',
+      marginBottom: 8,
+      userSelect: 'none',
+      letterSpacing: '0.01em',
+      ...style,
+    }}
+  >
+    {title}
+  </div>
+);
+
+export const Block = ({ children, style }: { children: ReactNode; style?: React.CSSProperties }) => (
+  <div
+    style={{
+      backgroundColor: MD3.surface,
+      width: 'calc(100% - 20px)',
+      margin: '0 10px',
+      borderRadius: '16px',
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      padding: '4px 0',
+      boxSizing: 'border-box',
+      ...style,
+    }}
+  >
+    {children}
+  </div>
+);
+
+const SettingsRow = ({
+  label,
+  right,
+  onClick,
+  icon,
+}: {
+  label: string;
+  right?: ReactNode;
+  onClick?: () => void;
+  icon?: ReactNode;
+}) => (
+  <div
+    onClick={onClick}
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '12px 14px',
+      borderRadius: onClick ? '12px' : 0,
+      margin: onClick ? '2px 6px' : 0,
+      cursor: onClick ? 'pointer' : 'default',
+      transition: 'background 150ms',
+      backgroundColor: 'transparent',
+      boxSizing: 'border-box',
+      userSelect: 'none',
+    }}
+    onMouseEnter={e => onClick && ((e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(202,196,208,0.08)')}
+    onMouseLeave={e => onClick && ((e.currentTarget as HTMLElement).style.backgroundColor = 'transparent')}
+  >
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1, minWidth: 0 }}>
+      {icon && (
+        <div style={{
+          width: 20,
+          height: 20,
+          borderRadius: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: MD3.onSurface,
+          flexShrink: 0,
+          backgroundColor: 'transparent',
+        }}>
+          {icon}
+        </div>
+      )}
+      <p style={{ fontSize: 14, fontWeight: 500, color: MD3.onSurface, margin: 0, lineHeight: 1.4 }}>{label}</p>
+    </div>
+    {right}
+  </div>
+);
+
+export const M3Switch = memo(({
+  checked, onChange, disabled,
+}: { checked: boolean; onChange: () => void; disabled?: boolean }) => (
+  <div
+    onClick={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!disabled) {
+        if (!checked) {
+          uiSounds.playSwitchOn();
+        } else {
+          uiSounds.playSwitchOff();
+        }
+        onChange();
+      }
+    }}
+    style={{
+      width: '42px',
+      height: '24px',
+      borderRadius: '12px',
+      backgroundColor: checked ? 'var(--accent-color, #7C3AED)' : 'var(--switch-bg, rgba(255,255,255,0.14))',
+      boxShadow: checked ? 'none' : 'inset 0 0 0 1.5px var(--switch-border, rgba(255,255,255,0.22))',
+      position: 'relative',
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      transition: 'background-color 200ms ease, box-shadow 200ms ease',
+      flexShrink: 0,
+      boxSizing: 'border-box',
+      opacity: disabled ? 0.38 : 1,
+    }}
+  >
+    <div
+      style={{
+        position: 'absolute',
+        top: '3px',
+        left: checked ? '21px' : '3px',
+        width: '18px',
+        height: '18px',
+        borderRadius: '50%',
+        backgroundColor: '#ffffff',
+        transition: 'left 200ms cubic-bezier(0.2,0,0,1)',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.35)',
+      }}
+    />
+  </div>
+));
+
+const MenuItem = ({
+  icon, label, onClick, rightElement, badge,
+}: {
+  icon: ReactNode; label: string;
+  onClick: () => void; rightElement?: ReactNode; badge?: ReactNode;
+}) => (
+  <div
+    onClick={onClick}
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 16,
+      padding: '12px 14px',
+      borderRadius: '12px',
+      margin: '2px 6px',
+      cursor: 'pointer',
+      transition: 'background 150ms',
+      backgroundColor: 'transparent',
+      boxSizing: 'border-box',
+      userSelect: 'none',
+    }}
+    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(202,196,208,0.08)')}
+    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+  >
+    <div style={{ width: 20, height: 20, borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: MD3.onSurface, flexShrink: 0, backgroundColor: 'transparent' }}>
+      {icon}
+    </div>
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <p style={{ fontSize: 14, fontWeight: 500, color: MD3.onSurface, margin: 0 }}>{label}</p>
+        {badge}
+      </div>
+    </div>
+    {rightElement}
+  </div>
+);
+
+interface NameEditModalProps {
+  open: boolean;
+  onClose: () => void;
+  currentNickname: string;
+  onSave: (newName: string) => void;
+}
+
+export const NameEditModal = ({ open, onClose, currentNickname, onSave }: NameEditModalProps) => {
+  const { t } = useTranslation();
+  const [firstName, setFirstName] = useState((currentNickname || '').trim());
+  const [lastName, setLastName] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setFirstName((currentNickname || '').trim());
+      setLastName('');
+      setError(null);
+    }
+  }, [open, currentNickname]);
+
+  const handleSave = () => {
+    const f = firstName.trim();
+    const l = lastName.trim();
+    const combined = [f, l].filter(Boolean).join(' ');
+    if (combined.length < 1 || combined.length > 32) {
+      setError(t('settings.nickname_length_error'));
+      return;
+    }
+    onSave(combined);
+    onClose();
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 300,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.55)',
+            backdropFilter: 'none',
+            WebkitBackdropFilter: 'none',
+            border: 'none',
+          }}
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              backgroundColor: 'var(--bg-secondary)',
+              borderRadius: '16px',
+              padding: '24px',
+              width: '100%',
+              maxWidth: '380px',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px', color: 'var(--text-main)' }}>
+              {t('profile.edit_name_title', 'Редактирование имени')}
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ fontSize: '12px', color: 'var(--accent-color, #9b7dd4)', fontWeight: 500, display: 'block', marginBottom: '4px' }}>
+                  {t('profile.first_name', 'Имя')}
+                </label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder={t('profile.first_name', 'Имя')}
+                  autoFocus
+                  style={{
+                    width: '100%',
+                    padding: '8px 4px',
+                    borderRadius: '0px',
+                    border: 'none',
+                    borderBottom: '1.5px solid var(--border-color, rgba(255,255,255,0.15))',
+                    backgroundColor: 'transparent',
+                    color: 'var(--text-main, #ffffff)',
+                    fontSize: '15px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={(e) => (e.currentTarget.style.borderBottomColor = 'var(--accent-color, #7C3AED)')}
+                  onBlur={(e) => (e.currentTarget.style.borderBottomColor = 'var(--border-color, rgba(255,255,255,0.15))')}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', color: 'var(--text-dim, #8e8e93)', fontWeight: 500, display: 'block', marginBottom: '4px' }}>
+                  {t('profile.last_name_optional', 'Фамилия (необязательно)')}
+                </label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder={t('profile.last_name', 'Фамилия')}
+                  style={{
+                    width: '100%',
+                    padding: '8px 4px',
+                    borderRadius: '0px',
+                    border: 'none',
+                    borderBottom: '1.5px solid var(--border-color, rgba(255,255,255,0.15))',
+                    backgroundColor: 'transparent',
+                    color: 'var(--text-main, #ffffff)',
+                    fontSize: '15px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={(e) => (e.currentTarget.style.borderBottomColor = 'var(--accent-color, #7C3AED)')}
+                  onBlur={(e) => (e.currentTarget.style.borderBottomColor = 'var(--border-color, rgba(255,255,255,0.15))')}
+                />
+              </div>
+            </div>
+
+            {error && <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '12px', marginBottom: 0 }}>{error}</p>}
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' }}>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label={t('common.cancel', 'Отмена')}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '9999px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: 'var(--accent-color, #9b7dd4)',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                }}
+              >
+                {t('common.cancel', 'Отмена')}
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                aria-label={t('common.save', 'Сохранить')}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '9999px',
+                  border: 'none',
+                  backgroundColor: 'var(--accent-color, #7C3AED)',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                }}
+              >
+                {t('common.save', 'Сохранить')}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+export const NicknameEditModal = NameEditModal;
+
+interface UsernameEditModalProps {
+  open: boolean;
+  onClose: () => void;
+  currentUsername: string | null;
+  onSave: (newUsername: string | null) => void;
+}
+
+export const UsernameEditModal = ({ open, onClose, currentUsername, onSave }: UsernameEditModalProps) => {
+  const { t } = useTranslation();
+  const myCode = useChatStore((s) => s.myCode);
+  const [value, setValue] = useState(currentUsername || '');
+  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+
+  useEffect(() => {
+    if (open) {
+      setValue(currentUsername || '');
+      setError(null);
+      setStatus('idle');
+    }
+  }, [open, currentUsername]);
+
+  useEffect(() => {
+    if (!open) return;
+    const raw = value.trim().replace(/^@+/, '').toLowerCase();
+    const cur = (currentUsername || '').replace(/^@+/, '').trim().toLowerCase();
+
+    if (!raw || raw === cur) {
+      setError(null);
+      setStatus('idle');
+      return;
+    }
+
+    if (raw.length < 5 || raw.length > 32 || !/^[a-zA-Z0-9_]+$/.test(raw)) {
+      setStatus('idle');
+      return;
+    }
+
+    setStatus('checking');
+    setError(null);
+
+    const timer = setTimeout(async () => {
+      try {
+        const available = await supabaseService.isUsernameAvailable(raw, myCode);
+        if (available) {
+          setStatus('available');
+          setError(null);
+        } else {
+          setStatus('taken');
+          setError(t('profile.username_taken', 'Это имя пользователя уже занято'));
+        }
+      } catch {
+        setStatus('idle');
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [value, open, currentUsername, myCode, t]);
+
+  const handleSave = async () => {
+    const raw = value.trim().replace(/^@+/, '').toLowerCase();
+    const cur = (currentUsername || '').replace(/^@+/, '').trim().toLowerCase();
+
+    if (!raw) {
+      onSave(null);
+      onClose();
+      return;
+    }
+    if (raw.length < 5) {
+      setError(t('profile.username_error_min_length', 'Минимальная длина — 5 символов'));
+      return;
+    }
+    if (raw.length > 32) {
+      setError(t('profile.username_error_max_length', 'Максимальная длина — 32 символа'));
+      return;
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(raw)) {
+      setError(t('profile.username_error_invalid_chars', 'Разрешены только буквы латиницы, цифры и знак подчеркивания'));
+      return;
+    }
+
+    if (raw !== cur) {
+      setStatus('checking');
+      try {
+        const available = await supabaseService.isUsernameAvailable(raw, myCode);
+        if (!available) {
+          setStatus('taken');
+          setError(t('profile.username_taken', 'Это имя пользователя уже занято'));
+          return;
+        }
+      } catch {
+        setError(t('profile.username_taken', 'Это имя пользователя уже занято'));
+        return;
+      }
+    }
+
+    onSave(raw);
+    onClose();
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 300,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.55)',
+            backdropFilter: 'none',
+            WebkitBackdropFilter: 'none',
+            border: 'none',
+          }}
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              backgroundColor: 'var(--bg-secondary)',
+              borderRadius: '16px',
+              padding: '24px',
+              width: '100%',
+              maxWidth: '400px',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px', color: 'var(--text-main)' }}>
+              {t('profile.username_title', 'Имя пользователя')}
+            </h3>
+
+            <div>
+              <label style={{ fontSize: '12px', color: 'var(--accent-color, #9b7dd4)', fontWeight: 500, display: 'block', marginBottom: '4px' }}>
+                @username
+              </label>
+              <input
+                type="text"
+                value={value}
+                onChange={(e) => {
+                  setValue(e.target.value.replace(/^@+/, ''));
+                  if (error) setError(null);
+                }}
+                placeholder={t('profile.username_placeholder', 'username')}
+                autoFocus
+                style={{
+                  width: '100%',
+                  padding: '8px 4px',
+                  borderRadius: '0px',
+                  border: 'none',
+                  borderBottom: `1.5px solid ${status === 'taken' || error ? '#ef4444' : status === 'available' ? '#22c55e' : 'var(--border-color, rgba(255,255,255,0.15))'}`,
+                  backgroundColor: 'transparent',
+                  color: 'var(--text-main, #ffffff)',
+                  fontSize: '15px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  transition: 'border-color 0.2s',
+                }}
+                onFocus={(e) => {
+                  if (!error && status !== 'taken' && status !== 'available') {
+                    e.currentTarget.style.borderBottomColor = 'var(--accent-color, #7C3AED)';
+                  }
+                }}
+                onBlur={(e) => {
+                  if (!error && status !== 'taken' && status !== 'available') {
+                    e.currentTarget.style.borderBottomColor = 'var(--border-color, rgba(255,255,255,0.15))';
+                  }
+                }}
+              />
+            </div>
+
+            {status === 'checking' && (
+              <p style={{ color: 'var(--text-dim, #8e8e93)', fontSize: '12px', marginTop: '8px', marginBottom: 0 }}>
+                {t('profile.username_checking', 'Проверка доступности...')}
+              </p>
+            )}
+
+            {status === 'available' && !error && (
+              <p style={{ color: '#22c55e', fontSize: '12px', marginTop: '8px', marginBottom: 0 }}>
+                {t('profile.username_available', 'Имя пользователя свободно')}
+              </p>
+            )}
+
+            {error && <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '8px', marginBottom: 0 }}>{error}</p>}
+
+            <div style={{ fontSize: '13px', color: 'var(--text-dim, #8e8e93)', lineHeight: '1.45', marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <p style={{ margin: 0 }}>
+                {t('profile.username_modal_desc', 'Вы можете выбрать публичное имя пользователя. Другие пользователи смогут найти Вас по такому имени и связаться, не зная вашего ID аккаунта.')}
+              </p>
+              <p style={{ margin: 0, whiteSpace: 'pre-line' }}>
+                {t('profile.username_modal_rules', 'Можно использовать символы a-z, 0-9 и _.\nМинимальная длина — 5 символов.')}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' }}>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label={t('common.cancel', 'Отмена')}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '9999px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: 'var(--accent-color, #9b7dd4)',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                }}
+              >
+                {t('common.cancel', 'Отмена')}
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={status === 'checking' || status === 'taken'}
+                aria-label={t('common.save', 'Сохранить')}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '9999px',
+                  border: 'none',
+                  backgroundColor: status === 'checking' || status === 'taken' ? 'rgba(124, 58, 237, 0.4)' : 'var(--accent-color, #7C3AED)',
+                  color: '#fff',
+                  cursor: status === 'checking' || status === 'taken' ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                }}
+              >
+                {t('common.save', 'Сохранить')}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+interface BirthdayEditModalProps {
+  open: boolean;
+  onClose: () => void;
+  currentBirthday: string | null;
+  onSave: (newBirthday: string | null) => void;
+}
+
+export const BirthdayEditModal = ({ open, onClose, currentBirthday, onSave }: BirthdayEditModalProps) => {
+  const { t, i18n } = useTranslation();
+  const parsed = parseBirthday(currentBirthday);
+  const [day, setDay] = useState(parsed?.day || 1);
+  const [month, setMonth] = useState(parsed?.month || 1);
+  const [year, setYear] = useState<number | ''>(parsed?.year || '');
+
+  useEffect(() => {
+    if (open) {
+      const p = parseBirthday(currentBirthday);
+      setDay(p?.day || 1);
+      setMonth(p?.month || 1);
+      setYear(p?.year || '');
+    }
+  }, [open, currentBirthday]);
+
+  const isRu = i18n.language === 'ru' || i18n.language === 'uk' || i18n.language === 'be';
+  const monthNames = isRu ? MONTH_FULL_RU : MONTH_FULL_EN;
+
+  const handleSave = () => {
+    const y = typeof year === 'number' && year > 1900 && year <= new Date().getFullYear() ? year : null;
+    const serialized = serializeBirthday(day, month, y);
+    onSave(serialized);
+    onClose();
+  };
+
+  const handleDelete = () => {
+    onSave(null);
+    onClose();
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 300,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.55)',
+            backdropFilter: 'none',
+            WebkitBackdropFilter: 'none',
+            border: 'none',
+          }}
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              backgroundColor: 'var(--bg-secondary)',
+              borderRadius: '16px',
+              padding: '24px',
+              width: '100%',
+              maxWidth: '380px',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px', color: 'var(--text-main)' }}>
+              {t('profile.birthday_title', 'День рождения')}
+            </h3>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+              <div style={{ flex: '0 0 70px' }}>
+                <label style={{ fontSize: '12px', color: 'var(--text-dim, #8e8e93)', fontWeight: 500, display: 'block', marginBottom: '4px' }}>
+                  {t('profile.day', 'День')}
+                </label>
+                <select
+                  value={day}
+                  onChange={(e) => setDay(parseInt(e.target.value, 10))}
+                  aria-label={t('profile.day', 'День')}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color, rgba(255,255,255,0.15))',
+                    backgroundColor: 'var(--surface-container, rgba(255,255,255,0.06))',
+                    color: 'var(--text-main, #ffffff)',
+                    fontSize: '14px',
+                    outline: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                    <option key={d} value={d} style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-main)' }}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: '12px', color: 'var(--text-dim, #8e8e93)', fontWeight: 500, display: 'block', marginBottom: '4px' }}>
+                  {t('profile.month', 'Месяц')}
+                </label>
+                <select
+                  value={month}
+                  onChange={(e) => setMonth(parseInt(e.target.value, 10))}
+                  aria-label={t('profile.month', 'Месяц')}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color, rgba(255,255,255,0.15))',
+                    backgroundColor: 'var(--surface-container, rgba(255,255,255,0.06))',
+                    color: 'var(--text-main, #ffffff)',
+                    fontSize: '14px',
+                    outline: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {monthNames.map((name, i) => (
+                    <option key={i + 1} value={i + 1} style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-main)' }}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ flex: '0 0 90px' }}>
+                <label style={{ fontSize: '12px', color: 'var(--text-dim, #8e8e93)', fontWeight: 500, display: 'block', marginBottom: '4px' }}>
+                  {t('profile.year_optional', 'Год')}
+                </label>
+                <input
+                  type="number"
+                  value={year}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setYear(v === '' ? '' : parseInt(v, 10));
+                  }}
+                  placeholder="YYYY"
+                  min={1920}
+                  max={new Date().getFullYear()}
+                  aria-label={t('profile.year_optional', 'Год')}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color, rgba(255,255,255,0.15))',
+                    backgroundColor: 'var(--surface-container, rgba(255,255,255,0.06))',
+                    color: 'var(--text-main, #ffffff)',
+                    fontSize: '14px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px' }}>
+              <div>
+                {currentBirthday && (
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    aria-label={t('common.delete', 'Удалить')}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: '20px',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      color: 'var(--md-error, #ff595a)',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {t('common.delete', 'Удалить')}
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label={t('common.cancel', 'Отмена')}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '9999px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    color: 'var(--accent-color, #9b7dd4)',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {t('common.cancel', 'Отмена')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  aria-label={t('common.save', 'Сохранить')}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '9999px',
+                    border: 'none',
+                    backgroundColor: 'var(--accent-color, #7C3AED)',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {t('common.save', 'Сохранить')}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+const broadcastProfileUpdate = (updates: {
+  avatarUrl?: string | null;
+  bannerUrl?: string | null;
+  nickname?: string;
+  bio?: string | null;
+  username?: string | null;
+  birthday?: string | null;
+}) => {
+  const currentNickname = useAuthStore.getState().nickname;
+  const currentAvatar = useAuthStore.getState().avatarUrl;
+  const currentBanner = useAuthStore.getState().bannerUrl;
+  const currentUserId = useAuthStore.getState().userId;
+  const currentBio = useAuthStore.getState().bio;
+  const currentUsername = useAuthStore.getState().username;
+  const currentBirthday = useAuthStore.getState().birthday;
+  const currentNumericId = useAuthStore.getState().numericId;
+  const myCode = useChatStore.getState().myCode;
+  const finalNickname = updates.nickname !== undefined ? updates.nickname : currentNickname;
+  const finalAvatar = updates.avatarUrl !== undefined ? updates.avatarUrl : currentAvatar;
+  const finalBanner = updates.bannerUrl !== undefined ? updates.bannerUrl : currentBanner;
+  const finalBio = updates.bio !== undefined ? updates.bio : currentBio;
+  const finalUsername = updates.username !== undefined ? updates.username : currentUsername;
+  const finalBirthday = updates.birthday !== undefined ? updates.birthday : currentBirthday;
+
+  const payload = {
+    type: 'profile-update',
+    sender: finalNickname,
+    senderUserId: currentUserId,
+    userId: currentUserId,
+    senderCode: myCode,
+    numericId: currentNumericId,
+    senderId: currentUserId || myCode,
+    avatarUrl: finalAvatar,
+    bannerUrl: finalBanner,
+    nickname: finalNickname,
+    bio: finalBio,
+    username: finalUsername,
+    birthday: finalBirthday,
+  };
+
+  if (myCode) {
+    supabaseService.publishPublicProfile(myCode, finalNickname, finalAvatar, null, finalBio, finalUsername, finalBirthday, finalBanner).catch(() => {});
+  }
+
+  if (currentUserId || myCode) {
+    useChatStore.getState().setUserProfile(currentUserId || myCode, {
+      nickname: finalNickname,
+      avatarUrl: finalAvatar,
+      bio: finalBio,
+      username: finalUsername,
+      bannerUrl: finalBanner,
+    });
+  }
+
+  groupService.updateMemberProfile(currentUserId, myCode, finalNickname, finalAvatar).catch(() => {});
+
+  const chats = useChatStore.getState().chats;
+  chats.forEach((chat) => {
+    if (chat.type === 'private' && chat.id !== 'notes') {
+      supabaseService.saveProfileUpdate(chat.id, finalNickname, finalAvatar, myCode, finalBio, finalUsername, finalBirthday, finalBanner).catch(() => {});
+      ablyService.sendMessage(chat.id, payload).catch(() => {});
+      const pusher = getPusher();
+      const channel = pusher.subscribe(`private-chat-${chat.id}`);
+      const send = () => {
+        channel.trigger('client-message', payload);
+      };
+      if (channel.subscribed) send();
+      else channel.bind('pusher:subscription_succeeded', send);
+
+      const recipientTargets = Array.from(new Set([
+        chat.peerCode,
+        chat.name && chat.name.length === 36 ? chat.name : undefined,
+      ].filter((t): t is string => Boolean(t && t !== myCode))));
+
+      for (const target of recipientTargets) {
+        supabaseService.saveNonMessage(
+          chat.id,
+          myCode || 'user',
+          target,
+          JSON.stringify(payload),
+          `prof_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+        ).catch(() => {});
+      }
+    } else if (chat.type === 'group') {
+      const groupPayload = {
+        type: 'member-profile-updated',
+        groupId: chat.id,
+        chatId: chat.id,
+        userId: currentUserId,
+        userCode: myCode,
+        oldNickname: currentNickname,
+        nickname: finalNickname,
+        avatarUrl: finalAvatar,
+        bannerUrl: finalBanner,
+        bio: finalBio,
+        username: finalUsername,
+        sender: finalNickname,
+        senderUserId: currentUserId,
+        senderCode: myCode,
+        senderId: currentUserId || myCode,
+      };
+
+      try {
+        const groupPusher = getGroupPusher();
+        const grpChan = groupPusher.subscribe(`presence-group-${chat.id}`);
+        const sendGrp = () => {
+          try { grpChan.trigger('member-profile-updated', groupPayload); } catch {}
+          try { grpChan.trigger('client-message', groupPayload); } catch {}
+        };
+        if (grpChan.subscribed) sendGrp();
+        else grpChan.bind('pusher:subscription_succeeded', sendGrp);
+      } catch {}
+
+      ablyService.sendMessage(chat.id, groupPayload).catch(() => {});
+
+      const isSelfMember = (m: any) => {
+        const mId = m.userId || m.userCode;
+        if (currentUserId && mId) return mId === currentUserId;
+        if (myCode && mId) return mId === myCode;
+        return m.nickname === currentNickname;
+      };
+      const updatedMembers = (chat.members || []).map((m: any) =>
+        isSelfMember(m)
+          ? { ...m, nickname: finalNickname, avatarUrl: finalAvatar || null }
+          : m
+      );
+      const updates: any = { members: updatedMembers };
+      if (chat.creatorNickname && currentNickname && chat.creatorNickname === currentNickname) {
+        updates.creatorNickname = finalNickname;
+      }
+      useChatStore.getState().updateChat(chat.id, updates);
+    }
+  });
+};
+
+const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup, onOpenOrbitaKey }: { onOpenPassword: () => void; onOpenBackup?: () => void; onOpenOrbitaKey?: () => void }) => {
+  const { t } = useTranslation();
+  const {
+    voiceCallsEnabled,
+    setVoiceCallsEnabled,
+    readReceiptsEnabled,
+    setReadReceiptsEnabled,
+    typingIndicatorsEnabled,
+    setTypingIndicatorsEnabled,
+    linkPreviewsEnabled,
+    setLinkPreviewsEnabled,
+    screenProtectionEnabled,
+    setScreenProtectionEnabled,
+  } = useChatStore(useShallow((s) => ({
+    voiceCallsEnabled: s.voiceCallsEnabled,
+    setVoiceCallsEnabled: s.setVoiceCallsEnabled,
+    readReceiptsEnabled: s.readReceiptsEnabled,
+    setReadReceiptsEnabled: s.setReadReceiptsEnabled,
+    typingIndicatorsEnabled: s.typingIndicatorsEnabled,
+    setTypingIndicatorsEnabled: s.setTypingIndicatorsEnabled,
+    linkPreviewsEnabled: s.linkPreviewsEnabled,
+    setLinkPreviewsEnabled: s.setLinkPreviewsEnabled,
+    screenProtectionEnabled: s.screenProtectionEnabled,
+    setScreenProtectionEnabled: s.setScreenProtectionEnabled,
+  })));
+
+  const [isPasswordSet, setIsPasswordSet] = useState(() => securityService.isPasswordSet());
+  const [isKeyConfigured, setIsKeyConfigured] = useState(() => orbitaKeyService.isKeyConfigured());
+
+  useEffect(() => {
+    setIsPasswordSet(securityService.isPasswordSet());
+    setIsKeyConfigured(orbitaKeyService.isKeyConfigured());
+  }, []);
+
+  const handleToggleScreenProtection = async () => {
+    const nextVal = !screenProtectionEnabled;
+    setScreenProtectionEnabled(nextVal);
+    if (typeof window !== 'undefined' && window.orbita?.setScreenProtection) {
+      await window.orbita.setScreenProtection(nextVal);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.18 }}
+      style={{ padding: '0 0 32px' }}
+    >
+      <div style={{ marginBottom: 24 }}>
+        <div style={{
+          fontSize: 12,
+          fontWeight: 600,
+          color: MD3.onSurfaceVar,
+          padding: '0 20px',
+          marginBottom: 8,
+        }}>
+          {t('settings.voice_calls_group', 'Звонки')}
+        </div>
+        <Block>
+          <div style={{
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>{t('settings.voice_calls')}</div>
+              <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>{t('settings.voice_calls_desc')}</div>
+            </div>
+            <M3Switch checked={voiceCallsEnabled} onChange={() => setVoiceCallsEnabled(!voiceCallsEnabled)} />
+          </div>
+        </Block>
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <div style={{
+          fontSize: 12,
+          fontWeight: 600,
+          color: MD3.onSurfaceVar,
+          padding: '0 20px',
+          marginBottom: 8,
+        }}>
+          {t('settings.communication_group', 'Общение')}
+        </div>
+        <Block>
+          <div style={{
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>{t('settings.read_receipts_title')}</div>
+              <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>{t('settings.read_receipts_desc')}</div>
+            </div>
+            <M3Switch checked={readReceiptsEnabled} onChange={() => setReadReceiptsEnabled(!readReceiptsEnabled)} />
+          </div>
+
+          <div style={{
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>{t('settings.typing_indicators_title')}</div>
+              <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>{t('settings.typing_indicators_desc')}</div>
+            </div>
+            <M3Switch checked={typingIndicatorsEnabled} onChange={() => setTypingIndicatorsEnabled(!typingIndicatorsEnabled)} />
+          </div>
+
+          <div style={{
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>{t('settings.link_previews_title', 'Предпросмотр ссылок')}</div>
+              <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>{t('settings.link_previews_desc', 'Генерировать предпросмотр для отправляемых ссылок (анонимно на стороне отправителя)')}</div>
+            </div>
+            <M3Switch checked={linkPreviewsEnabled} onChange={() => setLinkPreviewsEnabled(!linkPreviewsEnabled)} />
+          </div>
+        </Block>
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <div style={{
+          fontSize: 12,
+          fontWeight: 600,
+          color: MD3.onSurfaceVar,
+          padding: '0 20px',
+          marginBottom: 8,
+        }}>
+          {t('security.group_title', 'Безопасность')}
+        </div>
+        <Block>
+          <div
+            onClick={onOpenPassword}
+            style={{
+              padding: '14px 14px',
+              borderRadius: '12px',
+              margin: '2px 6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              transition: 'background 150ms',
+              backgroundColor: 'transparent',
+              boxSizing: 'border-box',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(202,196,208,0.08)')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>
+                {isPasswordSet ? t('security.change_password', 'Изменить пароль') : t('security.set_password', 'Поставить пароль')}
+              </div>
+              <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>
+                {t('security.password_subtitle', 'Поставить пароль для разблокировки Orbita.')}
+              </div>
+            </div>
+            <ChevronRight size={20} style={{ color: MD3.onSurfaceVar }} />
+          </div>
+          <div
+            onClick={onOpenOrbitaKey}
+            style={{
+              padding: '14px 14px',
+              borderRadius: '12px',
+              margin: '2px 6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              transition: 'background 150ms',
+              backgroundColor: 'transparent',
+              boxSizing: 'border-box',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(202,196,208,0.08)')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>{t('security.orbita_key_title', 'Orbita Key (USB-флешка)')}</span>
+                {isKeyConfigured && (
+                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontWeight: 600 }}>
+                    {t('security.orbita_key_active', 'Активен')}
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>
+                {isKeyConfigured
+                  ? t('security.orbita_key_subtitle_configured', 'Ключ привязан. Разблокировка по флешке настроена.')
+                  : t('security.orbita_key_subtitle_not_configured', 'Настроить разблокировку с помощью USB-накопителя.')}
+              </div>
+            </div>
+            <ChevronRight size={20} style={{ color: MD3.onSurfaceVar }} />
+          </div>
+          <div style={{
+            padding: '14px 14px',
+            margin: '2px 6px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            boxSizing: 'border-box',
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>
+                {t('settings.screen_protection')}
+              </div>
+              <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>
+                {t('settings.screen_protection_desc')}
+              </div>
+            </div>
+            <M3Switch checked={screenProtectionEnabled} onChange={handleToggleScreenProtection} />
+          </div>
+        </Block>
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <div style={{
+          fontSize: 12,
+          fontWeight: 600,
+          color: MD3.onSurfaceVar,
+          padding: '0 20px',
+          marginBottom: 8,
+        }}>
+          {t('backup.main_group_title', 'Резервное копирование')}
+        </div>
+        <Block>
+          <div
+            onClick={onOpenBackup}
+            style={{
+              padding: '14px 14px',
+              borderRadius: '12px',
+              margin: '2px 6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              transition: 'background 150ms',
+              backgroundColor: 'transparent',
+              boxSizing: 'border-box',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(202,196,208,0.08)')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>
+                {t('backup.create_title', 'Создать резервную копию')}
+              </div>
+              <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>
+                {t('backup.create_desc', 'Зашифровать аккаунт, настройки и список чатов секретной фразой из 12 слов.')}
+              </div>
+            </div>
+            <ChevronRight size={20} style={{ color: MD3.onSurfaceVar }} />
+          </div>
+        </Block>
+      </div>
+    </motion.div>
+  );
+};
+
+const PasswordSettingsScreen = ({ onSaved }: { onSaved?: () => void }) => {
+  const { t } = useTranslation();
+  const [isAlreadySet, setIsAlreadySet] = useState(() => securityService.isPasswordSet());
+
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Requirements checks
+  const isLength12 = newPassword.length >= 12;
+  const hasDigit = /[0-9]/.test(newPassword);
+  const hasSymbol = /[^a-zA-Z0-9]/.test(newPassword);
+  const hasUpper = /[A-Z]/.test(newPassword);
+  const hasLower = /[a-z]/.test(newPassword);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    if (isAlreadySet) {
+      if (!currentPassword) {
+        setErrorMsg(t('security.err_wrong_current', 'Неверный текущий пароль'));
+        return;
+      }
+      setIsSubmitting(true);
+      const isCurrentValid = await securityService.verifyPassword(currentPassword);
+      setIsSubmitting(false);
+      if (!isCurrentValid) {
+        setErrorMsg(t('security.err_wrong_current', 'Неверный текущий пароль'));
+        return;
+      }
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      setErrorMsg(t('security.err_too_short', 'Пароль должен содержать минимум 6 символов'));
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setErrorMsg(t('security.err_mismatch', 'Пароли не совпадают'));
+      return;
+    }
+
+    setIsSubmitting(true);
+    const success = await securityService.setPassword(newPassword);
+    setIsSubmitting(false);
+
+    if (success) {
+      setSuccessMsg(t('security.password_saved', 'Пароль успешно сохранен!'));
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setIsAlreadySet(true);
+      onSaved?.();
+    } else {
+      setErrorMsg(t('common.error', 'Ошибка'));
+    }
+  };
+
+  const handleRemove = async () => {
+    if (!currentPassword) {
+      setErrorMsg(t('security.err_wrong_current', 'Неверный текущий пароль'));
+      return;
+    }
+    setIsSubmitting(true);
+    const isCurrentValid = await securityService.verifyPassword(currentPassword);
+    setIsSubmitting(false);
+    if (!isCurrentValid) {
+      setErrorMsg(t('security.err_wrong_current', 'Неверный текущий пароль'));
+      return;
+    }
+    securityService.removePassword();
+    setSuccessMsg(t('security.password_removed', 'Пароль удален'));
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setIsAlreadySet(false);
+    onSaved?.();
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.18 }}
+      style={{ padding: '0 0 32px' }}
+    >
+      <form onSubmit={handleSubmit}>
+        {/* Block 1: Password Group */}
+        <div style={{ marginBottom: 24 }}>
+          <div style={{
+            fontSize: 12,
+            fontWeight: 600,
+            color: MD3.onSurfaceVar,
+            padding: '0 20px',
+            marginBottom: 8,
+          }}>
+            {t('security.password_group', 'Пароль')}
+          </div>
+
+          <Block style={{
+            padding: '20px',
+            gap: '14px',
+          }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: MD3.onSurface, margin: 0 }}>
+              {isAlreadySet ? t('security.modal_title_change', 'Изменить пароль') : t('security.modal_title_set', 'Поставить пароль')}
+            </h3>
+            <p style={{ fontSize: 13, color: MD3.onSurfaceVar, lineHeight: 1.45, margin: 0 }}>
+              {isAlreadySet
+                ? t('security.modal_desc_change', 'Измените пароль для Orbita. Локально сохранённые данные будут повторно зашифрованы с использованием нового пароля.')
+                : t('security.modal_desc_set', 'Поставьте пароль для Orbita. Локально сохранённые данные будут зашифрованы с использованием пароля. Если вы забудете пароль, то восстановить аккаунт не получится.')}
+            </p>
+
+            {/* Inputs Container */}
+            <div className="flex flex-col gap-3 mt-1">
+              {isAlreadySet && (
+                <div className="relative flex items-center">
+                  <input
+                    type={showCurrent ? 'text' : 'password'}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder={t('security.current_password', 'Текущий пароль')}
+                    className="w-full px-1 py-2.5 outline-none text-sm transition-all pr-8"
+                    style={{
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      borderBottom: '1px solid var(--border-color, rgba(255, 255, 255, 0.15))',
+                      borderRadius: '0px',
+                      color: 'var(--text-main, #ffffff)',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderBottomColor = 'var(--accent-color, #7C3AED)')}
+                    onBlur={(e) => (e.currentTarget.style.borderBottomColor = 'var(--border-color, rgba(255, 255, 255, 0.15))')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrent(!showCurrent)}
+                    className="absolute right-1 p-1 text-[var(--text-dim)] hover:text-[var(--text-main)] cursor-pointer"
+                  >
+                    {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              )}
+
+              <div className="relative flex items-center">
+                <input
+                  type={showNew ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder={t('security.new_password', 'Новый пароль')}
+                  className="w-full px-1 py-2.5 outline-none text-sm transition-all pr-8"
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    borderBottom: '1px solid var(--border-color, rgba(255, 255, 255, 0.15))',
+                    borderRadius: '0px',
+                    color: 'var(--text-main, #ffffff)',
+                  }}
+                  onFocus={(e) => (e.currentTarget.style.borderBottomColor = 'var(--accent-color, #7C3AED)')}
+                  onBlur={(e) => (e.currentTarget.style.borderBottomColor = 'var(--border-color, rgba(255, 255, 255, 0.15))')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNew(!showNew)}
+                  className="absolute right-1 p-1 text-[var(--text-dim)] hover:text-[var(--text-main)] cursor-pointer"
+                >
+                  {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+
+              <div className="relative flex items-center">
+                <input
+                  type={showConfirm ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder={t('security.confirm_password', 'Подтвердить пароль')}
+                  className="w-full px-1 py-2.5 outline-none text-sm transition-all pr-8"
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    borderBottom: '1px solid var(--border-color, rgba(255, 255, 255, 0.15))',
+                    borderRadius: '0px',
+                    color: 'var(--text-main, #ffffff)',
+                  }}
+                  onFocus={(e) => (e.currentTarget.style.borderBottomColor = 'var(--accent-color, #7C3AED)')}
+                  onBlur={(e) => (e.currentTarget.style.borderBottomColor = 'var(--border-color, rgba(255, 255, 255, 0.15))')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  className="absolute right-1 p-1 text-[var(--text-dim)] hover:text-[var(--text-main)] cursor-pointer"
+                >
+                  {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+          </Block>
+        </div>
+
+        <div style={{ marginBottom: 24 }}>
+          <div style={{
+            fontSize: 12,
+            fontWeight: 600,
+            color: MD3.onSurfaceVar,
+            padding: '0 20px',
+            marginBottom: 8,
+          }}>
+            {t('security.strength_group', 'Надёжность')}
+          </div>
+
+          <Block style={{
+            padding: '20px',
+            gap: '14px',
+          }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: MD3.onSurface, margin: 0 }}>
+              {t('security.strength_title', 'Индикатор надёжности пароля')}
+            </h3>
+            <p style={{ fontSize: 13, color: MD3.onSurfaceVar, lineHeight: 1.45, margin: 0 }}>
+              {t('security.strength_desc', 'Надёжный пароль помогает защитить ваши сообщения и вложения при утере или краже устройства.')}
+            </p>
+
+            {/* Dark inner requirement box */}
+            <div style={{
+              backgroundColor: 'rgba(0, 0, 0, 0.35)',
+              borderRadius: 12,
+              padding: '14px 16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              border: '1px solid rgba(255, 255, 255, 0.05)',
+            }}>
+              <div className="flex items-center gap-3 text-xs font-medium">
+                {isLength12 ? (
+                  <CheckCircle2 size={18} style={{ color: '#10b981', flexShrink: 0 }} />
+                ) : (
+                  <XCircle size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
+                )}
+                <span style={{ color: isLength12 ? MD3.onSurface : MD3.onSurfaceVar }}>
+                  {t('security.req_length_12', 'Длина больше 12 симво символов')}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3 text-xs font-medium">
+                {hasDigit ? (
+                  <CheckCircle2 size={18} style={{ color: '#10b981', flexShrink: 0 }} />
+                ) : (
+                  <XCircle size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
+                )}
+                <span style={{ color: hasDigit ? MD3.onSurface : MD3.onSurfaceVar }}>
+                  {t('security.req_digit', 'Содержит цифру')}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3 text-xs font-medium">
+                {hasSymbol ? (
+                  <CheckCircle2 size={18} style={{ color: '#10b981', flexShrink: 0 }} />
+                ) : (
+                  <XCircle size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
+                )}
+                <span style={{ color: hasSymbol ? MD3.onSurface : MD3.onSurfaceVar }}>
+                  {t('security.req_symbol', 'Содержит символ')}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3 text-xs font-medium">
+                {hasUpper ? (
+                  <CheckCircle2 size={18} style={{ color: '#10b981', flexShrink: 0 }} />
+                ) : (
+                  <XCircle size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
+                )}
+                <span style={{ color: hasUpper ? MD3.onSurface : MD3.onSurfaceVar }}>
+                  {t('security.req_uppercase', 'Содержит заглавную букву')}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3 text-xs font-medium">
+                {hasLower ? (
+                  <CheckCircle2 size={18} style={{ color: '#10b981', flexShrink: 0 }} />
+                ) : (
+                  <XCircle size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
+                )}
+                <span style={{ color: hasLower ? MD3.onSurface : MD3.onSurfaceVar }}>
+                  {t('security.req_lowercase', 'Содержит строчную букву')}
+                </span>
+              </div>
+            </div>
+          </Block>
+        </div>
+
+        {errorMsg && (
+          <p className="text-xs text-red-400 font-medium text-center mb-3">{errorMsg}</p>
+        )}
+        {successMsg && (
+          <p className="text-xs text-emerald-400 font-medium text-center mb-3">{successMsg}</p>
+        )}
+
+        {/* Action Button */}
+        <div className="flex flex-col items-center gap-3 mt-4 px-4">
+          <button
+            type="submit"
+            disabled={isSubmitting || !newPassword || newPassword !== confirmPassword}
+            className="px-8 py-2.5 rounded-full text-sm font-semibold border transition-all cursor-pointer"
+            style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              borderColor: 'rgba(255, 255, 255, 0.2)',
+              color: MD3.onSurface,
+              opacity: isSubmitting || !newPassword || newPassword !== confirmPassword ? 0.4 : 1,
+            }}
+          >
+            {isAlreadySet ? t('security.action_button_change', 'Изменить пароль') : t('security.action_button_set', 'Поставить пароль')}
+          </button>
+
+          {isAlreadySet && (
+            <button
+              type="button"
+              onClick={handleRemove}
+              disabled={isSubmitting || !currentPassword}
+              className="text-xs text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+            >
+              {t('security.remove_password', 'Удалить пароль')}
+            </button>
+          )}
+        </div>
+      </form>
+    </motion.div>
+  );
+};
+
+const SignalThemePicker: React.FC<{
+  activeTheme?: ThemeId;
+  onThemeChange?: (id: ThemeId) => void;
+}> = ({ activeTheme = 'system', onThemeChange }) => {
+  const { t } = useTranslation();
+
+  const themeOptions: { id: ThemeId; label: string; icon: React.ReactNode }[] = [
+    {
+      id: 'system',
+      label: t('settings.theme_system'),
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect width="20" height="14" x="2" y="3" rx="2" />
+          <line x1="8" x2="16" y1="21" y2="21" />
+          <line x1="12" x2="12" y1="17" y2="21" />
+        </svg>
+      ),
+    },
+    {
+      id: 'light',
+      label: t('settings.theme_light'),
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2" />
+          <path d="M12 20v2" />
+          <path d="m4.93 4.93 1.41 1.41" />
+          <path d="m17.66 17.66 1.41 1.41" />
+          <path d="M2 12h2" />
+          <path d="M20 12h2" />
+          <path d="m6.34 17.66-1.41 1.41" />
+          <path d="m19.07 4.93-1.41 1.41" />
+        </svg>
+      ),
+    },
+    {
+      id: 'dark',
+      label: t('settings.theme_dark'),
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+        </svg>
+      ),
+    },
+  ];
+
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 10,
+        padding: '4px 20px 14px',
+        userSelect: 'none',
+      }}
+    >
+      {themeOptions.map((opt) => {
+        const isActive = activeTheme === opt.id;
+        return (
+          <button
+            key={opt.id}
+            onClick={() => onThemeChange?.(opt.id)}
+            aria-label={opt.label}
+            style={{
+              all: 'unset',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              padding: '14px 8px',
+              borderRadius: 14,
+              backgroundColor: isActive
+                ? 'color-mix(in srgb, var(--accent-color, #2c6bed) 14%, var(--surface-container, #262626))'
+                : 'var(--surface-container, #262626)',
+              border: isActive
+                ? '2px solid var(--accent-color, #2c6bed)'
+                : '2px solid transparent',
+              color: isActive ? 'var(--accent-color, #2c6bed)' : 'var(--text-main)',
+              transition: 'all 0.18s ease',
+              boxSizing: 'border-box',
+            }}
+          >
+            <div style={{ opacity: isActive ? 1 : 0.8 }}>{opt.icon}</div>
+            <span style={{ fontSize: 13, fontWeight: isActive ? 600 : 500 }}>{opt.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
+const SignalChatColorPicker: React.FC = () => {
+  const { t } = useTranslation();
+  const chatColor = useChatStore((s) => s.chatColor);
+  const bubbleRadius = useChatStore((s) => s.bubbleRadius);
+  const setChatColor = useChatStore((s) => s.setChatColor);
+  const resetChatColor = useChatStore((s) => s.resetChatColor);
+  const colorInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCustomColorClick = () => {
+    colorInputRef.current?.click();
+  };
+
+  const handleColorInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val) {
+      setChatColor(val);
+    }
+  };
+
+  const isCustomActive = !CHAT_COLOR_PRESETS.some((p) => p.value === chatColor);
+
+  return (
+    <div
+      style={{
+        margin: '0 10px 16px',
+        width: 'calc(100% - 20px)',
+        backgroundColor: 'var(--surface-container, #262626)',
+        borderRadius: 16,
+        padding: '16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
+        boxSizing: 'border-box',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+          padding: '14px 12px',
+          backgroundColor: 'var(--bg-primary, #121212)',
+          borderRadius: 12,
+          border: '1px solid var(--border-color, rgba(255,255,255,0.06))',
+        }}
+      >
+        <div
+          className="relative flex flex-col"
+          style={{
+            alignSelf: 'flex-start',
+            maxWidth: 'min(460px, 88%)',
+            width: 'fit-content',
+            minWidth: '50px',
+            padding: '6.5px 12px 6.5px 11px',
+            borderRadius: `var(--bubble-radius, ${bubbleRadius}px)`,
+            background: 'var(--chat-bubble-incoming-bg, var(--surface-container, #282828))',
+            color: 'var(--chat-bubble-incoming-text, var(--text-main, #ffffff))',
+            fontSize: 'calc(12px * var(--text-scale, 1))',
+          }}
+        >
+          <div
+            className="select-text select-text-incoming"
+            style={{
+              fontSize: 'inherit',
+              lineHeight: 1.3,
+              wordBreak: 'break-word',
+              whiteSpace: 'pre-wrap',
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            <span>
+              {t('settings.chat_color_preview_incoming')}{' '}
+              <span className="emoji-font" style={{ fontFamily: "'Apple Color Emoji', 'Segoe UI Emoji', sans-serif" }}>
+                👋
+              </span>
+            </span>
+            <span
+              aria-hidden
+              className="flex-shrink-0"
+              style={{
+                float: 'right',
+                marginLeft: '10px',
+                marginRight: '-6px',
+                marginBottom: '-4.5px',
+                marginTop: '6px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                lineHeight: 1,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span
+                className="tabular-nums select-none"
+                style={{
+                  color: 'var(--text-dim)',
+                  fontSize: 'calc(11px * var(--text-scale, 1))',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  lineHeight: 1,
+                }}
+              >
+                20:19
+              </span>
+            </span>
+            <div style={{ clear: 'both' }} />
+          </div>
+        </div>
+
+        <div
+          className="relative flex flex-col"
+          style={{
+            alignSelf: 'flex-end',
+            maxWidth: 'min(460px, 88%)',
+            width: 'fit-content',
+            minWidth: '50px',
+            padding: '6.5px 12px 6.5px 11px',
+            borderRadius: `var(--bubble-radius, ${bubbleRadius}px)`,
+            background: chatColor || DEFAULT_CHAT_COLOR,
+            color: '#ffffff',
+            fontSize: 'calc(12px * var(--text-scale, 1))',
+          }}
+        >
+          <div
+            className="select-text select-text-own"
+            style={{
+              fontSize: 'inherit',
+              lineHeight: 1.3,
+              wordBreak: 'break-word',
+              whiteSpace: 'pre-wrap',
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            <span>
+              {t('settings.chat_color_preview_outgoing')}{' '}
+              <span className="emoji-font" style={{ fontFamily: "'Apple Color Emoji', 'Segoe UI Emoji', sans-serif" }}>
+                ✨
+              </span>
+            </span>
+            <span
+              aria-hidden
+              className="flex-shrink-0"
+              style={{
+                float: 'right',
+                marginLeft: '10px',
+                marginRight: '-9px',
+                marginBottom: '-4.5px',
+                marginTop: '6px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                lineHeight: 1,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span
+                className="tabular-nums select-none"
+                style={{
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  fontSize: 'calc(11px * var(--text-scale, 1))',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  lineHeight: 1,
+                }}
+              >
+                20:20
+                <span style={{ display: 'inline-flex', width: '26px', minWidth: '26px', flexShrink: 0, justifyContent: 'flex-end' }}>
+                  <MessageStatus status="read" isOwn={true} />
+                </span>
+              </span>
+            </span>
+            <div style={{ clear: 'both' }} />
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(38px, 1fr))',
+          gap: 10,
+          justifyItems: 'center',
+          alignItems: 'center',
+        }}
+      >
+        {CHAT_COLOR_PRESETS.map((preset) => {
+          const isSelected = chatColor === preset.value;
+          return (
+            <button
+              key={preset.id}
+              onClick={() => setChatColor(preset.value)}
+              aria-label={preset.name}
+              style={{
+                all: 'unset',
+                cursor: 'pointer',
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: preset.value,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                boxSizing: 'border-box',
+                outline: isSelected ? '2.5px solid var(--accent-color, #2c6bed)' : 'none',
+                outlineOffset: 3,
+                transform: isSelected ? 'scale(1.08)' : 'scale(1)',
+                transition: 'transform 0.15s ease, outline 0.15s ease',
+              }}
+            >
+              {isSelected && (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              )}
+            </button>
+          );
+        })}
+
+        <button
+          onClick={handleCustomColorClick}
+          aria-label={t('settings.custom_color')}
+          style={{
+            all: 'unset',
+            cursor: 'pointer',
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            backgroundColor: isCustomActive ? chatColor : '#ffffff',
+            color: isCustomActive ? '#ffffff' : '#121212',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            outline: isCustomActive ? '2.5px solid var(--accent-color, #2c6bed)' : 'none',
+            outlineOffset: 3,
+            transform: isCustomActive ? 'scale(1.08)' : 'scale(1)',
+            transition: 'transform 0.15s ease, outline 0.15s ease',
+            boxSizing: 'border-box',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.18)',
+          }}
+        >
+          {isCustomActive ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          )}
+          <input
+            ref={colorInputRef}
+            type="color"
+            value={chatColor.startsWith('#') ? chatColor : '#2c6bed'}
+            onChange={handleColorInputChange}
+            style={{ display: 'none' }}
+          />
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 4 }}>
+        <button
+          onClick={resetChatColor}
+          aria-label={t('settings.reset_all_chat_colors')}
+          style={{
+            all: 'unset',
+            cursor: 'pointer',
+            fontSize: 13,
+            fontWeight: 500,
+            color: 'var(--accent-color, #2c6bed)',
+            padding: '6px 12px',
+            borderRadius: 8,
+            transition: 'opacity 0.15s ease',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.75')}
+          onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+        >
+          {t('settings.reset_all_chat_colors')}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+
+export const BubbleSlider = ({
+  value,
+  onChange,
+  onChangeCommitted,
+  min,
+  max,
+  step,
+  label,
+  labelColor,
+  valueDisplay,
+  formatValue,
+  valuePlacement = 'top-right',
+  cssVar,
+  containerStyle,
+  ariaLabel,
+}: {
+  value: number;
+  onChange?: (v: number) => void;
+  onChangeCommitted?: (v: number) => void;
+  min: number;
+  max: number;
+  step: number;
+  label?: string;
+  labelColor?: string;
+  valueDisplay?: string;
+  formatValue?: (v: number) => string;
+  valuePlacement?: 'top-right' | 'right';
+  cssVar?: string;
+  containerStyle?: React.CSSProperties;
+  ariaLabel?: string;
+}) => {
+  const [localVal, setLocalVal] = useState(value);
+  const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false);
+  const localValRef = useRef(value);
+  const rafRef = useRef<number | null>(null);
+  const commitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!isDraggingRef.current) {
+      setLocalVal(value);
+      localValRef.current = value;
+      if (cssVar) {
+        document.documentElement.style.setProperty(cssVar, `${value}px`);
+      }
+    }
+  }, [value, cssVar]);
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (commitTimeoutRef.current) clearTimeout(commitTimeoutRef.current);
+    };
+  }, []);
+
+  const commit = useCallback((finalVal: number) => {
+    if (commitTimeoutRef.current) {
+      clearTimeout(commitTimeoutRef.current);
+      commitTimeoutRef.current = null;
+    }
+    const snappedVal = step && step > 0 ? Math.round((finalVal - min) / step) * step + min : finalVal;
+    const clampedVal = Math.max(min, Math.min(max, snappedVal));
+    setLocalVal(clampedVal);
+    localValRef.current = clampedVal;
+    if (onChangeCommitted) {
+      onChangeCommitted(clampedVal);
+    } else if (onChange) {
+      onChange(clampedVal);
+    }
+  }, [min, max, step, onChange, onChangeCommitted]);
+
+  useEffect(() => {
+    const handleGlobalPointerUp = () => {
+      if (isDraggingRef.current) {
+        isDraggingRef.current = false;
+        setIsDragging(false);
+        commit(localValRef.current);
+      }
+    };
+    window.addEventListener('pointerup', handleGlobalPointerUp);
+    window.addEventListener('pointercancel', handleGlobalPointerUp);
+    return () => {
+      window.removeEventListener('pointerup', handleGlobalPointerUp);
+      window.removeEventListener('pointercancel', handleGlobalPointerUp);
+    };
+  }, [commit]);
+
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const nextVal = Number(e.target.value);
+    setLocalVal(nextVal);
+    localValRef.current = nextVal;
+    if (cssVar) {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(() => {
+        const rounded = step && step >= 1 ? Math.round(nextVal) : nextVal;
+        document.documentElement.style.setProperty(cssVar, `${rounded}px`);
+      });
+    }
+    if (onChange && onChangeCommitted) {
+      onChange(nextVal);
+    } else if (onChange) {
+      if (commitTimeoutRef.current) clearTimeout(commitTimeoutRef.current);
+      commitTimeoutRef.current = setTimeout(() => {
+        onChange(nextVal);
+      }, 150);
+    }
+  };
+
+  const handlePointerDown = () => {
+    isDraggingRef.current = true;
+    setIsDragging(true);
+  };
+
+  const handlePointerUp = () => {
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false;
+      setIsDragging(false);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      commit(localValRef.current);
+    }
+  };
+
+  const fillPercent = Math.max(0, Math.min(100, ((localVal - min) / (max - min)) * 100));
+  const activeVal = step && step > 0 ? Math.round((localVal - min) / step) * step + min : localVal;
+  const displayedText = formatValue ? formatValue(activeVal) : (valueDisplay !== undefined ? valueDisplay : `${activeVal}`);
+
+  const trackContent = (
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: 28,
+        display: 'flex',
+        alignItems: 'center',
+      }}
+    >
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: 4,
+          borderRadius: 2,
+          backgroundColor: MD3.outline,
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: `${fillPercent}%`,
+            borderRadius: 2,
+            backgroundColor: 'var(--accent-color, #7c54cc)',
+            transition: isDragging ? 'none' : 'width 0.18s cubic-bezier(0.2, 0, 0, 1)',
+            willChange: 'width',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            left: `${fillPercent}%`,
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 14,
+            height: 14,
+            borderRadius: '50%',
+            backgroundColor: 'var(--accent-color, #7c54cc)',
+            boxShadow: '0 1px 4px rgba(0, 0, 0, 0.35)',
+            transition: isDragging ? 'none' : 'left 0.18s cubic-bezier(0.2, 0, 0, 1)',
+            willChange: 'left',
+            pointerEvents: 'none',
+          }}
+        />
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step || 1}
+        value={localVal}
+        onChange={handleInput}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onKeyUp={handlePointerUp}
+        onBlur={handlePointerUp}
+        aria-label={ariaLabel || label || 'slider'}
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          width: '100%',
+          height: '100%',
+          opacity: 0,
+          margin: 0,
+          padding: 0,
+          cursor: isDragging ? 'grabbing' : 'pointer',
+          zIndex: 2,
+        }}
+      />
+    </div>
+  );
+
+  if (valuePlacement === 'right') {
+    return (
+      <div style={{ padding: '0 20px 14px 20px', userSelect: 'none', ...containerStyle }}>
+        {label && (
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: labelColor || 'var(--accent-color, #9b7dd4)',
+              marginBottom: 10,
+            }}
+          >
+            {label}
+          </div>
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ flex: 1 }}>{trackContent}</div>
+          <span
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: labelColor || 'var(--accent-color, #9b7dd4)',
+              minWidth: 40,
+              textAlign: 'right',
+            }}
+          >
+            {displayedText}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: '0 20px', marginTop: 8, userSelect: 'none', ...containerStyle }}>
+      {(label || (displayedText && valueDisplay !== undefined) || (displayedText && formatValue)) && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+          {label && <span style={{ fontSize: 12, color: labelColor || MD3.onSurfaceVar }}>{label}</span>}
+          {displayedText && (
+            <span style={{ fontSize: 12, fontWeight: 600, color: MD3.onSurface }}>{displayedText}</span>
+          )}
+        </div>
+      )}
+      {trackContent}
+    </div>
+  );
+};
+
+const BubbleRadiusControl = () => {
+  const bubbleRadius = useChatStore((s) => s.bubbleRadius);
+  const setBubbleRadius = useChatStore((s) => s.setBubbleRadius);
+  return (
+    <BubbleSlider
+      value={bubbleRadius}
+      onChangeCommitted={setBubbleRadius}
+      min={4}
+      max={16}
+      step={1}
+      cssVar="--bubble-radius"
+    />
+  );
+};
+
+
+
+
+const PreferencesGroup = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) => (
+  <div style={{ marginBottom: 24, width: '100%' }}>
+    <div style={{
+      fontSize: 12,
+      fontWeight: 600,
+      color: MD3.onSurfaceVar,
+      padding: '0 20px',
+      marginBottom: 8,
+    }}>
+      {title}
+    </div>
+    <Block style={{ padding: '0 16px' }}>
+      {children}
+    </Block>
+  </div>
+);
+
+const PreferenceSwitch = ({
+  label,
+  description,
+  checked,
+  onChange,
+}: {
+  label: string;
+  description?: string;
+  checked: boolean;
+  onChange: () => void;
+}) => (
+  <div style={{
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '16px 0',
+    gap: 12,
+  }}>
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>{label}</div>
+      {description && <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>{description}</div>}
+    </div>
+    <M3Switch checked={checked} onChange={onChange} />
+  </div>
+);
+
+interface OrbitaSelectOption {
+  value: string;
+  label: string;
+}
+
+const OrbitaSelect = ({
+  value,
+  options,
+  onChange,
+  ariaLabel,
+  minWidth = 160,
+  width = 'auto',
+}: {
+  value: string;
+  options: OrbitaSelectOption[];
+  onChange: (value: string) => void;
+  ariaLabel?: string;
+  minWidth?: number | string;
+  width?: number | string;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const selectedOption = options.find((opt) => opt.value === value) || options[0];
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        position: 'relative',
+        width,
+        minWidth,
+        userSelect: 'none',
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => {
+          if (!isOpen) {
+            uiSounds.playTick();
+          } else {
+            uiSounds.playPop();
+          }
+          setIsOpen(!isOpen);
+        }}
+        aria-label={ariaLabel || selectedOption?.label}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          width: '100%',
+          backgroundColor: MD3.surfaceVar,
+          color: MD3.onSurface,
+          border: 'none',
+          borderRadius: 10,
+          padding: '9px 14px',
+          fontSize: 13.5,
+          fontWeight: 600,
+          cursor: 'pointer',
+          outline: 'none',
+          boxSizing: 'border-box',
+          transition: 'background-color 0.15s ease',
+          boxShadow: 'none',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = MD3.surfaceVar;
+        }}
+      >
+        <span
+          style={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            marginRight: 8,
+            textAlign: 'left',
+          }}
+        >
+          {selectedOption?.label}
+        </span>
+        <ChevronDown
+          size={16}
+          style={{
+            color: MD3.onSurfaceVar,
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.2s ease',
+            flexShrink: 0,
+          }}
+        />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: -4 }}
+            transition={{ duration: 0.12, ease: 'easeOut' }}
+            role="listbox"
+            aria-label={ariaLabel}
+            className="custom-chat-scrollbar"
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 6px)',
+              right: 0,
+              width: width === '100%' ? '100%' : 'max-content',
+              minWidth: '100%',
+              maxWidth: 320,
+              maxHeight: 164,
+              overflowY: 'auto',
+              backgroundColor: 'var(--md-surface, #2a253b)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              borderRadius: 10,
+              boxShadow: '0 12px 32px rgba(0, 0, 0, 0.65)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4,
+              padding: 4,
+              zIndex: 1000,
+              boxSizing: 'border-box',
+            }}
+          >
+            {options.map((opt) => {
+              const isSelected = opt.value === value;
+              return (
+                <div
+                  key={opt.value}
+                  role="option"
+                  aria-selected={isSelected}
+                  onClick={() => {
+                    uiSounds.playSwitchOn();
+                    onChange(opt.value);
+                    setIsOpen(false);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 10px',
+                    borderRadius: 7,
+                    fontSize: 13,
+                    fontWeight: isSelected ? 600 : 400,
+                    color: isSelected ? '#ffffff' : MD3.onSurface,
+                    backgroundColor: isSelected ? 'var(--accent-color, #7C3AED)' : 'transparent',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.12s ease',
+                    gap: 8,
+                    flexShrink: 0,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = 'rgba(130, 130, 130, 0.2)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
+                >
+                  <span
+                    style={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      flex: 1,
+                    }}
+                  >
+                    {opt.label}
+                  </span>
+                  {isSelected && (
+                    <Check
+                      size={15}
+                      style={{
+                        color: '#ffffff',
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const DeviceSelect = ({
+  label,
+  value,
+  devices,
+  defaultLabel,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  devices: MediaDeviceInfo[];
+  defaultLabel: string;
+  onChange: (deviceId: string) => void;
+}) => {
+  const options = [
+    { value: '', label: defaultLabel },
+    ...devices.map((device, idx) => ({
+      value: device.deviceId,
+      label: device.label || `${label} ${idx + 1}`,
+    })),
+  ];
+
+  return (
+    <div style={{ padding: '14px 0' }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: MD3.onSurfaceVar, marginBottom: 8 }}>
+        {label}
+      </div>
+      <OrbitaSelect
+        value={value}
+        options={options}
+        onChange={onChange}
+        ariaLabel={label}
+        width="100%"
+      />
+    </div>
+  );
+};
+
+const HotkeySwitch = ({
+  enterLabel,
+  shiftEnterLabel,
+  sendOnEnter,
+  onChange,
+}: {
+  enterLabel: string;
+  shiftEnterLabel: string;
+  sendOnEnter: boolean;
+  onChange: (value: boolean) => void;
+}) => {
+  const { t } = useTranslation();
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      padding: '16px 0',
+      gap: 8,
+    }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+        }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, color: MD3.onSurface }}>{enterLabel}</div>
+            <div style={{ fontSize: 12, color: MD3.onSurfaceVar }}>{t('settings.preferences_enter_desc')}</div>
+          </div>
+          <M3Switch checked={sendOnEnter} onChange={() => onChange(true)} />
+        </div>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+        }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, color: MD3.onSurface }}>{shiftEnterLabel}</div>
+            <div style={{ fontSize: 12, color: MD3.onSurfaceVar }}>{t('settings.preferences_shift_enter_desc')}</div>
+          </div>
+          <M3Switch checked={!sendOnEnter} onChange={() => onChange(false)} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+type TabId = 'main' | 'myAccount' | 'security' | 'connection' | 'chats' | 'calls' | 'font' | 'dataMemory' | 'energy' | 'notifications' | 'language' | 'preferences' | 'password' | 'qrCode' | 'backup' | 'cloudBackup' | 'pcBackup' | 'orbitaKey' | 'folders';
+
+export const SettingsScreen = () => {
+  const { t, i18n } = useTranslation();
+  const {
+    setTheme, currentTheme,
+    fontFamily, setFontFamily,
+    language, setLanguage,
+    notificationCount, setNotificationCount,
+    notificationPosition, setNotificationPosition,
+    notificationSoundEnabled, setNotificationSoundEnabled,
+    notificationsEnabled, setNotificationsEnabled,
+    notificationFlashTaskbar, setNotificationFlashTaskbar,
+    notificationVolume, setNotificationVolume,
+    notificationShowName, setNotificationShowName,
+    notificationShowText, setNotificationShowText,
+    notificationNativeWindows, setNotificationNativeWindows,
+    notificationRespectFocus, setNotificationRespectFocus,
+    myCode,
+    autoUpdate, setAutoUpdate,
+    showInSystemTray, setShowInSystemTray,
+    autoLaunch, setAutoLaunch,
+    sendOnEnter, setSendOnEnter,
+    cacheSizeLimit, setCacheSizeLimit,
+    mediaCacheLimit, setMediaCacheLimit,
+    cacheCleanupAge, setCacheCleanupAge,
+    autoLoadMedia, setAutoLoadMedia,
+    callSoundsEnabled, setCallSoundsEnabled,
+    alwaysRelayCalls, setAlwaysRelayCalls,
+    selectedCameraId, setSelectedCameraId,
+    selectedMicrophoneId, setSelectedMicrophoneId,
+    selectedSpeakerId, setSelectedSpeakerId,
+    hideMenuBar, setHideMenuBar,
+    voiceCallsEnabled, setVoiceCallsEnabled,
+  } = useChatStore(useShallow((s) => ({
+    setTheme: s.setTheme, currentTheme: s.currentTheme,
+    fontFamily: s.fontFamily, setFontFamily: s.setFontFamily,
+    language: s.language, setLanguage: s.setLanguage,
+    notificationCount: s.notificationCount, setNotificationCount: s.setNotificationCount,
+    notificationPosition: s.notificationPosition, setNotificationPosition: s.setNotificationPosition,
+    notificationSoundEnabled: s.notificationSoundEnabled, setNotificationSoundEnabled: s.setNotificationSoundEnabled,
+    notificationsEnabled: s.notificationsEnabled, setNotificationsEnabled: s.setNotificationsEnabled,
+    notificationFlashTaskbar: s.notificationFlashTaskbar, setNotificationFlashTaskbar: s.setNotificationFlashTaskbar,
+    notificationVolume: s.notificationVolume, setNotificationVolume: s.setNotificationVolume,
+    notificationShowName: s.notificationShowName, setNotificationShowName: s.setNotificationShowName,
+    notificationShowText: s.notificationShowText, setNotificationShowText: s.setNotificationShowText,
+    notificationNativeWindows: s.notificationNativeWindows, setNotificationNativeWindows: s.setNotificationNativeWindows,
+    notificationRespectFocus: s.notificationRespectFocus, setNotificationRespectFocus: s.setNotificationRespectFocus,
+    myCode: s.myCode,
+    autoUpdate: s.autoUpdate, setAutoUpdate: s.setAutoUpdate,
+    showInSystemTray: s.showInSystemTray, setShowInSystemTray: s.setShowInSystemTray,
+    autoLaunch: s.autoLaunch, setAutoLaunch: s.setAutoLaunch,
+    sendOnEnter: s.sendOnEnter, setSendOnEnter: s.setSendOnEnter,
+    cacheSizeLimit: s.cacheSizeLimit, setCacheSizeLimit: s.setCacheSizeLimit,
+    mediaCacheLimit: s.mediaCacheLimit, setMediaCacheLimit: s.setMediaCacheLimit,
+    cacheCleanupAge: s.cacheCleanupAge, setCacheCleanupAge: s.setCacheCleanupAge,
+    autoLoadMedia: s.autoLoadMedia, setAutoLoadMedia: s.setAutoLoadMedia,
+    callSoundsEnabled: s.callSoundsEnabled, setCallSoundsEnabled: s.setCallSoundsEnabled,
+    alwaysRelayCalls: s.alwaysRelayCalls, setAlwaysRelayCalls: s.setAlwaysRelayCalls,
+    selectedCameraId: s.selectedCameraId, setSelectedCameraId: s.setSelectedCameraId,
+    selectedMicrophoneId: s.selectedMicrophoneId, setSelectedMicrophoneId: s.setSelectedMicrophoneId,
+    selectedSpeakerId: s.selectedSpeakerId, setSelectedSpeakerId: s.setSelectedSpeakerId,
+    hideMenuBar: s.hideMenuBar, setHideMenuBar: s.setHideMenuBar,
+    voiceCallsEnabled: s.voiceCallsEnabled, setVoiceCallsEnabled: s.setVoiceCallsEnabled,
+  })));
+  const { hasCameraPermission, hasMicrophonePermission, setCameraPermission, setMicrophonePermission } = useDevicePermissionStore();
+  const peerVolume = useCallStore((state) => state.peerVolume);
+  const micVolume = useCallStore((state) => state.micVolume);
+  const setPeerVolume = useCallStore((state) => state.setPeerVolume);
+  const setMicVolume = useCallStore((state) => state.setMicVolume);
+  const { nickname, avatarUrl, bannerUrl, username, bio, birthday, userId, setNickname, setAvatarUrl, setBannerUrl, setUsername, setBio, setBirthday } = useAuthStore(useShallow((s) => ({
+    nickname: s.nickname,
+    avatarUrl: s.avatarUrl,
+    bannerUrl: s.bannerUrl,
+    username: s.username,
+    bio: s.bio,
+    birthday: s.birthday,
+    userId: s.userId,
+    setNickname: s.setNickname,
+    setAvatarUrl: s.setAvatarUrl,
+    setBannerUrl: s.setBannerUrl,
+    setUsername: s.setUsername,
+    setBio: s.setBio,
+    setBirthday: s.setBirthday,
+  })));
+  const setCurrentView = useChatStore((state) => state.setCurrentView);
+  const { appVersion } = useDeviceStore();
+  const { proxyEnabled, activeProxyId, proxies } = useConnectionStore();
+  const activeProxy = proxies.find((p) => p.id === activeProxyId);
+  const folders = useChatStore((s) => s.folders || []);
+  const initialSettingsTab = useChatStore((s) => s.initialSettingsTab) as TabId | undefined;
+  const [tabStack, setTabStack] = useState<TabId[]>(() => [initialSettingsTab || 'main']);
+  const activeTab = tabStack[tabStack.length - 1];
+
+  useEffect(() => {
+    return () => {
+      useChatStore.setState({ initialSettingsTab: 'main' });
+    };
+  }, []);
+
+  const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>([]);
+  const [videoInputDevices, setVideoInputDevices] = useState<MediaDeviceInfo[]>([]);
+  const [audioOutputDevices, setAudioOutputDevices] = useState<MediaDeviceInfo[]>([]);
+
+  const loadMediaDevices = useCallback(async () => {
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.enumerateDevices) return;
+    try {
+      const devs = await navigator.mediaDevices.enumerateDevices();
+      setAudioInputDevices(devs.filter((d) => d.kind === 'audioinput'));
+      setVideoInputDevices(devs.filter((d) => d.kind === 'videoinput'));
+      setAudioOutputDevices(devs.filter((d) => d.kind === 'audiooutput'));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'calls') {
+      loadMediaDevices();
+    }
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices?.addEventListener) {
+      navigator.mediaDevices.addEventListener('devicechange', loadMediaDevices);
+      return () => navigator.mediaDevices.removeEventListener('devicechange', loadMediaDevices);
+    }
+  }, [activeTab, loadMediaDevices]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.orbita?.getAutoLaunchState) {
+      window.orbita.getAutoLaunchState().then((enabled) => setAutoLaunch(enabled)).catch(() => {});
+    }
+  }, [setAutoLaunch]);
+
+  const [updateStatus, setUpdateStatus] = useState<{
+    status: 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error' | 'dev-mode';
+    version?: string;
+    percent?: number;
+    error?: string;
+  }>({ status: 'idle' });
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.orbita?.onUpdateStatus) {
+      const unsub = window.orbita.onUpdateStatus((data) => {
+        setUpdateStatus(data);
+        if (data.status !== 'checking') {
+          setIsCheckingUpdate(false);
+        }
+      });
+      return unsub;
+    }
+  }, []);
+
+  const handleToggleAutoUpdate = () => {
+    const nextVal = !autoUpdate;
+    setAutoUpdate(nextVal);
+    if (typeof window !== 'undefined' && window.orbita?.setAutoDownloadUpdates) {
+      window.orbita.setAutoDownloadUpdates(nextVal);
+    }
+  };
+
+  const handleCheckForUpdates = async () => {
+    if (typeof window !== 'undefined' && window.orbita?.checkForUpdates) {
+      setIsCheckingUpdate(true);
+      setUpdateStatus({ status: 'checking' });
+      try {
+        await window.orbita.checkForUpdates();
+      } catch (e: any) {
+        setUpdateStatus({ status: 'error', error: e?.message || String(e) });
+        setIsCheckingUpdate(false);
+      }
+    }
+  };
+
+  const handleDownloadUpdate = async () => {
+    if (typeof window !== 'undefined' && window.orbita?.downloadUpdate) {
+      setUpdateStatus((prev) => ({ ...prev, status: 'downloading', percent: 0 }));
+      await window.orbita.downloadUpdate();
+    }
+  };
+
+  const handleRestartAndInstall = () => {
+    if (typeof window !== 'undefined' && window.orbita?.quitAndInstallUpdate) {
+      window.orbita.quitAndInstallUpdate();
+    }
+  };
+
+  const [isMobileWidth, setIsMobileWidth] = useState(() => 
+    typeof window !== 'undefined' ? window.innerWidth < 650 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => setIsMobileWidth(window.innerWidth < 650);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (initialSettingsTab) {
+      setTabStack([initialSettingsTab]);
+    }
+  }, [initialSettingsTab]);
+
+  const pushTab = (tab: TabId) => setTabStack(prev => [...prev, tab]);
+  const popTab = () => setTabStack(prev => prev.length > 1 ? prev.slice(0, -1) : prev);
+
+  const innerContentRef = useRef<HTMLDivElement>(null);
+  const [targetHeight, setTargetHeight] = useState<number | null>(() => {
+    if (typeof window !== 'undefined') {
+      return Math.min(window.innerHeight * 0.85, 720);
+    }
+    return 720;
+  });
+
+  useEffect(() => {
+    if (isMobileWidth) return;
+
+    const measure = () => {
+      if (innerContentRef.current) {
+        const contentH = innerContentRef.current.offsetHeight || innerContentRef.current.scrollHeight;
+        const measured = Math.ceil(contentH) + 68;
+        if (measured > 0) {
+          setTargetHeight((prev) => (prev !== null && Math.abs(prev - measured) < 2 ? prev : measured));
+        }
+      }
+    };
+
+    const rafId = requestAnimationFrame(measure);
+    const timer = setTimeout(measure, 30);
+
+    let ro: ResizeObserver | null = null;
+    if (innerContentRef.current) {
+      ro = new ResizeObserver(measure);
+      ro.observe(innerContentRef.current);
+    }
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timer);
+      ro?.disconnect();
+    };
+  }, [activeTab, isMobileWidth]);
+
+  const settingsScrollRef = useRef<HTMLDivElement>(null);
+  const [settingsThumb, setSettingsThumb] = useState<{ top: number; height: number } | null>(null);
+  const [isSettingsActive, setIsSettingsActive] = useState(false);
+  const settingsActiveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const updateSettingsThumb = useCallback(() => {
+    const el = settingsScrollRef.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    if (scrollHeight <= clientHeight + 8) {
+      setSettingsThumb(null);
+      return;
+    }
+    const trackHeight = clientHeight - 12;
+    const thumbHeight = Math.max(24, (clientHeight / scrollHeight) * trackHeight);
+    const maxTop = trackHeight - thumbHeight;
+    const scrollableDistance = scrollHeight - clientHeight;
+    const ratio = scrollableDistance > 0 ? scrollTop / scrollableDistance : 0;
+    setSettingsThumb({ top: maxTop * ratio, height: thumbHeight });
+  }, []);
+
+  const triggerSettingsActive = useCallback(() => {
+    updateSettingsThumb();
+    const el = settingsScrollRef.current;
+    if (el && el.scrollHeight > el.clientHeight + 8) {
+      setIsSettingsActive(true);
+      if (settingsActiveTimerRef.current) clearTimeout(settingsActiveTimerRef.current);
+      settingsActiveTimerRef.current = setTimeout(() => {
+        setIsSettingsActive(false);
+      }, 1000);
+    } else {
+      setIsSettingsActive(false);
+    }
+  }, [updateSettingsThumb]);
+
+  const handleSettingsMouseLeave = useCallback(() => {
+    if (settingsActiveTimerRef.current) clearTimeout(settingsActiveTimerRef.current);
+    setIsSettingsActive(false);
+  }, []);
+
+  useEffect(() => {
+    updateSettingsThumb();
+  }, [activeTab, updateSettingsThumb]);
+
+  useEffect(() => {
+    const el = settingsScrollRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => updateSettingsThumb());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [updateSettingsThumb]);
+
+
+  const [nicknameEditOpen, setNicknameEditOpen] = useState(false);
+  const [nameEditOpen, setNameEditOpen] = useState(false);
+  const [usernameEditOpen, setUsernameEditOpen] = useState(false);
+  const [birthdayEditOpen, setBirthdayEditOpen] = useState(false);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [cropperModalOpen, setCropperModalOpen] = useState(false);
+  const [cropperImageSrc, setCropperImageSrc] = useState<string | null>(null);
+  const [bannerCropperOpen, setBannerCropperOpen] = useState(false);
+  const [bannerCropperImageSrc, setBannerCropperImageSrc] = useState<string | null>(null);
+  const [emojiModalOpen, setEmojiModalOpen] = useState(false);
+  const [localBio, setLocalBio] = useState(bio || '');
+  const cameraBtnRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    setLocalBio(bio || '');
+  }, [bio]);
+
+  useEffect(() => {
+    if (!avatarMenuOpen) return;
+    const handleClickOutside = () => setAvatarMenuOpen(false);
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, [avatarMenuOpen]);
+
+  const handleNameSave = (newName: string) => {
+    setNickname(newName);
+    broadcastProfileUpdate({ nickname: newName });
+  };
+  const handleNicknameSave = handleNameSave;
+
+  const handleUsernameSave = (newUsername: string | null) => {
+    setUsername(newUsername);
+    broadcastProfileUpdate({ username: newUsername });
+  };
+
+  const handleBirthdaySave = (newBirthday: string | null) => {
+    setBirthday(newBirthday);
+    broadcastProfileUpdate({ birthday: newBirthday });
+  };
+
+  const handleBioChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value.slice(0, 70);
+    setLocalBio(val);
+  };
+
+  const handleBioBlur = () => {
+    const trimmed = localBio.trim();
+    const finalBio = trimmed.length > 0 ? trimmed : null;
+    if (finalBio !== bio) {
+      setBio(finalBio);
+      broadcastProfileUpdate({ bio: finalBio });
+    }
+  };
+
+  const handleToggleAvatarMenu = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (cameraBtnRef.current) {
+      const rect = cameraBtnRef.current.getBoundingClientRect();
+      setMenuPos({
+        top: rect.top - 8,
+        left: rect.right - 6,
+      });
+    }
+    setAvatarMenuOpen((prev) => !prev);
+  };
+
+  const handleAvatarSave = async (dataUrl: string) => {
+    try {
+      setAvatarUrl(dataUrl);
+      let finalUrl = dataUrl;
+      const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+      const { ext, mime } = getMediaInfoFromDataUrl(dataUrl);
+      try {
+        const binaryStr = atob(base64);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+        const avatarBlob = new Blob([bytes], { type: mime });
+        mediaManager.setDirectDecryptedMedia(dataUrl, '', avatarBlob, mime);
+      } catch {}
+
+      if (typeof window !== 'undefined' && window.orbita?.writeTempFile && window.orbita?.uploadToCloudinary) {
+        const tempPath = await window.orbita.writeTempFile(base64, ext);
+        if (tempPath) {
+          const publicId = `avatar_${Date.now()}`;
+          const result = await window.orbita.uploadToCloudinary(tempPath, publicId);
+          if (result.success && result.secure_url) {
+            finalUrl = result.secure_url;
+            try {
+              const binaryStr = atob(base64);
+              const bytes = new Uint8Array(binaryStr.length);
+              for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+              const avatarBlob = new Blob([bytes], { type: mime });
+              mediaManager.setDirectDecryptedMedia(finalUrl, '', avatarBlob, mime);
+            } catch {}
+            setAvatarUrl(finalUrl);
+          }
+          await window.orbita.deleteTempFile(tempPath);
+        }
+      }
+
+      broadcastProfileUpdate({ avatarUrl: finalUrl });
+    } catch (err) {
+      console.error('Avatar save error:', err);
+      setAvatarUrl(dataUrl);
+      broadcastProfileUpdate({ avatarUrl: dataUrl });
+    }
+  };
+
+  const handlePickFile = async () => {
+    setAvatarMenuOpen(false);
+    try {
+      if (window.orbita?.pickFile) {
+        const raw = await window.orbita.pickFile(SUPPORTED_MEDIA_EXTENSIONS);
+        if (!raw) return;
+        const filePath = Array.isArray(raw) ? raw[0] : raw;
+        if (!filePath) return;
+
+        const sizeBytes = await window.orbita.getFileSize(filePath);
+        if (sizeBytes > MAX_AVATAR_BANNER_SIZE) {
+          alert(t('settings.file_too_large_3mb'));
+          return;
+        }
+
+        const dataUrl = await window.orbita.readFileAsDataURL(filePath);
+        if (dataUrl) {
+          if (!isStaticImageDataUrl(dataUrl) && !isAnimatedMedia(dataUrl)) {
+            alert(t('settings.static_images_only'));
+            return;
+          }
+          setCropperImageSrc(dataUrl);
+          setCropperModalOpen(true);
+        }
+      } else {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime';
+        input.onchange = async (e: any) => {
+          const file = e.target.files?.[0];
+          if (file) {
+            if (file.size > MAX_AVATAR_BANNER_SIZE) {
+              alert(t('settings.file_too_large_3mb'));
+              return;
+            }
+            const check = await isStaticImageFile(file);
+            const isAnim = file.type.startsWith('video/') || file.type === 'image/gif' || file.name.match(/\.(gif|mp4|webm|mov)$/i);
+            if (!check.ok && !isAnim) {
+              alert(t('settings.static_images_only'));
+              return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+              const res = reader.result as string;
+              if (!isStaticImageDataUrl(res) && !isAnimatedMedia(res)) {
+                alert(t('settings.static_images_only'));
+                return;
+              }
+              setCropperImageSrc(res);
+              setCropperModalOpen(true);
+            };
+            reader.readAsDataURL(file);
+          }
+        };
+        input.click();
+      }
+    } catch (err) {
+      console.error('Error picking avatar file:', err);
+    }
+  };
+
+  const handlePasteClipboard = async () => {
+    setAvatarMenuOpen(false);
+    try {
+      let dataUrl: string | null = null;
+      if (window.orbita?.readClipboardImage) {
+        dataUrl = await window.orbita.readClipboardImage();
+      }
+      if (!dataUrl && navigator.clipboard?.read) {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          for (const type of item.types) {
+            if (type.startsWith('image/')) {
+              const blob = await item.getType(type);
+              dataUrl = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+              });
+              break;
+            }
+          }
+          if (dataUrl) break;
+        }
+      }
+
+      if (dataUrl) {
+        if (!isStaticImageDataUrl(dataUrl) && !isAnimatedMedia(dataUrl)) {
+          alert(t('settings.static_images_only'));
+          return;
+        }
+        setCropperImageSrc(dataUrl);
+        setCropperModalOpen(true);
+      } else {
+        alert('В буфере обмена нет изображения.');
+      }
+    } catch (err) {
+      console.error('Error pasting clipboard image:', err);
+      alert('Не удалось прочитать изображение из буфера обмена.');
+    }
+  };
+
+  const handlePickBanner = async () => {
+    try {
+      if (window.orbita?.pickFile) {
+        const raw = await window.orbita.pickFile(SUPPORTED_MEDIA_EXTENSIONS);
+        if (!raw) return;
+        const filePath = Array.isArray(raw) ? raw[0] : raw;
+        if (!filePath) return;
+        const sizeBytes = await window.orbita.getFileSize(filePath);
+        if (sizeBytes > MAX_AVATAR_BANNER_SIZE) {
+          alert(t('settings.file_too_large_3mb'));
+          return;
+        }
+        const dataUrl = await window.orbita.readFileAsDataURL(filePath);
+        if (dataUrl) {
+          if (!isStaticImageDataUrl(dataUrl) && !isAnimatedMedia(dataUrl)) {
+            alert(t('settings.static_images_only'));
+            return;
+          }
+          setBannerCropperImageSrc(dataUrl);
+          setBannerCropperOpen(true);
+        }
+      } else {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime';
+        input.onchange = async (e: any) => {
+          const file = e.target.files?.[0];
+          if (file) {
+            if (file.size > MAX_AVATAR_BANNER_SIZE) {
+              alert(t('settings.file_too_large_3mb'));
+              return;
+            }
+            const check = await isStaticImageFile(file);
+            const isAnim = file.type.startsWith('video/') || file.type === 'image/gif' || file.name.match(/\.(gif|mp4|webm|mov)$/i);
+            if (!check.ok && !isAnim) {
+              alert(t('settings.static_images_only'));
+              return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+              const res = reader.result as string;
+              if (!isStaticImageDataUrl(res) && !isAnimatedMedia(res)) {
+                alert(t('settings.static_images_only'));
+                return;
+              }
+              setBannerCropperImageSrc(res);
+              setBannerCropperOpen(true);
+            };
+            reader.readAsDataURL(file);
+          }
+        };
+        input.click();
+      }
+    } catch (err) {
+      console.error('Error picking banner file:', err);
+    }
+  };
+
+  const handleBannerSave = async (dataUrl: string) => {
+    setBannerCropperOpen(false);
+    setBannerCropperImageSrc(null);
+    try {
+      setBannerUrl(dataUrl);
+      let finalUrl = dataUrl;
+      const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+      const { ext, mime } = getMediaInfoFromDataUrl(dataUrl);
+      try {
+        const binaryStr = atob(base64);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+        const bannerBlob = new Blob([bytes], { type: mime });
+        mediaManager.setDirectDecryptedMedia(dataUrl, '', bannerBlob, mime);
+      } catch {}
+
+      if (typeof window !== 'undefined' && window.orbita?.writeTempFile && window.orbita?.uploadToCloudinary) {
+        const tempPath = await window.orbita.writeTempFile(base64, ext);
+        if (tempPath) {
+          const publicId = `banner_${Date.now()}`;
+          const result = await window.orbita.uploadToCloudinary(tempPath, publicId);
+          if (result.success && result.secure_url) {
+            finalUrl = result.secure_url;
+            try {
+              const binaryStr = atob(base64);
+              const bytes = new Uint8Array(binaryStr.length);
+              for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+              const bannerBlob = new Blob([bytes], { type: mime });
+              mediaManager.setDirectDecryptedMedia(finalUrl, '', bannerBlob, mime);
+            } catch {}
+            setBannerUrl(finalUrl);
+          }
+          await window.orbita.deleteTempFile(tempPath);
+        }
+      }
+      broadcastProfileUpdate({ bannerUrl: finalUrl });
+    } catch (err) {
+      console.error('Banner save error:', err);
+      setBannerUrl(dataUrl);
+      broadcastProfileUpdate({ bannerUrl: dataUrl });
+    }
+  };
+
+  const handleDeleteBanner = () => {
+    setBannerUrl(null);
+    broadcastProfileUpdate({ bannerUrl: null });
+  };
+
+  const handleOpenEmojiAvatar = () => {
+    setAvatarMenuOpen(false);
+    setEmojiModalOpen(true);
+  };
+
+  const handleDeleteAvatar = () => {
+    setAvatarMenuOpen(false);
+    setAvatarUrl(null);
+    broadcastProfileUpdate({ avatarUrl: null });
+  };
+
+  const [devToastOpen, setDevToastOpen] = useState(false);
+
+  const triggerDevToast = useCallback(() => {
+    setDevToastOpen(true);
+    setTimeout(() => setDevToastOpen(false), 3000);
+  }, []);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [copyToastOpen, setCopyToastOpen] = useState(false);
+
+  const handleCopyCode = async () => {
+    const textToCopy = myCode || userId;
+    if (!textToCopy) return;
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      setCopyToastOpen(true);
+      setTimeout(() => setCopyToastOpen(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy code:', err);
+    }
+  };
+
+  const handleCopyUsername = useCallback(async () => {
+    if (!username) return;
+    try {
+      await navigator.clipboard.writeText(`@${username}`);
+      setCopyToastOpen(true);
+      setTimeout(() => setCopyToastOpen(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy username:', err);
+    }
+  }, [username]);
+
+  const handleCacheSizeLimitChange = async (value: number) => {
+    setCacheSizeLimit(value);
+    if (typeof window !== 'undefined' && window.orbita?.mediaSetLimit) {
+      await window.orbita.mediaSetLimit('total', value);
+    }
+  };
+
+  const handleMediaCacheLimitChange = async (value: number) => {
+    setMediaCacheLimit(value);
+    if (typeof window !== 'undefined' && window.orbita?.mediaSetLimit) {
+      await window.orbita.mediaSetLimit('media', value);
+    }
+  };
+
+  const handleCacheCleanupAgeChange = async (value: number) => {
+    setCacheCleanupAge(value);
+    if (typeof window !== 'undefined' && window.orbita?.mediaEvictByAge) {
+      await window.orbita.mediaEvictByAge(value);
+    }
+  };
+
+  const tabTitles: Record<string, string> = {
+    myAccount:     t('settings.my_account', 'Мой аккаунт'),
+    security:      t('settings.privacy'),
+    password:      securityService.isPasswordSet() ? t('security.modal_title_change') : t('security.modal_title_set'),
+    connection:    t('settings.connection'),
+    chats:         t('settings.appearance'),
+    calls:         t('settings.calls'),
+    font:          t('settings.font'),
+    dataMemory:    t('settings.data_memory'),
+    energy:        t('settings.energy'),
+    notifications: t('settings.notifications_and_sounds') || 'Уведомления и звуки',
+    language:      t('settings.language'),
+    preferences:   t('settings.preferences'),
+    qrCode:        t('qrModal.title', 'Получить QR-код'),
+    backup:        t('backup.title', 'Резервные копии'),
+    cloudBackup:   t('backup.title', 'Резервные копии'),
+    pcBackup:      t('backup.title', 'Резервные копии'),
+    orbitaKey:     t('security.orbita_key_screen_title', 'Настройка Orbita Key'),
+    folders:       t('settings.chat_folders', 'Папки с чатами'),
+  };
+
+  const languageDisplayOptions = [
+    { value: 'ru', label: 'Русский', native: 'Russian' },
+    { value: 'uk', label: 'Українська', native: 'Ukrainian' },
+    { value: 'be', label: 'Беларуская', native: 'Belarusian' },
+    { value: 'en', label: 'English', native: 'English' },
+    { value: 'de', label: 'Deutsch', native: 'German' },
+    { value: 'fr', label: 'Français', native: 'French' },
+    { value: 'es', label: 'Español', native: 'Spanish' },
+    { value: 'it', label: 'Italiano', native: 'Italian' },
+    { value: 'pt', label: 'Português', native: 'Portuguese' },
+    { value: 'nl', label: 'Nederlands', native: 'Dutch' },
+    { value: 'pl', label: 'Polski', native: 'Polish' },
+    { value: 'tr', label: 'Türkçe', native: 'Turkish' },
+    { value: 'ja', label: '日本語', native: 'Japanese' },
+    { value: 'ko', label: '한국어', native: 'Korean' },
+    { value: 'zh', label: '简体中文', native: 'Chinese (Simplified)' },
+    { value: 'zh-Hant', label: '繁體中文', native: 'Chinese (Traditional)' },
+    { value: 'hi', label: 'हिन्दी', native: 'Hindi' },
+    { value: 'kk', label: 'Қазақша', native: 'Kazakh' },
+  ];
+
+  const FONT_OPTIONS: { value: FontFamily; label: string; native?: string }[] = [
+    { value: 'system', label: t('settings.default'), native: 'Default System' },
+    { value: 'Segoe UI', label: 'Segoe UI', native: 'Segoe UI' },
+    { value: 'Segoe UI Black', label: 'Segoe UI Black', native: 'Segoe UI Black' },
+    { value: 'Inter', label: 'Inter', native: 'Inter' },
+    { value: 'Roboto', label: 'Roboto', native: 'Roboto' },
+    { value: 'Open Sans', label: 'Open Sans', native: 'Open Sans' },
+    { value: 'Lato', label: 'Lato', native: 'Lato' },
+    { value: 'Montserrat', label: 'Montserrat', native: 'Montserrat' },
+    { value: 'Poppins', label: 'Poppins', native: 'Poppins' },
+    { value: 'Nunito', label: 'Nunito', native: 'Nunito' },
+    { value: 'Rubik', label: 'Rubik', native: 'Rubik' },
+    { value: 'Fira Sans', label: 'Fira Sans', native: 'Fira Sans' },
+    { value: 'Ubuntu', label: 'Ubuntu', native: 'Ubuntu' },
+    { value: 'Manrope', label: 'Manrope', native: 'Manrope' },
+    { value: 'Arial', label: 'Arial', native: 'Arial' },
+    { value: 'Arial Black', label: 'Arial Black', native: 'Arial Black' },
+    { value: 'Trebuchet MS', label: 'Trebuchet MS', native: 'Trebuchet MS' },
+    { value: 'Verdana', label: 'Verdana', native: 'Verdana' },
+    { value: 'Tahoma', label: 'Tahoma', native: 'Tahoma' },
+    { value: 'Georgia', label: 'Georgia', native: 'Georgia' },
+    { value: 'Times New Roman', label: 'Times New Roman', native: 'Times New Roman' },
+    { value: 'Merriweather', label: 'Merriweather', native: 'Merriweather' },
+    { value: 'Playfair Display', label: 'Playfair Display', native: 'Playfair Display' },
+    { value: 'Fira Code', label: 'Fira Code', native: 'Monospace' },
+    { value: 'JetBrains Mono', label: 'JetBrains Mono', native: 'Monospace' },
+    { value: 'Consolas', label: 'Consolas', native: 'Monospace' },
+    { value: 'Courier New', label: 'Courier New', native: 'Monospace' },
+    { value: 'Comic Sans MS', label: 'Comic Sans MS', native: 'Cursive' },
+    { value: 'Caveat', label: 'Caveat', native: 'Handwriting' },
+    { value: 'Pacifico', label: 'Pacifico', native: 'Handwriting' },
+  ];
+
+  const renderDataMemory = () => {
+    return (
+      <DataMemorySettings
+        cacheSizeLimit={cacheSizeLimit}
+        mediaCacheLimit={mediaCacheLimit}
+        cacheCleanupAge={cacheCleanupAge}
+        autoLoadMedia={autoLoadMedia}
+        onCacheSizeLimitChange={handleCacheSizeLimitChange}
+        onMediaCacheLimitChange={handleMediaCacheLimitChange}
+        onCacheCleanupAgeChange={handleCacheCleanupAgeChange}
+        onAutoLoadMediaChange={() => setAutoLoadMedia(!autoLoadMedia)}
+      />
+    );
+  };
+
+  const renderCalls = () => {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.18 }}
+        style={{ padding: '0 0 32px' }}
+      >
+        <PreferencesGroup title={t('settings.calls')}>
+          <PreferenceSwitch
+            label={t('settings.enable_incoming_calls')}
+            checked={voiceCallsEnabled}
+            onChange={() => setVoiceCallsEnabled(!voiceCallsEnabled)}
+          />
+          <PreferenceSwitch
+            label={t('settings.play_call_sounds')}
+            checked={callSoundsEnabled}
+            onChange={() => setCallSoundsEnabled(!callSoundsEnabled)}
+          />
+        </PreferencesGroup>
+
+        <PreferencesGroup title={t('settings.voice_section')}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '14px 0',
+              gap: 8,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 13, fontWeight: 500, color: MD3.onSurface }}>
+                {t('call.peer_volume')}
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: peerVolume > 100 ? '#f59e0b' : MD3.primary, fontVariantNumeric: 'tabular-nums' }}>
+                {peerVolume}%
+              </span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="200"
+              step="1"
+              value={peerVolume}
+              onChange={(e) => setPeerVolume(Number(e.target.value))}
+              aria-label={t('call.peer_volume')}
+              style={{
+                width: '100%',
+                height: 8,
+                accentColor: peerVolume > 100 ? '#f59e0b' : 'var(--accent-color, #7C3AED)',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                borderRadius: 4,
+                cursor: 'pointer',
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: MD3.onSurfaceVar }}>
+              <span>0%</span>
+              <span>100%</span>
+              <span>200%</span>
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '14px 0',
+              gap: 8,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 13, fontWeight: 500, color: MD3.onSurface }}>
+                {t('call.mic_volume')}
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: micVolume > 100 ? '#f59e0b' : MD3.primary, fontVariantNumeric: 'tabular-nums' }}>
+                {micVolume}%
+              </span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="200"
+              step="1"
+              value={micVolume}
+              onChange={(e) => setMicVolume(Number(e.target.value))}
+              aria-label={t('call.mic_volume')}
+              style={{
+                width: '100%',
+                height: 8,
+                accentColor: micVolume > 100 ? '#f59e0b' : 'var(--accent-color, #7C3AED)',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                borderRadius: 4,
+                cursor: 'pointer',
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: MD3.onSurfaceVar }}>
+              <span>0%</span>
+              <span>100%</span>
+              <span>200%</span>
+            </div>
+          </div>
+        </PreferencesGroup>
+
+        <PreferencesGroup title={t('settings.devices_header')}>
+          <DeviceSelect
+            label={t('settings.video_device')}
+            value={selectedCameraId}
+            devices={videoInputDevices}
+            defaultLabel={t('settings.default_device')}
+            onChange={(id) => {
+              setSelectedCameraId(id);
+              liveKitService.switchDevice('videoinput', id);
+            }}
+          />
+          <DeviceSelect
+            label={t('settings.microphone_device')}
+            value={selectedMicrophoneId}
+            devices={audioInputDevices}
+            defaultLabel={t('settings.default_device')}
+            onChange={(id) => {
+              setSelectedMicrophoneId(id);
+              liveKitService.switchDevice('audioinput', id);
+            }}
+          />
+          <DeviceSelect
+            label={t('settings.speakers_device')}
+            value={selectedSpeakerId}
+            devices={audioOutputDevices}
+            defaultLabel={t('settings.default_device')}
+            onChange={(id) => {
+              setSelectedSpeakerId(id);
+              liveKitService.switchDevice('audiooutput', id);
+            }}
+          />
+        </PreferencesGroup>
+
+        <PreferencesGroup title={t('settings.advanced_header')}>
+          <PreferenceSwitch
+            label={t('settings.always_relay_calls')}
+            description={t('settings.always_relay_calls_desc')}
+            checked={alwaysRelayCalls}
+            onChange={() => setAlwaysRelayCalls(!alwaysRelayCalls)}
+          />
+        </PreferencesGroup>
+      </motion.div>
+    );
+  };
+
+  const renderLanguage = () => {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.18 }}
+        style={{ padding: '0 0 32px' }}
+      >
+        <Block>
+          {languageDisplayOptions.map((opt) => {
+            const isSelected = opt.value === language;
+            return (
+              <div
+                key={opt.value}
+                onClick={() => setLanguage(opt.value as Language)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                  padding: '12px 16px',
+                  borderRadius: '12px',
+                  margin: '2px 6px',
+                  cursor: 'pointer',
+                  transition: 'background 150ms',
+                  backgroundColor: isSelected ? 'rgba(197,180,227,0.12)' : 'transparent',
+                  userSelect: 'none',
+                  contentVisibility: 'auto',
+                  containIntrinsicSize: '48px',
+                  boxSizing: 'border-box',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(202,196,208,0.08)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                  }
+                }}
+              >
+                <div
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: '50%',
+                    border: `2px solid ${isSelected ? MD3.primary : MD3.outlineMed}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    transition: 'border-color 150ms',
+                  }}
+                >
+                  {isSelected && (
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: MD3.primary }} />
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: 15,
+                      fontWeight: isSelected ? 600 : 400,
+                      color: MD3.onSurface,
+                    }}
+                  >
+                    {opt.label}
+                  </div>
+                  {opt.native && opt.native !== opt.label && (
+                    <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>{opt.native}</div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </Block>
+      </motion.div>
+    );
+  };
+
+  const renderFont = () => {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.18 }}
+        style={{ padding: '0 0 32px' }}
+      >
+        <Block>
+          {FONT_OPTIONS.map((opt) => {
+            const isSelected = opt.value === fontFamily;
+            const itemFont = FONT_MAP[opt.value as FontFamily] || 'inherit';
+            return (
+              <div
+                key={opt.value}
+                onClick={() => setFontFamily(opt.value as FontFamily)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                  padding: '12px 16px',
+                  borderRadius: '12px',
+                  margin: '2px 6px',
+                  cursor: 'pointer',
+                  transition: 'background 150ms',
+                  backgroundColor: isSelected ? 'rgba(197,180,227,0.12)' : 'transparent',
+                  userSelect: 'none',
+                  contentVisibility: 'auto',
+                  containIntrinsicSize: '48px',
+                  boxSizing: 'border-box',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(202,196,208,0.08)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                  }
+                }}
+              >
+                <div
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: '50%',
+                    border: `2px solid ${isSelected ? MD3.primary : MD3.outlineMed}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    transition: 'border-color 150ms',
+                  }}
+                >
+                  {isSelected && (
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: MD3.primary }} />
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    className="font-picker-item"
+                    style={{
+                      fontSize: 15,
+                      fontWeight: isSelected ? 600 : 400,
+                      color: MD3.onSurface,
+                      '--item-font': itemFont,
+                    } as React.CSSProperties}
+                  >
+                    {opt.label}
+                  </div>
+                  {opt.native && (
+                    <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>{opt.native}</div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </Block>
+      </motion.div>
+    );
+  };
+
+  const renderMyAccount = () => (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.18 }}
+      style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 24 }}
+    >
+      <Block>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 16px',
+            boxSizing: 'border-box',
+            width: '100%',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+            {bannerUrl ? (
+              <div
+                style={{
+                  width: '56px',
+                  height: '36px',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  flexShrink: 0,
+                  backgroundColor: 'rgba(255,255,255,0.06)',
+                  border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
+                }}
+              >
+                <OptimizedBanner src={bannerUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+            ) : (
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: 'rgba(255,255,255,0.06)',
+                  color: MD3.onSurfaceVar,
+                  flexShrink: 0,
+                }}
+              >
+                <ImageIcon size={20} />
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+              <span style={{ fontSize: '14.5px', fontWeight: 600, color: MD3.onSurface }}>
+                {t('settings.banner', 'Баннер')}
+              </span>
+              <span style={{ fontSize: '12px', color: MD3.onSurfaceVar, marginTop: '2px' }}>
+                {bannerUrl
+                  ? t('settings.banner_active', 'Установлен')
+                  : t('settings.banner_description', 'Статичное изображение в шапке профиля')}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={handlePickBanner}
+              aria-label={bannerUrl ? t('common.edit', 'Изменить') : t('settings.set_banner', 'Поставить')}
+              style={{
+                background: 'var(--accent-color, #7C3AED)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '6px 14px',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'opacity 0.15s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+            >
+              {bannerUrl ? t('common.edit', 'Изменить') : t('settings.set_banner', 'Поставить')}
+            </button>
+            {bannerUrl && (
+              <button
+                type="button"
+                onClick={handleDeleteBanner}
+                aria-label={t('settings.delete_banner', 'Удалить баннер')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--md-error, #ff595a)',
+                  cursor: 'pointer',
+                  padding: '6px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255,89,90,0.12)')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+      </Block>
+
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px 20px 8px',
+          userSelect: 'none',
+        }}
+      >
+        <div style={{ position: 'relative', width: '84px', height: '84px', marginBottom: 12 }}>
+          <Avatar
+            src={avatarUrl}
+            alt={nickname || '?'}
+            className="w-[84px] h-[84px] rounded-full object-cover"
+            style={{ width: '84px', height: '84px', borderRadius: '50%' }}
+          />
+          <button
+            ref={cameraBtnRef}
+            type="button"
+            onClick={handleToggleAvatarMenu}
+            aria-label={t('common.edit', 'Изменить')}
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              right: 0,
+              width: '28px',
+              height: '28px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--accent-color, #7C3AED)',
+              color: '#ffffff',
+              border: '2px solid var(--bg-secondary, #211d2f)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+              padding: 0,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
+          </button>
+
+          <AnimatePresence>
+            {avatarMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.12 }}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  position: 'fixed',
+                  top: menuPos.top,
+                  left: menuPos.left,
+                  backgroundColor: 'var(--bg-secondary, #2a253b)',
+                  borderRadius: '12px',
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
+                  padding: '6px',
+                  minWidth: '200px',
+                  zIndex: 350,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px',
+                  border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={handlePickFile}
+                  aria-label={t('profile.choose_file', 'Выбрать файл')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    color: 'var(--text-main, #ffffff)',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    textAlign: 'left',
+                    width: '100%',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                  </svg>
+                  {t('profile.choose_file', 'Выбрать файл')}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handlePasteClipboard}
+                  aria-label={t('profile.paste_clipboard', 'Вставить из буфера')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    color: 'var(--text-main, #ffffff)',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    textAlign: 'left',
+                    width: '100%',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                  </svg>
+                  {t('profile.paste_clipboard', 'Вставить из буфера')}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleOpenEmojiAvatar}
+                  aria-label={t('profile.choose_emoji', 'Выбрать эмодзи-аватар')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    color: 'var(--text-main, #ffffff)',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    textAlign: 'left',
+                    width: '100%',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+                    <line x1="9" y1="9" x2="9.01" y2="9" />
+                    <line x1="15" y1="9" x2="15.01" y2="9" />
+                  </svg>
+                  {t('profile.choose_emoji', 'Выбрать эмодзи-аватар')}
+                </button>
+
+                {avatarUrl && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteAvatar}
+                    aria-label={t('profile.delete_photo', 'Удалить фото')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      color: 'var(--md-error, #ff595a)',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      textAlign: 'left',
+                      width: '100%',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,89,90,0.12)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                  >
+                    <Trash2 size={16} />
+                    {t('profile.delete_photo', 'Удалить фото')}
+                  </button>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 2 }}>
+          <span style={{ fontSize: '18px', fontWeight: 700, color: MD3.onSurface }}>
+            {nickname || 'User'}
+          </span>
+          <div
+            style={{
+              position: 'absolute',
+              left: 'calc(100% + 5px)',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              display: 'inline-flex',
+              alignItems: 'center',
+            }}
+          >
+            <DeveloperBadge userId={myCode} size={34} onClick={triggerDevToast} />
+          </div>
+        </div>
+
+        <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--accent-color, #9b7dd4)' }}>
+          {t('status.online', 'в сети')}
+        </div>
+      </div>
+
+      <div
+        style={{
+          padding: '12px 20px',
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 12,
+          boxSizing: 'border-box',
+          width: '100%',
+        }}
+      >
+        <textarea
+          value={localBio}
+          onChange={handleBioChange}
+          onBlur={handleBioBlur}
+          maxLength={70}
+          rows={localBio ? 2 : 1}
+          placeholder={t('profile.bio_placeholder', 'О себе')}
+          aria-label={t('profile.bio_placeholder', 'О себе')}
+          className="placeholder:text-[var(--md-on-surface-var,#9f96b3)] placeholder:opacity-60"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            backgroundColor: 'transparent',
+            border: 'none',
+            color: MD3.onSurface,
+            fontSize: '14.5px',
+            lineHeight: '1.4',
+            resize: 'none',
+            outline: 'none',
+            padding: 0,
+            margin: 0,
+            fontFamily: 'inherit',
+            boxSizing: 'border-box',
+          }}
+        />
+        <span style={{ fontSize: '13px', color: MD3.onSurfaceVar, flexShrink: 0, userSelect: 'none', paddingTop: 1 }}>
+          {70 - localBio.length}
+        </span>
+      </div>
+
+      <div
+        style={{
+          backgroundColor: MD3.surface,
+          padding: '12px 16px',
+          margin: '0 10px',
+          borderRadius: '16px',
+          fontSize: '13px',
+          color: MD3.onSurfaceVar,
+          lineHeight: '1.45',
+          userSelect: 'none',
+          width: 'calc(100% - 20px)',
+          boxSizing: 'border-box',
+          whiteSpace: 'pre-line',
+        }}
+      >
+        {t('profile.bio_hint_full', 'Расскажите о себе любые факты. Например: то, чем вы занимаетесь и что вас интересует.\nПример: Занимаюсь разработкой приложений, интересуюсь миром кода.')}
+      </div>
+
+      <Block>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 16px',
+            backgroundColor: 'transparent',
+            width: '100%',
+            boxSizing: 'border-box',
+            userSelect: 'none',
+          }}
+        >
+          <span style={{ fontSize: '14.5px', fontWeight: 500, color: MD3.onSurface }}>
+            {t('profile.name', 'Имя')}
+          </span>
+          <span
+            onClick={() => setNameEditOpen(true)}
+            style={{
+              fontSize: '14.5px',
+              fontWeight: 500,
+              color: MD3.onSurface,
+              maxWidth: '55%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              cursor: 'pointer',
+              borderRadius: '6px',
+              padding: '2px 6px',
+              margin: '-2px -6px',
+              transition: 'background-color 0.15s ease',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
+            {nickname || 'User'}
+          </span>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 16px',
+            backgroundColor: 'transparent',
+            width: '100%',
+            boxSizing: 'border-box',
+            userSelect: 'none',
+          }}
+        >
+          <span style={{ fontSize: '14.5px', fontWeight: 500, color: MD3.onSurface }}>
+            {t('profile.account_id', 'ID аккаунта')}
+          </span>
+          <span
+            onClick={handleCopyCode}
+            style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              color: 'var(--accent-color, #9b7dd4)',
+              fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
+              maxWidth: '55%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              cursor: 'pointer',
+              borderRadius: '6px',
+              padding: '2px 6px',
+              margin: '-2px -6px',
+              transition: 'background-color 0.15s ease',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
+            {myCode || userId || '------'}
+          </span>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 16px',
+            backgroundColor: 'transparent',
+            width: '100%',
+            boxSizing: 'border-box',
+            userSelect: 'none',
+          }}
+        >
+          <span style={{ fontSize: '14.5px', fontWeight: 500, color: MD3.onSurface }}>
+            {t('profile.username_label', 'Имя пользователя')}
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', maxWidth: '55%' }}>
+            <span
+              onClick={username ? handleCopyUsername : () => setUsernameEditOpen(true)}
+              style={{
+                fontSize: '14px',
+                fontWeight: 500,
+                color: username ? 'var(--accent-color, #9b7dd4)' : MD3.onSurfaceVar,
+                fontFamily: username ? '"JetBrains Mono", Consolas, Menlo, monospace' : 'inherit',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                cursor: 'pointer',
+                borderRadius: '6px',
+                padding: '2px 6px',
+                margin: '-2px -6px',
+                transition: 'background-color 0.15s ease',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+            >
+              {username ? `@${username}` : t('profile.username_not_set', 'Не установлено')}
+            </span>
+            {username && (
+              <button
+                type="button"
+                onClick={() => setUsernameEditOpen(true)}
+                aria-label={t('common.edit', 'Изменить')}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: MD3.onSurfaceVar,
+                  cursor: 'pointer',
+                  padding: '2px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 16px',
+            backgroundColor: 'transparent',
+            width: '100%',
+            boxSizing: 'border-box',
+            userSelect: 'none',
+          }}
+        >
+          <span style={{ fontSize: '14.5px', fontWeight: 500, color: MD3.onSurface }}>
+            {t('profile.birthday_label', 'День рождения')}
+          </span>
+          <span
+            onClick={() => setBirthdayEditOpen(true)}
+            style={{
+              fontSize: '14px',
+              fontWeight: 500,
+              color: birthday ? 'var(--text-main, #ffffff)' : MD3.onSurfaceVar,
+              cursor: 'pointer',
+              borderRadius: '6px',
+              padding: '2px 6px',
+              margin: '-2px -6px',
+              transition: 'background-color 0.15s ease',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
+            {birthday ? formatBirthday(birthday, i18n.language) : t('profile.birthday_not_set', 'Не указан')}
+          </span>
+        </div>
+      </Block>
+
+      <div
+        style={{
+          padding: '0 24px',
+          fontSize: '12.5px',
+          color: MD3.onSurfaceVar,
+          lineHeight: '1.4',
+          userSelect: 'none',
+          boxSizing: 'border-box',
+        }}
+      >
+        {t('profile.username_hint', 'С помощью имени пользователя другие люди смогут связаться с вами, не зная вашего ID аккаунта.')}
+      </div>
+    </motion.div>
+  );
+
+  const renderMain = () => (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.18 }}
+      style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
+    >
+      <div
+        onClick={() => pushTab('myAccount')}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          padding: '12px 14px 16px',
+          margin: '2px 10px',
+          width: 'calc(100% - 20px)',
+          userSelect: 'none',
+          cursor: 'pointer',
+          borderRadius: '16px',
+          boxSizing: 'border-box',
+          transition: 'background 150ms',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(202,196,208,0.08)')}
+        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+      >
+        <div style={{ position: 'relative', width: '66px', height: '66px', flexShrink: 0 }}>
+          <Avatar
+            src={avatarUrl}
+            alt={nickname || '?'}
+            className="w-[66px] h-[66px] rounded-full"
+            style={{ width: '66px', height: '66px' }}
+          />
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <span
+              style={{
+                fontSize: '16.5px',
+                fontWeight: 700,
+                color: MD3.onSurface,
+                lineHeight: 1.2,
+              }}
+              className="truncate"
+            >
+              {nickname || 'User'}
+            </span>
+            <DeveloperBadge userId={myCode} size={28} onClick={(e) => { e?.stopPropagation(); triggerDevToast(); }} />
+          </div>
+
+          <div
+            onClick={(e) => { e.stopPropagation(); handleCopyCode(); }}
+            style={{
+              fontSize: '13.5px',
+              fontWeight: 500,
+              color: 'var(--accent-color, #9b7dd4)',
+              wordBreak: 'break-all',
+              cursor: 'pointer',
+              lineHeight: 1.25,
+              fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
+            }}
+          >
+            {myCode || '------'}
+          </div>
+        </div>
+
+        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); pushTab('qrCode'); }}
+            aria-label={t('qrModal.title', 'Получить QR-код')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: MD3.onSurfaceVar,
+              cursor: 'pointer',
+              padding: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <QrCodeMiniIcon size={20} color={MD3.onSurfaceVar} />
+          </button>
+        </div>
+      </div>
+
+      <Block>
+        <MenuItem
+          icon={<User size={20} color={MD3.onSurface} />}
+          label={t('settings.my_account', 'Мой аккаунт')}
+          onClick={() => pushTab('myAccount')}
+        />
+
+        <MenuItem
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          }
+          label={t('settings.privacy')}
+          onClick={() => pushTab('security')}
+        />
+
+
+        <MenuItem
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+              <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+              <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+              <line x1="12" y1="20" x2="12.01" y2="20" />
+            </svg>
+          }
+          label={t('settings.connection') || 'Подключение'}
+          onClick={() => pushTab('connection')}
+          rightElement={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+              <span style={{ fontSize: 13, color: proxyEnabled ? 'var(--accent-color, #9b7dd4)' : MD3.onSurfaceVar }}>
+                {proxyEnabled ? (activeProxy ? activeProxy.name : 'Включено') : 'Прямое'}
+              </span>
+              <ChevronRight size={16} color={MD3.onSurfaceVar} />
+            </div>
+          }
+        />
+
+        <MenuItem
+          icon={
+            <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+              <path fillRule="evenodd" d="M14 6.5A1.5 1.5 0 0 0 12.5 5h-2.3l.249-.374c.358-.537.549-1.17.549-1.81v-.314a2.5 2.5 0 0 0-5 0v.314c0 .645.191 1.28.549 1.81L6.796 5h-2.3a1.5 1.5 0 0 0-1.5 1.5v4.43c0 1.06-.421 2.08-1.17 2.83l-.536.536a1 1 0 0 0 .707 1.707h9c.265 0 .52-.105.707-.293l.536-.536a6 6 0 0 0 1.76-4.24v-4.43zM4 8h9V6.5a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 1-.5-.5v-.197a1 1 0 0 1 .168-.555l.451-.677A2.27 2.27 0 0 0 10 2.811v-.314a1.5 1.5 0 0 0-3 0v.314c0 .448.132.885.381 1.26l.451.677c.11.164.168.357.168.555V5.5a.5.5 0 0 1-.5.5h-3a.5.5 0 0 0-.5.5zm7 7H8.99A3.5 3.5 0 0 0 10 12.54v-.04a.5.5 0 0 0-1 0v.04c0 1.19-.841 2.22-2.01 2.45l-.04.008H2l.536-.536a4.98 4.98 0 0 0 1.46-3.534v-1.93h9v1.93c0 1.33-.527 2.6-1.46 3.54l-.536.536z" clipRule="evenodd" />
+            </svg>
+          }
+          label={t('settings.appearance')}
+          onClick={() => pushTab('chats')}
+        />
+
+        <MenuItem
+          icon={<SettingsFolderIcon size={20} style={{ color: MD3.onSurface }} />}
+          label={t('settings.chat_folders', 'Папки с чатами')}
+          onClick={() => pushTab('folders')}
+          rightElement={
+            folders.length > 0 ? (
+              <span style={{ fontSize: 13, color: MD3.onSurfaceVar }}>
+                {folders.length}
+              </span>
+            ) : undefined
+          }
+        />
+
+        <MenuItem
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+            </svg>
+          }
+          label={t('settings.calls')}
+          onClick={() => pushTab('calls')}
+        />
+
+        <MenuItem
+          icon={
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10.026 18.64h.011zm-.197-.124l.003-17.038l-.07.07L4.94 6.316a.7.7 0 0 1-.49.2H1.968a.65.65 0 0 0-.365.242c-.13.156-.207.388-.22.69l-.001 5.411c.01.19.074.334.203.463c.123.122.343.209.622.238h2.304c.183 0 .359.071.488.199zM10.207.019c.583.097.953.522 1.005 1.165V18.84l-.005.085c-.078.603-.462 1.032-1.067 1.074c-.451.03-.871-.137-1.252-.484L4.224 14.92l-2.082-.002c-.644-.06-1.166-.267-1.54-.64A2.04 2.04 0 0 0 0 12.896V7.42c.027-.606.2-1.12.532-1.522a2 2 0 0 1 1.27-.736l.105-.008h2.258L8.77.6c.428-.444.913-.668 1.437-.58m6.21 2.227C18.602 3.618 20 6.576 20 9.862s-1.398 6.243-3.582 7.615a.7.7 0 0 1-.955-.208a.675.675 0 0 1 .211-.94c1.754-1.102 2.943-3.618 2.943-6.467c0-2.85-1.189-5.366-2.943-6.468a.675.675 0 0 1-.211-.94a.7.7 0 0 1 .954-.208m-2.301 2.686c1.36 1.007 2.197 2.88 2.197 4.93 0 2.165-.935 4.128-2.42 5.084a.7.7 0 0 1-.957-.198a.675.675 0 0 1 .2-.943c1.068-.686 1.794-2.212 1.794-3.943 0-1.644-.654-3.108-1.645-3.841a.674.674 0 0 1-.137-.954a.7.7 0 0 1 .968-.135" />
+            </svg>
+          }
+          label={t('common.notifications')}
+          onClick={() => pushTab('notifications')}
+        />
+
+        <MenuItem
+          icon={<Database size={20} color={MD3.onSurface} />}
+          label={t('settings.data_memory')}
+          onClick={() => pushTab('dataMemory')}
+        />
+
+        <MenuItem
+          icon={
+            <svg width="20" height="20" viewBox="0 0 512 512" fill="currentColor">
+              <path d="m478.33 433.6l-90-218a22 22 0 0 0-40.67 0l-90 218a22 22 0 1 0 40.67 16.79L316.66 406h102.67l18.33 44.39A22 22 0 0 0 458 464a22 22 0 0 0 20.32-30.4ZM334.83 362L368 281.65L401.17 362Zm-66.99-19.08a22 22 0 0 0-4.89-30.7c-.2-.15-15-11.13-36.49-34.73c39.65-53.68 62.11-114.75 71.27-143.49H330a22 22 0 0 0 0-44H214V70a22 22 0 0 0-44 0v20H54a22 22 0 0 0 0 44h197.25c-9.52 26.95-27.05 69.5-53.79 108.36c-31.41-41.68-43.08-68.65-43.17-68.87a22 22 0 0 0-40.58 17c.58 1.38 14.55 34.23 52.86 83.93c.92 1.19 1.83 2.35 2.74 3.51c-39.24 44.35-77.74 71.86-93.85 80.74a22 22 0 1 0 21.07 38.63c2.16-1.18 48.6-26.89 101.63-85.59c22.52 24.08 38 35.44 38.93 36.1a22 22 0 0 0 30.75-4.9Z" />
+            </svg>
+          }
+          label={t('settings.language')}
+          onClick={() => pushTab('language')}
+          rightElement={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+              <span style={{ fontSize: 13, color: MD3.onSurfaceVar }}>
+                {languageDisplayOptions.find(o => o.value === language)?.label || language || '...'}
+              </span>
+              <ChevronRight size={16} color={MD3.onSurfaceVar} />
+            </div>
+          }
+        />
+
+        <MenuItem
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+          }
+          label={t('settings.preferences')}
+          onClick={() => pushTab('preferences')}
+        />
+
+        <MenuItem
+          icon={<RotateCcw size={20} color={MD3.onSurface} />}
+          label={t('backup.title')}
+          onClick={() => pushTab('backup')}
+        />
+      </Block>
+
+      <Block>
+        <MenuItem
+          icon={<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>}
+          label={t('common.help')}
+          onClick={() => {
+            if ((window as any).orbita?.openExternal) {
+              (window as any).orbita.openExternal('https://github.com/saizzi/orbita-messenger');
+            }
+          }}
+        />
+        <MenuItem
+          icon={<Trash2 size={20} style={{ color: MD3.error }} />}
+          label={t('common.clear_identity')}
+          onClick={() => setDeleteModalOpen(true)}
+        />
+      </Block>
+
+      <div style={{ padding: '0px 20px 16px', textAlign: 'center', color: MD3.onSurfaceVar, fontSize: 12, userSelect: 'none', backgroundColor: 'transparent', marginTop: '8px' }}>
+        <div style={{ fontWeight: 700, fontSize: 17, letterSpacing: '0.1em', color: MD3.onSurface, marginBottom: 4 }}>
+          ORBITA MESSENGER
+        </div>
+        <div style={{ fontSize: 13, opacity: 0.7 }}>
+          {t('common.version', { version: appVersion || '0.1.996' })}
+        </div>
+      </div>
+    </motion.div>
+  );
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'main':
+        return renderMain();
+      case 'myAccount':
+        return renderMyAccount();
+      case 'security':
+        return (
+          <PrivacySettingsScreen
+            onOpenPassword={() => pushTab('password')}
+            onOpenBackup={() => pushTab('backup')}
+            onOpenOrbitaKey={() => pushTab('orbitaKey')}
+          />
+        );
+      case 'orbitaKey':
+        return <OrbitaKeySettings onBack={handleBack} />;
+      case 'backup':
+        return (
+          <AccountBackupScreen
+            mode="main"
+            onOpenCloud={() => pushTab('cloudBackup')}
+            onOpenPc={() => pushTab('pcBackup')}
+          />
+        );
+      case 'cloudBackup':
+        return <AccountBackupScreen mode="cloud" />;
+      case 'pcBackup':
+        return <AccountBackupScreen mode="pc" />;
+      case 'password':
+        return <PasswordSettingsScreen onSaved={() => pushTab('security')} />;
+      case 'connection':
+        return <ConnectionSettingsScreen onBack={handleBack} />;
+      case 'chats':
+        return (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }}>
+            <div style={{ marginBottom: 4 }}>
+              <p style={{ fontSize: 14, fontWeight: 500, color: MD3.onSurface, margin: '0 0 8px', userSelect: 'none', padding: '0 20px' }}>{t('settings.themes')}</p>
+              <SignalThemePicker activeTheme={currentTheme} onThemeChange={setTheme} />
+            </div>
+            <div style={{ marginBottom: 4 }}>
+              <p style={{ fontSize: 14, fontWeight: 500, color: MD3.onSurface, margin: '0 0 8px', userSelect: 'none', padding: '0 20px' }}>{t('settings.chat_color')}</p>
+              <SignalChatColorPicker />
+            </div>
+            <Block>
+              <SettingsRow
+                label={t('settings.font')}
+                onClick={() => pushTab('font')}
+                right={
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                    <span style={{ fontSize: 13, color: MD3.onSurfaceVar }}>
+                      {FONT_OPTIONS.find(o => o.value === fontFamily)?.label || fontFamily}
+                    </span>
+                    <ChevronRight size={16} color={MD3.onSurfaceVar} />
+                  </div>
+                }
+              />
+              <SettingsRow label={t('settings.bubble_radius')} />
+              <BubbleRadiusControl />
+            </Block>
+
+          </motion.div>
+        );
+      case 'font':
+        return renderFont();
+      case 'folders':
+        return <ChatFoldersSettings onBack={handleBack} />;
+      case 'dataMemory':
+        return renderDataMemory();
+      case 'energy':
+        return (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }}>
+            <Block style={{ marginBottom: 8 }}>
+              <SettingsRow label={t('settings.battery_saver')} right={<M3Switch checked={false} onChange={() => {}} />} />
+              <SettingsRow label={t('settings.background_usage')} right={<M3Switch checked={true} onChange={() => {}} />} />
+              <SettingsRow label={t('settings.auto_dark')} right={<M3Switch checked={false} onChange={() => {}} />} />
+            </Block>
+          </motion.div>
+        );
+      case 'notifications':
+        return (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }}>
+            <SectionHeader title={t('settings.general_settings') || 'Общие настройки'} />
+            <Block style={{ marginBottom: 4 }}>
+              <SettingsRow
+                label={t('settings.desktop_notifications') || 'Уведомления на рабочем столе'}
+                icon={<Bell size={18} />}
+                right={
+                  <M3Switch
+                    checked={notificationsEnabled}
+                    onChange={() => setNotificationsEnabled(!notificationsEnabled)}
+                  />
+                }
+              />
+              <SettingsRow
+                label={t('settings.flash_taskbar') || 'Анимация иконки на панели задач'}
+                icon={<TaskbarIcon />}
+                right={
+                  <M3Switch
+                    checked={notificationFlashTaskbar}
+                    onChange={() => setNotificationFlashTaskbar(!notificationFlashTaskbar)}
+                  />
+                }
+              />
+              <SettingsRow
+                label={t('settings.sound') || 'Звук'}
+                icon={<Volume2 size={18} />}
+                right={
+                  <M3Switch
+                    checked={notificationSoundEnabled}
+                    onChange={() => setNotificationSoundEnabled(!notificationSoundEnabled)}
+                  />
+                }
+              />
+            </Block>
+
+            <BubbleSlider
+              value={notificationVolume}
+              onChangeCommitted={setNotificationVolume}
+              min={0}
+              max={100}
+              step={1}
+              label={t('settings.volume') || 'Громкость'}
+              formatValue={(v) => `${Math.round(v)}%`}
+              valuePlacement="right"
+              containerStyle={{ marginTop: 22 }}
+              ariaLabel={t('settings.volume') || 'Громкость'}
+            />
+
+            <div
+              style={{
+                backgroundColor: 'var(--surface-container, var(--bg-secondary, #1c182a))',
+                borderRadius: '16px',
+                padding: '12px 16px',
+                margin: '4px 10px 18px 10px',
+                width: 'calc(100% - 20px)',
+                minHeight: '82px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                border: 'none',
+                boxShadow: 'none',
+                boxSizing: 'border-box',
+                fontFamily: 'var(--main-font), "Apple Color Emoji", "Segoe UI Emoji", sans-serif',
+              }}
+            >
+              {notificationShowName ? <TuxAvatar /> : <OrbitaLogoAvatar />}
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '3px' }}>
+                <div style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--text-main, #ffffff)', lineHeight: 1.25 }}>
+                  {notificationShowName ? (t('settings.preview_sender_name') || 'Saizzi') : (t('settings.hidden_name') || 'Orbita Desktop')}
+                </div>
+                <div style={{ fontSize: '13px', color: 'var(--text-dim, #a89ec4)', marginTop: '2px', lineHeight: 1.35 }}>
+                  {notificationShowText ? (t('settings.preview_message_text') || 'А ты любишь пингвинов?') : (t('settings.new_message') || 'Новое сообщение')}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', margin: '0 20px 24px 20px' }}>
+              <TogglePill
+                active={notificationShowName}
+                label={t('settings.name') || 'Имя'}
+                onClick={() => setNotificationShowName(!notificationShowName)}
+              />
+              <TogglePill
+                active={notificationShowText}
+                label={t('settings.text') || 'Текст'}
+                onClick={() => setNotificationShowText(!notificationShowText)}
+              />
+            </div>
+
+            <SectionHeader title={t('settings.system_integration') || 'Взаимодействие с системой'} style={{ marginTop: 8 }} />
+            <Block style={{ marginBottom: 8 }}>
+              <SettingsRow
+                label={t('settings.use_windows_notifications') || 'Использовать уведомления Windows'}
+                right={
+                  <M3Switch
+                    checked={notificationNativeWindows}
+                    onChange={() => setNotificationNativeWindows(!notificationNativeWindows)}
+                  />
+                }
+              />
+              <SettingsRow
+                label={t('settings.respect_focus_assist') || 'Соблюдать режим фокусирования'}
+                right={
+                  <M3Switch
+                    checked={notificationRespectFocus}
+                    onChange={() => setNotificationRespectFocus(!notificationRespectFocus)}
+                  />
+                }
+              />
+            </Block>
+
+            <SectionHeader title={t('settings.screen_position') || 'Расположение на экране'} style={{ marginTop: 16 }} />
+            <div style={{ margin: '8px 0 16px 0' }}>
+              <NotificationMonitor
+                count={notificationCount}
+                position={notificationPosition}
+                onPositionChange={setNotificationPosition}
+              />
+            </div>
+
+            {/* 4. Количество уведомлений */}
+            <SectionHeader title={t('settings.notification_count') || 'Количество уведомлений'} />
+            <div style={{ margin: '4px 0 24px 0' }}>
+              <NotificationCountSelector
+                count={notificationCount}
+                onChange={setNotificationCount}
+              />
+            </div>
+          </motion.div>
+        );
+      case 'calls':
+        return renderCalls();
+      case 'language':
+        return renderLanguage();
+      case 'preferences':
+        return (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.18 }}
+            style={{ padding: '0 0 32px' }}
+          >
+            <PreferencesGroup title={t('settings.system_section')}>
+              <PreferenceSwitch
+                label={t('settings.open_at_login')}
+                checked={autoLaunch}
+                onChange={async () => {
+                  const nextVal = !autoLaunch;
+                  setAutoLaunch(nextVal);
+                  if (typeof window !== 'undefined' && window.orbita?.setAutoLaunch) {
+                    await window.orbita.setAutoLaunch(nextVal);
+                  }
+                }}
+              />
+              <PreferenceSwitch
+                label={t('settings.hide_menu_bar')}
+                checked={hideMenuBar}
+                onChange={async () => {
+                  const nextVal = !hideMenuBar;
+                  setHideMenuBar(nextVal);
+                  if (typeof window !== 'undefined' && window.orbita?.setHideMenuBar) {
+                    await window.orbita.setHideMenuBar(nextVal);
+                  }
+                }}
+              />
+              <PreferenceSwitch
+                label={t('settings.minimize_to_tray')}
+                checked={showInSystemTray}
+                onChange={async () => {
+                  const nextVal = !showInSystemTray;
+                  setShowInSystemTray(nextVal);
+                  if (typeof window !== 'undefined' && window.orbita?.setShowInSystemTray) {
+                    await window.orbita.setShowInSystemTray(nextVal);
+                  }
+                }}
+              />
+            </PreferencesGroup>
+
+            <PreferencesGroup title={t('settings.permissions_section')}>
+              <PreferenceSwitch
+                label={t('settings.allow_microphone')}
+                checked={hasMicrophonePermission}
+                onChange={() => setMicrophonePermission(!hasMicrophonePermission)}
+              />
+              <PreferenceSwitch
+                label={t('settings.allow_camera')}
+                checked={hasCameraPermission}
+                onChange={() => setCameraPermission(!hasCameraPermission)}
+              />
+            </PreferencesGroup>
+
+            <PreferencesGroup title={t('settings.updates_section')}>
+              <PreferenceSwitch
+                label={t('settings.auto_download_updates')}
+                checked={autoUpdate}
+                onChange={handleToggleAutoUpdate}
+              />
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '14px 0',
+                  gap: 16,
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, color: MD3.onSurfaceVar }}>
+                    {t('settings.current_version')}: <span style={{ fontWeight: 600, color: MD3.onSurface }}>v{appVersion || '1.0.3'}</span>
+                  </div>
+                  {updateStatus.status === 'checking' && (
+                    <div style={{ fontSize: 12, color: MD3.primary, marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <RefreshCw size={13} style={{ animation: 'spin 1.5s linear infinite' }} />
+                      {t('settings.checking_for_updates')}
+                    </div>
+                  )}
+                  {updateStatus.status === 'not-available' && (
+                    <div style={{ fontSize: 12, color: '#23a559', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Check size={13} />
+                      {t('settings.update_not_available')}
+                    </div>
+                  )}
+                  {updateStatus.status === 'available' && (
+                    <div style={{ fontSize: 12, color: MD3.primary, marginTop: 4 }}>
+                      {t('settings.update_available')}{updateStatus.version ? ` v${updateStatus.version}` : ''}
+                    </div>
+                  )}
+                  {updateStatus.status === 'downloading' && (
+                    <div style={{ marginTop: 6 }}>
+                      <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+                        <span>{t('settings.update_downloading')}</span>
+                        <span>{updateStatus.percent || 0}%</span>
+                      </div>
+                      <div style={{ width: '100%', height: 4, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: 2, overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            width: `${updateStatus.percent || 0}%`,
+                            height: '100%',
+                            backgroundColor: MD3.primary,
+                            borderRadius: 2,
+                            transition: 'width 0.2s ease',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {updateStatus.status === 'downloaded' && (
+                    <div style={{ fontSize: 12, color: '#23a559', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <CheckCircle2 size={14} />
+                      {t('settings.update_downloaded')}
+                    </div>
+                  )}
+                  {updateStatus.status === 'dev-mode' && (
+                    <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 4 }}>
+                      {t('settings.update_dev_mode')}
+                    </div>
+                  )}
+                  {updateStatus.status === 'error' && (
+                    <div style={{ fontSize: 12, color: '#e55353', marginTop: 4 }}>
+                      {t('settings.update_error')}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  {updateStatus.status === 'downloaded' ? (
+                    <button
+                      type="button"
+                      onClick={handleRestartAndInstall}
+                      aria-label={t('settings.restart_and_install')}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: 8,
+                        backgroundColor: MD3.primary,
+                        color: '#ffffff',
+                        fontSize: 12.5,
+                        fontWeight: 600,
+                        border: 'none',
+                        cursor: 'pointer',
+                        outline: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        transition: 'opacity 0.15s ease',
+                      }}
+                    >
+                      <Check size={14} />
+                      {t('settings.restart_and_install')}
+                    </button>
+                  ) : updateStatus.status === 'available' && !autoUpdate ? (
+                    <button
+                      type="button"
+                      onClick={handleDownloadUpdate}
+                      aria-label={t('settings.download_update')}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: 8,
+                        backgroundColor: MD3.primary,
+                        color: '#ffffff',
+                        fontSize: 12.5,
+                        fontWeight: 600,
+                        border: 'none',
+                        cursor: 'pointer',
+                        outline: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        transition: 'opacity 0.15s ease',
+                      }}
+                    >
+                      <Download size={14} />
+                      {t('settings.download_update')}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={isCheckingUpdate || updateStatus.status === 'downloading'}
+                      onClick={handleCheckForUpdates}
+                      aria-label={t('settings.check_for_updates')}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: 8,
+                        backgroundColor: MD3.surfaceVar,
+                        color: MD3.onSurface,
+                        fontSize: 12.5,
+                        fontWeight: 600,
+                        border: 'none',
+                        cursor: isCheckingUpdate || updateStatus.status === 'downloading' ? 'default' : 'pointer',
+                        outline: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        opacity: isCheckingUpdate || updateStatus.status === 'downloading' ? 0.6 : 1,
+                        transition: 'background-color 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isCheckingUpdate && updateStatus.status !== 'downloading') {
+                          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = MD3.surfaceVar;
+                      }}
+                    >
+                      <RefreshCw
+                        size={13}
+                        style={{
+                          transform: isCheckingUpdate ? 'rotate(360deg)' : 'none',
+                          transition: isCheckingUpdate ? 'transform 1s linear infinite' : 'none',
+                        }}
+                      />
+                      {t('settings.check_for_updates')}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </PreferencesGroup>
+
+            <PreferencesGroup title={t('settings.preferences_hotkeys')}>
+              <HotkeySwitch
+                enterLabel={t('settings.preferences_send_enter')}
+                shiftEnterLabel={t('settings.preferences_send_shift_enter')}
+                sendOnEnter={sendOnEnter}
+                onChange={(value) => setSendOnEnter(value)}
+              />
+            </PreferencesGroup>
+          </motion.div>
+        );
+      case 'qrCode':
+        return (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }}>
+            <QrCodeView userId={myCode} avatarUrl={avatarUrl} nickname={nickname} />
+          </motion.div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const isOnMain = activeTab === 'main';
+  const getHeaderTitle = () => {
+    if (isOnMain) return t('settings.title');
+    return tabTitles[activeTab] ?? '';
+  };
+  const handleBack = () => popTab();
+
+  return (
+    <>
+      <style>{GLOBAL_CSS}</style>
+      <AnimatePresence>
+        <motion.div
+          key="settings-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 200,
+          display: isMobileWidth ? 'block' : 'flex',
+          alignItems: isMobileWidth ? 'stretch' : 'flex-start',
+          justifyContent: isMobileWidth ? 'stretch' : 'center',
+          backgroundColor: 'rgba(0, 0, 0, 0.55)',
+          backdropFilter: 'none',
+          WebkitBackdropFilter: 'none',
+          border: 'none',
+          padding: isMobileWidth ? '0' : 'min(7.5vh, 64px) 16px 16px',
+          userSelect: 'none',
+        }}
+        onClick={() => setCurrentView('chats')}
+      >
+        <motion.div
+          initial={false}
+          animate={{
+            opacity: 1,
+            scale: 1,
+            height: isMobileWidth
+              ? 'calc(100vh - 30px)'
+              : targetHeight !== null
+              ? Math.min(targetHeight, typeof window !== 'undefined' ? Math.min(window.innerHeight * 0.9, 900) : 900)
+              : (typeof window !== 'undefined' ? Math.min(window.innerHeight * 0.9, 900) : 900),
+          }}
+          transition={{
+            height: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
+            opacity: { duration: 0 },
+            scale: { duration: 0 },
+          }}
+          onClick={e => e.stopPropagation()}
+          style={{
+            position: 'relative',
+            width: '100%',
+            maxWidth: isMobileWidth ? '100vw' : '400px',
+            maxHeight: isMobileWidth ? 'calc(100vh - 30px)' : 'min(90vh, 900px)',
+            display: 'flex',
+            flexDirection: 'column',
+            margin: isMobileWidth ? '0' : '0 16px',
+            marginTop: isMobileWidth ? '30px' : '0',
+            backgroundColor: MD3.bg,
+            borderRadius: isMobileWidth ? 0 : 10,
+            color: MD3.onSurface,
+            boxShadow: isMobileWidth ? 'none' : '0 20px 60px rgba(0,0,0,0.5)',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 10,
+              padding: '16px 20px',
+              backgroundColor: MD3.bg,
+              flexShrink: 0,
+              userSelect: 'none',
+              borderBottom: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '100%',
+              boxSizing: 'border-box',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+              {activeTab !== 'main' && (
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  aria-label={t('common.back', 'Назад')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: MD3.onSurfaceVar,
+                    cursor: 'pointer',
+                    padding: '4px',
+                    transition: 'color 150ms',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    outline: 'none',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = MD3.primary)}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = MD3.onSurfaceVar)}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M16 22L6 12L16 2l1.775 1.775L9.55 12l8.225 8.225z" />
+                  </svg>
+                </button>
+              )}
+              <h2
+                style={{
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: MD3.onSurface,
+                  margin: 0,
+                  userSelect: 'none',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {getHeaderTitle()}
+              </h2>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {activeTab === 'main' && (
+                <button
+                  type="button"
+                  onClick={() => setNicknameEditOpen(true)}
+                  aria-label={t('settings.edit_nickname_title', 'Изменить имя')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: MD3.onSurfaceVar,
+                    cursor: 'pointer',
+                    padding: '4px',
+                    transition: 'color 150ms',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    outline: 'none',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = MD3.primary)}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = MD3.onSurfaceVar)}
+                >
+                  <svg width="18" height="18" viewBox="0 0 64 64" fill="currentColor">
+                    <path d="M61.2 13c-3.2-3.4-6.6-6.8-10-10.1c-.7-.7-1.5-1.1-2.4-1.1s-1.8.3-2.4 1L8.7 40.2c-.6.6-1 1.3-1.3 2L1.9 59c-.3.8-.1 1.6.3 2.2c.5.6 1.2 1 2.1 1h.4l17.1-5.7c.8-.3 1.5-.7 2-1.3l37.5-37.4c.6-.6 1-1.5 1-2.4s-.4-1.7-1.1-2.4M20.6 52.1c-.1.1-.2.1-.3.2L7.4 56.6l4.3-12.9c0-.1.1-.2.2-.3L39.4 16l8.7 8.7zm30.6-30.6l-8.7-8.7l6.1-6.1c2.9 2.8 5.8 5.8 8.6 8.7z" />
+                  </svg>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setCurrentView('chats')}
+                aria-label={t('common.close', 'Закрыть')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: MD3.onSurfaceVar,
+                  cursor: 'pointer',
+                  padding: '4px',
+                  transition: 'color 150ms',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  outline: 'none',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = MD3.primary)}
+                onMouseLeave={(e) => (e.currentTarget.style.color = MD3.onSurfaceVar)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">
+                  <path fill="currentColor" d="M6.225 4.811a1 1 0 0 0-1.414 1.414L10.586 12L4.81 17.775a1 1 0 1 0 1.414 1.414L12 13.414l5.775 5.775a1 1 0 0 0 1.414-1.414L13.414 12l5.775-5.775a1 1 0 0 0-1.414-1.414L12 10.586z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+            onMouseMove={triggerSettingsActive}
+            onMouseEnter={triggerSettingsActive}
+            onMouseLeave={handleSettingsMouseLeave}
+          >
+            <div
+              ref={settingsScrollRef}
+              onScroll={triggerSettingsActive}
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                padding: '0 0 8px',
+              }}
+              className="chat-list-scrollbar"
+            >
+              <div ref={innerContentRef} style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+                <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }}>
+                  {renderContent()}
+                </motion.div>
+              </div>
+            </div>
+
+            {settingsThumb && (
+              <>
+                <div
+                  className="overlay-scroll-track"
+                  onMouseDown={(e) => handleScrollbarTrackMouseDown(e, settingsScrollRef.current)}
+                  style={{
+                    top: '6px',
+                    bottom: '6px',
+                    opacity: isSettingsActive ? 1 : 0,
+                  }}
+                />
+                <div
+                  className="overlay-scroll-thumb"
+                  onMouseDown={(e) => handleScrollbarThumbMouseDown(e, settingsScrollRef.current)}
+                  style={{
+                    top: settingsThumb.top + 6,
+                    height: settingsThumb.height,
+                    opacity: isSettingsActive ? 1 : 0,
+                  }}
+                />
+              </>
+            )}
+          </div>
+
+          <DeveloperToast isOpen={devToastOpen} nickname={nickname || 'User'} />
+          <LinkCopiedToast isOpen={copyToastOpen} />
+        </motion.div>
+      </motion.div>
+      </AnimatePresence>
+
+      <NameEditModal open={nameEditOpen} onClose={() => setNameEditOpen(false)} currentNickname={nickname || ''} onSave={handleNameSave} />
+      <UsernameEditModal open={usernameEditOpen} onClose={() => setUsernameEditOpen(false)} currentUsername={username || null} onSave={handleUsernameSave} />
+      <BirthdayEditModal open={birthdayEditOpen} onClose={() => setBirthdayEditOpen(false)} currentBirthday={birthday || null} onSave={handleBirthdaySave} />
+      <EmojiAvatarModal
+        isOpen={emojiModalOpen}
+        onClose={() => setEmojiModalOpen(false)}
+        onSave={(emojiUrl: string) => {
+          setAvatarUrl(emojiUrl);
+          broadcastProfileUpdate({ avatarUrl: emojiUrl });
+        }}
+      />
+      <AvatarCropperModal
+        isOpen={cropperModalOpen}
+        onClose={() => {
+          setCropperModalOpen(false);
+          setCropperImageSrc(null);
+        }}
+        imageSrc={cropperImageSrc}
+        onSave={handleAvatarSave}
+      />
+      <BannerCropperModal
+        isOpen={bannerCropperOpen}
+        onClose={() => {
+          setBannerCropperOpen(false);
+          setBannerCropperImageSrc(null);
+        }}
+        imageSrc={bannerCropperImageSrc}
+        onSave={handleBannerSave}
+      />
+      <NicknameEditModal open={nicknameEditOpen} onClose={() => setNicknameEditOpen(false)} currentNickname={nickname || ''} onSave={handleNicknameSave} />
+      <DeleteAccountModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={async () => {
+          setDeleteModalOpen(false);
+          await useAccountStore.getState().deleteCurrentAccount();
+          setCurrentView('chats');
+        }}
+      />
+  </>
+);
+};

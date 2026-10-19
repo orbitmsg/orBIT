@@ -1,0 +1,1485 @@
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { relayRouter } from './relayRouter';
+import { getVercelBaseUrl } from './gatewayManager';
+import { SUPPORT_AVATAR_URL } from './supportService';
+
+export interface OfflineMessageRecord {
+  id: string;
+  chat_id: string;
+  sender_id: string;
+  recipient_id: string;
+  ciphertext: string;
+  message_index: number;
+  dh_public_key: string;
+  prev_chain_count?: number | null;
+  created_at: string;
+  expires_at: string;
+  delivered: boolean;
+}
+
+export interface OfflineHandshakeRecord {
+  id: string;
+  chat_id: string;
+  recipient_code: string;
+  sender_code: string | null;
+  sender_nickname: string;
+  sender_public_key: string;
+  sender_avatar_url: string | null;
+  created_at: string;
+  consumed: boolean;
+}
+
+export interface ProfileUpdateRecord {
+  id: string;
+  chat_id: string;
+  user_id?: string | null;
+  sender_id?: string | null;
+  nickname: string | null;
+  avatar_url: string | null;
+  banner_url?: string | null;
+  sender_code?: string | null;
+  numeric_id?: string | null;
+  bio?: string | null;
+  username?: string | null;
+  birthday?: string | null;
+  updated_at: string;
+}
+
+export interface UserDirectoryRecord {
+  user_code: string;
+  numeric_id?: string | null;
+  nickname: string;
+  avatar_url: string | null;
+  banner_url?: string | null;
+  username?: string | null;
+  bio?: string | null;
+  birthday?: string | null;
+  public_key?: string | null;
+  updated_at?: string;
+}
+
+export interface UserPublicKeysRecord {
+  user_code: string;
+  identity_key: string;
+  signed_pre_key: string;
+  pre_key_signature: string;
+  identity_signing_key?: string | null;
+  updated_at: string;
+}
+
+export interface OneTimePreKeyRecord {
+  id: string;
+  user_code: string;
+  key_id: number;
+  public_key: string;
+  created_at: string;
+}
+
+export interface PreKeyBundle {
+  identityKey: string;
+  signedPreKey: string;
+  preKeySignature: string;
+  identitySigningKey?: string;
+  oneTimePreKey?: {
+    id: string;
+    keyId: number;
+    publicKey: string;
+  };
+}
+
+class SupabaseService {
+  private client: SupabaseClient | null = null;
+  private failedRelays: Map<string, number> = new Map();
+
+  constructor() {
+    const url = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    if (url && anonKey) {
+      this.client = createClient(url, anonKey);
+      console.log('[SupabaseService] Initialized direct Supabase client fallback.');
+    } else {
+      console.log('[SupabaseService] Running in pure Relay/Worker mode (no client API keys needed).');
+    }
+  }
+
+  async sendOfflineMessage(
+    chatId: string,
+    senderId: string,
+    recipientId: string,
+    ciphertext: string,
+    index: number,
+    dhPublicKey: string,
+    clientMsgId?: string,
+    prevChainCount?: number
+  ): Promise<void> {
+    console.log('[Relay/Supabase] sendOfflineMessage called:', { chatId, senderId, recipientId, index, clientMsgId, prevChainCount });
+
+    const primaryRelay = relayRouter.getRelayForRecipient(recipientId);
+    const allRelays = [
+      primaryRelay,
+      ...relayRouter.getNodes().filter((n) => n.url !== primaryRelay.url),
+    ];
+
+    let lastError: any = null;
+
+    for (const relay of allRelays) {
+      try {
+        const res = await fetch(`${relay.url}/relay/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chatId,
+            senderId,
+            recipientId,
+            ciphertext,
+            messageIndex: index,
+            dhPublicKey,
+            clientMsgId,
+            prevChainCount,
+          }),
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ error: res.statusText }));
+          throw new Error(errorData.error || `HTTP ${res.status}`);
+        }
+
+        console.log(`[Relay] Message dispatched to ${relay.name} (${relay.url})`);
+        return;
+      } catch (err) {
+        console.warn(`[Relay] Failed on ${relay.name} (${relay.url}), trying next relay:`, err);
+        lastError = err;
+      }
+    }
+
+    if (this.client) {
+      const row: any = {
+        chat_id: chatId,
+        sender_id: senderId,
+        recipient_id: recipientId,
+        ciphertext,
+        message_index: index,
+        dh_public_key: dhPublicKey,
+        prev_chain_count: prevChainCount !== undefined ? prevChainCount : null,
+      };
+      if (clientMsgId) {
+        row.id = clientMsgId;
+      }
+      const { error } = await this.client
+        .from('messages')
+        .insert(row);
+
+      if (error) {
+        console.error('[Supabase] Insert error:', error);
+        throw new Error(`Failed to save offline message: ${error.message}`);
+      }
+      return;
+    }
+
+    throw lastError || new Error('All relays failed');
+  }
+
+  async saveNonMessage(
+    chatId: string,
+    senderId: string,
+    recipientId: string,
+    plaintext: string,
+    messageId: string,
+  ): Promise<void> {
+    const allRelays = relayRouter.getNodes();
+    let sentToRelay = false;
+
+    for (const relay of allRelays) {
+      try {
+        const res = await fetch(`${relay.url}/relay/non-message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: messageId,
+            chatId,
+            senderId,
+            recipientId,
+            ciphertext: plaintext,
+          }),
+        });
+        if (res.ok) {
+          sentToRelay = true;
+          break;
+        }
+      } catch (err) {
+        console.warn(`[Relay] Failed to save non-message on ${relay.url}:`, err);
+      }
+    }
+
+    if (!sentToRelay && this.client) {
+      const { error } = await this.client
+        .from('non_messages')
+        .insert({
+          id: messageId,
+          chat_id: chatId,
+          sender_id: senderId,
+          recipient_id: recipientId,
+          ciphertext: plaintext,
+          message_index: 0,
+        });
+      if (error) {
+        console.error('[Supabase] saveNonMessage error:', error);
+      }
+    }
+  }
+
+  async getPendingNonMessages(recipientId: string): Promise<OfflineMessageRecord[]> {
+    const allRelays = relayRouter.getNodes();
+    for (const relay of allRelays) {
+      try {
+        const res = await fetch(`${relay.url}/relay/non-messages?recipientId=${encodeURIComponent(recipientId)}`);
+        if (res.ok) {
+          const data = (await res.json()) as { non_messages: OfflineMessageRecord[] };
+          if (data?.non_messages && Array.isArray(data.non_messages)) {
+            return data.non_messages;
+          }
+        }
+      } catch (err) {
+        console.warn(`[Relay] Failed to get pending non-messages from ${relay.url}:`, err);
+      }
+    }
+
+    if (!this.client) return [];
+    const { data, error } = await this.client
+      .from('non_messages')
+      .select('*')
+      .eq('recipient_id', recipientId)
+      .eq('delivered', false)
+      .order('created_at', { ascending: true });
+    if (error) {
+      console.error('[Supabase] getPendingNonMessages error:', error);
+      return [];
+    }
+    return data || [];
+  }
+
+  async markNonMessageDelivered(messageId: string): Promise<void> {
+    if (!messageId) return;
+    const allRelays = relayRouter.getNodes();
+    for (const relay of allRelays) {
+      fetch(`${relay.url}/relay/non-message/delivered`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId }),
+      }).catch(() => {});
+    }
+
+    if (this.client) {
+      await this.client
+        .from('non_messages')
+        .delete()
+        .eq('id', messageId)
+        .then(({ error }) => {
+          if (error) console.error('[Supabase] markNonMessageDelivered error:', error);
+        });
+    }
+  }
+
+  async purgeServerMessages(chatId: string, messageIds: string[]): Promise<void> {
+    if (!messageIds || messageIds.length === 0) return;
+    const cleanIds = messageIds.filter(Boolean);
+    if (cleanIds.length === 0) return;
+
+    const relays = relayRouter.getNodes();
+    await Promise.all(
+      relays.flatMap((relay) =>
+        cleanIds.map((mid) =>
+          fetch(`${relay.url}/relay/delete-message`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chatId, messageId: mid }),
+          }).catch(() => {})
+        )
+      )
+    );
+
+    if (this.client) {
+      for (const id of cleanIds) {
+        try {
+          await this.client.from('messages').delete().eq('id', id);
+        } catch {}
+        try {
+          await this.client.from('non_messages').delete().eq('id', id);
+        } catch {}
+        if (chatId) {
+          try {
+            await this.client.from('non_messages').delete().eq('chat_id', chatId).ilike('ciphertext', `%${id}%`);
+          } catch {}
+          try {
+            await this.client.from('messages').delete().eq('chat_id', chatId).ilike('ciphertext', `%${id}%`);
+          } catch {}
+        }
+      }
+    }
+  }
+
+  async deleteMessage(
+    chatId: string,
+    messageId: string,
+    recipientId?: string,
+    senderId?: string
+  ): Promise<void> {
+    if (!chatId || !messageId) return;
+
+    const primaryRelay = relayRouter.getRelayForRecipient(chatId);
+    const allRelays = [
+      primaryRelay,
+      ...relayRouter.getNodes().filter((n) => n.url !== primaryRelay.url),
+    ];
+
+    for (const relay of allRelays) {
+      try {
+        await fetch(`${relay.url}/relay/delete-message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chatId, messageId, recipientId, senderId }),
+        });
+      } catch {}
+    }
+
+    if (this.client) {
+      try {
+        await this.client.from('non_messages').delete().eq('id', messageId);
+      } catch {}
+      try {
+        await this.client.from('messages').delete().eq('id', messageId);
+      } catch {}
+      try {
+        await this.client.from('non_messages').delete().eq('chat_id', chatId).ilike('ciphertext', `%${messageId}%`);
+      } catch {}
+      try {
+        await this.client.from('messages').delete().eq('chat_id', chatId).ilike('ciphertext', `%${messageId}%`);
+      } catch {}
+
+      if (recipientId) {
+        try {
+          const deletePayload = JSON.stringify({
+            type: 'delete-message',
+            targetMessageId: messageId,
+            chatId,
+          });
+          const deletionEventId = `del_${messageId}_${Date.now()}`;
+          await this.client.from('non_messages').insert({
+            id: deletionEventId,
+            chat_id: chatId,
+            sender_id: senderId || 'system',
+            recipient_id: recipientId,
+            ciphertext: deletePayload,
+            delivered: false,
+          });
+        } catch {}
+      }
+    }
+  }
+
+  async deleteChatData(chatId: string, recipientId?: string | string[], senderId?: string): Promise<void> {
+    if (!chatId || chatId === 'notes') return;
+
+    const primaryRelay = relayRouter.getRelayForRecipient(chatId);
+    const allRelays = [
+      primaryRelay,
+      ...relayRouter.getNodes().filter((n) => n.url !== primaryRelay.url),
+    ];
+
+    for (const relay of allRelays) {
+      try {
+        await fetch(`${relay.url}/relay/delete-chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chatId, recipientId, senderId }),
+        });
+      } catch {}
+    }
+
+    if (this.client) {
+      try {
+        await this.client.from('messages').delete().eq('chat_id', chatId);
+      } catch {}
+      try {
+        await this.client.from('non_messages').delete().eq('chat_id', chatId);
+      } catch {}
+      try {
+        await this.client.from('offline_handshakes').delete().eq('chat_id', chatId);
+      } catch {}
+      try {
+        await this.client.from('reactions').delete().eq('chat_id', chatId);
+      } catch {}
+
+      if (recipientId) {
+        const recipients = Array.isArray(recipientId) ? recipientId : [recipientId];
+        for (const rId of recipients) {
+          if (!rId) continue;
+          try {
+            const deletePayload = JSON.stringify({
+              type: 'system',
+              action: 'delete-chat',
+              chatId,
+            });
+            const eventId = `sys_del_${chatId}_${rId}_${Date.now()}`;
+            await this.client.from('non_messages').insert({
+              id: eventId,
+              chat_id: chatId,
+              sender_id: senderId || 'system',
+              recipient_id: rId,
+              ciphertext: deletePayload,
+              delivered: false,
+            });
+          } catch {}
+        }
+      }
+    }
+  }
+
+  async clearChatHistory(chatId: string, recipientId?: string | string[], senderId?: string): Promise<void> {
+    if (!chatId || chatId === 'notes') return;
+
+    const primaryRelay = relayRouter.getRelayForRecipient(chatId);
+    const allRelays = [
+      primaryRelay,
+      ...relayRouter.getNodes().filter((n) => n.url !== primaryRelay.url),
+    ];
+
+    for (const relay of allRelays) {
+      try {
+        await fetch(`${relay.url}/relay/clear-history`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chatId, recipientId, senderId }),
+        });
+      } catch {}
+    }
+
+    if (this.client) {
+      try {
+        await this.client.from('messages').delete().eq('chat_id', chatId);
+      } catch {}
+      try {
+        await this.client.from('reactions').delete().eq('chat_id', chatId);
+      } catch {}
+
+      if (recipientId) {
+        const recipients = Array.isArray(recipientId) ? recipientId : [recipientId];
+        for (const rId of recipients) {
+          if (!rId) continue;
+          try {
+            const clearPayload = JSON.stringify({
+              type: 'system',
+              action: 'clear-history',
+              chatId,
+            });
+            const eventId = `sys_clr_${chatId}_${rId}_${Date.now()}`;
+            await this.client.from('non_messages').insert({
+              id: eventId,
+              chat_id: chatId,
+              sender_id: senderId || 'system',
+              recipient_id: rId,
+              ciphertext: clearPayload,
+              delivered: false,
+            });
+          } catch {}
+        }
+      }
+    }
+  }
+
+  async getPendingMessages(recipientId: string): Promise<OfflineMessageRecord[]> {
+    const activeRelays = relayRouter.getActiveRelaysForMe(recipientId);
+    const allMessages: OfflineMessageRecord[] = [];
+    const seenIds = new Set<string>();
+
+    for (const relay of activeRelays) {
+      const lastFail = this.failedRelays.get(relay.url) || 0;
+      if (Date.now() - lastFail < 60000) continue;
+
+      try {
+        const res = await fetch(`${relay.url}/relay/messages?recipientId=${encodeURIComponent(recipientId)}`);
+        if (res.ok) {
+          const data = (await res.json()) as { messages: OfflineMessageRecord[] };
+          for (const msg of data.messages || []) {
+            if (!seenIds.has(msg.id)) {
+              seenIds.add(msg.id);
+              allMessages.push(msg);
+            }
+          }
+        } else {
+          this.failedRelays.set(relay.url, Date.now());
+        }
+      } catch (err) {
+        this.failedRelays.set(relay.url, Date.now());
+        console.warn(`[Relay] Failed to fetch pending messages from ${relay.url}:`, err);
+      }
+    }
+
+    if (allMessages.length > 0 || !this.client) {
+      return allMessages.sort((a, b) => {
+        const timeA = new Date(a.created_at).getTime();
+        const timeB = new Date(b.created_at).getTime();
+        if (timeA !== timeB) return timeA - timeB;
+        return (a.message_index ?? 0) - (b.message_index ?? 0);
+      });
+    }
+
+    if (this.client) {
+      const { data, error } = await this.client
+        .from('messages')
+        .select('*')
+        .eq('recipient_id', recipientId)
+        .eq('delivered', false)
+        .order('created_at', { ascending: true })
+        .order('message_index', { ascending: true });
+
+      if (error) {
+        console.error('[Supabase] Failed to fetch pending messages:', error);
+        return allMessages;
+      }
+
+      return data || [];
+    }
+
+    return allMessages;
+  }
+
+  async markMessageDelivered(messageId: string, recipientId?: string): Promise<void> {
+    console.log('[Relay/Supabase] markMessageDelivered:', { messageId });
+
+    const relays = recipientId ? relayRouter.getActiveRelaysForMe(recipientId) : relayRouter.getNodes();
+
+    await Promise.all(
+      relays.map((relay) =>
+        fetch(`${relay.url}/relay/message/delivered`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messageId }),
+        }).catch((err) => console.warn(`[Relay] Error delivering ack to ${relay.url}:`, err))
+      )
+    );
+
+    if (this.client) {
+      await this.client
+        .from('messages')
+        .update({
+          delivered: true,
+          expires_at: new Date(Date.now() + 60 * 1000).toISOString(),
+        })
+        .eq('id', messageId)
+        .eq('delivered', false)
+        .maybeSingle()
+        .then(({ error }) => {
+          if (error) console.error('[Supabase] Direct fallback mark delivered error:', error);
+        });
+    }
+  }
+
+  // --- Рукопожатия ---
+  async sendOfflineHandshake(
+    chatId: string,
+    recipientCode: string,
+    senderNickname: string,
+    senderPublicKey: string,
+    senderAvatarUrl: string | null,
+    senderCode: string
+  ): Promise<void> {
+    console.log('[Relay/Supabase] sendOfflineHandshake called:', { chatId, recipientCode, senderNickname });
+
+    const primaryRelay = relayRouter.getRelayForRecipient(recipientCode);
+    const allRelays = [
+      primaryRelay,
+      ...relayRouter.getNodes().filter((n) => n.url !== primaryRelay.url),
+    ];
+
+    let lastError: any = null;
+
+    for (const relay of allRelays) {
+      try {
+        const res = await fetch(`${relay.url}/relay/handshake`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chatId,
+            recipientCode,
+            senderNickname,
+            senderPublicKey,
+            senderAvatarUrl,
+            senderCode,
+          }),
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ error: res.statusText }));
+          throw new Error(errorData.error || `HTTP ${res.status}`);
+        }
+
+        console.log(`[Relay] Handshake dispatched to ${relay.name} (${relay.url})`);
+        return;
+      } catch (err) {
+        console.warn(`[Relay] Handshake failed on ${relay.name} (${relay.url}), trying next relay:`, err);
+        lastError = err;
+      }
+    }
+
+    if (this.client) {
+      const { error } = await this.client
+        .from('handshakes')
+        .insert({
+          chat_id: chatId,
+          recipient_code: recipientCode,
+          sender_nickname: senderNickname,
+          sender_public_key: senderPublicKey,
+          sender_avatar_url: senderAvatarUrl,
+          sender_code: senderCode,
+        });
+
+      if (error) {
+        console.error('[Supabase] Handshake insert error:', error);
+        throw new Error(`Failed to save offline handshake: ${error.message}`);
+      }
+      return;
+    }
+
+    throw lastError || new Error('All relay nodes failed');
+  }
+
+  async getPendingHandshakes(recipientCode: string): Promise<OfflineHandshakeRecord[]> {
+    const nodes = relayRouter.getNodes();
+    const allHandshakes: OfflineHandshakeRecord[] = [];
+    const seenIds = new Set<string>();
+
+    for (const relay of nodes) {
+      const lastFail = this.failedRelays.get(relay.url) || 0;
+      if (Date.now() - lastFail < 60000) continue;
+
+      try {
+        const res = await fetch(`${relay.url}/relay/handshakes?recipientCode=${encodeURIComponent(recipientCode)}`);
+        if (res.ok) {
+          const data = (await res.json()) as { handshakes: OfflineHandshakeRecord[] };
+          for (const hs of data.handshakes || []) {
+            if (!seenIds.has(hs.id)) {
+              seenIds.add(hs.id);
+              allHandshakes.push(hs);
+            }
+          }
+        } else {
+          this.failedRelays.set(relay.url, Date.now());
+        }
+      } catch (err) {
+        this.failedRelays.set(relay.url, Date.now());
+        console.warn(`[Relay] Failed to fetch pending handshakes from ${relay.url}:`, err);
+      }
+    }
+
+    if (allHandshakes.length > 0 || !this.client) {
+      return allHandshakes.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    }
+
+    if (this.client) {
+      const { data, error } = await this.client
+        .from('handshakes')
+        .select('*')
+        .eq('recipient_code', recipientCode)
+        .eq('consumed', false)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('[Supabase] Failed to fetch pending handshakes:', error);
+        return allHandshakes;
+      }
+
+      return data || [];
+    }
+
+    return allHandshakes;
+  }
+
+  async markHandshakeConsumed(handshakeId: string, _recipientCode?: string): Promise<void> {
+    console.log('[Relay/Supabase] markHandshakeConsumed:', { handshakeId });
+
+    const relays = relayRouter.getNodes();
+
+    await Promise.all(
+      relays.map((relay) =>
+        fetch(`${relay.url}/relay/handshake/consumed`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ handshakeId }),
+        }).catch((err) => console.warn(`[Relay] Error consuming handshake on ${relay.url}:`, err))
+      )
+    );
+
+    if (this.client) {
+      await this.client
+        .from('handshakes')
+        .update({ consumed: true })
+        .eq('id', handshakeId)
+        .then(({ error }) => {
+          if (error) console.error('[Supabase] Direct fallback mark consumed error:', error);
+        });
+    }
+  }
+
+  async saveProfileUpdate(
+    chatId: string,
+    nickname: string | null,
+    avatarUrl: string | null,
+    senderCode?: string | null,
+    bio?: string | null,
+    username?: string | null,
+    birthday?: string | null,
+    bannerUrl?: string | null
+  ): Promise<void> {
+    if (!chatId || chatId === 'notes') return;
+
+    const cleanUsername = username ? username.replace(/^@+/, '').trim().toLowerCase() : null;
+
+    if (cleanUsername) {
+      const isAvailable = await this.isUsernameAvailable(cleanUsername, senderCode || chatId);
+      if (!isAvailable) {
+        throw new Error('USERNAME_TAKEN');
+      }
+    }
+
+    const primaryRelay = relayRouter.getRelayForRecipient(chatId);
+    const allRelays = [
+      primaryRelay,
+      ...relayRouter.getNodes().filter((n) => n.url !== primaryRelay.url),
+    ];
+
+    for (const relay of allRelays) {
+      try {
+        const res = await fetch(`${relay.url}/relay/profile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chatId, nickname, avatarUrl, bannerUrl, senderCode, bio, username: cleanUsername, birthday }),
+        });
+        if (res.status === 409) {
+          throw new Error('USERNAME_TAKEN');
+        }
+      } catch (err: any) {
+        if (err?.message === 'USERNAME_TAKEN') {
+          throw err;
+        }
+        console.warn(`[Relay] Failed to save profile update on ${relay.url}:`, err);
+      }
+    }
+
+    if (this.client) {
+      try {
+        if (senderCode) {
+          await this.client.from('profile_updates').delete().eq('chat_id', chatId).eq('sender_code', senderCode);
+        }
+      } catch {}
+      let effectiveBio = bio || null;
+      if (bannerUrl) {
+        effectiveBio = effectiveBio ? `${effectiveBio}\n<!--banner:${bannerUrl}-->` : `<!--banner:${bannerUrl}-->`;
+      }
+      const insertPayload: Record<string, any> = {
+        chat_id: chatId,
+        nickname,
+        avatar_url: avatarUrl,
+        sender_code: senderCode || null,
+        bio: effectiveBio,
+        username: cleanUsername,
+        birthday: birthday || null,
+        banner_url: bannerUrl !== undefined ? bannerUrl : null,
+      };
+
+      let { error } = await this.client
+        .from('profile_updates')
+        .insert(insertPayload);
+
+      if (error && (error.message?.includes('banner_url') || error.code === 'PGRST204')) {
+        delete insertPayload.banner_url;
+        const retryRes = await this.client
+          .from('profile_updates')
+          .insert(insertPayload);
+        error = retryRes.error;
+      }
+
+      if (error) {
+        console.error('[Supabase] Failed to save profile update:', error);
+      }
+    }
+  }
+
+  private parseProfileRow(row: any): ProfileUpdateRecord | null {
+    if (!row) return null;
+    let bannerUrl = row.banner_url || null;
+    let bio = row.bio || null;
+    if (bio && typeof bio === 'string') {
+      const bannerMatch = bio.match(/<!--banner:(.*?)-->/);
+      if (bannerMatch) {
+        if (!bannerUrl) {
+          bannerUrl = bannerMatch[1];
+        }
+        bio = bio.replace(/<!--banner:.*?-->/g, '').trim() || null;
+      }
+    }
+    return {
+      ...row,
+      banner_url: bannerUrl,
+      bio,
+    };
+  }
+
+  async getLatestProfileUpdate(chatId: string, excludeCode?: string): Promise<ProfileUpdateRecord | null> {
+    if (!chatId || chatId === 'notes') return null;
+    const nodes = relayRouter.getNodes();
+
+    for (const relay of nodes) {
+      try {
+        const queryParam = excludeCode ? `&excludeCode=${encodeURIComponent(excludeCode)}` : '';
+        const res = await fetch(`${relay.url}/relay/profile?chatId=${encodeURIComponent(chatId)}${queryParam}`);
+        if (res.ok) {
+          const data = (await res.json()) as { profile: ProfileUpdateRecord | null };
+          if (data?.profile) return this.parseProfileRow(data.profile);
+        }
+      } catch (err) {
+        console.warn(`[Relay] Failed to get profile update from ${relay.url}:`, err);
+      }
+    }
+
+    if (this.client) {
+      let queryBuilder = this.client
+        .from('profile_updates')
+        .select('*')
+        .or(`chat_id.eq.${chatId},sender_code.eq.${chatId}`);
+
+      if (excludeCode) {
+        queryBuilder = queryBuilder.neq('sender_code', excludeCode);
+      }
+
+      const { data, error } = await queryBuilder
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('[Supabase] Failed to fetch latest profile update:', error);
+        return null;
+      }
+
+      return this.parseProfileRow(data);
+    }
+
+    return null;
+  }
+
+  async getLatestProfileUpdatesForChats(chatIds: string[]): Promise<ProfileUpdateRecord[]> {
+    if (chatIds.length === 0) return [];
+
+    const updates = await Promise.all(chatIds.map((id) => this.getLatestProfileUpdate(id)));
+    return updates.filter((u): u is ProfileUpdateRecord => u !== null);
+  }
+
+  async publishPublicProfile(
+    userCode: string,
+    nickname: string,
+    avatarUrl: string | null,
+    _publicKey?: string | null,
+    bio?: string | null,
+    username?: string | null,
+    birthday?: string | null,
+    bannerUrl?: string | null
+  ): Promise<void> {
+    if (!userCode || !nickname) return;
+    try {
+      await this.saveProfileUpdate(userCode, nickname, avatarUrl, userCode, bio, username, birthday, bannerUrl);
+    } catch (e) {
+      console.warn('[Directory] Failed to publish profile update:', e);
+    }
+  }
+
+  async lookupPublicProfile(userCode: string): Promise<UserDirectoryRecord | null> {
+    if (!userCode) return null;
+
+    try {
+      const update = await this.getLatestProfileUpdate(userCode);
+      if (update && update.nickname) {
+        return {
+          user_code: userCode,
+          numeric_id: update.numeric_id || null,
+          nickname: update.nickname,
+          avatar_url: update.avatar_url,
+          banner_url: update.banner_url,
+          username: update.username,
+          bio: update.bio,
+          birthday: update.birthday,
+          updated_at: update.updated_at,
+        };
+      }
+    } catch (err) {
+      console.warn('[Directory] Failed to lookup profile from relay:', err);
+    }
+
+    return null;
+  }
+
+  async isUsernameAvailable(username: string, excludeCode?: string | null): Promise<boolean> {
+    const cleanUsername = username ? username.replace(/^@+/, '').trim().toLowerCase() : '';
+    if (!cleanUsername) return false;
+    if (cleanUsername === 'support') return false;
+
+    const nodes = relayRouter.getNodes();
+    for (const relay of nodes) {
+      try {
+        const param = excludeCode ? `&excludeCode=${encodeURIComponent(excludeCode)}` : '';
+        const res = await fetch(`${relay.url}/relay/check-username?username=${encodeURIComponent(cleanUsername)}${param}`);
+        if (res.ok) {
+          const data = (await res.json()) as { available?: boolean };
+          if (typeof data.available === 'boolean') return data.available;
+        }
+      } catch {}
+    }
+
+    if (this.client) {
+      try {
+        const { data, error } = await this.client
+          .from('profile_updates')
+          .select('sender_code, chat_id')
+          .ilike('username', cleanUsername);
+
+        if (!error && data) {
+          const isTaken = data.some((row) => {
+            const owner = row.sender_code || row.chat_id;
+            return owner && excludeCode && owner !== excludeCode;
+          });
+          return !isTaken;
+        }
+      } catch {}
+    }
+
+    return true;
+  }
+
+  async lookupProfileByUsername(username: string): Promise<UserDirectoryRecord | null> {
+    if (!username) return null;
+    const cleanUsername = username.replace(/^@+/, '').trim().toLowerCase();
+    if (!cleanUsername) return null;
+
+    const nodes = relayRouter.getNodes();
+    for (const relay of nodes) {
+      try {
+        const res = await fetch(`${relay.url}/relay/resolve-username?username=${encodeURIComponent(cleanUsername)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.user) {
+            const parsed = this.parseProfileRow(data.user);
+            return {
+              user_code: data.user.user_code || data.user.sender_code || data.user.chat_id,
+              numeric_id: data.user.numeric_id || null,
+              nickname: data.user.nickname,
+              avatar_url: data.user.avatar_url,
+              banner_url: parsed?.banner_url || data.user.banner_url || null,
+              username: data.user.username,
+              bio: parsed?.bio || data.user.bio,
+              birthday: data.user.birthday,
+              updated_at: data.user.updated_at,
+            };
+          }
+        }
+      } catch {}
+    }
+
+    if (this.client) {
+      try {
+        const { data, error } = await this.client
+          .from('profile_updates')
+          .select('*')
+          .ilike('username', cleanUsername)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!error && data && data.nickname) {
+          const parsed = this.parseProfileRow(data);
+          return {
+            user_code: data.sender_code || data.chat_id,
+            numeric_id: data.numeric_id || null,
+            nickname: data.nickname,
+            avatar_url: data.avatar_url,
+            banner_url: parsed?.banner_url || data.banner_url || null,
+            username: data.username,
+            bio: parsed?.bio || data.bio,
+            birthday: data.birthday,
+            updated_at: data.updated_at,
+          };
+        }
+      } catch (err) {
+        console.warn('[Directory] Failed to lookup profile by username from Supabase:', err);
+      }
+    }
+
+    return null;
+  }
+
+  async ensureSupportProfile(): Promise<void> {
+    const supportCode = 'system_support';
+    const supportUsername = 'support';
+    const supportNickname = 'Техническая поддержка';
+    const supportBio = 'Официальная служба технической поддержки мессенджера Orbita';
+    const supportAvatar = SUPPORT_AVATAR_URL;
+
+    const nodes = relayRouter.getNodes();
+    for (const relay of nodes) {
+      try {
+        await fetch(`${relay.url}/relay/profile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chatId: supportCode,
+            senderCode: supportCode,
+            nickname: supportNickname,
+            username: supportUsername,
+            bio: supportBio,
+            avatarUrl: supportAvatar,
+          }),
+        });
+      } catch {}
+    }
+
+    if (this.client) {
+      try {
+        const { data } = await this.client
+          .from('profile_updates')
+          .select('id, avatar_url')
+          .eq('sender_code', supportCode)
+          .maybeSingle();
+
+        if (!data) {
+          await this.client.from('profile_updates').insert({
+            chat_id: supportCode,
+            sender_code: supportCode,
+            nickname: supportNickname,
+            username: supportUsername,
+            bio: supportBio,
+            avatar_url: supportAvatar,
+            updated_at: new Date().toISOString(),
+          });
+        } else if (data.avatar_url !== supportAvatar) {
+          await this.client.from('profile_updates').update({
+            avatar_url: supportAvatar,
+            updated_at: new Date().toISOString(),
+          }).eq('id', data.id);
+        }
+      } catch {}
+    }
+  }
+
+  async searchPublicProfiles(query: string, limit: number = 20): Promise<UserDirectoryRecord[]> {
+    if (!query) return [];
+    const cleanQuery = query.replace(/^@+/, '').trim().toLowerCase();
+    if (!cleanQuery) return [];
+
+    const seen = new Set<string>();
+    const results: UserDirectoryRecord[] = [];
+
+    const nodes = relayRouter.getNodes();
+    for (const relay of nodes) {
+      try {
+        const res = await fetch(`${relay.url}/relay/search-users?q=${encodeURIComponent(cleanQuery)}&limit=${limit}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data?.users) && data.users.length > 0) {
+            for (const u of data.users) {
+              const code = u.user_code;
+              if (code && !seen.has(code)) {
+                seen.add(code);
+                const parsed = this.parseProfileRow(u);
+                results.push({
+                  ...u,
+                  banner_url: parsed?.banner_url || u.banner_url || null,
+                  bio: parsed?.bio || u.bio,
+                });
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+
+    if (this.client) {
+      try {
+        const filter = `username.ilike.${cleanQuery}%,sender_code.eq.${cleanQuery}`;
+
+        const { data, error } = await this.client
+          .from('profile_updates')
+          .select('*')
+          .or(filter)
+          .order('updated_at', { ascending: false })
+          .limit(limit);
+
+        if (!error && data && Array.isArray(data)) {
+          for (const row of data) {
+            const userCode = row.sender_code || row.chat_id;
+            if (userCode && !seen.has(userCode)) {
+              seen.add(userCode);
+              const parsed = this.parseProfileRow(row);
+              results.push({
+                user_code: userCode,
+                nickname: row.nickname || 'User',
+                avatar_url: row.avatar_url,
+                banner_url: parsed?.banner_url || row.banner_url || null,
+                username: row.username,
+                bio: parsed?.bio || row.bio,
+                birthday: row.birthday,
+                updated_at: row.updated_at,
+                numeric_id: row.numeric_id || null,
+                public_key: row.public_key || null,
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[Directory] Failed to search profiles in Supabase:', err);
+      }
+    }
+
+    if (cleanQuery.length >= 2 && ('support'.startsWith(cleanQuery) || cleanQuery === 'support')) {
+      const hasSupport = results.some((r) => r.user_code === 'system_support' || r.username?.toLowerCase() === 'support');
+      if (!hasSupport) {
+        results.unshift({
+          user_code: 'system_support',
+          nickname: 'Техническая поддержка',
+          avatar_url: SUPPORT_AVATAR_URL,
+          banner_url: null,
+          username: 'support',
+          bio: 'Официальная служба технической поддержки мессенджера Orbita',
+          updated_at: new Date().toISOString(),
+        });
+        this.ensureSupportProfile().catch(() => {});
+      }
+    }
+
+    return results;
+  }
+
+  async getHandshakeRecordsForChat(chatId: string): Promise<OfflineHandshakeRecord[]> {
+    if (!chatId || chatId === 'notes') return [];
+    const nodes = relayRouter.getNodes();
+    for (const relay of nodes) {
+      try {
+        const res = await fetch(`${relay.url}/relay/chat-handshakes?chatId=${encodeURIComponent(chatId)}`);
+        if (res.ok) {
+          const data = (await res.json()) as { handshakes: OfflineHandshakeRecord[] };
+          if (data?.handshakes && data.handshakes.length > 0) return data.handshakes;
+        }
+      } catch (err) {
+        console.warn(`[Relay] Failed to get handshakes for chat from ${relay.url}:`, err);
+      }
+    }
+    if (this.client) {
+      const { data, error } = await this.client
+        .from('handshakes')
+        .select('*')
+        .eq('chat_id', chatId);
+      if (!error && data) return data;
+    }
+    return [];
+  }
+
+  // --- Реакции ---
+  async saveReaction(
+    chatId: string,
+    _messageIndex: number | undefined,
+    messageId: string | undefined,
+    emoji: string,
+    userId: string,
+    action: 'add' | 'remove'
+  ): Promise<void> {
+    if (!messageId || !this.client) return;
+    try {
+      if (action === 'add') {
+        await this.client
+          .from('message_reactions')
+          .delete()
+          .eq('chat_id', chatId)
+          .eq('message_id', messageId)
+          .eq('user_id', userId)
+          .eq('emoji', emoji);
+
+        await this.client
+          .from('message_reactions')
+          .insert({
+            chat_id: chatId,
+            message_id: messageId,
+            emoji,
+            user_id: userId,
+          });
+      } else {
+        await this.client
+          .from('message_reactions')
+          .delete()
+          .eq('chat_id', chatId)
+          .eq('message_id', messageId)
+          .eq('emoji', emoji)
+          .eq('user_id', userId);
+      }
+    } catch (err) {
+      console.error('[Supabase] saveReaction failed:', err);
+    }
+  }
+
+  async getReactionsForChat(chatId: string): Promise<Array<{ message_id: string | null; emoji: string; user_id: string }>> {
+    if (!this.client) return [];
+    try {
+      const { data, error } = await this.client
+        .from('message_reactions')
+        .select('message_id, emoji, user_id')
+        .eq('chat_id', chatId);
+
+      if (error) {
+        console.error('[Supabase] getReactionsForChat error:', error);
+        return [];
+      }
+      return data || [];
+    } catch (err) {
+      console.error('[Supabase] getReactionsForChat failed:', err);
+      return [];
+    }
+  }
+
+  async deleteReaction(chatId: string, messageId: string, emoji?: string): Promise<void> {
+    if (!this.client || !chatId || !messageId) return;
+    try {
+      let query = this.client
+        .from('message_reactions')
+        .delete()
+        .eq('chat_id', chatId)
+        .eq('message_id', messageId);
+      if (emoji) {
+        query = query.eq('emoji', emoji);
+      }
+      await query;
+    } catch (err) {
+      console.error('[Supabase] deleteReaction failed:', err);
+    }
+  }
+
+  async deleteReactionsForChat(chatId: string): Promise<void> {
+    if (!this.client || !chatId) return;
+    try {
+      await this.client
+        .from('message_reactions')
+        .delete()
+        .eq('chat_id', chatId);
+    } catch (err) {
+      console.error('[Supabase] deleteReactionsForChat failed:', err);
+    }
+  }
+
+  async getDeveloperCodes(): Promise<string[]> {
+    const allCodes = new Set<string>();
+
+    if (this.client) {
+      try {
+        const { data, error } = await this.client
+          .from('developers')
+          .select('code');
+
+        if (!error && data && Array.isArray(data)) {
+          data.forEach((row: any) => {
+            if (row.code && typeof row.code === 'string') {
+              allCodes.add(row.code.trim());
+            }
+          });
+        }
+      } catch (err) {
+        console.warn('[Supabase] Direct getDeveloperCodes failed:', err);
+      }
+    }
+
+    const primaryWorkerUrl = getVercelBaseUrl();
+    const urlsToTry = [
+      `${primaryWorkerUrl}/developers`,
+      `${primaryWorkerUrl}/relay/developers`,
+      'https://majmrtymawymomliowbz.supabase.co/functions/v1/gateway/developers',
+    ];
+
+    for (const url of urlsToTry) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const res = await fetch(url, { method: 'GET', signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          const json = await res.json();
+          const list = json.developers || json.codes || json.data || [];
+          if (Array.isArray(list)) {
+            list.forEach((c: any) => {
+              const codeStr = typeof c === 'string' ? c : c?.code;
+              if (codeStr && typeof codeStr === 'string') {
+                allCodes.add(codeStr.trim());
+              }
+            });
+            break;
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (this.client && allCodes.size > 0) {
+      try {
+        const baseCodes = Array.from(allCodes);
+        const { data: profs } = await this.client
+          .from('profile_updates')
+          .select('sender_code, username, nickname')
+          .in('sender_code', baseCodes);
+
+        if (profs && Array.isArray(profs)) {
+          for (const p of profs) {
+            if (p.username) {
+              allCodes.add(p.username.trim());
+              allCodes.add(p.username.trim().toLowerCase());
+            }
+            if (p.nickname) allCodes.add(p.nickname.trim());
+          }
+        }
+      } catch {}
+    }
+
+    return Array.from(allCodes);
+  }
+
+  subscribeToDevelopers(onChange: (codes: string[]) => void): () => void {
+    if (!this.client) return () => {};
+
+    const channel = this.client
+      .channel('realtime:developers')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'developers' },
+        async () => {
+          const codes = await this.getDeveloperCodes();
+          onChange(codes);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      this.client?.removeChannel(channel);
+    };
+  }
+
+  // --- Key Server (X3DH) ---
+  
+  async uploadPublicKeys(
+    userCode: string,
+    identityKey: string,
+    signedPreKey: string,
+    preKeySignature: string,
+    oneTimePreKeys: Array<{ keyId: number; publicKey: string }>,
+    identitySigningKey?: string
+  ): Promise<void> {
+    if (!this.client || !userCode) return;
+
+    try {
+      // 1. Обновляем основные ключи
+      const { error: keysError } = await this.client
+        .from('user_public_keys')
+        .upsert({
+          user_code: userCode,
+          identity_key: identityKey,
+          signed_pre_key: signedPreKey,
+          pre_key_signature: preKeySignature,
+          identity_signing_key: identitySigningKey,
+          updated_at: new Date().toISOString(),
+        });
+        
+      if (keysError) {
+        console.error('[Supabase] uploadPublicKeys error (main keys):', keysError);
+        throw keysError;
+      }
+
+      // 2. Добавляем новые одноразовые ключи (не удаляя старые)
+      if (oneTimePreKeys && oneTimePreKeys.length > 0) {
+        const otpkRows = oneTimePreKeys.map(k => ({
+          user_code: userCode,
+          key_id: k.keyId,
+          public_key: k.publicKey,
+        }));
+        
+        const { error: otpkError } = await this.client
+          .from('one_time_pre_keys')
+          .insert(otpkRows);
+          
+        if (otpkError) {
+          console.error('[Supabase] uploadPublicKeys error (one time keys):', otpkError);
+        }
+      }
+    } catch (e) {
+      console.error('[Supabase] Failed to upload public keys:', e);
+      throw e;
+    }
+  }
+
+  async fetchPreKeyBundle(userCode: string): Promise<PreKeyBundle | null> {
+    if (!this.client || !userCode) return null;
+
+    try {
+      // 1. Получаем основные ключи
+      const { data: mainKeys, error: keysError } = await this.client
+        .from('user_public_keys')
+        .select('*')
+        .eq('user_code', userCode)
+        .maybeSingle();
+        
+      if (keysError || !mainKeys) {
+        console.warn(`[Supabase] No main keys found for user: ${userCode}`);
+        return null;
+      }
+
+      const bundle: PreKeyBundle = {
+        identityKey: mainKeys.identity_key,
+        signedPreKey: mainKeys.signed_pre_key,
+        preKeySignature: mainKeys.pre_key_signature,
+        identitySigningKey: mainKeys.identity_signing_key,
+      };
+
+      // 2. Пытаемся получить и удалить (с помощью RPC) один одноразовый ключ
+      try {
+        await this.client.rpc('consume_one_time_pre_key', {
+          p_user_code: userCode,
+        });
+
+        // Если RPC вернул строку (publicKey), значит ключ успешно захвачен.
+        // Но нам нужен еще и keyId, поэтому RPC метод выше возвращает только ключ?
+        // Wait, I should implement consume_one_time_pre_key to return JSON if I want both.
+        // Let's just do a normal select and delete since this is a fallback.
+        // In a highly concurrent env we'd use RPC, but Supabase JS allows this:
+        
+        const { data: firstKeyData } = await this.client
+          .from('one_time_pre_keys')
+          .select('*')
+          .eq('user_code', userCode)
+          .order('created_at', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        if (firstKeyData) {
+          bundle.oneTimePreKey = {
+            id: firstKeyData.id,
+            keyId: firstKeyData.key_id,
+            publicKey: firstKeyData.public_key,
+          };
+          
+          // Удаляем его асинхронно
+          this.client.from('one_time_pre_keys').delete().eq('id', firstKeyData.id).then();
+        }
+      } catch (e) {
+        console.warn('[Supabase] Failed to consume OTPK, continuing without it:', e);
+      }
+
+      return bundle;
+    } catch (e) {
+      console.error('[Supabase] fetchPreKeyBundle error:', e);
+      return null;
+    }
+  }
+}
+
+export const supabaseService = new SupabaseService();

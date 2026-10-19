@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="color-scheme" content="dark">
+  <title>orbitachat — Приглашение в группу</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #17171b;
+      --alt: #1d1d22;
+      --text: #ececf0;
+      --muted: #a9a9b3;
+      --line: #2a2a31;
+      --blue: #8f8af2;
+      --on-blue: #101013;
+      --hover: #26262d;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .top-header {
+      width: 100%;
+      border-bottom: 1px solid var(--line);
+      background: var(--bg);
+    }
+    .header-inner {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 72px;
+    }
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--blue);
+      text-decoration: none;
+      letter-spacing: -0.01em;
+    }
+    .brand-link svg {
+      width: 38px;
+      height: 38px;
+    }
+    .nav-btn {
+      display: inline-flex;
+      align-items: center;
+      padding: 10px 18px;
+      border-radius: 8px;
+      background: var(--alt);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      border: 1px solid var(--line);
+      transition: background-color 0.15s ease;
+    }
+    .nav-btn:hover {
+      background: var(--hover);
+    }
+    .main-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px 60px;
+      width: 100%;
+      max-width: 520px;
+    }
+    .invite-card {
+      width: 100%;
+      background: var(--alt);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 40px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: rgba(143, 138, 242, 0.12);
+      border: 1px solid rgba(143, 138, 242, 0.28);
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+    .group-avatar {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      background: rgba(143, 138, 242, 0.15);
+      border: 2px solid rgba(143, 138, 242, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 22px;
+      overflow: hidden;
+      color: var(--blue);
+    }
+    .group-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .title {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.25;
+      margin-bottom: 10px;
+      letter-spacing: -0.015em;
+    }
+    .subtitle {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.55;
+      margin-bottom: 30px;
+      max-width: 400px;
+    }
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+    }
+    .btn-action-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 15px 24px;
+      border-radius: 12px;
+      background: var(--blue);
+      color: var(--on-blue);
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: filter 0.15s ease, transform 0.1s ease;
+    }
+    .btn-action-primary:hover {
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+    }
+    .btn-action-primary:active {
+      transform: translateY(0);
+    }
+    .btn-action-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 13px 24px;
+      border-radius: 12px;
+      background: transparent;
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      border: 1px solid var(--line);
+      transition: background-color 0.15s ease;
+    }
+    .btn-action-secondary:hover {
+      background: var(--hover);
+    }
+    .info-footer {
+      margin-top: 26px;
+      font-size: 12.5px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    @media (max-width: 520px) {
+      .header-inner { padding: 0 16px; height: 64px; }
+      .brand-link { font-size: 20px; }
+      .invite-card { padding: 32px 20px; border-radius: 18px; }
+      .title { font-size: 22px; }
+      .subtitle { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top-header">
+    <div class="header-inner">
+      <a class="brand-link" href="https://orbitachat.vercel.app/" aria-label="orbitachat — на главную">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" aria-hidden="true">
+          <defs>
+            <clipPath id="f-clip"><rect x="-600" y="0" width="1200" height="600"/></clipPath>
+            <mask id="b-mask"><rect x="0" y="0" width="800" height="800" fill="white"/><circle cx="400" cy="400" r="192" fill="black"/></mask>
+            <mask id="p-mask"><rect x="0" y="0" width="800" height="800" fill="white"/><g transform="translate(400,400) rotate(-26)"><path d="M 224 0 A 224 59 0 0 1 -224 0 L -376 0 A 376 121 0 0 0 376 0 Z" fill="black"/></g></mask>
+            <mask id="r-mask"><rect x="-600" y="-600" width="1200" height="1200" fill="white"/><ellipse cx="0" cy="0" rx="240" ry="75" fill="black"/></mask>
+          </defs>
+          <g mask="url(#b-mask)"><g transform="translate(400,400) rotate(-26)"><ellipse rx="360" ry="105" fill="#8f8af2" mask="url(#r-mask)"/></g></g>
+          <circle cx="400" cy="400" r="175" fill="#8f8af2" mask="url(#p-mask)"/>
+          <g transform="translate(400,400) rotate(-26)"><g clip-path="url(#f-clip)"><ellipse rx="360" ry="105" fill="#8f8af2" mask="url(#r-mask)"/></g></g>
+        </svg>
+        <span>orbitachat</span>
+      </a>
+      <a href="https://orbitachat.vercel.app/download.html" class="nav-btn" aria-label="Скачать приложение">Скачать</a>
+    </div>
+  </header>
+
+  <main class="main-wrap">
+    <div class="invite-card">
+      <div class="badge">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Защищённая группа E2EE</span>
+      </div>
+
+      <div class="group-avatar" id="avatarBox" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+
+      <h1 class="title" id="mainTitle">Вас пригласили в группу</h1>
+      <p class="subtitle" id="mainSubtitle">Присоединяйтесь к зашифрованному общению в Orbita. Все сообщения и звонки защищены сквозным шифрованием.</p>
+
+      <div class="actions">
+        <a id="openAppBtn" href="#" class="btn-action-primary" aria-label="Открыть в Orbita">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          <span>Открыть в Orbita</span>
+        </a>
+
+        <a id="downloadAppBtn" href="https://orbitachat.vercel.app/download.html" class="btn-action-secondary" aria-label="Скачать приложение Orbita">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span id="downloadBtnText">Скачать приложение</span>
+        </a>
+      </div>
+
+      <p class="info-footer">
+        Orbita — децентрализованный мессенджер со сквозным шифрованием по протоколу Signal.
+      </p>
+    </div>
+  </main>
+
+  <script>
+    function detectPlatform() {
+      const ua = navigator.userAgent;
+      if (/android/i.test(ua)) return 'Android';
+      if (/ipad|iphone|ipod/i.test(ua)) return 'iOS';
+      if (/macintosh|mac os x/i.test(ua)) return 'macOS';
+      if (/windows|win32|win64/i.test(ua)) return 'Windows';
+      if (/linux/i.test(ua)) return 'Linux';
+      return '';
+    }
+
+    const platform = detectPlatform();
+    const downloadTextEl = document.getElementById('downloadBtnText');
+    if (platform && downloadTextEl) {
+      downloadTextEl.textContent = 'Скачать для ' + platform;
+    }
+
+    function getTarget() {
+      const url = new URL(window.location.href);
+      const hash = window.location.hash ? window.location.hash.substring(1) : '';
+
+      if (hash) {
+        const cleanHash = decodeURIComponent(hash).trim().replace(/^#+/, '');
+        if (cleanHash) {
+          return { type: 'group', code: cleanHash };
+        }
+      }
+
+      const pathname = url.pathname;
+      const directJoinMatch = pathname.match(/\/(join_[a-zA-Z0-9_-]{6,32})/i);
+      if (directJoinMatch && directJoinMatch[1]) {
+        return { type: 'group', code: directJoinMatch[1] };
+      }
+
+      const groupMatch = pathname.match(/\/(?:g|group|groups|join|invite)(?:\/group)?\/([^\/?#]+)/i);
+      if (groupMatch && groupMatch[1]) {
+        return { type: 'group', code: decodeURIComponent(groupMatch[1]).trim() };
+      }
+
+      const userMatch = pathname.match(/\/u\/([^\/?#]+)/i);
+      if (userMatch && userMatch[1]) {
+        return { type: 'user', code: decodeURIComponent(userMatch[1]).trim() };
+      }
+
+      const gParam = url.searchParams.get('group');
+      if (gParam) {
+        return { type: 'group', code: gParam.trim() };
+      }
+
+      const q = url.searchParams.get('code') || url.searchParams.get('id') || url.searchParams.get('token') || '';
+      if (q.trim()) {
+        const val = q.trim();
+        if (val.startsWith('join_') || val.length >= 28) {
+          return { type: 'group', code: val };
+        }
+        return { type: 'user', code: val };
+      }
+
+      return null;
+    }
+
+    const target = getTarget();
+    let deepLink = '';
+    const titleEl = document.getElementById('mainTitle');
+    const subEl = document.getElementById('mainSubtitle');
+    const openAppBtn = document.getElementById('openAppBtn');
+
+    if (target && target.type === 'group') {
+      const cleanCode = target.code;
+      const params = new URLSearchParams(window.location.search);
+      const groupName = params.get('name');
+      const groupCreator = params.get('creator');
+
+      if (groupName) {
+        titleEl.textContent = 'Вас пригласили в группу «' + groupName + '»';
+      } else if (groupCreator) {
+        titleEl.textContent = groupCreator + ' приглашает вас в группу';
+      } else {
+        titleEl.textContent = 'Вас пригласили в группу';
+      }
+
+      deepLink = 'orbita://join/group/' + encodeURIComponent(cleanCode);
+      if (groupName) deepLink += '?name=' + encodeURIComponent(groupName);
+      if (groupCreator) deepLink += (groupName ? '&' : '?') + 'creator=' + encodeURIComponent(groupCreator);
+
+      openAppBtn.href = deepLink;
+
+      setTimeout(function() {
+        window.location.href = deepLink;
+      }, 350);
+    } else if (target && target.type === 'user') {
+      const cleanCode = target.code;
+      titleEl.textContent = 'Приглашение к личному диалогу';
+      subEl.textContent = 'Подключитесь для безопасного личного общения один на один со сквозным шифрованием.';
+      deepLink = 'orbita://connect/' + encodeURIComponent(cleanCode);
+      openAppBtn.href = deepLink;
+
+      setTimeout(function() {
+        window.location.href = deepLink;
+      }, 350);
+    } else {
+      openAppBtn.href = 'https://orbitachat.vercel.app/';
+      openAppBtn.querySelector('span').textContent = 'Перейти на главную';
+    }
+  </script>
+</body>
+</html>

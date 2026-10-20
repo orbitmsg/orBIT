@@ -91,20 +91,20 @@ declare global {
 const MAX_FILE_MB = 10;
 
 const getOptimalMessageBatchSize = (): number => {
-  if (typeof window === 'undefined') return 20;
+  if (typeof window === 'undefined') return 35;
   const height = window.innerHeight || 800;
   const width = window.innerWidth || 1200;
 
   if (width < 768 || height < 650) {
-    return 20;
-  }
-  if (height < 900) {
-    return 25;
-  }
-  if (height < 1200) {
     return 30;
   }
-  return 35;
+  if (height < 900) {
+    return 40;
+  }
+  if (height < 1200) {
+    return 50;
+  }
+  return 60;
 };
 
 const MessageRowWrapper = memo(
@@ -323,7 +323,7 @@ const chatScrollRegistry = new Map<string, ChatScrollState>();
 
 const saveChatScroll = (chatId: string, el: HTMLElement) => {
   if (!chatId || !el) return;
-  const isBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= 80;
+  const isBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= 100;
   chatScrollRegistry.set(chatId, {
     scrollTop: el.scrollTop,
     scrollHeight: el.scrollHeight,
@@ -1117,6 +1117,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
   const selection = useSelection();
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messagesContentRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLDivElement>(null);
   const savedSelectionRangeRef = useRef<Range | null>(null);
   const readMessageIdsRef = useRef<Set<string>>(new Set());
@@ -1156,7 +1157,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         atBottomRef.current = true;
         setShowScrollDown(false);
       } else {
-        const isBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= 80;
+        const isBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= 100;
         atBottomRef.current = isBottom;
         setShowScrollDown(!isBottom);
       }
@@ -1172,6 +1173,16 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
           if (!r) el.scrollTop = el.scrollHeight;
         }
       }, 50);
+      setTimeout(() => {
+        if (el && atBottomRef.current) {
+          el.scrollTop = el.scrollHeight;
+        }
+      }, 150);
+      setTimeout(() => {
+        if (el && atBottomRef.current) {
+          el.scrollTop = el.scrollHeight;
+        }
+      }, 350);
     }
     prevMessagesLengthRef.current = messages.length;
   }, [activeChatId]);
@@ -1220,13 +1231,20 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
           saveChatScroll(activeChatId, el);
         }
         setTimeout(() => {
-          if (el) {
+          if (el && atBottomRef.current) {
             el.scrollTop = el.scrollHeight;
           }
         }, 1);
+        setTimeout(() => {
+          if (el && atBottomRef.current) {
+            el.scrollTop = el.scrollHeight;
+          }
+        }, 60);
       } else {
         setShowScrollDown(true);
       }
+    } else if (atBottomRef.current && performance.now() - lastChatSwitchTimeRef.current < 1500) {
+      el.scrollTop = el.scrollHeight;
     }
   }, [messages, myCode, myNickname, activeChat, activeChatId, myUserId]);
 
@@ -1505,9 +1523,15 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     const currentChat = useChatStore.getState().chats.find((c) => c.id === activeChatId);
     if (currentChat?.type !== 'channel') return;
 
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const cachedStr = window.localStorage.getItem(`orbita_channel_posts_${activeChatId}`);
+    (async () => {
+      try {
+        let cachedStr: string | null = null;
+        if (typeof window !== 'undefined' && (window as any).orbita?.storageGet) {
+          cachedStr = await (window as any).orbita.storageGet(`orbita_channel_posts_${activeChatId}`);
+        }
+        if (!cachedStr && typeof window !== 'undefined' && window.localStorage) {
+          cachedStr = window.localStorage.getItem(`orbita_channel_posts_${activeChatId}`);
+        }
         if (cachedStr) {
           const cachedPosts: ChannelPost[] = JSON.parse(cachedStr);
           if (Array.isArray(cachedPosts) && cachedPosts.length > 0) {
@@ -1546,8 +1570,8 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
             }
           }
         }
-      }
-    } catch {}
+      } catch {}
+    })();
 
     const targetChannelId = activeChatId;
     channelService.getChannelPosts(targetChannelId).then((posts) => {
@@ -1644,6 +1668,14 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               [targetChannelId]: merged,
             },
           };
+        });
+        requestAnimationFrame(() => {
+          const el = messagesContainerRef.current;
+          if (el && (atBottomRef.current || (performance.now() - lastChatSwitchTimeRef.current < 1500))) {
+            el.scrollTop = el.scrollHeight;
+            atBottomRef.current = true;
+            setShowScrollDown(false);
+          }
         });
       }
     });
@@ -2289,33 +2321,55 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
   }, [visibleMessages.length, updateChatThumb]);
   useEffect(() => {
     const el = messagesContainerRef.current;
+    const content = messagesContentRef.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
     let prevHeight = el.clientHeight;
+    let prevContentHeight = content ? (content.scrollHeight || content.offsetHeight) : 0;
     const ro = new ResizeObserver((entries) => {
       updateChatThumb();
       for (const entry of entries) {
-        const newHeight = entry.contentRect.height;
-        if (prevHeight && Math.abs(newHeight - prevHeight) > 1) {
-          const isCurrentlyAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= 80;
-          if (isCurrentlyAtBottom && atBottomRef.current) {
-            el.scrollTop = el.scrollHeight;
-            requestAnimationFrame(() => {
-              if (el) {
-                el.scrollTop = el.scrollHeight;
-                atBottomRef.current = true;
-                setShowScrollDown(false);
-              }
-            });
+        if (entry.target === el) {
+          const newHeight = entry.contentRect.height;
+          if (prevHeight && Math.abs(newHeight - prevHeight) > 1) {
+            const isCurrentlyAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= 100;
+            if (isCurrentlyAtBottom && atBottomRef.current) {
+              el.scrollTop = el.scrollHeight;
+              requestAnimationFrame(() => {
+                if (el) {
+                  el.scrollTop = el.scrollHeight;
+                  atBottomRef.current = true;
+                  setShowScrollDown(false);
+                }
+              });
+            }
+            prevHeight = newHeight;
+          } else if (!prevHeight) {
+            prevHeight = newHeight;
           }
-          prevHeight = newHeight;
-        } else if (!prevHeight) {
-          prevHeight = newHeight;
+        } else if (content && entry.target === content) {
+          const currentContentHeight = content.scrollHeight || content.offsetHeight;
+          if (Math.abs(currentContentHeight - prevContentHeight) > 1) {
+            prevContentHeight = currentContentHeight;
+            const isRecentlySwitched = performance.now() - lastChatSwitchTimeRef.current < 1500;
+            const isCurrentlyAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= 120;
+            if (atBottomRef.current || isRecentlySwitched || isCurrentlyAtBottom) {
+              el.scrollTop = el.scrollHeight;
+              atBottomRef.current = true;
+              setShowScrollDown(false);
+              if (activeChatId) {
+                saveChatScroll(activeChatId, el);
+              }
+            }
+          }
         }
       }
     });
     ro.observe(el);
+    if (content) {
+      ro.observe(content);
+    }
     return () => ro.disconnect();
-  }, [updateChatThumb]);
+  }, [activeChatId, updateChatThumb]);
 
   const handleMessagesWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
     if (e.deltaY < 0) {
@@ -2372,8 +2426,11 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     }
 
     const virtualTopHeight = startIndex * 46;
-    if (el.scrollTop <= virtualTopHeight + 400 && hasMoreAbove) {
-      loadMoreAbove();
+    if (!atBottomRef.current && hasMoreAbove && (performance.now() - lastChatSwitchTimeRef.current >= 800)) {
+      const topThreshold = startIndex > 0 ? (virtualTopHeight + 80) : 150;
+      if (el.scrollTop <= topThreshold) {
+        loadMoreAbove();
+      }
     }
 
     if (floatingDateTimeoutRef.current) {
@@ -6344,6 +6401,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
   const renderReactionBadges = useCallback((msg: Message, index: number) => {
     const isShort = !msg.text || msg.text.length < 35;
     const isOwn = isMessageOutgoing(msg, myCode, myNickname, activeChat, myUserId);
+    const isChannel = activeChat?.type === 'channel';
     return (
       <div style={{ display: 'flex', width: '100%', justifyContent: isOwn ? 'flex-end' : 'flex-start' }}>
         <MessageReactions
@@ -6351,6 +6409,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
           onToggleReaction={(emoji) => triggerReactionMessage(msg.id || index, emoji)}
           isOwn={isOwn}
           activeChatId={activeChatId || undefined}
+          isChannel={isChannel}
           isSmallMessage={isShort}
         />
       </div>
@@ -7226,36 +7285,46 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
             transform: 'translateZ(0)',
             willChange: 'scroll-position',
             overscrollBehaviorY: 'contain',
+            overflowAnchor: 'none',
           }}
         >
-          {messages.length === 0 ? (
-            activeChat?.type === 'channel' ? (
-              <ChannelEmptyCard key={activeChat.id} chat={activeChat} />
-            ) : activeChat?.type === 'group' ? (
-              <GroupEmptyCard key={activeChat.id} chat={activeChat} />
+          <div
+            ref={messagesContentRef}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              width: '100%',
+              minHeight: '100%',
+              flex: '1 0 auto',
+            }}
+          >
+            {messages.length === 0 ? (
+              activeChat?.type === 'channel' ? (
+                <ChannelEmptyCard key={activeChat.id} chat={activeChat} />
+              ) : activeChat?.type === 'group' ? (
+                <GroupEmptyCard key={activeChat.id} chat={activeChat} />
+              ) : (
+                <EmptyChatGreeting
+                  onSendGreeting={(stk) => {
+                    if (stk) {
+                      handleSendSticker(stk);
+                    } else {
+                      triggerMessage('👋');
+                    }
+                  }}
+                  chatId={activeChatId}
+                />
+              )
             ) : (
-              <EmptyChatGreeting
-                onSendGreeting={(stk) => {
-                  if (stk) {
-                    handleSendSticker(stk);
-                  } else {
-                    triggerMessage('👋');
-                  }
-                }}
-                chatId={activeChatId}
+              <MessageList
+                messages={visibleMessages}
+                startIndex={startIndex}
+                renderFn={renderMessage}
               />
-            )
-          ) : (
-            <MessageList
-              messages={visibleMessages}
-              startIndex={startIndex}
-              renderFn={renderMessage}
-            />
-          )}
+            )}
 
-
-
-          <div style={{ height: '10px', flexShrink: 0 }} />
+            <div style={{ height: '10px', flexShrink: 0 }} />
+          </div>
         </div>
 
         {chatThumb && (

@@ -24,6 +24,7 @@ interface ReactionBadgeProps {
   users: string[];
   onToggle: (emoji: string) => void;
   activeChatId?: string;
+  isChannel?: boolean;
   isOwn?: boolean;
 }
 
@@ -32,6 +33,7 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
   users,
   onToggle,
   activeChatId,
+  isChannel: isChannelProp,
   isOwn = false,
 }) => {
   const myNickname = useAuthStore((s) => s.nickname) || 'YOU';
@@ -45,7 +47,7 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
   const chats = useChatStore((s) => s.chats);
   const usersById = useChatStore((s) => s.usersById);
 
-  const isChannel = activeChat?.type === 'channel';
+  const isChannel = isChannelProp !== undefined ? isChannelProp : (activeChat?.type === 'channel');
   const [, setCacheTick] = useState(0);
 
   const { uniqueUsers, uniqueCount, hasReacted } = useMemo(() => {
@@ -284,6 +286,7 @@ interface MessageReactionsProps {
   onToggleReaction: (emoji: string) => void;
   isOwn?: boolean;
   activeChatId?: string;
+  isChannel?: boolean;
   isSmallMessage?: boolean;
 }
 
@@ -292,6 +295,7 @@ export const MessageReactions: React.FC<MessageReactionsProps> = React.memo(({
   onToggleReaction,
   isOwn = false,
   activeChatId,
+  isChannel,
   isSmallMessage = false,
 }) => {
   const entries = useMemo(() => {
@@ -327,6 +331,7 @@ export const MessageReactions: React.FC<MessageReactionsProps> = React.memo(({
           users={users}
           onToggle={onToggleReaction}
           activeChatId={activeChatId}
+          isChannel={isChannel}
           isOwn={isOwn}
         />
       ))}

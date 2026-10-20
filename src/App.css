@@ -540,6 +540,7 @@ a:hover {
 .chat-list-scrollbar {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
+  overflow-anchor: none !important;
 }
 
 .chat-list-scrollbar::-webkit-scrollbar {

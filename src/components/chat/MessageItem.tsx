@@ -239,6 +239,8 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
               reactions={msg.reactions}
               onToggleReaction={(emoji) => onToggleReaction?.(emoji)}
               isOwn={isOwn}
+              activeChatId={activeChat?.id}
+              isChannel={isChannel}
               isSmallMessage={true}
             />
           </div>
@@ -477,6 +479,8 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                     reactions={msg.reactions}
                     onToggleReaction={(emoji) => onToggleReaction?.(emoji)}
                     isOwn={isOwn}
+                    activeChatId={activeChat?.id}
+                    isChannel={isChannel}
                     isSmallMessage={isShortMessage}
                   />
                   <div

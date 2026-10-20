@@ -115,7 +115,7 @@ export const MainLayout = () => {
   const [isNetworkOnline, setIsNetworkOnline] = useState<boolean>(() => {
     return typeof navigator !== 'undefined' ? navigator.onLine : true;
   });
-  const { nickname, avatarUrl, bannerUrl, step, username, bio, birthday } = useAuthStore(useShallow(state => ({
+  const { nickname, avatarUrl, bannerUrl, step, username, bio, birthday, isAuthHydrated } = useAuthStore(useShallow(state => ({
     nickname: state.nickname,
     avatarUrl: state.avatarUrl,
     bannerUrl: state.bannerUrl,
@@ -123,6 +123,7 @@ export const MainLayout = () => {
     username: state.username,
     bio: state.bio,
     birthday: state.birthday,
+    isAuthHydrated: state._hasHydrated,
   })));
   const [searchQuery, setSearchQuery] = useState('');
   const [globalFoundUsers, setGlobalFoundUsers] = useState<UserDirectoryRecord[]>([]);
@@ -323,10 +324,10 @@ export const MainLayout = () => {
   }, [_hasHydrated, step]);
 
   useEffect(() => {
-    if (step === 'main' && nickname && myCode) {
+    if (step === 'main' && nickname && myCode && isAuthHydrated && _hasHydrated) {
       supabaseService.publishPublicProfile(myCode, nickname, avatarUrl || null, null, bio, username, birthday, bannerUrl).catch(() => {});
     }
-  }, [step, nickname, myCode, avatarUrl, bio, username, birthday, bannerUrl]);
+  }, [step, nickname, myCode, avatarUrl, bio, username, birthday, bannerUrl, isAuthHydrated, _hasHydrated]);
 
   useEffect(() => {
     const pusher = getPusher();

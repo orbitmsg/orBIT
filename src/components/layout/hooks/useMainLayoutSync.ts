@@ -985,6 +985,9 @@ export const useMainLayoutSync = ({
           if (update.nickname && update.nickname !== chat.name) updates.name = update.nickname;
           if (update.avatar_url && update.avatar_url !== chat.avatarUrl) updates.avatarUrl = update.avatar_url;
           if (update.banner_url && update.banner_url !== chat.bannerUrl) updates.bannerUrl = update.banner_url;
+          if (update.username && update.username !== chat.username) updates.username = update.username;
+          if (update.birthday && update.birthday !== chat.birthday) updates.birthday = update.birthday;
+          if (update.bio && update.bio !== chat.description) updates.description = update.bio;
           if (update.sender_code && update.sender_code !== myCode && !chat.peerCode) {
             updates.peerCode = update.sender_code;
           }
@@ -996,6 +999,9 @@ export const useMainLayoutSync = ({
             if (pub.nickname && pub.nickname !== chat.name && !updates.name) updates.name = pub.nickname;
             if (pub.avatar_url && pub.avatar_url !== chat.avatarUrl && !updates.avatarUrl) updates.avatarUrl = pub.avatar_url;
             if (pub.banner_url && pub.banner_url !== chat.bannerUrl && !updates.bannerUrl) updates.bannerUrl = pub.banner_url;
+            if (pub.username && pub.username !== chat.username && !updates.username) updates.username = pub.username;
+            if (pub.birthday && pub.birthday !== chat.birthday && !updates.birthday) updates.birthday = pub.birthday;
+            if (pub.bio && pub.bio !== chat.description && !updates.description) updates.description = pub.bio;
           }
         }
 
@@ -1005,6 +1011,8 @@ export const useMainLayoutSync = ({
             if (pubByUname.nickname && pubByUname.nickname !== chat.name && !updates.name) updates.name = pubByUname.nickname;
             if (pubByUname.avatar_url && pubByUname.avatar_url !== chat.avatarUrl && !updates.avatarUrl) updates.avatarUrl = pubByUname.avatar_url;
             if (pubByUname.banner_url && pubByUname.banner_url !== chat.bannerUrl && !updates.bannerUrl) updates.bannerUrl = pubByUname.banner_url;
+            if (pubByUname.birthday && pubByUname.birthday !== chat.birthday && !updates.birthday) updates.birthday = pubByUname.birthday;
+            if (pubByUname.bio && pubByUname.bio !== chat.description && !updates.description) updates.description = pubByUname.bio;
           }
         }
         if (Object.keys(updates).length > 0) {

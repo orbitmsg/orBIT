@@ -3,89 +3,22 @@ import { relayRouter } from './relayRouter';
 import { getVercelBaseUrl } from './gatewayManager';
 import { SUPPORT_AVATAR_URL } from './supportService';
 
-export interface OfflineMessageRecord {
-  id: string;
-  chat_id: string;
-  sender_id: string;
-  recipient_id: string;
-  ciphertext: string;
-  message_index: number;
-  dh_public_key: string;
-  prev_chain_count?: number | null;
-  created_at: string;
-  expires_at: string;
-  delivered: boolean;
-}
-
-export interface OfflineHandshakeRecord {
-  id: string;
-  chat_id: string;
-  recipient_code: string;
-  sender_code: string | null;
-  sender_nickname: string;
-  sender_public_key: string;
-  sender_avatar_url: string | null;
-  created_at: string;
-  consumed: boolean;
-}
-
-export interface ProfileUpdateRecord {
-  id: string;
-  chat_id: string;
-  user_id?: string | null;
-  sender_id?: string | null;
-  nickname: string | null;
-  avatar_url: string | null;
-  banner_url?: string | null;
-  sender_code?: string | null;
-  numeric_id?: string | null;
-  bio?: string | null;
-  username?: string | null;
-  birthday?: string | null;
-  updated_at: string;
-}
-
-export interface UserDirectoryRecord {
-  user_code: string;
-  numeric_id?: string | null;
-  nickname: string;
-  avatar_url: string | null;
-  banner_url?: string | null;
-  username?: string | null;
-  bio?: string | null;
-  birthday?: string | null;
-  public_key?: string | null;
-  updated_at?: string;
-}
-
-export interface UserPublicKeysRecord {
-  user_code: string;
-  identity_key: string;
-  signed_pre_key: string;
-  pre_key_signature: string;
-  identity_signing_key?: string | null;
-  updated_at: string;
-}
-
-export interface OneTimePreKeyRecord {
-  id: string;
-  user_code: string;
-  key_id: number;
-  public_key: string;
-  created_at: string;
-}
-
-export interface PreKeyBundle {
-  identityKey: string;
-  signedPreKey: string;
-  preKeySignature: string;
-  identitySigningKey?: string;
-  oneTimePreKey?: {
-    id: string;
-    keyId: number;
-    publicKey: string;
-  };
-}
+export type {
+  OfflineMessageRecord,
+  OfflineHandshakeRecord,
+  ProfileUpdateRecord,
+  UserDirectoryRecord,
+  UserPublicKeysRecord,
+  OneTimePreKeyRecord,
+  PreKeyBundle,
+} from './supabaseTypes';
+import type {
+  OfflineMessageRecord,
+  OfflineHandshakeRecord,
+  ProfileUpdateRecord,
+  UserDirectoryRecord,
+  PreKeyBundle,
+} from './supabaseTypes';
 
 class SupabaseService {
   private client: SupabaseClient | null = null;
@@ -576,7 +509,6 @@ class SupabaseService {
     }
   }
 
-  // --- Рукопожатия ---
   async sendOfflineHandshake(
     chatId: string,
     recipientCode: string,
@@ -734,7 +666,27 @@ class SupabaseService {
   ): Promise<void> {
     if (!chatId || chatId === 'notes') return;
 
-    const cleanUsername = username ? username.replace(/^@+/, '').trim().toLowerCase() : null;
+    let cleanUsername = username !== undefined ? (username ? username.replace(/^@+/, '').trim().toLowerCase() : null) : undefined;
+    let cleanBirthday = birthday !== undefined ? (birthday || null) : undefined;
+    let cleanBannerUrl = bannerUrl !== undefined ? bannerUrl : undefined;
+    let cleanBio = bio !== undefined ? (bio || null) : undefined;
+
+    if (this.client && senderCode && (cleanUsername === undefined || cleanBirthday === undefined || cleanBannerUrl === undefined || cleanBio === undefined)) {
+      try {
+        const { data: existing } = await this.client
+          .from('profile_updates')
+          .select('username, birthday, banner_url, bio')
+          .eq('chat_id', chatId)
+          .eq('sender_code', senderCode)
+          .maybeSingle();
+        if (existing) {
+          if (cleanUsername === undefined) cleanUsername = existing.username || null;
+          if (cleanBirthday === undefined) cleanBirthday = existing.birthday || null;
+          if (cleanBannerUrl === undefined) cleanBannerUrl = existing.banner_url || null;
+          if (cleanBio === undefined && existing.bio) cleanBio = existing.bio;
+        }
+      } catch {}
+    }
 
     if (cleanUsername) {
       const isAvailable = await this.isUsernameAvailable(cleanUsername, senderCode || chatId);
@@ -754,7 +706,16 @@ class SupabaseService {
         const res = await fetch(`${relay.url}/relay/profile`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chatId, nickname, avatarUrl, bannerUrl, senderCode, bio, username: cleanUsername, birthday }),
+          body: JSON.stringify({
+            chatId,
+            nickname,
+            avatarUrl,
+            bannerUrl: cleanBannerUrl !== undefined ? cleanBannerUrl : null,
+            senderCode,
+            bio: cleanBio !== undefined ? cleanBio : null,
+            username: cleanUsername !== undefined ? cleanUsername : null,
+            birthday: cleanBirthday !== undefined ? cleanBirthday : null,
+          }),
         });
         if (res.status === 409) {
           throw new Error('USERNAME_TAKEN');
@@ -773,9 +734,9 @@ class SupabaseService {
           await this.client.from('profile_updates').delete().eq('chat_id', chatId).eq('sender_code', senderCode);
         }
       } catch {}
-      let effectiveBio = bio || null;
-      if (bannerUrl) {
-        effectiveBio = effectiveBio ? `${effectiveBio}\n<!--banner:${bannerUrl}-->` : `<!--banner:${bannerUrl}-->`;
+      let effectiveBio = cleanBio || null;
+      if (cleanBannerUrl) {
+        effectiveBio = effectiveBio ? `${effectiveBio}\n<!--banner:${cleanBannerUrl}-->` : `<!--banner:${cleanBannerUrl}-->`;
       }
       const insertPayload: Record<string, any> = {
         chat_id: chatId,
@@ -783,17 +744,19 @@ class SupabaseService {
         avatar_url: avatarUrl,
         sender_code: senderCode || null,
         bio: effectiveBio,
-        username: cleanUsername,
-        birthday: birthday || null,
-        banner_url: bannerUrl !== undefined ? bannerUrl : null,
+        username: cleanUsername !== undefined ? cleanUsername : null,
+        birthday: cleanBirthday !== undefined ? cleanBirthday : null,
+        banner_url: cleanBannerUrl !== undefined ? cleanBannerUrl : null,
       };
 
       let { error } = await this.client
         .from('profile_updates')
         .insert(insertPayload);
 
-      if (error && (error.message?.includes('banner_url') || error.code === 'PGRST204')) {
-        delete insertPayload.banner_url;
+      if (error && (error.message?.includes('banner_url') || error.message?.includes('birthday') || error.message?.includes('username') || error.code === 'PGRST204')) {
+        if (error.message?.includes('birthday')) delete insertPayload.birthday;
+        if (error.message?.includes('username')) delete insertPayload.username;
+        if (error.message?.includes('banner_url')) delete insertPayload.banner_url;
         const retryRes = await this.client
           .from('profile_updates')
           .insert(insertPayload);
@@ -1182,7 +1145,6 @@ class SupabaseService {
     return [];
   }
 
-  // --- Реакции ---
   async saveReaction(
     chatId: string,
     _messageIndex: number | undefined,
@@ -1365,7 +1327,6 @@ class SupabaseService {
     };
   }
 
-  // --- Key Server (X3DH) ---
   
   async uploadPublicKeys(
     userCode: string,
@@ -1378,7 +1339,6 @@ class SupabaseService {
     if (!this.client || !userCode) return;
 
     try {
-      // 1. Обновляем основные ключи
       const { error: keysError } = await this.client
         .from('user_public_keys')
         .upsert({
@@ -1395,7 +1355,6 @@ class SupabaseService {
         throw keysError;
       }
 
-      // 2. Добавляем новые одноразовые ключи (не удаляя старые)
       if (oneTimePreKeys && oneTimePreKeys.length > 0) {
         const otpkRows = oneTimePreKeys.map(k => ({
           user_code: userCode,
@@ -1421,7 +1380,6 @@ class SupabaseService {
     if (!this.client || !userCode) return null;
 
     try {
-      // 1. Получаем основные ключи
       const { data: mainKeys, error: keysError } = await this.client
         .from('user_public_keys')
         .select('*')
@@ -1440,17 +1398,11 @@ class SupabaseService {
         identitySigningKey: mainKeys.identity_signing_key,
       };
 
-      // 2. Пытаемся получить и удалить (с помощью RPC) один одноразовый ключ
       try {
         await this.client.rpc('consume_one_time_pre_key', {
           p_user_code: userCode,
         });
 
-        // Если RPC вернул строку (publicKey), значит ключ успешно захвачен.
-        // Но нам нужен еще и keyId, поэтому RPC метод выше возвращает только ключ?
-        // Wait, I should implement consume_one_time_pre_key to return JSON if I want both.
-        // Let's just do a normal select and delete since this is a fallback.
-        // In a highly concurrent env we'd use RPC, but Supabase JS allows this:
         
         const { data: firstKeyData } = await this.client
           .from('one_time_pre_keys')
@@ -1467,7 +1419,6 @@ class SupabaseService {
             publicKey: firstKeyData.public_key,
           };
           
-          // Удаляем его асинхронно
           this.client.from('one_time_pre_keys').delete().eq('id', firstKeyData.id).then();
         }
       } catch (e) {

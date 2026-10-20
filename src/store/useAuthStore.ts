@@ -43,6 +43,8 @@ interface AuthState {
   setConfigVersion: (version: number) => void;
   setSyncStatus: (status: CloudSyncStatus, lastSyncTime?: number | null) => void;
   setBackupConfig: (config: { enabled?: boolean; folder?: string | null; lastBackupTime?: number | null }) => void;
+  _hasHydrated: boolean;
+  setHasHydrated: (val: boolean) => void;
   setIdentityKeys: (keys: {
     identityKeyPair: { publicKey: string; privateKey: string };
     signedPreKeyPair: { publicKey: string; privateKey: string };
@@ -205,6 +207,8 @@ export const useAuthStore = create<AuthState>()(
       signedPreKeyPair: null,
       identitySigningKeyPair: null,
       oneTimePreKeys: [],
+      _hasHydrated: false,
+      setHasHydrated: (val) => set({ _hasHydrated: val }),
       setUserId: (userId) => set({ userId }),
       setNumericId: (numericId) => set({ numericId }),
       setStep: (step) => {
@@ -399,10 +403,13 @@ export const useAuthStore = create<AuthState>()(
         return persistedState;
       },
       onRehydrateStorage: () => (state) => {
-        if (state && !state.numericId && state.userId) {
-          const generated = getInitialNumericId(state.userId);
-          state.numericId = generated;
-          state.setNumericId(generated);
+        if (state) {
+          if (!state.numericId && state.userId) {
+            const generated = getInitialNumericId(state.userId);
+            state.numericId = generated;
+            state.setNumericId(generated);
+          }
+          state.setHasHydrated(true);
         }
       },
       storage: createJSONStorage(() => ipcStorage),

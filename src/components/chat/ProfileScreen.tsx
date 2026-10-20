@@ -360,6 +360,9 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         let updateNick: string | undefined = undefined;
         let updateAvatar: string | undefined = undefined;
         let updateBanner: string | undefined = undefined;
+        let updateUsername: string | undefined = undefined;
+        let updateBirthday: string | undefined = undefined;
+        let updateBio: string | undefined = undefined;
         let pubNumericId: string | null | undefined = undefined;
 
         const update = await supabaseService.getLatestProfileUpdate(chat.id, myCode || undefined);
@@ -373,6 +376,9 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
           if (update.nickname) updateNick = update.nickname;
           if (update.avatar_url) updateAvatar = update.avatar_url;
           if (update.banner_url) updateBanner = update.banner_url;
+          if (update.username) updateUsername = update.username;
+          if (update.birthday) updateBirthday = update.birthday;
+          if (update.bio) updateBio = update.bio;
         }
 
         if (targetCode) {
@@ -380,6 +386,9 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
           if (pub?.nickname && !updateNick) updateNick = pub.nickname;
           if (pub?.avatar_url && !updateAvatar) updateAvatar = pub.avatar_url;
           if (pub?.banner_url && !updateBanner) updateBanner = pub.banner_url;
+          if (pub?.username && !updateUsername) updateUsername = pub.username;
+          if (pub?.birthday && !updateBirthday) updateBirthday = pub.birthday;
+          if (pub?.bio && !updateBio) updateBio = pub.bio;
           if (pub?.numeric_id) pubNumericId = pub.numeric_id;
         }
 
@@ -388,6 +397,8 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
           if (pubByUname?.nickname && !updateNick) updateNick = pubByUname.nickname;
           if (pubByUname?.avatar_url && !updateAvatar) updateAvatar = pubByUname.avatar_url;
           if (pubByUname?.banner_url && !updateBanner) updateBanner = pubByUname.banner_url;
+          if (pubByUname?.birthday && !updateBirthday) updateBirthday = pubByUname.birthday;
+          if (pubByUname?.bio && !updateBio) updateBio = pubByUname.bio;
           if (pubByUname?.numeric_id && !pubNumericId) pubNumericId = pubByUname.numeric_id;
         }
 
@@ -411,6 +422,15 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         }
         if (updateAvatar && updateAvatar !== chat.avatarUrl) {
           chatUpdates.avatarUrl = updateAvatar;
+        }
+        if (updateUsername && updateUsername !== chat.username) {
+          chatUpdates.username = updateUsername;
+        }
+        if (updateBirthday && updateBirthday !== chat.birthday) {
+          chatUpdates.birthday = updateBirthday;
+        }
+        if (updateBio && updateBio !== chat.description) {
+          chatUpdates.description = updateBio;
         }
         if (updateBanner) {
           setLoadedBannerUrl(updateBanner);

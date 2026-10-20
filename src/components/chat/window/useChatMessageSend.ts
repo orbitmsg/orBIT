@@ -676,12 +676,14 @@ export const useChatMessageSend = ({
           const myUsername = useAuthStore.getState().username;
           const myBio = useAuthStore.getState().bio;
           const myBirthday = useAuthStore.getState().birthday;
+          const myBannerUrl = useAuthStore.getState().bannerUrl;
           const myNumericId = useAuthStore.getState().numericId;
           const reqPayload: any = {
             senderNickname: myNickname,
             senderCode: myCode,
             publicKey: myKeys.publicKey,
             avatarUrl: myAvatarUrl,
+            bannerUrl: myBannerUrl,
             chatId: activeChatId,
             numericId: myNumericId,
             username: myUsername,

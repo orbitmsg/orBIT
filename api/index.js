@@ -889,32 +889,56 @@ module.exports = async function handler(req, res) {
         }
       }
 
+      let cleanBannerUrl = body.bannerUrl !== undefined ? body.bannerUrl : undefined;
+      let cleanBirthday = body.birthday !== undefined ? (body.birthday || null) : undefined;
+      let cleanBio = body.bio !== undefined ? (body.bio || null) : undefined;
+      let targetUsername = cleanUsername !== undefined ? cleanUsername : undefined;
+
+      if (body.senderCode && (targetUsername === undefined || cleanBirthday === undefined || cleanBannerUrl === undefined || cleanBio === undefined)) {
+        try {
+          const { data: existing } = await supabase
+            .from('profile_updates')
+            .select('username, birthday, banner_url, bio')
+            .eq('chat_id', body.chatId)
+            .eq('sender_code', body.senderCode)
+            .maybeSingle();
+          if (existing) {
+            if (targetUsername === undefined) targetUsername = existing.username || null;
+            if (cleanBirthday === undefined) cleanBirthday = existing.birthday || null;
+            if (cleanBannerUrl === undefined) cleanBannerUrl = existing.banner_url || null;
+            if (cleanBio === undefined && existing.bio) cleanBio = existing.bio;
+          }
+        } catch {}
+      }
+
       try {
         if (body.senderCode) {
           await supabase.from('profile_updates').delete().eq('chat_id', body.chatId).eq('sender_code', body.senderCode);
         }
       } catch {}
 
-      let effectiveBio = body.bio || null;
-      if (body.bannerUrl) {
-        effectiveBio = effectiveBio ? `${effectiveBio}\n<!--banner:${body.bannerUrl}-->` : `<!--banner:${body.bannerUrl}-->`;
+      let effectiveBio = cleanBio || null;
+      if (cleanBannerUrl) {
+        effectiveBio = effectiveBio ? `${effectiveBio}\n<!--banner:${cleanBannerUrl}-->` : `<!--banner:${cleanBannerUrl}-->`;
       }
 
       const insertPayload = {
         chat_id: body.chatId,
         nickname: body.nickname || null,
         avatar_url: body.avatarUrl || null,
-        banner_url: body.bannerUrl !== undefined ? body.bannerUrl : null,
+        banner_url: cleanBannerUrl !== undefined ? cleanBannerUrl : null,
         hide_profile_id: body.hideProfileId !== undefined ? body.hideProfileId : null,
         sender_code: body.senderCode || null,
         bio: effectiveBio,
-        username: cleanUsername,
-        birthday: body.birthday || null,
+        username: targetUsername !== undefined ? targetUsername : null,
+        birthday: cleanBirthday !== undefined ? cleanBirthday : null,
       };
 
       let { data, error } = await supabase.from('profile_updates').insert(insertPayload).select();
-      if (error && (error.message?.includes('banner_url') || error.code === 'PGRST204')) {
-        delete insertPayload.banner_url;
+      if (error && (error.message?.includes('banner_url') || error.message?.includes('birthday') || error.message?.includes('username') || error.code === 'PGRST204')) {
+        if (error.message?.includes('banner_url')) delete insertPayload.banner_url;
+        if (error.message?.includes('birthday')) delete insertPayload.birthday;
+        if (error.message?.includes('username')) delete insertPayload.username;
         const retryRes = await supabase.from('profile_updates').insert(insertPayload).select();
         error = retryRes.error;
         data = retryRes.data;

@@ -1,6 +1,8 @@
 import React, { memo } from 'react';
 import type { Message, ChatTypingUser } from '../../../store/useChatStore';
 import { resolveStickerUrl } from '../../../lib/stickers-and-gifs';
+import { getOrbitaMediaUrl } from '../../../lib/media-utils';
+import type { MediaViewerItem } from '../TelegramMediaViewer';
 
 export const MAX_FILE_MB = 10;
 
@@ -272,6 +274,8 @@ export const formatTime = (timestamp: number): string => {
   return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 };
 
+export const truncateText = (text: string, maxLen: number): string => text.length <= maxLen ? text : text.substring(0, maxLen) + '...';
+
 export const isSameDay = (d1: number, d2: number): boolean => {
   const date1 = new Date(d1);
   const date2 = new Date(d2);
@@ -281,4 +285,152 @@ export const isSameDay = (d1: number, d2: number): boolean => {
     date1.getDate() === date2.getDate()
   );
 };
+
+export const getChatDateLabel = (timestamp: number, lang = 'ru'): string => {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const yesterday = today - 86400000;
+  const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+
+  const isRu = lang.startsWith('ru');
+
+  if (msgDate === today) {
+    return isRu ? 'Сегодня' : 'Today';
+  }
+  if (msgDate === yesterday) {
+    return isRu ? 'Вчера' : 'Yesterday';
+  }
+
+  const isDifferentYear = date.getFullYear() !== now.getFullYear();
+
+  if (isRu) {
+    const weekdays = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+    const months = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+    const wd = weekdays[date.getDay()];
+    const d = date.getDate();
+    const m = months[date.getMonth()];
+    const yr = isDifferentYear ? ` ${date.getFullYear()}` : '';
+    return `${wd}, ${d} ${m}${yr}`;
+  }
+
+  const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const wd = weekdays[date.getDay()];
+  const d = date.getDate();
+  const m = months[date.getMonth()];
+  const yr = isDifferentYear ? ` ${date.getFullYear()}` : '';
+  return `${wd}, ${d} ${m}${yr}`;
+};
+
+export const buildChatMediaViewerItems = (
+  messages: Message[],
+  sharedSecret?: string | null,
+  activeChatId?: string | null
+): MediaViewerItem[] => {
+  const list: MediaViewerItem[] = [];
+  messages.forEach((msg, msgIdx) => {
+    const media = parseMedia(msg);
+    if (msg.mediaItems && msg.mediaItems.length > 0) {
+      const isAlbum = msg.mediaItems.length > 1;
+      const albumGroupId = msg.id || `album_${msgIdx}`;
+      msg.mediaItems.forEach((mi, miIdx) => {
+        if (mi.type === 'photo' || mi.type === 'video' || mi.type === 'gif') {
+          const effectiveSecret = (mi.key || msg.mediaKey || sharedSecret) || undefined;
+          const directUrl = getOrbitaMediaUrl(mi.url, effectiveSecret, activeChatId || undefined, msg.id, mi.name || msg.mediaName) || undefined;
+          const isMiGif = mi.type === 'gif' || mi.mime === 'image/gif' || /\.gif(\?.*)?$/i.test(mi.name || mi.url || '');
+          list.push({
+            id: `${msg.id || msgIdx}_${miIdx}`,
+            url: mi.url,
+            directUrl,
+            chatId: activeChatId || undefined,
+            type: isMiGif ? 'gif' : (mi.type === 'video' ? 'video' : 'photo'),
+            name: mi.name || msg.mediaName,
+            sender: msg.sender,
+            time: msg.time,
+            messageId: msg.id,
+            messageIndex: msgIdx,
+            duration: mi.duration,
+            width: mi.width,
+            height: mi.height,
+            caption: msg.text,
+            isAlbum: isAlbum,
+            albumGroupId: isAlbum ? albumGroupId : undefined,
+            key: mi.key || msg.mediaKey,
+            sharedSecret: effectiveSecret,
+          });
+        }
+      });
+    } else if (media.type === 'image' || media.type === 'video' || media.type === 'gif') {
+      const isGif = Boolean(
+        media.type === 'gif' ||
+        msg.mediaType === 'gif' ||
+        (media.url && (/\.gif(\?.*)?$/i.test(media.url) || media.url.toLowerCase().includes('.gif'))) ||
+        (msg.mediaUrl && (
+          /\.gif(\?.*)?$/i.test(msg.mediaUrl) ||
+          msg.mediaUrl.toLowerCase().includes('.gif') ||
+          msg.mediaUrl.includes('tenor.com') ||
+          msg.mediaUrl.includes('giphy.com') ||
+          msg.mediaUrl.includes('.giphy.') ||
+          msg.mediaUrl.includes('c.tenor.com')
+        )) ||
+        (msg.text && /^\[GIF\]/i.test(msg.text.trim()))
+      );
+      const effectiveSecret = (msg.mediaKey || sharedSecret) || undefined;
+      const mediaUrl = media.url || msg.mediaUrl || '';
+      const directUrl = getOrbitaMediaUrl(mediaUrl, effectiveSecret, activeChatId || undefined, msg.id, media.fileName || msg.mediaName, media.mime || msg.mime) || undefined;
+      list.push({
+        id: msg.id || `${msg.time}_${msgIdx}`,
+        url: mediaUrl,
+        directUrl,
+        chatId: activeChatId || undefined,
+        type: isGif ? 'gif' : (media.type === 'video' ? 'video' : 'photo'),
+        name: media.fileName || msg.mediaName,
+        sender: msg.sender,
+        time: msg.time,
+        messageId: msg.id,
+        messageIndex: msgIdx,
+        duration: msg.duration || msg.audioMetadata?.duration,
+        width: msg.width,
+        height: msg.height,
+        caption: msg.text,
+        isAlbum: false,
+        key: msg.mediaKey,
+        sharedSecret: effectiveSecret,
+        thumbnail: msg.blurPreview,
+        blurPreview: msg.blurPreview,
+      });
+    }
+  });
+  return list;
+};
+
+export const resolveMediaViewerFallback = (
+  url: string,
+  messageId: string | undefined,
+  messages: Message[],
+  sharedSecret?: string | null,
+  activeChatId?: string | null
+): MediaViewerItem[] => {
+  const targetMsg = messages.find((m) => m.id === messageId);
+  const targetMedia = targetMsg ? parseMedia(targetMsg) : null;
+  const isTargetGif = targetMedia?.type === 'gif' || /\.gif(\?.*)?$/i.test(url) || Boolean(url && (url.includes('tenor.com') || url.includes('giphy.com')));
+  const isTargetVideo = !isTargetGif && (targetMedia?.type === 'video' || /\.(mp4|mov|avi|webm|mkv|m4v)(\?.*)?$/i.test(url) || Boolean(targetMsg?.mime?.startsWith('video/')));
+  const fallbackType = isTargetGif ? ('gif' as const) : (isTargetVideo ? ('video' as const) : ('photo' as const));
+  const effectiveSecret = (targetMsg?.mediaKey || sharedSecret) || undefined;
+  return [{
+    id: messageId || url,
+    url,
+    directUrl: getOrbitaMediaUrl(url, effectiveSecret, activeChatId || undefined, messageId, targetMedia?.fileName || targetMsg?.mediaName, targetMsg?.mime) || undefined,
+    chatId: activeChatId || undefined,
+    type: fallbackType,
+    time: Date.now(),
+    key: targetMsg?.mediaKey,
+    sharedSecret: effectiveSecret,
+    thumbnail: (targetMedia as any)?.thumbnail || targetMsg?.blurPreview,
+    blurPreview: targetMsg?.blurPreview,
+  }];
+};
+
+
 

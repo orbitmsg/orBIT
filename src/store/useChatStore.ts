@@ -246,58 +246,15 @@ export const useChatStore = create<ChatState>()(
           return { draftsByChatId: next };
         }),
 
-      inChatSearch: {
-        isOpen: false,
-        scope: 'this_chat',
-        query: '',
-        jumpTarget: null,
-      },
-      openInChatSearch: (scope = 'this_chat') =>
-        set((state) => ({
-          inChatSearch: {
-            ...state.inChatSearch,
-            isOpen: true,
-            scope,
-          },
-        })),
-      closeInChatSearch: () =>
-        set((state) => ({
-          inChatSearch: {
-            ...state.inChatSearch,
-            isOpen: false,
-            query: '',
-          },
-        })),
-      setInChatSearchScope: (scope) =>
-        set((state) => ({
-          inChatSearch: {
-            ...state.inChatSearch,
-            scope,
-          },
-        })),
-      setInChatSearchQuery: (query) =>
-        set((state) => ({
-          inChatSearch: {
-            ...state.inChatSearch,
-            query,
-          },
-        })),
+      inChatSearch: { isOpen: false, scope: 'this_chat', query: '', jumpTarget: null },
+      openInChatSearch: (scope = 'this_chat') => set((state) => ({ inChatSearch: { ...state.inChatSearch, isOpen: true, scope } })),
+      closeInChatSearch: () => set((state) => ({ inChatSearch: { ...state.inChatSearch, isOpen: false, query: '' } })),
+      setInChatSearchScope: (scope) => set((state) => ({ inChatSearch: { ...state.inChatSearch, scope } })),
+      setInChatSearchQuery: (query) => set((state) => ({ inChatSearch: { ...state.inChatSearch, query } })),
       jumpToChatMessage: (chatId, messageIndex, messageId) => {
         const currentActive = get().activeChatId;
-        if (currentActive !== chatId) {
-          get().setActiveChat(chatId);
-        }
-        set((state) => ({
-          inChatSearch: {
-            ...state.inChatSearch,
-            jumpTarget: {
-              chatId,
-              messageIndex,
-              messageId,
-              timestamp: Date.now(),
-            },
-          },
-        }));
+        if (currentActive !== chatId) get().setActiveChat(chatId);
+        set((state) => ({ inChatSearch: { ...state.inChatSearch, jumpTarget: { chatId, messageIndex, messageId, timestamp: Date.now() } } }));
       },
 
       setMyCode: (code) => {

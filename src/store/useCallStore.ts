@@ -14,88 +14,26 @@ import { deriveGroupKey } from '../lib/groupCrypto';
 import { generateKeyPair, generateChatId, getDirectChatId } from '../lib/crypto';
 import i18n from '../i18n';
 
-export type CallType = 'audio' | 'video';
-export type CallDirection = 'incoming' | 'outgoing';
-export type CallState = 'idle' | 'preparing' | 'ringing' | 'connecting' | 'connected' | 'ended';
-export type CallEndedStatus = 'missed' | 'rejected' | 'busy' | 'failed' | 'completed' | 'encryption_failed' | null;
+import type {
+  CallType,
+  CallDirection,
+  CallState,
+  CallEndedStatus,
+  IncomingCall,
+  ActiveCall,
+  CallStore,
+} from './call/types';
+import { createCallMessage } from './call/createCallMessage';
 
-export interface IncomingCall {
-  from: string;
-  chatId: string;
-  callType: CallType;
-  roomName: string;
-  timestamp: number;
-  verificationSalt?: string;
-}
-
-export interface ActiveCall {
-  chatId: string;
-  roomName: string;
-  direction: CallDirection;
-  callType: CallType;
-  startTime: number;
-  participants: ParticipantInfo[];
-  isMuted: boolean;
-  isVideoEnabled: boolean;
-  isScreenSharing: boolean;
-  connectionQuality: 'excellent' | 'good' | 'poor' | 'unknown';
-  endedStatus: CallEndedStatus;
-  verificationSecret?: string;
-  verificationSalt?: string;
-  verificationEmojis?: string[];
-  token?: string;
-  url?: string;
-  chatType?: 'group' | 'private' | 'channel';
-}
-
-interface CallStore {
-  activeCall: ActiveCall | null;
-  incomingCall: IncomingCall | null;
-  callState: CallState;
-  isMicEnabled: boolean;
-  isVideoEnabled: boolean;
-  isScreenSharing: boolean;
-  isScreenPickerOpen: boolean;
-  remoteScreenShareTrack: any | null;
-  remoteScreenShareIdentity: string | null;
-  connectionQuality: 'excellent' | 'good' | 'poor' | 'unknown';
-  duration: number;
-  myNickname: string | null;
-  statusMessage: string;
-  isEnding: boolean;
-  isMinimized: boolean;
-  processedRoomNames: string[];
-  setIncomingCall: (call: IncomingCall | null) => void;
-  addProcessedRoomName: (roomName: string) => void;
-  setMinimized: (minimized: boolean) => void;
-  startCall: (chatId: string, callType: CallType, myNickname: string) => Promise<void>;
-  initiateCall: () => Promise<void>;
-  answerCall: (myNickname: string) => Promise<void>;
-  rejectCall: (silent?: boolean) => void;
-  endCall: (forceClose?: boolean, remotesOverride?: number) => void;
-  handleBusy: (roomName?: string) => void;
-  handleReject: (roomName?: string) => void;
-  handleAccept: (roomName?: string) => Promise<void>;
-  handleConnected: (connectedAt?: number, roomName?: string) => void;
-  handleCancel: (roomName?: string) => void;
-  handleHangup: (roomName?: string) => void;
-  toggleMic: () => Promise<void>;
-  setMicEnabled: (enabled: boolean) => Promise<void>;
-  toggleVideo: (explicitVal?: boolean) => Promise<void>;
-  openScreenPicker: () => void;
-  closeScreenPicker: () => void;
-  startScreenShareWithOptions: (options: { sourceId?: string; audio: boolean }) => Promise<void>;
-  stopScreenShare: () => Promise<void>;
-  toggleScreenShare: () => Promise<void>;
-  updateParticipants: (participants: ParticipantInfo[]) => void;
-  updateConnectionQuality: (quality: 'excellent' | 'good' | 'poor' | 'unknown') => void;
-  peerVolume: number;
-  micVolume: number;
-  setPeerVolume: (volume: number) => void;
-  setMicVolume: (volume: number) => void;
-  isBusy: () => boolean;
-  reset: () => void;
-}
+export type {
+  CallType,
+  CallDirection,
+  CallState,
+  CallEndedStatus,
+  IncomingCall,
+  ActiveCall,
+  CallStore,
+};
 
 const LOG_PREFIX = '[CallStore]';
 const NO_ANSWER_TIMEOUT_MS = 60000;
@@ -224,50 +162,6 @@ function clearAllTimers() {
   if (peerLeftGraceTimer) { clearTimeout(peerLeftGraceTimer); peerLeftGraceTimer = null; }
   prefetchedToken = null;
 }
-
-async function createCallMessage(chatId: string, direction: CallDirection, duration: number, endedStatus: CallEndedStatus) {
-  try {
-    const chat = useChatStore.getState().chats.find((c) => c.id === chatId);
-    if (!chat || chat.type === 'group' || chat.type === 'channel') return;
-    const activeCall = useCallStore.getState().activeCall;
-    if (activeCall?.chatType === 'group' || activeCall?.chatType === 'channel') return;
-    const myNickname = useAuthStore.getState().nickname || 'YOU';
-    const sender = direction === 'outgoing' ? myNickname : chat.name;
-    const directionText = direction === 'outgoing' ? 'Исходящий' : 'Входящий';
-    let messageText = `[Call] ${directionText}`;
-    if (endedStatus === 'completed') {
-      const safeDuration = Math.max(0, Math.floor(duration) || 0);
-      const mins = Math.floor(safeDuration / 60);
-      const secs = safeDuration % 60;
-      messageText += `, ${mins}:${secs.toString().padStart(2, '0')}`;
-    }
-    const myCode = useChatStore.getState().myCode;
-    const isOutgoing = direction === 'outgoing';
-    const senderId = isOutgoing ? myCode : (chat.peerCode || chat.name);
-    const isCompleted = endedStatus === 'completed';
-    const initialStatus = isOutgoing
-      ? (isCompleted ? 'read' : 'delivered')
-      : undefined;
-    const isRead = isOutgoing ? true : isCompleted;
-
-    useChatStore.getState().addMessage(chatId, {
-      id: `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      senderId,
-      sender,
-      isOutgoing,
-      text: messageText,
-      time: Date.now(),
-      read: isRead,
-      status: initialStatus,
-      mediaType: 'call',
-      mediaUrl: '',
-      mediaName: endedStatus || 'completed',
-    });
-  } catch (err) {
-    console.error(`${LOG_PREFIX} Failed to create call message:`, err);
-  }
-}
-
 
 export const useCallStore = create<CallStore>((set, get) => {
   const startDurationTimer = () => {

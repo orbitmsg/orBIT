@@ -44,6 +44,7 @@ import { ProfileEditChannel } from './profile/ProfileEditChannel';
 import { ProfileSubTab } from './profile/ProfileSubTab';
 import { ProfileActionButtons } from './profile/ProfileActionButtons';
 import { ProfileInfoCard } from './profile/ProfileInfoCard';
+import { resolveProfileId } from './profile/resolveProfileId';
 
 export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLinkClick }: ProfileScreenProps) => {
   const { t, i18n } = useTranslation();
@@ -210,47 +211,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
     })) return true;
     return false;
   }, [isGroup, chat, isGroupOwner, myUserId]);
-  const profileId = useMemo(() => {
-    if (!chat) return '';
-    if (isChannel) return chat.id;
-    if (chatId === 'notes') return '';
-    const candidates = [
-      (chat as any).userCode,
-      (chat as any).user_code,
-      chat.peerCode,
-      chat.originalPeerCode,
-      (chat as any).userId,
-      (chat.name && chat.name.length === 36 ? chat.name : undefined),
-    ].filter((x): x is string => typeof x === 'string' && x.length > 0);
-    const code36 = candidates.find((c) => c.length === 36);
-    if (code36) return code36;
-
-    for (const code of candidates) {
-      const users = Object.values(useChatStore.getState().usersById || {});
-      const user = users.find((u: any) => u.id === code || (u as any).userId === code || (u as any).user_code === code || (u as any).userCode === code);
-      if (user) {
-        const uCode = (user as any).userCode || (user as any).user_code || (user.id?.length === 36 ? user.id : null);
-        if (uCode && uCode.length === 36) return uCode;
-      }
-      for (const c of useChatStore.getState().chats) {
-        if (c.members) {
-          const m = c.members.find((mb: any) => mb.userId === code || (mb as any).user_id === code || mb.userCode === code || (mb as any).user_code === code);
-          const mCode = (m?.userCode && m.userCode.length === 36 ? m.userCode : null) || ((m as any)?.user_code && (m as any).user_code.length === 36 ? (m as any).user_code : null);
-          if (mCode) return mCode;
-        }
-      }
-    }
-
-    if (chat.avatarUrl) {
-      const otherChat = useChatStore.getState().chats.find(
-        (c) => c.type === 'private' && c.id !== chat.id && c.avatarUrl === chat.avatarUrl && c.peerCode && c.peerCode.length === 36
-      );
-      if (otherChat?.peerCode) return otherChat.peerCode;
-    }
-
-    const fallbackCandidate = candidates.find((c) => c.length !== 64);
-    return fallbackCandidate || '';
-  }, [isChannel, chat, chatId]);
+  const profileId = useMemo(() => resolveProfileId(chat, chatId), [chat, chatId]);
 
   const formattedProfileId = useMemo(() => {
     if (!profileId) return '';

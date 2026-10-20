@@ -8,7 +8,7 @@ import { mediaManager } from '../../../services/mediaManager';
 import { getPusher, getGroupPusher, CLIENT_SESSION_ID } from '../../../utils/pusher';
 import { isValidGroupCode, deriveGroupKey } from '../../../lib/groupCrypto';
 import { deriveChannelKey, decryptMessage } from '../../../lib/crypto';
-import { saveChatScroll, restoreChatScroll, chatScrollRegistry } from './chatWindowHelpers';
+import { saveChatScroll, restoreChatScroll, chatScrollRegistry, mergeReactions } from './chatWindowHelpers';
 
 export interface UseChatRealtimeProps {
   activeChatId: string | null;
@@ -73,8 +73,18 @@ export const useChatRealtime = ({
               };
             }
             const map = new Map<string, any>();
-            sanitizedCached.forEach((m) => { if (m?.id) map.set(m.id, m); });
-            nowMsgs.forEach((m) => { if (m?.id) map.set(m.id, m); });
+            sanitizedCached.forEach((m) => {
+              if (m?.id) {
+                const live = nowMsgs.find(n => n.id === m.id);
+                map.set(m.id, live ? { ...m, reactions: mergeReactions(live.reactions, m.reactions) } : m);
+              }
+            });
+            nowMsgs.forEach((m) => {
+              if (m?.id) {
+                const prev = map.get(m.id);
+                map.set(m.id, prev ? { ...m, reactions: mergeReactions(m.reactions, prev.reactions) } : m);
+              }
+            });
             if (map.size > nowMsgs.length) {
               const merged = Array.from(map.values()).sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0));
               return {

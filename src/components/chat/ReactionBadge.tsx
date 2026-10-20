@@ -1,4 +1,5 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useChatStore } from '../../store/useChatStore';
 import { Avatar } from '../common/Avatar';
@@ -18,6 +19,24 @@ const POPULAR_REACTIONS: Record<string, number> = {
 };
 
 const profileAvatarCache = new Map<string, string>();
+
+const countVariants: Variants = {
+  initial: (dir: number) => ({
+    y: dir > 0 ? 14 : -14,
+    opacity: 0,
+    filter: 'blur(1.5px)',
+  }),
+  animate: {
+    y: 0,
+    opacity: 1,
+    filter: 'blur(0px)',
+  },
+  exit: (dir: number) => ({
+    y: dir > 0 ? -14 : 14,
+    opacity: 0,
+    filter: 'blur(1.5px)',
+  }),
+};
 
 interface ReactionBadgeProps {
   emoji: string;
@@ -84,6 +103,12 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
       hasReacted: reacted,
     };
   }, [users, myUserId, myCode, myNickname]);
+
+  const prevCountRef = useRef(uniqueCount);
+  const direction = uniqueCount >= prevCountRef.current ? 1 : -1;
+  useEffect(() => {
+    prevCountRef.current = uniqueCount;
+  }, [uniqueCount]);
 
   useEffect(() => {
     if (isChannel) return;
@@ -261,18 +286,43 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
         </>
       ) : (
         <span
-          className="tabular-nums"
           style={{
-            fontSize: '12.5px',
-            fontWeight: 600,
-            lineHeight: 1,
+            position: 'relative',
             display: 'inline-flex',
+            overflow: 'hidden',
+            height: '16px',
+            lineHeight: '16px',
             alignItems: 'center',
-            color: 'inherit',
-            transition: 'color 0.15s ease',
+            justifyContent: 'center',
+            verticalAlign: 'middle',
+            minWidth: `${Math.max(1, String(uniqueCount).length) * 8 + 4}px`,
           }}
         >
-          {uniqueCount}
+          <AnimatePresence mode="popLayout" initial={false} custom={direction}>
+            <motion.span
+              key={uniqueCount}
+              custom={direction}
+              variants={countVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{
+                duration: 0.28,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              className="tabular-nums"
+              style={{
+                fontSize: '12.5px',
+                fontWeight: 600,
+                lineHeight: '16px',
+                display: 'inline-block',
+                color: 'inherit',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              {uniqueCount}
+            </motion.span>
+          </AnimatePresence>
         </span>
       )}
     </button>

@@ -10,6 +10,7 @@ import { getPusher, getGroupPusher } from '../../../utils/pusher';
 import { deriveChannelKey, decryptMessage, generateChatId, getDirectChatId, generateKeyPair } from '../../../lib/crypto';
 import { isValidGroupCode, extractGroupCode } from '../../../lib/groupCrypto';
 import { useDevicePermissionStore } from '../../../store/useDevicePermissionStore';
+import { mergeReactions } from './chatWindowHelpers';
 
 export interface UseChatChannelsAndCallsProps {
   activeChatId: string | null;
@@ -503,7 +504,7 @@ export const useChatChannelsAndCalls = ({
                       waveform: post.waveform || undefined,
                       audioMetadata: post.audioMetadata || undefined,
                       linkPreview: post.linkPreview || undefined,
-                      reactions: post.reactions || undefined,
+                      reactions: (post.reactions && Object.keys(post.reactions).length > 0) ? post.reactions : undefined,
                     };
                   }),
                 },
@@ -553,7 +554,7 @@ export const useChatChannelsAndCalls = ({
                 senderId: effectiveSenderId,
                 text: fetched.text || m.text,
                 time: fetched.time || m.time,
-                reactions: fetched.reactions || m.reactions,
+                reactions: mergeReactions(m.reactions, fetched.reactions),
                 isOutgoing: isMine,
                 status: isMine ? ('read' as const) : m.status,
               };
@@ -589,7 +590,7 @@ export const useChatChannelsAndCalls = ({
                 waveform: post.waveform || undefined,
                 audioMetadata: post.audioMetadata || undefined,
                 linkPreview: post.linkPreview || undefined,
-                reactions: post.reactions || undefined,
+                reactions: (post.reactions && Object.keys(post.reactions).length > 0) ? post.reactions : undefined,
               });
             }
           });

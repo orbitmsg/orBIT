@@ -432,5 +432,26 @@ export const resolveMediaViewerFallback = (
   }];
 };
 
+export const mergeReactions = (
+  existing?: Record<string, string[]>,
+  incoming?: Record<string, string[]>
+): Record<string, string[]> | undefined => {
+  const hasExisting = existing && typeof existing === 'object' && Object.keys(existing).length > 0;
+  const hasIncoming = incoming && typeof incoming === 'object' && Object.keys(incoming).length > 0;
+
+  if (!hasExisting && !hasIncoming) return undefined;
+  if (!hasIncoming) return existing;
+  if (!hasExisting) return incoming;
+
+  const result: Record<string, string[]> = { ...existing };
+  for (const [emoji, users] of Object.entries(incoming!)) {
+    if (Array.isArray(users) && users.length > 0) {
+      const prev = result[emoji] || [];
+      result[emoji] = Array.from(new Set([...prev, ...users]));
+    }
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
+};
+
 
 

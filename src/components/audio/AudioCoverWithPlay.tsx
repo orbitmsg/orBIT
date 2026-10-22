@@ -1,7 +1,7 @@
 import React from 'react';
-import { Play, Pause, ArrowDown, X } from 'lucide-react';
+import { Play, Pause } from 'lucide-react';
 
-export type AudioCoverState = 'play' | 'pause' | 'download' | 'downloading' | 'uploading' | 'file';
+export type AudioCoverState = 'play' | 'pause' | 'download' | 'downloading' | 'uploading' | 'file' | 'done';
 
 interface AudioCoverWithPlayProps {
   cover: string | null;
@@ -29,10 +29,10 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
   ariaLabel,
 }) => {
   const iconSize = Math.round(size * 0.42);
-  const strokeW = size >= 48 ? 3 : 2.5;
-  const radius = Math.max(2, size / 2 - 4.5);
+  const strokeW = size >= 48 ? 3.5 : (size >= 40 ? 3 : 2.5);
+  const radius = Math.max(2, size / 2 - 4);
   const circumference = 2 * Math.PI * radius;
-  const clampedProgress = Math.max(0.04, Math.min(1, typeof progress === 'number' && isFinite(progress) ? progress : 0.08));
+  const clampedProgress = Math.max(0, Math.min(1, typeof progress === 'number' && isFinite(progress) ? progress : 0));
   const dashOffset = circumference * (1 - clampedProgress);
 
   const handleClick = (e: React.MouseEvent) => {
@@ -50,7 +50,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
   };
 
   const renderContent = () => {
-    if (state === 'uploading' || state === 'downloading') {
+    if (state === 'uploading') {
       return (
         <>
           <svg
@@ -72,7 +72,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke="rgba(255, 255, 255, 0.22)"
+              stroke="rgba(255, 255, 255, 0.08)"
               strokeWidth={strokeW}
             />
             <circle
@@ -80,15 +80,14 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke="#ffffff"
+              stroke="var(--accent-color, #6c5ce7)"
               strokeWidth={strokeW}
               strokeLinecap="round"
               strokeDasharray={circumference}
               strokeDashoffset={dashOffset}
               style={{
                 willChange: 'stroke-dashoffset',
-                transform: 'translateZ(0)',
-                transition: 'stroke-dashoffset 0.16s cubic-bezier(0.4, 0, 0.2, 1)',
+                transition: 'stroke-dashoffset 0.35s linear',
               }}
             />
           </svg>
@@ -99,12 +98,80 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#ffffff',
             }}
           >
-            <X size={Math.round(size * 0.38)} strokeWidth={2.4} />
+            <svg viewBox="0 0 24 24" width={Math.round(size * 0.46)} height={Math.round(size * 0.46)} fill="none" stroke="var(--accent-color, #6c5ce7)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 19V5M5 12l7-7 7 7" />
+            </svg>
           </div>
         </>
+      );
+    }
+
+    if (state === 'downloading') {
+      return (
+        <>
+          <svg
+            width={size}
+            height={size}
+            viewBox={`0 0 ${size} ${size}`}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              pointerEvents: 'none',
+              transform: 'rotate(-90deg)',
+              animation: 'spin-ring 1.4s linear infinite',
+            }}
+          >
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.08)"
+              strokeWidth={strokeW}
+            />
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="none"
+              stroke="var(--accent-color, #6c5ce7)"
+              strokeWidth={strokeW}
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={dashOffset}
+              style={{
+                willChange: 'stroke-dashoffset',
+                transition: 'stroke-dashoffset 0.35s linear',
+              }}
+            />
+          </svg>
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <svg viewBox="0 0 24 24" width={Math.round(size * 0.42)} height={Math.round(size * 0.42)}>
+              <rect x="7" y="7" width="10" height="10" rx="2" fill="#ffffff" />
+            </svg>
+          </div>
+        </>
+      );
+    }
+
+    if (state === 'done') {
+      return (
+        <svg viewBox="0 0 24 24" width={Math.round(size * 0.46)} height={Math.round(size * 0.46)} fill="none" stroke="#00b894" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M5 13l4 4L19 7" />
+        </svg>
       );
     }
 
@@ -129,8 +196,8 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke="rgba(255, 255, 255, 0.32)"
-              strokeWidth={2}
+              stroke="rgba(255, 255, 255, 0.12)"
+              strokeWidth={strokeW}
             />
           </svg>
           <div
@@ -140,10 +207,11 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#ffffff',
             }}
           >
-            <ArrowDown size={Math.round(size * 0.44)} strokeWidth={2.3} />
+            <svg viewBox="0 0 24 24" width={Math.round(size * 0.46)} height={Math.round(size * 0.46)} fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 4v12m0 0l-5-5m5 5l5-5M5 20h14" />
+            </svg>
           </div>
         </>
       );
@@ -178,8 +246,11 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
         overflow: 'hidden',
         position: 'relative',
         flexShrink: 0,
-        backgroundColor: cover ? 'transparent' : (isOwn ? 'rgba(255, 255, 255, 0.22)' : 'var(--accent-color, #7C3AED)'),
+        backgroundColor: cover ? 'transparent' : (state === 'done' ? 'rgba(0, 184, 148, 0.15)' : (isOwn ? 'rgba(255, 255, 255, 0.2)' : 'rgba(45, 48, 62, 0.9)')),
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
         cursor: 'pointer',
+        transition: 'background-color 0.3s ease',
       }}
     >
       {cover ? (

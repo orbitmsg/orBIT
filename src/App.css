@@ -994,3 +994,12 @@ html.app-paused *::after {
     opacity: 1;
   }
 }
+
+@keyframes spin-ring {
+  0% {
+    transform: rotate(-90deg);
+  }
+  100% {
+    transform: rotate(270deg);
+  }
+}

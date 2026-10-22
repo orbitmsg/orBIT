@@ -516,6 +516,40 @@ export const useChatMessageSend = ({
     sendQueueRef.current = sendQueueRef.current.then(async () => {
       try {
         const isVisual = mediaPayload ? (mediaPayload.type === 'photo' || mediaPayload.type === 'video') : false;
+        const sanitizePreview = (val?: string | null) => {
+          if (!val) return null;
+          if (val.startsWith('data:') && val.length > 2048) return null;
+          return val;
+        };
+
+        const safeBlurPreview = isVisual ? sanitizePreview(mediaPayload?.blurPreview) : null;
+        const safeThumbnail = isVisual ? (sanitizePreview(mediaPayload?.thumbnail) || safeBlurPreview) : null;
+
+        const sanitizedMediaItems = mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload.map((f) => {
+          const isFVisual = f.type === 'photo' || f.type === 'video';
+          const fBlur = isFVisual ? sanitizePreview(f.blurPreview) : undefined;
+          const fThumb = isFVisual ? (sanitizePreview(f.thumbnail) || fBlur) : undefined;
+          return {
+            type: f.type,
+            url: f.url,
+            name: f.name,
+            mime: f.mime,
+            size: f.size,
+            key: f.key,
+            width: f.width,
+            height: f.height,
+            duration: f.duration,
+            blurPreview: fBlur || undefined,
+            thumbnail: fThumb || undefined,
+            audioMetadata: f.audioMetadata ? {
+              title: f.audioMetadata.title,
+              artist: f.audioMetadata.artist,
+              duration: f.audioMetadata.duration,
+              size: f.audioMetadata.size,
+            } : undefined,
+          };
+        }) : null;
+
         const messageData = {
           id: messageId,
           senderId: myCode,
@@ -523,41 +557,20 @@ export const useChatMessageSend = ({
           avatarUrl: myAvatarUrl || null,
           text,
           time: localMessage.time || Date.now(),
-          mediaType: mediaPayload?.type || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.type : null),
-          mediaUrl: mediaPayload?.url || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.url : null),
-          mediaName: mediaPayload?.name || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.name : null),
-          mediaKey: mediaPayload?.key || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.key : null),
-          mime: mediaPayload?.mime || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.mime : null),
+          mediaType: mediaPayload?.type || (sanitizedMediaItems && sanitizedMediaItems.length > 0 ? sanitizedMediaItems[0]?.type : null),
+          mediaUrl: mediaPayload?.url || (sanitizedMediaItems && sanitizedMediaItems.length > 0 ? sanitizedMediaItems[0]?.url : null),
+          mediaName: mediaPayload?.name || (sanitizedMediaItems && sanitizedMediaItems.length > 0 ? sanitizedMediaItems[0]?.name : null),
+          mediaKey: mediaPayload?.key || (sanitizedMediaItems && sanitizedMediaItems.length > 0 ? sanitizedMediaItems[0]?.key : null),
+          mime: mediaPayload?.mime || (sanitizedMediaItems && sanitizedMediaItems.length > 0 ? sanitizedMediaItems[0]?.mime : null),
           audioMetadata: networkAudioMetadata,
-          duration: mediaPayload?.duration || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.duration : null),
+          duration: mediaPayload?.duration || (sanitizedMediaItems && sanitizedMediaItems.length > 0 ? sanitizedMediaItems[0]?.duration : null),
           waveform: mediaPayload?.waveform || null,
-          width: mediaPayload?.width || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.width : null),
-          height: mediaPayload?.height || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.height : null),
-          fileSize: mediaPayload?.size || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.size : null),
-          blurPreview: isVisual ? (mediaPayload?.blurPreview || null) : null,
-          thumbnail: isVisual ? (mediaPayload?.thumbnail || mediaPayload?.blurPreview || null) : null,
-          mediaItems: mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload.map((f) => {
-            const isFVisual = f.type === 'photo' || f.type === 'video';
-            return {
-              type: f.type,
-              url: f.url,
-              name: f.name,
-              mime: f.mime,
-              size: f.size,
-              key: f.key,
-              width: f.width,
-              height: f.height,
-              duration: f.duration,
-              blurPreview: isFVisual ? f.blurPreview : undefined,
-              thumbnail: isFVisual ? (f.thumbnail || f.blurPreview || undefined) : undefined,
-              audioMetadata: f.audioMetadata ? {
-                title: f.audioMetadata.title,
-                artist: f.audioMetadata.artist,
-                duration: f.audioMetadata.duration,
-                size: f.audioMetadata.size,
-              } : undefined,
-            };
-          }) : null,
+          width: mediaPayload?.width || (sanitizedMediaItems && sanitizedMediaItems.length > 0 ? sanitizedMediaItems[0]?.width : null),
+          height: mediaPayload?.height || (sanitizedMediaItems && sanitizedMediaItems.length > 0 ? sanitizedMediaItems[0]?.height : null),
+          fileSize: mediaPayload?.size || (sanitizedMediaItems && sanitizedMediaItems.length > 0 ? sanitizedMediaItems[0]?.size : null),
+          blurPreview: safeBlurPreview,
+          thumbnail: safeThumbnail,
+          mediaItems: sanitizedMediaItems,
           linkPreview: linkPreviewPayload || null,
         };
 
@@ -592,7 +605,7 @@ export const useChatMessageSend = ({
               width: mediaPayload?.width || firstGroupItem?.width || null,
               height: mediaPayload?.height || firstGroupItem?.height || null,
               duration: mediaPayload?.duration || firstGroupItem?.duration || null,
-              ...(mediaItemsPayload && mediaItemsPayload.length > 0 ? { mediaItems: mediaItemsPayload } : {}),
+              ...(sanitizedMediaItems && sanitizedMediaItems.length > 0 ? { mediaItems: sanitizedMediaItems } : {}),
               sender: myNickname,
               senderCode: myCode,
               senderId: myUserId || myCode,
@@ -604,7 +617,15 @@ export const useChatMessageSend = ({
               time: Date.now(),
             };
             const doSendPusher = () => {
-              try { channel.trigger('client-message', payload); } catch {}
+              try {
+                const jsonStr = JSON.stringify(payload);
+                if (jsonStr.length < 9800) {
+                  channel.trigger('client-message', payload);
+                } else {
+                  const { mediaItems: _, ...compactPayload } = payload;
+                  channel.trigger('client-message', compactPayload);
+                }
+              } catch {}
             };
             if (channel.subscribed) doSendPusher(); else channel.bind('pusher:subscription_succeeded', doSendPusher);
 
@@ -767,7 +788,7 @@ export const useChatMessageSend = ({
               )
             ).catch(() => {});
 
-            const firstPreItem = mediaItemsPayload?.[0];
+            const firstPreItem = sanitizedMediaItems?.[0];
             const preHandshakePayload = {
               mediaType: mediaPayload?.type || firstPreItem?.type || null,
               mediaUrl: mediaPayload?.url || firstPreItem?.url || null,
@@ -777,7 +798,7 @@ export const useChatMessageSend = ({
               height: mediaPayload?.height || firstPreItem?.height || null,
               duration: mediaPayload?.duration || firstPreItem?.duration || null,
               waveform: mediaPayload?.waveform || null,
-              ...(mediaItemsPayload && mediaItemsPayload.length > 0 ? { mediaItems: mediaItemsPayload } : {}),
+              ...(sanitizedMediaItems && sanitizedMediaItems.length > 0 ? { mediaItems: sanitizedMediaItems } : {}),
               sender: myNickname,
               avatarUrl: myAvatarUrl || null,
               senderCode: myCode,
@@ -797,7 +818,13 @@ export const useChatMessageSend = ({
               const channel = pusher.subscribe(`private-chat-${activeChatId}`);
               const doSendPusher = () => {
                 try {
-                  channel.trigger('client-message', preHandshakePayload);
+                  const jsonStr = JSON.stringify(preHandshakePayload);
+                  if (jsonStr.length < 9800) {
+                    channel.trigger('client-message', preHandshakePayload);
+                  } else {
+                    const { mediaItems: _, ...compactPayload } = preHandshakePayload;
+                    channel.trigger('client-message', compactPayload);
+                  }
                 } catch {}
               };
               if (channel.subscribed) doSendPusher(); else channel.bind('pusher:subscription_succeeded', doSendPusher);
@@ -808,7 +835,13 @@ export const useChatMessageSend = ({
                 const recipientHsChannel = pusher.subscribe(`private-handshake-${recipientId}`);
                 const doSendDirect = () => {
                   try {
-                    recipientHsChannel.trigger('client-message', preHandshakePayload);
+                    const jsonStr = JSON.stringify(preHandshakePayload);
+                    if (jsonStr.length < 9800) {
+                      recipientHsChannel.trigger('client-message', preHandshakePayload);
+                    } else {
+                      const { mediaItems: _, ...compactPayload } = preHandshakePayload;
+                      recipientHsChannel.trigger('client-message', compactPayload);
+                    }
                   } catch {}
                 };
                 if (recipientHsChannel.subscribed) doSendDirect();
@@ -835,7 +868,7 @@ export const useChatMessageSend = ({
 
         updateChat(activeChatId, { ratchetState: ratchet.getState() });
 
-        const firstRatchetItem = mediaItemsPayload?.[0];
+        const firstRatchetItem = sanitizedMediaItems?.[0];
         const payload = {
           mediaType: mediaPayload?.type || firstRatchetItem?.type || null,
           mediaUrl: mediaPayload?.url || firstRatchetItem?.url || null,
@@ -845,7 +878,7 @@ export const useChatMessageSend = ({
           height: mediaPayload?.height || firstRatchetItem?.height || null,
           duration: mediaPayload?.duration || firstRatchetItem?.duration || null,
           waveform: mediaPayload?.waveform || null,
-          ...(mediaItemsPayload && mediaItemsPayload.length > 0 ? { mediaItems: mediaItemsPayload } : {}),
+          ...(sanitizedMediaItems && sanitizedMediaItems.length > 0 ? { mediaItems: sanitizedMediaItems } : {}),
           sender: myNickname,
           avatarUrl: myAvatarUrl || null,
           senderCode: myCode,
@@ -882,7 +915,13 @@ export const useChatMessageSend = ({
             const channel = pusher.subscribe(`private-chat-${activeChatId}`);
             const doSendPusher = () => {
               try {
-                channel.trigger('client-message', payload);
+                const jsonStr = JSON.stringify(payload);
+                if (jsonStr.length < 9800) {
+                  channel.trigger('client-message', payload);
+                } else {
+                  const { mediaItems: _, ...compactPayload } = payload;
+                  channel.trigger('client-message', compactPayload);
+                }
               } catch {}
             };
             if (channel.subscribed) doSendPusher(); else channel.bind('pusher:subscription_succeeded', doSendPusher);
@@ -893,7 +932,13 @@ export const useChatMessageSend = ({
               const recipientHsChannel = pusher.subscribe(`private-handshake-${recipientId}`);
               const doSendDirect = () => {
                 try {
-                  recipientHsChannel.trigger('client-message', payload);
+                  const jsonStr = JSON.stringify(payload);
+                  if (jsonStr.length < 9800) {
+                    recipientHsChannel.trigger('client-message', payload);
+                  } else {
+                    const { mediaItems: _, ...compactPayload } = payload;
+                    recipientHsChannel.trigger('client-message', compactPayload);
+                  }
                 } catch {}
               };
               if (recipientHsChannel.subscribed) doSendDirect();

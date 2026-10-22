@@ -474,11 +474,12 @@ export const useChatAudioAndFiles = ({
 
     const isChannel = chat.type === 'channel';
     const isBotChat = activeChatId === 'system_support';
+    const isGroup = chat.type === 'group';
     if (isChannel) {
       if (!isChannelOwner) return;
-    } else if (isBotChat) {
+    } else if (isBotChat || isGroup) {
     } else {
-      if (!sharedSecret || !chat.ratchetState) return;
+      if (!sharedSecret) return;
     }
 
     const filesToSend = [...attachedFiles];
@@ -547,7 +548,7 @@ export const useChatAudioAndFiles = ({
           height: file.height,
           duration: file.duration || file.audioMetadata?.duration,
           blurPreview: file.blurPreview,
-          thumbnail: file.preview || file.blurPreview,
+          thumbnail: file.blurPreview,
         };
       }
 
@@ -666,7 +667,7 @@ export const useChatAudioAndFiles = ({
           height: file.height,
           duration: file.duration || file.audioMetadata?.duration,
           blurPreview: file.blurPreview,
-          thumbnail: (file.fileType === 'photo' || file.fileType === 'video') ? (file.preview || file.blurPreview) : undefined,
+          thumbnail: file.blurPreview,
         };
       } catch (err) {
         console.error('Upload error for file', file.name, err);
@@ -699,7 +700,7 @@ export const useChatAudioAndFiles = ({
           height: file.height,
           duration: file.duration || file.audioMetadata?.duration,
           blurPreview: file.blurPreview,
-          thumbnail: file.preview || file.blurPreview,
+          thumbnail: file.blurPreview,
           uploading: true,
           uploadedMb: 0,
         }));
@@ -794,7 +795,7 @@ export const useChatAudioAndFiles = ({
           height: file.height,
           duration: file.duration || file.audioMetadata?.duration,
           blurPreview: file.blurPreview,
-          thumbnail: file.preview || file.blurPreview,
+          thumbnail: file.blurPreview,
         };
         addMessage(activeChatId, localMessage);
         updateChat(activeChatId, { lastMsg: postCaption || file.name || `[${itemType}]` });

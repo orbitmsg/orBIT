@@ -1050,6 +1050,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   timeNode={timeBadge(msg, isMessagePinned(msg))}
                   isOwn={isOwn}
                   customRadius={customRadius}
+                  isUploading={msg.uploading || msg.status === 'sending'}
                 />
               </div>
             )}

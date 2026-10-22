@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../../store/useChatStore';
+import { useUploadProgressStore } from '../../store/useUploadProgressStore';
 import { useDecryptedMedia } from '../../lib/media-utils';
 import { mediaManager } from '../../services/mediaManager';
-import { AudioCoverWithPlay } from '../audio/AudioCoverWithPlay';
+import { AudioCoverWithPlay, type AudioCoverState } from '../audio/AudioCoverWithPlay';
 import { arrayBufferToBase64 } from '../../utils/messageUtils';
 import { orbitFs } from './chatUtils';
 
@@ -17,6 +18,7 @@ interface FileMessageProps {
   timeNode?: React.ReactNode;
   isOwn?: boolean;
   customRadius?: string;
+  isUploading?: boolean;
 }
 
 export const FileMessage = memo(({
@@ -29,6 +31,7 @@ export const FileMessage = memo(({
   timeNode,
   isOwn = false,
   customRadius,
+  isUploading = false,
 }: FileMessageProps) => {
   const { t } = useTranslation();
   const bubbleRadius = useChatStore((state) => state.bubbleRadius);
@@ -41,6 +44,9 @@ export const FileMessage = memo(({
   const [isLoading, setIsLoading] = useState(false);
   const displayName = fileName || t('chatWindow.file');
   const ext = fileName?.split('.').pop()?.toUpperCase() || 'FILE';
+
+  const uploadedMb = useUploadProgressStore((state) => (messageId ? state.progressByKey[messageId] : undefined));
+  const isCurrentlyUploading = Boolean(isUploading || (isOwn && messageId && typeof uploadedMb === 'number'));
 
   useEffect(() => {
     if (typeof initialSize === 'number' && initialSize > 0) {
@@ -112,8 +118,42 @@ export const FileMessage = memo(({
 
   const isDownloading = isLoading || mediaLoading;
 
+  const totalMb = fileSizeBytes ? fileSizeBytes / (1024 * 1024) : 0;
+  const uploadFraction = totalMb > 0 ? Math.min(1, Math.max(0, (uploadedMb || 0) / totalMb)) : (isCurrentlyUploading ? 0.08 : 0);
+  const downloadFraction = Math.min(1, Math.max(0, progress || 0));
+
+  const activeState: AudioCoverState = isCurrentlyUploading
+    ? 'uploading'
+    : isDownloading
+    ? 'downloading'
+    : blobUrl
+    ? 'file'
+    : 'download';
+
+  const activeProgress = isCurrentlyUploading ? uploadFraction : (isDownloading ? downloadFraction : undefined);
+  const activePercent = isCurrentlyUploading ? Math.round(uploadFraction * 100) : Math.round(downloadFraction * 100);
+
+  const statusText = useMemo(() => {
+    if (isCurrentlyUploading) {
+      if (totalMb > 0 && typeof uploadedMb === 'number') {
+        return `${uploadedMb.toFixed(1)} MB / ${totalMb.toFixed(1)} MB • ${activePercent}%`;
+      }
+      return `${activePercent}%`;
+    }
+    if (isDownloading) {
+      if (fileSizeBytes && fileSizeBytes > 0) {
+        const curMb = (downloadFraction * fileSizeBytes) / (1024 * 1024);
+        const totMb = fileSizeBytes / (1024 * 1024);
+        return `${curMb.toFixed(1)} MB / ${totMb.toFixed(1)} MB • ${activePercent}%`;
+      }
+      return `${activePercent}%`;
+    }
+    return fileSize ? (ext ? `${fileSize} • ${ext}` : fileSize) : ext || t('chatWindow.document');
+  }, [isCurrentlyUploading, isDownloading, totalMb, uploadedMb, activePercent, fileSizeBytes, downloadFraction, fileSize, ext, t]);
+
   const handleOpenFile = useCallback(async (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    if (isCurrentlyUploading) return;
     if (!blobUrl) {
       if (isDownloading) return;
       setIsLoading(true);
@@ -150,7 +190,7 @@ export const FileMessage = memo(({
       a.click();
       document.body.removeChild(a);
     }
-  }, [blobUrl, displayName, isDownloading, load]);
+  }, [blobUrl, displayName, isDownloading, isCurrentlyUploading, load]);
 
   return (
     <div
@@ -161,27 +201,27 @@ export const FileMessage = memo(({
           ? 'var(--chat-bubble-own-bg, #2c6bed)'
           : 'var(--chat-bubble-incoming-bg, var(--surface-container))',
         border: 'none',
-        padding: '8px 12px 8px 8px',
+        padding: '10px 14px 10px 10px',
         position: 'relative',
-        width: '260px',
-        height: '64px',
+        width: '280px',
         boxSizing: 'border-box',
         overflow: 'hidden',
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25)',
       }}
       onClick={handleOpenFile}
     >
-      <div className="flex items-start gap-2">
+      <div className="flex items-center gap-2.5">
         <AudioCoverWithPlay
           cover={null}
           isPlayingTrack={false}
           size={48}
           onClick={handleOpenFile}
-          state={!blobUrl ? (isDownloading ? 'downloading' : 'download') : 'file'}
-          progress={isDownloading ? progress : undefined}
+          state={activeState}
+          progress={activeProgress}
           isOwn={isOwn}
-          ariaLabel={isDownloading ? 'Cancel download' : (!blobUrl ? 'Download file' : 'Open file')}
+          ariaLabel={isCurrentlyUploading ? 'Uploading file' : (isDownloading ? 'Cancel download' : (!blobUrl ? 'Download file' : 'Open file'))}
         />
-        <div className="flex flex-col min-w-0 flex-1 gap-1 overflow-hidden" style={{ maxWidth: '100%' }}>
+        <div className="flex flex-col min-w-0 flex-1 gap-0.5 overflow-hidden" style={{ maxWidth: '100%' }}>
           <div
             className="font-semibold truncate"
             style={{
@@ -196,17 +236,48 @@ export const FileMessage = memo(({
           >
             {displayName}
           </div>
-          <div style={{ fontSize: orbitFs(11), color: isOwn ? 'rgba(255, 255, 255, 0.7)' : 'var(--text-dim)' }}>
-            {fileSize ? (ext ? `${fileSize} • ${ext}` : fileSize) : ext || t('chatWindow.document')}
+          <div
+            className="tabular-nums"
+            style={{
+              fontSize: orbitFs(11),
+              color: isOwn ? 'rgba(255, 255, 255, 0.75)' : 'var(--text-dim)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {statusText}
           </div>
+          {(isCurrentlyUploading || isDownloading) && (
+            <div
+              style={{
+                width: '100%',
+                height: '4px',
+                background: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '4px',
+                marginTop: '4px',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  height: '100%',
+                  width: `${activePercent}%`,
+                  background: 'var(--accent-color, #6c5ce7)',
+                  borderRadius: '4px',
+                  transition: 'width 0.35s linear',
+                }}
+              />
+            </div>
+          )}
         </div>
       </div>
 
       <div
         style={{
           position: 'absolute',
-          bottom: isOwn ? '2px' : '5px',
-          right: isOwn ? '3px' : '10px',
+          bottom: isOwn ? '2px' : '4px',
+          right: isOwn ? '4px' : '8px',
           display: 'flex',
           alignItems: 'center',
           gap: '2px',

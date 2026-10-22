@@ -1966,7 +1966,8 @@ function uploadToCloudinaryWithProgress(
 
     let uploadedFileBytes = 0;
     req.write(headerBuffer, () => {
-      fileStream = fs.createReadStream(filePath, { highWaterMark: 64 * 1024 });
+      const highWaterMark = Math.max(1024, Math.min(32 * 1024, Math.floor(fileLength / 64)));
+      fileStream = fs.createReadStream(filePath, { highWaterMark });
 
       fileStream.on('data', (chunk: Buffer) => {
         if (isStreamDestroyed) return;
@@ -2045,7 +2046,7 @@ async function cloudinaryUploadWithProgress(event: Electron.IpcMainInvokeEvent, 
       'file',
       (uploadedBytes, totalBytes) => {
         const now = Date.now();
-        if (uploadedBytes < totalBytes && now - lastProgressSent < 90) return;
+        if (uploadedBytes < totalBytes && now - lastProgressSent < 16) return;
         lastProgressSent = now;
         if (event.sender && !event.sender.isDestroyed()) {
           try {

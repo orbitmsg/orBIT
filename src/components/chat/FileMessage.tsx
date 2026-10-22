@@ -8,6 +8,15 @@ import { AudioCoverWithPlay, type AudioCoverState } from '../audio/AudioCoverWit
 import { arrayBufferToBase64 } from '../../utils/messageUtils';
 import { orbitFs } from './chatUtils';
 
+function formatBytes(bytes: number): string {
+  if (!bytes || isNaN(bytes) || bytes <= 0) return '0 B';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  const gb = bytes / (1024 * 1024 * 1024);
+  return `${gb >= 10 ? gb.toFixed(1) : gb.toFixed(2)} GB`;
+}
+
 interface FileMessageProps {
   url: string;
   fileName?: string;
@@ -45,8 +54,8 @@ export const FileMessage = memo(({
   const displayName = fileName || t('chatWindow.file');
   const ext = fileName?.split('.').pop()?.toUpperCase() || 'FILE';
 
-  const uploadedMb = useUploadProgressStore((state) => (messageId ? state.progressByKey[messageId] : undefined));
-  const isCurrentlyUploading = Boolean(isUploading || (isOwn && messageId && typeof uploadedMb === 'number'));
+  const liveProgress = useUploadProgressStore((state) => (messageId ? state.progressByKey[messageId] : undefined));
+  const isCurrentlyUploading = Boolean(isUploading || (isOwn && messageId && liveProgress !== undefined));
 
   useEffect(() => {
     if (typeof initialSize === 'number' && initialSize > 0) {
@@ -118,8 +127,7 @@ export const FileMessage = memo(({
 
   const isDownloading = isLoading || mediaLoading;
 
-  const totalMb = fileSizeBytes ? fileSizeBytes / (1024 * 1024) : 0;
-  const uploadFraction = totalMb > 0 ? Math.min(1, Math.max(0, (uploadedMb || 0) / totalMb)) : (isCurrentlyUploading ? 0.08 : 0);
+  const uploadFraction = liveProgress ? liveProgress.fraction : (isCurrentlyUploading ? 0.08 : 0);
   const downloadFraction = Math.min(1, Math.max(0, progress || 0));
 
   const activeState: AudioCoverState = isCurrentlyUploading
@@ -135,21 +143,23 @@ export const FileMessage = memo(({
 
   const statusText = useMemo(() => {
     if (isCurrentlyUploading) {
-      if (totalMb > 0 && typeof uploadedMb === 'number') {
-        return `${uploadedMb.toFixed(1)} MB / ${totalMb.toFixed(1)} MB • ${activePercent}%`;
+      if (liveProgress && liveProgress.totalBytes > 0) {
+        return `${formatBytes(liveProgress.uploadedBytes)} / ${formatBytes(liveProgress.totalBytes)} • ${activePercent}%`;
+      }
+      if (fileSizeBytes && fileSizeBytes > 0) {
+        return `${formatBytes(uploadFraction * fileSizeBytes)} / ${formatBytes(fileSizeBytes)} • ${activePercent}%`;
       }
       return `${activePercent}%`;
     }
     if (isDownloading) {
       if (fileSizeBytes && fileSizeBytes > 0) {
-        const curMb = (downloadFraction * fileSizeBytes) / (1024 * 1024);
-        const totMb = fileSizeBytes / (1024 * 1024);
-        return `${curMb.toFixed(1)} MB / ${totMb.toFixed(1)} MB • ${activePercent}%`;
+        const curBytes = downloadFraction * fileSizeBytes;
+        return `${formatBytes(curBytes)} / ${formatBytes(fileSizeBytes)} • ${activePercent}%`;
       }
       return `${activePercent}%`;
     }
     return fileSize ? (ext ? `${fileSize} • ${ext}` : fileSize) : ext || t('chatWindow.document');
-  }, [isCurrentlyUploading, isDownloading, totalMb, uploadedMb, activePercent, fileSizeBytes, downloadFraction, fileSize, ext, t]);
+  }, [isCurrentlyUploading, isDownloading, liveProgress, activePercent, fileSizeBytes, uploadFraction, downloadFraction, fileSize, ext, t]);
 
   const handleOpenFile = useCallback(async (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -265,7 +275,7 @@ export const FileMessage = memo(({
                   width: `${activePercent}%`,
                   background: 'var(--accent-color, #6c5ce7)',
                   borderRadius: '4px',
-                  transition: 'width 0.35s linear',
+                  transition: 'width 0.14s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               />
             </div>

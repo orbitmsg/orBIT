@@ -87,7 +87,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               strokeDashoffset={dashOffset}
               style={{
                 willChange: 'stroke-dashoffset',
-                transition: 'stroke-dashoffset 0.35s linear',
+                transition: 'stroke-dashoffset 0.14s cubic-bezier(0.4, 0, 0.2, 1)',
               }}
             />
           </svg>
@@ -146,7 +146,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               strokeDashoffset={dashOffset}
               style={{
                 willChange: 'stroke-dashoffset',
-                transition: 'stroke-dashoffset 0.35s linear',
+                transition: 'stroke-dashoffset 0.14s cubic-bezier(0.4, 0, 0.2, 1)',
               }}
             />
           </svg>

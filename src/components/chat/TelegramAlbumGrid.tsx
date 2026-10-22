@@ -86,8 +86,9 @@ const AlbumTile = memo(({
     if (!msg.id) return undefined;
     return s.progressByKey[progressKey] ?? ((!msg.mediaItems || msg.mediaItems.length <= 1) ? s.progressByKey[msg.id] : undefined);
   });
-  const currentUploaded = liveProgress !== undefined ? liveProgress : (item.uploadedMb || msg.uploadedMb || 0);
-  const uploadProgress = itemTotalSize > 0 ? Math.min(1, Math.max(0.04, (currentUploaded * 1024 * 1024) / itemTotalSize)) : 0.08;
+  const uploadProgress = liveProgress
+    ? Math.max(0.04, liveProgress.fraction)
+    : (itemTotalSize > 0 ? Math.min(1, Math.max(0.04, ((item.uploadedMb || msg.uploadedMb || 0) * 1024 * 1024) / itemTotalSize)) : 0.08);
 
   return (
     <div

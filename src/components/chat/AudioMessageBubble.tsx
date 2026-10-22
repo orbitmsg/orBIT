@@ -186,11 +186,14 @@ export const AudioMessageBubble = memo(({
     msg.uploading && (msg.status === 'sending' || msg.status === 'pending')
   );
   const itemTotalSize = msg.audioMetadata?.size || (msg as any).size || msg.fileSize || 0;
-  const sizeMbStr = itemTotalSize > 0 ? (itemTotalSize / (1024 * 1024)).toFixed(1) : '0.0';
   const liveProgress = useUploadProgressStore((s) => msg.id ? s.progressByKey[msg.id] : undefined);
-  const currentUploaded = liveProgress !== undefined ? liveProgress : (msg.uploadedMb || 0);
-  const uploadedMbStr = currentUploaded.toFixed(1);
-  const uploadProgress = itemTotalSize > 0 ? Math.min(1, Math.max(0.04, (currentUploaded * 1024 * 1024) / itemTotalSize)) : 0.08;
+  const uploadProgress = liveProgress
+    ? Math.max(0.04, liveProgress.fraction)
+    : (itemTotalSize > 0 ? Math.min(1, Math.max(0.04, ((msg.uploadedMb || 0) * 1024 * 1024) / itemTotalSize)) : 0.08);
+  const uploadedMbStr = liveProgress ? liveProgress.uploadedMb.toFixed(1) : (msg.uploadedMb || 0).toFixed(1);
+  const sizeMbStr = liveProgress && liveProgress.totalMb > 0
+    ? liveProgress.totalMb.toFixed(1)
+    : (itemTotalSize > 0 ? (itemTotalSize / (1024 * 1024)).toFixed(1) : '0.0');
 
   const coverState = isUploading
     ? 'uploading'

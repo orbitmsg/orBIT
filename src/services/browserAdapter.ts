@@ -414,6 +414,9 @@ class BrowserOrbitaAdapter {
           try {
             const data = JSON.parse(xhr.responseText);
             if (xhr.status === 200 && data.secure_url) {
+              if (fileBlob) {
+                this.notifyProgress(publicId, fileBlob.size, fileBlob.size);
+              }
               resolve({ success: true, secure_url: data.secure_url, bytes: data.bytes });
             } else {
               resolve({ success: false, secure_url: '', error: data.error?.message || `HTTP ${xhr.status}` });

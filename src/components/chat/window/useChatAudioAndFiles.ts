@@ -177,10 +177,19 @@ export const useChatAudioAndFiles = ({
         }
 
         const publicId = `orbita_${Date.now()}`;
+        const unsub = window.orbita?.onUploadProgress(({ publicId: pid, uploadedBytes, totalBytes }: any) => {
+          if (pid === publicId) {
+            useUploadProgressStore.getState().setProgress(optimisticMessageId, uploadedBytes, totalBytes);
+          }
+        });
         const result = await window.orbita?.uploadToCloudinary(tempPath, publicId);
+        unsub?.();
         window.orbita?.deleteTempFile?.(tempPath);
 
         if (result && result.success && result.secure_url) {
+          useUploadProgressStore.getState().setProgress(optimisticMessageId, 1, 1);
+          await new Promise((r) => setTimeout(r, 220));
+          useUploadProgressStore.getState().clearProgress(optimisticMessageId);
           mediaManager.setDirectDecryptedMedia(result.secure_url, fileKey || '', blob, 'audio/ogg;codecs=opus', activeChatId, optimisticMessageId);
           if (sharedSecret && sharedSecret !== fileKey) {
             mediaManager.setDirectDecryptedMedia(result.secure_url, sharedSecret, blob, 'audio/ogg;codecs=opus', activeChatId, optimisticMessageId);
@@ -200,10 +209,12 @@ export const useChatAudioAndFiles = ({
             optimisticMessageId
           );
         } else {
+          useUploadProgressStore.getState().clearProgress(optimisticMessageId);
           showToast(t('chatWindow.upload_failed'));
           useChatStore.getState().deleteMessage(activeChatId, optimisticMessageId);
         }
       } catch (error) {
+        useUploadProgressStore.getState().clearProgress(optimisticMessageId);
         console.error('Failed to upload recorded audio:', error);
         showToast(t('chatWindow.upload_failed'));
         useChatStore.getState().deleteMessage(activeChatId, optimisticMessageId);
@@ -533,7 +544,7 @@ export const useChatAudioAndFiles = ({
 
     const uploadSingleFile = async (
       file: typeof filesToSend[0],
-      onProgress?: (uploadedBytes: number) => void
+      onProgress?: (uploadedBytes: number, totalBytes: number) => void
     ) => {
       if (file.uploadedUrl) {
         return {
@@ -617,6 +628,7 @@ export const useChatAudioAndFiles = ({
         const cleanedBuffer = stripExifMetadata(fileArrayBuffer, file.fileType || file.name);
         let fileKey: string | undefined = undefined;
         let tempPath: string | null = null;
+        let uploadTotalBytes = cleanedBuffer.byteLength;
         const isPublic = isChannel || isBotChat;
         const ext = isTranscodedTemp ? 'mp4' : (file.name?.match(/\.([^.]+)$/) || [])[1]?.toLowerCase();
 
@@ -626,6 +638,7 @@ export const useChatAudioAndFiles = ({
           fileKey = generateEphemeralKey();
           const encryptedBlob = await encryptFile(cleanedBuffer, fileKey);
           const encryptedAb = await encryptedBlob.arrayBuffer();
+          uploadTotalBytes = encryptedAb.byteLength;
           tempPath = await window.orbita?.writeTempFile(new Uint8Array(encryptedAb), undefined);
         }
 
@@ -636,9 +649,12 @@ export const useChatAudioAndFiles = ({
 
         const publicId = `orbita_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 
-        const unsub = window.orbita?.onUploadProgress(({ publicId: pid, uploadedBytes }: any) => {
+        const unsub = window.orbita?.onUploadProgress(({ publicId: pid, uploadedBytes, totalBytes }: any) => {
           if (pid === publicId && onProgress) {
-            onProgress(uploadedBytes);
+            if (typeof totalBytes === 'number' && totalBytes > 0) {
+              uploadTotalBytes = totalBytes;
+            }
+            onProgress(uploadedBytes, uploadTotalBytes);
           }
         });
 
@@ -662,7 +678,7 @@ export const useChatAudioAndFiles = ({
           name: file.name,
           mime: itemMime,
           audioMetadata: file.audioMetadata,
-          size: cleanedBuffer.byteLength || (file.sizeMb ? Math.round(file.sizeMb * 1024 * 1024) : file.audioMetadata?.size),
+          size: uploadTotalBytes || cleanedBuffer.byteLength || (file.sizeMb ? Math.round(file.sizeMb * 1024 * 1024) : file.audioMetadata?.size),
           width: file.width,
           height: file.height,
           duration: file.duration || file.audioMetadata?.duration,
@@ -721,13 +737,18 @@ export const useChatAudioAndFiles = ({
         addMessage(activeChatId, localMessage);
         updateChat(activeChatId, { lastMsg: chunkCaption || '[MediaGroup]' });
 
+        for (let fIdx = 0; fIdx < chunkFiles.length; fIdx++) {
+          const cFile = chunkFiles[fIdx];
+          const initialBytes = cFile.sizeMb ? Math.round(cFile.sizeMb * 1024 * 1024) : 1;
+          useUploadProgressStore.getState().setProgress(`${messageId}_${fIdx}`, 0, initialBytes);
+        }
+
         (async () => {
           const uploadedItems: MediaItem[] = [];
           for (let fIdx = 0; fIdx < chunkFiles.length; fIdx++) {
             const currentFile = chunkFiles[fIdx];
-            const uploaded = await uploadSingleFile(currentFile, (uploadedBytes) => {
-              const uploadedMb = uploadedBytes / (1024 * 1024);
-              useUploadProgressStore.getState().setProgress(`${messageId}_${fIdx}`, uploadedMb);
+            const uploaded = await uploadSingleFile(currentFile, (uploadedBytes, totalBytes) => {
+              useUploadProgressStore.getState().setProgress(`${messageId}_${fIdx}`, uploadedBytes, totalBytes);
             });
 
             if (!uploaded) {
@@ -744,6 +765,8 @@ export const useChatAudioAndFiles = ({
               }));
               return;
             }
+            useUploadProgressStore.getState().setProgress(`${messageId}_${fIdx}`, uploaded.size || 1, uploaded.size || 1);
+            await new Promise((r) => setTimeout(r, 220));
             useUploadProgressStore.getState().clearProgress(`${messageId}_${fIdx}`);
             uploadedItems.push({
               ...uploaded,
@@ -801,11 +824,11 @@ export const useChatAudioAndFiles = ({
         };
         addMessage(activeChatId, localMessage);
         updateChat(activeChatId, { lastMsg: postCaption || file.name || `[${itemType}]` });
+        useUploadProgressStore.getState().setProgress(messageId, 0, fileSizeBytes || 1);
 
         (async () => {
-          const uploaded = await uploadSingleFile(file, (uploadedBytes) => {
-            const uploadedMb = uploadedBytes / (1024 * 1024);
-            useUploadProgressStore.getState().setProgress(messageId, uploadedMb);
+          const uploaded = await uploadSingleFile(file, (uploadedBytes, totalBytes) => {
+            useUploadProgressStore.getState().setProgress(messageId, uploadedBytes, totalBytes);
           });
 
           if (!uploaded) {
@@ -821,6 +844,9 @@ export const useChatAudioAndFiles = ({
             }));
             return;
           }
+
+          useUploadProgressStore.getState().setProgress(messageId, uploaded.size || 1, uploaded.size || 1);
+          await new Promise((r) => setTimeout(r, 220));
 
           const isPresent = useChatStore.getState().messagesByChatId[activeChatId]?.some((m) => m.id === messageId);
           if (!isPresent) {

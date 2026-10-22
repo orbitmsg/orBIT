@@ -168,14 +168,14 @@ export const SmartGifPlayer = memo(({
             loop
             muted
             playsInline
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
             style={{ display: 'block', pointerEvents: 'none' }}
           />
         ) : (
           <img
             src={blobUrl!}
             alt="GIF"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
             draggable={false}
             style={{ display: 'block' }}
           />
@@ -185,14 +185,14 @@ export const SmartGifPlayer = memo(({
           src={blobUrl || undefined}
           muted
           playsInline
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
           style={{ display: 'block', pointerEvents: 'none' }}
         />
       ) : (
         <img
           src={posterUrl || blobUrl || undefined}
           alt="GIF"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
           draggable={false}
           style={{ display: 'block', opacity: (posterUrl || blobUrl) ? 1 : 0, transition: 'opacity 0.15s' }}
         />

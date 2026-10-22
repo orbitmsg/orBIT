@@ -583,16 +583,15 @@ export const useChatMessageSend = ({
             const ciphertext = await encryptMessage(JSON.stringify(messageData), groupSecret);
             const groupPusher = getGroupPusher();
             const channel = groupPusher.subscribe(`presence-group-${activeChatId}`);
+            const firstGroupItem = mediaItemsPayload?.[0];
             const payload = {
-              ...(mediaPayload ? {
-                mediaType: mediaPayload.type,
-                mediaUrl: mediaPayload.url,
-                mediaName: mediaPayload.name,
-                mime: mediaPayload.mime,
-                width: mediaPayload.width,
-                height: mediaPayload.height,
-                duration: mediaPayload.duration,
-              } : {}),
+              mediaType: mediaPayload?.type || firstGroupItem?.type || null,
+              mediaUrl: mediaPayload?.url || firstGroupItem?.url || null,
+              mediaName: mediaPayload?.name || firstGroupItem?.name || null,
+              mime: mediaPayload?.mime || firstGroupItem?.mime || null,
+              width: mediaPayload?.width || firstGroupItem?.width || null,
+              height: mediaPayload?.height || firstGroupItem?.height || null,
+              duration: mediaPayload?.duration || firstGroupItem?.duration || null,
               ...(mediaItemsPayload && mediaItemsPayload.length > 0 ? { mediaItems: mediaItemsPayload } : {}),
               sender: myNickname,
               senderCode: myCode,
@@ -768,17 +767,16 @@ export const useChatMessageSend = ({
               )
             ).catch(() => {});
 
+            const firstPreItem = mediaItemsPayload?.[0];
             const preHandshakePayload = {
-              ...(mediaPayload ? {
-                mediaType: mediaPayload.type,
-                mediaUrl: mediaPayload.url,
-                mediaName: mediaPayload.name,
-                mime: mediaPayload.mime,
-                width: mediaPayload.width,
-                height: mediaPayload.height,
-                duration: mediaPayload.duration,
-                waveform: mediaPayload.waveform,
-              } : {}),
+              mediaType: mediaPayload?.type || firstPreItem?.type || null,
+              mediaUrl: mediaPayload?.url || firstPreItem?.url || null,
+              mediaName: mediaPayload?.name || firstPreItem?.name || null,
+              mime: mediaPayload?.mime || firstPreItem?.mime || null,
+              width: mediaPayload?.width || firstPreItem?.width || null,
+              height: mediaPayload?.height || firstPreItem?.height || null,
+              duration: mediaPayload?.duration || firstPreItem?.duration || null,
+              waveform: mediaPayload?.waveform || null,
               ...(mediaItemsPayload && mediaItemsPayload.length > 0 ? { mediaItems: mediaItemsPayload } : {}),
               sender: myNickname,
               avatarUrl: myAvatarUrl || null,
@@ -837,17 +835,16 @@ export const useChatMessageSend = ({
 
         updateChat(activeChatId, { ratchetState: ratchet.getState() });
 
+        const firstRatchetItem = mediaItemsPayload?.[0];
         const payload = {
-          ...(mediaPayload ? {
-            mediaType: mediaPayload.type,
-            mediaUrl: mediaPayload.url,
-            mediaName: mediaPayload.name,
-            mime: mediaPayload.mime,
-            width: mediaPayload.width,
-            height: mediaPayload.height,
-            duration: mediaPayload.duration,
-            waveform: mediaPayload.waveform,
-          } : {}),
+          mediaType: mediaPayload?.type || firstRatchetItem?.type || null,
+          mediaUrl: mediaPayload?.url || firstRatchetItem?.url || null,
+          mediaName: mediaPayload?.name || firstRatchetItem?.name || null,
+          mime: mediaPayload?.mime || firstRatchetItem?.mime || null,
+          width: mediaPayload?.width || firstRatchetItem?.width || null,
+          height: mediaPayload?.height || firstRatchetItem?.height || null,
+          duration: mediaPayload?.duration || firstRatchetItem?.duration || null,
+          waveform: mediaPayload?.waveform || null,
           ...(mediaItemsPayload && mediaItemsPayload.length > 0 ? { mediaItems: mediaItemsPayload } : {}),
           sender: myNickname,
           avatarUrl: myAvatarUrl || null,

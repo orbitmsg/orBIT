@@ -1,7 +1,7 @@
-import { memo, useMemo, useState } from 'react';
+import { memo, useMemo, useState, useCallback } from 'react';
 import { MediaItem, Message, useChatStore } from '../../store/useChatStore';
 import { useUploadProgressStore } from '../../store/useUploadProgressStore';
-import { useDecryptedMedia } from '../../lib/media-utils';
+import { useDecryptedMedia, calculateMediaDisplaySize } from '../../lib/media-utils';
 import { AudioCoverWithPlay } from '../audio/AudioCoverWithPlay';
 import { Play } from 'lucide-react';
 
@@ -24,6 +24,8 @@ const AlbumTile = memo(({
   style,
   isOwn = false,
   msg,
+  isSingle = false,
+  onDimensionsLoaded,
 }: {
   item: MediaItem;
   itemIdx: number;
@@ -32,6 +34,8 @@ const AlbumTile = memo(({
   style: React.CSSProperties;
   isOwn?: boolean;
   msg: Message;
+  isSingle?: boolean;
+  onDimensionsLoaded?: (width: number, height: number, itemIdx: number) => void;
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const isGif = Boolean(
@@ -101,8 +105,9 @@ const AlbumTile = memo(({
           className="absolute inset-0 pointer-events-none"
           style={{
             backgroundImage: `url(${posterSrc})`,
-            backgroundSize: 'cover',
+            backgroundSize: isSingle ? 'contain' : 'cover',
             backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
           }}
         />
       ) : blurSrc ? (
@@ -133,17 +138,31 @@ const AlbumTile = memo(({
               <img
                 src={mediaSrc}
                 alt={item.name || ''}
-                className="w-full h-full object-cover pointer-events-none relative z-[1] transition-opacity duration-200"
+                className={`w-full h-full pointer-events-none relative z-[1] transition-opacity duration-200 ${isSingle ? 'object-contain' : 'object-cover'}`}
                 style={{ opacity: isLoaded ? 1 : 0 }}
-                onLoad={() => setIsLoaded(true)}
+                onLoad={(e) => {
+                  setIsLoaded(true);
+                  const nw = e.currentTarget.naturalWidth;
+                  const nh = e.currentTarget.naturalHeight;
+                  if (nw > 0 && nh > 0) {
+                    onDimensionsLoaded?.(nw, nh, itemIdx);
+                  }
+                }}
                 loading="lazy"
                 decoding="async"
               />
             ) : (
               <video
                 src={mediaSrc}
-                className="w-full h-full object-cover pointer-events-none relative z-[1] transition-opacity duration-200"
+                className={`w-full h-full pointer-events-none relative z-[1] transition-opacity duration-200 ${isSingle ? 'object-contain' : 'object-cover'}`}
                 style={{ opacity: isLoaded ? 1 : 0 }}
+                onLoadedMetadata={(e) => {
+                  const vw = e.currentTarget.videoWidth;
+                  const vh = e.currentTarget.videoHeight;
+                  if (vw > 0 && vh > 0) {
+                    onDimensionsLoaded?.(vw, vh, itemIdx);
+                  }
+                }}
                 onLoadedData={() => setIsLoaded(true)}
                 autoPlay
                 loop
@@ -156,8 +175,15 @@ const AlbumTile = memo(({
             <video
               src={mediaSrc}
               poster={posterSrc || blurSrc || undefined}
-              className="w-full h-full object-cover pointer-events-none relative z-[1] transition-opacity duration-200"
+              className={`w-full h-full pointer-events-none relative z-[1] transition-opacity duration-200 ${isSingle ? 'object-contain' : 'object-cover'}`}
               style={{ opacity: isLoaded ? 1 : 0 }}
+              onLoadedMetadata={(e) => {
+                const vw = e.currentTarget.videoWidth;
+                const vh = e.currentTarget.videoHeight;
+                if (vw > 0 && vh > 0) {
+                  onDimensionsLoaded?.(vw, vh, itemIdx);
+                }
+              }}
               onLoadedData={() => setIsLoaded(true)}
               muted
               playsInline
@@ -168,9 +194,16 @@ const AlbumTile = memo(({
           <img
             src={mediaSrc}
             alt={item.name || ''}
-            className="w-full h-full object-cover pointer-events-none relative z-[1] transition-opacity duration-200"
+            className={`w-full h-full pointer-events-none relative z-[1] transition-opacity duration-200 ${isSingle ? 'object-contain' : 'object-cover'}`}
             style={{ opacity: isLoaded ? 1 : 0 }}
-            onLoad={() => setIsLoaded(true)}
+            onLoad={(e) => {
+              setIsLoaded(true);
+              const nw = e.currentTarget.naturalWidth;
+              const nh = e.currentTarget.naturalHeight;
+              if (nw > 0 && nh > 0) {
+                onDimensionsLoaded?.(nw, nh, itemIdx);
+              }
+            }}
             loading="lazy"
             decoding="async"
           />
@@ -246,6 +279,8 @@ const AlbumTile = memo(({
   prev.msg.id === next.msg.id &&
   prev.msg.status === next.msg.status &&
   prev.msg.uploading === next.msg.uploading &&
+  prev.isSingle === next.isSingle &&
+  prev.onDimensionsLoaded === next.onDimensionsLoaded &&
   prev.style?.borderRadius === next.style?.borderRadius
 );
 
@@ -286,9 +321,33 @@ export const TelegramAlbumGrid = memo(({
   customRadius,
   isOwn,
 }: TelegramAlbumGridProps) => {
+  const [loadedDimensions, setLoadedDimensions] = useState<Record<number, { width: number; height: number }>>({});
   const rows = useMemo(() => partitionAlbum(items), [items]);
   const cleanCaption = msg.text ? msg.text.replace(/^\[(?:Photo|GIF|Sticker|Video)\]\s*(https?:\/\/[^\s]+)?/i, '').trim() : '';
   const hasCaption = Boolean(cleanCaption);
+
+  const handleDimensionsLoaded = useCallback((w: number, h: number, idx: number) => {
+    setLoadedDimensions((prev) => {
+      if (prev[idx]?.width === w && prev[idx]?.height === h) return prev;
+      return { ...prev, [idx]: { width: w, height: h } };
+    });
+    if (msg.id) {
+      const activeChatId = useChatStore.getState().activeChatId;
+      if (activeChatId) {
+        useChatStore.getState().updateMessageMediaDimensions(activeChatId, msg.id, w, h, idx);
+      }
+    }
+  }, [msg.id]);
+
+  const item0 = items[0];
+  const dims0 = loadedDimensions[0];
+  const effectiveW = item0?.width || dims0?.width || (msg as any).width;
+  const effectiveH = item0?.height || dims0?.height || (msg as any).height;
+
+  const singleMediaSize = useMemo(() => {
+    if (items.length !== 1) return null;
+    return calculateMediaDisplaySize(effectiveW, effectiveH, maxWidth, 400);
+  }, [items.length, effectiveW, effectiveH, maxWidth]);
 
   const { photoBorderRadius, innerTL, innerTR, innerBL, innerBR } = useMemo(() => {
     let tl = 16;
@@ -328,17 +387,12 @@ export const TelegramAlbumGrid = memo(({
   }, [customRadius, hasCaption]);
 
   const containerWidth = useMemo(() => {
-    if (items.length === 1 && items[0].width && items[0].height && items[0].height > 0) {
-      const r = items[0].width / items[0].height;
-      if (r < 1) {
-        const clampedR = Math.max(0.6, r);
-        const w = Math.round(380 * clampedR);
-        return `min(${w}px, 100%)`;
-      }
-      return `min(${Math.min(maxWidth, Math.max(260, items[0].width))}px, 100%)`;
+    if (singleMediaSize) {
+      const targetW = hasCaption ? Math.max(singleMediaSize.width, 260) : singleMediaSize.width;
+      return `min(${targetW}px, 100%)`;
     }
     return `min(${maxWidth}px, 100%)`;
-  }, [items, maxWidth]);
+  }, [singleMediaSize, hasCaption, maxWidth]);
 
   return (
     <div
@@ -363,13 +417,20 @@ export const TelegramAlbumGrid = memo(({
         {rows.map((rowIndices, rIdx) => {
           const rowCount = rowIndices.length;
           let rowAspectRatio = '2 / 1';
+          let rowMaxHeight: string | undefined = undefined;
+
           if (rowCount === 1) {
-            if (items.length === 1 && items[0].width && items[0].height) {
-              const r = items[0].width / items[0].height;
-              const clamped = Math.max(0.6, Math.min(2.2, r));
+            if (items.length === 1 && singleMediaSize) {
+              rowAspectRatio = `${singleMediaSize.width} / ${singleMediaSize.height}`;
+              rowMaxHeight = `${singleMediaSize.height}px`;
+            } else if (items.length === 1 && (effectiveW && effectiveH)) {
+              const r = effectiveW / effectiveH;
+              const clamped = Math.max(0.45, Math.min(2.4, r));
               rowAspectRatio = `${clamped} / 1`;
+              rowMaxHeight = '400px';
             } else {
               rowAspectRatio = items.length === 1 ? '16 / 11' : '16 / 9';
+              rowMaxHeight = items.length === 1 ? '380px' : undefined;
             }
           } else if (rowCount === 2) {
             rowAspectRatio = '2 / 1';
@@ -387,7 +448,7 @@ export const TelegramAlbumGrid = memo(({
                 width: '100%',
                 gap: '2px',
                 aspectRatio: rowAspectRatio,
-                maxHeight: rowCount === 1 && items.length === 1 ? '380px' : undefined,
+                maxHeight: rowMaxHeight,
               }}
             >
               {rowIndices.map((itemIdx, colIdx) => {
@@ -416,6 +477,8 @@ export const TelegramAlbumGrid = memo(({
                       style={{ width: '100%', height: '100%', borderRadius: tileRadius }}
                       isOwn={isOwn}
                       msg={msg}
+                      isSingle={items.length === 1}
+                      onDimensionsLoaded={handleDimensionsLoaded}
                     />
                   </div>
                 );

@@ -724,6 +724,45 @@ export const useChatStore = create<ChatState>()(
           }
         }
       },
+      updateMessageMediaDimensions: (chatId, messageId, width, height, itemIdx = 0) => {
+        if (!width || !height || width <= 0 || height <= 0) return;
+        const state = get();
+        const messages = state.messagesByChatId[chatId] || [];
+        let updatedAny = false;
+        const updated = messages.map((m) => {
+          if (m.id !== messageId) return m;
+          const currentItem = m.mediaItems?.[itemIdx];
+          const hasSameTop = m.width === width && m.height === height;
+          const hasSameItem = currentItem ? (currentItem.width === width && currentItem.height === height) : true;
+          if (hasSameTop && hasSameItem) return m;
+          updatedAny = true;
+          const newItems = m.mediaItems ? m.mediaItems.map((it, idx) => {
+            if (idx === itemIdx) {
+              return { ...it, width, height };
+            }
+            return it;
+          }) : undefined;
+          return {
+            ...m,
+            width: itemIdx === 0 ? width : (m.width || width),
+            height: itemIdx === 0 ? height : (m.height || height),
+            mediaItems: newItems,
+          };
+        });
+        if (!updatedAny) return;
+        set({
+          messagesByChatId: {
+            ...state.messagesByChatId,
+            [chatId]: updated,
+          },
+        });
+        const updatedMsg = updated.find((m) => m.id === messageId);
+        if (updatedMsg && typeof window !== 'undefined' && (window as any).orbita?.storageAddMessage) {
+          setTimeout(() => {
+            (window as any).orbita?.storageAddMessage?.(chatId, messageId, updatedMsg)?.catch?.(() => {});
+          }, 0);
+        }
+      },
       editMessage: (chatId, messageId, newText, encryptedText?, index?) => {
         const state = get();
         const messages = state.messagesByChatId[chatId] || [];

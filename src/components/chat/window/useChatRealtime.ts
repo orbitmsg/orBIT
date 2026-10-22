@@ -171,9 +171,15 @@ export const useChatRealtime = ({
               mediaName: parsedData?.mediaName || row.media_name || undefined,
               mediaKey: parsedData?.mediaKey || row.media_key || undefined,
               mime: parsedData?.mime || row.mime || undefined,
-              mediaItems: parsedData?.mediaItems || undefined,
-              width: parsedData?.width || (row as any).width || undefined,
-              height: parsedData?.height || (row as any).height || undefined,
+              mediaItems: (parsedData?.mediaItems || (row as any).media_items)
+                ? (parsedData?.mediaItems || (row as any).media_items).map((it: any, idx: number) => ({
+                    ...it,
+                    width: it.width || (idx === 0 ? (parsedData?.width || (row as any).width) : undefined),
+                    height: it.height || (idx === 0 ? (parsedData?.height || (row as any).height) : undefined),
+                  }))
+                : undefined,
+              width: parsedData?.width || (row as any).width || (parsedData?.mediaItems?.[0]?.width) || undefined,
+              height: parsedData?.height || (row as any).height || (parsedData?.mediaItems?.[0]?.height) || undefined,
               duration: parsedData?.duration || row.duration || undefined,
               waveform: parsedData?.waveform || row.waveform || undefined,
               audioMetadata: parsedData?.audioMetadata || row.audio_metadata || undefined,
@@ -486,9 +492,15 @@ export const useChatRealtime = ({
               mediaName: parsed?.mediaName || data.mediaName || undefined,
               mediaKey: parsed?.mediaKey || data.mediaKey || undefined,
               mime: parsed?.mime || data.mime || undefined,
-              mediaItems: parsed?.mediaItems || data.mediaItems || undefined,
-              width: parsed?.width || data.width || undefined,
-              height: parsed?.height || data.height || undefined,
+              mediaItems: (parsed?.mediaItems || data.mediaItems)
+                ? (parsed?.mediaItems || data.mediaItems).map((it: any, idx: number) => ({
+                    ...it,
+                    width: it.width || (idx === 0 ? (parsed?.width || data.width) : undefined),
+                    height: it.height || (idx === 0 ? (parsed?.height || data.height) : undefined),
+                  }))
+                : undefined,
+              width: parsed?.width || data.width || (parsed?.mediaItems?.[0]?.width) || (data.mediaItems?.[0]?.width) || undefined,
+              height: parsed?.height || data.height || (parsed?.mediaItems?.[0]?.height) || (data.mediaItems?.[0]?.height) || undefined,
               duration: parsed?.duration || data.duration || undefined,
               waveform: parsed?.waveform || data.waveform || undefined,
               audioMetadata: parsed?.audioMetadata || data.audioMetadata || undefined,

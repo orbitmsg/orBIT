@@ -1,7 +1,7 @@
 import React, { useMemo, memo } from 'react';
 import { Play } from 'lucide-react';
 import { useChatStore } from '../../store/useChatStore';
-import { useDecryptedMedia } from '../../lib/media-utils';
+import { useDecryptedMedia, calculateMediaDisplaySize } from '../../lib/media-utils';
 import { AudioCoverWithPlay } from '../audio/AudioCoverWithPlay';
 import { SmartGifPlayer } from './SmartGifPlayer';
 
@@ -56,8 +56,7 @@ export const EncryptedMedia = memo(({
     );
   }, [isGifProp, url]);
 
-  const aspectRatio = (msgWidth && msgHeight && msgHeight > 0) ? (msgWidth / msgHeight) : 1.333;
-  const clampedAspect = Math.max(0.6, Math.min(2.0, aspectRatio));
+  const mediaSize = useMemo(() => calculateMediaDisplaySize(msgWidth, msgHeight, 440, 400), [msgWidth, msgHeight]);
 
   if (isGif) {
     return (
@@ -65,7 +64,7 @@ export const EncryptedMedia = memo(({
         blobUrl={blobUrl}
         width={msgWidth}
         height={msgHeight}
-        clampedAspect={clampedAspect}
+        clampedAspect={mediaSize.aspectRatio}
         bubbleRadius={bubbleRadius}
         timeNode={timeNode}
         onClick={onClick}
@@ -74,17 +73,13 @@ export const EncryptedMedia = memo(({
     );
   }
 
-  const initialWidth = (msgWidth && msgHeight && msgHeight > 0)
-    ? (clampedAspect < 1 ? Math.min(440, Math.round(380 * clampedAspect)) : Math.min(440, msgWidth))
-    : 440;
-
   return (
     <div
       style={{
-        width: `${initialWidth}px`,
+        width: `min(${mediaSize.width}px, 100%)`,
         maxWidth: '100%',
-        aspectRatio: `${clampedAspect}`,
-        maxHeight: '380px',
+        aspectRatio: `${mediaSize.width} / ${mediaSize.height}`,
+        maxHeight: `${mediaSize.height}px`,
         borderRadius: bubbleRadius,
         position: 'relative',
         overflow: 'hidden',
@@ -163,7 +158,7 @@ export const EncryptedMedia = memo(({
         <img
           src={blobUrl || undefined}
           alt=""
-          className="w-full h-full object-cover cursor-pointer"
+          className="w-full h-full object-contain cursor-pointer"
           draggable={false}
           style={{ userSelect: 'none', display: 'block', opacity: blobUrl ? 1 : 0, transition: 'opacity 0.2s' }}
           onClick={onClick}
@@ -187,7 +182,7 @@ export const EncryptedMedia = memo(({
           <video
             src={blobUrl || undefined}
             poster={thumbnail || blurPreview || undefined}
-            className="w-full h-full object-cover pointer-events-none"
+            className="w-full h-full object-contain pointer-events-none"
             preload="metadata"
             muted
             playsInline

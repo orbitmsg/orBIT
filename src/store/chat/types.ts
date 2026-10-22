@@ -512,6 +512,7 @@ export interface ChatState {
   ) => void;
   deleteMessage: (chatId: string, messageId: string) => void;
   updateMessageStatus: (chatId: string, messageId: string, status: Message['status']) => void;
+  updateMessageMediaDimensions: (chatId: string, messageId: string, width: number, height: number, itemIdx?: number) => void;
   editMessage: (chatId: string, messageId: string, newText: string, encryptedText?: string, index?: number) => void;
   toggleReaction: (chatId: string, messageIndexOrId: number | string, emoji: string, user: string) => void;
   setReaction: (chatId: string, messageIndexOrId: number | string, emoji: string, user: string, action?: 'add' | 'remove' | 'toggle', userAliases?: string[]) => 'add' | 'remove' | 'limit_reached';

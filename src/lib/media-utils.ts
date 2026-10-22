@@ -246,3 +246,65 @@ export function useDecryptedMedia(
     isUnavailable: isUnavailable || (cleanUrl ? mediaManager.isMediaUnavailable(cleanUrl) : false),
   };
 }
+
+export function calculateMediaDisplaySize(
+  origW?: number,
+  origH?: number,
+  maxW: number = 440,
+  maxH: number = 400,
+  minW: number = 140,
+  minH: number = 100
+): { width: number; height: number; aspectRatio: number } {
+  const w = Number(origW) || 0;
+  const h = Number(origH) || 0;
+
+  if (w <= 0 || h <= 0) {
+    return { width: Math.min(360, maxW), height: Math.min(260, maxH), aspectRatio: 360 / 260 };
+  }
+
+  const rawAspect = w / h;
+  const clampedAspect = Math.max(0.45, Math.min(2.4, rawAspect));
+
+  let displayW: number;
+  let displayH: number;
+
+  if (clampedAspect >= 1) {
+    displayW = Math.min(w, maxW);
+    displayH = Math.round(displayW / clampedAspect);
+    if (displayH > maxH) {
+      displayH = maxH;
+      displayW = Math.round(displayH * clampedAspect);
+    }
+  } else {
+    displayH = Math.min(h, maxH);
+    displayW = Math.round(displayH * clampedAspect);
+    if (displayW > maxW) {
+      displayW = maxW;
+      displayH = Math.round(displayW / clampedAspect);
+    }
+  }
+
+  if (displayW < minW) {
+    displayW = minW;
+    displayH = Math.round(displayW / clampedAspect);
+  }
+  if (displayH < minH) {
+    displayH = minH;
+    displayW = Math.round(displayH * clampedAspect);
+  }
+
+  if (displayW > maxW) {
+    displayW = maxW;
+    displayH = Math.round(displayW / clampedAspect);
+  }
+  if (displayH > maxH) {
+    displayH = maxH;
+    displayW = Math.round(displayH * clampedAspect);
+  }
+
+  return {
+    width: Math.round(displayW),
+    height: Math.round(displayH),
+    aspectRatio: clampedAspect,
+  };
+}

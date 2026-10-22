@@ -3,7 +3,7 @@ import { File } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, type Message, type MediaItem, isMessageOutgoing } from '../../../store/useChatStore';
 import { mediaManager } from '../../../services/mediaManager';
-import { getOrbitaMediaUrl } from '../../../lib/media-utils';
+import { getOrbitaMediaUrl, calculateMediaDisplaySize } from '../../../lib/media-utils';
 import { GroupedAudioBubble } from '../GroupedAudioBubble';
 import { TelegramAlbumGrid } from '../TelegramAlbumGrid';
 import { EncryptedMedia } from '../EncryptedMedia';
@@ -622,14 +622,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         const w = it.width || msg.width;
         const h = it.height || msg.height;
         if (w && h && h > 0) {
-          const ratio = w / h;
-          if (ratio < 1) {
-            const clampedR = Math.max(0.6, ratio);
-            const computedW = Math.round(380 * clampedR);
-            groupBubbleWidth = `min(${computedW}px, 75%)`;
-          } else {
-            groupBubbleWidth = `min(${Math.min(440, Math.max(260, w))}px, 75%)`;
-          }
+          const singleSize = calculateMediaDisplaySize(w, h, 440, 400);
+          const targetW = hasCaption ? Math.max(singleSize.width, 260) : singleSize.width;
+          groupBubbleWidth = `min(${targetW}px, 100%)`;
         }
       }
 

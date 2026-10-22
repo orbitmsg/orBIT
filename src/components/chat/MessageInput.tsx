@@ -1,95 +1,25 @@
 import React, { useRef, useEffect, useState, memo, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { X } from 'lucide-react';
-import { CustomEditIcon, CustomReplyIcon } from './ChatWindow';
 import { useChatStore, type LinkPreviewData } from '../../store/useChatStore';
 import { InputContextMenu, FormattingType } from './InputContextMenu';
 import { extractFirstUrl, fetchLinkPreview } from '../../utils/linkPreviewUtils';
-import { htmlToMarkdown, markdownToHtml, formatPreviewText } from '../../utils/messageUtils';
-import { ChannelMegaphoneIcon } from '../common/ChannelMegaphoneIcon';
-import { BotIcon } from '../common/BotIcon';
+import { htmlToMarkdown, markdownToHtml } from '../../utils/messageUtils';
 import { supportService } from '../../services/supportService';
-
-const FileWithArrowIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-    <polyline points="14 2 14 8 20 8" />
-    <path d="M9 13h6" />
-    <path d="m12 10 3 3-3 3" />
-  </svg>
-);
-
-const AttachIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeLinecap="round"
-    strokeWidth="1.5"
-  >
-    <path d="m7.918 17.807l7.89-7.553a2.253 2.253 0 0 0 0-3.284a2.503 2.503 0 0 0-3.43 0l-7.834 7.498a4.28 4.28 0 0 0 0 6.24c1.8 1.723 4.718 1.723 6.518 0l7.949-7.608c2.652-2.54 2.652-6.656 0-9.196s-6.954-2.539-9.607 0L3 10.034" />
-  </svg>
-);
-
-const EmojiIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    width="23"
-    height="23"
-  >
-    <g fill="none">
-      <circle cx="12" cy="12" r="9.25" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
-      <circle cx="9" cy="9.5" r="1.25" fill="currentColor" />
-      <circle cx="15" cy="9.5" r="1.25" fill="currentColor" />
-      <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.464 14.25a4 4 0 0 1-6.928 0" />
-    </g>
-  </svg>
-);
-
-const MicIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 48 48"
-    width="23"
-    height="23"
-  >
-    <g fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="3.5">
-      <rect width="14" height="27" x="17" y="4" rx="7" />
-      <path strokeLinecap="round" d="M9 23c0 8.284 6.716 15 15 15s15-6.716 15-15M24 38v6" />
-    </g>
-  </svg>
-);
-
-const SendIcon = () => (
-  <svg viewBox="0 0 512 512" width="20" height="20" fill="currentColor">
-    <path d="m476.59 227.05l-.16-.07L49.35 49.84A23.56 23.56 0 0 0 27.14 52A24.65 24.65 0 0 0 16 72.59v113.29a24 24 0 0 0 19.52 23.57l232.93 43.07a4 4 0 0 1 0 7.86L35.53 303.45A24 24 0 0 0 16 327v113.31A23.57 23.57 0 0 0 26.59 460a23.94 23.94 0 0 0 13.22 4a24.55 24.55 0 0 0 9.52-1.93L476.4 285.94l.19-.09a32 32 0 0 0 0-58.8" />
-  </svg>
-);
-
-const ConfirmEditIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-);
+import {
+  FileWithArrowIcon,
+  AttachIcon,
+  EmojiIcon,
+  MicIcon,
+  SendIcon,
+  ConfirmEditIcon,
+} from './input/MessageInputIcons';
+import { MessageInputCommandsMenu } from './input/MessageInputCommandsMenu';
+import { MessageInputLinkPreview } from './input/MessageInputLinkPreview';
+import { MessageInputActionBanner } from './input/MessageInputActionBanner';
+import { MessageInputVoiceRecorder } from './input/MessageInputVoiceRecorder';
 
 export { htmlToMarkdown, markdownToHtml };
-
-
 
 interface MessageInputProps {
   inputText: string;
@@ -649,14 +579,6 @@ export const MessageInput = memo<MessageInputProps>(({
     setIsContextMenuOpen(true);
   };
 
-  const formatDurationWithTenths = (totalSeconds: number) => {
-    const totalTenths = Math.floor(Math.max(0, totalSeconds) * 10);
-    const m = Math.floor(totalTenths / 600);
-    const s = Math.floor((totalTenths % 600) / 10);
-    const tenths = totalTenths % 10;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')},${tenths}`;
-  };
-
   const isHasContent = canSend || !isEditorEmpty;
   const attachColor = hoverAttach ? 'var(--text-main)' : 'var(--text-dim)';
   const emojiColor = (hoverEmoji || isEmojiOpen) ? 'var(--text-main)' : 'var(--text-dim)';
@@ -680,287 +602,53 @@ export const MessageInput = memo<MessageInputProps>(({
       }}
     >
       {showCommandsMenu && filteredCommands.length > 0 && !isRecordingActive && (
-        <div
-          role="listbox"
-          style={{
-            position: 'absolute',
-            bottom: '100%',
-            left: 0,
-            right: 0,
-            maxHeight: '136px',
-            overflowY: 'auto',
-            backgroundColor: 'var(--bg-secondary, #20222b)',
-            borderTop: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
-            borderBottom: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
-            boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.3)',
-            zIndex: 50,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          {filteredCommands.map((cmd, idx) => (
-            <div
-              key={cmd.command}
-              role="option"
-              aria-selected={idx === selectedCommandIndex}
-              onClick={() => executeCommand(cmd.command)}
-              onMouseEnter={() => setSelectedCommandIndex(idx)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                padding: '7px 16px',
-                minHeight: '34px',
-                cursor: 'pointer',
-                backgroundColor: idx === selectedCommandIndex ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-                transition: 'background-color 0.1s ease',
-              }}
-            >
-              <BotIcon size={16} className="text-accent" />
-              <span style={{ fontWeight: 600, fontSize: '13.5px', color: 'var(--text-main, #ffffff)', flexShrink: 0 }}>
-                {cmd.command}
-              </span>
-              <span style={{ fontSize: '13px', color: 'var(--text-dim, rgba(255, 255, 255, 0.5))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {cmd.desc}
-              </span>
-            </div>
-          ))}
-        </div>
+        <MessageInputCommandsMenu
+          commands={filteredCommands}
+          selectedIndex={selectedCommandIndex}
+          onSelectIndex={setSelectedCommandIndex}
+          onExecute={executeCommand}
+        />
       )}
 
       {liveLinkPreview && !isRecordingActive && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '12px',
-            width: '100%',
-            paddingBottom: '8px',
-            marginBottom: '6px',
-            borderBottom: '1px solid var(--border-color)',
+        <MessageInputLinkPreview
+          preview={liveLinkPreview}
+          onDismiss={(url) => {
+            setDismissedUrl(url);
+            setLiveLinkPreview(null);
           }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-            <div style={{ width: '3px', height: '32px', borderRadius: '2px', backgroundColor: 'var(--accent-color)', flexShrink: 0 }} />
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-              <div style={{ color: 'var(--accent-color)', fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {liveLinkPreview.siteName || 'Предпросмотр ссылки'}
-              </div>
-              <div style={{ color: 'var(--text-main)', fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {liveLinkPreview.title || liveLinkPreview.url}
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={() => {
-              setDismissedUrl(liveLinkPreview.url);
-              setLiveLinkPreview(null);
-            }}
-            style={{
-              color: 'var(--text-dim)',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '50%',
-              flexShrink: 0,
-            }}
-          >
-            <X size={18} />
-          </button>
-        </div>
+        />
       )}
 
       {showActionBanner && !isRecordingActive && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '12px',
-            width: '100%',
-            paddingBottom: '8px',
-            marginBottom: '4px',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-            <div style={{ color: 'var(--accent-color)', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-              {editingIndex !== null ? <CustomEditIcon size={18} /> : <CustomReplyIcon size={18} />}
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-              <div style={{ color: 'var(--accent-color)', fontSize: '13.5px', fontWeight: 600, lineHeight: 1.2 }}>
-                {editingIndex !== null ? (
-                  t('chatWindow.editing')
-                ) : isChannel && replyingTo ? (
-                  (() => {
-                    const full = t('chatWindow.reply_to', { sender: '___ORBITA_SENDER___' });
-                    const parts = full.split('___ORBITA_SENDER___');
-                    return (
-                      <span className="inline-flex items-center gap-1 min-w-0 truncate">
-                        {parts[0] && <span>{parts[0]}</span>}
-                        <ChannelMegaphoneIcon size={13} className="flex-shrink-0" />
-                        <span className="truncate">{replyingTo.sender}</span>
-                        {parts[1] && <span>{parts[1]}</span>}
-                      </span>
-                    );
-                  })()
-                ) : (
-                  t('chatWindow.reply_to', { sender: replyingTo?.sender || '' })
-                )}
-              </div>
-              <div
-                style={{
-                  color: 'var(--text-dim)',
-                  fontSize: '13px',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  lineHeight: 1.35,
-                  marginTop: '1px',
-                  maxHeight: '20px',
-                }}
-                dangerouslySetInnerHTML={{
-                  __html: markdownToHtml(
-                    formatPreviewText(
-                      editingIndex !== null ? (editingOriginalText || editText) : (replyingTo?.text || ''),
-                      t
-                    ),
-                    'inherit',
-                    true
-                  ).replace(/<br\s*\/?>/gi, ' '),
-                }}
-              />
-            </div>
-          </div>
-
-          <button
-            onClick={cancelCurrentAction}
-            style={{
-              color: 'var(--text-dim)',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '50%',
-              transition: 'color 0.2s',
-              flexShrink: 0,
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-main)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-dim)'; }}
-          >
-            <X size={18} />
-          </button>
-        </div>
+        <MessageInputActionBanner
+          editingIndex={editingIndex}
+          editingOriginalText={editingOriginalText}
+          editText={editText}
+          replyingTo={replyingTo}
+          isChannel={isChannel}
+          onCancel={cancelCurrentAction}
+        />
       )}
 
       {isRecordingActive ? (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            minHeight: '31px',
-            position: 'relative',
+        <MessageInputVoiceRecorder
+          recordingTime={recordingTime}
+          onCancel={() => {
+            setHoverMic(false);
+            setHoverAttach(false);
+            setHoverEmoji(false);
+            window.getSelection()?.removeAllRanges();
+            if (onCancelRecording) onCancelRecording();
           }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-            <span
-              style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: '#ef4444',
-                display: 'inline-block',
-                animation: 'pulse 1s infinite',
-              }}
-            />
-            <span
-              style={{
-                color: 'var(--text-main)',
-                fontSize: '15px',
-                fontWeight: 600,
-                fontVariantNumeric: 'tabular-nums',
-              }}
-            >
-              {formatDurationWithTenths(recordingTime)}
-            </span>
-          </div>
-
-          <button
-            type="button"
-            tabIndex={-1}
-            onClick={() => {
-              setHoverMic(false);
-              setHoverAttach(false);
-              setHoverEmoji(false);
-              window.getSelection()?.removeAllRanges();
-              if (onCancelRecording) onCancelRecording();
-            }}
-            style={{
-              position: 'absolute',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              background: 'none',
-              border: 'none',
-              outline: 'none',
-              boxShadow: 'none',
-              color: 'var(--accent-color, #7C3AED)',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              padding: '4px 12px',
-              borderRadius: '6px',
-              transition: 'background-color 0.15s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--accent-color, #7C3AED) 12%, transparent)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            {t('chatWindow.cancel_recording', 'Отмена')}
-          </button>
-
-          <button
-            type="button"
-            tabIndex={-1}
-            onClick={() => {
-              setHoverMic(false);
-              setHoverAttach(false);
-              setHoverEmoji(false);
-              window.getSelection()?.removeAllRanges();
-              onStopRecording();
-            }}
-            style={{
-              background: 'none',
-              border: 'none',
-              outline: 'none',
-              boxShadow: 'none',
-              color: 'var(--accent-color, #7C3AED)',
-              cursor: 'pointer',
-              padding: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'color 0.2s, opacity 0.2s',
-              flexShrink: 0,
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-main)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--accent-color, #7C3AED)'; }}
-          >
-            <SendIcon />
-          </button>
-        </div>
+          onStop={() => {
+            setHoverMic(false);
+            setHoverAttach(false);
+            setHoverEmoji(false);
+            window.getSelection()?.removeAllRanges();
+            onStopRecording();
+          }}
+        />
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', position: 'relative', transform: 'translateY(2.5px)' }}>
           {currentText.length > 256 && onOpenTxtModal && (

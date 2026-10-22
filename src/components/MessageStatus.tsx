@@ -11,7 +11,8 @@ interface MessageStatusProps {
 
 export const MessageStatus: React.FC<MessageStatusProps> = ({ status, className = '', isOwn = false, color }) => {
   const statusStyle: React.CSSProperties = {
-    transform: 'translateY(-1px)',
+    display: 'inline-block',
+    verticalAlign: 'middle',
     flexShrink: 0,
   };
 
@@ -24,8 +25,8 @@ export const MessageStatus: React.FC<MessageStatusProps> = ({ status, className 
         viewBox="0 0 12 12"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        width="13"
-        height="13"
+        width="11"
+        height="11"
         className={className}
         style={statusStyle}
         aria-hidden="true"
@@ -39,17 +40,17 @@ export const MessageStatus: React.FC<MessageStatusProps> = ({ status, className 
   if (status === 'read') {
     return (
       <svg
-        viewBox="0 -2 12 12"
+        viewBox="0 0 16 12"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="16"
+        width="15"
+        height="11"
         className={className}
         style={statusStyle}
         aria-hidden="true"
       >
         <path
-          d="m1 6l2.5 2.5l5-5m-2 5l5-5"
+          d="M1.5 6.5L4.5 9.5L10.5 3.5M6 9.5L14.5 3.5"
           stroke={readColor}
           strokeWidth="1.3"
           strokeLinecap="round"
@@ -61,17 +62,17 @@ export const MessageStatus: React.FC<MessageStatusProps> = ({ status, className 
 
   return (
     <svg
-      viewBox="0 -2 12 12"
+      viewBox="0 0 12 12"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
+      width="11"
+      height="11"
       className={className}
       style={statusStyle}
       aria-hidden="true"
     >
       <path
-        d="m1 6l2.5 2.5l5-5"
+        d="M1.5 6.5L4.5 9.5L10.5 3.5"
         stroke={checkColor}
         strokeWidth="1.3"
         strokeLinecap="round"

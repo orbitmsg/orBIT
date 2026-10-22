@@ -494,15 +494,15 @@ export const TelegramAlbumGrid = memo(({
         })}
         {!hasCaption && timeNode && (
           <div
-            className="absolute bottom-2 right-2 px-2 py-0.5 flex items-center justify-center z-[4] pointer-events-none select-none"
+            className="absolute bottom-2 right-2 flex items-center justify-center z-[4] pointer-events-none select-none"
             style={{
+              padding: '3px 8px',
               borderRadius: '9999px',
-              backgroundColor: 'rgba(0, 0, 0, 0.55)',
-              backdropFilter: 'blur(6px)',
+              backgroundColor: '#18191d',
               lineHeight: 1,
               userSelect: 'none',
               WebkitUserSelect: 'none',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
+              boxShadow: '0 1px 4px rgba(0, 0, 0, 0.4)',
             }}
           >
             {timeNode}

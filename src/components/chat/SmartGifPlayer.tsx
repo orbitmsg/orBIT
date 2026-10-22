@@ -226,19 +226,17 @@ export const SmartGifPlayer = memo(({
             bottom: '8px',
             right: '8px',
             borderRadius: '9999px',
-            backgroundColor: 'rgba(0, 0, 0, 0.55)',
-            backdropFilter: 'blur(6px)',
-            padding: '2.5px 7px',
+            backgroundColor: '#18191d',
+            padding: '3px 8px',
             color: '#ffffff',
             fontSize: '11px',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '4px',
             lineHeight: 1,
             zIndex: 4,
             pointerEvents: 'none',
             userSelect: 'none',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
+            boxShadow: '0 1px 4px rgba(0, 0, 0, 0.4)',
           }}
         >
           {timeNode}

@@ -101,6 +101,7 @@ export interface MediaItem {
   audioMetadata?: AudioMetadata;
   thumbnail?: string;
   blurPreview?: string;
+  preview?: string | null;
   uploading?: boolean;
   uploadedMb?: number;
 }
@@ -166,6 +167,7 @@ export interface Message {
   audioMetadata?: AudioMetadata;
   thumbnail?: string;
   blurPreview?: string;
+  preview?: string | null;
   width?: number;
   height?: number;
   duration?: number;

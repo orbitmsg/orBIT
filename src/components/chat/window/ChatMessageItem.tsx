@@ -263,7 +263,10 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     }
 
     if (hasPhotoOrVideo) {
-      const itemsToRender = mediaItems.slice(0, 10);
+      const itemsToRender = mediaItems.slice(0, 10).map((it) => ({
+        ...it,
+        preview: (it as any).preview || (it.url?.startsWith('data:') || it.url?.startsWith('blob:') ? it.url : undefined),
+      }));
       const viewerItems: MediaViewerItem[] = itemsToRender.map((item, vIdx) => {
         const isVGif = Boolean(
           item.type === 'gif' ||
@@ -899,6 +902,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   isGif={isGif}
                   isOwn={isOwn}
                   fileSize={msg.fileSize || (msg as any).size}
+                  preview={(msg as any).preview || (media.url?.startsWith('data:') || media.url?.startsWith('blob:') ? media.url : undefined)}
                   blurPreview={msg.blurPreview || msg.thumbnail}
                   timeNode={!(msg.text?.trim() && msg.text.trim().replace(/^\[(?:Photo|GIF|Sticker|Video)\]\s*https?:\/\/[^\s]+$/i, '').trim()) ? timeBadge(msg, isMessagePinned(msg)) : undefined}
                   onClick={() => openMediaViewer(media.url!, msg.id)}
@@ -930,6 +934,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   isGif={isGif}
                   isOwn={isOwn}
                   fileSize={msg.fileSize || (msg as any).size}
+                  preview={(msg as any).preview || (media.url?.startsWith('data:') || media.url?.startsWith('blob:') ? media.url : undefined)}
                   thumbnail={msg.thumbnail}
                   blurPreview={msg.blurPreview || msg.thumbnail}
                   timeNode={!(msg.text?.trim() && msg.text.trim().replace(/^\[(?:Photo|GIF|Sticker|Video)\]\s*https?:\/\/[^\s]+$/i, '').trim()) ? timeBadge(msg, isMessagePinned(msg)) : undefined}

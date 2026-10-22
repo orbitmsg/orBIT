@@ -75,9 +75,10 @@ const AlbumTile = memo(({
   };
 
   const isDownloading = isLoading;
-  const posterSrc = item.thumbnail || (item.url?.startsWith('data:') ? item.url : undefined);
-  const blurSrc = item.blurPreview || (!posterSrc && item.url?.startsWith('data:') ? item.url : null);
-  const mediaSrc = blobUrl || (item.url?.startsWith('data:') || item.url?.startsWith('blob:') ? item.url : undefined);
+  const isLocalMedia = Boolean((item as any).preview || (item.url?.startsWith('data:') && item.url.length > 2048) || item.url?.startsWith('blob:'));
+  const posterSrc = isLocalMedia ? ((item as any).preview || item.url) : (item.thumbnail && !item.thumbnail.startsWith('data:') ? item.thumbnail : undefined);
+  const blurSrc = item.blurPreview || (item.thumbnail?.startsWith('data:') ? item.thumbnail : null) || (!posterSrc && item.url?.startsWith('data:') ? item.url : null);
+  const mediaSrc = blobUrl || (isLocalMedia ? ((item as any).preview || item.url) : undefined);
 
   const itemTotalSize = item.size || msg.fileSize || (item.audioMetadata?.size || 0);
   const progressKey = `${msg.id}_${itemIdx}`;
@@ -115,10 +116,11 @@ const AlbumTile = memo(({
           className="absolute inset-0 pointer-events-none"
           style={{
             backgroundImage: `url(${blurSrc})`,
-            backgroundSize: 'cover',
+            backgroundSize: isSingle ? 'contain' : 'cover',
             backgroundPosition: 'center',
-            filter: 'blur(10px)',
-            transform: 'scale(1.12)',
+            backgroundRepeat: 'no-repeat',
+            filter: 'blur(20px)',
+            transform: 'scale(1.15)',
           }}
         />
       ) : (

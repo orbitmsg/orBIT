@@ -224,13 +224,13 @@ export const useChatAudioAndFiles = ({
           let blurPreview: string | undefined = undefined;
           try {
             const canvas = document.createElement('canvas');
-            const scale = Math.min(24 / img.naturalWidth, 24 / img.naturalHeight, 1);
+            const scale = Math.min(32 / img.naturalWidth, 32 / img.naturalHeight, 1);
             canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
             canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
             const ctx = canvas.getContext('2d');
             if (ctx) {
               ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-              blurPreview = canvas.toDataURL('image/jpeg', 0.4);
+              blurPreview = canvas.toDataURL('image/jpeg', 0.5);
             }
           } catch {}
           resolve({ width: img.naturalWidth, height: img.naturalHeight, blurPreview });
@@ -315,13 +315,13 @@ export const useChatAudioAndFiles = ({
               preview = canvas.toDataURL('image/jpeg', 0.85);
 
               const smallCanvas = document.createElement('canvas');
-              const scale = Math.min(24 / canvas.width, 24 / canvas.height, 1);
+              const scale = Math.min(32 / canvas.width, 32 / canvas.height, 1);
               smallCanvas.width = Math.max(1, Math.round(canvas.width * scale));
               smallCanvas.height = Math.max(1, Math.round(canvas.height * scale));
               const sCtx = smallCanvas.getContext('2d');
               if (sCtx) {
                 sCtx.drawImage(canvas, 0, 0, smallCanvas.width, smallCanvas.height);
-                blurPreview = smallCanvas.toDataURL('image/jpeg', 0.4);
+                blurPreview = smallCanvas.toDataURL('image/jpeg', 0.5);
               }
             }
           } catch {}
@@ -690,7 +690,8 @@ export const useChatAudioAndFiles = ({
         const messageId = `msg_${Date.now()}_${cIdx}_${Math.random().toString(36).substr(2, 9)}`;
 
         const initialMediaItems: MediaItem[] = chunkFiles.map((file) => ({
-          url: file.filePath || file.preview || '',
+          url: file.preview || file.filePath || '',
+          preview: file.preview,
           type: resolveItemType(file.fileType, file.name),
           name: file.name,
           mime: resolveMime(file.fileType, file.name),
@@ -786,7 +787,8 @@ export const useChatAudioAndFiles = ({
           uploading: true,
           uploadedMb: 0,
           mediaType: itemType,
-          mediaUrl: file.filePath || file.preview || '',
+          mediaUrl: file.preview || file.filePath || '',
+          preview: file.preview,
           mediaName: file.name,
           mime: itemMime,
           fileSize: fileSizeBytes,

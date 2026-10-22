@@ -19,6 +19,7 @@ interface EncryptedMediaProps {
   onClick?: () => void;
   isOwn?: boolean;
   fileSize?: number;
+  preview?: string;
   blurPreview?: string;
   thumbnail?: string;
 }
@@ -37,12 +38,17 @@ export const EncryptedMedia = memo(({
   onClick,
   isOwn = false,
   fileSize,
+  preview,
   blurPreview,
   thumbnail,
 }: EncryptedMediaProps) => {
   const autoLoad = useChatStore((state) => state.shouldAutoLoadMedia(type === 'image' ? 'photo' : 'video', fileSize, isOwn));
   const { blobUrl, load, isLoading, progress, isUnavailable } = useDecryptedMedia(url, sharedSecret, undefined, undefined, chatId, messageId, autoLoad);
   const bubbleRadius = useChatStore.getState().bubbleRadius;
+
+  const isFullRes = Boolean(preview || (thumbnail && !thumbnail.startsWith('data:')) || (thumbnail && thumbnail.startsWith('data:') && thumbnail.length > 2048));
+  const fullResSrc = preview || thumbnail;
+  const activeImageSrc = blobUrl || (url.startsWith('data:') || url.startsWith('blob:') ? url : (preview?.startsWith('data:') || preview?.startsWith('blob:') ? preview : null));
 
   const isGif = useMemo(() => {
     if (isGifProp !== undefined) return isGifProp;
@@ -87,7 +93,7 @@ export const EncryptedMedia = memo(({
         overflowAnchor: 'none',
       }}
     >
-      {!blobUrl && (
+      {(!blobUrl && !activeImageSrc) && (
         <div
           className={`absolute inset-0 flex flex-col items-center justify-center z-10 select-none ${isUnavailable ? 'pointer-events-none' : 'cursor-pointer'}`}
           onClick={(e) => {
@@ -95,23 +101,25 @@ export const EncryptedMedia = memo(({
             if (!isLoading && !isUnavailable) load();
           }}
         >
-          {thumbnail ? (
+          {isFullRes ? (
             <div
               className="absolute inset-0 pointer-events-none"
               style={{
-                backgroundImage: `url(${thumbnail})`,
-                backgroundSize: 'cover',
+                backgroundImage: `url(${fullResSrc})`,
+                backgroundSize: 'contain',
                 backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
               }}
             />
-          ) : blurPreview ? (
+          ) : (blurPreview || thumbnail) ? (
             <div
               className="absolute inset-0 pointer-events-none"
               style={{
-                backgroundImage: `url(${blurPreview})`,
-                backgroundSize: 'cover',
+                backgroundImage: `url(${blurPreview || thumbnail})`,
+                backgroundSize: 'contain',
                 backgroundPosition: 'center',
-                filter: 'blur(16px)',
+                backgroundRepeat: 'no-repeat',
+                filter: 'blur(20px)',
                 transform: 'scale(1.15)',
               }}
             />
@@ -156,15 +164,15 @@ export const EncryptedMedia = memo(({
 
       {type === 'image' ? (
         <img
-          src={blobUrl || undefined}
+          src={activeImageSrc || undefined}
           alt=""
           className="w-full h-full object-contain cursor-pointer"
           draggable={false}
-          style={{ userSelect: 'none', display: 'block', opacity: blobUrl ? 1 : 0, transition: 'opacity 0.2s' }}
+          style={{ userSelect: 'none', display: 'block', opacity: activeImageSrc ? 1 : 0, transition: 'opacity 0.2s' }}
           onClick={onClick}
           onContextMenu={(e) => {
             e.preventDefault();
-            if (blobUrl) onContextMenu?.(e, blobUrl);
+            if (activeImageSrc) onContextMenu?.(e, activeImageSrc);
           }}
         />
       ) : (

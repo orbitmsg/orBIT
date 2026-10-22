@@ -179,8 +179,12 @@ export const useChatScroll = ({
   const handleMessagesWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
     if (e.deltaY < 0) {
       atBottomRef.current = false;
+      const el = messagesContainerRef.current;
+      if (el && el.scrollHeight > el.clientHeight + 20) {
+        setShowScrollDown(true);
+      }
     }
-  }, [atBottomRef]);
+  }, [atBottomRef, messagesContainerRef, setShowScrollDown]);
 
   useEffect(() => {
     const handleAbortUpload = () => {
@@ -222,10 +226,8 @@ export const useChatScroll = ({
 
     const hasOverflow = el.scrollHeight > el.clientHeight + 20;
     const isAtBottom = !hasOverflow || (el.scrollHeight - el.scrollTop - el.clientHeight <= 60);
-    if (atBottomRef.current !== isAtBottom) {
-      atBottomRef.current = isAtBottom;
-      setShowScrollDown(!isAtBottom && hasOverflow);
-    }
+    atBottomRef.current = isAtBottom;
+    setShowScrollDown(!isAtBottom && hasOverflow);
     if (activeChatId) {
       saveChatScroll(activeChatId, el);
     }

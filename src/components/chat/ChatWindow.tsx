@@ -1220,18 +1220,14 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
             width: '42px',
             height: '42px',
             borderRadius: '50%',
-            backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
+            backgroundColor: 'var(--surface-container, #33363f)',
             color: 'var(--text-main)',
-            boxShadow: '0 4px 14px rgba(0,0,0,0.35)',
-            border: 'none',
+            boxShadow: '0 4px 14px rgba(0, 0, 0, 0.28)',
+            border: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.08))',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'opacity 0.25s ease, transform 0.25s ease, bottom 0.2s ease',
-            opacity: showScrollDown ? 1 : 0,
-            transform: showScrollDown ? 'scale(1)' : 'scale(0.8)',
-            pointerEvents: showScrollDown ? 'auto' : 'none',
             zIndex: 30,
           }}
         >
@@ -1261,7 +1257,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               {unreadCount > 99 ? '99+' : unreadCount}
             </div>
           )}
-          <ChevronDown size={22} style={{ color: 'var(--text-main)' }} />
+          <ChevronDown size={20} strokeWidth={2.4} style={{ color: 'var(--text-main)' }} />
         </button>
       </div>
 

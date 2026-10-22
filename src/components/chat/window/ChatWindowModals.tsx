@@ -338,14 +338,23 @@ export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
 
         .scroll-btn {
           opacity: 0;
-          transform: scale(0.8);
+          transform: translateY(24px) scale(0.72);
           pointer-events: none;
-          transition: opacity 0.25s ease, transform 0.25s ease;
+          will-change: transform, opacity;
+          transition: transform 0.16s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.14s ease-in, background-color 0.15s ease, box-shadow 0.15s ease;
         }
         .scroll-btn.visible {
           opacity: 1;
-          transform: scale(1);
+          transform: translateY(0) scale(1);
           pointer-events: auto;
+          transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.18s ease-out, background-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .scroll-btn.visible:hover {
+          background-color: var(--surface-container-strong, #3a3d47) !important;
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35) !important;
+        }
+        .scroll-btn.visible:active {
+          transform: translateY(0) scale(0.94) !important;
         }
 
         .input-container {

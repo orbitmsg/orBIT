@@ -151,7 +151,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
       >
         <span style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>{timeStr}</span>
         {isOwn && (
-          <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: '3px', flexShrink: 0, userSelect: 'none', WebkitUserSelect: 'none' }}>
+          <span style={{ display: 'inline-flex', width: '26px', minWidth: '26px', flexShrink: 0, justifyContent: 'flex-end', userSelect: 'none', WebkitUserSelect: 'none' }}>
             <MessageStatus
               status={
                 msg.uploading || msg.status === 'sending' || msg.status === 'pending'
@@ -221,7 +221,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
             >
               <span style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>{timeStr}</span>
               {isOwn && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: '5px', transform: 'translateY(-1.5px)', flexShrink: 0, userSelect: 'none', WebkitUserSelect: 'none' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: '5px', flexShrink: 0, userSelect: 'none', WebkitUserSelect: 'none' }}>
                   <MessageStatus
                     status={
                       msg.uploading || msg.status === 'sending' || msg.status === 'pending'

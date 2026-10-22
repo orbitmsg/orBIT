@@ -196,7 +196,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         )}
         <span style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>{formatTime(m.time)}</span>
         {mIsOwn && (
-          <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: '3px', flexShrink: 0, userSelect: 'none', WebkitUserSelect: 'none' }}>
+          <span style={{ display: 'inline-flex', width: '26px', minWidth: '26px', flexShrink: 0, justifyContent: 'flex-end', userSelect: 'none', WebkitUserSelect: 'none' }}>
             <MessageStatus
               status={
                 m.uploading || m.status === 'sending' || m.status === 'pending'
@@ -867,7 +867,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   >
                     <span style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>{formatTimeOfDay(msg.time)}</span>
                     {isOwn && (msg.status || msg.read) && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: '5px', transform: 'translateY(-1.5px)', flexShrink: 0, userSelect: 'none', WebkitUserSelect: 'none' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: '5px', flexShrink: 0, userSelect: 'none', WebkitUserSelect: 'none' }}>
                         <MessageStatus status={(msg.status === 'read' || msg.read) ? 'read' : (msg.status || 'sent')} isOwn={isOwn} />
                       </span>
                     )}

@@ -80,7 +80,7 @@ export const EncryptedMedia = memo(({
         maxWidth: '100%',
         aspectRatio: `${mediaSize.width} / ${mediaSize.height}`,
         maxHeight: `${mediaSize.height}px`,
-        borderRadius: bubbleRadius,
+        borderRadius: typeof bubbleRadius === 'number' ? `${Math.max(bubbleRadius, 20)}px` : '20px',
         position: 'relative',
         overflow: 'hidden',
         backgroundColor: 'var(--surface-container, rgba(255,255,255,0.06))',
@@ -202,20 +202,22 @@ export const EncryptedMedia = memo(({
         <div
           style={{
             position: 'absolute',
-            bottom: '6px',
-            right: '6px',
-            backgroundColor: 'rgba(0, 0, 0, 0.45)',
-            borderRadius: '6px',
-            padding: '2px 6px',
+            bottom: '8px',
+            right: '8px',
+            borderRadius: '9999px',
+            backgroundColor: 'rgba(0, 0, 0, 0.55)',
+            backdropFilter: 'blur(6px)',
+            padding: '2.5px 7px',
             color: '#ffffff',
             fontSize: '11px',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '4px',
             lineHeight: 1,
-            zIndex: 2,
+            zIndex: 4,
             pointerEvents: 'none',
             userSelect: 'none',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
           }}
         >
           {timeNode}

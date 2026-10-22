@@ -207,7 +207,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
               className="select-none tabular-nums opacity-0 group-hover:opacity-100 transition-opacity duration-150 mt-1 message-time-badge"
               style={{
                 backgroundColor: 'rgba(0, 0, 0, 0.55)',
-                borderRadius: '8px',
+                borderRadius: '9999px',
                 padding: '2.5px 7px',
                 color: 'rgba(255, 255, 255, 0.95)',
                 fontSize: '11px',

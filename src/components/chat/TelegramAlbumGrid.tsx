@@ -350,25 +350,31 @@ export const TelegramAlbumGrid = memo(({
   }, [items.length, effectiveW, effectiveH, maxWidth]);
 
   const { photoBorderRadius, innerTL, innerTR, innerBL, innerBR } = useMemo(() => {
-    let tl = 16;
-    let tr = 16;
-    let br = 16;
-    let bl = 16;
+    let tl = 20;
+    let tr = 20;
+    let br = 20;
+    let bl = 20;
     if (customRadius) {
       const parts = customRadius.trim().split(/\s+/);
-      const parseVal = (v?: string, fallback = 16) => {
+      const parseVal = (v?: string, fallback = 20) => {
         if (!v) return fallback;
         const n = parseFloat(v);
         return isNaN(n) ? fallback : n;
       };
-      tl = parseVal(parts[0]);
-      tr = parseVal(parts[1] || parts[0]);
-      br = parseVal(parts[2] || parts[0]);
-      bl = parseVal(parts[3] || parts[1] || parts[0]);
+      const rawTL = parseVal(parts[0], 20);
+      const rawTR = parseVal(parts[1] || parts[0], 20);
+      const rawBR = parseVal(parts[2] || parts[0], 20);
+      const rawBL = parseVal(parts[3] || parts[1] || parts[0], 20);
+
+      tl = rawTL <= 10 ? 8 : Math.max(20, rawTL);
+      tr = rawTR <= 10 ? 8 : Math.max(20, rawTR);
+      br = rawBR <= 10 ? 8 : Math.max(20, rawBR);
+      bl = rawBL <= 10 ? 8 : Math.max(20, rawBL);
     }
+    const computedRadius = `${tl}px ${tr}px ${br}px ${bl}px`;
     if (!hasCaption) {
       return {
-        photoBorderRadius: customRadius || '16px',
+        photoBorderRadius: computedRadius,
         innerTL: tl,
         innerTR: tr,
         innerBL: bl,
@@ -378,11 +384,11 @@ export const TelegramAlbumGrid = memo(({
     const cTL = Math.max(0, tl - 2);
     const cTR = Math.max(0, tr - 2);
     return {
-      photoBorderRadius: `${cTL}px ${cTR}px 4px 4px`,
+      photoBorderRadius: `${cTL}px ${cTR}px 6px 6px`,
       innerTL: cTL,
       innerTR: cTR,
-      innerBL: 4,
-      innerBR: 4,
+      innerBL: 6,
+      innerBR: 6,
     };
   }, [customRadius, hasCaption]);
 
@@ -488,11 +494,15 @@ export const TelegramAlbumGrid = memo(({
         })}
         {!hasCaption && timeNode && (
           <div
-            className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded-full bg-black/55 backdrop-blur-md flex items-center justify-end z-[4] pointer-events-none select-none"
+            className="absolute bottom-2 right-2 px-2 py-0.5 flex items-center justify-center z-[4] pointer-events-none select-none"
             style={{
+              borderRadius: '9999px',
+              backgroundColor: 'rgba(0, 0, 0, 0.55)',
+              backdropFilter: 'blur(6px)',
               lineHeight: 1,
               userSelect: 'none',
               WebkitUserSelect: 'none',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
             }}
           >
             {timeNode}

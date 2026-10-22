@@ -628,6 +628,20 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         }
       }
 
+      let photoRadius = customRadius;
+      if (isPhotoGroup) {
+        const pR = Math.max(parseFloat(baseRadius) || 16, 20);
+        if (isOwn) {
+          const rTopRight = isPrevSameSenderGroup ? 8 : pR;
+          const rBottomRight = isNextSameSenderGroup ? 8 : pR;
+          photoRadius = `${pR}px ${rTopRight}px ${rBottomRight}px ${pR}px`;
+        } else {
+          const rTopLeft = isPrevSameSenderGroup ? 8 : pR;
+          const rBottomLeft = isNextSameSenderGroup ? 8 : pR;
+          photoRadius = `${rTopLeft}px ${pR}px ${pR}px ${rBottomLeft}px`;
+        }
+      }
+
       return (
         <div style={{ ...highlightWrapperStyle }} data-datelabel={getDateLabel(msg.time)}>
           {wrapWithGroupAvatar(
@@ -651,7 +665,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 <div
                   className="relative"
                   style={bubbleStyle(isOwn, {
-                    borderRadius: customRadius,
+                    borderRadius: isPhotoGroup ? photoRadius : customRadius,
                     padding: isPhotoGroup ? (hasCaption ? '2px 2px 4px 2px' : '0px') : (isAudioGroup ? '0px' : '1px 1px 4px 1px'),
                     background: (isPhotoGroup && !hasCaption) ? 'transparent' : undefined,
                     border: (isPhotoGroup && !hasCaption) ? 'none' : undefined,
@@ -661,7 +675,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     boxSizing: 'border-box',
                   })}
                 >
-                  {renderMediaGroup(msg, index, customRadius, effectiveMediaItems)}
+                  {renderMediaGroup(msg, index, isPhotoGroup ? photoRadius : customRadius, effectiveMediaItems)}
                 </div>
                 {renderReactionBadges(msg, index)}
               </div>
@@ -839,7 +853,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     className="absolute bottom-0.5 right-0.5 select-none tabular-nums opacity-0 group-hover:opacity-100 transition-opacity duration-150 message-time-badge"
                     style={{
                       backgroundColor: 'rgba(0, 0, 0, 0.55)',
-                      borderRadius: '8px',
+                      borderRadius: '9999px',
                       padding: '2.5px 7px',
                       color: 'rgba(255, 255, 255, 0.95)',
                       fontSize: '11px',

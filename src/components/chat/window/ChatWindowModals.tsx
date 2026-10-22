@@ -337,24 +337,29 @@ export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
         .input-textarea::placeholder { color: var(--text-dim); }
 
         .scroll-btn {
+          background-color: var(--surface-container, #33363f) !important;
+          border: none !important;
+          outline: none !important;
           opacity: 0;
-          transform: translateY(18px);
+          transform: translateY(20px);
           pointer-events: none;
           will-change: transform, opacity;
-          transition: transform 0.16s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.14s ease-in, background-color 0.15s ease, box-shadow 0.15s ease;
+          transition: transform 0.16s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.14s ease-in, filter 0.15s ease, box-shadow 0.15s ease;
         }
         .scroll-btn.visible {
           opacity: 1;
           transform: translateY(0);
           pointer-events: auto;
-          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.16s ease-out, background-color 0.15s ease, box-shadow 0.15s ease;
+          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.16s ease-out, filter 0.15s ease, box-shadow 0.15s ease;
         }
         .scroll-btn.visible:hover {
-          background-color: var(--surface-container-strong, #3a3d47) !important;
+          background-color: var(--surface-container, #33363f) !important;
+          filter: brightness(1.08);
           box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35) !important;
         }
         .scroll-btn.visible:active {
           transform: translateY(0) scale(0.96) !important;
+          filter: brightness(0.96);
         }
 
         .input-container {

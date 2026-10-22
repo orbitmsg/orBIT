@@ -1217,13 +1217,14 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
             position: 'absolute',
             right: isMobileView ? '12px' : '20px',
             bottom: '16px',
-            width: '42px',
-            height: '42px',
+            width: '48px',
+            height: '48px',
             borderRadius: '50%',
             backgroundColor: 'var(--surface-container, #33363f)',
             color: 'var(--text-main)',
             boxShadow: '0 4px 14px rgba(0, 0, 0, 0.28)',
-            border: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.08))',
+            border: 'none',
+            outline: 'none',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -1235,8 +1236,8 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
             <div
               style={{
                 position: 'absolute',
-                top: '-5px',
-                right: unreadCount >= 10 ? '-6px' : '-2px',
+                top: '-4px',
+                right: unreadCount >= 10 ? '-5px' : '-2px',
                 backgroundColor: 'var(--accent-color, #7C3AED)',
                 color: '#ffffff',
                 fontSize: '11px',
@@ -1257,7 +1258,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               {unreadCount > 99 ? '99+' : unreadCount}
             </div>
           )}
-          <ChevronDown size={20} strokeWidth={2.4} style={{ color: 'var(--text-main)' }} />
+          <ChevronDown size={24} strokeWidth={2.4} style={{ color: 'var(--text-main)' }} />
         </button>
       </div>
 

@@ -854,8 +854,10 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 pointerEvents: 'auto',
-                maxWidth: 'calc(100% - 140px)',
-                maxHeight: 'calc(100% - 160px)',
+                width: '100%',
+                height: '100%',
+                maxWidth: 'calc(100% - 60px)',
+                maxHeight: 'calc(100% - 90px)',
               }}
               onMouseEnter={() => setIsVideoControlsHovered(true)}
               onMouseLeave={() => setIsVideoControlsHovered(false)}
@@ -864,7 +866,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 key={displaySrc || currentItem?.id || String(currentIndex)}
                 ref={videoRef}
                 src={displaySrc}
-                poster={currentItem?.thumbnail || currentItem?.blurPreview}
+                poster={currentItem?.thumbnail && (!currentItem.thumbnail.startsWith('data:') || currentItem.thumbnail.length > 2048) ? currentItem.thumbnail : undefined}
                 playsInline
                 preload="auto"
                 onClick={handleTogglePlay}
@@ -931,13 +933,19 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                   }
                 }}
                 style={{
-                  maxWidth: 'calc(100% - 140px)',
-                  maxHeight: 'calc(100% - 160px)',
+                  width: '100%',
+                  height: '100%',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
                   objectFit: 'contain',
                   borderRadius: 0,
                   backgroundColor: 'transparent',
                   cursor: 'pointer',
                   display: 'block',
+                  transform: (rotation !== 0 || zoomScale > 1 || panOffset.x !== 0 || panOffset.y !== 0)
+                    ? `translate3d(${panOffset.x}px, ${panOffset.y}px, 0) rotate(${rotation}deg) scale(${zoomScale})`
+                    : 'none',
+                  transition: 'none',
                 }}
               />
 

@@ -559,7 +559,7 @@ export const useChatAudioAndFiles = ({
           height: file.height,
           duration: file.duration || file.audioMetadata?.duration,
           blurPreview: file.blurPreview,
-          thumbnail: file.blurPreview,
+          thumbnail: file.preview || file.blurPreview,
         };
       }
 
@@ -683,7 +683,7 @@ export const useChatAudioAndFiles = ({
           height: file.height,
           duration: file.duration || file.audioMetadata?.duration,
           blurPreview: file.blurPreview,
-          thumbnail: file.blurPreview,
+          thumbnail: file.preview || file.blurPreview,
         };
       } catch (err) {
         console.error('Upload error for file', file.name, err);
@@ -717,7 +717,7 @@ export const useChatAudioAndFiles = ({
           height: file.height,
           duration: file.duration || file.audioMetadata?.duration,
           blurPreview: file.blurPreview,
-          thumbnail: file.blurPreview,
+          thumbnail: file.preview || file.blurPreview,
           uploading: true,
           uploadedMb: 0,
         }));
@@ -770,6 +770,8 @@ export const useChatAudioAndFiles = ({
             useUploadProgressStore.getState().clearProgress(`${messageId}_${fIdx}`);
             uploadedItems.push({
               ...uploaded,
+              preview: currentFile.preview,
+              thumbnail: currentFile.preview || uploaded.thumbnail,
               uploading: false,
             });
           }
@@ -820,7 +822,7 @@ export const useChatAudioAndFiles = ({
           height: file.height,
           duration: file.duration || file.audioMetadata?.duration,
           blurPreview: file.blurPreview,
-          thumbnail: file.blurPreview,
+          thumbnail: file.preview || file.blurPreview,
         };
         addMessage(activeChatId, localMessage);
         updateChat(activeChatId, { lastMsg: postCaption || file.name || `[${itemType}]` });
@@ -860,7 +862,11 @@ export const useChatAudioAndFiles = ({
 
           await triggerMessage(
             postCaption,
-            uploaded,
+            {
+              ...uploaded,
+              preview: file.preview,
+              thumbnail: file.preview || uploaded.thumbnail,
+            },
             undefined,
             messageId
           );

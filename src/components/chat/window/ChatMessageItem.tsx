@@ -291,7 +291,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           sender: m.sender,
           time: m.time,
           messageId: m.id,
-          thumbnail: item.thumbnail || item.blurPreview || m.blurPreview,
+          thumbnail: (item as any).preview || item.thumbnail || (m as any).preview || item.blurPreview || m.blurPreview,
           blurPreview: item.blurPreview || m.blurPreview,
         };
       });
@@ -935,7 +935,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   isOwn={isOwn}
                   fileSize={msg.fileSize || (msg as any).size}
                   preview={(msg as any).preview || (media.url?.startsWith('data:') || media.url?.startsWith('blob:') ? media.url : undefined)}
-                  thumbnail={msg.thumbnail}
+                  thumbnail={(msg as any).preview || msg.thumbnail}
                   blurPreview={msg.blurPreview || msg.thumbnail}
                   timeNode={!(msg.text?.trim() && msg.text.trim().replace(/^\[(?:Photo|GIF|Sticker|Video)\]\s*https?:\/\/[^\s]+$/i, '').trim()) ? timeBadge(msg, isMessagePinned(msg)) : undefined}
                   onClick={() => openMediaViewer(media.url!, msg.id)}

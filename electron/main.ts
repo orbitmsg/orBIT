@@ -2735,7 +2735,7 @@ ipcMain.handle('orbita:getVideoMetadata', async (_event, filePath: string) => {
       '-ss', seekPos,
       '-i', filePath,
       '-vframes', '1',
-      '-vf', 'scale=24:-2',
+      '-vf', 'scale=64:-2,boxblur=2:1',
       '-q:v', '8',
       '-f', 'image2pipe',
       '-c:v', 'mjpeg',

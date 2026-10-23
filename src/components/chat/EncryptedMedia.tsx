@@ -189,7 +189,7 @@ export const EncryptedMedia = memo(({
         >
           <video
             src={blobUrl || undefined}
-            poster={thumbnail || blurPreview || undefined}
+            poster={preview || (thumbnail && (!thumbnail.startsWith('data:') || thumbnail.length > 2048) ? thumbnail : undefined)}
             className="w-full h-full object-contain pointer-events-none"
             preload="metadata"
             muted

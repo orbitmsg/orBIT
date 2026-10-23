@@ -76,7 +76,7 @@ const AlbumTile = memo(({
 
   const isDownloading = isLoading;
   const isLocalMedia = Boolean((item as any).preview || (item.url?.startsWith('data:') && item.url.length > 2048) || item.url?.startsWith('blob:'));
-  const posterSrc = isLocalMedia ? ((item as any).preview || item.url) : (item.thumbnail && !item.thumbnail.startsWith('data:') ? item.thumbnail : undefined);
+  const posterSrc = (item as any).preview || (isLocalMedia ? item.url : undefined) || (item.thumbnail && (!item.thumbnail.startsWith('data:') || item.thumbnail.length > 2048) ? item.thumbnail : undefined);
   const blurSrc = item.blurPreview || (item.thumbnail?.startsWith('data:') ? item.thumbnail : null) || (!posterSrc && item.url?.startsWith('data:') ? item.url : null);
   const mediaSrc = blobUrl || (isLocalMedia ? ((item as any).preview || item.url) : undefined);
 
@@ -177,7 +177,7 @@ const AlbumTile = memo(({
           ) : (
             <video
               src={mediaSrc}
-              poster={posterSrc || blurSrc || undefined}
+              poster={posterSrc || undefined}
               className={`w-full h-full pointer-events-none relative z-[1] transition-opacity duration-200 ${isSingle ? 'object-contain' : 'object-cover'}`}
               style={{ opacity: isLoaded ? 1 : 0 }}
               onLoadedMetadata={(e) => {

@@ -68,6 +68,19 @@ class AblyService {
     return this.ABLY_KEYS[this.activeKeyIndex] || '';
   }
 
+  forceReconnect(): void {
+    if (this.client) {
+      try {
+        this.client.close();
+      } catch {}
+      this.client = null;
+      this.isConnected = false;
+    }
+    if (this.userId) {
+      this.connect(this.userId).catch(() => {});
+    }
+  }
+
   reconnect(): void {
     if (this.client) {
       try {

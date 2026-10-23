@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useChatStore, type Chat, type Message } from '../../../store/useChatStore';
 import { useAuthStore, getInitialNumericId } from '../../../store/useAuthStore';
 import { useConnectionStore } from '../../../store/useConnectionStore';
-import { getPusher } from '../../../utils/pusher';
+import { getPusher, reconnectPusher } from '../../../utils/pusher';
 import { ablyService } from '../../../services/ablyService';
 import { supabaseService, type OfflineMessageRecord } from '../../../services/supabaseService';
 import { gatewayManager } from '../../../services/gatewayManager';
@@ -1168,6 +1168,8 @@ export const useMainLayoutSync = ({
     const handleOnline = () => {
       setIsNetworkOnline(true);
       useConnectionStore.getState().setServerConnected(true);
+      ablyService.forceReconnect();
+      reconnectPusher();
       syncAll(true);
     };
 
@@ -1188,6 +1190,14 @@ export const useMainLayoutSync = ({
       syncAll(true);
     };
 
+    const unsubResume = window.orbita?.onSystemResume?.(() => {
+      setIsNetworkOnline(true);
+      useConnectionStore.getState().setServerConnected(true);
+      ablyService.forceReconnect();
+      reconnectPusher();
+      syncAll(true);
+    });
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     window.addEventListener('focus', handleFocus);
@@ -1199,11 +1209,17 @@ export const useMainLayoutSync = ({
       if (!navOnline) {
         setIsNetworkOnline(false);
         useConnectionStore.getState().setServerConnected(false);
+      } else {
+        const ablyState = ablyService.getConnectionState();
+        if (ablyState === 'disconnected' || ablyState === 'suspended' || ablyState === 'failed') {
+          ablyService.reconnect();
+        }
       }
-    }, 15000);
+    }, 10000);
 
     return () => {
       isDestroyed = true;
+      unsubResume?.();
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('focus', handleFocus);

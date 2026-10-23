@@ -99,6 +99,11 @@ contextBridge.exposeInMainWorld('orbita', {
     ipcRenderer.send('orbita:show-custom-notification', payload);
   },
 
+  onSystemResume: (callback: () => void) => {
+    const handler = () => callback();
+    ipcRenderer.on('orbita:system-resume', handler);
+    return () => ipcRenderer.removeListener('orbita:system-resume', handler);
+  },
   clearNotifications: () => {
     ipcRenderer.send('orbita:clear-notifications');
   },

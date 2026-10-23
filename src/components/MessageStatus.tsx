@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 type MessageStatusType = 'sent' | 'delivered' | 'read' | 'sending' | 'pending';
 
@@ -10,6 +11,7 @@ interface MessageStatusProps {
 }
 
 export const MessageStatus: React.FC<MessageStatusProps> = ({ status, className = '', isOwn = false, color }) => {
+  const { t } = useTranslation();
   const statusStyle: React.CSSProperties = {
     transform: 'translateY(-2.5px)',
     flexShrink: 0,
@@ -21,17 +23,17 @@ export const MessageStatus: React.FC<MessageStatusProps> = ({ status, className 
   if (status === 'sending' || status === 'pending') {
     return (
       <svg
-        viewBox="0 0 12 12"
-        fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        width="13"
-        height="13"
+        width="15"
+        height="15"
+        viewBox="0 0 16 16"
+        fill="none"
+        aria-label={t('common.sending', 'Отправка...')}
         className={className}
         style={statusStyle}
-        aria-hidden="true"
       >
-        <circle cx="6" cy="6" r="4.5" stroke={checkColor} strokeWidth="1.2" />
-        <path d="M6 3.5V6L7.5 7.5" stroke={checkColor} strokeWidth="1.2" strokeLinecap="round" />
+        <circle cx="8" cy="8" r="6.25" fill="none" stroke={checkColor} strokeWidth="1.5" />
+        <path d="M8 4.75V8H10.75" fill="none" stroke={checkColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
   }

@@ -102,6 +102,21 @@ export const switchToNextPusherServer = (): Pusher => {
   return getPusher();
 };
 
+export const reconnectPusher = (): void => {
+  if (pusherInstance) {
+    try {
+      pusherInstance.connection.disconnect();
+      pusherInstance.connection.connect();
+    } catch {}
+  }
+  if (groupPusherInstance) {
+    try {
+      groupPusherInstance.connection.disconnect();
+      groupPusherInstance.connection.connect();
+    } catch {}
+  }
+};
+
 export const getActivePusherServer = (): PusherServerConfig => PUSHER_SERVERS[activeServerIndex];
 
 export const GROUP_PUSHER_SERVERS: PusherServerConfig[] = [

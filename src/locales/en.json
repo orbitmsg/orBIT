@@ -125,6 +125,7 @@
       "copied": "QR code copied to clipboard"
     },
     "common": {
+      "sending": "Sending...",
       "lock_app": "Lock app",
       "you": "You",
       "link_copied": "Link copied",

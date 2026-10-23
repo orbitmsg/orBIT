@@ -518,7 +518,7 @@ export const useChatMessageSend = ({
         const isVisual = mediaPayload ? (mediaPayload.type === 'photo' || mediaPayload.type === 'video') : false;
         const sanitizePreview = (val?: string | null) => {
           if (!val) return null;
-          if (val.startsWith('data:') && val.length > 2048) return null;
+          if (val.startsWith('data:')) return null;
           return val;
         };
 
@@ -647,8 +647,11 @@ export const useChatMessageSend = ({
               waveform: mediaPayload?.waveform || null,
               audioMetadata: networkAudioMetadata,
               linkPreview: linkPreviewPayload || null,
+            }).then((res) => {
+              if (res) {
+                useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sent');
+              }
             }).catch(() => {});
-            useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sent');
           }
           return;
         }
@@ -774,7 +777,7 @@ export const useChatMessageSend = ({
             const targetIdx = currentMsgs.findIndex((m) => m.id === messageId);
             const preHandshakeIndex = targetIdx >= 0 ? targetIdx : currentMsgs.length;
             const plaintext = JSON.stringify(messageData);
-            Promise.allSettled(
+            const offlinePromise = Promise.allSettled(
               recipientTargets.map((recipientId) =>
                 supabaseService.sendOfflineMessage(
                   activeChatId,
@@ -786,7 +789,7 @@ export const useChatMessageSend = ({
                   messageId,
                 )
               )
-            ).catch(() => {});
+            );
 
             const firstPreItem = sanitizedMediaItems?.[0];
             const preHandshakePayload = {
@@ -811,8 +814,10 @@ export const useChatMessageSend = ({
               messageId,
               chatId: activeChatId,
             };
+            let ablyDirectSent = false;
             try {
-              ablyService.sendMessage(activeChatId, preHandshakePayload).catch(() => {});
+              await ablyService.sendMessage(activeChatId, preHandshakePayload);
+              ablyDirectSent = true;
             } catch {}
             try {
               const channel = pusher.subscribe(`private-chat-${activeChatId}`);
@@ -852,7 +857,11 @@ export const useChatMessageSend = ({
               } catch {}
             }
 
-            useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sent');
+            const offlineResults = await offlinePromise;
+            const hadOfflineSuccess = offlineResults.some((r) => r.status === 'fulfilled');
+            if (ablyDirectSent || hadOfflineSuccess) {
+              useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sent');
+            }
           }
           return;
         }
@@ -906,9 +915,10 @@ export const useChatMessageSend = ({
         ].filter((t): t is string => Boolean(t && t !== myCode && t !== myUserId))));
 
         (async () => {
-          useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sent');
+          let ablySuccess = false;
           try {
             await ablyService.sendMessage(activeChatId, payload);
+            ablySuccess = true;
           } catch {}
 
           try {
@@ -949,8 +959,9 @@ export const useChatMessageSend = ({
             } catch {}
           }
 
+          let offlineSuccess = false;
           if (freshChat?.type === 'private' || activeChat?.type === 'private') {
-            await Promise.allSettled(
+            const offlineResults = await Promise.allSettled(
               recipientTargets.map((recipientId) =>
                 supabaseService.sendOfflineMessage(
                   activeChatId,
@@ -964,9 +975,12 @@ export const useChatMessageSend = ({
                 )
               )
             );
+            offlineSuccess = offlineResults.some((r) => r.status === 'fulfilled');
           }
 
-          useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sent');
+          if (ablySuccess || offlineSuccess) {
+            useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sent');
+          }
         })().catch(() => {});
       } catch (err) {
         console.error('[ChatWindow] Failed to encrypt/send message:', err);

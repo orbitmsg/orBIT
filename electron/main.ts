@@ -15,6 +15,7 @@ import {
   protocol,
   net as electronNet,
   desktopCapturer,
+  powerMonitor,
 } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -4923,6 +4924,16 @@ app.whenReady().then(async () => {
   createMainWindow();
   setupTray();
   setupAutoUpdater();
+  powerMonitor.on('resume', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('orbita:system-resume');
+    }
+  });
+  powerMonitor.on('unlock-screen', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('orbita:system-resume');
+    }
+  });
 
   let appReadyHandled = false;
   const finishStartup = () => {

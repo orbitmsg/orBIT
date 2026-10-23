@@ -78,6 +78,7 @@ declare global {
       getPathForFile?: (file: any) => string;
       showCustomNotification: (payload: OrbitaCustomNotificationPayload) => void;
       clearNotifications: () => void;
+      onSystemResume?: (callback: () => void) => () => void;
       onOpenChat: (callback: (chatId: string) => void) => () => void;
       onDeepLink?: (callback: (url: string) => void) => () => void;
       setThemeForElectron: (themeId: string, themeVars: Record<string, string>) => void;

@@ -23,17 +23,17 @@ export const MessageStatus: React.FC<MessageStatusProps> = ({ status, className 
   if (status === 'sending' || status === 'pending') {
     return (
       <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="15"
-        height="15"
-        viewBox="0 0 16 16"
+        viewBox="0 -2 12 12"
         fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
         aria-label={t('common.sending', 'Отправка...')}
         className={className}
         style={statusStyle}
       >
-        <circle cx="8" cy="8" r="6.25" fill="none" stroke={checkColor} strokeWidth="1.5" />
-        <path d="M8 4.75V8H10.75" fill="none" stroke={checkColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="4.75" cy="6" r="3.75" fill="none" stroke={checkColor} strokeWidth="1.2" />
+        <path d="M4.75 3.8V6H6.3" fill="none" stroke={checkColor} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
   }

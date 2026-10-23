@@ -288,6 +288,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           key: item.key || m.mediaKey,
           sharedSecret: effectiveSecret,
           duration: item.duration,
+          width: item.width || m.width,
+          height: item.height || m.height,
           sender: m.sender,
           time: m.time,
           messageId: m.id,

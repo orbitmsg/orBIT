@@ -205,6 +205,15 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
   };
 
   const currentItem: MediaViewerItem | undefined = items[currentIndex];
+  const [mediaDimensions, setMediaDimensions] = useState<{ width: number; height: number } | null>(null);
+
+  useEffect(() => {
+    if (currentItem?.width && currentItem?.height) {
+      setMediaDimensions({ width: currentItem.width, height: currentItem.height });
+    } else {
+      setMediaDimensions(null);
+    }
+  }, [currentIndex, currentItem?.id, currentItem?.width, currentItem?.height]);
 
   const effectiveSecret = currentItem?.key || currentItem?.sharedSecret || sharedSecret;
   const cachedDecrypted = useMemo(() => {
@@ -841,7 +850,10 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
           justifyContent: 'center',
           overflow: 'hidden',
           pointerEvents: 'none',
-          padding: 0,
+          paddingTop: 54,
+          paddingBottom: carouselItems.length > 1 ? 160 : 100,
+          paddingLeft: 60,
+          paddingRight: 60,
           boxSizing: 'border-box',
         }}
       >
@@ -854,10 +866,12 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 pointerEvents: 'auto',
+                aspectRatio: mediaDimensions ? `${mediaDimensions.width} / ${mediaDimensions.height}` : undefined,
+                maxWidth: mediaDimensions ? `${mediaDimensions.width}px` : '100%',
+                maxHeight: mediaDimensions ? `${mediaDimensions.height}px` : '100%',
                 width: '100%',
                 height: '100%',
-                maxWidth: 'calc(100% - 60px)',
-                maxHeight: 'calc(100% - 90px)',
+                overflow: 'visible',
               }}
               onMouseEnter={() => setIsVideoControlsHovered(true)}
               onMouseLeave={() => setIsVideoControlsHovered(false)}
@@ -871,10 +885,17 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 preload="auto"
                 onClick={handleTogglePlay}
                 onLoadedMetadata={() => {
-                  if (videoRef.current && videoRef.current.duration && isFinite(videoRef.current.duration)) {
-                    setDuration(videoRef.current.duration);
-                    setCurrentTime(videoRef.current.currentTime);
-                    videoRef.current.playbackRate = playbackRate;
+                  if (videoRef.current) {
+                    const vw = videoRef.current.videoWidth;
+                    const vh = videoRef.current.videoHeight;
+                    if (vw && vh) {
+                      setMediaDimensions({ width: vw, height: vh });
+                    }
+                    if (videoRef.current.duration && isFinite(videoRef.current.duration)) {
+                      setDuration(videoRef.current.duration);
+                      setCurrentTime(videoRef.current.currentTime);
+                      videoRef.current.playbackRate = playbackRate;
+                    }
                   }
                 }}
                 onCanPlay={() => {
@@ -987,9 +1008,18 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 muted
                 playsInline
                 onClick={(e) => e.stopPropagation()}
+                onLoadedMetadata={(e) => {
+                  const v = e.currentTarget;
+                  if (v.videoWidth && v.videoHeight) {
+                    setMediaDimensions({ width: v.videoWidth, height: v.videoHeight });
+                  }
+                }}
                 style={{
-                  maxWidth: 'calc(100% - 140px)',
-                  maxHeight: 'calc(100% - 140px)',
+                  aspectRatio: mediaDimensions ? `${mediaDimensions.width} / ${mediaDimensions.height}` : undefined,
+                  maxWidth: mediaDimensions ? `${mediaDimensions.width}px` : '100%',
+                  maxHeight: mediaDimensions ? `${mediaDimensions.height}px` : '100%',
+                  width: '100%',
+                  height: '100%',
                   objectFit: 'contain',
                   borderRadius: 0,
                   pointerEvents: 'auto',
@@ -1001,9 +1031,18 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 src={displaySrc}
                 alt=""
                 onClick={(e) => e.stopPropagation()}
+                onLoad={(e) => {
+                  const img = e.currentTarget;
+                  if (img.naturalWidth && img.naturalHeight) {
+                    setMediaDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+                  }
+                }}
                 style={{
-                  maxWidth: 'calc(100% - 140px)',
-                  maxHeight: 'calc(100% - 140px)',
+                  aspectRatio: mediaDimensions ? `${mediaDimensions.width} / ${mediaDimensions.height}` : undefined,
+                  maxWidth: mediaDimensions ? `${mediaDimensions.width}px` : '100%',
+                  maxHeight: mediaDimensions ? `${mediaDimensions.height}px` : '100%',
+                  width: '100%',
+                  height: '100%',
                   objectFit: 'contain',
                   borderRadius: 0,
                   pointerEvents: 'auto',
@@ -1018,10 +1057,17 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
               alt=""
               decoding="async"
               loading="eager"
+              onLoad={(e) => {
+                const img = e.currentTarget;
+                if (img.naturalWidth && img.naturalHeight) {
+                  setMediaDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+                }
+              }}
               style={{
-                maxWidth: zoomScale > 1 ? 'none' : '100%',
-                maxHeight: zoomScale > 1 ? 'none' : '100%',
-                width: 'auto',
+                aspectRatio: (zoomScale <= 1 && mediaDimensions) ? `${mediaDimensions.width} / ${mediaDimensions.height}` : undefined,
+                maxWidth: zoomScale > 1 ? 'none' : (mediaDimensions ? `${mediaDimensions.width}px` : '100%'),
+                maxHeight: zoomScale > 1 ? 'none' : (mediaDimensions ? `${mediaDimensions.height}px` : '100%'),
+                width: zoomScale > 1 ? 'auto' : '100%',
                 height: zoomScale > 1 ? 'auto' : '100%',
                 objectFit: 'contain',
                 borderRadius: 0,

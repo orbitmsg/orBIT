@@ -397,7 +397,7 @@ export const buildChatMediaViewerItems = (
         isAlbum: false,
         key: msg.mediaKey,
         sharedSecret: effectiveSecret,
-        thumbnail: msg.blurPreview,
+        thumbnail: (msg as any).preview || msg.thumbnail || msg.blurPreview,
         blurPreview: msg.blurPreview,
       });
     }
@@ -425,9 +425,11 @@ export const resolveMediaViewerFallback = (
     chatId: activeChatId || undefined,
     type: fallbackType,
     time: Date.now(),
+    width: targetMsg?.width,
+    height: targetMsg?.height,
     key: targetMsg?.mediaKey,
     sharedSecret: effectiveSecret,
-    thumbnail: (targetMedia as any)?.thumbnail || targetMsg?.blurPreview,
+    thumbnail: (targetMedia as any)?.thumbnail || (targetMsg as any)?.preview || targetMsg?.thumbnail || targetMsg?.blurPreview,
     blurPreview: targetMsg?.blurPreview,
   }];
 };

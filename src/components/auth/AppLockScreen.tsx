@@ -4,6 +4,8 @@ import { Eye, EyeOff, Loader2, User, KeyRound, Usb, CheckCircle2, FolderOpen } f
 import { useTranslation } from 'react-i18next';
 import { securityService } from '../../services/securityService';
 import { orbitaKeyService } from '../../services/orbitaKeyService';
+import { sqliteStorage } from '../../services/sqliteStorage';
+import { useAuthStore } from '../../store/useAuthStore';
 
 interface AppLockScreenProps {
   onUnlocked: () => void;
@@ -20,21 +22,18 @@ export const AppLockScreen: React.FC<AppLockScreenProps> = ({ onUnlocked }) => {
   const [usbError, setUsbError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [userProfile] = useState<{ nickname: string; avatarUrl: string | null }>(() => {
-    try {
-      const raw = localStorage.getItem('orbita_lock_user_profile');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === 'object') {
-          return {
-            nickname: parsed.nickname || '',
-            avatarUrl: parsed.avatarUrl || null,
-          };
-        }
-      }
-    } catch {}
-    return { nickname: '', avatarUrl: null };
+  const [userProfile, setUserProfile] = useState<{ nickname: string; avatarUrl: string | null }>(() => {
+    const auth = useAuthStore.getState();
+    return { nickname: auth.nickname || '', avatarUrl: auth.avatarUrl || null };
   });
+
+  useEffect(() => {
+    sqliteStorage.getJson<{ nickname: string; avatarUrl: string | null }>('orbita_lock_user_profile', { nickname: '', avatarUrl: null }).then((p) => {
+      if (p && p.nickname) {
+        setUserProfile(p);
+      }
+    }).catch(() => {});
+  }, []);
 
   const getGreetingKey = () => {
     const hour = new Date().getHours();

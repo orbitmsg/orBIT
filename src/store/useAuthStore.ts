@@ -122,19 +122,13 @@ const ipcStorage: StateStorage = {
         return null;
       }
     }
-    const localVal = localStorage.getItem(name);
+    const localVal = typeof localStorage !== 'undefined' ? localStorage.getItem(name) : null;
     if (!val || (!hasExistingAccount(val) && hasExistingAccount(localVal))) {
-      if (!securityService.isPasswordSet()) {
-        val = localVal;
-        if (val && (window as any).orbita?.storageSet) {
-          (window as any).orbita.storageSet(name, val).catch(() => {});
-        }
+      val = localVal;
+      if (val && (window as any).orbita?.storageSet) {
+        (window as any).orbita.storageSet(name, val).catch(() => {});
       }
-    }
-    if (val && !localVal && !securityService.isPasswordSet()) {
-      try {
-        localStorage.setItem(name, val);
-      } catch {}
+      try { localStorage.removeItem(name); } catch {}
     }
     if (val !== null) lastSavedAuthValues[name] = val;
     return val;
@@ -148,24 +142,21 @@ const ipcStorage: StateStorage = {
 
     if (lastSavedAuthValues[name] === value) return;
 
-    const previousSaved = lastSavedAuthValues[name] || localStorage.getItem(name);
+    const previousSaved = lastSavedAuthValues[name];
     if (hasExistingAccount(previousSaved) && isBlankAuthState(value)) {
       return;
     }
 
     lastSavedAuthValues[name] = value;
-    if (!(window as any).orbita?.storageSet && !securityService.isPasswordSet()) {
-      try {
-        localStorage.setItem(name, value);
-      } catch {}
-    }
 
     if ((window as any).orbita?.storageSet) {
       try {
         await (window as any).orbita.storageSet(name, value);
-        try {
-          localStorage.removeItem(name);
-        } catch {}
+        if (typeof localStorage !== 'undefined') {
+          try {
+            localStorage.removeItem(name);
+          } catch {}
+        }
       } catch {}
     }
   },
@@ -439,3 +430,7 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
+
+if (typeof window !== 'undefined') {
+  (window as any).__ORBITA_AUTH_STORE__ = useAuthStore;
+}

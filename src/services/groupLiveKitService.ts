@@ -284,11 +284,7 @@ export class GroupLiveKitService extends EventEmitter {
   private onConnected(): void {
     if (!this.room) return;
     this.localParticipant = this.room.localParticipant;
-    const myAvatar = useAuthStore.getState().avatarUrl || (() => {
-      try {
-        return JSON.parse(localStorage.getItem('orbita-auth-storage') || '{}')?.state?.avatarUrl;
-      } catch { return null; }
-    })();
+    const myAvatar = useAuthStore.getState().avatarUrl || null;
     if (myAvatar && this.localParticipant) {
       try {
         this.localParticipant.setMetadata(JSON.stringify({ avatarUrl: myAvatar }));
@@ -302,11 +298,7 @@ export class GroupLiveKitService extends EventEmitter {
   private async onReconnected(): Promise<void> {
     if (!this.room) return;
     this.localParticipant = this.room.localParticipant;
-    const myAvatar = useAuthStore.getState().avatarUrl || (() => {
-      try {
-        return JSON.parse(localStorage.getItem('orbita-auth-storage') || '{}')?.state?.avatarUrl;
-      } catch { return null; }
-    })();
+    const myAvatar = useAuthStore.getState().avatarUrl || null;
     if (myAvatar && this.localParticipant) {
       try {
         this.localParticipant.setMetadata(JSON.stringify({ avatarUrl: myAvatar }));
@@ -922,11 +914,7 @@ export class GroupLiveKitService extends EventEmitter {
         } catch {}
       }
       if (!localAvatar) {
-        localAvatar = useAuthStore.getState().avatarUrl || (() => {
-          try {
-            return JSON.parse(localStorage.getItem('orbita-auth-storage') || '{}')?.state?.avatarUrl;
-          } catch { return null; }
-        })();
+        localAvatar = useAuthStore.getState().avatarUrl || null;
       }
       const isVideoOn = !!(
         this.localVideoTrack &&

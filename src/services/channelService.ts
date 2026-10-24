@@ -4,8 +4,8 @@ import { ablyService } from './ablyService';
 import { generateChannelId } from '../lib/codes';
 import { getVercelBaseUrl } from './gatewayManager';
 import { deriveChannelKey, encryptMessage, decryptMessage } from '../lib/crypto';
+import { sqliteStorage } from './sqliteStorage';
 import { mediaManager } from './mediaManager';
-import { securityService } from './securityService';
 import { getMediaInfoFromDataUrl } from '../utils/staticImageValidation';
 
 export interface ChannelInfo {
@@ -45,28 +45,11 @@ const W = getVercelBaseUrl();
 const CHANNELS_SUPABASE_URL = 'https://rugqiezexuknqcppicma.supabase.co';
 const CHANNELS_SUPABASE_KEY = 'sb_publishable_XYjE7C93LWA-P1OHZqNONg_QHlyZ9sZ';
 const getChannelPostsStorage = async (channelId: string): Promise<string | null> => {
-  if (typeof window !== 'undefined' && (window as any).orbita?.storageGet) {
-    try {
-      const val = await (window as any).orbita.storageGet(`orbita_channel_posts_${channelId}`);
-      if (val !== null && val !== undefined) return val;
-    } catch {}
-  }
-  if (!securityService.isPasswordSet()) {
-    return localStorage.getItem(`orbita_channel_posts_${channelId}`);
-  }
-  return null;
+  return await sqliteStorage.get(`orbita_channel_posts_${channelId}`);
 };
 
 const setChannelPostsStorage = async (channelId: string, val: string): Promise<void> => {
-  if (typeof window !== 'undefined' && (window as any).orbita?.storageSet) {
-    try {
-      await (window as any).orbita.storageSet(`orbita_channel_posts_${channelId}`, val);
-      return;
-    } catch {}
-  }
-  if (!securityService.isPasswordSet()) {
-    localStorage.setItem(`orbita_channel_posts_${channelId}`, val);
-  }
+  await sqliteStorage.set(`orbita_channel_posts_${channelId}`, val);
 };
 
 class ChannelService {

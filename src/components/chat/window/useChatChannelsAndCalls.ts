@@ -6,6 +6,7 @@ import { ablyService } from '../../../services/ablyService';
 import { supabaseService } from '../../../services/supabaseService';
 import { channelService, type ChannelPost } from '../../../services/channelService';
 import { supportService } from '../../../services/supportService';
+import { sqliteStorage } from '../../../services/sqliteStorage';
 import { getPusher, getGroupPusher } from '../../../utils/pusher';
 import { deriveChannelKey, decryptMessage, generateChatId, getDirectChatId, generateKeyPair } from '../../../lib/crypto';
 import { isValidGroupCode, extractGroupCode } from '../../../lib/groupCrypto';
@@ -467,13 +468,7 @@ export const useChatChannelsAndCalls = ({
 
     (async () => {
       try {
-        let cachedStr: string | null = null;
-        if (typeof window !== 'undefined' && (window as any).orbita?.storageGet) {
-          cachedStr = await (window as any).orbita.storageGet(`orbita_channel_posts_${activeChatId}`);
-        }
-        if (!cachedStr && typeof window !== 'undefined' && window.localStorage) {
-          cachedStr = window.localStorage.getItem(`orbita_channel_posts_${activeChatId}`);
-        }
+        const cachedStr = await sqliteStorage.get(`orbita_channel_posts_${activeChatId}`);
         if (cachedStr) {
           const cachedPosts: ChannelPost[] = JSON.parse(cachedStr);
           if (Array.isArray(cachedPosts) && cachedPosts.length > 0) {

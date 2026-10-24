@@ -1,24 +1,25 @@
 import React, { useEffect } from 'react';
 import { supabaseService } from '../../services/supabaseService';
 import { useToastStore } from '../../store/useToastStore';
+import { sqliteStorage } from '../../services/sqliteStorage';
 
 const STORAGE_KEY = 'orbita_cached_dev_codes_v2';
 const LAST_FETCH_KEY = 'orbita_dev_codes_last_fetch';
 
-const getInitialCachedCodes = (): Set<string> => {
-  if (typeof window === 'undefined') return new Set();
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const list = JSON.parse(raw);
-      if (Array.isArray(list)) return new Set(list.map((c: string) => c.trim()));
-    }
-  } catch (e) {}
-  return new Set();
-};
-
-let developerCodes: Set<string> = getInitialCachedCodes();
+let developerCodes: Set<string> = new Set();
+let lastFetchTime = 0;
 const listeners = new Set<() => void>();
+
+sqliteStorage.getJson<string[]>(STORAGE_KEY, []).then((list) => {
+  if (Array.isArray(list) && list.length > 0) {
+    developerCodes = new Set(list.map((c: string) => c.trim()));
+    notifyListeners();
+  }
+}).catch(() => {});
+
+sqliteStorage.get(LAST_FETCH_KEY).then((val) => {
+  if (val) lastFetchTime = Number(val) || 0;
+}).catch(() => {});
 
 const notifyListeners = () => {
   listeners.forEach((fn) => fn());
@@ -28,9 +29,8 @@ export const loadDeveloperCodes = async (force = false): Promise<boolean> => {
   if (typeof window === 'undefined') return false;
 
   const now = Date.now();
-  const lastFetch = Number(localStorage.getItem(LAST_FETCH_KEY) || 0);
 
-  if (!force && developerCodes.size > 0 && now - lastFetch < 60 * 1000) {
+  if (!force && developerCodes.size > 0 && now - lastFetchTime < 60 * 1000) {
     return true;
   }
 
@@ -38,10 +38,9 @@ export const loadDeveloperCodes = async (force = false): Promise<boolean> => {
     const codes = await supabaseService.getDeveloperCodes();
     if (codes && Array.isArray(codes)) {
       developerCodes = new Set(codes.map((c) => c.trim()));
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(developerCodes)));
-        localStorage.setItem(LAST_FETCH_KEY, String(now));
-      } catch (e) {}
+      lastFetchTime = now;
+      sqliteStorage.setJson(STORAGE_KEY, Array.from(developerCodes)).catch(() => {});
+      sqliteStorage.set(LAST_FETCH_KEY, String(now)).catch(() => {});
       notifyListeners();
       return true;
     }
@@ -64,10 +63,8 @@ if (typeof window !== 'undefined') {
   supabaseService.subscribeToDevelopers((newCodes) => {
     if (newCodes && newCodes.length > 0) {
       developerCodes = new Set(newCodes.map((c) => c.trim()));
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(developerCodes)));
-        localStorage.setItem(LAST_FETCH_KEY, String(Date.now()));
-      } catch (e) {}
+      sqliteStorage.setJson(STORAGE_KEY, Array.from(developerCodes)).catch(() => {});
+      sqliteStorage.set(LAST_FETCH_KEY, String(Date.now())).catch(() => {});
       notifyListeners();
     }
   });

@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { TelegramMediaViewer, MediaViewerItem } from './components/chat/TelegramMediaViewer';
 import { TitleBar } from './components/layout/TitleBar';
 import { FONT_MAP, FontFamily } from './store/useChatStore';
+import { sqliteStorage } from './services/sqliteStorage';
 import './App.css';
 import './i18n';
 
@@ -29,16 +30,17 @@ export const MediaWindowView: React.FC = () => {
       document.body.style.fontFamily = fontVal;
     };
 
-    try {
-      const savedThemeVars = localStorage.getItem('orbita_theme_vars');
+    sqliteStorage.getJson<Record<string, string> | null>('orbita_theme_vars', null).then((savedThemeVars) => {
       if (savedThemeVars) {
-        applyVars(JSON.parse(savedThemeVars));
+        applyVars(savedThemeVars);
       }
-      const savedFont = localStorage.getItem('orbita_font_family');
+    }).catch(() => {});
+
+    sqliteStorage.get('orbita_font_family').then((savedFont) => {
       if (savedFont) {
         applyFont(savedFont);
       }
-    } catch {}
+    }).catch(() => {});
 
     if (orbita?.getCurrentFont) {
       orbita.getCurrentFont().then((font: string) => {

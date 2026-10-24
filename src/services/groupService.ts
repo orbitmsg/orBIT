@@ -63,7 +63,7 @@ class GroupService {
     const secretCode = generateGroupInviteCode();
     const id = generateGroupId();
     const code = secretCode;
-    const sharedSecret = deriveGroupKey(id);
+    const sharedSecret = deriveGroupKey(secretCode);
 
     const initialMember: GroupMemberInfo = {
       nickname: creatorNickname,
@@ -164,7 +164,7 @@ class GroupService {
           maxMembers: g.max_members || 10,
           members,
           createdAt: new Date(g.created_at).getTime(),
-          sharedSecret: deriveGroupKey(g.id),
+          sharedSecret: deriveGroupKey(g.code || secret || g.id),
           inviteActive,
           inviteExpiresAt: expiresAt,
         };
@@ -178,8 +178,8 @@ class GroupService {
         if (data.group) {
           return { 
             ...data.group, 
-            code: secret || '', 
-            sharedSecret: secret ? deriveGroupKey(secret) : undefined 
+            code: secret || data.group.code || '', 
+            sharedSecret: secret ? deriveGroupKey(secret) : (data.group.code ? deriveGroupKey(data.group.code) : deriveGroupKey(data.group.id)) 
           };
         }
       }
@@ -261,7 +261,7 @@ class GroupService {
     }
 
     const realGroupId = groupRow.id || derivedId;
-    const sharedSecret = deriveGroupKey(realGroupId);
+    const sharedSecret = deriveGroupKey(secret || groupRow.code || realGroupId);
     const candidateId = meta?.userId || userCode;
     const memberCode = (userCode && userCode.length === 36 ? userCode : null) || (candidateId && candidateId.length === 36 ? candidateId : null) || userCode || candidateId || nickname;
 

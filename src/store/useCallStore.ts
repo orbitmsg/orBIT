@@ -12,6 +12,7 @@ import { ablyService } from '../services/ablyService';
 import { groupService } from '../services/groupService';
 import { deriveGroupKey } from '../lib/groupCrypto';
 import { generateKeyPair, generateChatId, getDirectChatId } from '../lib/crypto';
+import { sqliteStorage } from '../services/sqliteStorage';
 import i18n from '../i18n';
 
 import type {
@@ -87,13 +88,30 @@ async function fetchLivekitToken(room: string, identity: string, name?: string, 
   return { token: data.token, url };
 }
 
-const savedPeerVolume = typeof localStorage !== 'undefined' ? Number(localStorage.getItem('orbita_call_peer_volume') || '100') : 100;
-const savedMicVolume = typeof localStorage !== 'undefined' ? Number(localStorage.getItem('orbita_call_mic_volume') || '100') : 100;
+let savedPeerVolume = 100;
+let savedMicVolume = 100;
 
-try {
-  liveKitService.setPeerVolume((isNaN(savedPeerVolume) ? 100 : savedPeerVolume) / 100);
-  liveKitService.setMicVolume((isNaN(savedMicVolume) ? 100 : savedMicVolume) / 100);
-} catch {}
+sqliteStorage.get('orbita_call_peer_volume').then((val) => {
+  if (val) {
+    const v = Number(val);
+    if (!isNaN(v)) {
+      savedPeerVolume = v;
+      liveKitService.setPeerVolume(v / 100);
+      useCallStore.setState({ peerVolume: v });
+    }
+  }
+}).catch(() => {});
+
+sqliteStorage.get('orbita_call_mic_volume').then((val) => {
+  if (val) {
+    const v = Number(val);
+    if (!isNaN(v)) {
+      savedMicVolume = v;
+      liveKitService.setMicVolume(v / 100);
+      useCallStore.setState({ micVolume: v });
+    }
+  }
+}).catch(() => {});
 
 function sendCallSignal(chatId: string, payload: Record<string, any>) {
   const myUserId = useAuthStore.getState().userId;
@@ -592,14 +610,14 @@ export const useCallStore = create<CallStore>((set, get) => {
     setPeerVolume: (volume: number) => {
       const clamped = Math.max(0, Math.min(200, Math.round(volume)));
       set({ peerVolume: clamped });
-      try { localStorage.setItem('orbita_call_peer_volume', String(clamped)); } catch {}
+      sqliteStorage.set('orbita_call_peer_volume', String(clamped)).catch(() => {});
       liveKitService.setPeerVolume(clamped / 100);
     },
 
     setMicVolume: (volume: number) => {
       const clamped = Math.max(0, Math.min(200, Math.round(volume)));
       set({ micVolume: clamped });
-      try { localStorage.setItem('orbita_call_mic_volume', String(clamped)); } catch {}
+      sqliteStorage.set('orbita_call_mic_volume', String(clamped)).catch(() => {});
       liveKitService.setMicVolume(clamped / 100);
     },
 
@@ -661,7 +679,7 @@ export const useCallStore = create<CallStore>((set, get) => {
       if (!useChatStore.getState().voiceCallsEnabled) return;
       try { useAudioStore.getState().pause(); } catch {}
       try { await liveKitService.stopScreenShare(); } catch {}
-      try { localStorage.removeItem('orbita_active_call_state'); } catch {}
+      try { sessionStorage.removeItem('orbita_active_call_state'); } catch {}
       const chat = useChatStore.getState().chats.find((c) => c.id === chatId);
       const isGroup = chat?.type === 'group';
       const roomName = isGroup ? (chat?.activeCallRoom || `group-call-${chatId}`) : `call-${chatId}-${Date.now()}`;
@@ -1017,7 +1035,7 @@ export const useCallStore = create<CallStore>((set, get) => {
       activationInProgress = false;
       if (!isGroup && endedStatus !== null && state.myNickname) createCallMessage(chatId, direction, duration, endedStatus);
       console.log(`${LOG_PREFIX} Call ended. status=${endedStatus} duration=${duration}s`);
-      try { localStorage.removeItem('orbita_active_call_state'); } catch {}
+      try { sessionStorage.removeItem('orbita_active_call_state'); } catch {}
       set({ activeCall: null, incomingCall: null, callState: 'idle', duration: 0, isMicEnabled: false, isVideoEnabled: false, isScreenSharing: false, isScreenPickerOpen: false, remoteScreenShareTrack: null, remoteScreenShareIdentity: null, statusMessage: '', isEnding: false, isMinimized: false });
       try { (window as any).orbita?.closeCallWindow?.(); } catch {}
     },
@@ -1248,11 +1266,7 @@ const syncCallState = (state: CallStore) => {
   const chat = state.activeCall
     ? useChatStore.getState().chats.find((c) => c.id === state.activeCall?.chatId)
     : state.incomingCall ? useChatStore.getState().chats.find((c) => c.id === state.incomingCall?.chatId) : null;
-  const myAvatar = useAuthStore.getState().avatarUrl || (() => {
-    try {
-      return JSON.parse(localStorage.getItem('orbita-auth-storage') || '{}')?.state?.avatarUrl;
-    } catch { return null; }
-  })();
+  const myAvatar = useAuthStore.getState().avatarUrl || null;
   const knownAvatars: Record<string, string> = {};
   for (const c of (useChatStore.getState().chats || [])) {
     if (c.avatarUrl) {
@@ -1286,9 +1300,9 @@ const syncCallState = (state: CallStore) => {
   };
   try {
     if (state.callState !== 'idle' && state.callState !== 'ended') {
-      localStorage.setItem('orbita_active_call_state', JSON.stringify(payload));
+      sessionStorage.setItem('orbita_active_call_state', JSON.stringify(payload));
     } else {
-      localStorage.removeItem('orbita_active_call_state');
+      sessionStorage.removeItem('orbita_active_call_state');
     }
   } catch {}
   try { (window as any).orbita?.sendCallState?.(payload); } catch {}
@@ -1449,6 +1463,12 @@ const handleCallAction = (action: { type: string; payload?: any }) => {
 if (typeof window !== 'undefined') {
   const isStandaloneCallWindow = window.location.pathname.includes('call.html') || new URLSearchParams(window.location.search).get('view') === 'call' || window.location.hash === '#call';
   if (!isStandaloneCallWindow) {
+    window.addEventListener('beforeunload', () => {
+      const cur = useCallStore.getState();
+      if (cur.callState !== 'idle' && cur.callState !== 'ended') {
+        cur.endCall(true);
+      }
+    });
     useCallStore.subscribe((state) => { syncCallState(state); });
     const orbita = (window as any).orbita;
     orbita?.onCallAction?.((action: any) => { handleCallAction(action); });

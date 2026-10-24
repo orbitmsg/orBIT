@@ -742,11 +742,16 @@ export const useChatMessageSend = ({
 
             for (const target of allHandshakeTargets) {
               try {
-                const chan = pusher.subscribe(`private-handshake-${target}`);
+                const chanName = `private-handshake-${target}`;
+                const chan = pusher.channel(chanName) || pusher.subscribe(chanName);
                 const doSend = () => {
                   try {
                     chan.trigger('client-request-identity', reqPayload);
                   } catch {}
+                  chan.unbind('pusher:subscription_succeeded', doSend);
+                  setTimeout(() => {
+                    try { pusher.unsubscribe(chanName); } catch {}
+                  }, 5000);
                 };
                 if (chan.subscribed) doSend();
                 else chan.bind('pusher:subscription_succeeded', doSend);
@@ -842,7 +847,8 @@ export const useChatMessageSend = ({
 
             for (const recipientId of recipientTargets) {
               try {
-                const recipientHsChannel = pusher.subscribe(`private-handshake-${recipientId}`);
+                const chanName = `private-handshake-${recipientId}`;
+                const recipientHsChannel = pusher.channel(chanName) || pusher.subscribe(chanName);
                 const doSendDirect = () => {
                   try {
                     const jsonStr = JSON.stringify(preHandshakePayload);
@@ -853,6 +859,10 @@ export const useChatMessageSend = ({
                       recipientHsChannel.trigger('client-message', compactPayload);
                     }
                   } catch {}
+                  recipientHsChannel.unbind('pusher:subscription_succeeded', doSendDirect);
+                  setTimeout(() => {
+                    try { pusher.unsubscribe(chanName); } catch {}
+                  }, 5000);
                 };
                 if (recipientHsChannel.subscribed) doSendDirect();
                 else recipientHsChannel.bind('pusher:subscription_succeeded', doSendDirect);
@@ -946,7 +956,8 @@ export const useChatMessageSend = ({
 
           for (const recipientId of recipientTargets) {
             try {
-              const recipientHsChannel = pusher.subscribe(`private-handshake-${recipientId}`);
+              const chanName = `private-handshake-${recipientId}`;
+              const recipientHsChannel = pusher.channel(chanName) || pusher.subscribe(chanName);
               const doSendDirect = () => {
                 try {
                   const jsonStr = JSON.stringify(payload);
@@ -957,6 +968,10 @@ export const useChatMessageSend = ({
                     recipientHsChannel.trigger('client-message', compactPayload);
                   }
                 } catch {}
+                recipientHsChannel.unbind('pusher:subscription_succeeded', doSendDirect);
+                setTimeout(() => {
+                  try { pusher.unsubscribe(chanName); } catch {}
+                }, 5000);
               };
               if (recipientHsChannel.subscribed) doSendDirect();
               else recipientHsChannel.bind('pusher:subscription_succeeded', doSendDirect);

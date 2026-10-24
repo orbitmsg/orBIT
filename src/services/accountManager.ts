@@ -4,7 +4,7 @@ import { useChatStore } from '../store/useChatStore';
 import { ablyService } from './ablyService';
 import { generateRandomCode } from '../lib/codes';
 import { generateMasterSeedHex, deriveAccountKeys } from '../lib/zkAccountCrypto';
-import { securityService } from './securityService';
+import { sqliteStorage } from './sqliteStorage';
 
 export interface AccountMeta {
   id: 'account_1' | 'account_2';
@@ -29,53 +29,15 @@ const AUTH_STORAGE_PREFIX = 'orbita-auth-storage_';
 const CHAT_STORAGE_PREFIX = 'orbita-chat-storage_';
 
 const storageGet = async (key: string): Promise<string | null> => {
-  if (typeof window === 'undefined') return null;
-  if ((window as any).orbita?.storageGet) {
-    try {
-      const val = await (window as any).orbita.storageGet(key);
-      if (val !== null && val !== undefined) return val;
-    } catch {}
-    if (securityService.isPasswordSet()) {
-      return null;
-    }
-  }
-  if (securityService.isPasswordSet()) {
-    return null;
-  }
-  return localStorage.getItem(key);
+  return await sqliteStorage.get(key);
 };
 
 const storageSet = async (key: string, value: string): Promise<void> => {
-  if (typeof window === 'undefined') return;
-  if ((window as any).orbita?.storageSet) {
-    try {
-      await (window as any).orbita.storageSet(key, value);
-    } catch {}
-    if (securityService.isPasswordSet()) {
-      try {
-        localStorage.removeItem(key);
-      } catch {}
-      return;
-    }
-  }
-  if (securityService.isPasswordSet()) {
-    return;
-  }
-  try {
-    localStorage.setItem(key, value);
-  } catch {}
+  await sqliteStorage.set(key, value);
 };
 
 const storageRemove = async (key: string): Promise<void> => {
-  if (typeof window === 'undefined') return;
-  if ((window as any).orbita?.storageRemove) {
-    try {
-      await (window as any).orbita.storageRemove(key);
-    } catch {}
-  }
-  try {
-    localStorage.removeItem(key);
-  } catch {}
+  await sqliteStorage.remove(key);
 };
 
 const syncActiveAccountScope = (accountId: 'account_1' | 'account_2') => {

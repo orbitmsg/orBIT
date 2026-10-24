@@ -12,6 +12,7 @@ import { gatewayManager } from '../../services/gatewayManager';
 import { callSoundService } from '../../services/callSoundService';
 import { generateCallVerificationEmojis } from '../../lib/call-verification';
 import { useChatStore, FONT_MAP, type FontFamily } from '../../store/useChatStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { SignalStrengthIcon } from './SignalStrengthIcon';
 
 interface CallStatePayload {
@@ -98,16 +99,10 @@ export const CallWindowView = () => {
           isMicEnabled: true,
           duration: 0,
           statusMessage: '',
-          myNickname: searchParams.get('myNickname') || (() => {
-            try {
-              const auth = localStorage.getItem('orbita-auth-storage') || localStorage.getItem('auth-storage');
-              if (auth) return JSON.parse(auth)?.state?.nickname;
-            } catch {}
-            return null;
-          })(),
+          myNickname: searchParams.get('myNickname') || useAuthStore.getState().nickname || null,
         };
       }
-      const saved = localStorage.getItem('orbita_active_call_state');
+      const saved = sessionStorage.getItem('orbita_active_call_state');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed?.callState && parsed.callState !== 'idle' && parsed.callState !== 'ended') {
@@ -152,11 +147,8 @@ export const CallWindowView = () => {
       if (fp) {
         initialFont = fp;
       } else {
-        const chatStoreData = localStorage.getItem('chat-storage');
-        if (chatStoreData) {
-          const parsed = JSON.parse(chatStoreData);
-          if (parsed?.state?.fontFamily) initialFont = parsed.state.fontFamily;
-        }
+        const currentFont = useChatStore.getState().fontFamily;
+        if (currentFont) initialFont = currentFont;
       }
     } catch {}
     applyFont(initialFont);
@@ -692,13 +684,7 @@ export const CallWindowView = () => {
       try {
         if (svc.isConnected || svc.isCurrentlyConnecting) return;
         const roomName = activeCall.roomName;
-        const myNick = callData?.myNickname || (() => {
-          try {
-            const auth = localStorage.getItem('orbita-auth-storage') || localStorage.getItem('auth-storage');
-            if (auth) return JSON.parse(auth)?.state?.nickname;
-          } catch {}
-          return null;
-        })() || 'User';
+        const myNick = callData?.myNickname || useAuthStore.getState().nickname || 'User';
         const sessionKey = activeCall.verificationSecret
           ? (activeCall.verificationSalt ? `${activeCall.verificationSecret}:${activeCall.verificationSalt}` : activeCall.verificationSecret)
           : undefined;
@@ -706,13 +692,7 @@ export const CallWindowView = () => {
         let token = activeCall.token;
         let url = activeCall.url;
         if (!token || !url) {
-          const myUserId = (() => {
-            try {
-              const auth = localStorage.getItem('orbita-auth-storage') || localStorage.getItem('auth-storage');
-              if (auth) return JSON.parse(auth)?.state?.userId;
-            } catch {}
-            return null;
-          })();
+          const myUserId = useAuthStore.getState().userId || null;
           const uniqueTag = myUserId || Math.random().toString(36).slice(2, 8);
           const endpoint = '/token';
           const sessionNonce = Math.random().toString(36).slice(2, 6);

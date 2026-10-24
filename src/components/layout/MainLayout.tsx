@@ -23,6 +23,7 @@ import { ResizableSidebar } from './ResizableSidebar';
 import { supabaseService, type UserDirectoryRecord } from '../../services/supabaseService';
 import { useToastStore } from '../../store/useToastStore';
 import { gatewayManager } from '../../services/gatewayManager';
+import { sqliteStorage } from '../../services/sqliteStorage';
 import { GlobalAudioPlayer } from '../audio/GlobalAudioPlayer';
 import { GlobalAudioEngine } from '../audio/GlobalAudioEngine';
 import { CallMiniPlayer } from '../call/CallMiniPlayer';
@@ -230,8 +231,8 @@ export const MainLayout = () => {
     }
     const supportChat = store.chats.find((c) => c.id === supportService.BOT_ID);
     if (supportChat) {
-      const activeTicket = localStorage.getItem('orbita_user_active_ticket');
-      const isAdminToken = localStorage.getItem('orbita_admin_token');
+      const activeTicket = supportService.activeTicketNumber;
+      const isAdminToken = supportService.isAdmin;
       const msgs = store.messagesByChatId[supportService.BOT_ID] || [];
       const hasOutgoing = msgs.some((m) => m.isOutgoing);
       if (!activeTicket && !isAdminToken && !hasOutgoing) {
@@ -293,29 +294,28 @@ export const MainLayout = () => {
         setMyCode(activeAcc.myCode);
         return;
       }
-      try {
-        const regRaw = localStorage.getItem('orbita-accounts-registry');
-        if (regRaw) {
-          const reg = JSON.parse(regRaw);
-          const found = reg?.accounts?.find((a: any) => a.id === activeId || a.id === 'account_1');
-          if (found?.myCode) {
-            setMyCode(found.myCode);
-            return;
-          }
+      sqliteStorage.getJson<any>('orbita-accounts-registry', null).then((reg) => {
+        const found = reg?.accounts?.find((a: any) => a.id === activeId || a.id === 'account_1');
+        if (found?.myCode) {
+          setMyCode(found.myCode);
+          return;
         }
-        const accChatRaw = localStorage.getItem(`orbita-chat-storage_${activeId}`) || localStorage.getItem('orbita-chat-storage_account_1');
-        if (accChatRaw) {
-          const parsed = JSON.parse(accChatRaw);
+        sqliteStorage.getJson<any>(`orbita-chat-storage_${activeId}`, null).then((parsed) => {
           if (parsed?.state?.myCode || parsed?.myCode) {
             setMyCode(parsed.state?.myCode || parsed.myCode);
-            return;
+          } else if (useAccountStore.getState().accounts.length > 0) {
+            setMyCode(generateRandomCode());
           }
+        }).catch(() => {
+          if (useAccountStore.getState().accounts.length > 0) {
+            setMyCode(generateRandomCode());
+          }
+        });
+      }).catch(() => {
+        if (useAccountStore.getState().accounts.length > 0) {
+          setMyCode(generateRandomCode());
         }
-      } catch {}
-
-      if (useAccountStore.getState().accounts.length > 0) {
-        setMyCode(generateRandomCode());
-      }
+      });
     }
   }, [_hasHydrated, myCode, step, setMyCode]);
 

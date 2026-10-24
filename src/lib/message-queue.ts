@@ -1,4 +1,5 @@
 import { useChatStore } from '../store/useChatStore';
+import { sqliteStorage } from '../services/sqliteStorage';
 
 interface QueuedMessage {
   id: string;
@@ -54,25 +55,26 @@ class MessageQueue {
           items.push(msg);
         }
       }
-      localStorage.setItem('orbita_offline_msg_queue_v1', JSON.stringify(items));
+      sqliteStorage.set('orbita_offline_msg_queue_v1', JSON.stringify(items)).catch(() => {});
     } catch {}
   }
 
   private restoreQueue(): void {
     if (typeof window === 'undefined') return;
-    try {
-      const raw = localStorage.getItem('orbita_offline_msg_queue_v1');
+    sqliteStorage.get('orbita_offline_msg_queue_v1').then((raw) => {
       if (raw) {
-        const items: QueuedMessage[] = JSON.parse(raw);
-        if (Array.isArray(items)) {
-          for (const item of items) {
-            if (item && item.id && item.status === 'pending') {
-              this.queue.set(item.id, item);
+        try {
+          const items: QueuedMessage[] = JSON.parse(raw);
+          if (Array.isArray(items)) {
+            for (const item of items) {
+              if (item && item.id && item.status === 'pending') {
+                this.queue.set(item.id, item);
+              }
             }
           }
-        }
+        } catch {}
       }
-    } catch {}
+    }).catch(() => {});
   }
 
   async sendMessage(

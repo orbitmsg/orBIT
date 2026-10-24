@@ -1,4 +1,5 @@
 import { securityService } from './securityService';
+import { sqliteStorage } from './sqliteStorage';
 
 export interface OrbitaKeyPayload {
   orbitaKey: boolean;
@@ -24,6 +25,37 @@ const STORAGE_KEY_HASH = 'orbita_usb_key_hash';
 const STORAGE_KEY_CREATED_AT = 'orbita_usb_key_created_at';
 const STORAGE_KEY_LABEL = 'orbita_usb_key_label';
 const STORAGE_KEY_DEVICE_SECRET = 'orbita_usb_key_device_secret';
+
+let cachedEnabled = false;
+let cachedKeyId = '';
+let cachedKeyHash = '';
+let cachedCreatedAt: number | undefined = undefined;
+let cachedLabel = '';
+let cachedDeviceSecret: Uint8Array | null = null;
+
+sqliteStorage.get(STORAGE_KEY_ENABLED).then((val) => {
+  cachedEnabled = val === 'true';
+}).catch(() => {});
+
+sqliteStorage.get(STORAGE_KEY_ID).then((val) => {
+  if (val) cachedKeyId = val;
+}).catch(() => {});
+
+sqliteStorage.get(STORAGE_KEY_HASH).then((val) => {
+  if (val) cachedKeyHash = val;
+}).catch(() => {});
+
+sqliteStorage.get(STORAGE_KEY_CREATED_AT).then((val) => {
+  if (val) cachedCreatedAt = parseInt(val, 10) || undefined;
+}).catch(() => {});
+
+sqliteStorage.get(STORAGE_KEY_LABEL).then((val) => {
+  if (val) cachedLabel = val;
+}).catch(() => {});
+
+sqliteStorage.get(STORAGE_KEY_DEVICE_SECRET).then((val) => {
+  if (val && val.length === 64) cachedDeviceSecret = hexToBuffer(val);
+}).catch(() => {});
 
 const MAGIC_HEADER = new Uint8Array([0x4F, 0x52, 0x42, 0x4B, 0x02]);
 
@@ -93,13 +125,18 @@ async function decryptWithSecret(secretBytes: Uint8Array, encryptedHex: string, 
 }
 
 async function getOrCreateDeviceSecret(): Promise<Uint8Array> {
-  const existingHex = localStorage.getItem(STORAGE_KEY_DEVICE_SECRET);
+  if (cachedDeviceSecret && cachedDeviceSecret.length === 32) {
+    return cachedDeviceSecret;
+  }
+  const existingHex = await sqliteStorage.get(STORAGE_KEY_DEVICE_SECRET);
   if (existingHex && existingHex.length === 64) {
-    return hexToBuffer(existingHex);
+    cachedDeviceSecret = hexToBuffer(existingHex);
+    return cachedDeviceSecret;
   }
   const newSecret = new Uint8Array(32);
   crypto.getRandomValues(newSecret);
-  localStorage.setItem(STORAGE_KEY_DEVICE_SECRET, bufferToHex(newSecret));
+  cachedDeviceSecret = newSecret;
+  await sqliteStorage.set(STORAGE_KEY_DEVICE_SECRET, bufferToHex(newSecret));
   return newSecret;
 }
 
@@ -226,7 +263,7 @@ async function parseRawKeyData(input: Uint8Array | string | any): Promise<Orbita
 
 export const orbitaKeyService = {
   isKeyConfigured(): boolean {
-    return localStorage.getItem(STORAGE_KEY_ENABLED) === 'true';
+    return cachedEnabled;
   },
 
   getKeyInfo(): OrbitaKeyInfo {
@@ -235,9 +272,9 @@ export const orbitaKeyService = {
 
     return {
       isConfigured: true,
-      keyId: localStorage.getItem(STORAGE_KEY_ID) || '',
-      createdAt: parseInt(localStorage.getItem(STORAGE_KEY_CREATED_AT) || '0', 10) || undefined,
-      label: localStorage.getItem(STORAGE_KEY_LABEL) || '',
+      keyId: cachedKeyId,
+      createdAt: cachedCreatedAt,
+      label: cachedLabel,
     };
   },
 
@@ -280,12 +317,18 @@ export const orbitaKeyService = {
       const secretBytes = hexToBuffer(payload.secret);
       const secretHash = await sha256Hex(secretBytes);
 
-      localStorage.setItem(STORAGE_KEY_ENABLED, 'true');
-      localStorage.setItem(STORAGE_KEY_ID, payload.keyId);
-      localStorage.setItem(STORAGE_KEY_HASH, secretHash);
-      localStorage.setItem(STORAGE_KEY_CREATED_AT, String(payload.createdAt || Date.now()));
+      cachedEnabled = true;
+      cachedKeyId = payload.keyId;
+      cachedKeyHash = secretHash;
+      cachedCreatedAt = payload.createdAt || Date.now();
+      cachedLabel = label || '';
+
+      await sqliteStorage.set(STORAGE_KEY_ENABLED, 'true');
+      await sqliteStorage.set(STORAGE_KEY_ID, payload.keyId);
+      await sqliteStorage.set(STORAGE_KEY_HASH, secretHash);
+      await sqliteStorage.set(STORAGE_KEY_CREATED_AT, String(cachedCreatedAt));
       if (label) {
-        localStorage.setItem(STORAGE_KEY_LABEL, label);
+        await sqliteStorage.set(STORAGE_KEY_LABEL, label);
       }
 
       return true;
@@ -295,21 +338,27 @@ export const orbitaKeyService = {
   },
 
   removeKey(): void {
-    localStorage.removeItem(STORAGE_KEY_ENABLED);
-    localStorage.removeItem(STORAGE_KEY_ID);
-    localStorage.removeItem(STORAGE_KEY_HASH);
-    localStorage.removeItem(STORAGE_KEY_CREATED_AT);
-    localStorage.removeItem(STORAGE_KEY_LABEL);
-    localStorage.removeItem(STORAGE_KEY_DEVICE_SECRET);
+    cachedEnabled = false;
+    cachedKeyId = '';
+    cachedKeyHash = '';
+    cachedCreatedAt = undefined;
+    cachedLabel = '';
+    cachedDeviceSecret = null;
+    sqliteStorage.remove(STORAGE_KEY_ENABLED).catch(() => {});
+    sqliteStorage.remove(STORAGE_KEY_ID).catch(() => {});
+    sqliteStorage.remove(STORAGE_KEY_HASH).catch(() => {});
+    sqliteStorage.remove(STORAGE_KEY_CREATED_AT).catch(() => {});
+    sqliteStorage.remove(STORAGE_KEY_LABEL).catch(() => {});
+    sqliteStorage.remove(STORAGE_KEY_DEVICE_SECRET).catch(() => {});
   },
 
   async scanForUsbKey(): Promise<{ found: boolean; keyPayload?: OrbitaKeyPayload; drive?: string; path?: string; error?: string }> {
     if (typeof window !== 'undefined' && (window as any).orbita?.scanUsbKey) {
       try {
-        const preferred = localStorage.getItem(STORAGE_KEY_LABEL) || undefined;
+        const preferred = cachedLabel || await sqliteStorage.get(STORAGE_KEY_LABEL) || undefined;
         const res = await (window as any).orbita.scanUsbKey(preferred);
         if (res && res.found) {
-          const expectedKeyId = localStorage.getItem(STORAGE_KEY_ID);
+          const expectedKeyId = cachedKeyId || await sqliteStorage.get(STORAGE_KEY_ID);
           const candidates: Array<{ keyData: any; path: string; drive: string }> = Array.isArray(res.candidates) && res.candidates.length > 0
             ? res.candidates
             : (res.keyData ? [{ keyData: res.keyData, path: res.path, drive: res.drive }] : []);
@@ -348,8 +397,8 @@ export const orbitaKeyService = {
         return false;
       }
 
-      const expectedKeyId = localStorage.getItem(STORAGE_KEY_ID);
-      const expectedHash = localStorage.getItem(STORAGE_KEY_HASH);
+      const expectedKeyId = cachedKeyId || await sqliteStorage.get(STORAGE_KEY_ID);
+      const expectedHash = cachedKeyHash || await sqliteStorage.get(STORAGE_KEY_HASH);
 
       if (!expectedKeyId || !expectedHash) {
         return false;

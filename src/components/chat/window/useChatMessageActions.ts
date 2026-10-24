@@ -120,7 +120,8 @@ export const useChatMessageActions = ({
         const ratchet = DoubleRatchet.fromState(chat.ratchetState);
         const { ciphertext, index: newIndex, dhPublicKey: editDhPublicKey, prevChainCount: editPrevChainCount } = await ratchet.encrypt(newText);
         const pusher = getPusher();
-        const channel = pusher.subscribe(`private-chat-${activeChatId}`);
+        const chanName = `private-chat-${activeChatId}`;
+        const channel = pusher.channel(chanName) || pusher.subscribe(chanName);
         const send = () => {
           channel.trigger('client-message', {
             sender: myNickname,
@@ -133,6 +134,7 @@ export const useChatMessageActions = ({
             dhPublicKey: editDhPublicKey,
             prevChainCount: editPrevChainCount,
           });
+          channel.unbind('pusher:subscription_succeeded', send);
           updateChat(activeChatId, { ratchetState: ratchet.getState() });
         };
         if (channel.subscribed) send(); else channel.bind('pusher:subscription_succeeded', send);
@@ -189,15 +191,15 @@ export const useChatMessageActions = ({
 
     const isGroup = activeChat?.type === 'group';
     const pusher = isGroup ? getGroupPusher() : getPusher();
-    const channel = pusher.subscribe(
-      activeChat?.type === 'channel'
-        ? `public-channel-${activeChatId}`
-        : isGroup
-        ? `presence-group-${activeChatId}`
-        : `private-chat-${activeChatId}`
-    );
+    const chanName = activeChat?.type === 'channel'
+      ? `public-channel-${activeChatId}`
+      : isGroup
+      ? `presence-group-${activeChatId}`
+      : `private-chat-${activeChatId}`;
+    const channel = pusher.channel(chanName) || pusher.subscribe(chanName);
     const send = () => {
       channel.trigger('client-message', payload);
+      channel.unbind('pusher:subscription_succeeded', send);
     };
     if (channel.subscribed) send(); else channel.bind('pusher:subscription_succeeded', send);
 
@@ -246,19 +248,19 @@ export const useChatMessageActions = ({
 
     const isGroup = activeChat?.type === 'group';
     const pusher = isGroup ? getGroupPusher() : getPusher();
-    const channel = pusher.subscribe(
-      activeChat?.type === 'channel'
-        ? `public-channel-${activeChatId}`
-        : isGroup
-        ? `presence-group-${activeChatId}`
-        : `private-chat-${activeChatId}`
-    );
+    const chanName = activeChat?.type === 'channel'
+      ? `public-channel-${activeChatId}`
+      : isGroup
+      ? `presence-group-${activeChatId}`
+      : `private-chat-${activeChatId}`;
+    const channel = pusher.channel(chanName) || pusher.subscribe(chanName);
     const send = () => {
       channel.trigger('client-message', {
         type: 'pin-message',
         pinData,
         sender: myNickname,
       });
+      channel.unbind('pusher:subscription_succeeded', send);
     };
     if (channel.subscribed) send(); else channel.bind('pusher:subscription_succeeded', send);
 
@@ -278,18 +280,18 @@ export const useChatMessageActions = ({
 
     const isGroup = activeChat?.type === 'group';
     const pusher = isGroup ? getGroupPusher() : getPusher();
-    const channel = pusher.subscribe(
-      activeChat?.type === 'channel'
-        ? `public-channel-${activeChatId}`
-        : isGroup
-        ? `presence-group-${activeChatId}`
-        : `private-chat-${activeChatId}`
-    );
+    const chanName = activeChat?.type === 'channel'
+      ? `public-channel-${activeChatId}`
+      : isGroup
+      ? `presence-group-${activeChatId}`
+      : `private-chat-${activeChatId}`;
+    const channel = pusher.channel(chanName) || pusher.subscribe(chanName);
     const send = () => {
       channel.trigger('client-message', {
         type: 'unpin-message',
         sender: myNickname,
       });
+      channel.unbind('pusher:subscription_succeeded', send);
     };
     if (channel.subscribed) send(); else channel.bind('pusher:subscription_succeeded', send);
 
@@ -445,11 +447,12 @@ export const useChatMessageActions = ({
         const isGroup = activeChat?.type === 'group';
         const pusher = isGroup ? getGroupPusher() : getPusher();
         const channelName = isGroup ? `presence-group-${activeChatId}` : `private-chat-${activeChatId}`;
-        const channel = pusher.subscribe(channelName);
+        const channel = pusher.channel(channelName) || pusher.subscribe(channelName);
         const send = () => {
           try {
             channel.trigger('client-message', payload);
           } catch {}
+          channel.unbind('pusher:subscription_succeeded', send);
         };
         if (channel.subscribed) send();
         else channel.bind('pusher:subscription_succeeded', send);

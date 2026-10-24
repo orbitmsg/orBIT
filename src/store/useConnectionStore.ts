@@ -1,5 +1,5 @@
-// src/store/useConnectionStore.ts
 import { create } from 'zustand';
+import { sqliteStorage } from '../services/sqliteStorage';
 
 export interface ProxyProfile {
   id: string;
@@ -26,7 +26,6 @@ export interface ConnectionState {
   isServerConnected: boolean;
   errorMessage: string | null;
 
-  // Actions
   initConnection: () => Promise<void>;
   setServerConnected: (connected: boolean) => void;
   setProxyEnabled: (enabled: boolean) => Promise<void>;
@@ -56,51 +55,25 @@ const DEFAULT_PROXIES: ProxyProfile[] = [
   },
 ];
 
-const loadSavedState = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const data = JSON.parse(raw);
-      return {
-        proxyEnabled: Boolean(data.proxyEnabled),
-        activeProxyId: data.activeProxyId || (data.proxies?.[0]?.id ?? null),
-        proxies: Array.isArray(data.proxies) && data.proxies.length > 0 ? data.proxies : DEFAULT_PROXIES,
-        killSwitch: Boolean(data.killSwitch),
-        proxyCalls: data.proxyCalls !== undefined ? Boolean(data.proxyCalls) : true,
-        autoFallback: Boolean(data.autoFallback),
-      };
-    }
-  } catch (e) {
-    console.error('[ConnectionStore] Failed to load settings:', e);
-  }
-  return {
-    proxyEnabled: false,
-    activeProxyId: 'default-socks5-1',
-    proxies: DEFAULT_PROXIES,
-    killSwitch: false,
-    proxyCalls: true,
-    autoFallback: false,
-  };
-};
-
 const saveState = (state: Partial<ConnectionState>) => {
-  try {
-    const toSave = {
-      proxyEnabled: state.proxyEnabled,
-      activeProxyId: state.activeProxyId,
-      proxies: state.proxies,
-      killSwitch: state.killSwitch,
-      proxyCalls: state.proxyCalls,
-      autoFallback: state.autoFallback,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-  } catch (e) {
-    console.error('[ConnectionStore] Failed to save settings:', e);
-  }
+  const toSave = {
+    proxyEnabled: state.proxyEnabled,
+    activeProxyId: state.activeProxyId,
+    proxies: state.proxies,
+    killSwitch: state.killSwitch,
+    proxyCalls: state.proxyCalls,
+    autoFallback: state.autoFallback,
+  };
+  sqliteStorage.setJson(STORAGE_KEY, toSave).catch(() => {});
 };
 
 export const useConnectionStore = create<ConnectionState>((set, get) => ({
-  ...loadSavedState(),
+  proxyEnabled: false,
+  activeProxyId: 'default-socks5-1',
+  proxies: DEFAULT_PROXIES,
+  killSwitch: false,
+  proxyCalls: true,
+  autoFallback: false,
   isApplying: false,
   connectionStatus: 'disconnected',
   isServerConnected: typeof navigator !== 'undefined' ? navigator.onLine : true,
@@ -217,7 +190,6 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     });
     saveState(get());
 
-    // Auto check ping
     get().checkPing(id);
     return id;
   },
@@ -320,7 +292,6 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
         ),
       }));
 
-      // If active proxy failed and autoFallback is on, switch to another working proxy
       const state = get();
       if (state.proxyEnabled && state.activeProxyId === id && !res?.success && state.autoFallback) {
         const nextWorking = state.proxies.find((p) => p.id !== id && p.pingStatus === 'success');
@@ -332,7 +303,6 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
 
       return pingVal;
     } else {
-      // Fallback in browser dev mode
       const fakePing = Math.floor(Math.random() * 80) + 30;
       set((prev) => ({
         proxies: prev.proxies.map((p) =>
@@ -352,7 +322,6 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     const trimmed = input.trim();
     if (!trimmed) return null;
 
-    // Pattern 1: socks5://user:pass@host:port or http://user:pass@host:port
     const urlMatch = trimmed.match(/^(socks5|http|https):\/\/(?:([^:]+)(?::([^@]+))?@)?([^:]+):(\d+)/i);
     if (urlMatch) {
       const protocol = urlMatch[1].toLowerCase();
@@ -370,7 +339,6 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
       };
     }
 
-    // Pattern 2: host:port:user:pass or host:port
     const colonParts = trimmed.split(':');
     if (colonParts.length === 2 && !isNaN(Number(colonParts[1]))) {
       return {
@@ -394,3 +362,16 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     return null;
   },
 }));
+
+sqliteStorage.getJson<any>(STORAGE_KEY, null).then((data) => {
+  if (data) {
+    useConnectionStore.setState({
+      proxyEnabled: Boolean(data.proxyEnabled),
+      activeProxyId: data.activeProxyId || (data.proxies?.[0]?.id ?? null),
+      proxies: Array.isArray(data.proxies) && data.proxies.length > 0 ? data.proxies : DEFAULT_PROXIES,
+      killSwitch: Boolean(data.killSwitch),
+      proxyCalls: data.proxyCalls !== undefined ? Boolean(data.proxyCalls) : true,
+      autoFallback: Boolean(data.autoFallback),
+    });
+  }
+}).catch(() => {});

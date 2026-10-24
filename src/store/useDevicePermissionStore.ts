@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { sqliteStorage } from '../services/sqliteStorage';
 
 export type DevicePermissionType = 'camera' | 'microphone';
 
@@ -16,19 +17,11 @@ interface DevicePermissionState {
   resetPermissions: () => void;
 }
 
-const getStoredPermission = (key: string): boolean => {
-  try {
-    return localStorage.getItem(key) !== 'denied';
-  } catch {
-    return true;
-  }
-};
-
 export const useDevicePermissionStore = create<DevicePermissionState>((set, get) => ({
   isModalOpen: false,
   permissionType: null,
-  hasCameraPermission: getStoredPermission('orbita_perm_camera'),
-  hasMicrophonePermission: getStoredPermission('orbita_perm_microphone'),
+  hasCameraPermission: true,
+  hasMicrophonePermission: true,
   pendingResolve: null,
 
   requestPermission: (_type: DevicePermissionType): Promise<boolean> => {
@@ -36,38 +29,30 @@ export const useDevicePermissionStore = create<DevicePermissionState>((set, get)
   },
 
   setCameraPermission: (granted: boolean) => {
-    try {
-      if (granted) {
-        localStorage.setItem('orbita_perm_camera', 'granted');
-      } else {
-        localStorage.removeItem('orbita_perm_camera');
-      }
-    } catch {}
+    if (granted) {
+      sqliteStorage.set('orbita_perm_camera', 'granted').catch(() => {});
+    } else {
+      sqliteStorage.remove('orbita_perm_camera').catch(() => {});
+    }
     set({ hasCameraPermission: granted });
   },
 
   setMicrophonePermission: (granted: boolean) => {
-    try {
-      if (granted) {
-        localStorage.setItem('orbita_perm_microphone', 'granted');
-      } else {
-        localStorage.removeItem('orbita_perm_microphone');
-      }
-    } catch {}
+    if (granted) {
+      sqliteStorage.set('orbita_perm_microphone', 'granted').catch(() => {});
+    } else {
+      sqliteStorage.remove('orbita_perm_microphone').catch(() => {});
+    }
     set({ hasMicrophonePermission: granted });
   },
 
   confirmPermission: () => {
     const { permissionType, pendingResolve } = get();
     if (permissionType === 'camera') {
-      try {
-        localStorage.setItem('orbita_perm_camera', 'granted');
-      } catch {}
+      sqliteStorage.set('orbita_perm_camera', 'granted').catch(() => {});
       set({ hasCameraPermission: true, isModalOpen: false, permissionType: null, pendingResolve: null });
     } else if (permissionType === 'microphone') {
-      try {
-        localStorage.setItem('orbita_perm_microphone', 'granted');
-      } catch {}
+      sqliteStorage.set('orbita_perm_microphone', 'granted').catch(() => {});
       set({ hasMicrophonePermission: true, isModalOpen: false, permissionType: null, pendingResolve: null });
     }
     if (pendingResolve) {
@@ -84,10 +69,20 @@ export const useDevicePermissionStore = create<DevicePermissionState>((set, get)
   },
 
   resetPermissions: () => {
-    try {
-      localStorage.removeItem('orbita_perm_camera');
-      localStorage.removeItem('orbita_perm_microphone');
-    } catch {}
+    sqliteStorage.remove('orbita_perm_camera').catch(() => {});
+    sqliteStorage.remove('orbita_perm_microphone').catch(() => {});
     set({ hasCameraPermission: false, hasMicrophonePermission: false });
   },
 }));
+
+sqliteStorage.get('orbita_perm_camera').then((val) => {
+  if (val !== null) {
+    useDevicePermissionStore.setState({ hasCameraPermission: val !== 'denied' });
+  }
+}).catch(() => {});
+
+sqliteStorage.get('orbita_perm_microphone').then((val) => {
+  if (val !== null) {
+    useDevicePermissionStore.setState({ hasMicrophonePermission: val !== 'denied' });
+  }
+}).catch(() => {});

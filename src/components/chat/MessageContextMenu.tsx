@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { sqliteStorage } from '../../services/sqliteStorage';
 import {
   Copy, Image as ImageIcon, Download as DownloadIcon,
   CheckCircle, Trash, Search
@@ -60,22 +61,6 @@ const RECENT_REACTIONS_KEY = 'orbita-recent-reactions';
 export const DEFAULT_QUICK_REACTIONS = ['❤️‍🔥', '👍', '❤️', '👎', '🔥', '😂'];
 export const QUICK_REACTIONS = DEFAULT_QUICK_REACTIONS;
 
-const loadStoredReactions = (): string[] => {
-  try {
-    const raw = localStorage.getItem(FREQUENT_REACTIONS_KEY) || localStorage.getItem(RECENT_REACTIONS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        const valid = parsed.filter((e) => typeof e === 'string' && e.trim());
-        const merged = [...valid, ...DEFAULT_QUICK_REACTIONS];
-        const unique = Array.from(new Set(merged));
-        return unique.slice(0, 36);
-      }
-    }
-  } catch {}
-  return [...DEFAULT_QUICK_REACTIONS];
-};
-
 export const clampMenuPosition = (
   x: number,
   y: number,
@@ -116,17 +101,25 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
   const [displayLimit, setDisplayLimit] = useState(96);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const [recentEmojis, setRecentEmojis] = useState<string[]>(loadStoredReactions);
+  const [recentEmojis, setRecentEmojis] = useState<string[]>([...DEFAULT_QUICK_REACTIONS]);
+
+  useEffect(() => {
+    sqliteStorage.getJson<string[]>(FREQUENT_REACTIONS_KEY, []).then((list) => {
+      if (Array.isArray(list) && list.length > 0) {
+        const merged = [...list, ...DEFAULT_QUICK_REACTIONS];
+        const unique = Array.from(new Set(merged)).slice(0, 36);
+        setRecentEmojis(unique);
+      }
+    }).catch(() => {});
+  }, []);
 
   const handleSelect = useCallback(
     (emoji: string) => {
       onSelectReaction?.(emoji);
       setRecentEmojis((prev) => {
         const updated = [emoji, ...prev.filter((e) => e !== emoji)].slice(0, 36);
-        try {
-          localStorage.setItem(FREQUENT_REACTIONS_KEY, JSON.stringify(updated));
-          localStorage.setItem(RECENT_REACTIONS_KEY, JSON.stringify(updated));
-        } catch {}
+        sqliteStorage.setJson(FREQUENT_REACTIONS_KEY, updated).catch(() => {});
+        sqliteStorage.setJson(RECENT_REACTIONS_KEY, updated).catch(() => {});
         return updated;
       });
       onCloseMenu();

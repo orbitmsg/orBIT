@@ -5,6 +5,7 @@ import { gatewayManager } from './gatewayManager';
 import { ablyService } from './ablyService';
 import { parseReplyChain } from '../utils/messageUtils';
 import { deriveTicketKey, encryptMessage, decryptMessage } from '../lib/crypto';
+import { sqliteStorage } from './sqliteStorage';
 
 export interface SupportTicketRecord {
   id?: number;
@@ -79,7 +80,9 @@ class SupportService {
     this.t = t;
     const store = useChatStore.getState();
     this.myCode = userCode || store.myCode || this.myCode || '';
-    this.activeTicketNumber = localStorage.getItem('orbita_user_active_ticket');
+    sqliteStorage.get('orbita_user_active_ticket').then((t) => {
+      if (t) this.activeTicketNumber = t;
+    }).catch(() => {});
 
     const existing = store.chats.find((c) => c.id === this.BOT_ID);
     if (existing) {
@@ -109,7 +112,9 @@ class SupportService {
     if (t) this.t = t;
     const store = useChatStore.getState();
     this.myCode = userCode || store.myCode || this.myCode || '';
-    this.activeTicketNumber = localStorage.getItem('orbita_user_active_ticket');
+    sqliteStorage.get('orbita_user_active_ticket').then((t) => {
+      if (t) this.activeTicketNumber = t;
+    }).catch(() => {});
 
     const existing = store.chats.find((c) => c.id === this.BOT_ID);
     const chatName = this.t ? this.t('support.name', 'Техническая поддержка') : 'Техническая поддержка';
@@ -179,12 +184,12 @@ class SupportService {
         if (data && data.isAdmin) {
           this.isAdmin = true;
 
-          let storedToken = localStorage.getItem('orbita_admin_token');
+          let storedToken = await sqliteStorage.get('orbita_admin_token');
           if (!storedToken) {
             const arr = new Uint8Array(24);
             globalThis.crypto.getRandomValues(arr);
             storedToken = Array.from(arr).map((b) => b.toString(16).padStart(2, '0')).join('');
-            localStorage.setItem('orbita_admin_token', storedToken);
+            await sqliteStorage.set('orbita_admin_token', storedToken);
           }
           this.adminToken = storedToken;
 
@@ -507,7 +512,7 @@ class SupportService {
   private handleTicketClosedForUser(ticketNumber: string): void {
     if (this.activeTicketNumber === ticketNumber) {
       this.activeTicketNumber = null;
-      localStorage.removeItem('orbita_user_active_ticket');
+      sqliteStorage.remove('orbita_user_active_ticket').catch(() => {});
     }
     const store = useChatStore.getState();
     const closedMsg: Message = {
@@ -773,7 +778,7 @@ class SupportService {
     if (!ticketNumber) {
       ticketNumber = `#T-${Math.floor(10000 + Math.random() * 90000)}`;
       this.activeTicketNumber = ticketNumber;
-      localStorage.setItem('orbita_user_active_ticket', ticketNumber);
+      sqliteStorage.set('orbita_user_active_ticket', ticketNumber).catch(() => {});
     } else {
       isContinuation = true;
     }

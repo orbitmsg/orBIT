@@ -303,11 +303,11 @@ export const useConnectRequestHandler = ({
       if (!url) return;
       const groupCode = extractGroupCode(url);
       if (groupCode && isValidGroupCode(groupCode)) {
-        const authData = (() => { try { return JSON.parse(localStorage.getItem('orbita-auth-storage') || '{}')?.state || {}; } catch { return {}; } })();
-        const nick = authData.nickname || nickname;
-        const uCode = myCode || authData.userCode || (authData.userId?.length === 36 ? authData.userId : undefined);
-        const uAvatar = authData.avatarUrl || useAuthStore.getState().avatarUrl;
-        const uId = authData.userId || useAuthStore.getState().userId;
+        const authData = useAuthStore.getState();
+        const nick = authData.nickname || nickname || '';
+        const uCode = myCode || (authData.userId?.length === 36 ? authData.userId : undefined);
+        const uAvatar = authData.avatarUrl;
+        const uId = authData.userId;
         try {
           const result = await groupService.joinGroup(url, nick, uCode, { avatarUrl: uAvatar || undefined, userId: uId || undefined });
           if (result?.group) {

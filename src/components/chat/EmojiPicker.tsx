@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Settings, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { sqliteStorage } from '../../services/sqliteStorage';
 import {
   EMOJI_CATEGORIES,
   categoryLabels,
@@ -148,14 +149,15 @@ export const EmojiPicker = ({
     [onSelectGif, onClose]
   );
 
-  const [recentStickerIds, setRecentStickerIds] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('orbita-recent-stickers');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [recentStickerIds, setRecentStickerIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    sqliteStorage.getJson<string[]>('orbita-recent-stickers', []).then((list) => {
+      if (Array.isArray(list) && list.length > 0) {
+        setRecentStickerIds(list);
+      }
+    }).catch(() => {});
+  }, []);
 
   const allStickersMap = useMemo(() => {
     const map = new Map<string, StickerItem>();
@@ -180,9 +182,7 @@ export const EmojiPicker = ({
     (sticker: StickerItem) => {
       setRecentStickerIds((prev) => {
         const next = [sticker.id, ...prev.filter((id) => id !== sticker.id)].slice(0, 16);
-        try {
-          localStorage.setItem('orbita-recent-stickers', JSON.stringify(next));
-        } catch {}
+        sqliteStorage.setJson('orbita-recent-stickers', next).catch(() => {});
         return next;
       });
       if (onSelectSticker) {

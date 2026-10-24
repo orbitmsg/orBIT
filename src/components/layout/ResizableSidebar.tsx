@@ -1,5 +1,5 @@
-// src/components/layout/ResizableSidebar.tsx
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { sqliteStorage } from '../../services/sqliteStorage';
 
 interface ResizableSidebarProps {
   children: React.ReactNode;
@@ -69,22 +69,19 @@ export const ResizableSidebar: React.FC<ResizableSidebarProps> = ({
   }, [defaultWidth]);
 
   useEffect(() => {
-    try {
-      const savedWidth = localStorage.getItem('orbita-sidebar-width');
+    sqliteStorage.get('orbita-sidebar-width').then((savedWidth) => {
       if (savedWidth) {
         const parsed = parseInt(savedWidth, 10);
         if (!isNaN(parsed) && parsed >= minWidth && parsed <= maxWidth) {
           setWidth(parsed);
         }
       }
-    } catch {}
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
     if (!isMobile) {
-      try {
-        localStorage.setItem('orbita-sidebar-width', String(width));
-      } catch {}
+      sqliteStorage.set('orbita-sidebar-width', String(width)).catch(() => {});
     }
   }, [width, isMobile]);
 

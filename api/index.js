@@ -81,6 +81,34 @@ function toUuid(id) {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-a${h.slice(17, 20)}-${h.slice(20, 32)}`;
 }
 
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 180;
+const rateLimitMap = new Map();
+
+function checkRateLimit(req) {
+  const forwarded = req.headers['x-forwarded-for'];
+  const clientIp = (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : '') || req.socket?.remoteAddress || '127.0.0.1';
+  const userId = req.headers['x-user-id'] || '';
+  const key = `${clientIp}:${userId}`;
+  const now = Date.now();
+
+  let record = rateLimitMap.get(key);
+  if (!record || now - record.resetTime > RATE_LIMIT_WINDOW_MS) {
+    record = { count: 1, resetTime: now };
+    rateLimitMap.set(key, record);
+    if (rateLimitMap.size > 5000) {
+      const oldestTime = now - RATE_LIMIT_WINDOW_MS;
+      for (const [k, v] of rateLimitMap.entries()) {
+        if (v.resetTime < oldestTime) rateLimitMap.delete(k);
+      }
+    }
+    return true;
+  }
+
+  record.count += 1;
+  return record.count <= RATE_LIMIT_MAX_REQUESTS;
+}
+
 function getSupabaseClient() {
   if (!ENV.SUPABASE_URL || !ENV.SUPABASE_SERVICE_ROLE_KEY) return null;
   return createClient(ENV.SUPABASE_URL, ENV.SUPABASE_SERVICE_ROLE_KEY, {
@@ -378,6 +406,10 @@ module.exports = async function handler(req, res) {
         groups_host: ENV.GROUPS_SUPABASE_URL ? new URL(ENV.GROUPS_SUPABASE_URL).hostname : null,
         timestamp: Date.now(),
       });
+    }
+
+    if (!checkRateLimit(req)) {
+      return sendError(res, 'Rate limit exceeded. Please wait a minute.', 429);
     }
 
     if (pathname === '/user/config') {

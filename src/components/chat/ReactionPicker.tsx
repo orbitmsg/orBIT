@@ -1,8 +1,8 @@
-// src/components/chat/ReactionPicker.tsx
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search } from 'lucide-react';
 import { Virtuoso } from 'react-virtuoso';
+import { sqliteStorage } from '../../services/sqliteStorage';
 import {
   EMOJI_CATEGORIES,
   categoryLabels,
@@ -22,7 +22,7 @@ const COLUMNS = 7;
 const EMOJI_SIZE = 34;
 const GAP = 4;
 const PADDING = 4;
-const PICKER_WIDTH = COLUMNS * EMOJI_SIZE + (COLUMNS - 1) * GAP + 2 * PADDING + 12; // ~265px
+const PICKER_WIDTH = COLUMNS * EMOJI_SIZE + (COLUMNS - 1) * GAP + 2 * PADDING + 12;
 const PICKER_HEIGHT = 330;
 
 type ListItem =
@@ -38,23 +38,22 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
   const pickerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const [recentEmojis, setRecentEmojis] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('orbita-recent-reactions');
-      return saved ? JSON.parse(saved) : ['❤️', '👍', '🔥', '🥰', '👏'];
-    } catch {
-      return ['❤️', '👍', '🔥', '🥰', '👏'];
-    }
-  });
+  const [recentEmojis, setRecentEmojis] = useState<string[]>(['❤️', '👍', '🔥', '🥰', '👏']);
+
+  useEffect(() => {
+    sqliteStorage.getJson<string[]>('orbita-recent-reactions', ['❤️', '👍', '🔥', '🥰', '👏']).then((list) => {
+      if (Array.isArray(list) && list.length > 0) {
+        setRecentEmojis(list);
+      }
+    }).catch(() => {});
+  }, []);
 
   const handleSelect = useCallback(
     (emojiChar: string) => {
       onSelect(emojiChar);
       setRecentEmojis((prev) => {
         const updated = [emojiChar, ...prev.filter((e) => e !== emojiChar)].slice(0, 14);
-        try {
-          localStorage.setItem('orbita-recent-reactions', JSON.stringify(updated));
-        } catch {}
+        sqliteStorage.setJson('orbita-recent-reactions', updated).catch(() => {});
         return updated;
       });
     },
@@ -67,7 +66,6 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
     }
   }, []);
 
-  // Close on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -95,7 +93,6 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
 
     const rows: ListItem[] = [];
 
-    // Недавние реакции
     const recent = recentEmojis
       .map((char) => getEmojiByChar(char))
       .filter((e): e is Emoji => e !== null);
@@ -106,7 +103,6 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
       }
     }
 
-    // Категории
     for (const categoryId of EMOJI_CATEGORIES) {
       const emojis = getEmojisByCategory(categoryId);
       if (emojis.length === 0) continue;

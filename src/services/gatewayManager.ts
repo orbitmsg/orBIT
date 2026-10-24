@@ -1,3 +1,5 @@
+import { sqliteStorage } from './sqliteStorage';
+
 export interface GatewayEndpoint {
   id: string;
   name: string;
@@ -42,23 +44,19 @@ class GatewayManager {
   private activeGatewayId: string = 'vercel-edge';
 
   constructor() {
-    try {
-      const saved = localStorage.getItem('orbita_custom_gateways');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const filtered = parsed.filter(
-            (g) => g && g.url && !g.url.includes('workers.dev') && !g.url.includes('a.run.app') && !g.url.includes('google')
-          );
-          if (filtered.length > 0) {
-            this.gateways = filtered;
-          } else {
-            localStorage.removeItem('orbita_custom_gateways');
-            this.gateways = [...DEFAULT_GATEWAYS];
-          }
+    sqliteStorage.getJson<GatewayEndpoint[]>('orbita_custom_gateways', []).then((saved) => {
+      if (Array.isArray(saved) && saved.length > 0) {
+        const filtered = saved.filter(
+          (g) => g && g.url && !g.url.includes('workers.dev') && !g.url.includes('a.run.app') && !g.url.includes('google')
+        );
+        if (filtered.length > 0) {
+          this.gateways = filtered;
+        } else {
+          sqliteStorage.remove('orbita_custom_gateways').catch(() => {});
+          this.gateways = [...DEFAULT_GATEWAYS];
         }
       }
-    } catch {}
+    }).catch(() => {});
   }
 
   public getGateways(): GatewayEndpoint[] {

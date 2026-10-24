@@ -64,13 +64,7 @@ export const GroupParticipantTile = React.memo(({
   const avatarUrl = isLocal ? (
     myAvatar ||
     useAuthStore.getState().avatarUrl ||
-    (() => {
-      try {
-        const auth = localStorage.getItem('orbita-auth-storage') || localStorage.getItem('auth-storage');
-        if (auth) return JSON.parse(auth)?.state?.avatarUrl;
-      } catch {}
-      return null;
-    })()
+    null
   ) : (
     participant.avatarUrl ||
     memberInfo?.avatarUrl ||
@@ -331,13 +325,7 @@ export const ExpandedGroupParticipantTile = React.memo(({
   const avatarUrl = isLocal ? (
     myAvatar ||
     useAuthStore.getState().avatarUrl ||
-    (() => {
-      try {
-        const auth = localStorage.getItem('orbita-auth-storage') || localStorage.getItem('auth-storage');
-        if (auth) return JSON.parse(auth)?.state?.avatarUrl;
-      } catch {}
-      return null;
-    })()
+    null
   ) : (
     participant.avatarUrl ||
     memberInfo?.avatarUrl ||

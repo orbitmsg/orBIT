@@ -1,6 +1,24 @@
+import { sqliteStorage } from './sqliteStorage';
+
 const LOCK_ENABLED_KEY = 'orbita_lock_enabled';
 const LOCK_SALT_KEY = 'orbita_lock_salt';
 const LOCK_HASH_KEY = 'orbita_lock_hash';
+
+let cachedLockEnabled = false;
+let cachedSaltHex: string | null = null;
+let cachedHashHex: string | null = null;
+
+sqliteStorage.get(LOCK_ENABLED_KEY).then((val) => {
+  cachedLockEnabled = val === 'true';
+}).catch(() => {});
+
+sqliteStorage.get(LOCK_SALT_KEY).then((val) => {
+  cachedSaltHex = val;
+}).catch(() => {});
+
+sqliteStorage.get(LOCK_HASH_KEY).then((val) => {
+  cachedHashHex = val;
+}).catch(() => {});
 
 export interface PasswordStrength {
   score: number;
@@ -78,7 +96,7 @@ function hexToBuffer(hex: string): Uint8Array {
 
 export const securityService = {
   isPasswordSet(): boolean {
-    return localStorage.getItem(LOCK_ENABLED_KEY) === 'true';
+    return cachedLockEnabled;
   },
 
   async isStorageLocked(): Promise<boolean> {
@@ -105,9 +123,13 @@ export const securityService = {
       const saltHex = bufferToHex(salt);
       const hashHex = await deriveHash(password, salt);
 
-      localStorage.setItem(LOCK_ENABLED_KEY, 'true');
-      localStorage.setItem(LOCK_SALT_KEY, saltHex);
-      localStorage.setItem(LOCK_HASH_KEY, hashHex);
+      cachedLockEnabled = true;
+      cachedSaltHex = saltHex;
+      cachedHashHex = hashHex;
+
+      await sqliteStorage.set(LOCK_ENABLED_KEY, 'true');
+      await sqliteStorage.set(LOCK_SALT_KEY, saltHex);
+      await sqliteStorage.set(LOCK_HASH_KEY, hashHex);
       this.cleanUnencryptedLocalStorage();
       return true;
     } catch {
@@ -147,8 +169,8 @@ export const securityService = {
         return true;
       }
 
-      const saltHex = localStorage.getItem(LOCK_SALT_KEY);
-      const expectedHash = localStorage.getItem(LOCK_HASH_KEY);
+      const saltHex = cachedSaltHex || await sqliteStorage.get(LOCK_SALT_KEY);
+      const expectedHash = cachedHashHex || await sqliteStorage.get(LOCK_HASH_KEY);
 
       if (!saltHex || !expectedHash) return false;
 
@@ -166,9 +188,12 @@ export const securityService = {
       if (typeof window !== 'undefined' && (window as any).orbita?.removeStoragePin) {
         await (window as any).orbita.removeStoragePin();
       }
-      localStorage.removeItem(LOCK_ENABLED_KEY);
-      localStorage.removeItem(LOCK_SALT_KEY);
-      localStorage.removeItem(LOCK_HASH_KEY);
+      cachedLockEnabled = false;
+      cachedSaltHex = null;
+      cachedHashHex = null;
+      await sqliteStorage.remove(LOCK_ENABLED_KEY);
+      await sqliteStorage.remove(LOCK_SALT_KEY);
+      await sqliteStorage.remove(LOCK_HASH_KEY);
       return true;
     } catch {
       return false;

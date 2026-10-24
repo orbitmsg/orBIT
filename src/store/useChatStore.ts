@@ -4,7 +4,7 @@ import { ThemeId, DEFAULT_CHAT_COLOR, applyThemeToRoot } from '../theme';
 import { generateChatId as genChatId } from '../lib/crypto';
 import { mediaManager } from '../services/mediaManager';
 import { supabaseService } from '../services/supabaseService';
-import { securityService } from '../services/securityService';
+import { sqliteStorage } from '../services/sqliteStorage';
 
 import {
   RotationSpeed,
@@ -420,25 +420,13 @@ export const useChatStore = create<ChatState>()(
           let myAvatar = '';
           let myUserId = '';
           try {
-            const raw = localStorage.getItem('orbita-auth-storage') || localStorage.getItem('auth-storage');
-            if (raw) {
-              const parsed = JSON.parse(raw);
-              const s = parsed?.state || parsed;
-              myNick = s?.nickname || '';
-              myAvatar = s?.avatarUrl || '';
-              myUserId = s?.userId || '';
+            const authStore = (window as any).__ORBITA_AUTH_STORE__?.getState?.();
+            if (authStore) {
+              myNick = authStore.nickname || '';
+              myAvatar = authStore.avatarUrl || '';
+              myUserId = authStore.userId || '';
             }
           } catch {}
-          if (!myNick || !myAvatar) {
-            try {
-              const profileRaw = localStorage.getItem('orbita_lock_user_profile');
-              if (profileRaw) {
-                const parsedProfile = JSON.parse(profileRaw);
-                myNick = myNick || parsedProfile?.nickname || '';
-                myAvatar = myAvatar || parsedProfile?.avatarUrl || '';
-              }
-            } catch {}
-          }
 
           const cleanUpdates = { ...updates };
           for (const key of Object.keys(cleanUpdates)) {
@@ -1053,13 +1041,9 @@ export const useChatStore = create<ChatState>()(
         const array = new Uint8Array(32);
         crypto.getRandomValues(array);
         const sharedSecret = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
-        const authData = (() => {
-          try {
-            return JSON.parse(localStorage.getItem('orbita-auth-storage') || '{}')?.state || {};
-          } catch { return {}; }
-        })();
-        const nickname = authData.nickname || 'Unknown';
-        const userId = authData.userId || 'user';
+        const authStore = (window as any).__ORBITA_AUTH_STORE__?.getState?.() || {};
+        const nickname = authStore.nickname || 'Unknown';
+        const userId = authStore.userId || 'user';
         const newChat: Chat = {
           id: chatId,
           type: 'group',
@@ -1079,35 +1063,28 @@ export const useChatStore = create<ChatState>()(
           notificationsEnabled: true,
         };
         set((state) => ({ chats: [...state.chats, newChat] }));
-        try {
-          if (!securityService.isPasswordSet()) {
-            const groupRegistry = JSON.parse(localStorage.getItem('orbita-group-registry') || '{}');
-            groupRegistry[inviteCode] = {
-              chatId,
-              name,
-              sharedSecret,
-              inviteCodeTTL: Date.now() + ttl * 1000,
-              ownerNickname: nickname,
-              ownerUserId: userId,
-            };
-            localStorage.setItem('orbita-group-registry', JSON.stringify(groupRegistry));
-          }
-        } catch {}
+        sqliteStorage.getJson<Record<string, any>>('orbita-group-registry', {}).then((groupRegistry) => {
+          groupRegistry[inviteCode] = {
+            chatId,
+            name,
+            sharedSecret,
+            inviteCodeTTL: Date.now() + ttl * 1000,
+            ownerNickname: nickname,
+            ownerUserId: userId,
+          };
+          sqliteStorage.setJson('orbita-group-registry', groupRegistry).catch(() => {});
+        }).catch(() => {});
       },
-      joinGroupByCode: (inviteCode, callback) => {
+      joinGroupByCode: async (inviteCode, callback) => {
         const normalized = inviteCode.trim().toLowerCase();
         if (!normalized) { callback(false, 'Введите код группы'); return; }
-        const authData = (() => {
-          try {
-            return JSON.parse(localStorage.getItem('orbita-auth-storage') || '{}')?.state || {};
-          } catch { return {}; }
-        })();
-        const nickname = authData.nickname || 'Unknown';
-        const userId = authData.userId || 'user';
+        const authStore = (window as any).__ORBITA_AUTH_STORE__?.getState?.() || {};
+        const nickname = authStore.nickname || 'Unknown';
+        const userId = authStore.userId || 'user';
         const existing = get().chats.find(c => c.type === 'group' && c.inviteCode === normalized);
         if (existing) { callback(false, 'Вы уже в этой группе'); return; }
         try {
-          const groupRegistry = JSON.parse(localStorage.getItem('orbita-group-registry') || '{}');
+          const groupRegistry = await sqliteStorage.getJson<Record<string, any>>('orbita-group-registry', {});
           const groupData = groupRegistry[normalized];
           if (groupData) {
             if (groupData.inviteCodeTTL && Date.now() > groupData.inviteCodeTTL) {
@@ -1135,11 +1112,7 @@ export const useChatStore = create<ChatState>()(
               muted: false,
               notificationsEnabled: true,
             };
-            set((state) => {
-              const exists = state.chats.find(c => c.id === groupData.chatId);
-              if (exists) return {};
-              return { chats: [...state.chats, newChat] };
-            });
+            set((state) => ({ chats: [...state.chats, newChat] }));
             callback(true);
             return;
           }

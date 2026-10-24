@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import md3Theme, { applyThemeToRoot, themePalettes } from './theme';
 import { useAuthStore } from './store/useAuthStore';
 import { useChatStore } from './store/useChatStore';
+import { sqliteStorage } from './services/sqliteStorage';
 import { WelcomeScreen } from './components/auth/WelcomeScreen';
 import { NicknameScreen } from './components/auth/NicknameScreen';
 import { MainLayout } from './components/layout/MainLayout';
@@ -162,7 +163,7 @@ function App() {
   useEffect(() => {
     try {
       if (nickname) {
-        localStorage.setItem('orbita_lock_user_profile', JSON.stringify({ nickname, avatarUrl }));
+        sqliteStorage.set('orbita_lock_user_profile', JSON.stringify({ nickname, avatarUrl })).catch(() => {});
       }
     } catch {}
   }, [nickname, avatarUrl]);
@@ -398,27 +399,21 @@ function App() {
   }, [setProxyActive]);
 
   useEffect(() => {
-    const savedFont = (() => {
+    sqliteStorage.get('orbita_font_family').then((saved) => {
+      const activeFont = (!isAppLocked && fontFamily) ? fontFamily : (saved || fontFamily || 'system');
+      const root = document.documentElement;
+      const fontVal = (FONT_MAP as Record<string, string>)[activeFont] || FONT_MAP['system'];
+      root.style.setProperty('--main-font', fontVal);
       try {
-        return localStorage.getItem('orbita_font_family') || fontFamily || 'system';
-      } catch {
-        return fontFamily || 'system';
-      }
-    })();
-    const activeFont = (!isAppLocked && fontFamily) ? fontFamily : savedFont;
-    const root = document.documentElement;
-    const fontVal = (FONT_MAP as Record<string, string>)[activeFont] || FONT_MAP['system'];
-    root.style.setProperty('--main-font', fontVal);
-    if (!isAppLocked && fontFamily) {
-      try {
-        localStorage.setItem('orbita_font_family', fontFamily);
+        if (typeof window !== 'undefined' && (window as any).orbita?.setFontForElectron) {
+          (window as any).orbita.setFontForElectron(activeFont);
+        }
       } catch {}
+    }).catch(() => {});
+
+    if (!isAppLocked && fontFamily) {
+      sqliteStorage.set('orbita_font_family', fontFamily).catch(() => {});
     }
-    try {
-      if (typeof window !== 'undefined' && (window as any).orbita?.setFontForElectron) {
-        (window as any).orbita.setFontForElectron(activeFont);
-      }
-    } catch {}
   }, [fontFamily, isAppLocked]);
 
   useEffect(() => {

@@ -43,7 +43,49 @@ const AlbumTile = memo(({
   const [currentTime, setCurrentTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState<number>(item.duration || 0);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const progressBarRef = useRef<HTMLDivElement>(null);
   const timeColor = isOwn ? 'rgba(255, 255, 255, 0.9)' : 'var(--text-dim)';
+
+  const seekFromClientX = useCallback((clientX: number) => {
+    if (!progressBarRef.current || !videoRef.current) return;
+    const rect = progressBarRef.current.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const tot = videoDuration || item.duration || 0;
+    if (tot > 0) {
+      const newTime = ratio * tot;
+      videoRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
+  }, [videoDuration, item.duration]);
+
+  const handleProgressBarMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    seekFromClientX(e.clientX);
+    const onMouseMove = (ev: MouseEvent) => {
+      seekFromClientX(ev.clientX);
+    };
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  const handleProgressBarTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    if (e.touches[0]) seekFromClientX(e.touches[0].clientX);
+    const onTouchMove = (ev: TouchEvent) => {
+      if (ev.touches[0]) seekFromClientX(ev.touches[0].clientX);
+    };
+    const onTouchEnd = () => {
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+    window.addEventListener('touchmove', onTouchMove);
+    window.addEventListener('touchend', onTouchEnd);
+  };
 
   const formatCountdown = (totalSec: number, curSec: number) => {
     const rem = Math.max(0, Math.ceil((totalSec || 0) - (curSec || 0)));
@@ -326,26 +368,44 @@ const AlbumTile = memo(({
 
           {(videoDuration > 0 || item.duration) ? (
             <div
+              ref={progressBarRef}
+              onMouseDown={handleProgressBarMouseDown}
+              onTouchStart={handleProgressBarTouchStart}
+              onClick={(e) => {
+                e.stopPropagation();
+                seekFromClientX(e.clientX);
+              }}
               style={{
                 position: 'absolute',
                 bottom: 0,
                 left: 0,
                 right: 0,
-                height: '10px',
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                zIndex: 4,
-                overflow: 'hidden',
-                pointerEvents: 'none',
+                height: '14px',
+                display: 'flex',
+                alignItems: 'flex-end',
+                cursor: 'pointer',
+                zIndex: 5,
+                userSelect: 'none',
               }}
             >
               <div
                 style={{
-                  height: '100%',
-                  width: `${(videoDuration || item.duration || 0) > 0 ? Math.min(100, Math.max(0, (currentTime / (videoDuration || item.duration || 1)) * 100)) : 0}%`,
-                  backgroundColor: 'var(--accent-color, #7C3AED)',
-                  transition: 'width 0.1s linear',
+                  position: 'relative',
+                  width: '100%',
+                  height: '5px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.22)',
+                  overflow: 'hidden',
                 }}
-              />
+              >
+                <div
+                  style={{
+                    height: '100%',
+                    width: `${(videoDuration || item.duration || 0) > 0 ? Math.min(100, Math.max(0, (currentTime / (videoDuration || item.duration || 1)) * 100)) : 0}%`,
+                    backgroundColor: 'var(--accent-color, #7C3AED)',
+                    transition: 'width 0.08s linear',
+                  }}
+                />
+              </div>
             </div>
           ) : null}
         </>
@@ -575,7 +635,7 @@ export const TelegramAlbumGrid = memo(({
         })}
         {!hasCaption && timeNode && (
           <div
-            className="absolute bottom-3.5 right-2 flex items-center justify-center z-[4] pointer-events-none select-none opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+            className="absolute bottom-2.5 right-2 flex items-center justify-center z-[4] pointer-events-none select-none opacity-0 group-hover:opacity-100 transition-opacity duration-150"
             style={{
               padding: '3px 8px',
               height: '22px',

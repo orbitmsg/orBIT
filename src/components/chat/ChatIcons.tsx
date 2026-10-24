@@ -81,31 +81,31 @@ export const AnimatedVideoVolumeIcon: React.FC<{
       </g>
     </g>
     <line
-      x1="3"
-      y1="3"
-      x2="21"
-      y2="21"
+      x1="3.5"
+      y1="3.5"
+      x2="16.5"
+      y2="16.5"
       stroke="rgba(0, 0, 0, 0.55)"
       strokeWidth="3.2"
       strokeLinecap="round"
       style={{
-        strokeDasharray: 26,
-        strokeDashoffset: isMuted ? 0 : 26,
+        strokeDasharray: 20,
+        strokeDashoffset: isMuted ? 0 : 20,
         opacity: isMuted ? 1 : 0,
         transition: 'stroke-dashoffset 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease',
       }}
     />
     <line
-      x1="3"
-      y1="3"
-      x2="21"
-      y2="21"
+      x1="3.5"
+      y1="3.5"
+      x2="16.5"
+      y2="16.5"
       stroke="currentColor"
       strokeWidth="2"
       strokeLinecap="round"
       style={{
-        strokeDasharray: 26,
-        strokeDashoffset: isMuted ? 0 : 26,
+        strokeDasharray: 20,
+        strokeDashoffset: isMuted ? 0 : 20,
         opacity: isMuted ? 1 : 0,
         transition: 'stroke-dashoffset 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease',
       }}

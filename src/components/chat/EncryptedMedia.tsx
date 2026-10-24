@@ -1,4 +1,4 @@
-import React, { useMemo, memo, useState, useRef, useEffect } from 'react';
+import React, { useMemo, memo, useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../../store/useChatStore';
 import { useDecryptedMedia, calculateMediaDisplaySize } from '../../lib/media-utils';
@@ -56,6 +56,7 @@ export const EncryptedMedia = memo(({
   const [currentTime, setCurrentTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState<number>(duration || 0);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const progressBarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (duration && duration > 0 && videoDuration === 0) {
@@ -68,6 +69,47 @@ export const EncryptedMedia = memo(({
       videoRef.current.play().catch(() => {});
     }
   }, [blobUrl]);
+
+  const seekFromClientX = useCallback((clientX: number) => {
+    if (!progressBarRef.current || !videoRef.current) return;
+    const rect = progressBarRef.current.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const tot = videoDuration || duration || 0;
+    if (tot > 0) {
+      const newTime = ratio * tot;
+      videoRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
+  }, [videoDuration, duration]);
+
+  const handleProgressBarMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    seekFromClientX(e.clientX);
+    const onMouseMove = (ev: MouseEvent) => {
+      seekFromClientX(ev.clientX);
+    };
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  const handleProgressBarTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    if (e.touches[0]) seekFromClientX(e.touches[0].clientX);
+    const onTouchMove = (ev: TouchEvent) => {
+      if (ev.touches[0]) seekFromClientX(ev.touches[0].clientX);
+    };
+    const onTouchEnd = () => {
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+    window.addEventListener('touchmove', onTouchMove);
+    window.addEventListener('touchend', onTouchEnd);
+  };
 
   const formatCountdown = (totalSec: number, curSec: number) => {
     const rem = Math.max(0, Math.ceil((totalSec || 0) - (curSec || 0)));
@@ -286,26 +328,44 @@ export const EncryptedMedia = memo(({
 
           {blobUrl && (videoDuration > 0 || duration) && (
             <div
+              ref={progressBarRef}
+              onMouseDown={handleProgressBarMouseDown}
+              onTouchStart={handleProgressBarTouchStart}
+              onClick={(e) => {
+                e.stopPropagation();
+                seekFromClientX(e.clientX);
+              }}
               style={{
                 position: 'absolute',
                 bottom: 0,
                 left: 0,
                 right: 0,
-                height: '10px',
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                zIndex: 4,
-                overflow: 'hidden',
-                pointerEvents: 'none',
+                height: '14px',
+                display: 'flex',
+                alignItems: 'flex-end',
+                cursor: 'pointer',
+                zIndex: 5,
+                userSelect: 'none',
               }}
             >
               <div
                 style={{
-                  height: '100%',
-                  width: `${(videoDuration || duration || 0) > 0 ? Math.min(100, Math.max(0, (currentTime / (videoDuration || duration || 1)) * 100)) : 0}%`,
-                  backgroundColor: 'var(--accent-color, #7C3AED)',
-                  transition: 'width 0.1s linear',
+                  position: 'relative',
+                  width: '100%',
+                  height: '5px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.22)',
+                  overflow: 'hidden',
                 }}
-              />
+              >
+                <div
+                  style={{
+                    height: '100%',
+                    width: `${(videoDuration || duration || 0) > 0 ? Math.min(100, Math.max(0, (currentTime / (videoDuration || duration || 1)) * 100)) : 0}%`,
+                    backgroundColor: 'var(--accent-color, #7C3AED)',
+                    transition: 'width 0.08s linear',
+                  }}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -316,7 +376,7 @@ export const EncryptedMedia = memo(({
           className="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
           style={{
             position: 'absolute',
-            bottom: '14px',
+            bottom: '10px',
             right: '8px',
             borderRadius: '9999px',
             backgroundColor: 'rgba(24, 25, 29, 0.75)',

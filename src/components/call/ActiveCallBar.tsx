@@ -226,9 +226,7 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
       f3: number,
       wavePhase: number,
       colorRgb: [number, number, number],
-      alpha: number,
-      withHighlight = false,
-      volValue = 0
+      alpha: number
     ) => {
       ctx.beginPath();
       ctx.moveTo(0, height);
@@ -247,28 +245,11 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
 
       const [r, g, b] = colorRgb;
       const grad = ctx.createLinearGradient(0, baseline - amplitude, 0, height);
-      grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.15})`);
-      grad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.65})`);
+      grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.25})`);
+      grad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.70})`);
       grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, ${alpha})`);
       ctx.fillStyle = grad;
       ctx.fill();
-
-      if (withHighlight) {
-        ctx.beginPath();
-        for (let x = 0; x <= width; x += step) {
-          const s1 = Math.sin(x * f1 + wavePhase);
-          const s2 = Math.sin(x * f2 - wavePhase * 1.35 + 1.4);
-          const s3 = Math.cos(x * f3 + wavePhase * 0.75 + 2.8);
-          const norm = (s1 * 0.54 + s2 * 0.32 + s3 * 0.14 + 1) * 0.5;
-          const clamped = Math.max(0, Math.min(1, norm));
-          const y = baseline - clamped * amplitude;
-          if (x === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.strokeStyle = `rgba(255, 255, 255, ${Math.min(0.9, 0.55 + volValue * 0.35)})`;
-        ctx.lineWidth = 1.8 + volValue * 0.8;
-        ctx.stroke();
-      }
     };
 
     const render = () => {
@@ -293,7 +274,7 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
           const dev = Math.abs(timeData[i] - 128);
           if (dev > maxDev) maxDev = dev;
         }
-        const timeVol = maxDev > 2 ? Math.min(1, (maxDev - 2) / 32) : 0;
+        const timeVol = maxDev > 18 ? Math.min(1, (maxDev - 18) / 36) : 0;
 
         analyserRef.current.getByteFrequencyData(freqData);
         let sum = 0;
@@ -301,31 +282,31 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
           sum += freqData[i];
         }
         const avg = sum / freqData.length;
-        const freqVol = avg > 3 ? Math.min(1, (avg - 3) / 28) : 0;
+        const freqVol = avg > 16 ? Math.min(1, (avg - 16) / 32) : 0;
 
         micVol = Math.max(timeVol, freqVol);
       }
 
       const remoteSpeaking = !!activeCall?.participants?.some((p: any) => !p.isLocal && p.isSpeaking);
-      const remoteVol = remoteSpeaking ? 0.70 + Math.sin(timeRef.current * 7) * 0.25 : 0;
+      const remoteVol = remoteSpeaking ? 0.70 + Math.sin(timeRef.current * 4) * 0.25 : 0;
       const rawVol = Math.max(micVol, remoteVol);
-      const targetVol = rawVol > 0.03 ? rawVol : 0;
+      const targetVol = rawVol > 0.1 ? rawVol : 0;
 
       if (targetVol > smoothedVolumeRef.current) {
-        smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.40;
+        smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.06;
       } else {
-        smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.08;
+        smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.035;
       }
 
-      timeRef.current += 0.024 + smoothedVolumeRef.current * 0.075;
+      timeRef.current += 0.008 + smoothedVolumeRef.current * 0.015;
 
       const phase = timeRef.current;
       const vol = smoothedVolumeRef.current;
       const baseline = 56;
 
-      drawWaveLayer(ctx, width, height, baseline, 18 + vol * 26, 0.012, 0.024, 0.045, phase * 0.75, accentRgbRef.current, 0.20, false, vol);
-      drawWaveLayer(ctx, width, height, baseline, 23 + vol * 26, 0.016, 0.032, 0.058, phase * 1.1 + 2.1, accentRgbRef.current, 0.35, false, vol);
-      drawWaveLayer(ctx, width, height, baseline, 28 + vol * 24, 0.020, 0.038, 0.068, phase * 1.5 + 4.2, accentRgbRef.current, 0.52, true, vol);
+      drawWaveLayer(ctx, width, height, baseline, 18 + vol * 24, 0.012, 0.024, 0.045, phase * 0.75, accentRgbRef.current, 0.25);
+      drawWaveLayer(ctx, width, height, baseline, 23 + vol * 25, 0.016, 0.032, 0.058, phase * 1.1 + 2.1, accentRgbRef.current, 0.42);
+      drawWaveLayer(ctx, width, height, baseline, 28 + vol * 24, 0.020, 0.038, 0.068, phase * 1.4 + 4.2, accentRgbRef.current, 0.60);
 
       animId = requestAnimationFrame(render);
     };

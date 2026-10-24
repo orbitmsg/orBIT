@@ -173,16 +173,18 @@ export const useHandshakeListeners = ({
             (c.id === chatId || (data.senderCode && (c.peerCode === data.senderCode || c.originalPeerCode === data.senderCode)))
         );
 
-      if (existing && existing.peerPublicKey === data.publicKey && existing.sharedSecret) {
+      const existingTheirKey = existing?.peerPublicKey || existing?.ratchetState?.theirDHPublic;
+      if (existing && existingTheirKey === data.publicKey && existing.sharedSecret && existing.ratchetState) {
         const finalChatId = existing.id || chatId;
         const myCurrentUsername = useAuthStore.getState().username;
         const myCurrentBio = useAuthStore.getState().bio;
         const myCurrentBirthday = useAuthStore.getState().birthday;
         const myCurrentNumericId = useAuthStore.getState().numericId;
+        const ourKey = existing.ratchetState.ourDHPublic;
 
         ablyService.sendHandshakeConfirm(data.senderCode, {
           nickname,
-          publicKey: existing.peerPublicKey,
+          publicKey: ourKey,
           chatId: finalChatId,
           avatarUrl,
           bannerUrl,
@@ -198,7 +200,7 @@ export const useHandshakeListeners = ({
         const sendConfirm = () =>
           senderChannel.trigger('client-identity-confirmed', {
             nickname,
-            publicKey: existing.peerPublicKey,
+            publicKey: ourKey,
             chatId: finalChatId,
             avatarUrl,
             bannerUrl,
@@ -281,6 +283,7 @@ export const useHandshakeListeners = ({
         username: data.username || undefined,
         description: data.bio || undefined,
         birthday: data.birthday || undefined,
+        peerPublicKey: data.publicKey,
       });
 
       if (!data.isX3DH) {
@@ -288,10 +291,11 @@ export const useHandshakeListeners = ({
         const myCurrentBio = useAuthStore.getState().bio;
         const myCurrentBirthday = useAuthStore.getState().birthday;
         const myCurrentNumericId = useAuthStore.getState().numericId;
+        const confirmPubKey = myKeys?.publicKey || ratchet.getState().ourDHPublic;
 
         ablyService.sendHandshakeConfirm(data.senderCode, {
           nickname,
-          publicKey: myKeys?.publicKey,
+          publicKey: confirmPubKey,
           chatId: finalChatId,
           avatarUrl,
           bannerUrl,
@@ -307,7 +311,7 @@ export const useHandshakeListeners = ({
         const sendConfirm = () =>
           senderChannel.trigger('client-identity-confirmed', {
             nickname,
-            publicKey: myKeys?.publicKey,
+            publicKey: confirmPubKey,
             chatId: finalChatId,
             avatarUrl,
             bannerUrl,
@@ -322,7 +326,7 @@ export const useHandshakeListeners = ({
         else senderChannel.bind('pusher:subscription_succeeded', sendConfirm);
 
         supabaseService.sendOfflineHandshake(
-          chatId,
+          finalChatId,
           `CONFIRM:${data.senderCode}`,
           nickname || '',
           myKeys?.publicKey || '',
@@ -351,7 +355,7 @@ export const useHandshakeListeners = ({
       if (!data || !data.chatId || !data.publicKey) return;
       console.log('[Handshake] Real-time confirmation received for chat:', data.chatId, data);
       const currentChats = useChatStore.getState().chats;
-      const existing = currentChats.find(c => c.id === data.chatId);
+      const existing = currentChats.find(c => c.id === data.chatId || (c.type === 'private' && data.senderCode && (c.peerCode === data.senderCode || c.originalPeerCode === data.senderCode)));
       if (!existing) return;
 
       const peerCode = data.senderCode || existing.peerCode || (existing.name && existing.name.length === 36 ? existing.name : undefined);
@@ -431,25 +435,26 @@ export const useHandshakeListeners = ({
       );
       if (isSelf) return;
 
-      if (data.type === 'system') {
-        if (data.action === 'delete-chat') {
-          if (activeSubscriptions.current.has(data.chatId)) {
-            const sub = activeSubscriptions.current.get(data.chatId)!;
-            sub.channel.unbind_all();
-            getPusher().unsubscribe(`private-chat-${data.chatId}`);
-            activeSubscriptions.current.delete(data.chatId);
-          }
-          if (ablyMessageUnsubscribes.current.has(data.chatId)) {
-            const unsub = ablyMessageUnsubscribes.current.get(data.chatId)!;
-            unsub();
-            ablyMessageUnsubscribes.current.delete(data.chatId);
-          }
-          useChatStore.getState().deleteChat(data.chatId);
-          if (useChatStore.getState().activeChatId === data.chatId) {
-            useChatStore.getState().setActiveChat(null);
-          }
-          return;
+      if (data.type === 'chat-deleted' || (data.type === 'system' && data.action === 'delete-chat') || data.action === 'delete-chat') {
+        if (activeSubscriptions.current.has(data.chatId)) {
+          const sub = activeSubscriptions.current.get(data.chatId)!;
+          sub.channel.unbind_all();
+          getPusher().unsubscribe(`private-chat-${data.chatId}`);
+          activeSubscriptions.current.delete(data.chatId);
         }
+        if (ablyMessageUnsubscribes.current.has(data.chatId)) {
+          const unsub = ablyMessageUnsubscribes.current.get(data.chatId)!;
+          unsub();
+          ablyMessageUnsubscribes.current.delete(data.chatId);
+        }
+        useChatStore.getState().deleteChat(data.chatId);
+        if (useChatStore.getState().activeChatId === data.chatId) {
+          useChatStore.getState().setActiveChat(null);
+        }
+        return;
+      }
+
+      if (data.type === 'system') {
         if (data.action === 'clear-history') {
           useChatStore.setState((state) => ({
             messagesByChatId: {

@@ -1068,7 +1068,7 @@ export const MainLayout = () => {
       unreadCount: 0,
       createdAt: Date.now(),
       notificationsEnabled: true,
-      isDraft: false,
+      isDraft: true,
       isChatInitiator: true,
       peerPublicKey: user.public_key || null,
     };

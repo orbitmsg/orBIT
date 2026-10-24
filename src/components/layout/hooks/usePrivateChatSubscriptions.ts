@@ -172,24 +172,25 @@ export const usePrivateChatSubscriptions = ({
         return;
       }
 
-      if (data.type === 'system') {
-        if (data.action === 'delete-chat') {
-          useChatStore.getState().deleteChat(chatId);
-          if (useChatStore.getState().activeChatId === chatId) {
-            useChatStore.getState().setActiveChat(null);
-          }
-          if (activeSubscriptions.current.has(chatId)) {
-            const sub = activeSubscriptions.current.get(chatId)!;
-            sub.channel.unbind_all();
-            pusher.unsubscribe(`private-chat-${chatId}`);
-            activeSubscriptions.current.delete(chatId);
-          }
-          if (ablyMessageUnsubscribes.current.has(chatId)) {
-            ablyMessageUnsubscribes.current.get(chatId)!();
-            ablyMessageUnsubscribes.current.delete(chatId);
-          }
-          return;
+      if (data.type === 'chat-deleted' || (data.type === 'system' && data.action === 'delete-chat') || data.action === 'delete-chat') {
+        useChatStore.getState().deleteChat(chatId);
+        if (useChatStore.getState().activeChatId === chatId) {
+          useChatStore.getState().setActiveChat(null);
         }
+        if (activeSubscriptions.current.has(chatId)) {
+          const sub = activeSubscriptions.current.get(chatId)!;
+          sub.channel.unbind_all();
+          pusher.unsubscribe(`private-chat-${chatId}`);
+          activeSubscriptions.current.delete(chatId);
+        }
+        if (ablyMessageUnsubscribes.current.has(chatId)) {
+          ablyMessageUnsubscribes.current.get(chatId)!();
+          ablyMessageUnsubscribes.current.delete(chatId);
+        }
+        return;
+      }
+
+      if (data.type === 'system') {
         if (data.action === 'clear-history') {
           useChatStore.setState((state) => ({
             messagesByChatId: {
@@ -506,20 +507,21 @@ export const usePrivateChatSubscriptions = ({
         lastPongTime.current.set(chatId, Date.now());
       }
 
-      if (data.type === 'system') {
-        if (data.action === 'delete-chat') {
-          if (activeSubscriptions.current.has(chatId)) {
-            const sub = activeSubscriptions.current.get(chatId)!;
-            sub.channel.unbind_all();
-            getPusher().unsubscribe(`private-chat-${chatId}`);
-            activeSubscriptions.current.delete(chatId);
-          }
-          useChatStore.getState().deleteChat(chatId);
-          if (useChatStore.getState().activeChatId === chatId) {
-            useChatStore.getState().setActiveChat(null);
-          }
-          return;
+      if (data.type === 'chat-deleted' || (data.type === 'system' && data.action === 'delete-chat') || data.action === 'delete-chat') {
+        if (activeSubscriptions.current.has(chatId)) {
+          const sub = activeSubscriptions.current.get(chatId)!;
+          sub.channel.unbind_all();
+          getPusher().unsubscribe(`private-chat-${chatId}`);
+          activeSubscriptions.current.delete(chatId);
         }
+        useChatStore.getState().deleteChat(chatId);
+        if (useChatStore.getState().activeChatId === chatId) {
+          useChatStore.getState().setActiveChat(null);
+        }
+        return;
+      }
+
+      if (data.type === 'system') {
         if (data.action === 'clear-history') {
           useChatStore.setState((state) => ({
             messagesByChatId: {

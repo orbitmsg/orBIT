@@ -588,26 +588,27 @@ export const useMainLayoutSync = ({
               continue;
             }
 
-            if (messageData?.type === 'system') {
-              if (messageData.action === 'delete-chat') {
-                if (activeSubscriptions.current.has(record.chat_id)) {
-                  const sub = activeSubscriptions.current.get(record.chat_id)!;
-                  sub.channel.unbind_all();
-                  getPusher().unsubscribe(`private-chat-${record.chat_id}`);
-                  activeSubscriptions.current.delete(record.chat_id);
-                }
-                if (ablyMessageUnsubscribes.current.has(record.chat_id)) {
-                  const unsub = ablyMessageUnsubscribes.current.get(record.chat_id)!;
-                  unsub();
-                  ablyMessageUnsubscribes.current.delete(record.chat_id);
-                }
-                useChatStore.getState().deleteChat(record.chat_id);
-                if (useChatStore.getState().activeChatId === record.chat_id) {
-                  useChatStore.getState().setActiveChat(null);
-                }
-                nonDeliveredIds.push(record.id);
-                continue;
+            if (messageData?.type === 'chat-deleted' || (messageData?.type === 'system' && messageData.action === 'delete-chat') || messageData?.action === 'delete-chat') {
+              if (activeSubscriptions.current.has(record.chat_id)) {
+                const sub = activeSubscriptions.current.get(record.chat_id)!;
+                sub.channel.unbind_all();
+                getPusher().unsubscribe(`private-chat-${record.chat_id}`);
+                activeSubscriptions.current.delete(record.chat_id);
               }
+              if (ablyMessageUnsubscribes.current.has(record.chat_id)) {
+                const unsub = ablyMessageUnsubscribes.current.get(record.chat_id)!;
+                unsub();
+                ablyMessageUnsubscribes.current.delete(record.chat_id);
+              }
+              useChatStore.getState().deleteChat(record.chat_id);
+              if (useChatStore.getState().activeChatId === record.chat_id) {
+                useChatStore.getState().setActiveChat(null);
+              }
+              nonDeliveredIds.push(record.id);
+              continue;
+            }
+
+            if (messageData?.type === 'system') {
               if (messageData.action === 'clear-history') {
                 useChatStore.setState((state) => ({
                   messagesByChatId: {

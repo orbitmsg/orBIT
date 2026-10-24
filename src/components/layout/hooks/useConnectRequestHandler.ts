@@ -148,6 +148,7 @@ export const useConnectRequestHandler = ({
             username: data.username !== undefined ? data.username : undefined,
             description: data.bio !== undefined ? data.bio : undefined,
             birthday: data.birthday !== undefined ? data.birthday : undefined,
+            peerPublicKey: data.publicKey,
           });
         } else {
           addChat({
@@ -167,6 +168,7 @@ export const useConnectRequestHandler = ({
             username: data.username || undefined,
             description: data.bio || undefined,
             birthday: data.birthday || undefined,
+            peerPublicKey: data.publicKey,
           });
         }
         cleanup();

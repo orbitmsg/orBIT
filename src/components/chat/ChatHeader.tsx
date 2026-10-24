@@ -89,7 +89,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       }}
     >
       <header
-        className="flex justify-center w-full select-none"
+        className="flex justify-center w-full select-none relative z-10"
         style={{
           padding: '10px 16px',
           userSelect: 'none',

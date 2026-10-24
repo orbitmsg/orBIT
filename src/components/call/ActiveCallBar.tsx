@@ -46,12 +46,33 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const smoothedVolumeRef = useRef(0.08);
+  const streamRef = useRef<MediaStream | null>(null);
+  const isOwnStreamRef = useRef(false);
+  const smoothedVolumeRef = useRef(0.04);
   const timeRef = useRef(0);
   const accentRgbRef = useRef<[number, number, number]>([92, 84, 229]);
 
   useEffect(() => {
     if (!barRef.current) return;
+    if (chatColor) {
+      if (chatColor.startsWith('#')) {
+        const r = parseInt(chatColor.slice(1, 3), 16) || 92;
+        const g = parseInt(chatColor.slice(3, 5), 16) || 84;
+        const b = parseInt(chatColor.slice(5, 7), 16) || 229;
+        accentRgbRef.current = [r, g, b];
+        return;
+      }
+      const hexMatch = chatColor.match(/#[0-9a-fA-F]{6}/);
+      if (hexMatch) {
+        const hex = hexMatch[0];
+        accentRgbRef.current = [
+          parseInt(hex.slice(1, 3), 16) || 92,
+          parseInt(hex.slice(3, 5), 16) || 84,
+          parseInt(hex.slice(5, 7), 16) || 229,
+        ];
+        return;
+      }
+    }
     const computed = getComputedStyle(barRef.current);
     const col = computed.getPropertyValue('--accent-color').trim() || '#5c54e5';
     if (col.startsWith('#')) {
@@ -69,6 +90,13 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
 
   useEffect(() => {
     if (!isCallActive || !isMicEnabled || !callAnimationsEnabled) {
+      if (isOwnStreamRef.current && streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => {
+          try { t.stop(); } catch {}
+        });
+      }
+      streamRef.current = null;
+      isOwnStreamRef.current = false;
       if (mediaSourceRef.current) {
         try { mediaSourceRef.current.disconnect(); } catch {}
         mediaSourceRef.current = null;
@@ -87,25 +115,51 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
     let isCancelled = false;
     const setupMicAnalyser = async () => {
       try {
+        let stream: MediaStream | null = null;
         const isGroup = activeCall?.chatType === 'group';
         const svc = isGroup ? groupLiveKitService : liveKitService;
         const localTrack = svc.getLocalAudioTrack();
         const mediaTrack = localTrack?.mediaStreamTrack;
-        if (!mediaTrack || isCancelled) return;
+
+        if (mediaTrack && mediaTrack.readyState !== 'ended') {
+          stream = new MediaStream([mediaTrack]);
+          isOwnStreamRef.current = false;
+        } else if (navigator.mediaDevices?.getUserMedia) {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+            },
+          });
+          isOwnStreamRef.current = true;
+        }
+
+        if (!stream || isCancelled) {
+          if (stream && isOwnStreamRef.current) {
+            stream.getTracks().forEach((t) => {
+              try { t.stop(); } catch {}
+            });
+          }
+          return;
+        }
+
+        streamRef.current = stream;
 
         const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
         if (!AudioCtx) return;
 
         const audioCtx = new AudioCtx();
         audioContextRef.current = audioCtx;
+        if (audioCtx.state === 'suspended') {
+          await audioCtx.resume();
+        }
 
-        const stream = new MediaStream([mediaTrack]);
         const source = audioCtx.createMediaStreamSource(stream);
         mediaSourceRef.current = source;
 
         const analyser = audioCtx.createAnalyser();
         analyser.fftSize = 64;
-        analyser.smoothingTimeConstant = 0.25;
+        analyser.smoothingTimeConstant = 0.2;
         analyserRef.current = analyser;
 
         source.connect(analyser);
@@ -116,6 +170,13 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
 
     return () => {
       isCancelled = true;
+      if (isOwnStreamRef.current && streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => {
+          try { t.stop(); } catch {}
+        });
+      }
+      streamRef.current = null;
+      isOwnStreamRef.current = false;
       if (mediaSourceRef.current) {
         try { mediaSourceRef.current.disconnect(); } catch {}
         mediaSourceRef.current = null;
@@ -143,7 +204,7 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
       const rect = container.getBoundingClientRect();
       if (rect.width > 0) {
         canvas.width = rect.width;
-        canvas.height = 26;
+        canvas.height = 76;
       }
     };
 
@@ -153,26 +214,55 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
 
     const dataArray = new Uint8Array(32);
 
-    const drawWave = (
+    const drawWaveLayer = (
       ctx: CanvasRenderingContext2D,
       width: number,
       height: number,
+      baseline: number,
       amplitude: number,
       freq: number,
-      phase: number,
-      fillStyle: string
+      wavePhase: number,
+      colorRgb: [number, number, number],
+      alpha: number,
+      withHighlight = false
     ) => {
       ctx.beginPath();
       ctx.moveTo(0, height);
       const step = 8;
       for (let x = 0; x <= width; x += step) {
-        const y = (height - 4) - amplitude * (Math.sin(x * freq + phase) * 0.72 + Math.sin(x * freq * 0.5 - phase * 0.75) * 0.28);
+        const sin1 = Math.sin(x * freq + wavePhase);
+        const sin2 = Math.sin(x * freq * 0.52 - wavePhase * 0.78);
+        const cos3 = Math.cos(x * freq * 0.28 + wavePhase * 0.45);
+        const combined = (sin1 * 0.58 + sin2 * 0.28 + cos3 * 0.14 + 1) * 0.5;
+        const y = baseline - combined * amplitude;
         ctx.lineTo(x, y);
       }
       ctx.lineTo(width, height);
       ctx.closePath();
-      ctx.fillStyle = fillStyle;
+
+      const [r, g, b] = colorRgb;
+      const grad = ctx.createLinearGradient(0, baseline - amplitude, 0, height);
+      grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.35})`);
+      grad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.75})`);
+      grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, ${alpha})`);
+      ctx.fillStyle = grad;
       ctx.fill();
+
+      if (withHighlight) {
+        ctx.beginPath();
+        for (let x = 0; x <= width; x += step) {
+          const sin1 = Math.sin(x * freq + wavePhase);
+          const sin2 = Math.sin(x * freq * 0.52 - wavePhase * 0.78);
+          const cos3 = Math.cos(x * freq * 0.28 + wavePhase * 0.45);
+          const combined = (sin1 * 0.58 + sin2 * 0.28 + cos3 * 0.14 + 1) * 0.5;
+          const y = baseline - combined * amplitude;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = `rgba(255, 255, 255, ${Math.min(0.65, alpha * 0.75)})`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
     };
 
     const render = () => {
@@ -196,24 +286,32 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
         for (let i = 0; i < dataArray.length; i++) {
           sum += dataArray[i];
         }
-        micVol = Math.min(1, (sum / dataArray.length) / 70);
+        const avg = sum / dataArray.length;
+        if (avg > 5) {
+          micVol = Math.min(1, (avg - 5) / 36);
+        }
       }
 
       const remoteSpeaking = !!activeCall?.participants?.some((p: any) => !p.isLocal && p.isSpeaking);
-      const remoteVol = remoteSpeaking ? 0.65 + Math.sin(timeRef.current * 7) * 0.25 : 0;
+      const remoteVol = remoteSpeaking ? 0.70 + Math.sin(timeRef.current * 7) * 0.25 : 0;
       const rawVol = Math.max(micVol, remoteVol);
-      const targetVol = rawVol > 0.05 ? rawVol : 0.08;
+      const targetVol = rawVol > 0.04 ? rawVol : 0;
 
-      smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.14;
-      timeRef.current += 0.035 + smoothedVolumeRef.current * 0.05;
+      if (targetVol > smoothedVolumeRef.current) {
+        smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.35;
+      } else {
+        smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.10;
+      }
+
+      timeRef.current += 0.025 + smoothedVolumeRef.current * 0.065;
 
       const phase = timeRef.current;
       const vol = smoothedVolumeRef.current;
-      const [r, g, b] = accentRgbRef.current;
+      const baseline = 60;
 
-      drawWave(ctx, width, height, 4 + vol * 11, 0.009, phase * 0.85, `rgba(${r}, ${g}, ${b}, 0.28)`);
-      drawWave(ctx, width, height, 5 + vol * 14, 0.015, phase * 1.25 + 2.1, `rgba(${r}, ${g}, ${b}, 0.45)`);
-      drawWave(ctx, width, height, 6 + vol * 17, 0.021, phase * 1.65 + 4.2, `rgba(${r}, ${g}, ${b}, 0.70)`);
+      drawWaveLayer(ctx, width, height, baseline, 14 + vol * 32, 0.007, phase * 0.75, accentRgbRef.current, 0.28, false);
+      drawWaveLayer(ctx, width, height, baseline, 16 + vol * 38, 0.012, phase * 1.15 + 2.2, accentRgbRef.current, 0.48, false);
+      drawWaveLayer(ctx, width, height, baseline, 18 + vol * 44, 0.018, phase * 1.55 + 4.3, accentRgbRef.current, 0.75, true);
 
       animId = requestAnimationFrame(render);
     };
@@ -252,10 +350,10 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
           ref={canvasRef}
           style={{
             position: 'absolute',
-            top: '-20px',
+            top: '-60px',
             left: 0,
             width: '100%',
-            height: '26px',
+            height: '76px',
             pointerEvents: 'none',
             zIndex: 1,
           }}

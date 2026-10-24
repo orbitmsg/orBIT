@@ -177,6 +177,11 @@ export const usePrivateChatSubscriptions = ({
       }
 
       if (data.type === 'chat-deleted' || (data.type === 'system' && data.action === 'delete-chat') || data.action === 'delete-chat') {
+        const targetChat = useChatStore.getState().chats.find(c => c.id === targetChatId);
+        const eventTime = data.timestamp || data.time;
+        if (targetChat && targetChat.createdAt && eventTime && eventTime < targetChat.createdAt) {
+          return;
+        }
         useChatStore.getState().deleteChat(targetChatId);
         if (useChatStore.getState().activeChatId === targetChatId) {
           useChatStore.getState().setActiveChat(null);
@@ -516,14 +521,24 @@ export const usePrivateChatSubscriptions = ({
       }
 
       if (data.type === 'chat-deleted' || (data.type === 'system' && data.action === 'delete-chat') || data.action === 'delete-chat') {
+        const targetChat = useChatStore.getState().chats.find(c => c.id === targetChatId);
+        const eventTime = data.timestamp || data.time;
+        if (targetChat && targetChat.createdAt && eventTime && eventTime < targetChat.createdAt) {
+          return;
+        }
         if (activeSubscriptions.current.has(chatId)) {
           const sub = activeSubscriptions.current.get(chatId)!;
           sub.channel.unbind_all();
           getPusher().unsubscribe(`private-chat-${chatId}`);
           activeSubscriptions.current.delete(chatId);
         }
-        useChatStore.getState().deleteChat(chatId);
-        if (useChatStore.getState().activeChatId === chatId) {
+        if (ablyMessageUnsubscribes.current.has(chatId)) {
+          const unsub = ablyMessageUnsubscribes.current.get(chatId)!;
+          unsub();
+          ablyMessageUnsubscribes.current.delete(chatId);
+        }
+        useChatStore.getState().deleteChat(targetChatId);
+        if (useChatStore.getState().activeChatId === targetChatId) {
           useChatStore.getState().setActiveChat(null);
         }
         return;

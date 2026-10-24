@@ -385,7 +385,9 @@ export const useChatStore = create<ChatState>()(
             const msgsExists = msgsMap[exists.id] || [];
             const msgsEntry = chatEntry.id ? (msgsMap[chatEntry.id] || []) : [];
             const canonicalId = (msgsExists.length === 0 && msgsEntry.length > 0 && chatEntry.id) ? chatEntry.id : exists.id;
-            const alternateId = canonicalId === exists.id ? chatEntry.id : exists.id;
+            const alternateId = (chatEntry.id && chatEntry.id !== canonicalId)
+              ? chatEntry.id
+              : (exists.id !== canonicalId ? exists.id : null);
 
             let updatedMessagesMap = state.messagesByChatId;
             if (alternateId && alternateId !== canonicalId) {
@@ -434,13 +436,13 @@ export const useChatStore = create<ChatState>()(
 
             const nextChats = state.chats
               .map((c, idx) => idx === existsIndex ? merged : c)
-              .filter(c => c.id !== alternateId);
+              .filter(c => !alternateId || c.id !== alternateId);
 
             return {
               chats: nextChats,
               messagesByChatId: updatedMessagesMap,
-              activeChatId: (state.activeChatId === alternateId) ? canonicalId : state.activeChatId,
-              activeProfileChatId: (state.activeProfileChatId === alternateId) ? canonicalId : state.activeProfileChatId,
+              activeChatId: (alternateId && state.activeChatId === alternateId) ? canonicalId : state.activeChatId,
+              activeProfileChatId: (alternateId && state.activeProfileChatId === alternateId) ? canonicalId : state.activeProfileChatId,
               deletedChatIds: currentDeleted,
             };
           }

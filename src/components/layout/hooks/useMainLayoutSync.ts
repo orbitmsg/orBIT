@@ -596,6 +596,12 @@ export const useMainLayoutSync = ({
             }
 
             if (messageData?.type === 'chat-deleted' || (messageData?.type === 'system' && messageData.action === 'delete-chat') || messageData?.action === 'delete-chat') {
+              const targetChat = useChatStore.getState().chats.find(c => c.id === record.chat_id);
+              const recordTime = new Date(record.created_at).getTime();
+              if (targetChat && targetChat.createdAt && recordTime && recordTime < targetChat.createdAt) {
+                nonDeliveredIds.push(record.id);
+                continue;
+              }
               if (activeSubscriptions.current.has(record.chat_id)) {
                 const sub = activeSubscriptions.current.get(record.chat_id)!;
                 sub.channel.unbind_all();

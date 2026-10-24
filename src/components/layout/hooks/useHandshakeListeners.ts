@@ -442,6 +442,11 @@ export const useHandshakeListeners = ({
       if (isSelf) return;
 
       if (data.type === 'chat-deleted' || (data.type === 'system' && data.action === 'delete-chat') || data.action === 'delete-chat') {
+        const targetChat = useChatStore.getState().chats.find(c => c.id === data.chatId);
+        const eventTime = data.timestamp || data.time;
+        if (targetChat && targetChat.createdAt && eventTime && eventTime < targetChat.createdAt) {
+          return;
+        }
         if (activeSubscriptions.current.has(data.chatId)) {
           const sub = activeSubscriptions.current.get(data.chatId)!;
           sub.channel.unbind_all();

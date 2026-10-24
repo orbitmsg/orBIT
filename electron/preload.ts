@@ -378,6 +378,8 @@ contextBridge.exposeInMainWorld('orbita', {
     ipcRenderer.invoke('storage:delete-messages', getScopedChatId(chatId)),
   storageDeleteMessage: (messageId: string) =>
     ipcRenderer.invoke('storage:delete-message', getScopedMsgId(messageId)),
+  storageMigrateChat: (fromChatId: string, toChatId: string) =>
+    ipcRenderer.invoke('storage:migrate-chat', getScopedChatId(fromChatId), getScopedChatId(toChatId)),
 
   setProxy: (config: { host: string; port: number; username?: string; password?: string; type?: string; proxyCalls?: boolean }) =>
     ipcRenderer.invoke('orbita:setProxy', config),

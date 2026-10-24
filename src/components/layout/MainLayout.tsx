@@ -1027,7 +1027,7 @@ export const MainLayout = () => {
       setSearchQuery('');
       return;
     }
-    const directChatId = (myUid && user.user_code && user.user_code.length === 36) ? getDirectChatId(myUid, user.user_code) : null;
+    const directChatId = (myC && user.user_code) ? getDirectChatId(myC, user.user_code) : null;
     const currentChats = useChatStore.getState().chats;
     const existingChat = currentChats.find(
       (c) =>

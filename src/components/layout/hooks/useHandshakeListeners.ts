@@ -169,10 +169,50 @@ export const useHandshakeListeners = ({
         .chats.find(
           (c) =>
             c.type === 'private' &&
-            (c.id === chatId || (data.senderCode && c.peerCode === data.senderCode))
+            c.id !== 'notes' &&
+            (c.id === chatId || (data.senderCode && (c.peerCode === data.senderCode || c.originalPeerCode === data.senderCode)))
         );
-      if (existing) {
-        console.log('Ignoring duplicate handshake request from', data.senderNickname);
+
+      if (existing && existing.peerPublicKey === data.publicKey && existing.sharedSecret) {
+        const finalChatId = existing.id || chatId;
+        const myCurrentUsername = useAuthStore.getState().username;
+        const myCurrentBio = useAuthStore.getState().bio;
+        const myCurrentBirthday = useAuthStore.getState().birthday;
+        const myCurrentNumericId = useAuthStore.getState().numericId;
+
+        ablyService.sendHandshakeConfirm(data.senderCode, {
+          nickname,
+          publicKey: existing.peerPublicKey,
+          chatId: finalChatId,
+          avatarUrl,
+          bannerUrl,
+          senderCode: myCode,
+          numericId: myCurrentNumericId,
+          username: myCurrentUsername,
+          bio: myCurrentBio,
+          birthday: myCurrentBirthday,
+        }).catch(() => {});
+
+        const pusher = getPusher();
+        const senderChannel = pusher.subscribe(`private-handshake-${data.senderCode}`);
+        const sendConfirm = () =>
+          senderChannel.trigger('client-identity-confirmed', {
+            nickname,
+            publicKey: existing.peerPublicKey,
+            chatId: finalChatId,
+            avatarUrl,
+            bannerUrl,
+            senderCode: myCode,
+            numericId: myCurrentNumericId,
+            username: myCurrentUsername,
+            bio: myCurrentBio,
+            birthday: myCurrentBirthday,
+          });
+
+        if (senderChannel.subscribed) sendConfirm();
+        senderChannel.bind('pusher:subscription_succeeded', () => {
+          sendConfirm();
+        });
         return;
       }
 
@@ -222,9 +262,10 @@ export const useHandshakeListeners = ({
         ratchet = DoubleRatchet.initSymmetric(rootKey, myKeys.privateKey, myKeys.publicKey, data.publicKey);
       }
 
+      const finalChatId = existing?.id || chatId;
       const senderNumericId = data.numericId || data.numeric_id || (data.senderCode ? getInitialNumericId(data.senderCode) : undefined);
       addChat({
-        id: chatId,
+        id: finalChatId,
         type: 'private',
         name: data.senderNickname,
         lastMsg: 'E2EE_SECURE_CHANNEL_READY',
@@ -251,7 +292,7 @@ export const useHandshakeListeners = ({
         ablyService.sendHandshakeConfirm(data.senderCode, {
           nickname,
           publicKey: myKeys?.publicKey,
-          chatId,
+          chatId: finalChatId,
           avatarUrl,
           bannerUrl,
           senderCode: myCode,
@@ -267,7 +308,7 @@ export const useHandshakeListeners = ({
           senderChannel.trigger('client-identity-confirmed', {
             nickname,
             publicKey: myKeys?.publicKey,
-            chatId,
+            chatId: finalChatId,
             avatarUrl,
             bannerUrl,
             senderCode: myCode,
@@ -468,7 +509,11 @@ export const useHandshakeListeners = ({
         return;
       }
 
-      let chat = useChatStore.getState().chats.find((c) => c.id === data.chatId);
+      const senderCode = data.senderCode || data.senderId;
+      let chat = useChatStore.getState().chats.find((c) =>
+        c.id === data.chatId ||
+        (c.type === 'private' && senderCode && (c.peerCode === senderCode || c.originalPeerCode === senderCode))
+      );
       if (!chat) {
         let senderNick = data.sender || 'User';
         let senderAvatar = data.avatarUrl;
@@ -535,8 +580,9 @@ export const useHandshakeListeners = ({
         mediaName: mediaName || null,
         mime: mime || null,
       };
-      addMessage(data.chatId, newMsg);
-      updateChat(data.chatId, {
+      const targetChatId = chat ? chat.id : data.chatId;
+      addMessage(targetChatId, newMsg);
+      updateChat(targetChatId, {
         lastMsg: textContent || (mediaType ? `[${mediaType}]` : ''),
       });
     };

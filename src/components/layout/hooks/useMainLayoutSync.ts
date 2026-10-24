@@ -78,7 +78,10 @@ export const useMainLayoutSync = ({
         processedIds.add(hs.id);
 
         const currentChats = useChatStore.getState().chats;
-        if (currentChats.some(c => c.id === hs.chat_id) || useChatStore.getState().deletedChatIds?.includes(hs.chat_id)) {
+        const existingHsChat = currentChats.find(
+          c => c.id === hs.chat_id || (c.type === 'private' && (c.peerCode === hs.sender_code || c.originalPeerCode === hs.sender_code || c.peerCode === hs.recipient_code))
+        );
+        if (existingHsChat || useChatStore.getState().deletedChatIds?.includes(hs.chat_id)) {
           await supabaseService.markHandshakeConsumed(hs.id);
           continue;
         }
@@ -277,7 +280,9 @@ export const useMainLayoutSync = ({
           }
 
           const currentChats = useChatStore.getState().chats;
-          let chat = currentChats.find(c => c.id === record.chat_id);
+          let chat = currentChats.find(
+            c => c.id === record.chat_id || (c.type === 'private' && record.sender_id && (c.peerCode === record.sender_id || c.originalPeerCode === record.sender_id))
+          );
           if (!chat) {
             const restored = useChatStore.getState().restoreDeletedChat(record.chat_id);
             if (restored) {
@@ -422,7 +427,7 @@ export const useMainLayoutSync = ({
           const isActiveChat = useChatStore.getState().activeChatId === record.chat_id && typeof document !== 'undefined' && document.visibilityState === 'visible';
 
           batchMessages.push({
-            chatId: record.chat_id,
+            chatId: chat?.id || record.chat_id,
             message: {
               id: msgId,
               senderId: record.sender_id,
@@ -450,7 +455,7 @@ export const useMainLayoutSync = ({
           });
 
           if (isActiveChat) {
-            readReceiptsToSend.push({ chatId: record.chat_id, msgId });
+            readReceiptsToSend.push({ chatId: chat?.id || record.chat_id, msgId });
           }
 
           processedMessageIds.current.add(record.id);

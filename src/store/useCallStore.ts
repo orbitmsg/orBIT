@@ -1384,9 +1384,9 @@ const handleCallAction = (action: { type: string; payload?: any }) => {
         if (chatId && chatStore.chats.some(c => c.id === chatId)) {
           chatStore.setActiveChat(chatId);
         } else if (peerCode) {
-          const myUid = useAuthStore.getState().userId;
           const myCode = chatStore.myCode;
-          const myIds = [myUid, myCode].filter((x): x is string => typeof x === 'string' && x.length > 0);
+          const myUid = useAuthStore.getState().userId;
+          const myIds = [myCode, myUid].filter((x): x is string => typeof x === 'string' && x.length > 0);
 
           const candidateCodes = new Set<string>();
           candidateCodes.add(peerCode);
@@ -1438,7 +1438,7 @@ const handleCallAction = (action: { type: string; payload?: any }) => {
             chatStore.setActiveChat(existing.id);
           } else if (targetCode) {
             const myKeys = generateKeyPair();
-            const preferredMyId = myIds.find((id) => id.length === 36) || myIds[0];
+            const preferredMyId = myCode || myIds.find((id) => id.length === 36) || myIds[0];
             const newChatId = (preferredMyId && targetCode) ? getDirectChatId(preferredMyId, targetCode) : generateChatId();
             chatStore.addChat({
               id: newChatId,

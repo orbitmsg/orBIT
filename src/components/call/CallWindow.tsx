@@ -127,9 +127,9 @@ export const CallWindow = () => {
     if (memberInfo?.user_id) candidateCodes.add(memberInfo.user_id);
     if (participant.identity) candidateCodes.add(participant.identity);
 
-    const myUid = useAuthStore.getState().userId;
     const myCode = useChatStore.getState().myCode;
-    const myIds = [myUid, myCode].filter((x): x is string => typeof x === 'string' && x.length > 0);
+    const myUid = useAuthStore.getState().userId;
+    const myIds = [myCode, myUid].filter((x): x is string => typeof x === 'string' && x.length > 0);
     myIds.forEach((id) => candidateCodes.delete(id));
     if (candidateCodes.size === 0) return;
 
@@ -168,7 +168,7 @@ export const CallWindow = () => {
       chatStore.setActiveChat(existing.id);
     } else {
       const myKeys = generateKeyPair();
-      const preferredMyId = myIds.find((id) => id.length === 36) || myIds[0];
+      const preferredMyId = myCode || myIds.find((id) => id.length === 36) || myIds[0];
       const newChatId = (preferredMyId && targetCode) ? getDirectChatId(preferredMyId, targetCode) : generateChatId();
       chatStore.addChat({
         id: newChatId,

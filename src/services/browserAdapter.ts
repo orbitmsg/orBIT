@@ -208,6 +208,31 @@ class BrowserOrbitaAdapter {
         } catch {}
       },
       storageDeleteMessage: async () => {},
+      storageMigrateChat: async (fromChatId: string, toChatId: string) => {
+        try {
+          const scopedFrom = getScopedChatId(fromChatId);
+          const scopedTo = getScopedChatId(toChatId);
+          const rawFrom = localStorage.getItem(`orbita_msgs_${scopedFrom}`) || localStorage.getItem(`orbita_msgs_${fromChatId}`);
+          if (rawFrom) {
+            const fromMsgs = JSON.parse(rawFrom);
+            const rawTo = localStorage.getItem(`orbita_msgs_${scopedTo}`) || localStorage.getItem(`orbita_msgs_${toChatId}`);
+            const toMsgs = rawTo ? JSON.parse(rawTo) : [];
+            const seen = new Set(toMsgs.map((m: any) => m.id || `${m.time}_${m.text}`));
+            const combined = [...toMsgs];
+            for (const m of fromMsgs) {
+              const key = m.id || `${m.time}_${m.text}`;
+              if (!seen.has(key)) {
+                seen.add(key);
+                combined.push(m);
+              }
+            }
+            combined.sort((a: any, b: any) => (Number(a.time) || 0) - (Number(b.time) || 0));
+            localStorage.setItem(`orbita_msgs_${scopedTo}`, JSON.stringify(combined));
+            localStorage.removeItem(`orbita_msgs_${scopedFrom}`);
+            localStorage.removeItem(`orbita_msgs_${fromChatId}`);
+          }
+        } catch {}
+      },
     };
   }
 

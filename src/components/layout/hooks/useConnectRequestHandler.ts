@@ -61,8 +61,20 @@ export const useConnectRequestHandler = ({
       const pusher = getPusher();
       const friendChannel = pusher.subscribe(`private-handshake-${friendCode}`);
       const myKeys = generateKeyPair();
-      const myUid = useAuthStore.getState().userId;
-      const chatId = (myUid && friendCode && friendCode.length === 36) ? getDirectChatId(myUid, friendCode) : generateChatId();
+      const storeMyCode = myCode || useChatStore.getState().myCode;
+      const targetUserCode = initialProfile?.user_code || friendCode;
+      const directChatId = (storeMyCode && targetUserCode) ? getDirectChatId(storeMyCode, targetUserCode) : generateChatId();
+      const existingPeerChat = useChatStore.getState().chats.find(
+        (c) =>
+          c.type === 'private' &&
+          c.id !== 'notes' &&
+          (c.id === directChatId ||
+            (c.peerCode && (c.peerCode === targetUserCode || c.peerCode === friendCode)) ||
+            (c.originalPeerCode && (c.originalPeerCode === targetUserCode || c.originalPeerCode === friendCode)) ||
+            (initialProfile?.numeric_id && c.numericId === initialProfile.numeric_id) ||
+            (initialProfile?.username && c.username && c.username.toLowerCase() === initialProfile.username.toLowerCase()))
+      );
+      const chatId = existingPeerChat?.id || directChatId;
       let settled = false;
 
       const allTargets = new Set<string>([friendCode]);

@@ -296,7 +296,7 @@ export const useChatChannelsAndCalls = ({
       chatStore.setActiveChat(existing.id);
     } else {
       const myKeys = generateKeyPair();
-      const preferredMyId = myIds.find((id) => id.length === 36) || myIds[0];
+      const preferredMyId = storeMyCode || myIds.find((id) => id.length === 36) || myIds[0];
       const newChatId = (preferredMyId && targetCode) ? getDirectChatId(preferredMyId, targetCode) : generateChatId();
       const targetName = resolvedMember?.nickname || senderName || 'User';
       const targetAv = resolvedMember?.avatarUrl || (resolvedMember as any)?.avatar_url || memberAvatars[targetCode] || null;

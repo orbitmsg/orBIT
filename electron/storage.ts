@@ -308,6 +308,20 @@ export function storageDeleteMessage(messageId: string): Promise<void> {
   });
 }
 
+export function storageMigrateChat(fromChatId: string, toChatId: string): Promise<void> {
+  return new Promise((resolve) => {
+    if (!fromChatId || !toChatId || fromChatId === toChatId) {
+      resolve();
+      return;
+    }
+    getDb().run(
+      `UPDATE ${MESSAGES_TABLE} SET chat_id = ? WHERE chat_id = ?`,
+      [toChatId, fromChatId],
+      () => resolve()
+    );
+  });
+}
+
 export async function migrateFromLocalStorage(): Promise<void> {
   // Для каждого ключа, который может быть в localStorage, переносим в SQLite
   const keysToMigrate = [
@@ -366,5 +380,9 @@ export function setupStorageIPC(): void {
 
   ipcMain.handle('storage:delete-message', async (_, messageId: string) => {
     await storageDeleteMessage(messageId);
+  });
+
+  ipcMain.handle('storage:migrate-chat', async (_, fromChatId: string, toChatId: string) => {
+    await storageMigrateChat(fromChatId, toChatId);
   });
 }

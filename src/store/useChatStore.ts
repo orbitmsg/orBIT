@@ -364,19 +364,88 @@ export const useChatStore = create<ChatState>()(
           const currentDeleted = (state.deletedChatIds || []).filter(
             id => id !== chatEntry.id && (!chatEntry.peerCode || id !== chatEntry.peerCode)
           );
-          const exists = state.chats.find(c => c.id === chatEntry.id);
-          if (exists) {
-            const merged: Chat = { ...exists };
-            for (const k of Object.keys(chatEntry) as (keyof Chat)[]) {
-              if (chatEntry[k] !== undefined) {
-                (merged as any)[k] = chatEntry[k];
+
+          let existsIndex = -1;
+          if (chatEntry.type === 'private' && chatEntry.id !== 'notes') {
+            existsIndex = state.chats.findIndex((c) => {
+              if (c.type !== 'private' || c.id === 'notes') return false;
+              if (c.id === chatEntry.id) return true;
+              if (chatEntry.peerCode && (c.peerCode === chatEntry.peerCode || c.originalPeerCode === chatEntry.peerCode)) return true;
+              if (chatEntry.originalPeerCode && (c.peerCode === chatEntry.originalPeerCode || c.originalPeerCode === chatEntry.originalPeerCode)) return true;
+              if (c.peerCode && (chatEntry.peerCode === c.peerCode || chatEntry.originalPeerCode === c.peerCode)) return true;
+              if (chatEntry.peerPublicKey && c.peerPublicKey && c.peerPublicKey === chatEntry.peerPublicKey) return true;
+              if (chatEntry.numericId && c.numericId && c.numericId === chatEntry.numericId) return true;
+              if (chatEntry.username && c.username && chatEntry.username.toLowerCase() === c.username.toLowerCase()) return true;
+              return false;
+            });
+          } else {
+            existsIndex = state.chats.findIndex(c => c.id === chatEntry.id);
+          }
+
+          if (existsIndex !== -1) {
+            const exists = state.chats[existsIndex];
+            const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+            const canonicalId = (isUuid(chatEntry.id) && !isUuid(exists.id)) ? chatEntry.id : exists.id;
+            const alternateId = canonicalId === exists.id ? chatEntry.id : exists.id;
+
+            let updatedMessagesMap = state.messagesByChatId;
+            if (alternateId && alternateId !== canonicalId) {
+              const msgsCanonical = updatedMessagesMap[canonicalId] ? [...updatedMessagesMap[canonicalId]] : [];
+              const msgsAlt = updatedMessagesMap[alternateId] || [];
+              if (msgsAlt.length > 0) {
+                const seen = new Set(msgsCanonical.map(m => m.id || `${m.time}_${m.text}`));
+                for (const m of msgsAlt) {
+                  const key = m.id || `${m.time}_${m.text}`;
+                  if (!seen.has(key)) {
+                    seen.add(key);
+                    msgsCanonical.push(m);
+                  }
+                }
+                msgsCanonical.sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0));
+                const { [alternateId]: _, ...rest } = updatedMessagesMap;
+                updatedMessagesMap = {
+                  ...rest,
+                  [canonicalId]: msgsCanonical,
+                };
+              }
+              if (typeof window !== 'undefined' && (window as any).orbita?.storageMigrateChat) {
+                (window as any).orbita.storageMigrateChat(alternateId, canonicalId).catch(() => {});
               }
             }
+
+            const merged: Chat = {
+              ...exists,
+              ...chatEntry,
+              id: canonicalId,
+              ratchetState: chatEntry.ratchetState || exists.ratchetState,
+              sharedSecret: chatEntry.sharedSecret || exists.sharedSecret,
+              peerPublicKey: chatEntry.peerPublicKey || exists.peerPublicKey,
+              avatarUrl: chatEntry.avatarUrl || exists.avatarUrl,
+              bannerUrl: chatEntry.bannerUrl || exists.bannerUrl,
+              username: chatEntry.username || exists.username,
+              description: chatEntry.description || exists.description,
+              numericId: chatEntry.numericId || exists.numericId,
+              peerCode: chatEntry.peerCode || exists.peerCode,
+              originalPeerCode: chatEntry.originalPeerCode || exists.originalPeerCode,
+              name: (chatEntry.name && chatEntry.name !== 'Unknown') ? chatEntry.name : exists.name,
+              lastMsg: (chatEntry.lastMsg && chatEntry.lastMsg !== 'E2EE_SECURE_CHANNEL_READY') ? chatEntry.lastMsg : exists.lastMsg,
+              online: chatEntry.online ?? exists.online,
+              unreadCount: (exists.unreadCount ?? 0) + (chatEntry.unreadCount ?? 0),
+            };
+
+            const nextChats = state.chats
+              .map((c, idx) => idx === existsIndex ? merged : c)
+              .filter(c => c.id !== alternateId);
+
             return {
-              chats: state.chats.map(c => c.id === chatEntry.id ? merged : c),
+              chats: nextChats,
+              messagesByChatId: updatedMessagesMap,
+              activeChatId: (state.activeChatId === alternateId) ? canonicalId : state.activeChatId,
+              activeProfileChatId: (state.activeProfileChatId === alternateId) ? canonicalId : state.activeProfileChatId,
               deletedChatIds: currentDeleted,
             };
           }
+
           return {
             chats: [...state.chats, chatEntry],
             deletedChatIds: currentDeleted,
@@ -497,6 +566,10 @@ export const useChatStore = create<ChatState>()(
         let state = get();
         if (state.deletedChatIds?.includes(chatId)) return;
         let chat = state.chats.find(c => c.id === chatId);
+        if (!chat && message.senderId) {
+          chat = state.chats.find(c => c.type === 'private' && (c.peerCode === message.senderId || c.originalPeerCode === message.senderId));
+          if (chat) chatId = chat.id;
+        }
         if (!chat) return;
 
         if (message.id && state.messagesByChatId[chatId]?.some(m => m.id === message.id)) {
@@ -575,10 +648,14 @@ export const useChatStore = create<ChatState>()(
         const chatUpdates = new Map<string, { lastMsg?: string; unreadDelta: number }>();
 
         for (const item of items) {
-          const { chatId, message, encryptedText, index } = item;
-          if (deletedChatIds.includes(chatId)) continue;
-          const chat = state.chats.find(c => c.id === chatId);
+          const { chatId: rawChatId, message, encryptedText, index } = item;
+          if (deletedChatIds.includes(rawChatId)) continue;
+          let chat = state.chats.find(c => c.id === rawChatId);
+          if (!chat && message.senderId) {
+            chat = state.chats.find(c => c.type === 'private' && (c.peerCode === message.senderId || c.originalPeerCode === message.senderId));
+          }
           if (!chat) continue;
+          const chatId = chat.id;
 
           const currentList = newMessagesByChatId[chatId] || [];
           if (message.id && currentList.some(m => m.id === message.id)) {
@@ -958,8 +1035,16 @@ export const useChatStore = create<ChatState>()(
               const updated = { ...state.messagesByChatId };
               const updatedChats = [...state.chats];
               let chatsChanged = false;
-              for (const [chatId, msgs] of Object.entries(recent)) {
+              for (const [rawChatId, msgs] of Object.entries(recent)) {
                 if (Array.isArray(msgs) && msgs.length > 0) {
+                  const targetChat = state.chats.find(c =>
+                    c.id === rawChatId ||
+                    (c.type === 'private' && (c.peerCode === rawChatId || c.originalPeerCode === rawChatId))
+                  );
+                  const chatId = targetChat ? targetChat.id : rawChatId;
+                  if (chatId !== rawChatId && typeof window !== 'undefined' && (window as any).orbita?.storageMigrateChat) {
+                    (window as any).orbita.storageMigrateChat(rawChatId, chatId).catch(() => {});
+                  }
                   const current = updated[chatId] || [];
                   let mergedMsgs = msgs;
                   if (current.length === 0) {

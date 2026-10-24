@@ -143,12 +143,99 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
       state.pinnedChatIds = [];
     }
     if (state && Array.isArray(state.chats)) {
-      state.chats = state.chats
+      const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+      const privateChats = state.chats.filter((c) => c.type === 'private' && c.id !== 'notes');
+      const otherChats = state.chats
+        .filter((c) => c.type !== 'private' || c.id === 'notes')
         .filter((c) => !(c.type === 'channel' && !c.isOwner && c.isSubscribed === false))
         .map((c) => ({
           ...c,
           online: false,
         }));
+
+      const groups: typeof privateChats[] = [];
+      for (const chat of privateChats) {
+        let foundGroup = groups.find((group) =>
+          group.some((c) => {
+            if (c.id === chat.id) return true;
+            if (chat.peerCode && (c.peerCode === chat.peerCode || c.originalPeerCode === chat.peerCode)) return true;
+            if (chat.originalPeerCode && (c.peerCode === chat.originalPeerCode || c.originalPeerCode === chat.originalPeerCode)) return true;
+            if (c.peerCode && (chat.peerCode === c.peerCode || chat.originalPeerCode === c.peerCode)) return true;
+            if (chat.peerPublicKey && c.peerPublicKey && c.peerPublicKey === chat.peerPublicKey) return true;
+            if (chat.numericId && c.numericId && c.numericId === chat.numericId) return true;
+            if (chat.username && c.username && chat.username.toLowerCase() === c.username.toLowerCase()) return true;
+            return false;
+          })
+        );
+        if (foundGroup) {
+          foundGroup.push(chat);
+        } else {
+          groups.push([chat]);
+        }
+      }
+
+      const deduplicatedPrivate: typeof privateChats = [];
+      const messagesMap = state.messagesByChatId || {};
+
+      for (const group of groups) {
+        if (group.length === 1) {
+          deduplicatedPrivate.push({ ...group[0], online: false });
+          continue;
+        }
+
+        let canonical = group.find((c) => isUuid(c.id)) || group[0];
+        let mergedMessages: Message[] = messagesMap[canonical.id] ? [...messagesMap[canonical.id]] : [];
+        const seenMsgKeys = new Set(mergedMessages.map((m) => m.id || `${m.time}_${m.text}`));
+
+        for (const dup of group) {
+          if (dup.id === canonical.id) continue;
+          const dupMsgs = messagesMap[dup.id] || [];
+          for (const m of dupMsgs) {
+            const key = m.id || `${m.time}_${m.text}`;
+            if (!seenMsgKeys.has(key)) {
+              seenMsgKeys.add(key);
+              mergedMessages.push(m);
+            }
+          }
+          delete messagesMap[dup.id];
+
+          if (typeof window !== 'undefined' && (window as any).orbita?.storageMigrateChat) {
+            (window as any).orbita.storageMigrateChat(dup.id, canonical.id).catch(() => {});
+          }
+
+          if (state.activeChatId === dup.id) {
+            state.activeChatId = canonical.id;
+          }
+          if (state.activeProfileChatId === dup.id) {
+            state.activeProfileChatId = canonical.id;
+          }
+
+          canonical = {
+            ...dup,
+            ...canonical,
+            id: canonical.id,
+            online: false,
+            ratchetState: canonical.ratchetState || dup.ratchetState,
+            sharedSecret: canonical.sharedSecret || dup.sharedSecret,
+            peerPublicKey: canonical.peerPublicKey || dup.peerPublicKey,
+            avatarUrl: canonical.avatarUrl || dup.avatarUrl,
+            bannerUrl: canonical.bannerUrl || dup.bannerUrl,
+            username: canonical.username || dup.username,
+            description: canonical.description || dup.description,
+            numericId: canonical.numericId || dup.numericId,
+            peerCode: canonical.peerCode || dup.peerCode,
+            originalPeerCode: canonical.originalPeerCode || dup.originalPeerCode,
+            name: (canonical.name && canonical.name !== 'Unknown') ? canonical.name : dup.name,
+          };
+        }
+
+        mergedMessages.sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0));
+        messagesMap[canonical.id] = mergedMessages;
+        deduplicatedPrivate.push(canonical);
+      }
+
+      state.chats = [...otherChats, ...deduplicatedPrivate];
+      state.messagesByChatId = messagesMap;
       if (state.activeChatId && !state.chats.some((c) => c.id === state.activeChatId)) {
         state.activeChatId = null;
       }

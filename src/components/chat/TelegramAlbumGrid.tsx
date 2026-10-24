@@ -4,6 +4,7 @@ import { useUploadProgressStore } from '../../store/useUploadProgressStore';
 import { useDecryptedMedia, calculateMediaDisplaySize } from '../../lib/media-utils';
 import { AudioCoverWithPlay } from '../audio/AudioCoverWithPlay';
 import { Play, Pause } from 'lucide-react';
+import { orbitFs } from './chatUtils';
 
 interface TelegramAlbumGridProps {
   items: MediaItem[];
@@ -318,10 +319,25 @@ const AlbumTile = memo(({
           </button>
           {(videoDuration > 0 || item.duration) ? (
             <div
-              className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/60 text-white text-[11px] font-semibold tabular-nums backdrop-blur-sm select-none z-[3]"
-              style={{ borderRadius: '9999px', lineHeight: 1 }}
+              className="absolute top-2 left-2 flex items-center justify-center tabular-nums select-none z-[3]"
+              style={{
+                padding: '3px 8px',
+                height: '22px',
+                boxSizing: 'border-box',
+                borderRadius: '9999px',
+                backgroundColor: '#18191d',
+                color: 'rgba(255, 255, 255, 0.95)',
+                fontSize: orbitFs(11),
+                fontWeight: 400,
+                lineHeight: 1,
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                boxShadow: '0 1px 4px rgba(0, 0, 0, 0.4)',
+              }}
             >
-              {formatDuration(videoDuration || item.duration)}
+              <span className="tabular-nums" style={{ fontSize: orbitFs(11), lineHeight: 1 }}>
+                {formatDuration(videoDuration || item.duration)}
+              </span>
             </div>
           ) : null}
         </>
@@ -554,6 +570,8 @@ export const TelegramAlbumGrid = memo(({
             className="absolute bottom-2 right-2 flex items-center justify-center z-[4] pointer-events-none select-none"
             style={{
               padding: '3px 8px',
+              height: '22px',
+              boxSizing: 'border-box',
               borderRadius: '9999px',
               backgroundColor: '#18191d',
               lineHeight: 1,

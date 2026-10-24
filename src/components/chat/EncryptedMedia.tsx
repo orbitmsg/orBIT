@@ -5,6 +5,7 @@ import { useChatStore } from '../../store/useChatStore';
 import { useDecryptedMedia, calculateMediaDisplaySize } from '../../lib/media-utils';
 import { AudioCoverWithPlay } from '../audio/AudioCoverWithPlay';
 import { SmartGifPlayer } from './SmartGifPlayer';
+import { orbitFs } from './chatUtils';
 
 interface EncryptedMediaProps {
   url: string;
@@ -293,12 +294,13 @@ export const EncryptedMedia = memo(({
                 top: '8px',
                 left: '8px',
                 borderRadius: '9999px',
-                backgroundColor: 'rgba(0, 0, 0, 0.55)',
-                backdropFilter: 'blur(8px)',
+                backgroundColor: '#18191d',
                 padding: '3px 8px',
-                color: '#ffffff',
-                fontSize: '11px',
-                fontWeight: 600,
+                height: '22px',
+                boxSizing: 'border-box',
+                color: 'rgba(255, 255, 255, 0.95)',
+                fontSize: orbitFs(11),
+                fontWeight: 400,
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '4px',
@@ -306,13 +308,15 @@ export const EncryptedMedia = memo(({
                 zIndex: 4,
                 cursor: 'pointer',
                 userSelect: 'none',
-                boxShadow: '0 1px 4px rgba(0, 0, 0, 0.35)',
+                boxShadow: '0 1px 4px rgba(0, 0, 0, 0.4)',
                 border: 'none',
                 transition: 'background-color 0.15s',
               }}
               aria-label={isMuted ? t('mediaViewer.unmute', 'Включить звук') : t('mediaViewer.mute', 'Выключить звук')}
             >
-              <span>{formatPillTime(videoDuration || duration || 0)}</span>
+              <span className="tabular-nums select-none" style={{ fontSize: orbitFs(11), lineHeight: 1, userSelect: 'none', WebkitUserSelect: 'none' }}>
+                {formatPillTime(videoDuration || duration || 0)}
+              </span>
               {!isMuted ? (
                 <Volume2 size={12} className="text-white shrink-0" />
               ) : isPillHovered ? (
@@ -332,8 +336,10 @@ export const EncryptedMedia = memo(({
             borderRadius: '9999px',
             backgroundColor: '#18191d',
             padding: '3px 8px',
+            height: '22px',
+            boxSizing: 'border-box',
             color: '#ffffff',
-            fontSize: '11px',
+            fontSize: orbitFs(11),
             display: 'inline-flex',
             alignItems: 'center',
             lineHeight: 1,

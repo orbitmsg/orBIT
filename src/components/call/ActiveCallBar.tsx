@@ -204,7 +204,7 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
       const rect = container.getBoundingClientRect();
       if (rect.width > 0) {
         canvas.width = rect.width;
-        canvas.height = 68;
+        canvas.height = 56;
       }
     };
 
@@ -321,11 +321,11 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
 
       const phase = timeRef.current;
       const vol = smoothedVolumeRef.current;
-      const baseline = 58;
+      const baseline = 56;
 
-      drawWaveLayer(ctx, width, height, baseline, 20 + vol * 24, 0.012, 0.024, 0.045, phase * 0.75, accentRgbRef.current, 0.20, false, vol);
-      drawWaveLayer(ctx, width, height, baseline, 24 + vol * 26, 0.016, 0.032, 0.058, phase * 1.1 + 2.1, accentRgbRef.current, 0.35, false, vol);
-      drawWaveLayer(ctx, width, height, baseline, 28 + vol * 26, 0.020, 0.038, 0.068, phase * 1.5 + 4.2, accentRgbRef.current, 0.52, true, vol);
+      drawWaveLayer(ctx, width, height, baseline, 18 + vol * 26, 0.012, 0.024, 0.045, phase * 0.75, accentRgbRef.current, 0.20, false, vol);
+      drawWaveLayer(ctx, width, height, baseline, 23 + vol * 26, 0.016, 0.032, 0.058, phase * 1.1 + 2.1, accentRgbRef.current, 0.35, false, vol);
+      drawWaveLayer(ctx, width, height, baseline, 28 + vol * 24, 0.020, 0.038, 0.068, phase * 1.5 + 4.2, accentRgbRef.current, 0.52, true, vol);
 
       animId = requestAnimationFrame(render);
     };
@@ -349,6 +349,7 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
         background: gradientBackground,
         border: 'none',
         borderBottom: 'none',
+        overflow: 'visible',
         transition: 'background 0.3s ease',
         ...style,
       }}
@@ -364,12 +365,12 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
           ref={canvasRef}
           style={{
             position: 'absolute',
-            top: '-58px',
+            bottom: '100%',
             left: 0,
             width: '100%',
-            height: '68px',
+            height: '56px',
             pointerEvents: 'none',
-            zIndex: 1,
+            zIndex: 15,
           }}
         />
       )}

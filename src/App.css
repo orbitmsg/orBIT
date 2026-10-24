@@ -864,7 +864,7 @@ textarea::selection,
 .active-call-header-bar {
   background: #14111d;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .reaction-badge-btn {

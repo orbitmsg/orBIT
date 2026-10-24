@@ -69,6 +69,11 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
   const [videoFirstFrame, setVideoFirstFrame] = useState<string | null>(null);
 
   const handleInstantClose = useCallback(() => {
+    if (videoRef.current) {
+      try {
+        videoRef.current.pause();
+      } catch {}
+    }
     const el = document.getElementById('telegram-media-viewer-root');
     if (el) el.style.display = 'none';
     if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
@@ -119,6 +124,8 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
 
   useEffect(() => {
     if (isOpen) {
+      const el = document.getElementById('telegram-media-viewer-root');
+      if (el) el.style.display = 'flex';
       useChatStore.getState().setMediaViewerOpen(true);
       return () => {
         useChatStore.getState().setMediaViewerOpen(false);

@@ -52,16 +52,17 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
     <div
       style={{
         position: 'fixed',
-        bottom: carouselItemsLength > 1 ? 75 : 25,
+        bottom: carouselItemsLength > 1 ? 75 : 16,
         left: '50%',
         transform: 'translateX(-50%)',
         width: 'min(420px, calc(100% - 32px))',
-        padding: '8px 14px 7px 14px',
-        backgroundColor: 'var(--surface-container, #282828)',
-        borderRadius: '12px',
+        padding: '6px 18px 7px 18px',
+        backgroundColor: 'rgba(28, 28, 28, 0.88)',
+        backdropFilter: 'blur(20px)',
+        borderRadius: '999px',
         display: 'flex',
         flexDirection: 'column',
-        gap: 3,
+        gap: 2,
         color: '#ffffff',
         opacity: (!isPlaying || areControlsVisible || isVideoControlsHovered) ? 1 : 0,
         pointerEvents: (!isPlaying || areControlsVisible || isVideoControlsHovered) ? 'auto' : 'none',
@@ -75,8 +76,8 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
       onMouseLeave={() => setIsVideoControlsHovered(false)}
       onClick={(e) => e.stopPropagation()}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-        <div style={{ display: 'flex', alignItems: 'center', minWidth: 36 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', height: '30px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', minWidth: 32 }}>
           <button
             type="button"
             onClick={onToggleMute}
@@ -90,9 +91,9 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '28px',
-              height: '28px',
-              borderRadius: '6px',
+              width: '26px',
+              height: '26px',
+              borderRadius: '999px',
               opacity: isMuted ? 0.6 : 0.95,
               transition: 'opacity 0.15s',
               padding: 0,
@@ -100,7 +101,7 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
             onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
             onMouseLeave={(e) => { e.currentTarget.style.opacity = isMuted ? '0.6' : '0.95'; }}
           >
-            {isMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}
+            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
           </button>
         </div>
 
@@ -119,23 +120,24 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '36px',
-            height: '36px',
+            width: '32px',
+            height: '32px',
+            borderRadius: '999px',
             padding: 0,
-            opacity: 0.9,
+            opacity: 0.95,
             transition: 'opacity 0.15s ease',
           }}
           onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.9'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.95'; }}
         >
           {isPlaying ? (
-            <Pause size={24} fill="white" />
+            <Pause size={22} fill="white" />
           ) : (
-            <Play size={24} fill="white" style={{ marginLeft: 2 }} />
+            <Play size={22} fill="white" style={{ marginLeft: 2 }} />
           )}
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', minWidth: 36 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', minWidth: 32 }}>
           <button
             type="button"
             onClick={onCycleSpeed}
@@ -145,8 +147,8 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
               border: 'none',
               outline: 'none',
               color: '#ffffff',
-              borderRadius: 4,
-              padding: '2px 6px',
+              borderRadius: '999px',
+              padding: '2px 8px',
               fontSize: '11px',
               fontWeight: 600,
               cursor: 'pointer',
@@ -169,12 +171,12 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
         style={{
           position: 'relative',
           width: '100%',
-          height: '14px',
+          height: '10px',
           display: 'flex',
           alignItems: 'center',
           cursor: 'pointer',
           userSelect: 'none',
-          margin: '2px 0',
+          margin: '1px 0',
         }}
       >
         <div
@@ -183,7 +185,7 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
             width: '100%',
             height: isVideoProgressHovered ? '4px' : '3px',
             backgroundColor: 'rgba(255, 255, 255, 0.22)',
-            borderRadius: '2px',
+            borderRadius: '999px',
             transition: 'height 0.12s ease',
             overflow: 'visible',
           }}
@@ -197,7 +199,7 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
               height: '100%',
               width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`,
               backgroundColor: 'var(--accent-color, #7C3AED)',
-              borderRadius: '2px',
+              borderRadius: '999px',
               willChange: 'width',
             }}
           >
@@ -219,7 +221,7 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', color: 'rgba(255,255,255,0.7)', fontVariantNumeric: 'tabular-nums', padding: '0 2px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10.5px', color: 'rgba(255,255,255,0.7)', fontVariantNumeric: 'tabular-nums', padding: '0 4px', height: '14px' }}>
         <span ref={videoTimeDisplayRef}>
           {formatVideoTime(currentTime)}/{formatVideoTime(duration || 0)}
         </span>

@@ -79,7 +79,7 @@ app.commandLine.appendSwitch('enable-smooth-scrolling');
 app.commandLine.appendSwitch('ignore-gpu-blocklist');
 app.commandLine.appendSwitch('enable-accelerated-video-decode');
 app.commandLine.appendSwitch('enable-accelerated-video-encode');
-app.commandLine.appendSwitch('enable-features', 'CalculateNativeWinOcclusion,WebRtcD3D11VideoDecoder,WebRtcHardwareVideoEncoding,WebRtcD3d11DesktopCapturer,PlatformHEVCDecoderSupport');
+app.commandLine.appendSwitch('enable-features', 'WebRtcD3D11VideoDecoder,WebRtcHardwareVideoEncoding,WebRtcD3d11DesktopCapturer,PlatformHEVCDecoderSupport');
 
 // Load optional native module
 let nativeModule: any = null;
@@ -3895,14 +3895,14 @@ function createOrShowMediaWindow(initialPayload?: any): BrowserWindow {
     win.webContents.setBackgroundThrottling(false);
   }
 
-  if (currentMediaPayloadCache && !win.isDestroyed()) {
-    win.webContents.send('orbita:media-payload', currentMediaPayloadCache);
-  }
-
   if (win.isMinimized()) win.restore();
   win.setOpacity(1);
   win.show();
   win.focus();
+
+  if (currentMediaPayloadCache && !win.isDestroyed()) {
+    win.webContents.send('orbita:media-payload', currentMediaPayloadCache);
+  }
 
   if (currentMediaPayloadCache && !win.isDestroyed() && win.webContents.isLoading()) {
     win.webContents.once('did-finish-load', () => {

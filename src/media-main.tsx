@@ -88,6 +88,8 @@ export const MediaWindowView: React.FC = () => {
         if (newPayload) {
           const root = document.getElementById('root');
           if (root) root.style.display = '';
+          const viewerEl = document.getElementById('telegram-media-viewer-root');
+          if (viewerEl) viewerEl.style.display = 'flex';
         }
         setPayload(newPayload || null);
       });
@@ -98,7 +100,12 @@ export const MediaWindowView: React.FC = () => {
       bc = new BroadcastChannel('orbita-media-channel');
       bc.onmessage = (event) => {
         if (event.data?.type === 'SET_MEDIA_PAYLOAD') {
-          console.log('[MediaWindow] BroadcastChannel payload received:', event.data.payload?.items?.length);
+          if (event.data.payload) {
+            const root = document.getElementById('root');
+            if (root) root.style.display = '';
+            const viewerEl = document.getElementById('telegram-media-viewer-root');
+            if (viewerEl) viewerEl.style.display = 'flex';
+          }
           setPayload(event.data.payload || null);
         }
       };
@@ -165,17 +172,20 @@ export const MediaWindowView: React.FC = () => {
         />
       </div>
       <div className="w-full h-full absolute inset-0 overflow-hidden">
-        <TelegramMediaViewer
-          isOpen={true}
-          isWindowMode={true}
-          items={payload?.items || []}
-          initialIndex={payload?.initialIndex || 0}
-          sharedSecret={payload?.sharedSecret}
-          onClose={handleClose}
-          onGoToMessage={handleGoToMessage}
-          onForwardMessage={handleForwardMessage}
-          onDeleteMessage={handleDeleteMessage}
-        />
+        {payload && payload.items && payload.items.length > 0 ? (
+          <TelegramMediaViewer
+            key={payload.items[0]?.id || payload.chatId || String(payload.initialIndex || 0)}
+            isOpen={true}
+            isWindowMode={true}
+            items={payload.items}
+            initialIndex={payload.initialIndex || 0}
+            sharedSecret={payload.sharedSecret}
+            onClose={handleClose}
+            onGoToMessage={handleGoToMessage}
+            onForwardMessage={handleForwardMessage}
+            onDeleteMessage={handleDeleteMessage}
+          />
+        ) : null}
       </div>
     </div>
   );

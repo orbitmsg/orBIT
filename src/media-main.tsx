@@ -157,6 +157,10 @@ export const MediaWindowView: React.FC = () => {
     dispatchAction({ type: 'DELETE_MESSAGE', messageId, chatId: payload?.chatId });
   };
 
+  const handleOpenAllMedia = () => {
+    dispatchAction({ type: 'OPEN_ALL_MEDIA', chatId: payload?.chatId });
+  };
+
   return (
     <div
       className="w-full h-full min-h-screen relative overflow-hidden select-none"
@@ -184,6 +188,7 @@ export const MediaWindowView: React.FC = () => {
             onGoToMessage={handleGoToMessage}
             onForwardMessage={handleForwardMessage}
             onDeleteMessage={handleDeleteMessage}
+            onOpenAllMedia={handleOpenAllMedia}
           />
         ) : null}
       </div>

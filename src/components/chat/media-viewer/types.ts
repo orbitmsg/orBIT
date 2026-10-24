@@ -21,6 +21,7 @@ export interface MediaViewerItem {
   sharedSecret?: string;
   thumbnail?: string;
   blurPreview?: string;
+  isOwn?: boolean;
 }
 
 export interface TelegramMediaViewerProps {

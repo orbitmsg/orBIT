@@ -1,6 +1,15 @@
-import React, { RefObject } from 'react';
+import React, { RefObject, useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import {
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize2,
+  Minimize2,
+  Settings,
+  Check,
+} from 'lucide-react';
 import { formatVideoTime } from './types';
 
 interface MediaViewerVideoControlsProps {
@@ -10,15 +19,19 @@ interface MediaViewerVideoControlsProps {
   isVideoControlsHovered: boolean;
   isVideoProgressHovered: boolean;
   isMuted: boolean;
+  volume?: number;
   playbackRate: number;
   currentTime: number;
   duration: number;
+  isWindowMaximized?: boolean;
   videoProgressRef: RefObject<HTMLDivElement | null>;
   videoProgressFillRef: RefObject<HTMLDivElement | null>;
   videoTimeDisplayRef: RefObject<HTMLSpanElement | null>;
   onTogglePlay: () => void;
   onToggleMute: () => void;
-  onCycleSpeed: () => void;
+  onVolumeChange?: (newVolume: number) => void;
+  onSelectSpeed?: (speed: number) => void;
+  onToggleFullscreen?: () => void;
   onProgressMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void;
   onProgressTouchStart: (e: React.TouchEvent<HTMLDivElement>) => void;
   setIsVideoControlsHovered: (hovered: boolean) => void;
@@ -32,21 +45,90 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
   isVideoControlsHovered,
   isVideoProgressHovered,
   isMuted,
+  volume = 1,
   playbackRate,
   currentTime,
   duration,
+  isWindowMaximized = false,
   videoProgressRef,
   videoProgressFillRef,
   videoTimeDisplayRef,
   onTogglePlay,
   onToggleMute,
-  onCycleSpeed,
+  onVolumeChange,
+  onSelectSpeed,
+  onToggleFullscreen,
   onProgressMouseDown,
   onProgressTouchStart,
   setIsVideoControlsHovered,
   setIsVideoProgressHovered,
 }) => {
   const { t } = useTranslation();
+  const [isVolumeHovered, setIsVolumeHovered] = useState(false);
+  const [isSpeedMenuOpen, setIsSpeedMenuOpen] = useState(false);
+  const [showRemaining, setShowRemaining] = useState(true);
+  const volumeTrackRef = useRef<HTMLDivElement>(null);
+  const speedMenuRef = useRef<HTMLDivElement>(null);
+
+  const speedPresets = [
+    { speed: 0.5, label: t('mediaViewer.speedSlow', 'Медленно') },
+    { speed: 1.0, label: t('mediaViewer.speedNormal', 'По умолчанию') },
+    { speed: 1.2, label: t('mediaViewer.speedFast', 'Ускоренно') },
+    { speed: 1.5, label: t('mediaViewer.speedFaster', 'Быстро') },
+    { speed: 1.7, label: t('mediaViewer.speedVeryFast', 'Очень быстро') },
+    { speed: 2.0, label: t('mediaViewer.speedSuperFast', 'Сверхбыстро') },
+  ];
+
+  useEffect(() => {
+    if (!isSpeedMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (speedMenuRef.current && !speedMenuRef.current.contains(e.target as Node)) {
+        setIsSpeedMenuOpen(false);
+      }
+    };
+    window.addEventListener('mousedown', handleClickOutside);
+    return () => window.removeEventListener('mousedown', handleClickOutside);
+  }, [isSpeedMenuOpen]);
+
+  const updateVolumeFromEvent = useCallback((clientX: number) => {
+    if (!volumeTrackRef.current || !onVolumeChange) return;
+    const rect = volumeTrackRef.current.getBoundingClientRect();
+    const clampedX = Math.max(0, Math.min(rect.width, clientX - rect.left));
+    const newVol = rect.width > 0 ? clampedX / rect.width : 0;
+    onVolumeChange(Math.max(0, Math.min(1, newVol)));
+  }, [onVolumeChange]);
+
+  const handleVolumeMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    updateVolumeFromEvent(e.clientX);
+
+    const onMouseMove = (ev: MouseEvent) => {
+      updateVolumeFromEvent(ev.clientX);
+    };
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  const handleVolumeTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    if (e.touches[0]) updateVolumeFromEvent(e.touches[0].clientX);
+
+    const onTouchMove = (ev: TouchEvent) => {
+      if (ev.touches[0]) updateVolumeFromEvent(ev.touches[0].clientX);
+    };
+    const onTouchEnd = () => {
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+    window.addEventListener('touchmove', onTouchMove);
+    window.addEventListener('touchend', onTouchEnd);
+  };
+
+  const currentVol = isMuted ? 0 : volume;
 
   return (
     <div
@@ -55,20 +137,21 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
         bottom: carouselItemsLength > 1 ? 75 : 16,
         left: '50%',
         transform: 'translateX(-50%)',
-        width: 'min(420px, calc(100% - 32px))',
-        padding: '6px 18px 7px 18px',
-        backgroundColor: 'rgba(28, 28, 28, 0.88)',
+        width: 'min(440px, calc(100% - 32px))',
+        padding: '10px 18px 9px 18px',
+        backgroundColor: 'rgba(24, 24, 27, 0.94)',
         backdropFilter: 'blur(20px)',
         borderRadius: '999px',
+        border: 'none',
+        outline: 'none',
         display: 'flex',
         flexDirection: 'column',
-        gap: 2,
+        gap: 6,
         color: '#ffffff',
-        opacity: (!isPlaying || areControlsVisible || isVideoControlsHovered) ? 1 : 0,
-        pointerEvents: (!isPlaying || areControlsVisible || isVideoControlsHovered) ? 'auto' : 'none',
+        opacity: (!isPlaying || areControlsVisible || isVideoControlsHovered || isSpeedMenuOpen) ? 1 : 0,
+        pointerEvents: (!isPlaying || areControlsVisible || isVideoControlsHovered || isSpeedMenuOpen) ? 'auto' : 'none',
         transition: 'opacity 0.15s ease',
         boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-        border: '1px solid var(--border-color, rgba(255,255,255,0.08))',
         zIndex: 120,
         boxSizing: 'border-box',
       }}
@@ -76,8 +159,8 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
       onMouseLeave={() => setIsVideoControlsHovered(false)}
       onClick={(e) => e.stopPropagation()}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', height: '30px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', minWidth: 32 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', height: '32px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <button
             type="button"
             onClick={onToggleMute}
@@ -101,8 +184,65 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
             onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
             onMouseLeave={(e) => { e.currentTarget.style.opacity = isMuted ? '0.6' : '0.95'; }}
           >
-            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            {isMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}
           </button>
+
+          <div
+            ref={volumeTrackRef}
+            onMouseDown={handleVolumeMouseDown}
+            onTouchStart={handleVolumeTouchStart}
+            onMouseEnter={() => setIsVolumeHovered(true)}
+            onMouseLeave={() => setIsVolumeHovered(false)}
+            style={{
+              position: 'relative',
+              width: '56px',
+              height: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              cursor: 'pointer',
+              userSelect: 'none',
+            }}
+            aria-label="Volume"
+          >
+            <div
+              style={{
+                position: 'relative',
+                width: '100%',
+                height: '3px',
+                backgroundColor: 'rgba(255, 255, 255, 0.22)',
+                borderRadius: '999px',
+                overflow: 'visible',
+              }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  height: '100%',
+                  width: `${currentVol * 100}%`,
+                  backgroundColor: 'var(--accent-color, #7C3AED)',
+                  borderRadius: '999px',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    right: '-4px',
+                    top: '50%',
+                    width: '9px',
+                    height: '9px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--accent-color, #7C3AED)',
+                    opacity: isVolumeHovered ? 1 : 0,
+                    transform: isVolumeHovered ? 'translateY(-50%) scale(1)' : 'translateY(-50%) scale(0)',
+                    transition: 'opacity 0.12s ease, transform 0.12s ease',
+                    pointerEvents: 'none',
+                  }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         <button
@@ -120,8 +260,8 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '32px',
-            height: '32px',
+            width: '36px',
+            height: '36px',
             borderRadius: '999px',
             padding: 0,
             opacity: 0.95,
@@ -131,99 +271,244 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
           onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.95'; }}
         >
           {isPlaying ? (
-            <Pause size={22} fill="white" />
+            <Pause size={24} fill="white" />
           ) : (
-            <Play size={22} fill="white" style={{ marginLeft: 2 }} />
+            <Play size={24} fill="white" style={{ marginLeft: 2 }} />
           )}
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', minWidth: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 64, justifyContent: 'flex-end', position: 'relative' }}>
+          {onToggleFullscreen && (
+            <button
+              type="button"
+              onClick={onToggleFullscreen}
+              aria-label={isWindowMaximized ? t('mediaViewer.exitFullscreen', 'Выйти из полноэкранного режима') : t('mediaViewer.fullscreen', 'Во весь экран')}
+              style={{
+                background: 'none',
+                border: 'none',
+                outline: 'none',
+                color: '#ffffff',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '26px',
+                height: '26px',
+                borderRadius: '999px',
+                opacity: 0.85,
+                transition: 'opacity 0.15s',
+                padding: 0,
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.85'; }}
+            >
+              {isWindowMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            </button>
+          )}
+
           <button
             type="button"
-            onClick={onCycleSpeed}
+            onClick={() => setIsSpeedMenuOpen((prev) => !prev)}
             aria-label={t('mediaViewer.playbackSpeed', 'Скорость воспроизведения')}
             style={{
-              background: 'rgba(255, 255, 255, 0.12)',
+              background: isSpeedMenuOpen ? 'rgba(255, 255, 255, 0.2)' : 'none',
               border: 'none',
               outline: 'none',
               color: '#ffffff',
-              borderRadius: '999px',
-              padding: '2px 8px',
-              fontSize: '11px',
-              fontWeight: 600,
               cursor: 'pointer',
-              transition: 'background-color 0.15s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '26px',
+              height: '26px',
+              borderRadius: '999px',
+              opacity: isSpeedMenuOpen ? 1 : 0.85,
+              transition: 'opacity 0.15s, background-color 0.15s',
+              padding: 0,
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.22)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = isSpeedMenuOpen ? '1' : '0.85'; }}
           >
-            {playbackRate}x
+            <Settings size={17} />
           </button>
+
+          {isSpeedMenuOpen && (
+            <div
+              ref={speedMenuRef}
+              style={{
+                position: 'absolute',
+                bottom: 'calc(100% + 14px)',
+                right: 0,
+                width: '210px',
+                padding: '12px 14px',
+                backgroundColor: 'rgba(28, 30, 36, 0.96)',
+                backdropFilter: 'blur(20px)',
+                borderRadius: '14px',
+                border: 'none',
+                outline: 'none',
+                boxShadow: '0 12px 36px rgba(0, 0, 0, 0.7)',
+                zIndex: 1000,
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', marginBottom: 10 }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff', minWidth: '32px' }}>
+                  {playbackRate}x
+                </span>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="2.0"
+                  step="0.1"
+                  value={playbackRate}
+                  onChange={(e) => onSelectSpeed?.(parseFloat(e.target.value))}
+                  style={{
+                    flex: 1,
+                    accentColor: 'var(--accent-color, #7C3AED)',
+                    cursor: 'pointer',
+                    height: '4px',
+                  }}
+                  aria-label={t('mediaViewer.playbackSpeed', 'Скорость воспроизведения')}
+                />
+              </div>
+
+              <div style={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.08)', marginBottom: 6 }} />
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {speedPresets.map((preset) => {
+                  const isSelected = Math.abs(playbackRate - preset.speed) < 0.05;
+                  return (
+                    <button
+                      key={preset.speed}
+                      type="button"
+                      onClick={() => {
+                        onSelectSpeed?.(preset.speed);
+                        setIsSpeedMenuOpen(false);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '6px 8px',
+                        background: 'none',
+                        border: 'none',
+                        outline: 'none',
+                        color: isSelected ? 'var(--accent-color, #a78bfa)' : '#ffffff',
+                        fontSize: '12.5px',
+                        fontWeight: isSelected ? 600 : 500,
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        width: '100%',
+                        transition: 'background-color 0.12s',
+                      }}
+                      className="hover:bg-white/10"
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ opacity: isSelected ? 1 : 0.7, width: 30 }}>{preset.speed}x</span>
+                        <span>{preset.label}</span>
+                      </div>
+                      {isSelected && <Check size={15} color="var(--accent-color, #a78bfa)" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      <div
-        ref={videoProgressRef}
-        onMouseDown={onProgressMouseDown}
-        onTouchStart={onProgressTouchStart}
-        onMouseEnter={() => setIsVideoProgressHovered(true)}
-        onMouseLeave={() => setIsVideoProgressHovered(false)}
-        style={{
-          position: 'relative',
-          width: '100%',
-          height: '10px',
-          display: 'flex',
-          alignItems: 'center',
-          cursor: 'pointer',
-          userSelect: 'none',
-          margin: '1px 0',
-        }}
-      >
+      <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 10 }}>
+        <span
+          ref={videoTimeDisplayRef}
+          style={{
+            fontSize: '11px',
+            fontWeight: 600,
+            color: 'rgba(255,255,255,0.75)',
+            fontVariantNumeric: 'tabular-nums',
+            minWidth: 36,
+            userSelect: 'none',
+          }}
+        >
+          {formatVideoTime(currentTime)}
+        </span>
+
         <div
+          ref={videoProgressRef}
+          onMouseDown={onProgressMouseDown}
+          onTouchStart={onProgressTouchStart}
+          onMouseEnter={() => setIsVideoProgressHovered(true)}
+          onMouseLeave={() => setIsVideoProgressHovered(false)}
           style={{
             position: 'relative',
-            width: '100%',
-            height: isVideoProgressHovered ? '4px' : '3px',
-            backgroundColor: 'rgba(255, 255, 255, 0.22)',
-            borderRadius: '999px',
-            transition: 'height 0.12s ease',
-            overflow: 'visible',
+            flex: 1,
+            height: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            cursor: 'pointer',
+            userSelect: 'none',
           }}
         >
           <div
-            ref={videoProgressFillRef}
             style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              height: '100%',
-              width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`,
-              backgroundColor: 'var(--accent-color, #7C3AED)',
+              position: 'relative',
+              width: '100%',
+              height: isVideoProgressHovered ? '4px' : '3px',
+              backgroundColor: 'rgba(255, 255, 255, 0.22)',
               borderRadius: '999px',
-              willChange: 'width',
+              transition: 'height 0.12s ease',
+              overflow: 'visible',
             }}
           >
             <div
+              ref={videoProgressFillRef}
               style={{
                 position: 'absolute',
-                right: '-5px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: isVideoProgressHovered ? '10px' : '8px',
-                height: isVideoProgressHovered ? '10px' : '8px',
-                borderRadius: '50%',
-                backgroundColor: '#ffffff',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.5)',
-                transition: 'width 0.12s ease, height 0.12s ease',
+                top: 0,
+                left: 0,
+                height: '100%',
+                width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`,
+                backgroundColor: 'var(--accent-color, #7C3AED)',
+                borderRadius: '999px',
+                willChange: 'width',
               }}
-            />
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  right: '-5px',
+                  top: '50%',
+                  width: isVideoProgressHovered ? '10px' : '8px',
+                  height: isVideoProgressHovered ? '10px' : '8px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--accent-color, #7C3AED)',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.5)',
+                  opacity: isVideoProgressHovered ? 1 : 0,
+                  transform: isVideoProgressHovered ? 'translateY(-50%) scale(1)' : 'translateY(-50%) scale(0)',
+                  transition: 'opacity 0.12s ease, transform 0.12s ease',
+                  pointerEvents: 'none',
+                }}
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10.5px', color: 'rgba(255,255,255,0.7)', fontVariantNumeric: 'tabular-nums', padding: '0 4px', height: '14px' }}>
-        <span ref={videoTimeDisplayRef}>
-          {formatVideoTime(currentTime)}/{formatVideoTime(duration || 0)}
+        <span
+          onClick={() => setShowRemaining((prev) => !prev)}
+          style={{
+            fontSize: '11px',
+            fontWeight: 600,
+            color: 'rgba(255,255,255,0.75)',
+            fontVariantNumeric: 'tabular-nums',
+            minWidth: 36,
+            textAlign: 'right',
+            cursor: 'pointer',
+            userSelect: 'none',
+          }}
+        >
+          {showRemaining ? `-${formatVideoTime(Math.max(0, duration - currentTime))}` : formatVideoTime(duration || 0)}
         </span>
       </div>
     </div>

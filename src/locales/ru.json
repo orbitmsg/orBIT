@@ -1492,7 +1492,20 @@
       "pause": "Пауза",
       "mute": "Выключить звук",
       "unmute": "Включить звук",
-      "playbackSpeed": "Скорость воспроизведения"
+      "playbackSpeed": "Скорость воспроизведения",
+      "copyFrame": "Копировать кадр",
+      "frameCopied": "Кадр скопирован в буфер обмена",
+      "sendFromTime": "Отправить с {{time}}",
+      "timestampCopied": "Отметка времени скопирована",
+      "showAllFiles": "Показать все файлы",
+      "fullscreen": "Во весь экран",
+      "exitFullscreen": "Выйти из полноэкранного режима",
+      "speedSlow": "Медленно",
+      "speedNormal": "По умолчанию",
+      "speedFast": "Ускоренно",
+      "speedFaster": "Быстро",
+      "speedVeryFast": "Очень быстро",
+      "speedSuperFast": "Сверхбыстро"
     },
     "forward": {
       "title": "Переслать",

@@ -58,7 +58,9 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(1);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [isWindowMaximized, setIsWindowMaximized] = useState(false);
   const [isVideoControlsHovered, setIsVideoControlsHovered] = useState(false);
   const videoProgressRef = useRef<HTMLDivElement>(null);
   const videoProgressFillRef = useRef<HTMLDivElement>(null);
@@ -684,20 +686,104 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
     }
   };
 
-  const handleToggleMute = () => {
-    if (!videoRef.current) return;
-    videoRef.current.muted = !isMuted;
-    setIsMuted(!isMuted);
-  };
+  const handleVolumeChange = useCallback((newVol: number) => {
+    setVolume(newVol);
+    if (videoRef.current) {
+      videoRef.current.volume = newVol;
+      if (newVol === 0) {
+        videoRef.current.muted = true;
+        setIsMuted(true);
+      } else if (isMuted) {
+        videoRef.current.muted = false;
+        setIsMuted(false);
+      }
+    }
+  }, [isMuted]);
 
-  const handleCycleSpeed = () => {
+  const handleToggleMute = useCallback(() => {
+    setIsMuted((prev) => {
+      const next = !prev;
+      if (videoRef.current) {
+        videoRef.current.muted = next;
+        if (!next && volume === 0) {
+          setVolume(1);
+          videoRef.current.volume = 1;
+        }
+      }
+      return next;
+    });
+  }, [volume]);
+
+  const handleSelectSpeed = useCallback((speed: number) => {
+    setPlaybackRate(speed);
+    if (videoRef.current) {
+      videoRef.current.playbackRate = speed;
+    }
+  }, []);
+
+  const handleToggleFullscreen = useCallback(() => {
+    const orbita = (window as any).orbita;
+    if (orbita?.maximizeWindow) {
+      if (isWindowMaximized) {
+        orbita.unmaximizeWindow?.();
+      } else {
+        orbita.maximizeWindow();
+      }
+    } else if (document.fullscreenElement) {
+      document.exitFullscreen?.().catch(() => {});
+    } else {
+      document.documentElement.requestFullscreen?.().catch(() => {});
+    }
+  }, [isWindowMaximized]);
+
+  const handleCopyFrame = useCallback(async () => {
     if (!videoRef.current) return;
-    const rates = [1, 1.5, 2];
-    const nextIdx = (rates.indexOf(playbackRate) + 1) % rates.length;
-    const nextRate = rates[nextIdx];
-    videoRef.current.playbackRate = nextRate;
-    setPlaybackRate(nextRate);
-  };
+    const v = videoRef.current;
+    if (!v.videoWidth || !v.videoHeight) return;
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = v.videoWidth;
+      canvas.height = v.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/png');
+        if (window.orbita?.copyImage) {
+          const base64 = dataUrl.replace(/^data:image\/png;base64,/, '');
+          window.orbita.copyImage(base64);
+        }
+        canvas.toBlob(async (blob) => {
+          if (blob && navigator.clipboard && (window as any).ClipboardItem) {
+            try {
+              await navigator.clipboard.write([
+                new (window as any).ClipboardItem({ 'image/png': blob }),
+              ]);
+            } catch {}
+          }
+        }, 'image/png');
+        useToastStore.getState().showToast(t('mediaViewer.frameCopied', 'Кадр скопирован в буфер обмена'), 'image');
+      }
+    } catch {}
+  }, [t]);
+
+  const handleSendFromTime = useCallback((timeSec: number) => {
+    const timeFormatted = formatVideoTime(timeSec);
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(timeFormatted).catch(() => {});
+    }
+    useToastStore.getState().showToast(t('mediaViewer.timestampCopied', 'Отметка времени скопирована'), 'text');
+  }, [t]);
+
+  const handleOpenAllMedia = useCallback(() => {
+    if (onOpenAllMedia) {
+      onOpenAllMedia();
+      return;
+    }
+    if (currentItem?.chatId) {
+      useChatStore.getState().setActiveProfileChatId(currentItem.chatId);
+      handleInstantClose();
+    }
+  }, [onOpenAllMedia, currentItem?.chatId, handleInstantClose]);
 
   useEffect(() => {
     if (!isVideo) return;
@@ -840,8 +926,6 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
       });
     };
   }, [isOpen]);
-
-  const [isWindowMaximized, setIsWindowMaximized] = useState(false);
 
   useEffect(() => {
     const orbita = (window as any).orbita;
@@ -1180,15 +1264,19 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 isVideoControlsHovered={isVideoControlsHovered}
                 isVideoProgressHovered={isVideoProgressHovered}
                 isMuted={isMuted}
+                volume={volume}
                 playbackRate={playbackRate}
                 currentTime={currentTime}
                 duration={duration}
+                isWindowMaximized={isWindowMaximized}
                 videoProgressRef={videoProgressRef}
                 videoProgressFillRef={videoProgressFillRef}
                 videoTimeDisplayRef={videoTimeDisplayRef}
                 onTogglePlay={handleTogglePlay}
                 onToggleMute={handleToggleMute}
-                onCycleSpeed={handleCycleSpeed}
+                onVolumeChange={handleVolumeChange}
+                onSelectSpeed={handleSelectSpeed}
+                onToggleFullscreen={handleToggleFullscreen}
                 onProgressMouseDown={handleProgressMouseDown}
                 onProgressTouchStart={handleProgressTouchStart}
                 setIsVideoControlsHovered={setIsVideoControlsHovered}
@@ -1405,12 +1493,16 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 ref={optionsMenuRef}
                 currentItem={currentItem}
                 isPhoto={isPhoto}
+                isVideo={isVideo}
+                currentTime={currentTime}
                 onGoToMessage={onGoToMessage}
                 onForwardMessage={onForwardMessage}
                 onDeleteMessage={onDeleteMessage}
-                onOpenAllMedia={onOpenAllMedia}
+                onOpenAllMedia={onOpenAllMedia || handleOpenAllMedia}
                 onClose={() => setShowOptionsMenu(false)}
                 onCopyImage={handleCopyImage}
+                onCopyFrame={handleCopyFrame}
+                onSendFromTime={handleSendFromTime}
                 onDownload={handleDownload}
               />
             )}

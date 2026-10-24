@@ -1492,7 +1492,20 @@
       "pause": "Pause",
       "mute": "Mute",
       "unmute": "Unmute",
-      "playbackSpeed": "Playback speed"
+      "playbackSpeed": "Playback speed",
+      "copyFrame": "Copy frame",
+      "frameCopied": "Frame copied to clipboard",
+      "sendFromTime": "Send from {{time}}",
+      "timestampCopied": "Timestamp copied",
+      "showAllFiles": "Show all files",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit fullscreen",
+      "speedSlow": "Slow",
+      "speedNormal": "Normal",
+      "speedFast": "Slightly fast",
+      "speedFaster": "Fast",
+      "speedVeryFast": "Very fast",
+      "speedSuperFast": "Super fast"
     },
     "forward": {
       "title": "Forward",

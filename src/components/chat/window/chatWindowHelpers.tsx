@@ -360,6 +360,7 @@ export const buildChatMediaViewerItems = (
             sharedSecret: effectiveSecret,
             thumbnail: mi.thumbnail || (mi as any).preview || mi.blurPreview || msg.thumbnail || msg.blurPreview,
             blurPreview: mi.blurPreview || msg.blurPreview,
+            isOwn: Boolean((msg as any).isOwn || (msg as any).outgoing),
           });
         }
       });
@@ -401,6 +402,7 @@ export const buildChatMediaViewerItems = (
         sharedSecret: effectiveSecret,
         thumbnail: (msg as any).preview || msg.thumbnail || msg.blurPreview,
         blurPreview: msg.blurPreview,
+        isOwn: Boolean((msg as any).isOwn || (msg as any).outgoing),
       });
     }
   });
@@ -427,6 +429,7 @@ export const resolveMediaViewerFallback = (
     chatId: activeChatId || undefined,
     type: fallbackType,
     sender: targetMsg?.sender,
+    isOwn: Boolean((targetMsg as any)?.isOwn || (targetMsg as any)?.outgoing),
     time: Date.now(),
     width: targetMsg?.width,
     height: targetMsg?.height,

@@ -1,5 +1,5 @@
-import React, { useMemo, memo } from 'react';
-import { Play } from 'lucide-react';
+import React, { useMemo, memo, useState, useRef } from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
 import { useChatStore } from '../../store/useChatStore';
 import { useDecryptedMedia, calculateMediaDisplaySize } from '../../lib/media-utils';
 import { AudioCoverWithPlay } from '../audio/AudioCoverWithPlay';
@@ -13,6 +13,7 @@ interface EncryptedMediaProps {
   messageId?: string;
   width?: number;
   height?: number;
+  duration?: number;
   timeNode?: React.ReactNode;
   isGif?: boolean;
   onContextMenu?: (e: React.MouseEvent, blobUrl: string) => void;
@@ -32,6 +33,7 @@ export const EncryptedMedia = memo(({
   messageId,
   width: msgWidth,
   height: msgHeight,
+  duration,
   timeNode,
   isGif: isGifProp,
   onContextMenu,
@@ -45,6 +47,17 @@ export const EncryptedMedia = memo(({
   const autoLoad = useChatStore((state) => state.shouldAutoLoadMedia(type === 'image' ? 'photo' : 'video', fileSize, isOwn));
   const { blobUrl, load, isLoading, progress, isUnavailable } = useDecryptedMedia(url, sharedSecret, undefined, undefined, chatId, messageId, autoLoad);
   const bubbleRadius = useChatStore.getState().bubbleRadius;
+
+  const [isMuted, setIsMuted] = useState(true);
+  const [videoDuration, setVideoDuration] = useState<number>(duration || 0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const formatPillTime = (sec: number) => {
+    const s = Math.max(0, Math.floor(sec || 0));
+    const m = Math.floor(s / 60);
+    const rem = s % 60;
+    return `${String(m).padStart(2, '0')}:${String(rem).padStart(2, '0')}`;
+  };
 
   const isFullRes = Boolean(preview || (thumbnail && !thumbnail.startsWith('data:')) || (thumbnail && thumbnail.startsWith('data:') && thumbnail.length > 2048));
   const fullResSrc = preview || thumbnail;
@@ -179,7 +192,6 @@ export const EncryptedMedia = memo(({
         <div
           className="w-full h-full relative cursor-pointer group"
           onClick={() => {
-            console.log('[EncryptedMedia] Clicked video preview in chat bubble:', { url, hasBlobUrl: Boolean(blobUrl) });
             onClick?.();
           }}
           onContextMenu={(e) => {
@@ -188,19 +200,64 @@ export const EncryptedMedia = memo(({
           }}
         >
           <video
+            ref={videoRef}
             src={blobUrl || undefined}
             poster={preview || (thumbnail && (!thumbnail.startsWith('data:') || thumbnail.length > 2048) ? thumbnail : undefined)}
             className="w-full h-full object-contain pointer-events-none"
-            preload="metadata"
-            muted
+            preload="auto"
+            autoPlay
+            loop
+            muted={isMuted}
             playsInline
             style={{ display: 'block', opacity: blobUrl ? 1 : 0, transition: 'opacity 0.2s' }}
+            onLoadedMetadata={(e) => {
+              if (e.currentTarget.duration && isFinite(e.currentTarget.duration)) {
+                setVideoDuration(e.currentTarget.duration);
+              }
+            }}
           />
+
           {blobUrl && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20 z-[2]">
-              <div className="w-11 h-11 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white shadow-lg transition-transform duration-150 group-hover:scale-105">
-                <Play size={20} fill="white" className="ml-0.5" />
-              </div>
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMuted((prev) => {
+                  const next = !prev;
+                  if (videoRef.current) {
+                    videoRef.current.muted = next;
+                    if (!next) {
+                      videoRef.current.play().catch(() => {});
+                    }
+                  }
+                  return next;
+                });
+              }}
+              style={{
+                position: 'absolute',
+                top: '8px',
+                left: '8px',
+                borderRadius: '9999px',
+                backgroundColor: 'rgba(0, 0, 0, 0.45)',
+                backdropFilter: 'blur(8px)',
+                padding: '3px 8px',
+                color: '#ffffff',
+                fontSize: '11px',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                lineHeight: 1,
+                zIndex: 4,
+                cursor: 'pointer',
+                userSelect: 'none',
+                boxShadow: '0 1px 4px rgba(0, 0, 0, 0.35)',
+                border: 'none',
+                transition: 'background-color 0.15s',
+              }}
+              aria-label={isMuted ? 'Включить звук' : 'Выключить звук'}
+            >
+              <span>{formatPillTime(videoDuration)}</span>
+              {isMuted ? <VolumeX size={13} /> : <Volume2 size={13} />}
             </div>
           )}
         </div>

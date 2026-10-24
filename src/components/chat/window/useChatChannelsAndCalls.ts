@@ -412,6 +412,11 @@ export const useChatChannelsAndCalls = ({
         handleMediaForwardMessage(action.messageId);
       } else if (action.type === 'DELETE_MESSAGE' && action.messageId) {
         handleMediaDeleteMessage(action.messageId);
+      } else if (action.type === 'OPEN_ALL_MEDIA') {
+        const targetChat = action.chatId || activeChatId;
+        if (targetChat) {
+          useChatStore.getState().setActiveProfileChatId(targetChat);
+        }
       }
     };
 

@@ -75,37 +75,6 @@ class GroupService {
       avatarUrl: creatorAvatarUrl || null,
     };
 
-    const inviteMeta = JSON.stringify({ active: true, expiresAt: null });
-    const nowIso = new Date().toISOString();
-
-    try {
-      await this.supabase.from('groups').upsert({
-        id,
-        code,
-        name: name.trim(),
-        description: description.trim(),
-        avatar_url: avatarUrl || null,
-        creator_id: inviteMeta,
-        creator_code: creatorCode || null,
-        creator_nickname: creatorNickname,
-        max_members: 10,
-        members_count: 1,
-        created_at: nowIso,
-        updated_at: nowIso,
-      });
-
-      await this.supabase.from('group_members').upsert({
-        group_id: id,
-        user_code: creatorCode || creatorNickname,
-        user_id: creatorUserId || creatorCode || null,
-        nickname: creatorNickname,
-        role: 'owner',
-        joined_at: nowIso,
-        last_seen: nowIso,
-        avatar_url: creatorAvatarUrl || null,
-      });
-    } catch {}
-
     try {
       fetch(`${this.getWorkerUrl()}/groups/create`, {
         method: 'POST',
@@ -295,7 +264,6 @@ class GroupService {
     const sharedSecret = deriveGroupKey(realGroupId);
     const candidateId = meta?.userId || userCode;
     const memberCode = (userCode && userCode.length === 36 ? userCode : null) || (candidateId && candidateId.length === 36 ? candidateId : null) || userCode || candidateId || nickname;
-    const nowIso = new Date().toISOString();
 
     let currentMembers: any[] = [];
     try {
@@ -314,19 +282,6 @@ class GroupService {
       if (currentMembers.length >= 10) {
         throw new Error('GROUP_FULL');
       }
-
-      try {
-        await this.supabase.from('group_members').upsert({
-          group_id: realGroupId,
-          user_code: memberCode,
-          user_id: meta?.userId || candidateId || memberCode,
-          nickname,
-          role: 'member',
-          joined_at: nowIso,
-          last_seen: nowIso,
-          avatar_url: meta?.avatarUrl || null,
-        });
-      } catch {}
 
       try {
         fetch(`${this.getWorkerUrl()}/groups/join`, {
@@ -445,7 +400,6 @@ class GroupService {
 
   async resetInviteLink(groupId: string): Promise<string | null> {
     const newCode = generateGroupInviteCode();
-    const nowIso = new Date().toISOString();
     try {
       const { data: existing } = await this.supabase
         .from('groups')
@@ -454,16 +408,6 @@ class GroupService {
         .maybeSingle();
 
       const realId = existing?.id || groupId;
-      let meta: any = { active: true, expiresAt: null };
-      if (existing?.creator_id && typeof existing.creator_id === 'string' && existing.creator_id.startsWith('{')) {
-        try { meta = { ...JSON.parse(existing.creator_id), active: true }; } catch {}
-      }
-
-      await this.supabase.from('groups').update({
-        code: newCode,
-        creator_id: JSON.stringify(meta),
-        updated_at: nowIso,
-      }).eq('id', realId);
 
       fetch(`${this.getWorkerUrl()}/groups/update`, {
         method: 'POST',
@@ -483,17 +427,7 @@ class GroupService {
   }
 
   async revokeInviteLink(groupId: string): Promise<boolean> {
-    const nowIso = new Date().toISOString();
     try {
-      const { data: existing } = await this.supabase.from('groups').select('creator_id').eq('id', groupId).maybeSingle();
-      let meta: any = { active: false, expiresAt: null };
-      if (existing?.creator_id && typeof existing.creator_id === 'string' && existing.creator_id.startsWith('{')) {
-        try { meta = { ...JSON.parse(existing.creator_id), active: false }; } catch {}
-      }
-      await this.supabase.from('groups').update({
-        creator_id: JSON.stringify(meta),
-        updated_at: nowIso,
-      }).eq('id', groupId);
       fetch(`${this.getWorkerUrl()}/groups/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -506,17 +440,7 @@ class GroupService {
   }
 
   async enableInviteLink(groupId: string): Promise<boolean> {
-    const nowIso = new Date().toISOString();
     try {
-      const { data: existing } = await this.supabase.from('groups').select('creator_id').eq('id', groupId).maybeSingle();
-      let meta: any = { active: true, expiresAt: null };
-      if (existing?.creator_id && typeof existing.creator_id === 'string' && existing.creator_id.startsWith('{')) {
-        try { meta = { ...JSON.parse(existing.creator_id), active: true }; } catch {}
-      }
-      await this.supabase.from('groups').update({
-        creator_id: JSON.stringify(meta),
-        updated_at: nowIso,
-      }).eq('id', groupId);
       fetch(`${this.getWorkerUrl()}/groups/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -529,17 +453,7 @@ class GroupService {
   }
 
   async setInviteExpiration(groupId: string, expiresAt: number | null): Promise<boolean> {
-    const nowIso = new Date().toISOString();
     try {
-      const { data: existing } = await this.supabase.from('groups').select('creator_id').eq('id', groupId).maybeSingle();
-      let meta: any = { active: true, expiresAt };
-      if (existing?.creator_id && typeof existing.creator_id === 'string' && existing.creator_id.startsWith('{')) {
-        try { meta = { ...JSON.parse(existing.creator_id), expiresAt }; } catch {}
-      }
-      await this.supabase.from('groups').update({
-        creator_id: JSON.stringify(meta),
-        updated_at: nowIso,
-      }).eq('id', groupId);
       fetch(`${this.getWorkerUrl()}/groups/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -552,19 +466,6 @@ class GroupService {
   }
 
   async leaveGroup(groupId: string, sharedSecret: string, nickname: string, userCode?: string, userId?: string): Promise<void> {
-    try {
-      const filters = [`nickname.eq.${nickname}`];
-      if (userCode) {
-        filters.push(`user_code.eq.${userCode}`);
-        filters.push(`user_id.eq.${userCode}`);
-      }
-      if (userId && userId !== userCode) {
-        filters.push(`user_code.eq.${userId}`);
-        filters.push(`user_id.eq.${userId}`);
-      }
-      await this.supabase.from('group_members').delete().eq('group_id', groupId).or(filters.join(','));
-    } catch {}
-
     try {
       fetch(`${this.getWorkerUrl()}/groups/leave`, {
         method: 'POST',
@@ -600,19 +501,6 @@ class GroupService {
   }
 
   async kickMember(groupId: string, sharedSecret: string, targetNickname: string, adminNickname: string, targetUserCode?: string, targetUserId?: string): Promise<void> {
-    try {
-      const filters = [`nickname.eq.${targetNickname}`];
-      if (targetUserCode) {
-        filters.push(`user_code.eq.${targetUserCode}`);
-        filters.push(`user_id.eq.${targetUserCode}`);
-      }
-      if (targetUserId && targetUserId !== targetUserCode) {
-        filters.push(`user_code.eq.${targetUserId}`);
-        filters.push(`user_id.eq.${targetUserId}`);
-      }
-      await this.supabase.from('group_members').delete().eq('group_id', groupId).or(filters.join(','));
-    } catch {}
-
     try {
       fetch(`${this.getWorkerUrl()}/groups/kick`, {
         method: 'POST',
@@ -669,10 +557,6 @@ class GroupService {
     if (data.avatarUrl !== undefined) updatePayload.avatar_url = data.avatarUrl;
 
     try {
-      await this.supabase.from('groups').update(updatePayload).eq('id', groupId);
-    } catch {}
-
-    try {
       const res = await fetch(`${this.getWorkerUrl()}/groups/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -703,15 +587,6 @@ class GroupService {
     } catch {}
 
     try {
-      await Promise.allSettled([
-        this.supabase.from('group_members').delete().eq('group_id', groupId),
-        this.supabase.from('group_messages').delete().eq('group_id', groupId),
-        this.supabase.from('group_calls').delete().eq('group_id', groupId),
-        this.supabase.from('groups').delete().eq('id', groupId),
-      ]);
-    } catch {}
-
-    try {
       const res = await fetch(`${this.getWorkerUrl()}/groups/delete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -730,16 +605,6 @@ class GroupService {
     targetUserCode?: string,
     actorNickname?: string
   ): Promise<boolean> {
-    try {
-      let q = this.supabase.from('group_members').update({ role }).eq('group_id', groupId);
-      if (targetUserCode) {
-        q = q.or(`user_code.eq.${targetUserCode},user_id.eq.${targetUserCode}`);
-      } else {
-        q = q.eq('nickname', targetNickname);
-      }
-      await q;
-    } catch {}
-
     try {
       const res = await fetch(`${this.getWorkerUrl()}/groups/role`, {
         method: 'POST',
@@ -785,32 +650,6 @@ class GroupService {
 
   async sendGroupMessage(payload: any): Promise<string | null> {
     const msgId = payload.id || `gmsg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const nowIso = new Date().toISOString();
-
-    const row = {
-      id: msgId,
-      group_id: payload.groupId,
-      sender_code: payload.senderCode || payload.senderNickname,
-      sender_id: payload.senderId || null,
-      sender_nickname: payload.senderNickname,
-      ciphertext: payload.ciphertext,
-      media_type: payload.mediaType || null,
-      media_url: payload.mediaUrl || null,
-      media_name: payload.mediaName || null,
-      media_key: payload.mediaKey || null,
-      mime: payload.mime || null,
-      duration: payload.duration || null,
-      width: payload.width || null,
-      height: payload.height || null,
-      waveform: payload.waveform || null,
-      audio_metadata: payload.audioMetadata || null,
-      link_preview: payload.linkPreview || null,
-      created_at: nowIso,
-    };
-
-    try {
-      await this.supabase.from('group_messages').insert(row);
-    } catch {}
 
     try {
       fetch(`${this.getWorkerUrl()}/groups/message`, {
@@ -936,9 +775,11 @@ class GroupService {
       if (data) {
         const isStale = data.created_at && (Date.now() - new Date(data.created_at).getTime() > 6 * 60 * 60 * 1000);
         if (isStale) {
-          try {
-            await this.supabase.from('group_calls').update({ status: 'ended', updated_at: new Date().toISOString() }).eq('group_id', groupId);
-          } catch {}
+          fetch(`${this.getWorkerUrl()}/groups/calls/end`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ groupId }),
+          }).catch(() => {});
           return null;
         }
         return {
@@ -978,20 +819,6 @@ class GroupService {
   }
 
   async startCall(groupId: string, roomName: string, hostCode: string, hostNickname: string): Promise<void> {
-    const nowIso = new Date().toISOString();
-    try {
-      await this.supabase.from('group_calls').upsert({
-        group_id: groupId,
-        room_name: roomName,
-        status: 'active',
-        host_code: hostCode,
-        host_nickname: hostNickname,
-        participants_count: 1,
-        created_at: nowIso,
-        updated_at: nowIso,
-      });
-    } catch {}
-
     try {
       fetch(`${this.getWorkerUrl()}/groups/calls/start`, {
         method: 'POST',
@@ -1006,10 +833,6 @@ class GroupService {
   }
 
   async endCall(groupId: string, actorNickname?: string): Promise<void> {
-    try {
-      await this.supabase.from('group_calls').update({ status: 'ended', updated_at: new Date().toISOString() }).eq('group_id', groupId);
-    } catch {}
-
     try {
       fetch(`${this.getWorkerUrl()}/groups/calls/end`, {
         method: 'POST',

@@ -1153,36 +1153,21 @@ class SupabaseService {
     userId: string,
     action: 'add' | 'remove'
   ): Promise<void> {
-    if (!messageId || !this.client) return;
-    try {
-      if (action === 'add') {
-        await this.client
-          .from('message_reactions')
-          .delete()
-          .eq('chat_id', chatId)
-          .eq('message_id', messageId)
-          .eq('user_id', userId)
-          .eq('emoji', emoji);
-
-        await this.client
-          .from('message_reactions')
-          .insert({
-            chat_id: chatId,
-            message_id: messageId,
-            emoji,
-            user_id: userId,
-          });
-      } else {
-        await this.client
-          .from('message_reactions')
-          .delete()
-          .eq('chat_id', chatId)
-          .eq('message_id', messageId)
-          .eq('emoji', emoji)
-          .eq('user_id', userId);
-      }
-    } catch (err) {
-      console.error('[Supabase] saveReaction failed:', err);
+    if (!messageId) return;
+    const primaryRelay = relayRouter.getRelayForRecipient(chatId);
+    const allRelays = [
+      primaryRelay,
+      ...relayRouter.getNodes().filter((n) => n.url !== primaryRelay.url),
+    ];
+    for (const relay of allRelays) {
+      try {
+        const res = await fetch(`${relay.url}/relay/reaction`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chatId, messageId, emoji, userId, action }),
+        });
+        if (res.ok) return;
+      } catch {}
     }
   }
 
@@ -1195,42 +1180,49 @@ class SupabaseService {
         .eq('chat_id', chatId);
 
       if (error) {
-        console.error('[Supabase] getReactionsForChat error:', error);
         return [];
       }
       return data || [];
-    } catch (err) {
-      console.error('[Supabase] getReactionsForChat failed:', err);
+    } catch {
       return [];
     }
   }
 
   async deleteReaction(chatId: string, messageId: string, emoji?: string): Promise<void> {
-    if (!this.client || !chatId || !messageId) return;
-    try {
-      let query = this.client
-        .from('message_reactions')
-        .delete()
-        .eq('chat_id', chatId)
-        .eq('message_id', messageId);
-      if (emoji) {
-        query = query.eq('emoji', emoji);
-      }
-      await query;
-    } catch (err) {
-      console.error('[Supabase] deleteReaction failed:', err);
+    if (!chatId || !messageId) return;
+    const primaryRelay = relayRouter.getRelayForRecipient(chatId);
+    const allRelays = [
+      primaryRelay,
+      ...relayRouter.getNodes().filter((n) => n.url !== primaryRelay.url),
+    ];
+    for (const relay of allRelays) {
+      try {
+        await fetch(`${relay.url}/relay/reaction/delete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chatId, messageId, emoji }),
+        });
+        return;
+      } catch {}
     }
   }
 
   async deleteReactionsForChat(chatId: string): Promise<void> {
-    if (!this.client || !chatId) return;
-    try {
-      await this.client
-        .from('message_reactions')
-        .delete()
-        .eq('chat_id', chatId);
-    } catch (err) {
-      console.error('[Supabase] deleteReactionsForChat failed:', err);
+    if (!chatId) return;
+    const primaryRelay = relayRouter.getRelayForRecipient(chatId);
+    const allRelays = [
+      primaryRelay,
+      ...relayRouter.getNodes().filter((n) => n.url !== primaryRelay.url),
+    ];
+    for (const relay of allRelays) {
+      try {
+        await fetch(`${relay.url}/relay/reaction/delete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chatId }),
+        });
+        return;
+      } catch {}
     }
   }
 

@@ -111,21 +111,20 @@ try {
   ed25519Module = require('@noble/curves/ed25519.js').ed25519;
 } catch {}
 
-function verifyServerEd25519(userIdHex, version, configBlob, signatureHex) {
-  if (!userIdHex || !signatureHex || version === undefined || !configBlob) return false;
+function verifyEd25519Signature(pubKeyHex, messageStr, signatureHex) {
+  if (!pubKeyHex || !signatureHex || messageStr === undefined) return false;
   try {
-    const cleanUserId = String(userIdHex).trim().toLowerCase();
+    const cleanPub = String(pubKeyHex).trim().toLowerCase();
     const cleanSig = String(signatureHex).trim().toLowerCase();
-    const messageStr = `${cleanUserId}${version}${configBlob}`;
-    const messageBytes = Buffer.from(messageStr, 'utf8');
+    const messageBytes = Buffer.from(String(messageStr), 'utf8');
 
     if (ed25519Module && typeof ed25519Module.verify === 'function') {
-      const pubBytes = Buffer.from(cleanUserId, 'hex');
+      const pubBytes = Buffer.from(cleanPub, 'hex');
       const sigBytes = Buffer.from(cleanSig, 'hex');
       return ed25519Module.verify(sigBytes, messageBytes, pubBytes);
     }
 
-    const pubBytes = Buffer.from(cleanUserId, 'hex');
+    const pubBytes = Buffer.from(cleanPub, 'hex');
     const sigBytes = Buffer.from(cleanSig, 'hex');
     const spkiPrefix = Buffer.from('302a300506032b6570032100', 'hex');
     const keyObj = crypto.createPublicKey({
@@ -137,6 +136,11 @@ function verifyServerEd25519(userIdHex, version, configBlob, signatureHex) {
   } catch {
     return false;
   }
+}
+
+function verifyServerEd25519(userIdHex, version, configBlob, signatureHex) {
+  const cleanUserId = String(userIdHex || '').trim().toLowerCase();
+  return verifyEd25519Signature(cleanUserId, `${cleanUserId}${version}${configBlob}`, signatureHex);
 }
 
 async function checkAdminAuthorization(supabase, userCode) {
@@ -1150,6 +1154,7 @@ module.exports = async function handler(req, res) {
           await supabase.from('messages').delete().eq('chat_id', chatId);
           await supabase.from('offline_handshakes').delete().eq('chat_id', chatId);
           await supabase.from('reactions').delete().eq('chat_id', chatId);
+          await supabase.from('message_reactions').delete().eq('chat_id', chatId);
           await supabase.from('non_messages').delete().eq('chat_id', chatId);
           if (recipientId) {
             const targets = Array.isArray(recipientId) ? recipientId : [recipientId];
@@ -1183,6 +1188,7 @@ module.exports = async function handler(req, res) {
         try {
           await supabase.from('messages').delete().eq('chat_id', chatId);
           await supabase.from('reactions').delete().eq('chat_id', chatId);
+          await supabase.from('message_reactions').delete().eq('chat_id', chatId);
           if (recipientId) {
             const targets = Array.isArray(recipientId) ? recipientId : [recipientId];
             for (const rId of targets) {
@@ -1232,6 +1238,54 @@ module.exports = async function handler(req, res) {
         }
       }
       return sendJson(res, { status: 'ok' });
+    }
+
+    if (pathname === '/relay/reaction' && req.method === 'POST') {
+      const supabase = getSupabaseClient();
+      if (!supabase) return sendError(res, 'Database not configured', 500);
+      const { chatId, messageId, emoji, userId, action } = body;
+      if (!chatId || !messageId || !emoji || !userId) {
+        return sendError(res, 'Missing parameters', 400);
+      }
+      try {
+        await supabase
+          .from('message_reactions')
+          .delete()
+          .eq('chat_id', chatId)
+          .eq('message_id', messageId)
+          .eq('emoji', emoji)
+          .eq('user_id', userId);
+
+        if (action === 'add') {
+          await supabase
+            .from('message_reactions')
+            .insert({
+              chat_id: chatId,
+              message_id: messageId,
+              emoji,
+              user_id: userId,
+            });
+        }
+        return sendJson(res, { status: 'ok' });
+      } catch (err) {
+        return sendError(res, err.message, 500);
+      }
+    }
+
+    if (pathname === '/relay/reaction/delete' && req.method === 'POST') {
+      const supabase = getSupabaseClient();
+      if (!supabase) return sendError(res, 'Database not configured', 500);
+      const { chatId, messageId, emoji } = body;
+      if (!chatId) return sendError(res, 'Missing chatId', 400);
+      try {
+        let q = supabase.from('message_reactions').delete().eq('chat_id', chatId);
+        if (messageId) q = q.eq('message_id', messageId);
+        if (emoji) q = q.eq('emoji', emoji);
+        await q;
+        return sendJson(res, { status: 'ok' });
+      } catch (err) {
+        return sendError(res, err.message, 500);
+      }
     }
 
     if (pathname === '/relay/profile' && req.method === 'GET') {

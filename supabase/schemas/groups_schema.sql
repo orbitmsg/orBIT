@@ -127,13 +127,15 @@ ALTER TABLE public.group_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.group_calls ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_configs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow all on groups" ON public.groups FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all on group_members" ON public.group_members FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all on group_messages" ON public.group_messages FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all on group_calls" ON public.group_calls FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all on user_configs" ON public.user_configs FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow select on groups" ON public.groups FOR SELECT USING (true);
+CREATE POLICY "Allow select on group_members" ON public.group_members FOR SELECT USING (true);
+CREATE POLICY "Allow select on group_messages" ON public.group_messages FOR SELECT USING (true);
+CREATE POLICY "Allow select on group_calls" ON public.group_calls FOR SELECT USING (true);
+CREATE POLICY "Allow select on user_configs" ON public.user_configs FOR SELECT USING (true);
 
-GRANT ALL ON TABLE public.user_configs TO postgres, anon, authenticated, service_role;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA public FROM anon, authenticated;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role, postgres;
 
 NOTIFY pgrst, 'reload schema';
 

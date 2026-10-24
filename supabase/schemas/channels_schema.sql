@@ -65,70 +65,13 @@ ALTER TABLE public.channel_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.channel_posts ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow select for profiles" ON public.profiles FOR SELECT USING (true);
-CREATE POLICY "Allow insert for profiles" ON public.profiles FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow update for profiles" ON public.profiles FOR UPDATE USING (true) WITH CHECK (true);
-
 CREATE POLICY "Allow select for public_channels" ON public.public_channels FOR SELECT USING (true);
-CREATE POLICY "Allow insert for public_channels" ON public.public_channels FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow update for public_channels" ON public.public_channels FOR UPDATE USING (
-    creator_id = auth.uid() OR
-    EXISTS (
-        SELECT 1 FROM public.channel_members
-        WHERE channel_members.channel_id = public_channels.id
-        AND channel_members.user_id = auth.uid()
-        AND channel_members.role IN ('owner', 'admin')
-    )
-);
-CREATE POLICY "Allow delete for public_channels" ON public.public_channels FOR DELETE USING (
-    creator_id = auth.uid() OR
-    EXISTS (
-        SELECT 1 FROM public.channel_members
-        WHERE channel_members.channel_id = public_channels.id
-        AND channel_members.user_id = auth.uid()
-        AND channel_members.role = 'owner'
-    )
-);
-
 CREATE POLICY "Allow select for channel_members" ON public.channel_members FOR SELECT USING (true);
-CREATE POLICY "Allow insert for channel_members" ON public.channel_members FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow delete for channel_members" ON public.channel_members FOR DELETE USING (
-    user_id = auth.uid() OR
-    EXISTS (
-        SELECT 1 FROM public.channel_members cm
-        WHERE cm.channel_id = channel_members.channel_id
-        AND cm.user_id = auth.uid()
-        AND cm.role = 'owner'
-    )
-);
-
 CREATE POLICY "Allow select for channel_posts" ON public.channel_posts FOR SELECT USING (true);
-CREATE POLICY "Allow insert for channel_posts" ON public.channel_posts FOR INSERT WITH CHECK (
-    sender_id = auth.uid() AND
-    EXISTS (
-        SELECT 1 FROM public.channel_members
-        WHERE channel_members.channel_id = channel_posts.channel_id
-        AND channel_members.user_id = auth.uid()
-        AND channel_members.role IN ('owner', 'admin')
-    )
-);
-CREATE POLICY "Allow update for channel_posts" ON public.channel_posts FOR UPDATE USING (
-    sender_id = auth.uid() OR
-    EXISTS (
-        SELECT 1 FROM public.channel_members
-        WHERE channel_members.channel_id = channel_posts.channel_id
-        AND channel_members.user_id = auth.uid()
-        AND channel_members.role IN ('owner', 'admin')
-    )
-);
-CREATE POLICY "Allow delete for channel_posts" ON public.channel_posts FOR DELETE USING (
-    sender_id = auth.uid() OR
-    EXISTS (
-        SELECT 1 FROM public.channel_members
-        WHERE channel_members.channel_id = channel_posts.channel_id
-        AND channel_members.user_id = auth.uid()
-        AND channel_members.role IN ('owner', 'admin')
-    )
-);
+
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.profiles, public.public_channels, public.channel_members, public.channel_posts FROM anon, authenticated;
+GRANT SELECT ON public.profiles, public.public_channels, public.channel_members, public.channel_posts TO anon, authenticated;
+GRANT ALL ON public.profiles, public.public_channels, public.channel_members, public.channel_posts TO service_role, postgres;
 
 CREATE TABLE IF NOT EXISTS public.messages (
     id TEXT PRIMARY KEY,

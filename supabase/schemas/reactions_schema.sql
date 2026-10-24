@@ -27,8 +27,6 @@ ALTER TABLE public.message_reactions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow select for all users"
 ON public.message_reactions FOR SELECT USING (true);
 
-CREATE POLICY "Allow insert for user"
-ON public.message_reactions FOR INSERT WITH CHECK (user_id = auth.uid() OR auth.uid() IS NULL);
-
-CREATE POLICY "Allow delete for user"
-ON public.message_reactions FOR DELETE USING (user_id = auth.uid() OR auth.uid() IS NULL);
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.message_reactions FROM anon, authenticated;
+GRANT SELECT ON public.message_reactions TO anon, authenticated;
+GRANT ALL ON public.message_reactions TO service_role, postgres;

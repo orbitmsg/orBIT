@@ -27,9 +27,10 @@ ALTER TABLE public.one_time_pre_keys ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public keys are viewable by everyone" ON public.user_public_keys FOR SELECT USING (true);
 CREATE POLICY "One-time keys are viewable by everyone" ON public.one_time_pre_keys FOR SELECT USING (true);
 
--- (Опционально) Добавьте политики на INSERT/UPDATE/DELETE, если у вас настроена аутентификация через Supabase Auth
--- CREATE POLICY "Users can insert their own keys" ON public.user_public_keys FOR ALL USING (auth.uid() = user_code);
--- ... (настройте по вашей логике аутентификации)
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.user_public_keys, public.one_time_pre_keys FROM anon, authenticated;
+GRANT SELECT ON public.user_public_keys, public.one_time_pre_keys TO anon, authenticated;
+GRANT ALL ON public.user_public_keys, public.one_time_pre_keys TO service_role, postgres;
+GRANT EXECUTE ON FUNCTION consume_one_time_pre_key TO anon, authenticated, service_role;
 
 -- 4. RPC функция для безопасного захвата и удаления One-Time PreKey (чтобы избежать race conditions)
 CREATE OR REPLACE FUNCTION consume_one_time_pre_key(p_user_code UUID) -- Или TEXT

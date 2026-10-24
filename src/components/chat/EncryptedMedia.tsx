@@ -513,7 +513,7 @@ export const EncryptedMedia = memo(({
               <span ref={countdownRef} className="tabular-nums select-none" style={{ color: timeColor, fontSize: orbitFs(11), lineHeight: 1, userSelect: 'none', WebkitUserSelect: 'none' }}>
                 {formatCountdown(videoDuration || duration || 0, videoRef.current?.currentTime || 0)}
               </span>
-              <AnimatedVideoVolumeIcon isMuted={isMuted} size={14} style={{ color: timeColor }} />
+              <AnimatedVideoVolumeIcon isMuted={isMuted} size={16} style={{ color: timeColor, transform: 'translateY(1px)' }} />
             </div>
           )}
 

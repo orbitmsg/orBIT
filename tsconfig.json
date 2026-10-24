@@ -22,6 +22,6 @@
     "src/**/*.ts",
     "src/**/*.tsx"
   ],
-  "exclude": ["electron", "node_modules", "dist", "dist-electron", "google-cloud-gateway", "workers", "supabase"],
+  "exclude": ["electron", "node_modules", "dist", "dist-electron", "workers", "supabase"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

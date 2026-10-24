@@ -3,8 +3,8 @@ import { MediaItem, Message, useChatStore } from '../../store/useChatStore';
 import { useUploadProgressStore } from '../../store/useUploadProgressStore';
 import { useDecryptedMedia, calculateMediaDisplaySize } from '../../lib/media-utils';
 import { AudioCoverWithPlay } from '../audio/AudioCoverWithPlay';
-import { Volume2, VolumeX } from 'lucide-react';
 import { orbitFs } from './chatUtils';
+import { AnimatedVideoVolumeIcon } from './ChatIcons';
 
 interface TelegramAlbumGridProps {
   items: MediaItem[];
@@ -306,7 +306,6 @@ const AlbumTile = memo(({
                 boxSizing: 'border-box',
                 borderRadius: '9999px',
                 backgroundColor: 'rgba(24, 25, 29, 0.75)',
-                backdropFilter: 'blur(6px)',
                 color: timeColor,
                 fontSize: orbitFs(11),
                 fontWeight: 400,
@@ -321,11 +320,7 @@ const AlbumTile = memo(({
               <span className="tabular-nums" style={{ color: timeColor, fontSize: orbitFs(11), lineHeight: 1 }}>
                 {formatCountdown(videoDuration || item.duration || 0, currentTime)}
               </span>
-              {isMuted ? (
-                <VolumeX size={12} className="shrink-0" style={{ color: timeColor }} />
-              ) : (
-                <Volume2 size={12} className="shrink-0" style={{ color: timeColor }} />
-              )}
+              <AnimatedVideoVolumeIcon isMuted={isMuted} size={14} style={{ color: timeColor }} />
             </div>
           ) : null}
 
@@ -336,7 +331,7 @@ const AlbumTile = memo(({
                 bottom: 0,
                 left: 0,
                 right: 0,
-                height: '2.5px',
+                height: '10px',
                 backgroundColor: 'rgba(255, 255, 255, 0.2)',
                 zIndex: 4,
                 overflow: 'hidden',
@@ -580,14 +575,13 @@ export const TelegramAlbumGrid = memo(({
         })}
         {!hasCaption && timeNode && (
           <div
-            className="absolute bottom-2 right-2 flex items-center justify-center z-[4] pointer-events-none select-none opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+            className="absolute bottom-3.5 right-2 flex items-center justify-center z-[4] pointer-events-none select-none opacity-0 group-hover:opacity-100 transition-opacity duration-150"
             style={{
               padding: '3px 8px',
               height: '22px',
               boxSizing: 'border-box',
               borderRadius: '9999px',
               backgroundColor: 'rgba(24, 25, 29, 0.75)',
-              backdropFilter: 'blur(6px)',
               color: isOwn ? 'rgba(255, 255, 255, 0.9)' : 'var(--text-dim)',
               lineHeight: 1,
               userSelect: 'none',

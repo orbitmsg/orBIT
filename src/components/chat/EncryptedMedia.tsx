@@ -1,11 +1,11 @@
 import React, { useMemo, memo, useState, useRef, useEffect } from 'react';
-import { Volume2, VolumeX } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../../store/useChatStore';
 import { useDecryptedMedia, calculateMediaDisplaySize } from '../../lib/media-utils';
 import { AudioCoverWithPlay } from '../audio/AudioCoverWithPlay';
 import { SmartGifPlayer } from './SmartGifPlayer';
 import { orbitFs } from './chatUtils';
+import { AnimatedVideoVolumeIcon } from './ChatIcons';
 
 interface EncryptedMediaProps {
   url: string;
@@ -258,7 +258,6 @@ export const EncryptedMedia = memo(({
                 left: '8px',
                 borderRadius: '9999px',
                 backgroundColor: 'rgba(24, 25, 29, 0.75)',
-                backdropFilter: 'blur(6px)',
                 padding: '3px 8px',
                 height: '22px',
                 boxSizing: 'border-box',
@@ -281,11 +280,7 @@ export const EncryptedMedia = memo(({
               <span className="tabular-nums select-none" style={{ color: timeColor, fontSize: orbitFs(11), lineHeight: 1, userSelect: 'none', WebkitUserSelect: 'none' }}>
                 {formatCountdown(videoDuration || duration || 0, currentTime)}
               </span>
-              {isMuted ? (
-                <VolumeX size={12} className="shrink-0" style={{ color: timeColor }} />
-              ) : (
-                <Volume2 size={12} className="shrink-0" style={{ color: timeColor }} />
-              )}
+              <AnimatedVideoVolumeIcon isMuted={isMuted} size={14} style={{ color: timeColor }} />
             </div>
           )}
 
@@ -296,7 +291,7 @@ export const EncryptedMedia = memo(({
                 bottom: 0,
                 left: 0,
                 right: 0,
-                height: '2.5px',
+                height: '10px',
                 backgroundColor: 'rgba(255, 255, 255, 0.2)',
                 zIndex: 4,
                 overflow: 'hidden',
@@ -321,11 +316,10 @@ export const EncryptedMedia = memo(({
           className="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
           style={{
             position: 'absolute',
-            bottom: '8px',
+            bottom: '14px',
             right: '8px',
             borderRadius: '9999px',
             backgroundColor: 'rgba(24, 25, 29, 0.75)',
-            backdropFilter: 'blur(6px)',
             padding: '3px 8px',
             height: '22px',
             boxSizing: 'border-box',

@@ -42,3 +42,73 @@ export const CustomUnmuteIcon: React.FC<{ size?: number; className?: string; sty
     <path d="M15 8a5 5 0 0 1 0 8m2.7-11a9 9 0 0 1 0 14M6 15H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h2l3.5-4.5A.8.8 0 0 1 11 5v14a.8.8 0 0 1-1.5.5z" />
   </svg>
 );
+
+export const AnimatedVideoVolumeIcon: React.FC<{
+  isMuted: boolean;
+  size?: number;
+  className?: string;
+  style?: React.CSSProperties;
+}> = ({ isMuted, size = 14, className = '', style = {} }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    width={size}
+    height={size}
+    className={className}
+    style={{ display: 'block', overflow: 'visible', flexShrink: 0, ...style }}
+    aria-hidden="true"
+  >
+    <g fill="currentColor">
+      <path d="M13 6.037c0-1.724-1.978-2.665-3.28-1.562L5.638 7.933H4c-1.105 0-2 .91-2 2.034v4.066c0 1.123.895 2.034 2 2.034h1.638l4.082 3.458c1.302 1.104 3.28.162 3.28-1.562z" />
+      <g
+        style={{
+          opacity: isMuted ? 0 : 1,
+          transform: isMuted ? 'scale(0.5)' : 'scale(1)',
+          transformOrigin: '14px 12px',
+          transition: 'opacity 0.2s ease, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+      >
+        <path
+          fillRule="evenodd"
+          d="M14.786 7.658a.99.99 0 0 1 1.414-.014A6.14 6.14 0 0 1 18 12c0 1.662-.655 3.17-1.715 4.27a.99.99 0 0 1-1.414.014a1.03 1.03 0 0 1-.014-1.437A4.1 4.1 0 0 0 16 12a4.1 4.1 0 0 0-1.2-2.904a1.03 1.03 0 0 1-.014-1.438"
+          clipRule="evenodd"
+        />
+        <path
+          fillRule="evenodd"
+          d="M17.657 4.811a.99.99 0 0 1 1.414 0A10.22 10.22 0 0 1 22 12c0 2.807-1.12 5.35-2.929 7.189a.99.99 0 0 1-1.414 0a1.03 1.03 0 0 1 0-1.438A8.17 8.17 0 0 0 20 12a8.17 8.17 0 0 0-2.343-5.751a1.03 1.03 0 0 1 0-1.438"
+          clipRule="evenodd"
+        />
+      </g>
+    </g>
+    <line
+      x1="3"
+      y1="3"
+      x2="21"
+      y2="21"
+      stroke="rgba(0, 0, 0, 0.55)"
+      strokeWidth="3.2"
+      strokeLinecap="round"
+      style={{
+        strokeDasharray: 26,
+        strokeDashoffset: isMuted ? 0 : 26,
+        opacity: isMuted ? 1 : 0,
+        transition: 'stroke-dashoffset 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease',
+      }}
+    />
+    <line
+      x1="3"
+      y1="3"
+      x2="21"
+      y2="21"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      style={{
+        strokeDasharray: 26,
+        strokeDashoffset: isMuted ? 0 : 26,
+        opacity: isMuted ? 1 : 0,
+        transition: 'stroke-dashoffset 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease',
+      }}
+    />
+  </svg>
+);

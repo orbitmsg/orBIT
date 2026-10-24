@@ -3,7 +3,7 @@ import { MediaItem, Message, useChatStore } from '../../store/useChatStore';
 import { useUploadProgressStore } from '../../store/useUploadProgressStore';
 import { useDecryptedMedia, calculateMediaDisplaySize } from '../../lib/media-utils';
 import { AudioCoverWithPlay } from '../audio/AudioCoverWithPlay';
-import { Play, Pause } from 'lucide-react';
+import { Volume2, VolumeX } from 'lucide-react';
 import { orbitFs } from './chatUtils';
 
 interface TelegramAlbumGridProps {
@@ -39,10 +39,18 @@ const AlbumTile = memo(({
   onDimensionsLoaded?: (width: number, height: number, itemIdx: number) => void;
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(isSingle);
+  const [isMuted, setIsMuted] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState<number>(item.duration || 0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const timeColor = isOwn ? 'rgba(255, 255, 255, 0.9)' : 'var(--text-dim)';
+
+  const formatCountdown = (totalSec: number, curSec: number) => {
+    const rem = Math.max(0, Math.ceil((totalSec || 0) - (curSec || 0)));
+    const m = Math.floor(rem / 60);
+    const s = rem % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  };
   const isGif = Boolean(
     item.type === 'gif' ||
     msg.mediaType === 'gif' ||
@@ -71,18 +79,6 @@ const AlbumTile = memo(({
     msg.id,
     autoLoad
   );
-
-  const formatDuration = (sec?: number) => {
-    if (!sec || isNaN(sec)) return '';
-    const s = Math.max(0, Math.floor(sec || 0));
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const rem = s % 60;
-    if (h > 0) {
-      return `${h}:${String(m).padStart(2, '0')}:${String(rem).padStart(2, '0')}`;
-    }
-    return `${m}:${String(rem).padStart(2, '0')}`;
-  };
 
   const isDownloading = isLoading;
   const isLocalMedia = Boolean((item as any).preview || (item.url?.startsWith('data:') && item.url.length > 2048) || item.url?.startsWith('blob:'));
@@ -170,6 +166,9 @@ const AlbumTile = memo(({
                 src={mediaSrc}
                 className={`w-full h-full pointer-events-none relative z-[1] transition-opacity duration-200 ${isSingle ? 'object-contain' : 'object-cover'}`}
                 style={{ opacity: isLoaded ? 1 : 0 }}
+                onTimeUpdate={(e) => {
+                  setCurrentTime(e.currentTarget.currentTime);
+                }}
                 onLoadedMetadata={(e) => {
                   const vw = e.currentTarget.videoWidth;
                   const vh = e.currentTarget.videoHeight;
@@ -181,11 +180,9 @@ const AlbumTile = memo(({
                   }
                 }}
                 onLoadedData={() => setIsLoaded(true)}
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
                 autoPlay
                 loop
-                muted
+                muted={isMuted}
                 playsInline
                 preload="auto"
               />
@@ -197,6 +194,9 @@ const AlbumTile = memo(({
               poster={posterSrc || undefined}
               className={`w-full h-full pointer-events-none relative z-[1] transition-opacity duration-200 ${isSingle ? 'object-contain' : 'object-cover'}`}
               style={{ opacity: isLoaded ? 1 : 0 }}
+              onTimeUpdate={(e) => {
+                setCurrentTime(e.currentTarget.currentTime);
+              }}
               onLoadedMetadata={(e) => {
                 const vw = e.currentTarget.videoWidth;
                 const vh = e.currentTarget.videoHeight;
@@ -208,11 +208,11 @@ const AlbumTile = memo(({
                 }
               }}
               onLoadedData={() => setIsLoaded(true)}
-              onPlay={() => setIsPlaying(true)}
-              onPause={() => setIsPlaying(false)}
-              muted
+              autoPlay
+              loop
+              muted={isMuted}
               playsInline
-              preload="metadata"
+              preload="auto"
             />
           )
         ) : (
@@ -284,61 +284,73 @@ const AlbumTile = memo(({
 
       {isVideo && isLoaded && !isGif && !isUploading && (
         <>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!videoRef.current) return;
-              if (videoRef.current.paused) {
-                videoRef.current.play().catch(() => {});
-              } else {
-                videoRef.current.pause();
-              }
-            }}
-            aria-label={isPlaying ? 'Пауза' : 'Воспроизведение'}
-            className={`absolute inset-0 m-auto flex items-center justify-center cursor-pointer transition-all duration-200 z-[3] ${
-              isPlaying
-                ? 'opacity-0 group-hover:opacity-90 hover:!opacity-100 hover:scale-110 active:scale-95'
-                : 'opacity-95 hover:opacity-100 hover:scale-110 active:scale-95'
-            }`}
-            style={{
-              width: '44px',
-              height: '44px',
-              background: 'none',
-              backgroundColor: 'transparent',
-              border: 'none',
-              outline: 'none',
-              padding: 0,
-              filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 2px rgba(0, 0, 0, 0.9))',
-            }}
-          >
-            {isPlaying ? (
-              <Pause size={isSingle ? 38 : 32} className="text-white fill-white" />
-            ) : (
-              <Play size={isSingle ? 38 : 32} className="text-white fill-white ml-0.5" />
-            )}
-          </button>
           {(videoDuration > 0 || item.duration) ? (
             <div
-              className="absolute top-2 left-2 flex items-center justify-center tabular-nums select-none z-[3]"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMuted((prev) => {
+                  const next = !prev;
+                  if (videoRef.current) {
+                    videoRef.current.muted = next;
+                    if (!next) {
+                      videoRef.current.play().catch(() => {});
+                    }
+                  }
+                  return next;
+                });
+              }}
+              className="absolute top-2 left-2 flex items-center justify-center tabular-nums select-none z-[3] cursor-pointer"
               style={{
                 padding: '3px 8px',
                 height: '22px',
                 boxSizing: 'border-box',
                 borderRadius: '9999px',
-                backgroundColor: '#18191d',
+                backgroundColor: 'rgba(24, 25, 29, 0.75)',
+                backdropFilter: 'blur(6px)',
                 color: timeColor,
                 fontSize: orbitFs(11),
                 fontWeight: 400,
+                gap: '5px',
                 lineHeight: 1,
                 userSelect: 'none',
                 WebkitUserSelect: 'none',
                 boxShadow: '0 1px 4px rgba(0, 0, 0, 0.4)',
               }}
+              aria-label={isMuted ? 'Включить звук' : 'Выключить звук'}
             >
               <span className="tabular-nums" style={{ color: timeColor, fontSize: orbitFs(11), lineHeight: 1 }}>
-                {formatDuration(videoDuration || item.duration)}
+                {formatCountdown(videoDuration || item.duration || 0, currentTime)}
               </span>
+              {isMuted ? (
+                <VolumeX size={12} className="shrink-0" style={{ color: timeColor }} />
+              ) : (
+                <Volume2 size={12} className="shrink-0" style={{ color: timeColor }} />
+              )}
+            </div>
+          ) : null}
+
+          {(videoDuration > 0 || item.duration) ? (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: '2.5px',
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                zIndex: 4,
+                overflow: 'hidden',
+                pointerEvents: 'none',
+              }}
+            >
+              <div
+                style={{
+                  height: '100%',
+                  width: `${(videoDuration || item.duration || 0) > 0 ? Math.min(100, Math.max(0, (currentTime / (videoDuration || item.duration || 1)) * 100)) : 0}%`,
+                  backgroundColor: 'var(--accent-color, #7C3AED)',
+                  transition: 'width 0.1s linear',
+                }}
+              />
             </div>
           ) : null}
         </>
@@ -568,13 +580,14 @@ export const TelegramAlbumGrid = memo(({
         })}
         {!hasCaption && timeNode && (
           <div
-            className="absolute bottom-2 right-2 flex items-center justify-center z-[4] pointer-events-none select-none"
+            className="absolute bottom-2 right-2 flex items-center justify-center z-[4] pointer-events-none select-none opacity-0 group-hover:opacity-100 transition-opacity duration-150"
             style={{
               padding: '3px 8px',
               height: '22px',
               boxSizing: 'border-box',
               borderRadius: '9999px',
-              backgroundColor: '#18191d',
+              backgroundColor: 'rgba(24, 25, 29, 0.75)',
+              backdropFilter: 'blur(6px)',
               color: isOwn ? 'rgba(255, 255, 255, 0.9)' : 'var(--text-dim)',
               lineHeight: 1,
               userSelect: 'none',

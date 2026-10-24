@@ -1,5 +1,5 @@
 import React, { useMemo, memo, useState, useRef, useEffect } from 'react';
-import { Volume2, VolumeX, Play, Pause } from 'lucide-react';
+import { Volume2, VolumeX } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../../store/useChatStore';
 import { useDecryptedMedia, calculateMediaDisplaySize } from '../../lib/media-utils';
@@ -53,8 +53,7 @@ export const EncryptedMedia = memo(({
   const timeColor = isOwn ? 'rgba(255, 255, 255, 0.9)' : 'var(--text-dim)';
 
   const [isMuted, setIsMuted] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [isPillHovered, setIsPillHovered] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState<number>(duration || 0);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -64,15 +63,17 @@ export const EncryptedMedia = memo(({
     }
   }, [duration, videoDuration]);
 
-  const formatPillTime = (sec: number) => {
-    const s = Math.max(0, Math.floor(sec || 0));
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const rem = s % 60;
-    if (h > 0) {
-      return `${h}:${String(m).padStart(2, '0')}:${String(rem).padStart(2, '0')}`;
+  useEffect(() => {
+    if (blobUrl && videoRef.current) {
+      videoRef.current.play().catch(() => {});
     }
-    return `${m}:${String(rem).padStart(2, '0')}`;
+  }, [blobUrl]);
+
+  const formatCountdown = (totalSec: number, curSec: number) => {
+    const rem = Math.max(0, Math.ceil((totalSec || 0) - (curSec || 0)));
+    const m = Math.floor(rem / 60);
+    const s = rem % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
   const isFullRes = Boolean(preview || (thumbnail && !thumbnail.startsWith('data:')) || (thumbnail && thumbnail.startsWith('data:') && thumbnail.length > 2048));
@@ -226,52 +227,15 @@ export const EncryptedMedia = memo(({
             muted={isMuted}
             playsInline
             style={{ display: 'block', opacity: blobUrl ? 1 : 0, transition: 'opacity 0.2s' }}
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
-            onEnded={() => setIsPlaying(false)}
+            onTimeUpdate={(e) => {
+              setCurrentTime(e.currentTarget.currentTime);
+            }}
             onLoadedMetadata={(e) => {
               if (e.currentTarget.duration && isFinite(e.currentTarget.duration)) {
                 setVideoDuration(e.currentTarget.duration);
               }
             }}
           />
-
-          {blobUrl && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!videoRef.current) return;
-                if (videoRef.current.paused) {
-                  videoRef.current.play().catch(() => {});
-                } else {
-                  videoRef.current.pause();
-                }
-              }}
-              aria-label={isPlaying ? t('mediaViewer.pause', 'Пауза') : t('mediaViewer.play', 'Воспроизведение')}
-              className={`absolute inset-0 m-auto flex items-center justify-center cursor-pointer transition-all duration-200 z-[3] ${
-                isPlaying
-                  ? 'opacity-0 group-hover:opacity-90 hover:!opacity-100 hover:scale-110 active:scale-95'
-                  : 'opacity-95 hover:opacity-100 hover:scale-110 active:scale-95'
-              }`}
-              style={{
-                width: '48px',
-                height: '48px',
-                background: 'none',
-                backgroundColor: 'transparent',
-                border: 'none',
-                outline: 'none',
-                padding: 0,
-                filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 2px rgba(0, 0, 0, 0.9))',
-              }}
-            >
-              {isPlaying ? (
-                <Pause size={40} className="text-white fill-white" />
-              ) : (
-                <Play size={40} className="text-white fill-white ml-1" />
-              )}
-            </button>
-          )}
 
           {blobUrl && (videoDuration > 0 || duration) && (
             <div
@@ -288,14 +252,13 @@ export const EncryptedMedia = memo(({
                   return next;
                 });
               }}
-              onMouseEnter={() => setIsPillHovered(true)}
-              onMouseLeave={() => setIsPillHovered(false)}
               style={{
                 position: 'absolute',
                 top: '8px',
                 left: '8px',
                 borderRadius: '9999px',
-                backgroundColor: '#18191d',
+                backgroundColor: 'rgba(24, 25, 29, 0.75)',
+                backdropFilter: 'blur(6px)',
                 padding: '3px 8px',
                 height: '22px',
                 boxSizing: 'border-box',
@@ -304,7 +267,7 @@ export const EncryptedMedia = memo(({
                 fontWeight: 400,
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '4px',
+                gap: '5px',
                 lineHeight: 1,
                 zIndex: 4,
                 cursor: 'pointer',
@@ -316,13 +279,38 @@ export const EncryptedMedia = memo(({
               aria-label={isMuted ? t('mediaViewer.unmute', 'Включить звук') : t('mediaViewer.mute', 'Выключить звук')}
             >
               <span className="tabular-nums select-none" style={{ color: timeColor, fontSize: orbitFs(11), lineHeight: 1, userSelect: 'none', WebkitUserSelect: 'none' }}>
-                {formatPillTime(videoDuration || duration || 0)}
+                {formatCountdown(videoDuration || duration || 0, currentTime)}
               </span>
-              {!isMuted ? (
+              {isMuted ? (
+                <VolumeX size={12} className="shrink-0" style={{ color: timeColor }} />
+              ) : (
                 <Volume2 size={12} className="shrink-0" style={{ color: timeColor }} />
-              ) : isPillHovered ? (
-                <VolumeX size={12} className="shrink-0 opacity-70" style={{ color: timeColor }} />
-              ) : null}
+              )}
+            </div>
+          )}
+
+          {blobUrl && (videoDuration > 0 || duration) && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: '2.5px',
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                zIndex: 4,
+                overflow: 'hidden',
+                pointerEvents: 'none',
+              }}
+            >
+              <div
+                style={{
+                  height: '100%',
+                  width: `${(videoDuration || duration || 0) > 0 ? Math.min(100, Math.max(0, (currentTime / (videoDuration || duration || 1)) * 100)) : 0}%`,
+                  backgroundColor: 'var(--accent-color, #7C3AED)',
+                  transition: 'width 0.1s linear',
+                }}
+              />
             </div>
           )}
         </div>
@@ -330,12 +318,14 @@ export const EncryptedMedia = memo(({
 
       {timeNode && (
         <div
+          className="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
           style={{
             position: 'absolute',
             bottom: '8px',
             right: '8px',
             borderRadius: '9999px',
-            backgroundColor: '#18191d',
+            backgroundColor: 'rgba(24, 25, 29, 0.75)',
+            backdropFilter: 'blur(6px)',
             padding: '3px 8px',
             height: '22px',
             boxSizing: 'border-box',

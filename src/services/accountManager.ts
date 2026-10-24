@@ -127,13 +127,20 @@ export const useAccountStore = create<AccountStoreState>((set, get) => ({
         const parsed = JSON.parse(account1ChatRaw);
         if (parsed?.myCode && !chat.myCode) chat.setMyCode(parsed.myCode);
         const liveChats = useChatStore.getState().chats || [];
-        if (liveChats.length === 0 && parsed?.chats && Array.isArray(parsed.chats) && parsed.chats.length > 0) {
+        const liveRealCount = liveChats.filter((c: any) => c && c.id && c.id !== 'notes' && c.id !== 'system_support').length;
+        if (liveRealCount === 0 && parsed?.chats && Array.isArray(parsed.chats) && parsed.chats.length > 0) {
           chat.importChatState(parsed);
         } else if (parsed?.chats && Array.isArray(parsed.chats) && parsed.chats.length > 0) {
           const liveIds = new Set(liveChats.map((c) => c.id));
           const missing = parsed.chats.filter((c: any) => c && c.id && !liveIds.has(c.id));
           if (missing.length > 0) {
-            useChatStore.setState((s) => ({ chats: [...s.chats, ...missing] }));
+            useChatStore.setState((s) => ({
+              chats: [...s.chats, ...missing],
+              messagesByChatId: {
+                ...(parsed.messagesByChatId || {}),
+                ...s.messagesByChatId,
+              },
+            }));
           }
         }
       } catch {}
@@ -178,7 +185,8 @@ export const useAccountStore = create<AccountStoreState>((set, get) => ({
       if (currentAuth.nickname || currentAuth.userId) {
         await storageSet(`${AUTH_STORAGE_PREFIX}account_1`, JSON.stringify(currentAuth.exportAuthState()));
       }
-      if (currentChat.myCode || (currentChat.chats && currentChat.chats.length > 0)) {
+      const currentRealCount = (currentChat.chats || []).filter((c: any) => c && c.id && c.id !== 'notes' && c.id !== 'system_support').length;
+      if (currentRealCount > 0 || currentChat.myCode) {
         await storageSet(`${CHAT_STORAGE_PREFIX}account_1`, JSON.stringify(currentChat.exportChatState()));
       }
     } else {

@@ -249,14 +249,16 @@ function App() {
         setIsAppLocked(true);
       } else {
         setIsAppLocked(false);
-        useAuthStore.persist.rehydrate();
-        useChatStore.persist.rehydrate();
-        useAccountStore.getState().init().catch(() => {});
+        if (!useChatStore.persist.hasHydrated()) {
+          useAuthStore.persist.rehydrate();
+          useChatStore.persist.rehydrate();
+        }
       }
     }).catch(() => {
-      useAuthStore.persist.rehydrate();
-      useChatStore.persist.rehydrate();
-      useAccountStore.getState().init().catch(() => {});
+      if (!useChatStore.persist.hasHydrated()) {
+        useAuthStore.persist.rehydrate();
+        useChatStore.persist.rehydrate();
+      }
     });
   }, []);
 

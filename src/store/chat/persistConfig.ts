@@ -1,5 +1,5 @@
 import { createJSONStorage, PersistOptions } from 'zustand/middleware';
-import { ipcStorage } from './storage';
+import { ipcStorage, pickBestRatchetState } from './storage';
 import { ChatState, Message, MAX_MESSAGES_PER_CHAT } from './types';
 
 export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
@@ -215,7 +215,7 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
             ...canonical,
             id: canonical.id,
             online: false,
-            ratchetState: canonical.ratchetState || dup.ratchetState,
+            ratchetState: pickBestRatchetState(canonical.ratchetState, dup.ratchetState),
             sharedSecret: canonical.sharedSecret || dup.sharedSecret,
             peerPublicKey: canonical.peerPublicKey || dup.peerPublicKey,
             avatarUrl: canonical.avatarUrl || dup.avatarUrl,

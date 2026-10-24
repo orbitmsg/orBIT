@@ -36,7 +36,7 @@ import {
   clampTextScale,
   ChatState,
 } from './chat/types';
-import { flushStorageSet, setHydratedChecker } from './chat/storage';
+import { flushStorageSet, setHydratedChecker, pickBestRatchetState } from './chat/storage';
 import { chatStorePersistConfig } from './chat/persistConfig';
 
 export type {
@@ -417,9 +417,9 @@ export const useChatStore = create<ChatState>()(
               ...exists,
               ...chatEntry,
               id: canonicalId,
-              ratchetState: chatEntry.ratchetState || exists.ratchetState,
-              sharedSecret: chatEntry.sharedSecret || exists.sharedSecret,
-              peerPublicKey: chatEntry.peerPublicKey || exists.peerPublicKey,
+              ratchetState: pickBestRatchetState(exists.ratchetState, chatEntry.ratchetState),
+              sharedSecret: exists.sharedSecret || chatEntry.sharedSecret,
+              peerPublicKey: exists.peerPublicKey || chatEntry.peerPublicKey,
               avatarUrl: chatEntry.avatarUrl || exists.avatarUrl,
               bannerUrl: chatEntry.bannerUrl || exists.bannerUrl,
               username: chatEntry.username || exists.username,

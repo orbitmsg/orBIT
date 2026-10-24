@@ -1,5 +1,6 @@
-import React, { useMemo, memo, useState, useRef } from 'react';
-import { Volume2, VolumeX } from 'lucide-react';
+import React, { useMemo, memo, useState, useRef, useEffect } from 'react';
+import { Volume2, VolumeX, Play, Pause } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../../store/useChatStore';
 import { useDecryptedMedia, calculateMediaDisplaySize } from '../../lib/media-utils';
 import { AudioCoverWithPlay } from '../audio/AudioCoverWithPlay';
@@ -47,16 +48,29 @@ export const EncryptedMedia = memo(({
   const autoLoad = useChatStore((state) => state.shouldAutoLoadMedia(type === 'image' ? 'photo' : 'video', fileSize, isOwn));
   const { blobUrl, load, isLoading, progress, isUnavailable } = useDecryptedMedia(url, sharedSecret, undefined, undefined, chatId, messageId, autoLoad);
   const bubbleRadius = useChatStore.getState().bubbleRadius;
+  const { t } = useTranslation();
 
   const [isMuted, setIsMuted] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPillHovered, setIsPillHovered] = useState(false);
   const [videoDuration, setVideoDuration] = useState<number>(duration || 0);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  useEffect(() => {
+    if (duration && duration > 0 && videoDuration === 0) {
+      setVideoDuration(duration);
+    }
+  }, [duration, videoDuration]);
+
   const formatPillTime = (sec: number) => {
     const s = Math.max(0, Math.floor(sec || 0));
-    const m = Math.floor(s / 60);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
     const rem = s % 60;
-    return `${String(m).padStart(2, '0')}:${String(rem).padStart(2, '0')}`;
+    if (h > 0) {
+      return `${h}:${String(m).padStart(2, '0')}:${String(rem).padStart(2, '0')}`;
+    }
+    return `${m}:${String(rem).padStart(2, '0')}`;
   };
 
   const isFullRes = Boolean(preview || (thumbnail && !thumbnail.startsWith('data:')) || (thumbnail && thumbnail.startsWith('data:') && thumbnail.length > 2048));
@@ -210,6 +224,9 @@ export const EncryptedMedia = memo(({
             muted={isMuted}
             playsInline
             style={{ display: 'block', opacity: blobUrl ? 1 : 0, transition: 'opacity 0.2s' }}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            onEnded={() => setIsPlaying(false)}
             onLoadedMetadata={(e) => {
               if (e.currentTarget.duration && isFinite(e.currentTarget.duration)) {
                 setVideoDuration(e.currentTarget.duration);
@@ -218,6 +235,43 @@ export const EncryptedMedia = memo(({
           />
 
           {blobUrl && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!videoRef.current) return;
+                if (videoRef.current.paused) {
+                  videoRef.current.play().catch(() => {});
+                } else {
+                  videoRef.current.pause();
+                }
+              }}
+              aria-label={isPlaying ? t('mediaViewer.pause', 'Пауза') : t('mediaViewer.play', 'Воспроизведение')}
+              className={`absolute inset-0 m-auto flex items-center justify-center cursor-pointer transition-all duration-200 z-[3] ${
+                isPlaying
+                  ? 'opacity-0 group-hover:opacity-90 hover:!opacity-100 hover:scale-110 active:scale-95'
+                  : 'opacity-95 hover:opacity-100 hover:scale-110 active:scale-95'
+              }`}
+              style={{
+                width: '48px',
+                height: '48px',
+                background: 'none',
+                backgroundColor: 'transparent',
+                border: 'none',
+                outline: 'none',
+                padding: 0,
+                filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 2px rgba(0, 0, 0, 0.9))',
+              }}
+            >
+              {isPlaying ? (
+                <Pause size={40} className="text-white fill-white" />
+              ) : (
+                <Play size={40} className="text-white fill-white ml-1" />
+              )}
+            </button>
+          )}
+
+          {blobUrl && (videoDuration > 0 || duration) && (
             <div
               onClick={(e) => {
                 e.stopPropagation();
@@ -232,12 +286,14 @@ export const EncryptedMedia = memo(({
                   return next;
                 });
               }}
+              onMouseEnter={() => setIsPillHovered(true)}
+              onMouseLeave={() => setIsPillHovered(false)}
               style={{
                 position: 'absolute',
                 top: '8px',
                 left: '8px',
                 borderRadius: '9999px',
-                backgroundColor: 'rgba(0, 0, 0, 0.45)',
+                backgroundColor: 'rgba(0, 0, 0, 0.55)',
                 backdropFilter: 'blur(8px)',
                 padding: '3px 8px',
                 color: '#ffffff',
@@ -245,7 +301,7 @@ export const EncryptedMedia = memo(({
                 fontWeight: 600,
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '5px',
+                gap: '4px',
                 lineHeight: 1,
                 zIndex: 4,
                 cursor: 'pointer',
@@ -254,10 +310,14 @@ export const EncryptedMedia = memo(({
                 border: 'none',
                 transition: 'background-color 0.15s',
               }}
-              aria-label={isMuted ? 'Включить звук' : 'Выключить звук'}
+              aria-label={isMuted ? t('mediaViewer.unmute', 'Включить звук') : t('mediaViewer.mute', 'Выключить звук')}
             >
-              <span>{formatPillTime(videoDuration)}</span>
-              {isMuted ? <VolumeX size={13} /> : <Volume2 size={13} />}
+              <span>{formatPillTime(videoDuration || duration || 0)}</span>
+              {!isMuted ? (
+                <Volume2 size={12} className="text-white shrink-0" />
+              ) : isPillHovered ? (
+                <VolumeX size={12} className="text-white/70 shrink-0" />
+              ) : null}
             </div>
           )}
         </div>

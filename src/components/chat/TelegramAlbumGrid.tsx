@@ -1,9 +1,9 @@
-import { memo, useMemo, useState, useCallback } from 'react';
+import { memo, useMemo, useState, useCallback, useRef } from 'react';
 import { MediaItem, Message, useChatStore } from '../../store/useChatStore';
 import { useUploadProgressStore } from '../../store/useUploadProgressStore';
 import { useDecryptedMedia, calculateMediaDisplaySize } from '../../lib/media-utils';
 import { AudioCoverWithPlay } from '../audio/AudioCoverWithPlay';
-import { Play } from 'lucide-react';
+import { Play, Pause } from 'lucide-react';
 
 interface TelegramAlbumGridProps {
   items: MediaItem[];
@@ -38,6 +38,9 @@ const AlbumTile = memo(({
   onDimensionsLoaded?: (width: number, height: number, itemIdx: number) => void;
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(isSingle);
+  const [videoDuration, setVideoDuration] = useState<number>(item.duration || 0);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const isGif = Boolean(
     item.type === 'gif' ||
     msg.mediaType === 'gif' ||
@@ -69,9 +72,14 @@ const AlbumTile = memo(({
 
   const formatDuration = (sec?: number) => {
     if (!sec || isNaN(sec)) return '';
-    const m = Math.floor(sec / 60);
-    const s = Math.floor(sec % 60);
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
+    const s = Math.max(0, Math.floor(sec || 0));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const rem = s % 60;
+    if (h > 0) {
+      return `${h}:${String(m).padStart(2, '0')}:${String(rem).padStart(2, '0')}`;
+    }
+    return `${m}:${String(rem).padStart(2, '0')}`;
   };
 
   const isDownloading = isLoading;
@@ -156,6 +164,7 @@ const AlbumTile = memo(({
               />
             ) : (
               <video
+                ref={videoRef}
                 src={mediaSrc}
                 className={`w-full h-full pointer-events-none relative z-[1] transition-opacity duration-200 ${isSingle ? 'object-contain' : 'object-cover'}`}
                 style={{ opacity: isLoaded ? 1 : 0 }}
@@ -165,8 +174,13 @@ const AlbumTile = memo(({
                   if (vw > 0 && vh > 0) {
                     onDimensionsLoaded?.(vw, vh, itemIdx);
                   }
+                  if (e.currentTarget.duration && isFinite(e.currentTarget.duration)) {
+                    setVideoDuration(e.currentTarget.duration);
+                  }
                 }}
                 onLoadedData={() => setIsLoaded(true)}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
                 autoPlay
                 loop
                 muted
@@ -176,6 +190,7 @@ const AlbumTile = memo(({
             )
           ) : (
             <video
+              ref={videoRef}
               src={mediaSrc}
               poster={posterSrc || undefined}
               className={`w-full h-full pointer-events-none relative z-[1] transition-opacity duration-200 ${isSingle ? 'object-contain' : 'object-cover'}`}
@@ -186,8 +201,13 @@ const AlbumTile = memo(({
                 if (vw > 0 && vh > 0) {
                   onDimensionsLoaded?.(vw, vh, itemIdx);
                 }
+                if (e.currentTarget.duration && isFinite(e.currentTarget.duration)) {
+                  setVideoDuration(e.currentTarget.duration);
+                }
               }}
               onLoadedData={() => setIsLoaded(true)}
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
               muted
               playsInline
               preload="metadata"
@@ -261,16 +281,50 @@ const AlbumTile = memo(({
       )}
 
       {isVideo && isLoaded && !isGif && !isUploading && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20 z-[2]">
-          <div className="w-9 h-9 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white">
-            <Play size={18} fill="white" className="ml-0.5" />
-          </div>
-          {item.duration ? (
-            <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/60 text-white text-[11px] font-medium tabular-nums">
-              {formatDuration(item.duration)}
+        <>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!videoRef.current) return;
+              if (videoRef.current.paused) {
+                videoRef.current.play().catch(() => {});
+              } else {
+                videoRef.current.pause();
+              }
+            }}
+            aria-label={isPlaying ? 'Пауза' : 'Воспроизведение'}
+            className={`absolute inset-0 m-auto flex items-center justify-center cursor-pointer transition-all duration-200 z-[3] ${
+              isPlaying
+                ? 'opacity-0 group-hover:opacity-90 hover:!opacity-100 hover:scale-110 active:scale-95'
+                : 'opacity-95 hover:opacity-100 hover:scale-110 active:scale-95'
+            }`}
+            style={{
+              width: '44px',
+              height: '44px',
+              background: 'none',
+              backgroundColor: 'transparent',
+              border: 'none',
+              outline: 'none',
+              padding: 0,
+              filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 2px rgba(0, 0, 0, 0.9))',
+            }}
+          >
+            {isPlaying ? (
+              <Pause size={isSingle ? 38 : 32} className="text-white fill-white" />
+            ) : (
+              <Play size={isSingle ? 38 : 32} className="text-white fill-white ml-0.5" />
+            )}
+          </button>
+          {(videoDuration > 0 || item.duration) ? (
+            <div
+              className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/60 text-white text-[11px] font-semibold tabular-nums backdrop-blur-sm select-none z-[3]"
+              style={{ borderRadius: '9999px', lineHeight: 1 }}
+            >
+              {formatDuration(videoDuration || item.duration)}
             </div>
           ) : null}
-        </div>
+        </>
       )}
     </div>
   );

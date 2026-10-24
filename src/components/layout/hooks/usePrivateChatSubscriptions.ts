@@ -77,9 +77,13 @@ export const usePrivateChatSubscriptions = ({
     const handleMessage = (data: any) => {
       if (useChatStore.getState().deletedChatIds?.includes(chatId)) return;
       let chat = useChatStore.getState().chats.find((c) => c.id === chatId);
+      if (!chat && data.senderCode) {
+        chat = useChatStore.getState().chats.find((c) => c.type === 'private' && (c.peerCode === data.senderCode || c.originalPeerCode === data.senderCode));
+      }
       if (!chat) {
         chat = useChatStore.getState().restoreDeletedChat(chatId) || undefined;
       }
+      const targetChatId = chat?.id || chatId;
       const myUserId = useAuthStore.getState().userId;
       const isSelf = Boolean(
         (myUserId && (data.senderUserId === myUserId || data.userId === myUserId || data.senderId === myUserId)) ||
@@ -95,13 +99,13 @@ export const usePrivateChatSubscriptions = ({
         if (data.sessionId === CLIENT_SESSION_ID) return;
         const targetId = data.messageId || data.id;
         if (targetId) {
-          useChatStore.getState().setReaction(chatId, targetId, data.emoji, data.sender, data.action || 'add');
+          useChatStore.getState().setReaction(targetChatId, targetId, data.emoji, data.sender, data.action || 'add');
         }
         return;
       }
 
       if (data.type === 'delivered') {
-        const currentMessages = useChatStore.getState().messagesByChatId[chatId] || [];
+        const currentMessages = useChatStore.getState().messagesByChatId[targetChatId] || [];
         const updatedMessages = currentMessages.map((msg) => {
           const isTarget = (data.messageId && msg.id === data.messageId) || (data.time && msg.time <= data.time && msg.isOutgoing);
           if (isTarget) {
@@ -113,14 +117,14 @@ export const usePrivateChatSubscriptions = ({
         useChatStore.setState((state) => ({
           messagesByChatId: {
             ...state.messagesByChatId,
-            [chatId]: updatedMessages,
+            [targetChatId]: updatedMessages,
           }
         }));
         return;
       }
 
       if (data.type === 'read') {
-        const currentMessages = useChatStore.getState().messagesByChatId[chatId] || [];
+        const currentMessages = useChatStore.getState().messagesByChatId[targetChatId] || [];
         const readIds: string[] = [];
         const readMediaUrls: string[] = [];
         const readMsgObjects: Message[] = [];
@@ -143,11 +147,11 @@ export const usePrivateChatSubscriptions = ({
         useChatStore.setState((state) => ({
           messagesByChatId: {
             ...state.messagesByChatId,
-            [chatId]: updatedMessages,
+            [targetChatId]: updatedMessages,
           }
         }));
         if (readIds.length > 0) {
-          supabaseService.purgeServerMessages(chatId, readIds);
+          supabaseService.purgeServerMessages(targetChatId, readIds);
         }
         if (readMediaUrls.length > 0) {
           mediaManager.purgeServerMedia(readMediaUrls);
@@ -155,7 +159,7 @@ export const usePrivateChatSubscriptions = ({
         if (typeof window !== 'undefined' && (window as any).orbita?.storageAddMessage) {
           for (const rm of readMsgObjects) {
             if (rm.id) {
-              (window as any).orbita.storageAddMessage(chatId, rm.id, rm).catch(() => {});
+              (window as any).orbita.storageAddMessage(targetChatId, rm.id, rm).catch(() => {});
             }
           }
         }
@@ -173,8 +177,8 @@ export const usePrivateChatSubscriptions = ({
       }
 
       if (data.type === 'chat-deleted' || (data.type === 'system' && data.action === 'delete-chat') || data.action === 'delete-chat') {
-        useChatStore.getState().deleteChat(chatId);
-        if (useChatStore.getState().activeChatId === chatId) {
+        useChatStore.getState().deleteChat(targetChatId);
+        if (useChatStore.getState().activeChatId === targetChatId) {
           useChatStore.getState().setActiveChat(null);
         }
         if (activeSubscriptions.current.has(chatId)) {
@@ -195,10 +199,10 @@ export const usePrivateChatSubscriptions = ({
           useChatStore.setState((state) => ({
             messagesByChatId: {
               ...state.messagesByChatId,
-              [chatId]: [],
+              [targetChatId]: [],
             }
           }));
-          updateChat(chatId, {
+          updateChat(targetChatId, {
             lastMsg: t('common.history_cleared'),
             unreadCount: 0,
             lastReadTimestamp: Date.now(),
@@ -230,7 +234,7 @@ export const usePrivateChatSubscriptions = ({
           updates.peerCode = data.senderCode;
           updates.originalPeerCode = data.senderCode;
         }
-        updateChat(chatId, updates);
+        updateChat(targetChatId, updates);
         return;
       }
 
@@ -241,12 +245,16 @@ export const usePrivateChatSubscriptions = ({
         }
         processedMessageIds.current.add(messageKey);
 
-        const prevQueue = decryptQueues.current.get(chatId) || Promise.resolve();
+        const prevQueue = decryptQueues.current.get(targetChatId) || Promise.resolve();
         const nextQueue = prevQueue.then(async () => {
-          let currentChat = useChatStore.getState().chats.find((c) => c.id === chatId);
-          if (!currentChat) {
-            currentChat = useChatStore.getState().restoreDeletedChat(chatId) || undefined;
+          let currentChat = useChatStore.getState().chats.find((c) => c.id === targetChatId);
+          if (!currentChat && data.senderCode) {
+            currentChat = useChatStore.getState().chats.find((c) => c.type === 'private' && (c.peerCode === data.senderCode || c.originalPeerCode === data.senderCode));
           }
+          if (!currentChat) {
+            currentChat = useChatStore.getState().restoreDeletedChat(targetChatId) || undefined;
+          }
+          const actualChatId = currentChat?.id || targetChatId;
           let messageData: any = null;
           if (data.dhPublicKey === 'PRE_HANDSHAKE' || (!data.dhPublicKey && data.ciphertext?.startsWith('{'))) {
             try {
@@ -269,7 +277,7 @@ export const usePrivateChatSubscriptions = ({
             if (decrypted === null) {
               return;
             }
-            updateChat(chatId, { ratchetState: ratchet.getState() });
+            updateChat(actualChatId, { ratchetState: ratchet.getState() });
 
             try {
               messageData = JSON.parse(decrypted);
@@ -282,7 +290,7 @@ export const usePrivateChatSubscriptions = ({
             const targetIds = new Set((messageData.messageIds || [messageData.messageId]).filter(Boolean));
             const targetTime = messageData.time;
 
-            const currentMessages = useChatStore.getState().messagesByChatId[chatId] || [];
+            const currentMessages = useChatStore.getState().messagesByChatId[actualChatId] || [];
             const updatedMessages = currentMessages.map((m) => {
               const isTarget = (m.id && targetIds.has(m.id)) || (targetTime && m.time <= targetTime && m.isOutgoing);
               if (isTarget) {
@@ -294,7 +302,7 @@ export const usePrivateChatSubscriptions = ({
             useChatStore.setState((s) => ({
               messagesByChatId: {
                 ...s.messagesByChatId,
-                [chatId]: updatedMessages,
+                [actualChatId]: updatedMessages,
               },
             }));
 
@@ -325,13 +333,13 @@ export const usePrivateChatSubscriptions = ({
             chatUpdates.peerCode = senderCode;
           }
           if (Object.keys(chatUpdates).length > 0) {
-            updateChat(chatId, chatUpdates);
+            updateChat(actualChatId, chatUpdates);
           }
 
-          const isCurrentActive = useChatStore.getState().activeChatId === chatId && typeof document !== 'undefined' && document.visibilityState === 'visible';
+          const isCurrentActive = useChatStore.getState().activeChatId === actualChatId && typeof document !== 'undefined' && document.visibilityState === 'visible';
 
           addMessage(
-            chatId,
+            actualChatId,
             {
               id: msgId,
               senderId: senderCode || messageData?.senderId || data.senderId || data.senderCode || chat.peerCode,
@@ -373,7 +381,7 @@ export const usePrivateChatSubscriptions = ({
 
           if (!isSelf && chat) {
             const activeChatId = useChatStore.getState().activeChatId;
-            if (activeChatId !== chatId || !isAppInFocusAndVisible()) {
+            if (activeChatId !== actualChatId || !isAppInFocusAndVisible()) {
               let notifBody = messageData.text;
               if (
                 messageData.mediaType === 'sticker' ||

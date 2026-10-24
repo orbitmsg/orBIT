@@ -98,12 +98,11 @@ export const useAccountStore = create<AccountStoreState>((set, get) => ({
           unsub();
           resolve();
         });
-        setTimeout(resolve, 800);
+        setTimeout(resolve, 3000);
       });
     }
 
     const auth = useAuthStore.getState();
-    const chat = useChatStore.getState();
 
     let account1 = registry.accounts.find((a) => a.id === 'account_1');
     const account2 = registry.accounts.find((a) => a.id === 'account_2');
@@ -125,23 +124,13 @@ export const useAccountStore = create<AccountStoreState>((set, get) => ({
     if (account1ChatRaw) {
       try {
         const parsed = JSON.parse(account1ChatRaw);
+        const chat = useChatStore.getState();
         if (parsed?.myCode && !chat.myCode) chat.setMyCode(parsed.myCode);
         const liveChats = useChatStore.getState().chats || [];
         const liveRealCount = liveChats.filter((c: any) => c && c.id && c.id !== 'notes' && c.id !== 'system_support').length;
-        if (liveRealCount === 0 && parsed?.chats && Array.isArray(parsed.chats) && parsed.chats.length > 0) {
+        const parsedRealChats = (parsed?.chats || []).filter((c: any) => c && c.id && c.id !== 'notes' && c.id !== 'system_support');
+        if (liveRealCount === 0 && parsedRealChats.length > 0) {
           chat.importChatState(parsed);
-        } else if (parsed?.chats && Array.isArray(parsed.chats) && parsed.chats.length > 0) {
-          const liveIds = new Set(liveChats.map((c) => c.id));
-          const missing = parsed.chats.filter((c: any) => c && c.id && !liveIds.has(c.id));
-          if (missing.length > 0) {
-            useChatStore.setState((s) => ({
-              chats: [...s.chats, ...missing],
-              messagesByChatId: {
-                ...(parsed.messagesByChatId || {}),
-                ...s.messagesByChatId,
-              },
-            }));
-          }
         }
       } catch {}
     }
@@ -185,9 +174,10 @@ export const useAccountStore = create<AccountStoreState>((set, get) => ({
       if (currentAuth.nickname || currentAuth.userId) {
         await storageSet(`${AUTH_STORAGE_PREFIX}account_1`, JSON.stringify(currentAuth.exportAuthState()));
       }
-      const currentRealCount = (currentChat.chats || []).filter((c: any) => c && c.id && c.id !== 'notes' && c.id !== 'system_support').length;
-      if (currentRealCount > 0 || currentChat.myCode) {
-        await storageSet(`${CHAT_STORAGE_PREFIX}account_1`, JSON.stringify(currentChat.exportChatState()));
+      const freshChat = useChatStore.getState();
+      const currentRealCount = (freshChat.chats || []).filter((c: any) => c && c.id && c.id !== 'notes' && c.id !== 'system_support').length;
+      if (currentRealCount > 0 || freshChat.myCode) {
+        await storageSet(`${CHAT_STORAGE_PREFIX}account_1`, JSON.stringify(freshChat.exportChatState()));
       }
     } else {
       const account2AuthRaw = await storageGet(`${AUTH_STORAGE_PREFIX}account_2`);
@@ -195,12 +185,12 @@ export const useAccountStore = create<AccountStoreState>((set, get) => ({
 
       if (account2AuthRaw) {
         try {
-          auth.importAuthState(JSON.parse(account2AuthRaw));
+          useAuthStore.getState().importAuthState(JSON.parse(account2AuthRaw));
         } catch {}
       }
       if (account2ChatRaw) {
         try {
-          chat.importChatState(JSON.parse(account2ChatRaw));
+          useChatStore.getState().importChatState(JSON.parse(account2ChatRaw));
         } catch {}
       }
     }

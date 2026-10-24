@@ -130,11 +130,6 @@ function App() {
     const unsubAuth = useAuthStore.persist.onFinishHydration(checkHydration);
     const unsubChat = useChatStore.persist.onFinishHydration(checkHydration);
 
-    if (!securityService.isPasswordSet()) {
-      useAuthStore.persist.rehydrate();
-      useChatStore.persist.rehydrate();
-    }
-
     return () => {
       unsubAuth();
       unsubChat();
@@ -249,16 +244,12 @@ function App() {
         setIsAppLocked(true);
       } else {
         setIsAppLocked(false);
-        if (!useChatStore.persist.hasHydrated()) {
-          useAuthStore.persist.rehydrate();
-          useChatStore.persist.rehydrate();
-        }
-      }
-    }).catch(() => {
-      if (!useChatStore.persist.hasHydrated()) {
         useAuthStore.persist.rehydrate();
         useChatStore.persist.rehydrate();
       }
+    }).catch(() => {
+      useAuthStore.persist.rehydrate();
+      useChatStore.persist.rehydrate();
     });
   }, []);
 

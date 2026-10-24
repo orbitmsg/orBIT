@@ -370,12 +370,9 @@ export const useChatStore = create<ChatState>()(
             existsIndex = state.chats.findIndex((c) => {
               if (c.type !== 'private' || c.id === 'notes') return false;
               if (c.id === chatEntry.id) return true;
-              if (chatEntry.peerCode && (c.peerCode === chatEntry.peerCode || c.originalPeerCode === chatEntry.peerCode)) return true;
-              if (chatEntry.originalPeerCode && (c.peerCode === chatEntry.originalPeerCode || c.originalPeerCode === chatEntry.originalPeerCode)) return true;
-              if (c.peerCode && (chatEntry.peerCode === c.peerCode || chatEntry.originalPeerCode === c.peerCode)) return true;
+              if (chatEntry.peerCode && c.peerCode && (c.peerCode === chatEntry.peerCode || c.originalPeerCode === chatEntry.peerCode)) return true;
+              if (chatEntry.originalPeerCode && c.originalPeerCode && (c.peerCode === chatEntry.originalPeerCode || c.originalPeerCode === chatEntry.originalPeerCode)) return true;
               if (chatEntry.peerPublicKey && c.peerPublicKey && c.peerPublicKey === chatEntry.peerPublicKey) return true;
-              if (chatEntry.numericId && c.numericId && c.numericId === chatEntry.numericId) return true;
-              if (chatEntry.username && c.username && chatEntry.username.toLowerCase() === c.username.toLowerCase()) return true;
               return false;
             });
           } else {
@@ -384,8 +381,10 @@ export const useChatStore = create<ChatState>()(
 
           if (existsIndex !== -1) {
             const exists = state.chats[existsIndex];
-            const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-            const canonicalId = (isUuid(chatEntry.id) && !isUuid(exists.id)) ? chatEntry.id : exists.id;
+            const msgsMap = state.messagesByChatId || {};
+            const msgsExists = msgsMap[exists.id] || [];
+            const msgsEntry = chatEntry.id ? (msgsMap[chatEntry.id] || []) : [];
+            const canonicalId = (msgsExists.length === 0 && msgsEntry.length > 0 && chatEntry.id) ? chatEntry.id : exists.id;
             const alternateId = canonicalId === exists.id ? chatEntry.id : exists.id;
 
             let updatedMessagesMap = state.messagesByChatId;

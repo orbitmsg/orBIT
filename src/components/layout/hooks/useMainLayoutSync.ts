@@ -146,7 +146,9 @@ export const useMainLayoutSync = ({
 
       for (const conf of confirmations) {
         const currentChats = useChatStore.getState().chats;
-        const existing = currentChats.find(c => c.id === conf.chat_id);
+        const existing = currentChats.find(
+          c => c.id === conf.chat_id || (c.type === 'private' && conf.sender_code && (c.peerCode === conf.sender_code || c.originalPeerCode === conf.sender_code))
+        );
 
         if (!existing) {
           if (useChatStore.getState().deletedChatIds?.includes(conf.chat_id)) {
@@ -155,34 +157,40 @@ export const useMainLayoutSync = ({
           continue;
         }
 
-          if (existing.sharedSecret && !existing.ratchetState) {
-            const initiatorPrivateKey = existing.sharedSecret;
-            const initiatorPublicKey = derivePublicKey(initiatorPrivateKey);
-            const sharedSecret = deriveSharedSecret(initiatorPrivateKey, conf.sender_public_key);
-            const rootKey = deriveRootKey(sharedSecret);
-            const ratchet = DoubleRatchet.initSymmetric(rootKey, initiatorPrivateKey, initiatorPublicKey, conf.sender_public_key);
+        if (existing.sharedSecret && !existing.ratchetState) {
+          const initiatorPrivateKey = existing.sharedSecret;
+          const initiatorPublicKey = derivePublicKey(initiatorPrivateKey);
+          const sharedSecret = deriveSharedSecret(initiatorPrivateKey, conf.sender_public_key);
+          const rootKey = deriveRootKey(sharedSecret);
+          const ratchet = DoubleRatchet.initSymmetric(rootKey, initiatorPrivateKey, initiatorPublicKey, conf.sender_public_key);
 
-            const peerCode = conf.sender_code || existing.peerCode || (existing.name && existing.name.length === 36 ? existing.name : undefined);
-            if (peerCode) {
-              revalidateDevelopersOnConnection(peerCode);
-            }
-            const safeLastMsg = existing.lastMsg && existing.lastMsg !== 'Заявка отправлена' && existing.lastMsg !== 'E2EE_SECURE_CHANNEL_READY'
-              ? existing.lastMsg
-              : 'E2EE_SECURE_CHANNEL_READY';
-            updateChat(conf.chat_id, {
-              name: conf.sender_nickname,
-              lastMsg: safeLastMsg,
-              online: false,
-              sharedSecret: sharedSecret,
-              ratchetState: ratchet.getState(),
-              avatarUrl: conf.sender_avatar_url ?? undefined,
-              peerCode: peerCode,
-            });
-
-            await supabaseService.markHandshakeConsumed(conf.id);
-          } else if (existing.ratchetState) {
-            await supabaseService.markHandshakeConsumed(conf.id);
+          const peerCode = conf.sender_code || existing.peerCode || (existing.name && existing.name.length === 36 ? existing.name : undefined);
+          if (peerCode) {
+            revalidateDevelopersOnConnection(peerCode);
           }
+          const safeLastMsg = existing.lastMsg && existing.lastMsg !== 'Заявка отправлена' && existing.lastMsg !== 'E2EE_SECURE_CHANNEL_READY'
+            ? existing.lastMsg
+            : 'E2EE_SECURE_CHANNEL_READY';
+          updateChat(existing.id, {
+            name: conf.sender_nickname,
+            lastMsg: safeLastMsg,
+            online: false,
+            sharedSecret: sharedSecret,
+            ratchetState: ratchet.getState(),
+            avatarUrl: conf.sender_avatar_url ?? undefined,
+            peerCode: peerCode,
+          });
+          subscribeToChat(existing.id, sharedSecret);
+          subscribeToDeliveryUpdates(existing.id);
+          if (conf.chat_id !== existing.id) {
+            subscribeToChat(conf.chat_id, sharedSecret);
+            subscribeToDeliveryUpdates(conf.chat_id);
+          }
+
+          await supabaseService.markHandshakeConsumed(conf.id);
+        } else if (existing.ratchetState) {
+          await supabaseService.markHandshakeConsumed(conf.id);
+        }
         }
       } catch (err) {
       console.error('[MainLayout] Failed to load pending handshakes:', err);
@@ -353,6 +361,7 @@ export const useMainLayoutSync = ({
             chat = useChatStore.getState().chats.find(c => c.id === record.chat_id) || (newChatObj as Chat);
           }
 
+          const targetChatId = chat?.id || record.chat_id;
           let messageData: any = null;
 
           if (record.dh_public_key === 'PRE_HANDSHAKE' || (!record.dh_public_key && record.ciphertext?.startsWith('{'))) {
@@ -364,7 +373,7 @@ export const useMainLayoutSync = ({
               continue;
             }
           } else {
-            const activeRatchetState = ratchetStateUpdates.get(record.chat_id) || chat?.ratchetState;
+            const activeRatchetState = ratchetStateUpdates.get(targetChatId) || chat?.ratchetState;
             if (!chat || !chat.sharedSecret || !activeRatchetState) {
               continue;
             }
@@ -379,7 +388,7 @@ export const useMainLayoutSync = ({
             if (decrypted === null) {
               continue;
             }
-            ratchetStateUpdates.set(record.chat_id, ratchet.getState());
+            ratchetStateUpdates.set(targetChatId, ratchet.getState());
 
             try {
               messageData = JSON.parse(decrypted);
@@ -392,7 +401,6 @@ export const useMainLayoutSync = ({
 
           if (messageData?.type === 'delete-message' || messageData?.type === 'delete') {
             processedMessageIds.current.add(record.id);
-            const targetChatId = messageData.chatId || record.chat_id;
             const targetId = messageData.targetMessageId || messageData.messageId;
             if (targetId) {
               deleteActions.push({ chatId: targetChatId, messageId: targetId });
@@ -403,7 +411,6 @@ export const useMainLayoutSync = ({
 
           if (messageData?.type === 'receipt' || messageData?.type === 'read' || messageData?.receiptType === 'read') {
             processedMessageIds.current.add(record.id);
-            const targetChatId = messageData.chatId || record.chat_id;
             const rawIds: unknown[] = messageData.messageIds || [messageData.messageId];
             const targetIds = new Set<string>(rawIds.filter((id): id is string => typeof id === 'string' && id.length > 0));
             const existingUpdate = receiptUpdates.get(targetChatId);
@@ -424,10 +431,10 @@ export const useMainLayoutSync = ({
           }
 
           const msgId = messageData?.id || record.id;
-          const isActiveChat = useChatStore.getState().activeChatId === record.chat_id && typeof document !== 'undefined' && document.visibilityState === 'visible';
+          const isActiveChat = useChatStore.getState().activeChatId === targetChatId && typeof document !== 'undefined' && document.visibilityState === 'visible';
 
           batchMessages.push({
-            chatId: chat?.id || record.chat_id,
+            chatId: targetChatId,
             message: {
               id: msgId,
               senderId: record.sender_id,
@@ -455,7 +462,7 @@ export const useMainLayoutSync = ({
           });
 
           if (isActiveChat) {
-            readReceiptsToSend.push({ chatId: chat?.id || record.chat_id, msgId });
+            readReceiptsToSend.push({ chatId: targetChatId, msgId });
           }
 
           processedMessageIds.current.add(record.id);

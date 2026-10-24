@@ -143,7 +143,6 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
       state.pinnedChatIds = [];
     }
     if (state && Array.isArray(state.chats)) {
-      const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
       const privateChats = state.chats.filter((c) => c.type === 'private' && c.id !== 'notes');
       const otherChats = state.chats
         .filter((c) => c.type !== 'private' || c.id === 'notes')
@@ -153,17 +152,36 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
           online: false,
         }));
 
+      const messagesMap = state.messagesByChatId || {};
+
+      const getChatScore = (chat: any): number => {
+        let score = 0;
+        const msgs = messagesMap[chat.id];
+        if (Array.isArray(msgs) && msgs.length > 0) {
+          score += msgs.length * 10;
+        }
+        if (chat.ratchetState) {
+          score += 50;
+          const progress = (Number(chat.ratchetState.sendIndex) || 0) + (Number(chat.ratchetState.recvIndex) || 0);
+          score += progress * 5;
+        }
+        if (chat.sharedSecret) {
+          score += 20;
+        }
+        if (chat.lastMsg && chat.lastMsg !== 'E2EE_SECURE_CHANNEL_READY' && chat.lastMsg !== 'Заявка отправлена') {
+          score += 5;
+        }
+        return score;
+      };
+
       const groups: typeof privateChats[] = [];
       for (const chat of privateChats) {
         let foundGroup = groups.find((group) =>
           group.some((c) => {
             if (c.id === chat.id) return true;
-            if (chat.peerCode && (c.peerCode === chat.peerCode || c.originalPeerCode === chat.peerCode)) return true;
-            if (chat.originalPeerCode && (c.peerCode === chat.originalPeerCode || c.originalPeerCode === chat.originalPeerCode)) return true;
-            if (c.peerCode && (chat.peerCode === c.peerCode || chat.originalPeerCode === c.peerCode)) return true;
+            if (chat.peerCode && c.peerCode && (c.peerCode === chat.peerCode || c.originalPeerCode === chat.peerCode)) return true;
+            if (chat.originalPeerCode && c.originalPeerCode && c.originalPeerCode === chat.originalPeerCode) return true;
             if (chat.peerPublicKey && c.peerPublicKey && c.peerPublicKey === chat.peerPublicKey) return true;
-            if (chat.numericId && c.numericId && c.numericId === chat.numericId) return true;
-            if (chat.username && c.username && chat.username.toLowerCase() === c.username.toLowerCase()) return true;
             return false;
           })
         );
@@ -175,7 +193,6 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
       }
 
       const deduplicatedPrivate: typeof privateChats = [];
-      const messagesMap = state.messagesByChatId || {};
 
       for (const group of groups) {
         if (group.length === 1) {
@@ -183,12 +200,13 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
           continue;
         }
 
-        let canonical = group.find((c) => isUuid(c.id)) || group[0];
+        group.sort((a, b) => getChatScore(b) - getChatScore(a));
+        let canonical = group[0];
         let mergedMessages: Message[] = messagesMap[canonical.id] ? [...messagesMap[canonical.id]] : [];
         const seenMsgKeys = new Set(mergedMessages.map((m) => m.id || `${m.time}_${m.text}`));
 
-        for (const dup of group) {
-          if (dup.id === canonical.id) continue;
+        for (let i = 1; i < group.length; i++) {
+          const dup = group[i];
           const dupMsgs = messagesMap[dup.id] || [];
           for (const m of dupMsgs) {
             const key = m.id || `${m.time}_${m.text}`;

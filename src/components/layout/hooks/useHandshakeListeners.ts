@@ -387,7 +387,13 @@ export const useHandshakeListeners = ({
         updates.lastMsg = 'E2EE_SECURE_CHANNEL_READY';
       }
 
-      updateChat(data.chatId, updates);
+      updateChat(existing.id, updates);
+      if (updates.sharedSecret || existing.sharedSecret) {
+        subscribeToChat(existing.id, (updates.sharedSecret || existing.sharedSecret)!);
+        if (data.chatId !== existing.id) {
+          subscribeToChat(data.chatId, (updates.sharedSecret || existing.sharedSecret)!);
+        }
+      }
     };
 
     const handleGroupAdded = (data: any) => {

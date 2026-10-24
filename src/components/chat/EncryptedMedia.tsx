@@ -55,6 +55,7 @@ export const EncryptedMedia = memo(({
 
   const isAppVisible = useAppVisibility();
   const isMediaViewerOpen = useChatStore((s) => s.isMediaViewerOpen);
+  const chatAutoPlayVideos = useChatStore((s) => s.chatAutoPlayVideos);
   const [inView, setInView] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -82,7 +83,7 @@ export const EncryptedMedia = memo(({
     return () => observer.disconnect();
   }, []);
 
-  const shouldPlay = inView && isAppVisible && !isMediaViewerOpen;
+  const shouldPlay = inView && isAppVisible && !isMediaViewerOpen && chatAutoPlayVideos;
 
   useEffect(() => {
     if (!blobUrl || !videoRef.current || isDraggingRef.current) return;

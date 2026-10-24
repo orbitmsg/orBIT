@@ -231,6 +231,11 @@ export const useChatStore = create<ChatState>()(
       autoLoadMaxAudioSizeMb: 10,
       autoLoadMaxFileSizeMb: 10,
 
+      stickersAutoplayPanel: true,
+      stickersAutoplayChat: true,
+      chatAutoPlayVideos: true,
+      callAnimationsEnabled: true,
+
       draftsByChatId: {},
       setDraft: (chatId, text) =>
         set((state) => ({
@@ -1406,6 +1411,11 @@ export const useChatStore = create<ChatState>()(
       setAutoLoadMaxVideoSizeMb: (mb) => set({ autoLoadMaxVideoSizeMb: mb }),
       setAutoLoadMaxAudioSizeMb: (mb) => set({ autoLoadMaxAudioSizeMb: mb }),
       setAutoLoadMaxFileSizeMb: (mb) => set({ autoLoadMaxFileSizeMb: mb }),
+
+      setStickersAutoplayPanel: (enabled) => set({ stickersAutoplayPanel: enabled }),
+      setStickersAutoplayChat: (enabled) => set({ stickersAutoplayChat: enabled }),
+      setChatAutoPlayVideos: (enabled) => set({ chatAutoPlayVideos: enabled }),
+      setCallAnimationsEnabled: (enabled) => set({ callAnimationsEnabled: enabled }),
 
       shouldAutoLoadMedia: (type, sizeBytes, isOwn) => {
         if (isOwn) return true;

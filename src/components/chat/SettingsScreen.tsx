@@ -1,5 +1,4 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight } from 'lucide-react';
 import { securityService } from '../../services/securityService';
 
 import { OrbitaKeySettings } from '../settings/OrbitaKeySettings';
@@ -30,6 +29,7 @@ import { useAccountStore } from '../../services/accountManager';
 import { AccountBackupScreen } from '../settings/AccountBackupScreen';
 import { ConnectionSettingsScreen } from '../settings/ConnectionSettingsScreen';
 import { DataMemorySettings } from '../settings/DataMemorySettings';
+import { EnergySettingsScreen } from '../settings/EnergySettingsScreen';
 import { useConnectionStore } from '../../store/useConnectionStore';
 import { useCallStore } from '../../store/useCallStore';
 import { useDevicePermissionStore } from '../../store/useDevicePermissionStore';
@@ -63,11 +63,7 @@ import {
 import { broadcastProfileUpdate } from '../settings/broadcastProfileUpdate';
 import { PrivacySettingsScreen } from '../settings/PrivacySettingsScreen';
 import { PasswordSettingsScreen } from '../settings/PasswordSettingsScreen';
-import {
-  SignalThemePicker,
-  SignalChatColorPicker,
-  BubbleRadiusControl,
-  BubbleSlider,
+import {  BubbleSlider,
 } from '../settings/AppearanceSettings';
 import { CallsTab } from '../settings/tabs/CallsTab';
 import { LanguageTab, FontTab } from '../settings/tabs/LanguageFontTabs';
@@ -89,9 +85,7 @@ export {
 
 export const SettingsScreen = () => {
   const { t } = useTranslation();
-  const {
-    setTheme, currentTheme,
-    fontFamily, setFontFamily,
+  const {    fontFamily, setFontFamily,
     language, setLanguage,
     notificationCount, setNotificationCount,
     notificationPosition, setNotificationPosition,
@@ -768,7 +762,7 @@ export const SettingsScreen = () => {
     calls:         t('settings.calls'),
     font:          t('settings.font'),
     dataMemory:    t('settings.data_memory'),
-    energy:        t('settings.energy'),
+    energy:        t('settings.energy_and_animations', 'Заряд батареи и анимации'),
     notifications: t('settings.notifications_and_sounds') || 'Уведомления и звуки',
     language:      t('settings.language'),
     preferences:   t('settings.preferences'),
@@ -971,35 +965,6 @@ export const SettingsScreen = () => {
       case 'connection':
         return <ConnectionSettingsScreen onBack={handleBack} />;
       case 'chats':
-        return (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }}>
-            <div style={{ marginBottom: 4 }}>
-              <p style={{ fontSize: 14, fontWeight: 500, color: MD3.onSurface, margin: '0 0 8px', userSelect: 'none', padding: '0 20px' }}>{t('settings.themes')}</p>
-              <SignalThemePicker activeTheme={currentTheme} onThemeChange={setTheme} />
-            </div>
-            <div style={{ marginBottom: 4 }}>
-              <p style={{ fontSize: 14, fontWeight: 500, color: MD3.onSurface, margin: '0 0 8px', userSelect: 'none', padding: '0 20px' }}>{t('settings.chat_color')}</p>
-              <SignalChatColorPicker />
-            </div>
-            <Block>
-              <SettingsRow
-                label={t('settings.font')}
-                onClick={() => pushTab('font')}
-                right={
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                    <span style={{ fontSize: 13, color: MD3.onSurfaceVar }}>
-                      {FONT_OPTIONS.find(o => o.value === fontFamily)?.label || fontFamily}
-                    </span>
-                    <ChevronRight size={16} color={MD3.onSurfaceVar} />
-                  </div>
-                }
-              />
-              <SettingsRow label={t('settings.bubble_radius')} />
-              <BubbleRadiusControl />
-            </Block>
-
-          </motion.div>
-        );
       case 'font':
         return renderFont();
       case 'folders':
@@ -1007,6 +972,7 @@ export const SettingsScreen = () => {
       case 'dataMemory':
         return renderDataMemory();
       case 'energy':
+        return <EnergySettingsScreen />;
         return (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }}>
             <Block style={{ marginBottom: 8 }}>

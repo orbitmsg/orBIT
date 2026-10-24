@@ -43,6 +43,7 @@ const AlbumTile = memo(({
   const { t } = useTranslation();
   const isAppVisible = useAppVisibility();
   const isMediaViewerOpen = useChatStore((s) => s.isMediaViewerOpen);
+  const chatAutoPlayVideos = useChatStore((s) => s.chatAutoPlayVideos);
   const [inView, setInView] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -113,7 +114,7 @@ const AlbumTile = memo(({
   const blurSrc = item.blurPreview || (item.thumbnail?.startsWith('data:') ? item.thumbnail : null) || (!posterSrc && item.url?.startsWith('data:') ? item.url : null);
   const mediaSrc = blobUrl || (isLocalMedia ? ((item as any).preview || item.url) : undefined);
 
-  const shouldPlay = inView && isAppVisible && !isMediaViewerOpen;
+  const shouldPlay = inView && isAppVisible && !isMediaViewerOpen && chatAutoPlayVideos;
 
   useEffect(() => {
     if (!mediaSrc || !videoRef.current || isDraggingRef.current || !isVideo) return;

@@ -470,6 +470,16 @@ export interface ChatState {
   autoLoadMaxAudioSizeMb: number;
   autoLoadMaxFileSizeMb: number;
 
+  stickersAutoplayPanel: boolean;
+  stickersAutoplayChat: boolean;
+  chatAutoPlayVideos: boolean;
+  callAnimationsEnabled: boolean;
+
+  setStickersAutoplayPanel: (enabled: boolean) => void;
+  setStickersAutoplayChat: (enabled: boolean) => void;
+  setChatAutoPlayVideos: (enabled: boolean) => void;
+  setCallAnimationsEnabled: (enabled: boolean) => void;
+
   setAutoLoadMedia: (enabled: boolean) => void;
   setAutoLoadPhotos: (enabled: boolean) => void;
   setAutoLoadVideos: (enabled: boolean) => void;

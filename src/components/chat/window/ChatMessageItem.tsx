@@ -98,6 +98,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   handleRetryMessage,
 }) => {
   const { t } = useTranslation();
+  const stickersAutoplayChat = useChatStore((s) => s.stickersAutoplayChat);
 
   const isOwn = isMessageOutgoing(msg, myCode, myNickname, activeChat, myUserId);
   const media = parseMedia(msg);
@@ -849,7 +850,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     <TgsPlayer
                       src={media.url}
                       loop={true}
-                      autoplay={true}
+                      autoplay={stickersAutoplayChat}
                       className="w-full h-full select-none cursor-pointer active:scale-[0.98] transition-transform"
                     />
                   ) : (

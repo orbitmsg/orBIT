@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, User, Database, RotateCcw, Trash2 } from 'lucide-react';
+import { ChevronRight, User, Database, RotateCcw, Trash2, BatteryCharging } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
 import { DeveloperBadge } from '../../ui/DeveloperBadge';
 import { SettingsFolderIcon } from '../ChatFoldersSettings';
@@ -215,6 +215,12 @@ export const MainTab = ({
           icon={<Database size={20} color={MD3.onSurface} />}
           label={t('settings.data_memory')}
           onClick={() => pushTab('dataMemory')}
+        />
+
+        <MenuItem
+          icon={<BatteryCharging size={20} color={MD3.onSurface} />}
+          label={t('settings.energy_and_animations', 'Заряд батареи и анимации')}
+          onClick={() => pushTab('energy')}
         />
 
         <MenuItem

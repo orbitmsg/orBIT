@@ -20,6 +20,7 @@ import {
   searchStickers,
 } from '../../lib/stickers-and-gifs';
 import { TgsPlayer } from './TgsPlayer';
+import { useChatStore } from '../../store/useChatStore';
 
 interface EmojiPickerProps {
   onSelect: (emoji: string) => void;
@@ -51,6 +52,7 @@ const StickerGridButton: React.FC<{
 }> = ({ sticker, onSelect }) => {
   const isTgs = sticker.url.endsWith('.tgs');
   const [isHovered, setIsHovered] = useState(false);
+  const stickersAutoplayPanel = useChatStore((s) => s.stickersAutoplayPanel);
 
   return (
     <button
@@ -65,8 +67,8 @@ const StickerGridButton: React.FC<{
         <TgsPlayer
           src={sticker.url}
           loop={true}
-          autoplay={false}
-          isPlaying={isHovered}
+          autoplay={stickersAutoplayPanel}
+          isPlaying={stickersAutoplayPanel ? undefined : isHovered}
           className="w-full h-full select-none pointer-events-none"
         />
       ) : (

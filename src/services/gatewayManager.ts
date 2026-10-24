@@ -37,15 +37,6 @@ export function getCloudflareWorkerUrl(): string {
 
 const DEFAULT_GATEWAYS: GatewayEndpoint[] = [
   {
-    id: 'cloudflare-worker',
-    name: 'Cloudflare Edge Worker',
-    provider: 'custom',
-    url: getCloudflareWorkerUrl(),
-    ping: null,
-    status: 'healthy',
-    lastChecked: null,
-  },
-  {
     id: 'vercel-edge',
     name: 'Vercel Serverless Gateway',
     provider: 'custom',
@@ -54,17 +45,26 @@ const DEFAULT_GATEWAYS: GatewayEndpoint[] = [
     status: 'healthy',
     lastChecked: null,
   },
+  {
+    id: 'cloudflare-worker',
+    name: 'Cloudflare Edge Worker',
+    provider: 'custom',
+    url: getCloudflareWorkerUrl(),
+    ping: null,
+    status: 'healthy',
+    lastChecked: null,
+  },
 ];
 
 class GatewayManager {
   private gateways: GatewayEndpoint[] = [...DEFAULT_GATEWAYS];
-  private activeGatewayId: string = 'cloudflare-worker';
+  private activeGatewayId: string = 'vercel-edge';
 
   constructor() {
     sqliteStorage.getJson<GatewayEndpoint[]>('orbita_custom_gateways', []).then((saved) => {
       if (Array.isArray(saved) && saved.length > 0) {
         const filtered = saved.filter(
-          (g) => g && g.url && !g.url.includes('a.run.app') && !g.url.includes('google')
+          (g) => g && g.url && !g.url.includes('workers.dev') && !g.url.includes('a.run.app') && !g.url.includes('google')
         );
         if (filtered.length > 0) {
           this.gateways = filtered;
@@ -126,5 +126,5 @@ class GatewayManager {
 export const gatewayManager = new GatewayManager();
 
 export function getVercelBaseUrl(): string {
-  return gatewayManager.getBaseUrl();
+  return getVercelFallbackUrl();
 }

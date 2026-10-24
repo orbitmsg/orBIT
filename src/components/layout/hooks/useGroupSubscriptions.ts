@@ -419,7 +419,12 @@ export const useGroupSubscriptions = ({
         useChatStore.getState().updateChat(chatId, { activeCallRoom: null });
         return;
       }
-      if (data?.type === 'group-call-started' || data?.type === 'client-group-call-started') {
+      if (
+        data?.type === 'group-call-started' ||
+        data?.type === 'client-group-call-started' ||
+        data?.type === 'group-call-active' ||
+        data?.type === 'client-group-call-active'
+      ) {
         useChatStore.getState().updateChat(chatId, { activeCallRoom: data.roomName || `group-call-${chatId}` });
         return;
       }
@@ -546,6 +551,8 @@ export const useGroupSubscriptions = ({
           if (sysType === 'call_ended') {
             useChatStore.getState().updateChat(chatId, { activeCallRoom: null });
           } else if (sysType === 'call') {
+            const fallbackRoom = parsedData?.roomName || (data as any)?.roomName || `group-call-${chatId}`;
+            useChatStore.getState().updateChat(chatId, { activeCallRoom: fallbackRoom });
             groupService.getActiveCall(chatId).then((call) => {
               if (call && call.status === 'active') {
                 useChatStore.getState().updateChat(chatId, { activeCallRoom: call.roomName });
@@ -711,6 +718,8 @@ export const useGroupSubscriptions = ({
     };
     channel.bind('group-call-started', handleGroupCallStarted);
     channel.bind('client-group-call-started', handleGroupCallStarted);
+    channel.bind('group-call-active', handleGroupCallStarted);
+    channel.bind('client-group-call-active', handleGroupCallStarted);
     channel.bind('group-call-ended', handleGroupCallEnded);
     channel.bind('client-group-call-ended', handleGroupCallEnded);
     channel.bind('member-joined', (data: any) => {

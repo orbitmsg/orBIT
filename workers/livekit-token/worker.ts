@@ -40,6 +40,8 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, X-Admin-Token, x-user-id',
 };
 
+const inMemoryActiveGroupCalls = new Map<string, any>();
+
 function verifyWorkerEd25519(userIdHex: string, version: number, configBlob: string, signatureHex: string): boolean {
   if (!userIdHex || !signatureHex || version === undefined || !configBlob) return false;
   try {
@@ -2395,6 +2397,16 @@ export default {
                 avatarUrl: m.avatar_url || null,
               }));
 
+              let inviteActive = true;
+              let expiresAt: number | null = null;
+              if (groupData.creator_id && typeof groupData.creator_id === 'string' && groupData.creator_id.startsWith('{')) {
+                try {
+                  const parsed = JSON.parse(groupData.creator_id);
+                  if (parsed.active === false) inviteActive = false;
+                  if (typeof parsed.expiresAt === 'number') expiresAt = parsed.expiresAt;
+                } catch {}
+              }
+
               return jsonResponse({
                 status: 'ok',
                 group: {
@@ -2409,6 +2421,8 @@ export default {
                   maxMembers: groupData.max_members || 10,
                   members,
                   createdAt: new Date(groupData.created_at).getTime(),
+                  inviteActive,
+                  inviteExpiresAt: expiresAt,
                 },
               });
             }
@@ -2879,8 +2893,14 @@ export default {
               .eq('status', 'active')
               .maybeSingle();
 
-            return jsonResponse({ status: 'ok', call: data || null });
+            if (data) {
+              return jsonResponse({ status: 'ok', call: data });
+            }
           } catch {}
+        }
+        const memCall = inMemoryActiveGroupCalls.get(groupId);
+        if (memCall && memCall.status === 'active') {
+          return jsonResponse({ status: 'ok', call: memCall });
         }
         return jsonResponse({ status: 'ok', call: null });
       }
@@ -2890,20 +2910,23 @@ export default {
         const { groupId, roomName, hostCode, hostNickname } = body;
         if (!groupId || !roomName) return errorResponse('Missing call parameters', 400);
 
-        const supabase = getGroupsSupabaseClient(env);
         const nowIso = new Date().toISOString();
+        const callData = {
+          group_id: groupId,
+          room_name: roomName,
+          status: 'active',
+          host_code: hostCode || hostNickname,
+          host_nickname: hostNickname || 'Host',
+          participants_count: 1,
+          created_at: nowIso,
+          updated_at: nowIso,
+        };
+        inMemoryActiveGroupCalls.set(groupId, callData);
+
+        const supabase = getGroupsSupabaseClient(env);
         if (supabase) {
           try {
-            await supabase.from('group_calls').upsert({
-              group_id: groupId,
-              room_name: roomName,
-              status: 'active',
-              host_code: hostCode || hostNickname,
-              host_nickname: hostNickname || 'Host',
-              participants_count: 1,
-              created_at: nowIso,
-              updated_at: nowIso,
-            });
+            await supabase.from('group_calls').upsert(callData);
           } catch {}
         }
 
@@ -2921,6 +2944,8 @@ export default {
         const body = (await request.json()) as any;
         const { groupId } = body;
         if (!groupId) return errorResponse('Missing groupId', 400);
+
+        inMemoryActiveGroupCalls.delete(groupId);
 
         const supabase = getGroupsSupabaseClient(env);
         if (supabase) {

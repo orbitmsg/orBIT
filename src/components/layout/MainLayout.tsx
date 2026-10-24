@@ -138,6 +138,18 @@ export const MainLayout = () => {
   const [showCallsModal, setShowCallsModal] = useState(false);
   const [showFriendRequestsModal, setShowFriendRequestsModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [groupInviteUrl, setGroupInviteUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleOpenInvite = (e: any) => {
+      const u = e?.detail?.url;
+      if (u) setGroupInviteUrl(u);
+    };
+    window.addEventListener('orbita:open-group-invite', handleOpenInvite);
+    return () => {
+      window.removeEventListener('orbita:open-group-invite', handleOpenInvite);
+    };
+  }, []);
   const [isMobileView, setIsMobileView] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 680 : false);
   const [chatContextMenu, setChatContextMenu] = useState<ChatContextMenu>({
     visible: false,
@@ -1258,6 +1270,8 @@ export const MainLayout = () => {
         </AnimatePresence>
 
         <MainLayoutModals
+          groupInviteUrl={groupInviteUrl}
+          setGroupInviteUrl={setGroupInviteUrl}
           connectModalConfig={connectModalConfig}
           setConnectModalConfig={setConnectModalConfig}
           handleConnectRequest={handleConnectRequest}

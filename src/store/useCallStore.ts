@@ -48,6 +48,7 @@ let incomingAutoRejectTimer: ReturnType<typeof setTimeout> | null = null;
 let connectingTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
 let ringingOfferIntervalTimer: ReturnType<typeof setInterval> | null = null;
 let peerLeftGraceTimer: ReturnType<typeof setTimeout> | null = null;
+let groupCallHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
 let listenersAttached = false;
 let activationInProgress = false;
 
@@ -178,6 +179,7 @@ function clearAllTimers() {
   if (connectingTimeoutTimer) { clearTimeout(connectingTimeoutTimer); connectingTimeoutTimer = null; }
   if (ringingOfferIntervalTimer) { clearInterval(ringingOfferIntervalTimer); ringingOfferIntervalTimer = null; }
   if (peerLeftGraceTimer) { clearTimeout(peerLeftGraceTimer); peerLeftGraceTimer = null; }
+  if (groupCallHeartbeatTimer) { clearInterval(groupCallHeartbeatTimer); groupCallHeartbeatTimer = null; }
   prefetchedToken = null;
 }
 
@@ -753,20 +755,35 @@ export const useCallStore = create<CallStore>((set, get) => {
           isEnding: false,
         });
 
+        const sendGroupCallSignal = (type: string) => {
+          try {
+            const groupPusher = getGroupPusher();
+            const grpCh = groupPusher.subscribe(`presence-group-${chatId}`);
+            const payload = { type, roomName, chatId };
+            const notifyCall = () => {
+              try { grpCh.trigger(`client-${type}`, payload); } catch {}
+              try { grpCh.trigger('client-message', payload); } catch {}
+            };
+            if (grpCh.subscribed) notifyCall(); else grpCh.bind('pusher:subscription_succeeded', notifyCall);
+          } catch {}
+          try {
+            ablyService.sendMessage(chatId, { type, roomName, chatId }).catch(() => {});
+          } catch {}
+        };
+
         if (isNewCall) {
           const myCode = useChatStore.getState().myCode;
           groupService.startCall(chatId, roomName, myCode || myNickname, myNickname).catch(() => {});
           useChatStore.getState().updateChat(chatId, { activeCallRoom: roomName });
-          try {
-            const groupPusher = getGroupPusher();
-            const grpCh = groupPusher.subscribe(`presence-group-${chatId}`);
-            const notifyCall = () => {
-              try { grpCh.trigger('client-group-call-started', { roomName, chatId }); } catch {}
-              try { grpCh.trigger('client-message', { type: 'group-call-started', roomName, chatId }); } catch {}
-            };
-            if (grpCh.subscribed) notifyCall(); else grpCh.bind('pusher:subscription_succeeded', notifyCall);
-          } catch {}
+          sendGroupCallSignal('group-call-started');
         }
+
+        if (groupCallHeartbeatTimer) {
+          clearInterval(groupCallHeartbeatTimer);
+        }
+        groupCallHeartbeatTimer = setInterval(() => {
+          sendGroupCallSignal('group-call-active');
+        }, 10000);
 
         const isElectronSeparateCallWindow = typeof window !== 'undefined' && !!(window as any).orbita?.openCallWindow;
         if (!isElectronSeparateCallWindow && fetchedToken && fetchedUrl) {
@@ -1014,16 +1031,24 @@ export const useCallStore = create<CallStore>((set, get) => {
         const isInitiator = activeCall.direction === 'outgoing';
         const shouldEndForGroup = remainingRemotes === 0 || (isInitiator && isEarlyState);
         if (shouldEndForGroup) {
+          if (groupCallHeartbeatTimer) {
+            clearInterval(groupCallHeartbeatTimer);
+            groupCallHeartbeatTimer = null;
+          }
           groupService.endCall(chatId, state.myNickname || undefined).catch(() => {});
           useChatStore.getState().updateChat(chatId, { activeCallRoom: null });
           try {
             const groupPusher = getGroupPusher();
             const grpCh = groupPusher.subscribe(`presence-group-${chatId}`);
+            const endPayload = { type: 'group-call-ended', chatId, roomName };
             const sendEnd = () => {
-              try { grpCh.trigger('client-group-call-ended', { chatId, roomName }); } catch {}
-              try { grpCh.trigger('client-message', { type: 'group-call-ended', chatId, roomName }); } catch {}
+              try { grpCh.trigger('client-group-call-ended', endPayload); } catch {}
+              try { grpCh.trigger('client-message', endPayload); } catch {}
             };
             if (grpCh.subscribed) sendEnd(); else grpCh.bind('pusher:subscription_succeeded', sendEnd);
+          } catch {}
+          try {
+            ablyService.sendMessage(chatId, { type: 'group-call-ended', chatId, roomName }).catch(() => {});
           } catch {}
         }
       }

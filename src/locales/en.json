@@ -1025,7 +1025,11 @@
       "added_success": "Added",
       "search_contacts": "Search contacts...",
       "no_contacts_found": "No contacts found",
-      "add_friend_hint": "Add friends in direct chats first to invite them here"
+      "add_friend_hint": "Add friends in direct chats first to invite them here",
+      "group_invitation": "Group invitation",
+      "link_expired_or_revoked": "Link expired or revoked",
+      "join": "Join",
+      "cancel": "Cancel"
     },
     "groupCall": {
       "active_title": "Group call in progress",

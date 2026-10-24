@@ -2,10 +2,9 @@ import React, { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, type Chat } from '../../../store/useChatStore';
 import { useAuthStore, getInitialNumericId } from '../../../store/useAuthStore';
-import { getPusher, getGroupPusher } from '../../../utils/pusher';
+import { getPusher } from '../../../utils/pusher';
 import { ablyService } from '../../../services/ablyService';
 import { supabaseService, type UserDirectoryRecord } from '../../../services/supabaseService';
-import { groupService } from '../../../services/groupService';
 import {
   generateKeyPair,
   deriveSharedSecret,
@@ -334,70 +333,7 @@ export const useConnectRequestHandler = ({
       if (!url) return;
       const groupCode = extractGroupCode(url);
       if (groupCode && isValidGroupCode(groupCode)) {
-        const authData = useAuthStore.getState();
-        const nick = authData.nickname || nickname || '';
-        const uCode = myCode || (authData.userId?.length === 36 ? authData.userId : undefined);
-        const uAvatar = authData.avatarUrl;
-        const uId = authData.userId;
-        try {
-          const result = await groupService.joinGroup(url, nick, uCode, { avatarUrl: uAvatar || undefined, userId: uId || undefined });
-          if (result?.group) {
-            const existing = useChatStore.getState().chats.find((c) => c.id === result.group.id);
-            if (!existing) {
-              useChatStore.getState().addChat({
-                id: result.group.id,
-                type: 'group',
-                name: result.group.name,
-                description: result.group.description || '',
-                lastMsg: 'E2EE_SECURE_CHANNEL_READY',
-                online: false,
-                sharedSecret: result.sharedSecret,
-                role: 'member',
-                inviteCode: result.group.code,
-                creatorNickname: result.group.creatorNickname,
-                creatorCode: result.group.creatorCode || undefined,
-                avatarUrl: result.group.avatarUrl || undefined,
-                members: (result.group.members || []) as any[],
-                membersCount: result.group.membersCount || 2,
-                createdAt: result.group.createdAt || Date.now(),
-                unreadCount: 0,
-                lastReadTimestamp: Date.now(),
-                muted: false,
-                notificationsEnabled: true,
-                isExplicitJoin: true,
-              } as any);
-            } else {
-              const shouldUpdateName = existing.name === 'Группа' || existing.name === 'Group' || (result.group.name && result.group.name !== 'Группа' && result.group.name !== 'Group');
-              useChatStore.getState().updateChat(existing.id, {
-                ...(shouldUpdateName ? { name: result.group.name } : {}),
-                ...(result.group.avatarUrl ? { avatarUrl: result.group.avatarUrl } : {}),
-                ...(result.group.creatorNickname ? { creatorNickname: result.group.creatorNickname } : {}),
-                sharedSecret: result.sharedSecret || existing.sharedSecret,
-                members: (result.group.members && result.group.members.length > (existing.members?.length || 0)) ? (result.group.members as any[]) : existing.members,
-                membersCount: Math.max(result.group.membersCount || 1, existing.membersCount || 1, (result.group.members?.length || 1)),
-              });
-            }
-            useChatStore.getState().setActiveChat(result.group.id);
-
-            try {
-              const grpChannel = getGroupPusher().subscribe(`presence-group-${result.group.id}`);
-              const joinPayload = {
-                type: 'member-joined',
-                nickname: nick,
-                userCode: uCode,
-                chatId: result.group.id,
-                members: result.group.members,
-                membersCount: result.group.membersCount,
-              };
-              const sendJoinEvent = () => {
-                try { grpChannel.trigger('client-message', joinPayload); } catch {}
-                try { grpChannel.trigger('member-joined', joinPayload); } catch {}
-              };
-              if (grpChannel.subscribed) sendJoinEvent();
-              else grpChannel.bind('pusher:subscription_succeeded', sendJoinEvent);
-            } catch {}
-          }
-        } catch {}
+        window.dispatchEvent(new CustomEvent('orbita:open-group-invite', { detail: { url } }));
         return;
       }
       const code = extractCodeFromInput(url);

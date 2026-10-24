@@ -233,7 +233,7 @@ export const useChatRealtime = ({
       groupService.getActiveCall(targetGroupId).then((call) => {
         if (call && call.status === 'active') {
           useChatStore.getState().updateChat(targetGroupId, { activeCallRoom: call.roomName });
-        } else {
+        } else if (call && call.status === 'ended') {
           useChatStore.getState().updateChat(targetGroupId, { activeCallRoom: null });
         }
       }).catch(() => {});
@@ -411,7 +411,12 @@ export const useChatRealtime = ({
         useChatStore.getState().updateChat(activeChatId, { activeCallRoom: null });
         return;
       }
-      if (data?.type === 'group-call-started' || data?.type === 'client-group-call-started') {
+      if (
+        data?.type === 'group-call-started' ||
+        data?.type === 'client-group-call-started' ||
+        data?.type === 'group-call-active' ||
+        data?.type === 'client-group-call-active'
+      ) {
         useChatStore.getState().updateChat(activeChatId, { activeCallRoom: data.roomName || `group-call-${activeChatId}` });
         return;
       }
@@ -513,6 +518,8 @@ export const useChatRealtime = ({
             if (item.systemType === 'call_ended') {
               useChatStore.getState().updateChat(activeChatId, { activeCallRoom: null });
             } else if (item.systemType === 'call') {
+              const fallbackRoom = (parsed as any)?.roomName || (data as any)?.roomName || (item as any)?.roomName || `group-call-${activeChatId}`;
+              useChatStore.getState().updateChat(activeChatId, { activeCallRoom: fallbackRoom });
               groupService.getActiveCall(activeChatId).then((call) => {
                 if (call && call.status === 'active') {
                   useChatStore.getState().updateChat(activeChatId, { activeCallRoom: call.roomName });
@@ -816,6 +823,8 @@ export const useChatRealtime = ({
     channel.bind('pusher:member_removed', handleMemberRemoved);
     channel.bind('group-call-started', handleGroupCallStarted);
     channel.bind('client-group-call-started', handleGroupCallStarted);
+    channel.bind('group-call-active', handleGroupCallStarted);
+    channel.bind('client-group-call-active', handleGroupCallStarted);
     channel.bind('group-call-ended', handleGroupCallEnded);
     channel.bind('client-group-call-ended', handleGroupCallEnded);
     channel.bind('member-profile-updated', handleClientMessage);
@@ -833,6 +842,8 @@ export const useChatRealtime = ({
       channel.unbind('pusher:member_removed', handleMemberRemoved);
       channel.unbind('group-call-started', handleGroupCallStarted);
       channel.unbind('client-group-call-started', handleGroupCallStarted);
+      channel.unbind('group-call-active', handleGroupCallStarted);
+      channel.unbind('client-group-call-active', handleGroupCallStarted);
       channel.unbind('group-call-ended', handleGroupCallEnded);
       channel.unbind('client-group-call-ended', handleGroupCallEnded);
       channel.unbind('member-profile-updated', handleClientMessage);

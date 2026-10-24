@@ -11,6 +11,7 @@ import {
 } from '../lib/groupCrypto';
 import { useChatStore, type Message } from '../store/useChatStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { ablyService } from './ablyService';
 
 export interface GroupMemberInfo {
   nickname: string;
@@ -667,7 +668,8 @@ class GroupService {
     _sharedSecret: string,
     eventType: 'join' | 'title' | 'avatar' | 'admin' | 'unadmin' | 'call' | 'call_ended' | 'kick' | 'create' | 'invite' | 'leave',
     actorNickname: string,
-    targetNickname?: string
+    targetNickname?: string,
+    extra?: { roomName?: string }
   ): Promise<void> {
     const actor = actorNickname || useAuthStore.getState().nickname || 'Участник';
     const textMap: Record<string, string> = {
@@ -691,6 +693,7 @@ class GroupService {
       systemType: eventType,
       actorNickname: actor,
       targetNickname,
+      roomName: extra?.roomName,
     });
     const ciphertext = payload;
 
@@ -704,35 +707,42 @@ class GroupService {
       systemType: eventType,
       actorNickname: actor,
       targetNickname,
+      roomName: extra?.roomName,
     };
     useChatStore.getState().addMessage(groupId, systemMsg);
     try {
       (window as any).orbita?.storageAddMessage?.(groupId, msgId, systemMsg);
     } catch {}
 
+    const pusherPayload = {
+      id: msgId,
+      messageId: msgId,
+      chatId: groupId,
+      sender: 'system',
+      senderNickname: actor || 'system',
+      senderCode: 'system',
+      ciphertext,
+      type: 'message',
+      mediaType: 'system',
+      systemType: eventType,
+      actorNickname: actor,
+      targetNickname,
+      roomName: extra?.roomName,
+      time: Date.now(),
+      text,
+    };
+
     try {
       const groupPusher = getGroupPusher();
       const channel = groupPusher.subscribe(`presence-group-${groupId}`);
-      const pusherPayload = {
-        id: msgId,
-        messageId: msgId,
-        chatId: groupId,
-        sender: 'system',
-        senderNickname: actor || 'system',
-        senderCode: 'system',
-        ciphertext,
-        type: 'message',
-        mediaType: 'system',
-        systemType: eventType,
-        actorNickname: actor,
-        targetNickname,
-        time: Date.now(),
-        text,
-      };
       const doSend = () => {
         try { channel.trigger('client-message', pusherPayload); } catch {}
       };
       if (channel.subscribed) doSend(); else channel.bind('pusher:subscription_succeeded', doSend);
+    } catch {}
+
+    try {
+      ablyService.sendMessage(groupId, pusherPayload).catch(() => {});
     } catch {}
 
     await this.sendGroupMessage({
@@ -829,7 +839,7 @@ class GroupService {
 
     const chatSecret = useChatStore.getState().chats.find(c => c.id === groupId)?.sharedSecret;
     const secret = chatSecret || deriveGroupKey(groupId);
-    this.sendSystemMessage(groupId, secret, 'call', hostNickname);
+    this.sendSystemMessage(groupId, secret, 'call', hostNickname, undefined, { roomName });
   }
 
   async endCall(groupId: string, actorNickname?: string): Promise<void> {

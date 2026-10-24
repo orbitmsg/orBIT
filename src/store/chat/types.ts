@@ -158,6 +158,7 @@ export interface Message {
   systemType?: 'join' | 'leave' | 'title' | 'avatar' | 'admin' | 'unadmin' | 'call' | 'call_ended' | 'kick' | 'create' | 'invite';
   actorNickname?: string;
   targetNickname?: string;
+  roomName?: string;
   mediaUrl?: string;
   mediaName?: string;
   mediaKey?: string;

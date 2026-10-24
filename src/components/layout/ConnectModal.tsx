@@ -13,7 +13,6 @@ import { useToastStore } from '../../store/useToastStore';
 import { AvatarCropperModal } from '../settings/AvatarCropperModal';
 import { isStaticImageFile, MAX_AVATAR_BANNER_SIZE } from '../../utils/staticImageValidation';
 import { supabaseService, type UserDirectoryRecord } from '../../services/supabaseService';
-import { getGroupPusher } from '../../utils/pusher';
 import { Avatar } from '../common/Avatar';
 
 export type CreateModalType = 'group' | 'channel' | 'friend';
@@ -157,61 +156,8 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
       const isExplicitGroup = trimmed.includes('group') || trimmed.includes('join') || trimmed.includes('#') || trimmed.startsWith('join_');
       const groupCode = isExplicitGroup ? extractGroupCode(trimmed) : '';
       if (groupCode && isValidGroupCode(groupCode)) {
-        setIsLoading(true);
-        groupService.joinGroup(trimmed, myNickname, myCode, { userId: useAuthStore.getState().userId, avatarUrl: useAuthStore.getState().avatarUrl || undefined }).then((result) => {
-          setIsLoading(false);
-          if (result?.group) {
-            const existing = useChatStore.getState().chats.find((c) => c.id === result.group.id);
-            if (!existing) {
-              useChatStore.getState().addChat({
-                id: result.group.id,
-                type: 'group',
-                name: result.group.name,
-                description: result.group.description || '',
-                lastMsg: 'E2EE_SECURE_CHANNEL_READY',
-                online: false,
-                sharedSecret: result.sharedSecret,
-                role: 'member',
-                inviteCode: result.group.code,
-                creatorNickname: result.group.creatorNickname,
-                creatorCode: result.group.creatorCode || undefined,
-                avatarUrl: result.group.avatarUrl || undefined,
-                members: (result.group.members || []) as any[],
-                membersCount: result.group.membersCount || 1,
-                createdAt: result.group.createdAt || Date.now(),
-                unreadCount: 0,
-                lastReadTimestamp: Date.now(),
-                muted: false,
-                notificationsEnabled: true,
-                isExplicitJoin: true,
-              } as any);
-            }
-            try {
-              const grpChannel = getGroupPusher().subscribe(`presence-group-${result.group.id}`);
-              const joinPayload = {
-                type: 'member-joined',
-                nickname: myNickname,
-                userCode: myCode,
-                chatId: result.group.id,
-                members: result.group.members,
-                membersCount: result.group.membersCount,
-              };
-              const sendJoinEvent = () => {
-                try { grpChannel.trigger('client-message', joinPayload); } catch {}
-                try { grpChannel.trigger('member-joined', joinPayload); } catch {}
-              };
-              if (grpChannel.subscribed) sendJoinEvent();
-              else grpChannel.bind('pusher:subscription_succeeded', sendJoinEvent);
-            } catch {}
-            setActiveChat(result.group.id);
-            onClose();
-          } else {
-            showTempWarning(t('createModal.invalid_content', 'Неверное содержимое'));
-          }
-        }).catch(() => {
-          setIsLoading(false);
-          showTempWarning(t('createModal.invalid_content', 'Неверное содержимое'));
-        });
+        onClose();
+        window.dispatchEvent(new CustomEvent('orbita:open-group-invite', { detail: { url: trimmed } }));
         return;
       }
 

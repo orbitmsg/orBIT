@@ -10,9 +10,12 @@ import { ActionConfirmModal, type ConfirmActionType } from '../common/ActionConf
 import { IncomingCallModal } from '../call/IncomingCallModal';
 import { CallWindow } from '../call/CallWindow';
 import { DevicePermissionModal } from '../common/DevicePermissionModal';
+import { GroupInviteModal } from '../chat/GroupInviteModal';
 import { useChatStore, type IncomingFriendRequest } from '../../store/useChatStore';
 
 export interface MainLayoutModalsProps {
+  groupInviteUrl?: string | null;
+  setGroupInviteUrl?: (url: string | null) => void;
   connectModalConfig: { isOpen: boolean; type: 'friend' | 'group' | 'channel' };
   setConnectModalConfig: React.Dispatch<React.SetStateAction<{ isOpen: boolean; type: 'friend' | 'group' | 'channel' }>>;
   handleConnectRequest: (friendCode: string, callback: (success: boolean, error?: string) => void) => void;
@@ -90,6 +93,8 @@ export const MainLayoutModals: React.FC<MainLayoutModalsProps> = ({
   pendingSwitchChatId,
   setPendingSwitchChatId,
   showCallModalsInWindow,
+  groupInviteUrl,
+  setGroupInviteUrl,
 }) => {
   return (
     <>
@@ -234,6 +239,12 @@ export const MainLayoutModals: React.FC<MainLayoutModalsProps> = ({
       {showCallModalsInWindow && <IncomingCallModal />}
       {showCallModalsInWindow && <CallWindow />}
       <DevicePermissionModal />
+      {groupInviteUrl && (
+        <GroupInviteModal
+          inviteUrl={groupInviteUrl}
+          onClose={() => setGroupInviteUrl?.(null)}
+        />
+      )}
     </>
   );
 };

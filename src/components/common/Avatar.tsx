@@ -34,17 +34,48 @@ interface AvatarProps {
   style?: React.CSSProperties;
 }
 
+export function optimizeAvatarUrl(url: string | null | undefined, size = 128): string | null {
+  if (!url || typeof url !== 'string') return null;
+  const trimmed = url.trim();
+  if (!trimmed || trimmed === 'undefined' || trimmed === 'null' || trimmed.startsWith('undefined') || trimmed.startsWith('null')) {
+    return null;
+  }
+  if (trimmed.includes('res.cloudinary.com') && trimmed.includes('/image/upload/')) {
+    if (trimmed.includes('/f_auto') || trimmed.includes('/w_') || trimmed.includes('/q_auto')) {
+      return trimmed;
+    }
+    return trimmed.replace(
+      '/image/upload/',
+      `/image/upload/c_fill,g_face,w_${size},h_${size},f_auto,q_auto/`
+    );
+  }
+  return trimmed;
+}
+
+export function optimizeBannerUrl(url: string | null | undefined, width = 800): string | null {
+  if (!url || typeof url !== 'string') return null;
+  const trimmed = url.trim();
+  if (!trimmed || trimmed === 'undefined' || trimmed === 'null' || trimmed.startsWith('undefined') || trimmed.startsWith('null')) {
+    return null;
+  }
+  if (trimmed.includes('res.cloudinary.com') && trimmed.includes('/image/upload/')) {
+    if (trimmed.includes('/f_auto') || trimmed.includes('/w_') || trimmed.includes('/q_auto')) {
+      return trimmed;
+    }
+    return trimmed.replace(
+      '/image/upload/',
+      `/image/upload/c_limit,w_${width},f_auto,q_auto/`
+    );
+  }
+  return trimmed;
+}
+
 export const Avatar = ({ src, alt = '', className = '', style }: AvatarProps) => {
   const [videoError, setVideoError] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   const cleanSrc = useMemo(() => {
-    if (!src || typeof src !== 'string') return null;
-    const trimmed = src.trim();
-    if (!trimmed || trimmed === 'undefined' || trimmed === 'null' || trimmed.startsWith('undefined') || trimmed.startsWith('null')) {
-      return null;
-    }
-    return trimmed;
+    return optimizeAvatarUrl(src, 128);
   }, [src]);
 
   const cleanAlt = useMemo(() => {
@@ -213,7 +244,7 @@ export const Avatar = ({ src, alt = '', className = '', style }: AvatarProps) =>
       src={cleanSrc}
       alt={cleanAlt}
       decoding="async"
-      loading="lazy"
+      loading="eager"
       draggable={false}
       onDragStart={(e) => e.preventDefault()}
       className={`object-cover rounded-full flex-shrink-0 select-none ${className}`}

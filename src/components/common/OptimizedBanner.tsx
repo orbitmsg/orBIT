@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useMemo, useState } from 'react';
+import { optimizeBannerUrl } from './Avatar';
 
 interface OptimizedBannerProps {
   src?: string | null;
@@ -20,7 +21,7 @@ export const OptimizedBanner: React.FC<OptimizedBannerProps> = ({
     if (!src || typeof src !== 'string') return null;
     const trimmed = src.trim();
     if (!trimmed || trimmed === 'undefined' || trimmed === 'null') return null;
-    return trimmed;
+    return optimizeBannerUrl(trimmed, 1200) || trimmed;
   }, [src]);
 
   const isVideo = useMemo(() => {

@@ -212,16 +212,31 @@ export const useConnectRequestHandler = ({
       setActiveChat(chatId);
 
       (async () => {
+        for (const targetKey of allTargets) {
+          supabaseService.sendOfflineHandshake(
+            chatId,
+            targetKey,
+            nickname || '',
+            myKeys.publicKey,
+            avatarUrl || null,
+            myCode || ''
+          ).catch(() => {});
+        }
+
         let friendProfile = (initialProfile?.public_key ? initialProfile : null) as UserDirectoryRecord | null;
         if (!friendProfile) {
-          friendProfile = await supabaseService.lookupPublicProfile(friendCode);
-        }
-        if (!friendProfile) {
-          friendProfile = await supabaseService.lookupProfileByUsername(friendCode);
-        }
-        if (!friendProfile) {
-          const sMatches = await supabaseService.searchPublicProfiles(friendCode, 1);
-          if (sMatches && sMatches.length > 0) friendProfile = sMatches[0];
+          const [byCodeRes, byUserRes] = await Promise.allSettled([
+            supabaseService.lookupPublicProfile(friendCode),
+            supabaseService.lookupProfileByUsername(friendCode),
+          ]);
+          friendProfile =
+            (byCodeRes.status === 'fulfilled' ? byCodeRes.value : null) ||
+            (byUserRes.status === 'fulfilled' ? byUserRes.value : null);
+
+          if (!friendProfile) {
+            const sMatches = await supabaseService.searchPublicProfiles(friendCode, 1).catch(() => null);
+            if (sMatches && sMatches.length > 0) friendProfile = sMatches[0];
+          }
         }
 
         const targetsToSend = new Set<string>(allTargets);
@@ -263,17 +278,19 @@ export const useConnectRequestHandler = ({
               originalPeerCode: friendProfile.user_code || friendCode,
             });
           }
-        }
 
-        for (const targetKey of targetsToSend) {
-            supabaseService.sendOfflineHandshake(
-              chatId,
-              targetKey,
-              nickname || '',
-              myKeys.publicKey,
-              avatarUrl || null,
-              myCode || ''
-            ).catch(() => {});
+          for (const targetKey of targetsToSend) {
+            if (!allTargets.has(targetKey)) {
+              supabaseService.sendOfflineHandshake(
+                chatId,
+                targetKey,
+                nickname || '',
+                myKeys.publicKey,
+                avatarUrl || null,
+                myCode || ''
+              ).catch(() => {});
+            }
+          }
         }
 
         if (!settled) {

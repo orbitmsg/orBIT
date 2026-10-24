@@ -6,6 +6,7 @@ import { AudioCoverWithPlay } from '../audio/AudioCoverWithPlay';
 import { SmartGifPlayer } from './SmartGifPlayer';
 import { orbitFs } from './chatUtils';
 import { AnimatedVideoVolumeIcon } from './ChatIcons';
+import { useAppVisibility } from '../../utils/appVisibility';
 
 interface EncryptedMediaProps {
   url: string;
@@ -52,11 +53,45 @@ export const EncryptedMedia = memo(({
   const { t } = useTranslation();
   const timeColor = isOwn ? 'rgba(255, 255, 255, 0.9)' : 'var(--text-dim)';
 
+  const isAppVisible = useAppVisibility();
+  const isMediaViewerOpen = useChatStore((s) => s.isMediaViewerOpen);
+  const [inView, setInView] = useState(true);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const [isMuted, setIsMuted] = useState(true);
-  const [currentTime, setCurrentTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState<number>(duration || 0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
+  const progressFillRef = useRef<HTMLDivElement>(null);
+  const countdownRef = useRef<HTMLSpanElement>(null);
+  const isDraggingRef = useRef(false);
+  const wasPlayingRef = useRef(false);
+  const targetTimeRef = useRef(0);
+  const dragCleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setInView(entry.isIntersecting);
+      },
+      { threshold: 0.05 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const shouldPlay = inView && isAppVisible && !isMediaViewerOpen;
+
+  useEffect(() => {
+    if (!blobUrl || !videoRef.current || isDraggingRef.current) return;
+    if (shouldPlay) {
+      videoRef.current.play().catch(() => {});
+    } else {
+      videoRef.current.pause();
+    }
+  }, [shouldPlay, blobUrl]);
 
   useEffect(() => {
     if (duration && duration > 0 && videoDuration === 0) {
@@ -64,58 +99,215 @@ export const EncryptedMedia = memo(({
     }
   }, [duration, videoDuration]);
 
-  useEffect(() => {
-    if (blobUrl && videoRef.current) {
-      videoRef.current.play().catch(() => {});
-    }
-  }, [blobUrl]);
+  const formatCountdown = useCallback((totalSec: number, curSec: number) => {
+    const rem = Math.max(0, Math.ceil((totalSec || 0) - (curSec || 0)));
+    const m = Math.floor(rem / 60);
+    const s = rem % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }, []);
 
-  const seekFromClientX = useCallback((clientX: number) => {
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    let animId: number | null = null;
+    let lastFormattedTime = '';
+
+    const updateVisuals = () => {
+      if (!isDraggingRef.current && video) {
+        const cur = video.currentTime || 0;
+        const tot = videoDuration || duration || video.duration || 0;
+        if (tot > 0) {
+          const pct = Math.min(100, Math.max(0, (cur / tot) * 100));
+          if (progressFillRef.current) {
+            progressFillRef.current.style.width = `${pct}%`;
+          }
+          const text = formatCountdown(tot, cur);
+          if (countdownRef.current && lastFormattedTime !== text) {
+            lastFormattedTime = text;
+            countdownRef.current.textContent = text;
+          }
+        }
+      }
+      if (video && !video.paused && !video.ended) {
+        animId = requestAnimationFrame(updateVisuals);
+      } else {
+        animId = null;
+      }
+    };
+
+    const onPlay = () => {
+      if (animId !== null) cancelAnimationFrame(animId);
+      animId = requestAnimationFrame(updateVisuals);
+    };
+
+    const onPause = () => {
+      if (animId !== null) {
+        cancelAnimationFrame(animId);
+        animId = null;
+      }
+      if (!isDraggingRef.current && video) {
+        const cur = video.currentTime || 0;
+        const tot = videoDuration || duration || video.duration || 0;
+        if (tot > 0 && progressFillRef.current) {
+          progressFillRef.current.style.width = `${Math.min(100, Math.max(0, (cur / tot) * 100))}%`;
+        }
+      }
+    };
+
+    const onTimeUpdate = () => {
+      if (video.paused && !isDraggingRef.current) {
+        const cur = video.currentTime || 0;
+        const tot = videoDuration || duration || video.duration || 0;
+        if (tot > 0) {
+          if (progressFillRef.current) {
+            progressFillRef.current.style.width = `${Math.min(100, Math.max(0, (cur / tot) * 100))}%`;
+          }
+          const text = formatCountdown(tot, cur);
+          if (countdownRef.current && lastFormattedTime !== text) {
+            lastFormattedTime = text;
+            countdownRef.current.textContent = text;
+          }
+        }
+      }
+    };
+
+    video.addEventListener('play', onPlay);
+    video.addEventListener('pause', onPause);
+    video.addEventListener('ended', onPause);
+    video.addEventListener('timeupdate', onTimeUpdate);
+
+    if (!video.paused && !video.ended) {
+      onPlay();
+    }
+
+    return () => {
+      if (animId !== null) cancelAnimationFrame(animId);
+      video.removeEventListener('play', onPlay);
+      video.removeEventListener('pause', onPause);
+      video.removeEventListener('ended', onPause);
+      video.removeEventListener('timeupdate', onTimeUpdate);
+    };
+  }, [videoDuration, duration, blobUrl, formatCountdown]);
+
+  useEffect(() => {
+    return () => {
+      if (dragCleanupRef.current) {
+        dragCleanupRef.current();
+        dragCleanupRef.current = null;
+      }
+    };
+  }, []);
+
+  const applySeek = useCallback((clientX: number) => {
     if (!progressBarRef.current || !videoRef.current) return;
     const rect = progressBarRef.current.getBoundingClientRect();
     if (rect.width <= 0) return;
     const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    const tot = videoDuration || duration || 0;
-    if (tot > 0) {
-      const newTime = ratio * tot;
-      videoRef.current.currentTime = newTime;
-      setCurrentTime(newTime);
+    const tot = videoDuration || duration || videoRef.current.duration || 0;
+    if (tot <= 0) return;
+
+    const targetTime = ratio * tot;
+    targetTimeRef.current = targetTime;
+
+    if (progressFillRef.current) {
+      progressFillRef.current.style.width = `${ratio * 100}%`;
     }
-  }, [videoDuration, duration]);
+    const text = formatCountdown(tot, targetTime);
+    if (countdownRef.current && countdownRef.current.textContent !== text) {
+      countdownRef.current.textContent = text;
+    }
+
+    if (!videoRef.current.seeking) {
+      videoRef.current.currentTime = targetTime;
+    }
+  }, [videoDuration, duration, formatCountdown]);
+
+  const handleSeeked = useCallback(() => {
+    if (isDraggingRef.current && videoRef.current) {
+      if (Math.abs(videoRef.current.currentTime - targetTimeRef.current) > 0.05) {
+        videoRef.current.currentTime = targetTimeRef.current;
+      }
+    }
+  }, []);
 
   const handleProgressBarMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
-    seekFromClientX(e.clientX);
+    e.preventDefault();
+    isDraggingRef.current = true;
+    wasPlayingRef.current = !!(videoRef.current && !videoRef.current.paused && !videoRef.current.ended);
+    if (videoRef.current && wasPlayingRef.current) {
+      videoRef.current.pause();
+    }
+    applySeek(e.clientX);
+
     const onMouseMove = (ev: MouseEvent) => {
-      seekFromClientX(ev.clientX);
+      ev.preventDefault();
+      applySeek(ev.clientX);
     };
+
     const onMouseUp = () => {
+      if (dragCleanupRef.current) {
+        dragCleanupRef.current();
+      }
+      isDraggingRef.current = false;
+      if (videoRef.current) {
+        videoRef.current.currentTime = targetTimeRef.current;
+        if (wasPlayingRef.current && shouldPlay) {
+          videoRef.current.play().catch(() => {});
+        }
+      }
+    };
+
+    const cleanup = () => {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
+      dragCleanupRef.current = null;
     };
+    dragCleanupRef.current = cleanup;
+
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
   };
 
   const handleProgressBarTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     e.stopPropagation();
-    if (e.touches[0]) seekFromClientX(e.touches[0].clientX);
+    if (!e.touches[0]) return;
+    isDraggingRef.current = true;
+    wasPlayingRef.current = !!(videoRef.current && !videoRef.current.paused && !videoRef.current.ended);
+    if (videoRef.current && wasPlayingRef.current) {
+      videoRef.current.pause();
+    }
+    applySeek(e.touches[0].clientX);
+
     const onTouchMove = (ev: TouchEvent) => {
-      if (ev.touches[0]) seekFromClientX(ev.touches[0].clientX);
+      if (ev.touches[0]) applySeek(ev.touches[0].clientX);
     };
+
     const onTouchEnd = () => {
+      if (dragCleanupRef.current) {
+        dragCleanupRef.current();
+      }
+      isDraggingRef.current = false;
+      if (videoRef.current) {
+        videoRef.current.currentTime = targetTimeRef.current;
+        if (wasPlayingRef.current && shouldPlay) {
+          videoRef.current.play().catch(() => {});
+        }
+      }
+    };
+
+    const cleanup = () => {
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener('touchcancel', onTouchEnd);
+      dragCleanupRef.current = null;
     };
-    window.addEventListener('touchmove', onTouchMove);
-    window.addEventListener('touchend', onTouchEnd);
-  };
+    dragCleanupRef.current = cleanup;
 
-  const formatCountdown = (totalSec: number, curSec: number) => {
-    const rem = Math.max(0, Math.ceil((totalSec || 0) - (curSec || 0)));
-    const m = Math.floor(rem / 60);
-    const s = rem % 60;
-    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    window.addEventListener('touchend', onTouchEnd);
+    window.addEventListener('touchcancel', onTouchEnd);
   };
 
   const isFullRes = Boolean(preview || (thumbnail && !thumbnail.startsWith('data:')) || (thumbnail && thumbnail.startsWith('data:') && thumbnail.length > 2048));
@@ -153,6 +345,7 @@ export const EncryptedMedia = memo(({
 
   return (
     <div
+      ref={containerRef}
       style={{
         width: `min(${mediaSize.width}px, 100%)`,
         maxWidth: '100%',
@@ -269,9 +462,7 @@ export const EncryptedMedia = memo(({
             muted={isMuted}
             playsInline
             style={{ display: 'block', opacity: blobUrl ? 1 : 0, transition: 'opacity 0.2s' }}
-            onTimeUpdate={(e) => {
-              setCurrentTime(e.currentTarget.currentTime);
-            }}
+            onSeeked={handleSeeked}
             onLoadedMetadata={(e) => {
               if (e.currentTarget.duration && isFinite(e.currentTarget.duration)) {
                 setVideoDuration(e.currentTarget.duration);
@@ -287,7 +478,7 @@ export const EncryptedMedia = memo(({
                   const next = !prev;
                   if (videoRef.current) {
                     videoRef.current.muted = next;
-                    if (!next) {
+                    if (!next && shouldPlay) {
                       videoRef.current.play().catch(() => {});
                     }
                   }
@@ -319,8 +510,8 @@ export const EncryptedMedia = memo(({
               }}
               aria-label={isMuted ? t('mediaViewer.unmute', 'Включить звук') : t('mediaViewer.mute', 'Выключить звук')}
             >
-              <span className="tabular-nums select-none" style={{ color: timeColor, fontSize: orbitFs(11), lineHeight: 1, userSelect: 'none', WebkitUserSelect: 'none' }}>
-                {formatCountdown(videoDuration || duration || 0, currentTime)}
+              <span ref={countdownRef} className="tabular-nums select-none" style={{ color: timeColor, fontSize: orbitFs(11), lineHeight: 1, userSelect: 'none', WebkitUserSelect: 'none' }}>
+                {formatCountdown(videoDuration || duration || 0, videoRef.current?.currentTime || 0)}
               </span>
               <AnimatedVideoVolumeIcon isMuted={isMuted} size={14} style={{ color: timeColor }} />
             </div>
@@ -333,7 +524,6 @@ export const EncryptedMedia = memo(({
               onTouchStart={handleProgressBarTouchStart}
               onClick={(e) => {
                 e.stopPropagation();
-                seekFromClientX(e.clientX);
               }}
               style={{
                 position: 'absolute',
@@ -358,11 +548,13 @@ export const EncryptedMedia = memo(({
                 }}
               >
                 <div
+                  ref={progressFillRef}
                   style={{
                     height: '100%',
-                    width: `${(videoDuration || duration || 0) > 0 ? Math.min(100, Math.max(0, (currentTime / (videoDuration || duration || 1)) * 100)) : 0}%`,
+                    width: `${(videoDuration || duration || 0) > 0 ? Math.min(100, Math.max(0, ((videoRef.current?.currentTime || 0) / (videoDuration || duration || 1)) * 100)) : 0}%`,
                     backgroundColor: 'var(--accent-color, #7C3AED)',
-                    transition: 'width 0.08s linear',
+                    willChange: 'width',
+                    pointerEvents: 'none',
                   }}
                 />
               </div>

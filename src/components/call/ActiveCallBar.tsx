@@ -204,7 +204,7 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
       const rect = container.getBoundingClientRect();
       if (rect.width > 0) {
         canvas.width = rect.width;
-        canvas.height = 76;
+        canvas.height = 68;
       }
     };
 
@@ -212,7 +212,8 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
     const observer = new ResizeObserver(resize);
     observer.observe(container);
 
-    const dataArray = new Uint8Array(32);
+    const timeData = new Uint8Array(64);
+    const freqData = new Uint8Array(32);
 
     const drawWaveLayer = (
       ctx: CanvasRenderingContext2D,
@@ -220,21 +221,25 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
       height: number,
       baseline: number,
       amplitude: number,
-      freq: number,
+      f1: number,
+      f2: number,
+      f3: number,
       wavePhase: number,
       colorRgb: [number, number, number],
       alpha: number,
-      withHighlight = false
+      withHighlight = false,
+      volValue = 0
     ) => {
       ctx.beginPath();
       ctx.moveTo(0, height);
-      const step = 8;
+      const step = 4;
       for (let x = 0; x <= width; x += step) {
-        const sin1 = Math.sin(x * freq + wavePhase);
-        const sin2 = Math.sin(x * freq * 0.52 - wavePhase * 0.78);
-        const cos3 = Math.cos(x * freq * 0.28 + wavePhase * 0.45);
-        const combined = (sin1 * 0.58 + sin2 * 0.28 + cos3 * 0.14 + 1) * 0.5;
-        const y = baseline - combined * amplitude;
+        const s1 = Math.sin(x * f1 + wavePhase);
+        const s2 = Math.sin(x * f2 - wavePhase * 1.35 + 1.4);
+        const s3 = Math.cos(x * f3 + wavePhase * 0.75 + 2.8);
+        const norm = (s1 * 0.54 + s2 * 0.32 + s3 * 0.14 + 1) * 0.5;
+        const clamped = Math.max(0, Math.min(1, norm));
+        const y = baseline - clamped * amplitude;
         ctx.lineTo(x, y);
       }
       ctx.lineTo(width, height);
@@ -242,8 +247,8 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
 
       const [r, g, b] = colorRgb;
       const grad = ctx.createLinearGradient(0, baseline - amplitude, 0, height);
-      grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.35})`);
-      grad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.75})`);
+      grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.15})`);
+      grad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.65})`);
       grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, ${alpha})`);
       ctx.fillStyle = grad;
       ctx.fill();
@@ -251,16 +256,17 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
       if (withHighlight) {
         ctx.beginPath();
         for (let x = 0; x <= width; x += step) {
-          const sin1 = Math.sin(x * freq + wavePhase);
-          const sin2 = Math.sin(x * freq * 0.52 - wavePhase * 0.78);
-          const cos3 = Math.cos(x * freq * 0.28 + wavePhase * 0.45);
-          const combined = (sin1 * 0.58 + sin2 * 0.28 + cos3 * 0.14 + 1) * 0.5;
-          const y = baseline - combined * amplitude;
+          const s1 = Math.sin(x * f1 + wavePhase);
+          const s2 = Math.sin(x * f2 - wavePhase * 1.35 + 1.4);
+          const s3 = Math.cos(x * f3 + wavePhase * 0.75 + 2.8);
+          const norm = (s1 * 0.54 + s2 * 0.32 + s3 * 0.14 + 1) * 0.5;
+          const clamped = Math.max(0, Math.min(1, norm));
+          const y = baseline - clamped * amplitude;
           if (x === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }
-        ctx.strokeStyle = `rgba(255, 255, 255, ${Math.min(0.65, alpha * 0.75)})`;
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = `rgba(255, 255, 255, ${Math.min(0.9, 0.55 + volValue * 0.35)})`;
+        ctx.lineWidth = 1.8 + volValue * 0.8;
         ctx.stroke();
       }
     };
@@ -281,37 +287,45 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
 
       let micVol = 0;
       if (analyserRef.current && isMicEnabled) {
-        analyserRef.current.getByteFrequencyData(dataArray);
+        analyserRef.current.getByteTimeDomainData(timeData);
+        let maxDev = 0;
+        for (let i = 0; i < timeData.length; i++) {
+          const dev = Math.abs(timeData[i] - 128);
+          if (dev > maxDev) maxDev = dev;
+        }
+        const timeVol = maxDev > 2 ? Math.min(1, (maxDev - 2) / 32) : 0;
+
+        analyserRef.current.getByteFrequencyData(freqData);
         let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) {
-          sum += dataArray[i];
+        for (let i = 0; i < freqData.length; i++) {
+          sum += freqData[i];
         }
-        const avg = sum / dataArray.length;
-        if (avg > 5) {
-          micVol = Math.min(1, (avg - 5) / 36);
-        }
+        const avg = sum / freqData.length;
+        const freqVol = avg > 3 ? Math.min(1, (avg - 3) / 28) : 0;
+
+        micVol = Math.max(timeVol, freqVol);
       }
 
       const remoteSpeaking = !!activeCall?.participants?.some((p: any) => !p.isLocal && p.isSpeaking);
       const remoteVol = remoteSpeaking ? 0.70 + Math.sin(timeRef.current * 7) * 0.25 : 0;
       const rawVol = Math.max(micVol, remoteVol);
-      const targetVol = rawVol > 0.04 ? rawVol : 0;
+      const targetVol = rawVol > 0.03 ? rawVol : 0;
 
       if (targetVol > smoothedVolumeRef.current) {
-        smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.35;
+        smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.40;
       } else {
-        smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.10;
+        smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.08;
       }
 
-      timeRef.current += 0.025 + smoothedVolumeRef.current * 0.065;
+      timeRef.current += 0.024 + smoothedVolumeRef.current * 0.075;
 
       const phase = timeRef.current;
       const vol = smoothedVolumeRef.current;
-      const baseline = 60;
+      const baseline = 58;
 
-      drawWaveLayer(ctx, width, height, baseline, 14 + vol * 32, 0.007, phase * 0.75, accentRgbRef.current, 0.28, false);
-      drawWaveLayer(ctx, width, height, baseline, 16 + vol * 38, 0.012, phase * 1.15 + 2.2, accentRgbRef.current, 0.48, false);
-      drawWaveLayer(ctx, width, height, baseline, 18 + vol * 44, 0.018, phase * 1.55 + 4.3, accentRgbRef.current, 0.75, true);
+      drawWaveLayer(ctx, width, height, baseline, 20 + vol * 24, 0.012, 0.024, 0.045, phase * 0.75, accentRgbRef.current, 0.20, false, vol);
+      drawWaveLayer(ctx, width, height, baseline, 24 + vol * 26, 0.016, 0.032, 0.058, phase * 1.1 + 2.1, accentRgbRef.current, 0.35, false, vol);
+      drawWaveLayer(ctx, width, height, baseline, 28 + vol * 26, 0.020, 0.038, 0.068, phase * 1.5 + 4.2, accentRgbRef.current, 0.52, true, vol);
 
       animId = requestAnimationFrame(render);
     };
@@ -350,10 +364,10 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
           ref={canvasRef}
           style={{
             position: 'absolute',
-            top: '-60px',
+            top: '-58px',
             left: 0,
             width: '100%',
-            height: '76px',
+            height: '68px',
             pointerEvents: 'none',
             zIndex: 1,
           }}

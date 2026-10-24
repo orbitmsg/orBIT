@@ -10,7 +10,7 @@ export interface GatewayEndpoint {
   lastChecked: number | null;
 }
 
-export function getVercelBaseUrl(): string {
+export function getVercelFallbackUrl(): string {
   if (
     typeof window !== 'undefined' &&
     window.location?.origin &&
@@ -27,12 +27,29 @@ export function getVercelBaseUrl(): string {
   return 'https://orbitad.vercel.app';
 }
 
+export function getCloudflareWorkerUrl(): string {
+  const custom = import.meta.env.VITE_WORKER_URL;
+  if (custom) {
+    return custom.startsWith('http') ? custom : `https://${custom}`;
+  }
+  return 'https://orbita.ypgreg78.workers.dev';
+}
+
 const DEFAULT_GATEWAYS: GatewayEndpoint[] = [
+  {
+    id: 'cloudflare-worker',
+    name: 'Cloudflare Edge Worker',
+    provider: 'custom',
+    url: getCloudflareWorkerUrl(),
+    ping: null,
+    status: 'healthy',
+    lastChecked: null,
+  },
   {
     id: 'vercel-edge',
     name: 'Vercel Serverless Gateway',
     provider: 'custom',
-    url: getVercelBaseUrl(),
+    url: getVercelFallbackUrl(),
     ping: null,
     status: 'healthy',
     lastChecked: null,
@@ -41,13 +58,13 @@ const DEFAULT_GATEWAYS: GatewayEndpoint[] = [
 
 class GatewayManager {
   private gateways: GatewayEndpoint[] = [...DEFAULT_GATEWAYS];
-  private activeGatewayId: string = 'vercel-edge';
+  private activeGatewayId: string = 'cloudflare-worker';
 
   constructor() {
     sqliteStorage.getJson<GatewayEndpoint[]>('orbita_custom_gateways', []).then((saved) => {
       if (Array.isArray(saved) && saved.length > 0) {
         const filtered = saved.filter(
-          (g) => g && g.url && !g.url.includes('workers.dev') && !g.url.includes('a.run.app') && !g.url.includes('google')
+          (g) => g && g.url && !g.url.includes('a.run.app') && !g.url.includes('google')
         );
         if (filtered.length > 0) {
           this.gateways = filtered;
@@ -89,8 +106,25 @@ class GatewayManager {
     const primary = this.getActiveGateway();
     const primaryPath = this.resolvePathForGateway(path);
     const url = `${primary.url.replace(/\/+$/, '')}${primaryPath}`;
-    return fetch(url, options);
+    try {
+      const res = await fetch(url, options);
+      if (res.ok || (res.status >= 400 && res.status < 500)) {
+        return res;
+      }
+      throw new Error(`Primary gateway returned ${res.status}`);
+    } catch (err) {
+      const fallback = this.gateways.find((g) => g.id !== primary.id) || DEFAULT_GATEWAYS[1];
+      if (fallback) {
+        const fallbackUrl = `${fallback.url.replace(/\/+$/, '')}${primaryPath}`;
+        return fetch(fallbackUrl, options);
+      }
+      throw err;
+    }
   }
 }
 
 export const gatewayManager = new GatewayManager();
+
+export function getVercelBaseUrl(): string {
+  return gatewayManager.getBaseUrl();
+}

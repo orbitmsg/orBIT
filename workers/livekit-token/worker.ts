@@ -12,13 +12,23 @@ export interface Env {
   LIVEKIT_API_SECRET?: string;
   LIVEKIT_URL?: string;
   ABLY_API_KEY?: string;
+  ABLY_API_KEY_2?: string;
   SUPABASE_URL?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
   SUPABASE_ANON_KEY?: string;
+  CHANNELS_SUPABASE_URL?: string;
+  CHANNELS_SUPABASE_KEY?: string;
+  GROUPS_SUPABASE_URL?: string;
+  GROUPS_SUPABASE_KEY?: string;
+  GROUPS_SUPABASE_SECRET_KEY?: string;
   PUSHER_KEY?: string;
   PUSHER_SECRET?: string;
   PUSHER_APP_ID?: string;
   PUSHER_CLUSTER?: string;
+  PUSHER_KEY_2?: string;
+  PUSHER_SECRET_2?: string;
+  PUSHER_APP_ID_2?: string;
+  PUSHER_CLUSTER_2?: string;
   CLOUDINARY_API_KEY?: string;
   CLOUDINARY_API_SECRET?: string;
   CLOUDINARY_CLOUD_NAME?: string;
@@ -27,7 +37,7 @@ export interface Env {
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, x-user-id',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, X-Admin-Token, x-user-id',
 };
 
 function verifyWorkerEd25519(userIdHex: string, version: number, configBlob: string, signatureHex: string): boolean {
@@ -60,12 +70,92 @@ function errorResponse(error: string, status = 400): Response {
 }
 
 function getSupabaseClient(env: Env): SupabaseClient | null {
-  const url = env.SUPABASE_URL;
+  const url = env.SUPABASE_URL || 'https://majmrtymawymomliowbz.supabase.co';
   const key = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
   if (!url || !key) return null;
   return createClient(url, key, {
     auth: { persistSession: false },
+    global: {
+      fetch: (input, init = {}) => {
+        const headers = new Headers(init.headers);
+        if (key.startsWith('sb_secret_') || key.startsWith('sb_publishable_')) {
+          headers.delete('Authorization');
+          headers.set('apikey', key);
+        }
+        return fetch(input, { ...init, headers });
+      },
+    },
   });
+}
+
+function getGroupsSupabaseClient(env: Env): SupabaseClient | null {
+  const url = env.GROUPS_SUPABASE_URL || 'https://vxjaybyveerulkdqhggr.supabase.co';
+  const key = env.GROUPS_SUPABASE_SECRET_KEY || env.GROUPS_SUPABASE_KEY || 'sb_publishable_x6OPhg68nS-xBcPn4K47NQ_2nSS4Kfu';
+  if (!url || !key) return null;
+  return createClient(url, key, {
+    auth: { persistSession: false },
+    global: {
+      fetch: (input, init = {}) => {
+        const headers = new Headers(init.headers);
+        if (key.startsWith('sb_secret_') || key.startsWith('sb_publishable_')) {
+          headers.delete('Authorization');
+          headers.set('apikey', key);
+        }
+        return fetch(input, { ...init, headers });
+      },
+    },
+  });
+}
+
+function getChannelsSupabaseClient(env: Env): SupabaseClient | null {
+  const url = env.CHANNELS_SUPABASE_URL || 'https://rugqiezexuknqcppicma.supabase.co';
+  const key = env.CHANNELS_SUPABASE_KEY || 'sb_publishable_XYjE7C93LWA-P1OHZqNONg_QHlyZ9sZ';
+  if (!url || !key) return null;
+  return createClient(url, key, {
+    auth: { persistSession: false },
+    global: {
+      fetch: (input, init = {}) => {
+        const headers = new Headers(init.headers);
+        if (key.startsWith('sb_secret_') || key.startsWith('sb_publishable_')) {
+          headers.delete('Authorization');
+          headers.set('apikey', key);
+        }
+        return fetch(input, { ...init, headers });
+      },
+    },
+  });
+}
+
+async function checkAdminAuthorization(supabase: SupabaseClient | null, userCode: string) {
+  if (!supabase || !userCode) return null;
+  try {
+    const { data: adminRecord } = await supabase
+      .from('support_admins')
+      .select('user_code, role, auth_token')
+      .eq('user_code', userCode)
+      .maybeSingle();
+
+    if (adminRecord) return adminRecord;
+
+    const { data: devRecord } = await supabase
+      .from('developers')
+      .select('code')
+      .eq('code', userCode)
+      .maybeSingle();
+
+    if (devRecord) {
+      const newAdmin = {
+        user_code: userCode,
+        role: 'superadmin',
+        auth_token: null,
+      };
+      await supabase.from('support_admins').upsert(newAdmin);
+      return newAdmin;
+    }
+  } catch (err) {
+    console.error('[checkAdminAuthorization] error:', err);
+  }
+  return null;
 }
 
 async function toUuid(id?: string): Promise<string | null> {
@@ -272,9 +362,58 @@ async function triggerPusherEvent(
 
   return results.some((r) => r.status === 'fulfilled' && r.value === true);
 }
+
+const GROUP_PUSHER_CONFIGS = (env: Env): Array<{ appId: string; key: string; secret: string; cluster: string }> => [
+  {
+    appId: env.PUSHER_APP_ID_2 || '2179076',
+    key: env.PUSHER_KEY_2 || 'a7856d37aeac4f908167',
+    secret: env.PUSHER_SECRET_2 || env.PUSHER_SECRET || '',
+    cluster: env.PUSHER_CLUSTER_2 || 'eu',
+  }
+].filter((s): s is { appId: string; key: string; secret: string; cluster: string } => Boolean(s.secret));
+
+async function triggerGroupPusherEvent(
+  env: Env,
+  channel: string,
+  event: string,
+  data: any
+): Promise<boolean> {
+  const configs = GROUP_PUSHER_CONFIGS(env).length > 0 ? GROUP_PUSHER_CONFIGS(env) : PUSHER_CONFIGS(env);
+  if (configs.length === 0) return false;
+  const results = await Promise.allSettled(
+    configs.map((server) => triggerPusherEventOnServer(server, channel, event, data))
+  );
+  return results.some((r) => r.status === 'fulfilled' && r.value === true);
+}
+
+async function triggerAblyEvent(
+  env: Env,
+  channel: string,
+  name: string,
+  data: any
+): Promise<boolean> {
+  const keys = [env.ABLY_API_KEY, env.ABLY_API_KEY_2].filter(Boolean);
+  if (keys.length === 0) return false;
+  for (const key of keys) {
+    try {
+      const basicAuth = btoa(key!);
+      const url = `https://rest.ably.io/channels/${encodeURIComponent(channel)}/messages`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${basicAuth}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, data }),
+      });
+      if (res.ok) return true;
+    } catch {}
+  }
+  return false;
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    // 1. CORS Preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: CORS_HEADERS });
     }
@@ -284,11 +423,13 @@ export default {
 
     try {
       if (pathname === '/' || pathname === '/health') {
+        const groupsUrl = env.GROUPS_SUPABASE_URL || 'https://vxjaybyveerulkdqhggr.supabase.co';
         return jsonResponse({
           status: 'ok',
           service: 'orbita-relay-worker',
-          capabilities: ['livekit', 'ably', 'relay', 'pusher', 'cloudinary'],
-          supabase_host: env.SUPABASE_URL ? new URL(env.SUPABASE_URL).hostname : null,
+          capabilities: ['livekit', 'ably', 'relay', 'pusher', 'cloudinary', 'groups', 'support', 'channels'],
+          supabase_host: env.SUPABASE_URL ? new URL(env.SUPABASE_URL).hostname : 'majmrtymawymomliowbz.supabase.co',
+          groups_host: groupsUrl ? new URL(groupsUrl).hostname : null,
           timestamp: Date.now(),
         });
       }
@@ -571,6 +712,45 @@ export default {
         return jsonResponse(signResult);
       }
 
+      if (pathname === '/cloudinary/destroy' || pathname === '/cloudinary-destroy') {
+        let publicId = '';
+        let resourceType = 'image';
+        if (request.method === 'POST') {
+          try {
+            const body = (await request.json()) as any;
+            publicId = body.public_id || body.publicId || '';
+            resourceType = body.resourceType || body.resource_type || 'image';
+          } catch {}
+        }
+        if (!publicId) {
+          publicId = url.searchParams.get('public_id') || url.searchParams.get('publicId') || '';
+        }
+        const apiKey = env.CLOUDINARY_API_KEY;
+        const apiSecret = env.CLOUDINARY_API_SECRET;
+        const cloudName = env.CLOUDINARY_CLOUD_NAME;
+        if (!publicId || !apiKey || !apiSecret || !cloudName) {
+          return jsonResponse({ success: false });
+        }
+        try {
+          const timestamp = Math.floor(Date.now() / 1000).toString();
+          const paramsToSign = `public_id=${publicId}&timestamp=${timestamp}${apiSecret}`;
+          const hashBuffer = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(paramsToSign));
+          const signature = Array.from(new Uint8Array(hashBuffer)).map((b) => b.toString(16).padStart(2, '0')).join('');
+          const formData = new URLSearchParams();
+          formData.append('public_id', publicId);
+          formData.append('api_key', apiKey);
+          formData.append('timestamp', timestamp);
+          formData.append('signature', signature);
+          await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/destroy`, {
+            method: 'POST',
+            body: formData,
+          });
+          return jsonResponse({ success: true });
+        } catch {
+          return jsonResponse({ success: false });
+        }
+      }
+
       if (pathname === '/relay/message' && request.method === 'POST') {
         const supabase = getSupabaseClient(env);
         if (!supabase) return errorResponse('Database not configured on server', 500);
@@ -653,7 +833,65 @@ export default {
         return jsonResponse({ status: 'ok' });
       }
 
-      // 8. Relay: Handshakes
+      if (pathname === '/relay/non-message' && request.method === 'POST') {
+        const supabase = getSupabaseClient(env);
+        if (!supabase) return errorResponse('Database not configured on server', 500);
+        const body = (await request.json()) as {
+          id?: string;
+          chatId: string;
+          senderId: string;
+          recipientId: string;
+          ciphertext: string;
+        };
+        if (!body.chatId || !body.senderId || !body.recipientId || !body.ciphertext) {
+          return errorResponse('Missing required non-message parameters', 400);
+        }
+        const row = {
+          id: body.id || `non_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          chat_id: body.chatId,
+          sender_id: body.senderId,
+          recipient_id: body.recipientId,
+          ciphertext: body.ciphertext,
+          message_index: 0,
+          delivered: false,
+        };
+        const { data, error } = await supabase.from('non_messages').insert(row).select();
+        if (error) {
+          if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
+            return jsonResponse({ status: 'ok', duplicate: true });
+          }
+          return errorResponse(error.message, 500);
+        }
+        return jsonResponse({ status: 'ok', data });
+      }
+
+      if (pathname === '/relay/non-messages' && request.method === 'GET') {
+        const supabase = getSupabaseClient(env);
+        if (!supabase) return errorResponse('Database not configured on server', 500);
+        const recipientId = url.searchParams.get('recipientId');
+        if (!recipientId) return errorResponse('Missing recipientId parameter', 400);
+        const { data, error } = await supabase
+          .from('non_messages')
+          .select('*')
+          .eq('recipient_id', recipientId)
+          .eq('delivered', false)
+          .order('created_at', { ascending: true });
+        if (error) return errorResponse(error.message, 500);
+        return jsonResponse({ non_messages: data || [] });
+      }
+
+      if (pathname === '/relay/non-message/delivered' && request.method === 'POST') {
+        const supabase = getSupabaseClient(env);
+        if (!supabase) return errorResponse('Database not configured on server', 500);
+        const body = (await request.json()) as { messageId: string };
+        if (!body.messageId) return errorResponse('Missing messageId parameter', 400);
+        const { error } = await supabase
+          .from('non_messages')
+          .delete()
+          .eq('id', body.messageId);
+        if (error) return errorResponse(error.message, 500);
+        return jsonResponse({ status: 'ok' });
+      }
       if (pathname === '/relay/handshake' && request.method === 'POST') {
         const supabase = getSupabaseClient(env);
         if (!supabase) return errorResponse('Database not configured on server', 500);
@@ -1004,6 +1242,122 @@ export default {
         }
 
         return jsonResponse({ status: 'ok' });
+      }
+
+      if (pathname === '/relay/delete-chat' && request.method === 'POST') {
+        const supabase = getSupabaseClient(env);
+        const body = (await request.json()) as { chatId?: string; recipientId?: string | string[]; senderId?: string };
+        if (supabase && body.chatId) {
+          try {
+            await supabase.from('messages').delete().eq('chat_id', body.chatId);
+            await supabase.from('offline_handshakes').delete().eq('chat_id', body.chatId);
+            await supabase.from('reactions').delete().eq('chat_id', body.chatId);
+            await supabase.from('message_reactions').delete().eq('chat_id', body.chatId);
+            await supabase.from('non_messages').delete().eq('chat_id', body.chatId);
+            if (body.recipientId) {
+              const targets = Array.isArray(body.recipientId) ? body.recipientId : [body.recipientId];
+              for (const rId of targets) {
+                if (!rId) continue;
+                await supabase.from('non_messages').insert({
+                  id: `sys_del_${body.chatId}_${rId}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+                  chat_id: body.chatId,
+                  sender_id: body.senderId || 'system',
+                  recipient_id: rId,
+                  ciphertext: JSON.stringify({
+                    type: 'system',
+                    action: 'delete-chat',
+                    chatId: body.chatId,
+                  }),
+                  delivered: false,
+                });
+              }
+            }
+          } catch (err) {
+            console.error('[relay/delete-chat] error:', err);
+          }
+        }
+        return jsonResponse({ status: 'ok' });
+      }
+
+      if (pathname === '/relay/clear-history' && request.method === 'POST') {
+        const supabase = getSupabaseClient(env);
+        const body = (await request.json()) as { chatId?: string; recipientId?: string | string[]; senderId?: string };
+        if (supabase && body.chatId) {
+          try {
+            await supabase.from('messages').delete().eq('chat_id', body.chatId);
+            await supabase.from('reactions').delete().eq('chat_id', body.chatId);
+            await supabase.from('message_reactions').delete().eq('chat_id', body.chatId);
+            if (body.recipientId) {
+              const targets = Array.isArray(body.recipientId) ? body.recipientId : [body.recipientId];
+              for (const rId of targets) {
+                if (!rId) continue;
+                await supabase.from('non_messages').insert({
+                  id: `sys_clear_${body.chatId}_${rId}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+                  chat_id: body.chatId,
+                  sender_id: body.senderId || 'system',
+                  recipient_id: rId,
+                  ciphertext: JSON.stringify({
+                    type: 'system',
+                    action: 'clear-history',
+                    chatId: body.chatId,
+                  }),
+                  delivered: false,
+                });
+              }
+            }
+          } catch (err) {
+            console.error('[relay/clear-history] error:', err);
+          }
+        }
+        return jsonResponse({ status: 'ok' });
+      }
+
+      if (pathname === '/relay/reaction' && request.method === 'POST') {
+        const supabase = getSupabaseClient(env);
+        if (!supabase) return errorResponse('Database not configured on server', 500);
+        const body = (await request.json()) as { chatId: string; messageId: string; emoji: string; userId: string; action?: string };
+        if (!body.chatId || !body.messageId || !body.emoji || !body.userId) {
+          return errorResponse('Missing parameters', 400);
+        }
+        try {
+          await supabase
+            .from('message_reactions')
+            .delete()
+            .eq('chat_id', body.chatId)
+            .eq('message_id', body.messageId)
+            .eq('emoji', body.emoji)
+            .eq('user_id', body.userId);
+
+          if (body.action === 'add') {
+            await supabase
+              .from('message_reactions')
+              .insert({
+                chat_id: body.chatId,
+                message_id: body.messageId,
+                emoji: body.emoji,
+                user_id: body.userId,
+              });
+          }
+          return jsonResponse({ status: 'ok' });
+        } catch (err: any) {
+          return errorResponse(err?.message || 'Reaction failed', 500);
+        }
+      }
+
+      if (pathname === '/relay/reaction/delete' && request.method === 'POST') {
+        const supabase = getSupabaseClient(env);
+        if (!supabase) return errorResponse('Database not configured on server', 500);
+        const body = (await request.json()) as { chatId: string; messageId?: string; emoji?: string };
+        if (!body.chatId) return errorResponse('Missing chatId', 400);
+        try {
+          let q = supabase.from('message_reactions').delete().eq('chat_id', body.chatId);
+          if (body.messageId) q = q.eq('message_id', body.messageId);
+          if (body.emoji) q = q.eq('emoji', body.emoji);
+          await q;
+          return jsonResponse({ status: 'ok' });
+        } catch (err: any) {
+          return errorResponse(err?.message || 'Reaction delete failed', 500);
+        }
       }
 
       if (pathname === '/relay/profile' && request.method === 'GET') {
@@ -1575,6 +1929,1009 @@ export default {
         });
 
         return jsonResponse({ status: 'ok', reactions: updatedReactions });
+      }
+
+      if (pathname === '/support/ticket' && request.method === 'POST') {
+        const supabase = getSupabaseClient(env) || getChannelsSupabaseClient(env);
+        if (!supabase) return errorResponse('Database not configured on server', 500);
+        const body = (await request.json()) as { ticketNumber: string; userCode?: string; senderNickname?: string; messageText: string };
+        const { ticketNumber, userCode, senderNickname, messageText } = body;
+        if (!ticketNumber || !messageText) return errorResponse('Missing ticket data', 400);
+
+        const { data: existingTicket } = await supabase
+          .from('support_tickets')
+          .select('*')
+          .eq('ticket_number', ticketNumber)
+          .maybeSingle();
+
+        if (existingTicket) {
+          const updatedMessage = existingTicket.message_text
+            ? `${existingTicket.message_text}\n\n---\n\n${messageText}`
+            : messageText;
+
+          const { error: updateErr } = await supabase
+            .from('support_tickets')
+            .update({
+              message_text: updatedMessage,
+              status: 'sent',
+              sender_nickname: senderNickname || existingTicket.sender_nickname,
+              created_at: new Date().toISOString(),
+            })
+            .eq('ticket_number', ticketNumber);
+
+          if (updateErr) return errorResponse(updateErr.message, 500);
+
+          const payload = {
+            ticket_number: ticketNumber,
+            ticketNumber: ticketNumber,
+            user_code: existingTicket.user_code,
+            userCode: existingTicket.user_code,
+            sender_nickname: senderNickname || existingTicket.sender_nickname,
+            senderNickname: senderNickname || existingTicket.sender_nickname,
+            message_text: updatedMessage,
+            messageText: updatedMessage,
+            status: 'sent',
+            admin_reply: existingTicket.admin_reply,
+            created_at: new Date().toISOString(),
+          };
+
+          await triggerPusherEvent(env, 'support-admin', 'ticket-updated', payload);
+          await triggerAblyEvent(env, 'support-admin', 'ticket-updated', payload);
+          await triggerPusherEvent(env, 'support-admin', 'new-ticket', payload);
+          await triggerAblyEvent(env, 'support-admin', 'new-ticket', payload);
+          await triggerAblyEvent(env, 'chat:support-admin', 'client-message', { type: 'ticket-updated', ...payload });
+
+          return jsonResponse({ status: 'ok', ticketNumber, updated: true });
+        }
+
+        const ticketPayload = {
+          ticket_number: ticketNumber,
+          user_code: userCode || 'ANON',
+          sender_nickname: senderNickname || 'User',
+          message_text: messageText,
+          status: 'sent',
+          created_at: new Date().toISOString(),
+        };
+
+        const { error } = await supabase.from('support_tickets').insert(ticketPayload);
+        if (error) return errorResponse(error.message, 500);
+
+        await triggerPusherEvent(env, 'support-admin', 'new-ticket', ticketPayload);
+        await triggerAblyEvent(env, 'support-admin', 'new-ticket', ticketPayload);
+        await triggerAblyEvent(env, 'chat:support-admin', 'client-message', { type: 'new-ticket', ticket: ticketPayload, ...ticketPayload });
+
+        return jsonResponse({ status: 'ok', ticketNumber });
+      }
+
+      if (pathname === '/support/tickets' && request.method === 'GET') {
+        const supabase = getSupabaseClient(env) || getChannelsSupabaseClient(env);
+        if (!supabase) return errorResponse('Database not configured on server', 500);
+        const userCode = url.searchParams.get('userCode');
+        if (!userCode) return errorResponse('Missing userCode', 400);
+
+        const { data, error } = await supabase
+          .from('support_tickets')
+          .select('*')
+          .eq('user_code', userCode)
+          .order('created_at', { ascending: true });
+
+        if (error) return errorResponse(error.message, 500);
+        return jsonResponse({ tickets: data || [] });
+      }
+
+      if (pathname === '/support/admin/check' && request.method === 'GET') {
+        const supabase = getSupabaseClient(env) || getChannelsSupabaseClient(env);
+        if (!supabase) return errorResponse('Database not configured on server', 500);
+        const userCode = url.searchParams.get('userCode');
+        if (!userCode) return errorResponse('Missing userCode', 400);
+
+        const adminRecord = await checkAdminAuthorization(supabase, userCode);
+        if (!adminRecord) {
+          return jsonResponse({ isAdmin: false });
+        }
+
+        return jsonResponse({
+          isAdmin: true,
+          role: adminRecord.role || 'admin',
+          hasToken: Boolean(adminRecord.auth_token),
+        });
+      }
+
+      if (pathname === '/support/admin/register-token' && request.method === 'POST') {
+        const supabase = getSupabaseClient(env) || getChannelsSupabaseClient(env);
+        if (!supabase) return errorResponse('Database not configured on server', 500);
+        const body = (await request.json()) as { userCode: string; adminToken: string };
+        const { userCode, adminToken } = body;
+        if (!userCode || !adminToken) return errorResponse('Missing parameters', 400);
+
+        const adminRecord = await checkAdminAuthorization(supabase, userCode);
+        if (!adminRecord) {
+          return errorResponse('Access denied', 403);
+        }
+
+        const { error: updateErr } = await supabase
+          .from('support_admins')
+          .update({ auth_token: adminToken })
+          .eq('user_code', userCode);
+
+        if (updateErr) return errorResponse(updateErr.message, 500);
+        return jsonResponse({ status: 'ok' });
+      }
+
+      if (pathname === '/support/admin/tickets' && request.method === 'GET') {
+        const supabase = getSupabaseClient(env) || getChannelsSupabaseClient(env);
+        if (!supabase) return errorResponse('Database not configured on server', 500);
+        const userCode = url.searchParams.get('userCode');
+        const adminToken = request.headers.get('x-admin-token') || url.searchParams.get('adminToken');
+        if (!userCode) return errorResponse('Missing userCode', 400);
+
+        const adminRecord = await checkAdminAuthorization(supabase, userCode);
+        if (!adminRecord) {
+          return errorResponse('Access denied: not an authorized admin', 403);
+        }
+
+        if (adminToken && adminRecord.auth_token !== adminToken) {
+          await supabase
+            .from('support_admins')
+            .update({ auth_token: adminToken })
+            .eq('user_code', userCode);
+        }
+
+        const { data, error } = await supabase
+          .from('support_tickets')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        if (error) return errorResponse(error.message, 500);
+        return jsonResponse({ tickets: data || [] });
+      }
+
+      if (pathname === '/support/reply' && request.method === 'POST') {
+        const supabase = getSupabaseClient(env) || getChannelsSupabaseClient(env);
+        if (!supabase) return errorResponse('Database not configured on server', 500);
+        const body = (await request.json()) as { ticketNumber: string; adminReply: string; adminCode: string; adminToken?: string };
+        const { ticketNumber, adminReply, adminCode } = body;
+        const adminToken = request.headers.get('x-admin-token') || body.adminToken;
+        if (!ticketNumber || !adminReply || !adminCode) return errorResponse('Missing required fields', 400);
+
+        const adminRecord = await checkAdminAuthorization(supabase, adminCode);
+        if (!adminRecord) {
+          return errorResponse('Access denied: not an authorized admin', 403);
+        }
+
+        if (adminToken && adminRecord.auth_token !== adminToken) {
+          await supabase
+            .from('support_admins')
+            .update({ auth_token: adminToken })
+            .eq('user_code', adminCode);
+        }
+
+        const { data: existingTicket } = await supabase
+          .from('support_tickets')
+          .select('user_code, message_text, admin_reply')
+          .eq('ticket_number', ticketNumber)
+          .maybeSingle();
+
+        const answeredAt = new Date().toISOString();
+        const updatedAdminReply = existingTicket?.admin_reply
+          ? `${existingTicket.admin_reply}\n\n---\n\n${adminReply}`
+          : adminReply;
+
+        const { error } = await supabase
+          .from('support_tickets')
+          .update({
+            admin_reply: updatedAdminReply,
+            status: 'answered',
+            answered_at: answeredAt,
+          })
+          .eq('ticket_number', ticketNumber);
+
+        if (error) return errorResponse(error.message, 500);
+
+        if (existingTicket?.user_code) {
+          const userPayload = {
+            ticketNumber,
+            ticket_number: ticketNumber,
+            adminReply: updatedAdminReply,
+            latestReply: adminReply,
+            answeredAt,
+          };
+          await triggerPusherEvent(env, `user-${existingTicket.user_code}`, 'ticket-reply', userPayload);
+          await triggerAblyEvent(env, `user-${existingTicket.user_code}`, 'ticket-reply', userPayload);
+          await triggerAblyEvent(env, `chat:user-${existingTicket.user_code}`, 'client-message', {
+            type: 'ticket-reply',
+            ...userPayload,
+          });
+        }
+
+        const adminPayload = {
+          ticketNumber,
+          adminReply,
+          adminCode,
+          status: 'answered',
+          answeredAt,
+        };
+        await triggerPusherEvent(env, 'support-admin', 'ticket-updated', adminPayload);
+        await triggerAblyEvent(env, 'support-admin', 'ticket-updated', adminPayload);
+        await triggerAblyEvent(env, 'chat:support-admin', 'client-message', {
+          type: 'ticket-updated',
+          ...adminPayload,
+        });
+
+        return jsonResponse({ status: 'ok' });
+      }
+
+      if (pathname === '/support/close' && request.method === 'POST') {
+        const supabase = getSupabaseClient(env) || getChannelsSupabaseClient(env);
+        if (!supabase) return errorResponse('Database not configured on server', 500);
+        const body = (await request.json()) as { ticketNumber: string; adminCode: string; adminToken?: string };
+        const { ticketNumber, adminCode } = body;
+        const adminToken = request.headers.get('x-admin-token') || body.adminToken;
+        if (!ticketNumber || !adminCode) return errorResponse('Missing required fields', 400);
+
+        const adminRecord = await checkAdminAuthorization(supabase, adminCode);
+        if (!adminRecord) {
+          return errorResponse('Access denied: not an authorized admin', 403);
+        }
+
+        if (adminToken && adminRecord.auth_token !== adminToken) {
+          await supabase
+            .from('support_admins')
+            .update({ auth_token: adminToken })
+            .eq('user_code', adminCode);
+        }
+
+        const { data: existingTicket } = await supabase
+          .from('support_tickets')
+          .select('user_code')
+          .eq('ticket_number', ticketNumber)
+          .maybeSingle();
+
+        const { error } = await supabase
+          .from('support_tickets')
+          .delete()
+          .eq('ticket_number', ticketNumber);
+
+        if (error) return errorResponse(error.message, 500);
+
+        const closedAt = new Date().toISOString();
+
+        if (existingTicket?.user_code) {
+          await triggerPusherEvent(env, `user-${existingTicket.user_code}`, 'ticket-closed', {
+            ticketNumber,
+            closedAt,
+          });
+          await triggerAblyEvent(env, `user-${existingTicket.user_code}`, 'ticket-closed', {
+            ticketNumber,
+            closedAt,
+          });
+          await triggerAblyEvent(env, `chat:user-${existingTicket.user_code}`, 'client-message', {
+            type: 'ticket-closed',
+            ticketNumber,
+            closedAt,
+          });
+        }
+
+        const closeAdminPayload = {
+          ticketNumber,
+          closedAt,
+        };
+        await triggerPusherEvent(env, 'support-admin', 'ticket-closed', closeAdminPayload);
+        await triggerAblyEvent(env, 'support-admin', 'ticket-closed', closeAdminPayload);
+        await triggerAblyEvent(env, 'chat:support-admin', 'client-message', {
+          type: 'ticket-closed',
+          ...closeAdminPayload,
+        });
+
+        return jsonResponse({ status: 'ok', ticketNumber });
+      }
+
+      if (pathname === '/groups/create' && request.method === 'POST') {
+        const body = (await request.json()) as any;
+        if (!body.name || !body.creatorNickname) return errorResponse('Missing name or creatorNickname', 400);
+        const groupId = body.id;
+        const code = body.code;
+        if (!groupId || !code) return errorResponse('Missing group id or code', 400);
+
+        const supabase = getGroupsSupabaseClient(env);
+        const nowIso = new Date().toISOString();
+        const initialMember = {
+          group_id: groupId,
+          user_code: body.creatorCode || body.creatorNickname,
+          user_id: body.creatorId || null,
+          nickname: body.creatorNickname,
+          role: 'owner',
+          joined_at: nowIso,
+          last_seen: nowIso,
+        };
+
+        if (supabase) {
+          try {
+            const { error: grpErr } = await supabase.from('groups').upsert({
+              id: groupId,
+              code: code,
+              name: body.name.trim(),
+              description: (body.description || '').trim(),
+              avatar_url: body.avatarUrl || null,
+              creator_id: body.creatorId || null,
+              creator_code: body.creatorCode || null,
+              creator_nickname: body.creatorNickname,
+              max_members: 10,
+              members_count: 1,
+              created_at: nowIso,
+              updated_at: nowIso,
+            });
+            if (grpErr) return errorResponse(grpErr.message, 500);
+
+            const { error: memErr } = await supabase.from('group_members').upsert(initialMember);
+            if (memErr) return errorResponse(memErr.message, 500);
+          } catch (err: any) {
+            return errorResponse(err?.message || 'Failed to create group', 500);
+          }
+        }
+
+        return jsonResponse({
+          status: 'ok',
+          group: {
+            id: groupId,
+            code: code,
+            name: body.name.trim(),
+            description: (body.description || '').trim(),
+            avatarUrl: body.avatarUrl || null,
+            creatorNickname: body.creatorNickname,
+            creatorCode: body.creatorCode || null,
+            membersCount: 1,
+            maxMembers: 10,
+            members: [
+              {
+                nickname: body.creatorNickname,
+                userCode: body.creatorCode,
+                role: 'owner',
+                joinedAt: Date.now(),
+                lastSeen: Date.now(),
+              }
+            ],
+            createdAt: Date.now(),
+          },
+        });
+      }
+
+      if (pathname === '/groups/my' && request.method === 'GET') {
+        const userCode = url.searchParams.get('userCode') || url.searchParams.get('user_code');
+        const userId = url.searchParams.get('userId') || url.searchParams.get('user_id');
+        if (!userCode && !userId) return errorResponse('Missing userCode or userId', 400);
+
+        const supabase = getGroupsSupabaseClient(env);
+        if (!supabase) return errorResponse('Groups database not configured', 500);
+
+        try {
+          const filters = [];
+          if (userCode) {
+            filters.push(`user_code.eq.${userCode}`);
+            filters.push(`user_id.eq.${userCode}`);
+          }
+          if (userId && userId !== userCode) {
+            filters.push(`user_code.eq.${userId}`);
+            filters.push(`user_id.eq.${userId}`);
+          }
+          const { data: memberRows } = await supabase
+            .from('group_members')
+            .select('group_id, role')
+            .or(filters.join(','));
+
+          if (!memberRows || memberRows.length === 0) {
+            return jsonResponse({ groups: [] });
+          }
+
+          const groupIds = memberRows.map((r: any) => r.group_id);
+          const { data: groups } = await supabase
+            .from('groups')
+            .select('*')
+            .in('id', groupIds);
+
+          const roleMap: Record<string, string> = {};
+          memberRows.forEach((r: any) => { roleMap[r.group_id] = r.role; });
+
+          const result = await Promise.all((groups || []).map(async (g: any) => {
+            const { data: members } = await supabase
+              .from('group_members')
+              .select('*')
+              .eq('group_id', g.id);
+
+            const formattedMembers = (members || []).map((m: any) => ({
+              nickname: m.nickname,
+              userCode: m.user_code,
+              userId: m.user_code || m.user_id,
+              role: m.role || 'member',
+              joinedAt: new Date(m.joined_at || g.created_at).getTime(),
+              lastSeen: m.last_seen ? new Date(m.last_seen).getTime() : undefined,
+              avatarUrl: m.avatar_url || null,
+            }));
+
+            return {
+              id: g.id,
+              code: g.code,
+              name: g.name,
+              description: g.description || '',
+              avatarUrl: g.avatar_url || null,
+              creatorNickname: g.creator_nickname,
+              creatorCode: g.creator_code || null,
+              membersCount: g.members_count || formattedMembers.length || 1,
+              maxMembers: g.max_members || 10,
+              members: formattedMembers,
+              createdAt: new Date(g.created_at).getTime(),
+              role: roleMap[g.id] || 'member',
+            };
+          }));
+
+          return jsonResponse({ groups: result });
+        } catch (err: any) {
+          return errorResponse(err?.message || 'Failed to load groups', 500);
+        }
+      }
+
+      if (pathname === '/groups/get' && request.method === 'GET') {
+        const code = url.searchParams.get('code') || url.searchParams.get('id');
+        if (!code) return errorResponse('Missing group code or id', 400);
+
+        const supabase = getGroupsSupabaseClient(env);
+        if (supabase) {
+          try {
+            const { data: groupData } = await supabase.from('groups').select('*').or(`id.eq.${code},code.eq.${code}`).maybeSingle();
+            if (groupData) {
+              const { data: membersData } = await supabase
+                .from('group_members')
+                .select('*')
+                .eq('group_id', groupData.id);
+
+              const members = (membersData || []).map((m: any) => ({
+                nickname: m.nickname,
+                userCode: m.user_code,
+                userId: m.user_code || m.user_id,
+                role: m.role || 'member',
+                joinedAt: new Date(m.joined_at || groupData.created_at).getTime(),
+                lastSeen: m.last_seen ? new Date(m.last_seen).getTime() : undefined,
+                avatarUrl: m.avatar_url || null,
+              }));
+
+              return jsonResponse({
+                status: 'ok',
+                group: {
+                  id: groupData.id,
+                  code: groupData.code,
+                  name: groupData.name,
+                  description: groupData.description || '',
+                  avatarUrl: groupData.avatar_url || null,
+                  creatorNickname: groupData.creator_nickname,
+                  creatorCode: groupData.creator_code || null,
+                  membersCount: groupData.members_count || members.length || 1,
+                  maxMembers: groupData.max_members || 10,
+                  members,
+                  createdAt: new Date(groupData.created_at).getTime(),
+                },
+              });
+            }
+          } catch {}
+        }
+        return errorResponse('Group not found', 404);
+      }
+
+      if (pathname === '/groups/join' && request.method === 'POST') {
+        const body = (await request.json()) as any;
+        const { id, code, nickname, userCode, avatarUrl } = body;
+        if (!nickname || (!id && !code)) return errorResponse('Missing required fields', 400);
+
+        const supabase = getGroupsSupabaseClient(env);
+        if (supabase) {
+          try {
+            let queryBuilder = supabase.from('groups').select('*');
+            if (code && id) {
+              queryBuilder = queryBuilder.or(`id.eq.${id},code.eq.${code}`);
+            } else if (code) {
+              queryBuilder = queryBuilder.or(`id.eq.${code},code.eq.${code}`);
+            } else if (id) {
+              queryBuilder = queryBuilder.eq('id', id);
+            }
+            const { data: groupData } = await queryBuilder.maybeSingle();
+            if (!groupData) return errorResponse('Group not found', 404);
+
+            let inviteActive = true;
+            let expiresAt = null;
+            if (groupData.creator_id && typeof groupData.creator_id === 'string' && groupData.creator_id.startsWith('{')) {
+              try {
+                const meta = JSON.parse(groupData.creator_id);
+                if (meta.active === false) inviteActive = false;
+                if (typeof meta.expiresAt === 'number') expiresAt = meta.expiresAt;
+              } catch {}
+            }
+            if (!inviteActive) return errorResponse('INVITE_REVOKED', 403);
+            if (expiresAt && Date.now() > expiresAt) return errorResponse('INVITE_EXPIRED', 410);
+
+            const { count } = await supabase
+              .from('group_members')
+              .select('*', { count: 'exact', head: true })
+              .eq('group_id', groupData.id);
+
+            const currentCount = typeof count === 'number' ? count : (groupData.members_count || 1);
+            const candidateId = body.userId || userCode;
+            const memberUserCode = userCode || candidateId || nickname;
+
+            let memberQuery = supabase.from('group_members').select('*').eq('group_id', groupData.id);
+            if (candidateId) {
+              memberQuery = memberQuery.or(`user_code.eq.${candidateId},user_id.eq.${candidateId}`);
+            } else {
+              memberQuery = memberQuery.eq('user_code', memberUserCode);
+            }
+            const { data: existingMember } = await memberQuery.maybeSingle();
+
+            if (!existingMember && currentCount >= 10) {
+              return errorResponse('GROUP_FULL', 400);
+            }
+
+            const nowIso = new Date().toISOString();
+            await supabase.from('group_members').upsert({
+              group_id: groupData.id,
+              user_code: memberUserCode,
+              user_id: body.userId || candidateId || memberUserCode,
+              nickname: nickname,
+              role: existingMember?.role || 'member',
+              avatar_url: avatarUrl || null,
+              joined_at: existingMember?.joined_at || nowIso,
+              last_seen: nowIso,
+            });
+
+            const { data: allMembers } = await supabase
+              .from('group_members')
+              .select('*')
+              .eq('group_id', groupData.id);
+
+            const formattedMembers = (allMembers || []).map((m: any) => ({
+              nickname: m.nickname,
+              userCode: m.user_code,
+              userId: m.user_code || m.user_id,
+              role: m.role || 'member',
+              joinedAt: new Date(m.joined_at || groupData.created_at).getTime(),
+              lastSeen: m.last_seen ? new Date(m.last_seen).getTime() : undefined,
+              avatarUrl: m.avatar_url || null,
+            }));
+
+            const updatedGroup = {
+              id: groupData.id,
+              code: groupData.code,
+              name: groupData.name,
+              description: groupData.description || '',
+              avatarUrl: groupData.avatar_url || null,
+              creatorNickname: groupData.creator_nickname,
+              creatorCode: groupData.creator_code || null,
+              membersCount: formattedMembers.length,
+              maxMembers: 10,
+              members: formattedMembers,
+              createdAt: new Date(groupData.created_at).getTime(),
+            };
+
+            await triggerGroupPusherEvent(env, `presence-group-${groupData.id}`, 'member-joined', {
+              groupId: groupData.id,
+              nickname,
+              userCode: memberUserCode,
+              members: formattedMembers,
+            });
+
+            return jsonResponse({ status: 'ok', group: updatedGroup });
+          } catch (err: any) {
+            return errorResponse(err?.message || 'Join failed', 500);
+          }
+        }
+        return errorResponse('Groups database not configured', 500);
+      }
+
+      if (pathname === '/groups/leave' && request.method === 'POST') {
+        const body = (await request.json()) as any;
+        const { groupId, nickname, userCode, userId } = body;
+        const targetId = userCode || userId;
+        if (!groupId || (!nickname && !targetId)) return errorResponse('Missing groupId or member identification', 400);
+
+        const supabase = getGroupsSupabaseClient(env);
+        if (supabase) {
+          try {
+            let deleteQuery = supabase.from('group_members').delete().eq('group_id', groupId);
+            if (targetId) {
+              deleteQuery = deleteQuery.or(`user_code.eq.${targetId},user_id.eq.${targetId}`);
+            } else {
+              deleteQuery = deleteQuery.eq('nickname', nickname);
+            }
+            await deleteQuery;
+            await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'member-left', {
+              groupId,
+              nickname,
+              userCode: targetId || nickname,
+              userId: targetId || null,
+            });
+            return jsonResponse({ status: 'ok' });
+          } catch {}
+        }
+        return jsonResponse({ status: 'ok' });
+      }
+
+      if (pathname === '/groups/kick' && request.method === 'POST') {
+        const body = (await request.json()) as any;
+        const { groupId, targetNickname, targetUserCode, targetUserId, adminNickname } = body;
+        const targetId = targetUserCode || targetUserId;
+        if (!groupId || (!targetNickname && !targetId)) return errorResponse('Missing kick parameters', 400);
+
+        const supabase = getGroupsSupabaseClient(env);
+        if (supabase) {
+          try {
+            let deleteQuery = supabase.from('group_members').delete().eq('group_id', groupId);
+            if (targetId) {
+              deleteQuery = deleteQuery.or(`user_code.eq.${targetId},user_id.eq.${targetId}`);
+            } else {
+              deleteQuery = deleteQuery.eq('nickname', targetNickname);
+            }
+            await deleteQuery;
+            await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'kick', {
+              groupId,
+              target: targetNickname,
+              targetUserCode: targetId,
+              targetUserId: targetId,
+              admin: adminNickname,
+            });
+            return jsonResponse({ status: 'ok' });
+          } catch {}
+        }
+        return jsonResponse({ status: 'ok' });
+      }
+
+      if (pathname === '/groups/update' && request.method === 'POST') {
+        const body = (await request.json()) as any;
+        const { groupId, name, description, avatarUrl } = body;
+        if (!groupId) return errorResponse('Missing groupId', 400);
+
+        const supabase = getGroupsSupabaseClient(env);
+        if (supabase) {
+          try {
+            const updateData: any = { updated_at: new Date().toISOString() };
+            if (typeof name === 'string' && name.trim()) updateData.name = name.trim();
+            if (typeof description === 'string') updateData.description = description.trim();
+            if (avatarUrl !== undefined) updateData.avatar_url = avatarUrl;
+            if (typeof body.code === 'string' && body.code.trim()) updateData.code = body.code.trim();
+            if (body.creator_id !== undefined) updateData.creator_id = body.creator_id;
+            if (body.creatorId !== undefined) updateData.creator_id = body.creatorId;
+
+            await supabase.from('groups').update(updateData).eq('id', groupId);
+
+            await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'group-updated', {
+              groupId,
+              name: updateData.name,
+              description: updateData.description,
+              avatarUrl: updateData.avatar_url,
+            });
+
+            return jsonResponse({ status: 'ok', group: updateData });
+          } catch (err: any) {
+            return errorResponse(err?.message || 'Update failed', 500);
+          }
+        }
+        return jsonResponse({ status: 'ok' });
+      }
+
+      if (pathname === '/groups/delete' && request.method === 'POST') {
+        const body = (await request.json()) as any;
+        const { groupId } = body;
+        if (!groupId) return errorResponse('Missing groupId', 400);
+
+        const supabase = getGroupsSupabaseClient(env);
+        if (supabase) {
+          try {
+            await supabase.from('groups').delete().eq('id', groupId);
+            await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'group-deleted', {
+              groupId,
+            });
+            return jsonResponse({ status: 'ok' });
+          } catch (err: any) {
+            return errorResponse(err?.message || 'Delete failed', 500);
+          }
+        }
+        return jsonResponse({ status: 'ok' });
+      }
+
+      if (pathname === '/groups/role' && request.method === 'POST') {
+        const body = (await request.json()) as any;
+        const { groupId, targetNickname, targetUserCode, targetUserId, role } = body;
+        const targetId = targetUserCode || targetUserId;
+        if (!groupId || (!targetNickname && !targetId) || !role) return errorResponse('Missing parameters', 400);
+
+        const supabase = getGroupsSupabaseClient(env);
+        if (supabase) {
+          try {
+            let roleQuery = supabase.from('group_members').update({ role }).eq('group_id', groupId);
+            if (targetId) {
+              roleQuery = roleQuery.or(`user_code.eq.${targetId},user_id.eq.${targetId}`);
+            } else {
+              roleQuery = roleQuery.eq('nickname', targetNickname);
+            }
+            await roleQuery;
+            await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'member-role-updated', {
+              groupId,
+              targetNickname,
+              targetUserCode: targetId,
+              targetUserId: targetId,
+              role,
+            });
+            return jsonResponse({ status: 'ok' });
+          } catch (err: any) {
+            return errorResponse(err?.message || 'Role update failed', 500);
+          }
+        }
+        return jsonResponse({ status: 'ok' });
+      }
+
+      if (pathname === '/groups/notify-member' && request.method === 'POST') {
+        const body = (await request.json()) as any;
+        const { targetUserCode, targetNickname, group } = body;
+        if ((!targetUserCode && !targetNickname) || !group) return errorResponse('Missing targetUserCode or group', 400);
+
+        const targets = Array.from(new Set([targetUserCode, targetNickname].filter(Boolean)));
+        const allPusherServers = [...PUSHER_CONFIGS(env), ...GROUP_PUSHER_CONFIGS(env)];
+        let triggered = false;
+        for (const tCode of targets) {
+          for (const server of allPusherServers) {
+            try {
+              await triggerPusherEventOnServer(server, `private-handshake-${tCode}`, 'client-group-added', { group });
+              triggered = true;
+            } catch {}
+          }
+        }
+        return jsonResponse({ status: triggered ? 'ok' : 'no_server' });
+      }
+
+      if (pathname === '/groups/messages' && request.method === 'GET') {
+        const groupId = url.searchParams.get('groupId') || url.searchParams.get('id');
+        const limit = parseInt(url.searchParams.get('limit') || '100', 10);
+        if (!groupId) return errorResponse('Missing groupId', 400);
+
+        const supabase = getGroupsSupabaseClient(env);
+        if (!supabase) return errorResponse('Groups database not configured', 500);
+
+        try {
+          const { data, error } = await supabase
+            .from('group_messages')
+            .select('*')
+            .eq('group_id', groupId)
+            .order('created_at', { ascending: true })
+            .limit(limit);
+
+          if (error) return errorResponse(error.message, 500);
+          return jsonResponse({ status: 'ok', messages: data || [] });
+        } catch (err: any) {
+          return errorResponse(err?.message || 'Failed to fetch messages', 500);
+        }
+      }
+
+      if (pathname === '/groups/message' && request.method === 'POST') {
+        const body = (await request.json()) as any;
+        const {
+          id,
+          groupId,
+          senderCode,
+          senderId,
+          senderNickname,
+          ciphertext,
+          mediaType,
+          mediaUrl,
+          mediaName,
+          mediaKey,
+          mime,
+          duration,
+          width,
+          height,
+          waveform,
+          audioMetadata,
+          linkPreview,
+        } = body;
+
+        if (!groupId || !ciphertext || !senderNickname) {
+          return errorResponse('Missing required message parameters', 400);
+        }
+
+        const msgId = id || `gmsg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const supabase = getGroupsSupabaseClient(env);
+        const nowIso = new Date().toISOString();
+
+        const messageRow = {
+          id: msgId,
+          group_id: groupId,
+          sender_code: senderCode || senderNickname,
+          sender_id: senderId || null,
+          sender_nickname: senderNickname,
+          ciphertext,
+          media_type: mediaType || null,
+          media_url: mediaUrl || null,
+          media_name: mediaName || null,
+          media_key: mediaKey || null,
+          mime: mime || null,
+          duration: duration || null,
+          width: width || null,
+          height: height || null,
+          waveform: waveform || null,
+          audio_metadata: audioMetadata || null,
+          link_preview: linkPreview || null,
+          created_at: nowIso,
+        };
+
+        if (supabase) {
+          try {
+            await supabase.from('group_messages').insert(messageRow);
+          } catch {}
+        }
+
+        const broadcastPayload = {
+          type: 'group-message',
+          id: msgId,
+          groupId,
+          sender: senderNickname,
+          senderCode: senderCode || senderNickname,
+          senderId: senderId || null,
+          ciphertext,
+          mediaType,
+          mediaUrl,
+          mediaName,
+          mime,
+          duration,
+          waveform,
+          time: Date.now(),
+        };
+
+        await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'client-message', broadcastPayload);
+
+        return jsonResponse({ status: 'ok', id: msgId });
+      }
+
+      if (pathname === '/groups/read' && request.method === 'POST') {
+        const body = (await request.json()) as any;
+        const { groupId, messageId, readIds, time, sender, senderUserId, senderCode } = body;
+        if (!groupId) return errorResponse('Missing groupId', 400);
+
+        const idsToCheck = Array.from(new Set((readIds || (messageId ? [messageId] : [])).filter(Boolean)));
+        const supabase = getGroupsSupabaseClient(env);
+        let fullyReadIds: any[] = [];
+
+        if (supabase && idsToCheck.length > 0) {
+          try {
+            const { data: members } = await supabase
+              .from('group_members')
+              .select('user_code, user_id, nickname')
+              .eq('group_id', groupId);
+
+            const totalMembers = members || [];
+            const readerIds = [senderUserId, senderCode, sender].filter(Boolean);
+
+            for (const mId of idsToCheck) {
+              const { data: msg } = await supabase
+                .from('group_messages')
+                .select('id, sender_code, sender_id, sender_nickname, reactions')
+                .eq('id', mId)
+                .maybeSingle();
+
+              if (!msg) {
+                fullyReadIds.push(mId);
+                continue;
+              }
+
+              const isSender = (m: any) => {
+                if (msg.sender_id && (m.user_id === msg.sender_id || m.user_code === msg.sender_id)) return true;
+                if (msg.sender_code && (m.user_code === msg.sender_code || m.user_id === msg.sender_code)) return true;
+                return m.nickname === msg.sender_nickname;
+              };
+
+              const otherMembers = totalMembers.filter((m: any) => !isSender(m));
+              const existingReads = Array.isArray(msg.reactions?._read_by) ? msg.reactions._read_by : [];
+              const updatedReads = Array.from(new Set([...existingReads, ...readerIds]));
+
+              const allRead = otherMembers.length === 0 || otherMembers.every((m: any) =>
+                updatedReads.some((r: any) => r === m.user_id || r === m.user_code || r === m.nickname)
+              );
+
+              if (allRead) {
+                await supabase.from('group_messages').delete().eq('id', mId);
+                fullyReadIds.push(mId);
+              } else {
+                await supabase
+                  .from('group_messages')
+                  .update({ reactions: { ...(msg.reactions || {}), _read_by: updatedReads } })
+                  .eq('id', mId);
+              }
+            }
+          } catch (err) {
+            console.error('[groups/read] error processing reads:', err);
+          }
+        }
+
+        if (fullyReadIds.length > 0) {
+          const readPayload = {
+            type: 'read',
+            groupId,
+            messageId: fullyReadIds[fullyReadIds.length - 1],
+            readIds: fullyReadIds,
+            time: time || Date.now(),
+            sender,
+            senderUserId,
+            senderCode,
+            senderId: senderUserId || senderCode,
+          };
+          await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'client-message', readPayload);
+        }
+
+        return jsonResponse({ status: 'ok', fullyReadIds });
+      }
+
+      if (pathname === '/groups/calls/active' && request.method === 'GET') {
+        const groupId = url.searchParams.get('groupId') || url.searchParams.get('id');
+        if (!groupId) return errorResponse('Missing groupId', 400);
+
+        const supabase = getGroupsSupabaseClient(env);
+        if (supabase) {
+          try {
+            const { data } = await supabase
+              .from('group_calls')
+              .select('*')
+              .eq('group_id', groupId)
+              .eq('status', 'active')
+              .maybeSingle();
+
+            return jsonResponse({ status: 'ok', call: data || null });
+          } catch {}
+        }
+        return jsonResponse({ status: 'ok', call: null });
+      }
+
+      if (pathname === '/groups/calls/start' && request.method === 'POST') {
+        const body = (await request.json()) as any;
+        const { groupId, roomName, hostCode, hostNickname } = body;
+        if (!groupId || !roomName) return errorResponse('Missing call parameters', 400);
+
+        const supabase = getGroupsSupabaseClient(env);
+        const nowIso = new Date().toISOString();
+        if (supabase) {
+          try {
+            await supabase.from('group_calls').upsert({
+              group_id: groupId,
+              room_name: roomName,
+              status: 'active',
+              host_code: hostCode || hostNickname,
+              host_nickname: hostNickname || 'Host',
+              participants_count: 1,
+              created_at: nowIso,
+              updated_at: nowIso,
+            });
+          } catch {}
+        }
+
+        await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'group-call-started', {
+          groupId,
+          roomName,
+          hostCode,
+          hostNickname,
+        });
+
+        return jsonResponse({ status: 'ok', roomName });
+      }
+
+      if (pathname === '/groups/calls/end' && request.method === 'POST') {
+        const body = (await request.json()) as any;
+        const { groupId } = body;
+        if (!groupId) return errorResponse('Missing groupId', 400);
+
+        const supabase = getGroupsSupabaseClient(env);
+        if (supabase) {
+          try {
+            await supabase.from('group_calls').update({ status: 'ended', updated_at: new Date().toISOString() }).eq('group_id', groupId);
+          } catch {}
+        }
+
+        await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'group-call-ended', { groupId });
+
+        return jsonResponse({ status: 'ok' });
       }
 
       if ((pathname === '/developers' || pathname === '/relay/developers') && request.method === 'GET') {

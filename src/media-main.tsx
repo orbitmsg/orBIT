@@ -85,6 +85,10 @@ export const MediaWindowView: React.FC = () => {
           initialIndex: newPayload?.initialIndex,
           items: newPayload?.items?.map((it: any) => ({ id: it.id, type: it.type, url: it.url })),
         });
+        if (newPayload) {
+          const root = document.getElementById('root');
+          if (root) root.style.display = '';
+        }
         setPayload(newPayload || null);
       });
     }
@@ -110,13 +114,15 @@ export const MediaWindowView: React.FC = () => {
   }, []);
 
   const handleClose = () => {
-    setPayload(null);
+    const root = document.getElementById('root');
+    if (root) root.style.display = 'none';
     const orbita = (window as any).orbita;
     if (orbita?.closeMediaWindow) {
       orbita.closeMediaWindow();
     } else {
       window.close();
     }
+    setPayload(null);
   };
 
   const dispatchAction = (action: { type: string; messageId?: string; chatId?: string }) => {

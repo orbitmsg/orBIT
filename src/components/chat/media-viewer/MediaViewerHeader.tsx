@@ -65,7 +65,7 @@ export const MediaViewerHeader: React.FC<MediaViewerHeaderProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'background-color 0.15s, color 0.15s',
+            transition: 'none',
           }}
           className="hover:bg-white/15 hover:text-white"
           aria-label={t('window.minimize', 'Свернуть')}
@@ -91,7 +91,7 @@ export const MediaViewerHeader: React.FC<MediaViewerHeaderProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'background-color 0.15s, color 0.15s',
+            transition: 'none',
           }}
           className="hover:bg-white/15 hover:text-white"
           aria-label={isWindowMaximized ? t('window.restore', 'Восстановить') : t('window.maximize', 'Развернуть')}
@@ -122,7 +122,7 @@ export const MediaViewerHeader: React.FC<MediaViewerHeaderProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'background-color 0.15s, color 0.15s',
+            transition: 'none',
           }}
           className="hover:bg-red-500/30 hover:text-red-300"
           aria-label={t('common.close', 'Закрыть')}

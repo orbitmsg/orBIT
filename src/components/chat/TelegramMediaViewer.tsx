@@ -66,6 +66,38 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
   const isVideoDraggingRef = useRef(false);
   const [isVideoProgressHovered, setIsVideoProgressHovered] = useState(false);
   const isRepairingRef = useRef(false);
+  const [videoFirstFrame, setVideoFirstFrame] = useState<string | null>(null);
+
+  const handleInstantClose = useCallback(() => {
+    const el = document.getElementById('telegram-media-viewer-root');
+    if (el) el.style.display = 'none';
+    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+      try {
+        navigator.mediaSession.playbackState = 'none';
+        navigator.mediaSession.metadata = null;
+      } catch {}
+    }
+    onClose();
+  }, [onClose]);
+
+  const captureVideoFrame = useCallback(() => {
+    if (!videoRef.current) return null;
+    const v = videoRef.current;
+    if (!v.videoWidth || !v.videoHeight) return null;
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.min(v.videoWidth, 640);
+      canvas.height = Math.round(canvas.width * (v.videoHeight / v.videoWidth));
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        setVideoFirstFrame(dataUrl);
+        return dataUrl;
+      }
+    } catch {}
+    return null;
+  }, []);
 
   const carouselRef = useRef<HTMLDivElement>(null);
   const optionsMenuRef = useRef<HTMLDivElement>(null);
@@ -321,7 +353,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
       resetIdleTimer();
       if (e.key === 'Escape') {
         e.preventDefault();
-        onClose();
+        handleInstantClose();
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
         if (isVideo && videoRef.current && !e.shiftKey) {
@@ -358,7 +390,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, currentIndex, items.length, isVideo, duration, onClose, resetIdleTimer]);
+  }, [isOpen, currentIndex, items.length, isVideo, duration, handleInstantClose, resetIdleTimer]);
 
   useEffect(() => {
     if (!showOptionsMenu) return;
@@ -399,6 +431,117 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
       video.removeEventListener('pause', onPause);
     };
   }, [isVideo, displaySrc]);
+
+  useEffect(() => {
+    setVideoFirstFrame(null);
+  }, [currentIndex]);
+
+  const senderNick = currentItem?.sender || (currentItem?.chatId ? useChatStore.getState().chats.find((c) => c.id === currentItem.chatId)?.name : null) || 'Orbita';
+
+  useEffect(() => {
+    if (!isOpen || !isVideo || typeof navigator === 'undefined' || !('mediaSession' in navigator)) {
+      return;
+    }
+
+    const artworkSrc = videoFirstFrame || currentItem?.thumbnail || currentItem?.blurPreview || '/icons/512x512.png';
+    const artworkList = [
+      { src: artworkSrc, sizes: '512x512', type: 'image/jpeg' },
+      { src: '/icons/256x256.png', sizes: '256x256', type: 'image/png' },
+      { src: '/icons/128x128.png', sizes: '128x128', type: 'image/png' },
+    ];
+
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: senderNick,
+        artist: senderNick,
+        album: 'Orbita',
+        artwork: artworkList,
+      });
+      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+    } catch {}
+
+    navigator.mediaSession.setActionHandler('play', () => {
+      if (videoRef.current) {
+        videoRef.current.play().catch(() => {});
+        setIsPlaying(true);
+      }
+    });
+
+    navigator.mediaSession.setActionHandler('pause', () => {
+      if (videoRef.current) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+    });
+
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+      if (currentIndex > 0) {
+        setCurrentIndex((i) => i - 1);
+        setRotation(0);
+        setZoomScale(1);
+        setPanOffset({ x: 0, y: 0 });
+      }
+    });
+
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+      if (currentIndex < items.length - 1) {
+        setCurrentIndex((i) => i + 1);
+        setRotation(0);
+        setZoomScale(1);
+        setPanOffset({ x: 0, y: 0 });
+      }
+    });
+
+    navigator.mediaSession.setActionHandler('seekto', (details) => {
+      if (typeof details.seekTime === 'number' && videoRef.current) {
+        videoRef.current.currentTime = details.seekTime;
+        setCurrentTime(details.seekTime);
+      }
+    });
+
+    navigator.mediaSession.setActionHandler('stop', () => {
+      if (videoRef.current) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+      handleInstantClose();
+    });
+
+    return () => {
+      if ('mediaSession' in navigator) {
+        try {
+          navigator.mediaSession.playbackState = 'none';
+          navigator.mediaSession.metadata = null;
+          navigator.mediaSession.setActionHandler('play', null);
+          navigator.mediaSession.setActionHandler('pause', null);
+          navigator.mediaSession.setActionHandler('previoustrack', null);
+          navigator.mediaSession.setActionHandler('nexttrack', null);
+          navigator.mediaSession.setActionHandler('seekto', null);
+          navigator.mediaSession.setActionHandler('stop', null);
+        } catch {}
+      }
+    };
+  }, [isOpen, isVideo, senderNick, videoFirstFrame, currentItem?.thumbnail, currentItem?.blurPreview, currentIndex, items.length, handleInstantClose]);
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('mediaSession' in navigator) || !isVideo) return;
+    try {
+      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+    } catch {}
+  }, [isPlaying, isVideo]);
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('mediaSession' in navigator) || !isVideo) return;
+    if ('setPositionState' in navigator.mediaSession && duration && isFinite(duration) && duration > 0) {
+      try {
+        navigator.mediaSession.setPositionState({
+          duration: Math.max(0, duration),
+          playbackRate: playbackRate || 1,
+          position: Math.min(Math.max(0, currentTime), duration),
+        });
+      } catch {}
+    }
+  }, [currentTime, duration, playbackRate, isVideo]);
 
   const handleDownload = useCallback(async () => {
     if (!displaySrc || !currentItem) return;
@@ -721,7 +864,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
         cursor: areControlsVisible ? (zoomScale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default') : 'none',
         fontFamily: activeFont,
       }}
-      onClick={onClose}
+      onClick={handleInstantClose}
     >
       <style>{`
         #telegram-media-viewer-root,
@@ -739,7 +882,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
         <MediaViewerHeader
           areControlsVisible={areControlsVisible}
           isWindowMaximized={isWindowMaximized}
-          onClose={onClose}
+          onClose={handleInstantClose}
         />
       )}
 
@@ -898,10 +1041,17 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                     }
                   }
                 }}
+                onLoadedData={() => {
+                  captureVideoFrame();
+                }}
                 onCanPlay={() => {
+                  captureVideoFrame();
                   if (videoRef.current && isPlaying && videoRef.current.paused) {
                     videoRef.current.play().catch(() => {});
                   }
+                }}
+                onSeeked={() => {
+                  captureVideoFrame();
                 }}
                 onTimeUpdate={() => {
                   if (videoRef.current) setCurrentTime(videoRef.current.currentTime);

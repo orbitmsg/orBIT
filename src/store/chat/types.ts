@@ -151,7 +151,7 @@ export interface Message {
   ttlSeconds?: number;
   expiresAt?: number;
   read?: boolean;
-  status?: 'sent' | 'delivered' | 'read' | 'pending' | 'sending';
+  status?: 'sent' | 'delivered' | 'read' | 'pending' | 'sending' | 'failed' | 'error';
   uploading?: boolean;
   uploadedMb?: number;
   mediaType?: 'photo' | 'video' | 'audio' | 'voice' | 'file' | 'call' | 'emoji' | 'gif' | 'sticker' | 'system' | null;

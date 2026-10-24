@@ -26,6 +26,7 @@ interface MessageItemProps {
   onButtonClick?: (button: { text: string; action: string; channelId?: string; url?: string; data?: string; icon?: 'channel' | 'backup' | 'help' | 'link' }) => void;
   onSenderClick?: (senderId?: string, senderName?: string) => void;
   activeChat?: Chat;
+  onRetry?: (messageId: string) => void;
 }
 
 const MessageText = ({
@@ -103,7 +104,7 @@ const MessageText = ({
 };
 
 export const MessageItem: React.FC<MessageItemProps> = React.memo(
-  ({ msg, isOwn, isPinned, onContextMenu, themeColor, bubbleRadius, currentUserId, onToggleReaction, onQuoteClick, isGroup = false, isPrevSameSender = false, onLinkClick, onButtonClick, onSenderClick, activeChat: activeChatProp }) => {
+  ({ msg, isOwn, isPinned, onContextMenu, themeColor, bubbleRadius, currentUserId, onToggleReaction, onQuoteClick, isGroup = false, isPrevSameSender = false, onLinkClick, onButtonClick, onSenderClick, activeChat: activeChatProp, onRetry }) => {
     const { t } = useTranslation();
     const myCode = useChatStore((s) => s.myCode);
     const myNickname = useAuthStore((s) => s.nickname);
@@ -151,16 +152,19 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
       >
         <span style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>{timeStr}</span>
         {isOwn && (
-          <span style={{ display: 'inline-flex', width: '26px', minWidth: '26px', flexShrink: 0, justifyContent: 'flex-end', userSelect: 'none', WebkitUserSelect: 'none' }}>
+          <span style={{ display: 'inline-flex', width: (msg.status === 'failed' || msg.status === 'error') ? '20px' : '26px', minWidth: (msg.status === 'failed' || msg.status === 'error') ? '20px' : '26px', flexShrink: 0, justifyContent: 'flex-end', userSelect: 'none', WebkitUserSelect: 'none' }}>
             <MessageStatus
               status={
-                msg.uploading || msg.status === 'sending' || msg.status === 'pending'
+                (msg.status === 'failed' || msg.status === 'error')
+                  ? 'failed'
+                  : msg.uploading || msg.status === 'sending' || msg.status === 'pending'
                   ? 'sending'
                   : (msg.status === 'read' || (!msg.uploading && msg.read))
                   ? 'read'
                   : (msg.status || 'sent')
               }
               isOwn={isOwn}
+              onRetry={(msg.status === 'failed' || msg.status === 'error') && onRetry ? () => onRetry(msg.id || '') : undefined}
             />
           </span>
         )}
@@ -224,13 +228,16 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                 <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: '5px', flexShrink: 0, userSelect: 'none', WebkitUserSelect: 'none' }}>
                   <MessageStatus
                     status={
-                      msg.uploading || msg.status === 'sending' || msg.status === 'pending'
+                      (msg.status === 'failed' || msg.status === 'error')
+                        ? 'failed'
+                        : msg.uploading || msg.status === 'sending' || msg.status === 'pending'
                         ? 'sending'
                         : (msg.status === 'read' || (!msg.uploading && msg.read))
                         ? 'read'
                         : (msg.status || 'sent')
                     }
                     isOwn={isOwn}
+                    onRetry={(msg.status === 'failed' || msg.status === 'error') && onRetry ? () => onRetry(msg.id || '') : undefined}
                   />
                 </span>
               )}

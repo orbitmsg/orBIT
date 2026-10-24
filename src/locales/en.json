@@ -126,6 +126,8 @@
     },
     "common": {
       "sending": "Sending...",
+      "not_delivered": "Not delivered",
+      "retry": "Retry",
       "lock_app": "Lock app",
       "you": "You",
       "link_copied": "Link copied",

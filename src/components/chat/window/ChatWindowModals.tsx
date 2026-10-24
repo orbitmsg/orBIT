@@ -72,6 +72,7 @@ export interface ChatWindowModalsProps {
   triggerReactionMessage: (indexOrId: any, emoji: string) => void;
   isChannelOwner: boolean;
   messages: Message[];
+  handleRetryMessage?: (indexOrId: number | string) => void;
   isEmojiPanelOpen: boolean;
   emojiButtonRef: React.RefObject<HTMLButtonElement | null>;
   headerRef: React.RefObject<HTMLDivElement | null>;
@@ -135,6 +136,7 @@ export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
   triggerReactionMessage,
   isChannelOwner,
   messages,
+  handleRetryMessage,
   isEmojiPanelOpen,
   emojiButtonRef,
   headerRef,
@@ -319,6 +321,7 @@ export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
               onSelect={handleSelectFromMenu}
               onSelectReaction={(emoji) => triggerReactionMessage(contextMenu.messageId ?? contextMenu.messageIndex, emoji)}
               canManageMessages={activeChat?.type !== 'channel' || isChannelOwner}
+              onRetry={handleRetryMessage ? () => handleRetryMessage(contextMenu.messageId || contextMenu.messageIndex) : undefined}
             />
           </AnimatePresence>,
           document.body

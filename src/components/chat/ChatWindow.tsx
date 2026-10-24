@@ -753,6 +753,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     triggerMessage,
     handleSendMessage,
     handleSendAsTxt,
+    handleRetryMessage,
   } = useChatMessageSend({
     activeChatId,
     activeChat,
@@ -997,9 +998,10 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         handleLinkClick={handleLinkClick}
         handleMessageButtonClick={handleMessageButtonClick}
         handleOpenDirectChat={handleOpenDirectChat}
+        handleRetryMessage={handleRetryMessage}
       />
     );
-  }, [myCode, myNickname, myUserId, activeChat, activeChatId, sharedSecret, bubbleRadius, themeColor, highlightedIndex, selection, editingIndex, editText, memberAvatars, isMessagePinned, getDateLabel, openMediaViewer, triggerReactionMessage, triggerEditMessage, handleMessageClick, handleContextMenu, handleCallPress, handleQuoteClick, handleLinkClick, handleMessageButtonClick, handleOpenDirectChat]);
+  }, [myCode, myNickname, myUserId, activeChat, activeChatId, sharedSecret, bubbleRadius, themeColor, highlightedIndex, selection, editingIndex, editText, memberAvatars, isMessagePinned, getDateLabel, openMediaViewer, triggerReactionMessage, triggerEditMessage, handleMessageClick, handleContextMenu, handleCallPress, handleQuoteClick, handleLinkClick, handleMessageButtonClick, handleOpenDirectChat, handleRetryMessage]);
 
 
 
@@ -1313,6 +1315,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
           triggerReactionMessage={triggerReactionMessage}
           isChannelOwner={isChannelOwner}
           messages={messages}
+          handleRetryMessage={handleRetryMessage}
           isEmojiPanelOpen={isEmojiPanelOpen}
           emojiButtonRef={emojiButtonRef}
           headerRef={headerRef}

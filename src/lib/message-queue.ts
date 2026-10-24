@@ -1,3 +1,5 @@
+import { useChatStore } from '../store/useChatStore';
+
 interface QueuedMessage {
   id: string;
   chatId: string;
@@ -30,7 +32,47 @@ class MessageQueue {
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
+    this.restoreQueue();
     this.cleanupTimer = setInterval(() => this.cleanup(), this.CLEANUP_INTERVAL_MS);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => {
+        for (const msg of this.queue.values()) {
+          if (msg.status === 'pending') {
+            msg.retries = 0;
+          }
+        }
+      });
+    }
+  }
+
+  private persistQueue(): void {
+    if (typeof window === 'undefined') return;
+    try {
+      const items: QueuedMessage[] = [];
+      for (const msg of this.queue.values()) {
+        if (msg.status === 'pending') {
+          items.push(msg);
+        }
+      }
+      localStorage.setItem('orbita_offline_msg_queue_v1', JSON.stringify(items));
+    } catch {}
+  }
+
+  private restoreQueue(): void {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem('orbita_offline_msg_queue_v1');
+      if (raw) {
+        const items: QueuedMessage[] = JSON.parse(raw);
+        if (Array.isArray(items)) {
+          for (const item of items) {
+            if (item && item.id && item.status === 'pending') {
+              this.queue.set(item.id, item);
+            }
+          }
+        }
+      }
+    } catch {}
   }
 
   async sendMessage(
@@ -59,6 +101,7 @@ class MessageQueue {
     };
 
     this.queue.set(messageId, queuedMsg);
+    this.persistQueue();
 
     await this.attemptDelivery(messageId, sendFn);
 
@@ -118,13 +161,17 @@ class MessageQueue {
 
       if (msg.retries >= msg.maxRetries) {
         msg.status = 'failed';
+        this.persistQueue();
+        useChatStore.getState().updateMessageStatus(msg.chatId, msg.id, 'failed');
         return;
       }
 
       await this.attemptDelivery(messageId, sendFn);
 
       if (msg.status === 'pending') {
-        const nextDelay = Math.min(this.RETRY_INTERVAL_MS * Math.pow(1.3, Math.min(msg.retries, 5)), 6000);
+        const baseDelay = Math.min(this.RETRY_INTERVAL_MS * Math.pow(1.5, Math.min(msg.retries, 6)), 30000);
+        const jitter = Math.floor(Math.random() * 500);
+        const nextDelay = baseDelay + jitter;
         this.scheduleNextRetry(messageId, sendFn, nextDelay);
       }
     }, delay);
@@ -181,6 +228,7 @@ class MessageQueue {
         clearTimeout(this.retryTimers.get(ackData.messageId)!);
         this.retryTimers.delete(ackData.messageId);
       }
+      this.persistQueue();
     }
   }
 
@@ -197,6 +245,7 @@ class MessageQueue {
         this.queue.delete(msgId);
       }
     }
+    this.persistQueue();
 
     if (this.deliveredMessages.size > 1000) {
       const entries = Array.from(this.deliveredMessages).slice(-500);

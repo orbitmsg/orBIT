@@ -682,6 +682,8 @@ export const useChatStore = create<ChatState>()(
         const state = get();
         const messages = state.messagesByChatId[chatId] || [];
         const STATUS_RANK: Record<string, number> = {
+          failed: 0,
+          error: 0,
           sending: 1,
           pending: 1,
           sent: 2,
@@ -690,6 +692,13 @@ export const useChatStore = create<ChatState>()(
         };
         const updated = messages.map(m => {
           if (m.id !== messageId) return m;
+          if (status === 'failed' || status === 'error') {
+            if (m.status === 'read' || m.read || m.status === 'delivered') return m;
+            return { ...m, status: 'failed' as const };
+          }
+          if (status === 'sending' && (m.status === 'failed' || m.status === 'error')) {
+            return { ...m, status: 'sending' as const };
+          }
           const currentStatus = (m.status === 'read' || m.read) ? 'read' : (m.status || 'sent');
           const currentRank = STATUS_RANK[currentStatus] || 1;
           const newRank = (status ? STATUS_RANK[status] : undefined) || 1;

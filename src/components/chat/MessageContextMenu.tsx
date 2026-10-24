@@ -52,6 +52,7 @@ export interface ContextMenuState {
   isOwn: boolean;
   type: 'text' | 'singleImage' | 'multipleImages' | 'file' | 'sticker';
   hasMultipleImages: boolean;
+  isFailed?: boolean;
 }
 
 const FREQUENT_REACTIONS_KEY = 'orbita-frequent-reactions';
@@ -363,6 +364,7 @@ interface MessageContextMenuProps {
   onSelect: () => void;
   onSelectReaction?: (emoji: string) => void;
   canManageMessages?: boolean;
+  onRetry?: () => void;
 }
 
 export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
@@ -379,6 +381,7 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
   onSelect,
   onSelectReaction,
   canManageMessages,
+  onRetry,
 }) => {
   const { t } = useTranslation();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -422,6 +425,32 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
   };
 
   const items: { label: string; onClick: () => void; icon: React.ReactNode }[] = [];
+
+  if (menu.isFailed && onRetry) {
+    items.push({
+      label: t('common.retry', 'Повторить'),
+      onClick: onRetry,
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          width={16}
+          height={16}
+          fill="none"
+          stroke="#ff4d4f"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M21 2v6h-6" />
+          <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+          <path d="M3 22v-6h6" />
+          <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+        </svg>
+      ),
+    });
+  }
 
   if (canManageMessages !== false) {
     items.push({

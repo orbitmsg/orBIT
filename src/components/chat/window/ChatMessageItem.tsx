@@ -60,6 +60,7 @@ export interface ChatMessageItemProps {
   handleLinkClick: (url: string) => void;
   handleMessageButtonClick: (btn: any) => void;
   handleOpenDirectChat: (senderId?: string, senderName?: string, memberObj?: any) => void;
+  handleRetryMessage?: (indexOrId: number | string) => void;
 }
 
 export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
@@ -94,6 +95,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   handleLinkClick,
   handleMessageButtonClick,
   handleOpenDirectChat,
+  handleRetryMessage,
 }) => {
   const { t } = useTranslation();
 
@@ -189,6 +191,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
 
   const timeBadge = useCallback((m: Message, isPinned?: boolean) => {
     const mIsOwn = isMessageOutgoing(m, myCode, myNickname, activeChat, myUserId);
+    const isFailed = m.status === 'failed' || m.status === 'error';
     return (
       <span className="tabular-nums select-none message-time-badge" style={{ color: mIsOwn ? 'rgba(255, 255, 255, 0.9)' : 'var(--text-dim)', fontSize: orbitFs(11), display: 'inline-flex', alignItems: 'center', lineHeight: 1, userSelect: 'none', WebkitUserSelect: 'none' }}>
         {isPinned && (
@@ -196,22 +199,25 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         )}
         <span style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>{formatTime(m.time)}</span>
         {mIsOwn && (
-          <span style={{ display: 'inline-flex', width: '26px', minWidth: '26px', flexShrink: 0, justifyContent: 'flex-end', userSelect: 'none', WebkitUserSelect: 'none' }}>
+          <span style={{ display: 'inline-flex', width: isFailed ? '20px' : '26px', minWidth: isFailed ? '20px' : '26px', flexShrink: 0, justifyContent: 'flex-end', userSelect: 'none', WebkitUserSelect: 'none' }}>
             <MessageStatus
               status={
-                m.uploading || m.status === 'sending' || m.status === 'pending'
+                isFailed
+                  ? 'failed'
+                  : m.uploading || m.status === 'sending' || m.status === 'pending'
                   ? 'sending'
                   : (m.status === 'read' || (!m.uploading && m.read))
                   ? 'read'
                   : (m.status || 'sent')
               }
               isOwn={mIsOwn}
+              onRetry={isFailed && handleRetryMessage ? () => handleRetryMessage(m.id || index) : undefined}
             />
           </span>
         )}
       </span>
     );
-  }, [myCode, myNickname, activeChat, myUserId]);
+  }, [myCode, myNickname, activeChat, myUserId, handleRetryMessage, index]);
 
   const bubbleStyle = useCallback((bIsOwn: boolean, extra?: React.CSSProperties): React.CSSProperties => ({
     padding: '6.5px 12px 6.5px 11px',
@@ -711,6 +717,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
               onButtonClick={handleMessageButtonClick}
               onSenderClick={(sId, sName) => handleOpenDirectChat(sId, sName, senderMember)}
               activeChat={activeChat}
+              onRetry={handleRetryMessage ? () => handleRetryMessage(msg.id || index) : undefined}
             />
           )}
         </div>
@@ -873,7 +880,17 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     <span style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>{formatTimeOfDay(msg.time)}</span>
                     {isOwn && (msg.status || msg.read) && (
                       <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: '5px', flexShrink: 0, userSelect: 'none', WebkitUserSelect: 'none' }}>
-                        <MessageStatus status={(msg.status === 'read' || msg.read) ? 'read' : (msg.status || 'sent')} isOwn={isOwn} />
+                        <MessageStatus
+                          status={
+                            (msg.status === 'failed' || msg.status === 'error')
+                              ? 'failed'
+                              : (msg.status === 'read' || msg.read)
+                              ? 'read'
+                              : (msg.status || 'sent')
+                          }
+                          isOwn={isOwn}
+                          onRetry={(msg.status === 'failed' || msg.status === 'error') && handleRetryMessage ? () => handleRetryMessage(msg.id || index) : undefined}
+                        />
                       </span>
                     )}
                   </div>

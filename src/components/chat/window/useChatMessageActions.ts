@@ -502,7 +502,8 @@ export const useChatMessageActions = ({
     const index = realIndex >= 0 ? realIndex : (typeof target === 'number' ? target : -1);
     const type = getMessageMenuType(msg);
     const hasMultipleImages = msg.mediaItems ? msg.mediaItems.filter((item) => item.type === 'photo').length > 1 : false;
-    setContextMenu({ visible: true, x, y, messageIndex: index, messageId: msg.id, isOwn, type, hasMultipleImages });
+    const isFailed = msg.status === 'failed' || msg.status === 'error';
+    setContextMenu({ visible: true, x, y, messageIndex: index, messageId: msg.id, isOwn, type, hasMultipleImages, isFailed });
   };
 
   const handleReply = (indexOrId?: number | string) => {

@@ -63,6 +63,7 @@ export interface UseChatMessageSendReturn {
   ) => Promise<void>;
   handleSendMessage: (overrideText?: string, linkPreview?: LinkPreviewData) => void;
   handleSendAsTxt: (caption: string) => Promise<void>;
+  handleRetryMessage: (indexOrId: number | string) => Promise<void>;
 }
 
 export const useChatMessageSend = ({
@@ -650,8 +651,12 @@ export const useChatMessageSend = ({
             }).then((res) => {
               if (res) {
                 useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sent');
+              } else {
+                useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');
               }
-            }).catch(() => {});
+            }).catch(() => {
+              useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');
+            });
           }
           return;
         }
@@ -861,6 +866,8 @@ export const useChatMessageSend = ({
             const hadOfflineSuccess = offlineResults.some((r) => r.status === 'fulfilled');
             if (ablyDirectSent || hadOfflineSuccess) {
               useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sent');
+            } else {
+              useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');
             }
           }
           return;
@@ -980,10 +987,14 @@ export const useChatMessageSend = ({
 
           if (ablySuccess || offlineSuccess) {
             useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sent');
+          } else {
+            useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');
           }
-        })().catch(() => {});
+        })().catch(() => {
+          useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');
+        });
       } catch (err) {
-        console.error('[ChatWindow] Failed to encrypt/send message:', err);
+        useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');
       }
     }).catch(() => {});
   };
@@ -1059,9 +1070,46 @@ export const useChatMessageSend = ({
     }
   };
 
+  const handleRetryMessage = useCallback(async (indexOrId: number | string) => {
+    if (!activeChatId) return;
+    const msgs = useChatStore.getState().messagesByChatId[activeChatId] || [];
+    const targetMsg = typeof indexOrId === 'string'
+      ? msgs.find((m) => m.id === indexOrId)
+      : (typeof indexOrId === 'number' && indexOrId >= 0 ? msgs[indexOrId] : null);
+
+    if (!targetMsg || !targetMsg.id) return;
+
+    useChatStore.getState().updateMessageStatus(activeChatId, targetMsg.id, 'sending');
+
+    const mediaPayload = targetMsg.mediaUrl ? {
+      type: targetMsg.mediaType || 'photo',
+      url: targetMsg.mediaUrl,
+      key: targetMsg.mediaKey,
+      name: targetMsg.mediaName,
+      mime: targetMsg.mime,
+      audioMetadata: targetMsg.audioMetadata,
+      duration: targetMsg.duration,
+      waveform: targetMsg.waveform,
+      size: targetMsg.fileSize,
+      width: targetMsg.width,
+      height: targetMsg.height,
+      thumbnail: targetMsg.thumbnail,
+      blurPreview: targetMsg.blurPreview,
+    } : undefined;
+
+    await triggerMessage(
+      targetMsg.text || '',
+      mediaPayload,
+      targetMsg.linkPreview,
+      targetMsg.id,
+      targetMsg.mediaItems
+    );
+  }, [activeChatId, triggerMessage]);
+
   return {
     triggerMessage,
     handleSendMessage,
     handleSendAsTxt,
+    handleRetryMessage,
   };
 };

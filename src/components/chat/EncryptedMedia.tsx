@@ -50,6 +50,7 @@ export const EncryptedMedia = memo(({
   const { blobUrl, load, isLoading, progress, isUnavailable } = useDecryptedMedia(url, sharedSecret, undefined, undefined, chatId, messageId, autoLoad);
   const bubbleRadius = useChatStore.getState().bubbleRadius;
   const { t } = useTranslation();
+  const timeColor = isOwn ? 'rgba(255, 255, 255, 0.9)' : 'var(--text-dim)';
 
   const [isMuted, setIsMuted] = useState(true);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -298,7 +299,7 @@ export const EncryptedMedia = memo(({
                 padding: '3px 8px',
                 height: '22px',
                 boxSizing: 'border-box',
-                color: 'rgba(255, 255, 255, 0.95)',
+                color: timeColor,
                 fontSize: orbitFs(11),
                 fontWeight: 400,
                 display: 'inline-flex',
@@ -314,13 +315,13 @@ export const EncryptedMedia = memo(({
               }}
               aria-label={isMuted ? t('mediaViewer.unmute', 'Включить звук') : t('mediaViewer.mute', 'Выключить звук')}
             >
-              <span className="tabular-nums select-none" style={{ fontSize: orbitFs(11), lineHeight: 1, userSelect: 'none', WebkitUserSelect: 'none' }}>
+              <span className="tabular-nums select-none" style={{ color: timeColor, fontSize: orbitFs(11), lineHeight: 1, userSelect: 'none', WebkitUserSelect: 'none' }}>
                 {formatPillTime(videoDuration || duration || 0)}
               </span>
               {!isMuted ? (
-                <Volume2 size={12} className="text-white shrink-0" />
+                <Volume2 size={12} className="shrink-0" style={{ color: timeColor }} />
               ) : isPillHovered ? (
-                <VolumeX size={12} className="text-white/70 shrink-0" />
+                <VolumeX size={12} className="shrink-0 opacity-70" style={{ color: timeColor }} />
               ) : null}
             </div>
           )}
@@ -338,7 +339,7 @@ export const EncryptedMedia = memo(({
             padding: '3px 8px',
             height: '22px',
             boxSizing: 'border-box',
-            color: '#ffffff',
+            color: timeColor,
             fontSize: orbitFs(11),
             display: 'inline-flex',
             alignItems: 'center',

@@ -42,6 +42,7 @@ const AlbumTile = memo(({
   const [isPlaying, setIsPlaying] = useState(isSingle);
   const [videoDuration, setVideoDuration] = useState<number>(item.duration || 0);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const timeColor = isOwn ? 'rgba(255, 255, 255, 0.9)' : 'var(--text-dim)';
   const isGif = Boolean(
     item.type === 'gif' ||
     msg.mediaType === 'gif' ||
@@ -326,7 +327,7 @@ const AlbumTile = memo(({
                 boxSizing: 'border-box',
                 borderRadius: '9999px',
                 backgroundColor: '#18191d',
-                color: 'rgba(255, 255, 255, 0.95)',
+                color: timeColor,
                 fontSize: orbitFs(11),
                 fontWeight: 400,
                 lineHeight: 1,
@@ -335,7 +336,7 @@ const AlbumTile = memo(({
                 boxShadow: '0 1px 4px rgba(0, 0, 0, 0.4)',
               }}
             >
-              <span className="tabular-nums" style={{ fontSize: orbitFs(11), lineHeight: 1 }}>
+              <span className="tabular-nums" style={{ color: timeColor, fontSize: orbitFs(11), lineHeight: 1 }}>
                 {formatDuration(videoDuration || item.duration)}
               </span>
             </div>
@@ -574,6 +575,7 @@ export const TelegramAlbumGrid = memo(({
               boxSizing: 'border-box',
               borderRadius: '9999px',
               backgroundColor: '#18191d',
+              color: isOwn ? 'rgba(255, 255, 255, 0.9)' : 'var(--text-dim)',
               lineHeight: 1,
               userSelect: 'none',
               WebkitUserSelect: 'none',

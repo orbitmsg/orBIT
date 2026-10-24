@@ -66,10 +66,8 @@ const {
 } = process.env;
 
 if (process.platform === 'win32') {
-  app.setName('Orbita Desktop');
+  app.setName('Orbita');
   app.setAppUserModelId('com.saizzi.orbita');
-  console.log('[App] App name set to: Orbita Desktop');
-  console.log('[App] AppUserModelId set to: com.saizzi.orbita');
 }
 
 app.commandLine.appendSwitch('disk-cache-size', '67108864');
@@ -3784,7 +3782,7 @@ function initOrGetMediaWindow(initialPayload?: any): BrowserWindow {
       backgroundThrottling: false,
       devTools: !app.isPackaged,
     },
-    title: 'Orbita Media',
+    title: 'Orbita',
     show: false,
     icon: icon && !icon.isEmpty() ? icon : undefined,
   });
@@ -4780,7 +4778,47 @@ function setupAutoUpdater() {
   }
 }
 
+function registerWindowsAppIdentity(): void {
+  if (process.platform !== 'win32') return;
+  try {
+    const icoPath = app.isPackaged
+      ? path.join(process.resourcesPath, 'icons', 'icon.ico')
+      : path.join(__dirname, '..', 'public', 'icons', 'icon.ico');
+    const programsPath = app.getPath('programs');
+    const shortcutPath = path.join(programsPath, 'Orbita.lnk');
+
+    const shortcutDetails = {
+      target: process.execPath,
+      args: app.isPackaged ? '' : `"${path.resolve(__dirname, '..')}"`,
+      description: 'Orbita',
+      appUserModelId: 'com.saizzi.orbita',
+      icon: fs.existsSync(icoPath) ? icoPath : process.execPath,
+      iconIndex: 0,
+      cwd: app.isPackaged ? path.dirname(process.execPath) : path.resolve(__dirname, '..'),
+    };
+
+    if (fs.existsSync(shortcutPath)) {
+      shell.writeShortcutLink(shortcutPath, 'update', shortcutDetails);
+    } else {
+      shell.writeShortcutLink(shortcutPath, 'create', shortcutDetails);
+    }
+
+    const regCommands = [
+      `reg add "HKCU\\Software\\Classes\\AppUserModelId\\com.saizzi.orbita" /v DisplayName /d "Orbita" /f`,
+      `reg add "HKCU\\Software\\Classes\\AppUserModelId\\com.saizzi.orbita" /v IconUri /d "${icoPath}" /f`,
+      `reg add "HKCU\\Software\\Classes\\AppUserModelId\\com.saizzi.orbita" /v IconBackgroundColor /d "0" /f`,
+      `reg add "HKCU\\Software\\Classes\\Applications\\electron.exe" /v FriendlyAppName /d "Orbita" /f`,
+      `reg add "HKCU\\Software\\Classes\\Applications\\electron.exe" /v ApplicationCompany /d "Orbita" /f`,
+    ];
+
+    for (const cmd of regCommands) {
+      spawn('cmd.exe', ['/c', cmd], { windowsHide: true, stdio: 'ignore' });
+    }
+  } catch {}
+}
+
 app.whenReady().then(async () => {
+  registerWindowsAppIdentity();
   if (!app.requestSingleInstanceLock()) {
     app.quit();
     return;

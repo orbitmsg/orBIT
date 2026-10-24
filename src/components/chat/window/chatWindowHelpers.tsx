@@ -358,6 +358,8 @@ export const buildChatMediaViewerItems = (
             albumGroupId: isAlbum ? albumGroupId : undefined,
             key: mi.key || msg.mediaKey,
             sharedSecret: effectiveSecret,
+            thumbnail: mi.thumbnail || (mi as any).preview || mi.blurPreview || msg.thumbnail || msg.blurPreview,
+            blurPreview: mi.blurPreview || msg.blurPreview,
           });
         }
       });
@@ -424,6 +426,7 @@ export const resolveMediaViewerFallback = (
     directUrl: getOrbitaMediaUrl(url, effectiveSecret, activeChatId || undefined, messageId, targetMedia?.fileName || targetMsg?.mediaName, targetMsg?.mime) || undefined,
     chatId: activeChatId || undefined,
     type: fallbackType,
+    sender: targetMsg?.sender,
     time: Date.now(),
     width: targetMsg?.width,
     height: targetMsg?.height,

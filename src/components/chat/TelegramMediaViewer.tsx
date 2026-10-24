@@ -80,10 +80,10 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
     onClose();
   }, [onClose]);
 
-  const captureVideoFrame = useCallback(() => {
+  const captureVideoFrame = useCallback((force = false) => {
     if (!videoRef.current) return null;
     const v = videoRef.current;
-    if (!v.videoWidth || !v.videoHeight) return null;
+    if (!v.videoWidth || !v.videoHeight || v.readyState < 2) return null;
     try {
       const canvas = document.createElement('canvas');
       canvas.width = Math.min(v.videoWidth, 640);
@@ -92,8 +92,15 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
       if (ctx) {
         ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        setVideoFirstFrame(dataUrl);
-        return dataUrl;
+        if (dataUrl && dataUrl.length > 256) {
+          setVideoFirstFrame((prev) => {
+            if (!prev || force || v.currentTime > 0.05) {
+              return dataUrl;
+            }
+            return prev;
+          });
+          return dataUrl;
+        }
       }
     } catch {}
     return null;
@@ -438,27 +445,17 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
 
   const senderNick = currentItem?.sender || (currentItem?.chatId ? useChatStore.getState().chats.find((c) => c.id === currentItem.chatId)?.name : null) || 'Orbita';
 
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const currentIndexRef = useRef(currentIndex);
+  currentIndexRef.current = currentIndex;
+  const handleInstantCloseRef = useRef(handleInstantClose);
+  handleInstantCloseRef.current = handleInstantClose;
+
   useEffect(() => {
     if (!isOpen || !isVideo || typeof navigator === 'undefined' || !('mediaSession' in navigator)) {
       return;
     }
-
-    const artworkSrc = videoFirstFrame || currentItem?.thumbnail || currentItem?.blurPreview || '/icons/512x512.png';
-    const artworkList = [
-      { src: artworkSrc, sizes: '512x512', type: 'image/jpeg' },
-      { src: '/icons/256x256.png', sizes: '256x256', type: 'image/png' },
-      { src: '/icons/128x128.png', sizes: '128x128', type: 'image/png' },
-    ];
-
-    try {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: senderNick,
-        artist: senderNick,
-        album: 'Orbita',
-        artwork: artworkList,
-      });
-      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
-    } catch {}
 
     navigator.mediaSession.setActionHandler('play', () => {
       if (videoRef.current) {
@@ -475,8 +472,8 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
     });
 
     navigator.mediaSession.setActionHandler('previoustrack', () => {
-      if (currentIndex > 0) {
-        setCurrentIndex((i) => i - 1);
+      if (currentIndexRef.current > 0) {
+        setCurrentIndex(currentIndexRef.current - 1);
         setRotation(0);
         setZoomScale(1);
         setPanOffset({ x: 0, y: 0 });
@@ -484,8 +481,8 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
     });
 
     navigator.mediaSession.setActionHandler('nexttrack', () => {
-      if (currentIndex < items.length - 1) {
-        setCurrentIndex((i) => i + 1);
+      if (currentIndexRef.current < itemsRef.current.length - 1) {
+        setCurrentIndex(currentIndexRef.current + 1);
         setRotation(0);
         setZoomScale(1);
         setPanOffset({ x: 0, y: 0 });
@@ -504,7 +501,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
         videoRef.current.pause();
         setIsPlaying(false);
       }
-      handleInstantClose();
+      handleInstantCloseRef.current();
     });
 
     return () => {
@@ -521,7 +518,40 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
         } catch {}
       }
     };
-  }, [isOpen, isVideo, senderNick, videoFirstFrame, currentItem?.thumbnail, currentItem?.blurPreview, currentIndex, items.length, handleInstantClose]);
+  }, [isOpen, isVideo]);
+
+  useEffect(() => {
+    if (!isOpen || !isVideo || typeof navigator === 'undefined' || !('mediaSession' in navigator)) {
+      return;
+    }
+
+    const rawArtwork = videoFirstFrame || currentItem?.thumbnail || currentItem?.blurPreview || '/icons/512x512.png';
+    const resolvedArtwork = rawArtwork.startsWith('/')
+      ? new URL(rawArtwork, window.location.href).href
+      : rawArtwork;
+
+    const mime = (resolvedArtwork.startsWith('data:image/png') || resolvedArtwork.endsWith('.png'))
+      ? 'image/png'
+      : 'image/jpeg';
+
+    const artworkList = [
+      { src: resolvedArtwork, sizes: '512x512', type: mime },
+      { src: resolvedArtwork, sizes: '384x384', type: mime },
+      { src: resolvedArtwork, sizes: '256x256', type: mime },
+      { src: resolvedArtwork, sizes: '192x192', type: mime },
+      { src: resolvedArtwork, sizes: '128x128', type: mime },
+      { src: resolvedArtwork, sizes: '96x96', type: mime },
+    ];
+
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: senderNick,
+        artist: senderNick,
+        album: 'Orbita',
+        artwork: artworkList,
+      });
+    } catch {}
+  }, [isOpen, isVideo, senderNick, videoFirstFrame, currentItem?.thumbnail, currentItem?.blurPreview]);
 
   useEffect(() => {
     if (typeof navigator === 'undefined' || !('mediaSession' in navigator) || !isVideo) return;
@@ -1023,6 +1053,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 key={displaySrc || currentItem?.id || String(currentIndex)}
                 ref={videoRef}
                 src={displaySrc}
+                crossOrigin="anonymous"
                 poster={currentItem?.thumbnail && (!currentItem.thumbnail.startsWith('data:') || currentItem.thumbnail.length > 2048) ? currentItem.thumbnail : undefined}
                 playsInline
                 preload="auto"
@@ -1051,13 +1082,28 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                   }
                 }}
                 onSeeked={() => {
-                  captureVideoFrame();
+                  captureVideoFrame(true);
                 }}
                 onTimeUpdate={() => {
-                  if (videoRef.current) setCurrentTime(videoRef.current.currentTime);
+                  if (videoRef.current) {
+                    setCurrentTime(videoRef.current.currentTime);
+                    if (!videoFirstFrame && videoRef.current.currentTime > 0.05) {
+                      captureVideoFrame();
+                    }
+                  }
                 }}
-                onPlay={() => setIsPlaying(true)}
-                onPlaying={() => setIsPlaying(true)}
+                onPlay={() => {
+                  setIsPlaying(true);
+                  if (!videoFirstFrame) {
+                    captureVideoFrame();
+                  }
+                }}
+                onPlaying={() => {
+                  setIsPlaying(true);
+                  if (!videoFirstFrame) {
+                    captureVideoFrame();
+                  }
+                }}
                 onPause={() => setIsPlaying(false)}
                 onEnded={() => setIsPlaying(false)}
                 onError={async () => {

@@ -382,6 +382,11 @@ export const MessageInput = memo<MessageInputProps>(({
     if (!textToSend.trim()) return;
     if (editingIndex !== null) {
       onEditMessage(textToSend);
+      if (onCancelEdit) {
+        onCancelEdit();
+      } else {
+        setEditText('');
+      }
     } else {
       onSendMessage(textToSend, liveLinkPreview || undefined);
       setLiveLinkPreview(null);

@@ -1001,14 +1001,14 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     <input
                       value={editText}
                       onChange={(e) => setEditText(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') triggerEditMessage(index, editText); if (e.key === 'Escape') { setEditingIndex(null); setEditText(''); } }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { triggerEditMessage(index, editText); setEditingIndex(null); setEditText(''); } if (e.key === 'Escape') { setEditingIndex(null); setEditText(''); } }}
                       className="bg-transparent border-b outline-none py-1 select-text w-full"
                       style={{ borderColor: 'color-mix(in srgb, var(--accent-color, #7C3AED) 30%, transparent)', color: 'var(--text-main, #ffffff)', fontSize: orbitFs(11) }}
                       autoFocus
                     />
                     <div className="flex gap-2 justify-end select-none">
                       <button type="button" onClick={() => { setEditingIndex(null); setEditText(''); }} className="uppercase" style={{ color: 'var(--text-dim, #4b5563)', fontSize: orbitFs(8) }}>{t('common.cancel')}</button>
-                      <button type="button" onClick={() => triggerEditMessage(index, editText)} className="uppercase font-bold" style={{ color: 'var(--accent-color, #7C3AED)', fontSize: orbitFs(8) }}>{t('common.save')}</button>
+                      <button type="button" onClick={() => { triggerEditMessage(index, editText); setEditingIndex(null); setEditText(''); }} className="uppercase font-bold" style={{ color: 'var(--accent-color, #7C3AED)', fontSize: orbitFs(8) }}>{t('common.save')}</button>
                     </div>
                   </div>
                 ) : quotes.length > 0 ? (

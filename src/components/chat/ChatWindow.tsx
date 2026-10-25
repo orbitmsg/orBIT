@@ -827,7 +827,10 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
   const handleEditMessage = async (overrideText?: string) => {
     const textToSave = (typeof overrideText === 'string' ? overrideText : editText).trim();
     if (editingIndex === null || !textToSave) return;
-    triggerEditMessage(editingIndex, textToSave);
+    const idx = editingIndex;
+    setEditingIndex(null);
+    setEditText('');
+    triggerEditMessage(idx, textToSave);
     inputRef.current?.focus();
   };
 

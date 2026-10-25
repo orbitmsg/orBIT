@@ -299,12 +299,14 @@ class SupabaseService {
             chatId,
           });
           const deletionEventId = `del_${messageId}_${Date.now()}`;
-          await this.client.from('non_messages').insert({
+          await this.client.from('messages').insert({
             id: deletionEventId,
             chat_id: chatId,
             sender_id: senderId || 'system',
             recipient_id: recipientId,
             ciphertext: deletePayload,
+            dh_public_key: 'PRE_HANDSHAKE',
+            message_index: 0,
             delivered: false,
           });
         } catch {}
@@ -1176,13 +1178,15 @@ class SupabaseService {
 
   async saveReaction(
     chatId: string,
-    _messageIndex: number | undefined,
+    recipientIdOrMessageIndex: string | number | undefined,
     messageId: string | undefined,
     emoji: string,
     userId: string,
-    action: 'add' | 'remove'
+    action: 'add' | 'remove',
+    senderNickname?: string
   ): Promise<void> {
     if (!messageId) return;
+    const resolvedRecipientId = typeof recipientIdOrMessageIndex === 'string' ? recipientIdOrMessageIndex : undefined;
     const primaryRelay = relayRouter.getRelayForRecipient(chatId);
     const allRelays = [
       primaryRelay,
@@ -1193,9 +1197,52 @@ class SupabaseService {
         const res = await fetch(`${relay.url}/relay/reaction`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chatId, messageId, emoji, userId, action }),
+          body: JSON.stringify({ chatId, messageId, emoji, userId, action, recipientId: resolvedRecipientId }),
         });
         if (res.ok) return;
+      } catch {}
+    }
+
+    if (this.client) {
+      if (resolvedRecipientId) {
+        try {
+          const reactionPayload = JSON.stringify({
+            type: 'reaction',
+            messageId,
+            emoji,
+            sender: senderNickname || userId,
+            senderId: userId,
+            action,
+            chatId,
+          });
+          const reactionEventId = `react_${messageId}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+          await this.client.from('messages').insert({
+            id: reactionEventId,
+            chat_id: chatId,
+            sender_id: userId,
+            recipient_id: resolvedRecipientId,
+            ciphertext: reactionPayload,
+            dh_public_key: 'PRE_HANDSHAKE',
+            message_index: 0,
+            delivered: false,
+          });
+        } catch {}
+      }
+      try {
+        if (action === 'add') {
+          await this.client.from('message_reactions').upsert({
+            chat_id: chatId,
+            message_id: messageId,
+            emoji,
+            user_id: userId,
+          }, { onConflict: 'chat_id,message_id,emoji,user_id' });
+        } else {
+          await this.client.from('message_reactions').delete()
+            .eq('chat_id', chatId)
+            .eq('message_id', messageId)
+            .eq('emoji', emoji)
+            .eq('user_id', userId);
+        }
       } catch {}
     }
   }

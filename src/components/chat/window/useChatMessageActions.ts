@@ -98,6 +98,9 @@ export const useChatMessageActions = ({
     if (!activeChatId || !sharedSecret) return;
     if (activeChat?.type === 'channel' && !isChannelOwner) return;
 
+    setEditingIndex(null);
+    setEditText('');
+
     const updatedMessages = [...messages];
     if (updatedMessages[index]) {
       const editedTarget = { ...updatedMessages[index], text: newText, isEdited: true, editedAt: Date.now() };
@@ -121,9 +124,35 @@ export const useChatMessageActions = ({
     try {
       const chat = useChatStore.getState().chats.find((c) => c.id === activeChatId);
       const targetId = updatedMessages[index]?.id;
+      const recipientTargets = Array.from(new Set([
+        activeChat?.peerCode,
+        chat?.peerCode,
+        activeChat?.originalPeerCode,
+        chat?.originalPeerCode,
+        activeChat?.numericId,
+        chat?.numericId,
+        activeChat?.username,
+        chat?.username,
+        (activeChat?.name && activeChat.name.length === 36) ? activeChat.name : undefined,
+        (chat?.name && chat.name.length === 36) ? chat.name : undefined,
+      ].filter((t): t is string => Boolean(t && t !== myCode && t !== myUserId))));
+
+      const editPlaintext = JSON.stringify({
+        type: 'edit',
+        targetMessageId: targetId,
+        messageId: targetId,
+        editIndex: index,
+        text: newText,
+        isEdited: true,
+        editedAt: Date.now(),
+        sender: myNickname,
+        senderId: myUserId || myCode,
+        senderUserId: myUserId,
+      });
+
       if (chat && chat.ratchetState) {
         const ratchet = DoubleRatchet.fromState(chat.ratchetState);
-        const { ciphertext, index: newIndex, dhPublicKey: editDhPublicKey, prevChainCount: editPrevChainCount } = await ratchet.encrypt(newText);
+        const { ciphertext, index: newIndex, dhPublicKey: editDhPublicKey, prevChainCount: editPrevChainCount } = await ratchet.encrypt(editPlaintext);
         const editPayload = {
           sender: myNickname,
           senderUserId: myUserId,
@@ -134,6 +163,7 @@ export const useChatMessageActions = ({
           targetMessageId: targetId,
           messageId: targetId,
           isEdited: true,
+          editedAt: Date.now(),
           index: newIndex,
           dhPublicKey: editDhPublicKey,
           prevChainCount: editPrevChainCount,
@@ -148,6 +178,46 @@ export const useChatMessageActions = ({
           updateChat(activeChatId, { ratchetState: ratchet.getState() });
         };
         if (channel.subscribed) send(); else channel.bind('pusher:subscription_succeeded', send);
+
+        for (const rId of recipientTargets) {
+          supabaseService.sendOfflineMessage(
+            activeChatId,
+            myUserId || myCode || myNickname,
+            rId,
+            ciphertext,
+            newIndex,
+            editDhPublicKey,
+            `edit_${targetId || Date.now()}`,
+            editPrevChainCount
+          ).catch(() => {});
+        }
+      } else {
+        const editPayload = {
+          sender: myNickname,
+          senderUserId: myUserId,
+          senderId: myUserId || myCode,
+          text: editPlaintext,
+          type: 'edit',
+          editIndex: index,
+          targetMessageId: targetId,
+          messageId: targetId,
+          isEdited: true,
+          editedAt: Date.now(),
+          index: 0,
+          dhPublicKey: 'PRE_HANDSHAKE',
+        };
+        ablyService.sendMessage(activeChatId, editPayload).catch(() => {});
+        for (const rId of recipientTargets) {
+          supabaseService.sendOfflineMessage(
+            activeChatId,
+            myUserId || myCode || myNickname,
+            rId,
+            editPlaintext,
+            0,
+            'PRE_HANDSHAKE',
+            `edit_${targetId || Date.now()}`
+          ).catch(() => {});
+        }
       }
     } catch (err) {
       console.error('Failed to broadcast message edit:', err);
@@ -220,6 +290,9 @@ export const useChatMessageActions = ({
     } else if (targetMsgId) {
       const recipientTargets = Array.from(new Set([
         activeChat?.peerCode,
+        activeChat?.originalPeerCode,
+        activeChat?.numericId,
+        activeChat?.username,
         activeChat?.name && activeChat.name.length === 36 ? activeChat.name : undefined,
       ].filter((rec): rec is string => Boolean(rec && rec !== myCode && rec !== myUserId))));
       for (const rId of recipientTargets) {
@@ -452,7 +525,17 @@ export const useChatMessageActions = ({
         sessionId: CLIENT_SESSION_ID,
       };
 
-      supabaseService.saveReaction(activeChatId, undefined, msgId, emoji, reactionUserId, finalAction).catch(() => {});
+      const recipientTargets = Array.from(new Set([
+        activeChat?.peerCode,
+        activeChat?.originalPeerCode,
+        activeChat?.numericId,
+        activeChat?.username,
+        activeChat?.name && activeChat.name.length === 36 ? activeChat.name : undefined,
+      ].filter((rec): rec is string => Boolean(rec && rec !== myCode && rec !== myUserId))));
+
+      for (const rId of recipientTargets) {
+        supabaseService.saveReaction(activeChatId, rId, msgId, emoji, reactionUserId, finalAction, myNickname).catch(() => {});
+      }
 
       ablyService.sendMessage(activeChatId, {
         ...payload,

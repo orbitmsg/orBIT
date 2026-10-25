@@ -402,6 +402,70 @@ export const useMainLayoutSync = ({
             }
           }
 
+          if (messageData?.type === 'edit') {
+            processedMessageIds.current.add(record.id);
+            const targetId = messageData.targetMessageId || messageData.messageId;
+            const newText = messageData.text || '';
+            const currentMsgs = useChatStore.getState().messagesByChatId[targetChatId] || [];
+            const targetIndex = targetId
+              ? currentMsgs.findIndex((m) => m.id === targetId)
+              : (messageData.editIndex !== undefined ? messageData.editIndex : -1);
+            if (targetIndex >= 0 && currentMsgs[targetIndex]) {
+              const updatedMsgs = [...currentMsgs];
+              const updatedMsg = {
+                ...updatedMsgs[targetIndex],
+                text: newText,
+                isEdited: true,
+                editedAt: messageData.editedAt || Date.now(),
+              };
+              updatedMsgs[targetIndex] = updatedMsg;
+              useChatStore.setState((s) => ({
+                messagesByChatId: {
+                  ...s.messagesByChatId,
+                  [targetChatId]: updatedMsgs,
+                },
+                chats: s.chats.map((c) => c.id === targetChatId ? { ...c, lastMsg: newText } : c),
+              }));
+              if (updatedMsg.id && typeof window !== 'undefined' && (window as any).orbita?.storageAddMessage) {
+                (window as any).orbita.storageAddMessage(targetChatId, updatedMsg.id, updatedMsg).catch(() => {});
+              }
+            }
+            deliveredIds.push(record.id);
+            continue;
+          }
+
+          if (messageData?.type === 'reaction') {
+            processedMessageIds.current.add(record.id);
+            const targetId = messageData.messageId || messageData.id;
+            if (targetId && messageData.emoji) {
+              useChatStore.getState().setReaction(
+                targetChatId,
+                targetId,
+                messageData.emoji,
+                messageData.senderId || messageData.sender || record.sender_id,
+                messageData.action || 'add'
+              );
+            }
+            deliveredIds.push(record.id);
+            continue;
+          }
+
+          if (messageData?.type === 'pin' || messageData?.type === 'pin-message') {
+            processedMessageIds.current.add(record.id);
+            if (messageData.pinData) {
+              updateChat(targetChatId, { pinnedMessage: messageData.pinData });
+            }
+            deliveredIds.push(record.id);
+            continue;
+          }
+
+          if (messageData?.type === 'unpin' || messageData?.type === 'unpin-message') {
+            processedMessageIds.current.add(record.id);
+            updateChat(targetChatId, { pinnedMessage: null });
+            deliveredIds.push(record.id);
+            continue;
+          }
+
           if (messageData?.type === 'delete-message' || messageData?.type === 'delete') {
             processedMessageIds.current.add(record.id);
             const targetId = messageData.targetMessageId || messageData.messageId;
@@ -689,7 +753,71 @@ export const useMainLayoutSync = ({
               continue;
             }
 
-            if (messageData?.type === 'delete-message' || messageData?.type === 'delete') {
+            if (messageData?.type === 'edit') {
+              processedMessageIds.current.add(record.id);
+              const targetId = messageData.targetMessageId || messageData.messageId;
+              const newText = messageData.text || '';
+              const currentMsgs = useChatStore.getState().messagesByChatId[record.chat_id] || [];
+              const targetIndex = targetId
+                ? currentMsgs.findIndex((m) => m.id === targetId)
+                : (messageData.editIndex !== undefined ? messageData.editIndex : -1);
+              if (targetIndex >= 0 && currentMsgs[targetIndex]) {
+                const updatedMsgs = [...currentMsgs];
+                const updatedMsg = {
+                  ...updatedMsgs[targetIndex],
+                  text: newText,
+                  isEdited: true,
+                  editedAt: messageData.editedAt || Date.now(),
+                };
+                updatedMsgs[targetIndex] = updatedMsg;
+                useChatStore.setState((s) => ({
+                  messagesByChatId: {
+                    ...s.messagesByChatId,
+                    [record.chat_id]: updatedMsgs,
+                  },
+                  chats: s.chats.map((c) => c.id === record.chat_id ? { ...c, lastMsg: newText } : c),
+                }));
+                if (updatedMsg.id && typeof window !== 'undefined' && (window as any).orbita?.storageAddMessage) {
+                  (window as any).orbita.storageAddMessage(record.chat_id, updatedMsg.id, updatedMsg).catch(() => {});
+                }
+              }
+              nonDeliveredIds.push(record.id);
+              continue;
+            }
+
+            if (messageData?.type === 'reaction') {
+              processedMessageIds.current.add(record.id);
+              const targetId = messageData.messageId || messageData.id;
+              if (targetId && messageData.emoji) {
+                useChatStore.getState().setReaction(
+                  record.chat_id,
+                  targetId,
+                  messageData.emoji,
+                  messageData.senderId || messageData.sender || record.sender_id,
+                  messageData.action || 'add'
+                );
+              }
+              nonDeliveredIds.push(record.id);
+              continue;
+            }
+
+            if (messageData?.type === 'pin' || messageData?.type === 'pin-message') {
+              processedMessageIds.current.add(record.id);
+              if (messageData.pinData) {
+                updateChat(record.chat_id, { pinnedMessage: messageData.pinData });
+              }
+              nonDeliveredIds.push(record.id);
+              continue;
+            }
+
+            if (messageData?.type === 'unpin' || messageData?.type === 'unpin-message') {
+              processedMessageIds.current.add(record.id);
+              updateChat(record.chat_id, { pinnedMessage: null });
+              nonDeliveredIds.push(record.id);
+              continue;
+            }
+
+          if (messageData?.type === 'delete-message' || messageData?.type === 'delete') {
               const targetId = messageData.targetMessageId || messageData.messageId;
               if (targetId) {
                 useChatStore.getState().deleteMessage(record.chat_id, targetId);

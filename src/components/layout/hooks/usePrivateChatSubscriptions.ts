@@ -464,6 +464,11 @@ export const usePrivateChatSubscriptions = ({
           );
           if (decrypted === null) return;
           updateChat(chatId, { ratchetState: ratchet.getState() });
+          let resolvedText = decrypted;
+          try {
+            const parsed = JSON.parse(decrypted);
+            if (parsed && typeof parsed.text === 'string') resolvedText = parsed.text;
+          } catch {}
           const currentMsgs = useChatStore.getState().messagesByChatId[chatId] || [];
           const targetIndex = (data.targetMessageId || data.messageId)
             ? currentMsgs.findIndex((m) => m.id === (data.targetMessageId || data.messageId))
@@ -472,7 +477,7 @@ export const usePrivateChatSubscriptions = ({
             const updatedMessages = [...currentMsgs];
             const updatedItem = {
               ...updatedMessages[targetIndex],
-              text: decrypted,
+              text: resolvedText,
               encryptedText: data.text,
               index: data.index,
               isEdited: true,

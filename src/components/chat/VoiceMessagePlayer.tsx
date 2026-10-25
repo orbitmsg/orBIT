@@ -347,12 +347,16 @@ export const VoiceMessagePlayer = memo(({
         smoothedVolRef.current += (rawVol - smoothedVolRef.current) * 0.22;
         const vol = smoothedVolRef.current;
         if (voicePulseRingRef.current) {
-          voicePulseRingRef.current.style.transform = `scale(${1 + vol * 0.22})`;
-          voicePulseRingRef.current.style.opacity = `${0.22 + vol * 0.28}`;
+          voicePulseRingRef.current.style.transform = `scale(${1 + vol * 0.24})`;
+          voicePulseRingRef.current.style.opacity = isOwn
+            ? `${0.2 + vol * 0.22}`
+            : `${0.22 + vol * 0.28}`;
         }
         if (voicePulseRingRef2.current) {
-          voicePulseRingRef2.current.style.transform = `scale(${1 + vol * 0.36})`;
-          voicePulseRingRef2.current.style.opacity = `${0.08 + vol * 0.16}`;
+          voicePulseRingRef2.current.style.transform = `scale(${1 + vol * 0.4})`;
+          voicePulseRingRef2.current.style.opacity = isOwn
+            ? `${0.08 + vol * 0.12}`
+            : `${0.08 + vol * 0.16}`;
         }
       }
 
@@ -449,7 +453,7 @@ export const VoiceMessagePlayer = memo(({
             width: '48px',
             height: '48px',
             borderRadius: '50%',
-            backgroundColor: 'var(--accent-color, #7C3AED)',
+            backgroundColor: isOwn ? '#ffffff' : 'var(--accent-color, #7C3AED)',
             opacity: 0,
             pointerEvents: 'none',
             transform: 'scale(1)',
@@ -464,7 +468,7 @@ export const VoiceMessagePlayer = memo(({
             width: '48px',
             height: '48px',
             borderRadius: '50%',
-            backgroundColor: 'var(--accent-color, #7C3AED)',
+            backgroundColor: isOwn ? '#ffffff' : 'var(--accent-color, #7C3AED)',
             opacity: 0,
             pointerEvents: 'none',
             transform: 'scale(1)',
@@ -481,8 +485,6 @@ export const VoiceMessagePlayer = memo(({
           onClick={handleAction}
           onCancel={isUploading ? onCancelUpload : undefined}
           isOwn={isOwn}
-          customBg="var(--accent-color, #7C3AED)"
-          customIconColor="#1e1c2b"
         />
       </div>
 

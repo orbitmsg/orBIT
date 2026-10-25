@@ -867,7 +867,7 @@ export const useChatStore = create<ChatState>()(
         const messages = state.messagesByChatId[chatId] || [];
         const updated = messages.map(m =>
           m.id === messageId
-            ? { ...m, text: newText, encryptedText: encryptedText || newText, index: index ?? m.index }
+            ? { ...m, text: newText, encryptedText: encryptedText || newText, index: index ?? m.index, isEdited: true, editedAt: Date.now() }
             : m
         );
         set({

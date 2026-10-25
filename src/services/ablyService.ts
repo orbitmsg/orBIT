@@ -24,8 +24,10 @@ class AblyService {
   private typingCallbacks: Map<string, Set<TypingCallback>> = new Map();
   private activeTypingUsers: Map<string, Map<string, { nickname: string; action: ChatAction; timer: any }>> = new Map();
   private typingSubscribersCount: Map<string, number> = new Map();
-  private deliveryCallbacks: Map<string, DeliveryCallback> = new Map();
-  private presenceCallbacks: Map<string, UserStatusCallback> = new Map();
+  private deliveryCallbacks: Map<string, Set<DeliveryCallback>> = new Map();
+  private deliverySubscribersCount: Map<string, number> = new Map();
+  private presenceCallbacks: Map<string, Set<UserStatusCallback>> = new Map();
+  private presenceSubscribersCount: Map<string, number> = new Map();
   private handshakeCallbacks: Map<string, HandshakeCallback> = new Map();
   private chatMessageCallbacks: Map<string, Set<(data: any) => void>> = new Map();
 
@@ -41,6 +43,9 @@ class AblyService {
 
   private readonly ABLY_KEYS: string[] = [];
   private activeKeyIndex = 0;
+  private connectPromise: Promise<void> | null = null;
+  private reconnectAttempt = 0;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   getConnectionState(): string {
     return this.client ? (this.client.connection as any).state : 'disconnected';
@@ -69,6 +74,10 @@ class AblyService {
   }
 
   forceReconnect(): void {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     if (this.client) {
       try {
         this.client.close();
@@ -76,12 +85,17 @@ class AblyService {
       this.client = null;
       this.isConnected = false;
     }
+    this.connectPromise = null;
+    this.reconnectAttempt = 0;
     if (this.userId) {
       this.connect(this.userId).catch(() => {});
     }
   }
 
   reconnect(): void {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return;
+    }
     if (this.client) {
       try {
         this.client.connection.connect();
@@ -98,12 +112,23 @@ class AblyService {
       return Promise.resolve();
     }
 
-    if (this.client && this.userId !== userId) {
-      this.client.close();
-      this.client = null;
+    if (this.connectPromise && this.userId === userId) {
+      return this.connectPromise;
     }
 
-    return new Promise((resolve, reject) => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return Promise.reject(new Error('Network offline'));
+    }
+
+    if (this.client && this.userId !== userId) {
+      try {
+        this.client.close();
+      } catch {}
+      this.client = null;
+      this.isConnected = false;
+    }
+
+    this.connectPromise = new Promise<void>((resolve, reject) => {
       try {
         const clientOptions: Ably.ClientOptions = {
           clientId: userId,
@@ -134,8 +159,16 @@ class AblyService {
         this.client = new Ably.Realtime(clientOptions);
         this.userId = userId;
 
-        this.client.connection.on('connected', () => {
+        let connectionTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
+
+        const onConnected = () => {
+          if (connectionTimeoutTimer) {
+            clearTimeout(connectionTimeoutTimer);
+            connectionTimeoutTimer = null;
+          }
           this.isConnected = true;
+          this.reconnectAttempt = 0;
+          this.connectPromise = null;
           this.setOnline(userId);
           this.reattachAllSubscriptions();
           console.log(`[Ably] Connected with key index ${this.activeKeyIndex} (${activeKey ? activeKey.slice(0, 12) + '...' : 'worker'})`);
@@ -145,17 +178,45 @@ class AblyService {
             (window as any).getActiveAblyServer = () => ({ index: this.activeKeyIndex, key: this.getActiveKey() });
           }
           resolve();
-        });
+        };
+
+        this.client.connection.once('connected', onConnected);
 
         this.client.connection.on('failed', (error) => {
+          if (connectionTimeoutTimer) {
+            clearTimeout(connectionTimeoutTimer);
+            connectionTimeoutTimer = null;
+          }
           console.error('[Ably] Connection failed with key index', this.activeKeyIndex, error);
           this.isConnected = false;
-          if (this.ABLY_KEYS.length > 1) {
-            this.activeKeyIndex = (this.activeKeyIndex + 1) % this.ABLY_KEYS.length;
-            this.client = null;
-            this.connect(userId).then(resolve).catch(reject);
+          this.connectPromise = null;
+
+          if (typeof navigator !== 'undefined' && !navigator.onLine) {
+            reject(error);
             return;
           }
+
+          if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+          }
+
+          this.reconnectAttempt++;
+          const jitter = Math.floor(Math.random() * 500);
+          const backoff = Math.min(1000 * Math.pow(1.5, Math.min(this.reconnectAttempt, 6)) + jitter, 30000);
+
+          if (this.ABLY_KEYS.length > 1) {
+            this.activeKeyIndex = (this.activeKeyIndex + 1) % this.ABLY_KEYS.length;
+          }
+
+          this.reconnectTimer = setTimeout(() => {
+            this.reconnectTimer = null;
+            if (this.userId && (typeof navigator === 'undefined' || navigator.onLine)) {
+              this.client = null;
+              this.connect(this.userId).catch(() => {});
+            }
+          }, backoff);
+
           reject(error);
         });
 
@@ -170,22 +231,25 @@ class AblyService {
         this.client.connection.on('update', (stateChange) => {
           if (stateChange.current === 'connected') {
             this.isConnected = true;
+            this.reconnectAttempt = 0;
             this.setOnline(userId);
             this.reattachAllSubscriptions();
           }
         });
 
-        const timeout = setTimeout(() => {
+        connectionTimeoutTimer = setTimeout(() => {
           if (!this.isConnected) {
+            this.connectPromise = null;
             reject(new Error('Ably connection timeout'));
           }
         }, 10000);
-
-        this.client.connection.once('connected', () => clearTimeout(timeout));
       } catch (error) {
+        this.connectPromise = null;
         reject(error);
       }
     });
+
+    return this.connectPromise;
   }
 
   disconnect(): void {
@@ -263,12 +327,12 @@ class AblyService {
       this._attachTypingChannel(chatId);
     });
 
-    this.deliveryCallbacks.forEach((callback, chatId) => {
-      this._attachDeliveryChannel(chatId, callback);
+    this.deliverySubscribersCount.forEach((_count, chatId) => {
+      this._attachDeliveryChannel(chatId);
     });
 
-    this.presenceCallbacks.forEach((callback, userId) => {
-      this._attachPresenceChannel(userId, callback);
+    this.presenceSubscribersCount.forEach((_count, userId) => {
+      this._attachPresenceChannel(userId);
     });
 
     this.chatMessageCallbacks.forEach((_cbs, chatId) => {
@@ -279,6 +343,7 @@ class AblyService {
   private startHeartbeat(userId: string): void {
     this.stopHeartbeat();
     this.heartbeatTimer = setInterval(() => {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
       if (!this.client || !this.isConnected || !this.userId) return;
       const channel = this.client.channels.get(`presence:user:${userId}`);
       channel.presence.update({
@@ -330,27 +395,48 @@ class AblyService {
       return () => {};
     }
     const cleanId = userId.trim();
-    this.presenceCallbacks.set(cleanId, callback);
+    let set = this.presenceCallbacks.get(cleanId);
+    if (!set) {
+      set = new Set();
+      this.presenceCallbacks.set(cleanId, set);
+    }
+    set.add(callback);
 
-    if (this.client && this.isConnected) {
-      this._attachPresenceChannel(cleanId, callback);
+    const count = this.presenceSubscribersCount.get(cleanId) || 0;
+    this.presenceSubscribersCount.set(cleanId, count + 1);
+
+    if (this.client && this.isConnected && !this.presenceSubscriptions.has(cleanId)) {
+      this._attachPresenceChannel(cleanId);
     }
 
     return () => {
-      this.presenceCallbacks.delete(cleanId);
+      const callbacks = this.presenceCallbacks.get(cleanId);
+      if (callbacks) {
+        callbacks.delete(callback);
+        if (callbacks.size === 0) {
+          this.presenceCallbacks.delete(cleanId);
+        }
+      }
 
-      const channel = this.presenceSubscriptions.get(cleanId);
-      if (channel) {
-        try {
-          channel.presence.unsubscribe();
-        } catch {}
+      const currentCount = this.presenceSubscribersCount.get(cleanId) || 1;
+      if (currentCount <= 1) {
+        this.presenceSubscribersCount.delete(cleanId);
+        const channel = this.presenceSubscriptions.get(cleanId);
+        const handler = this.presenceHandlers.get(cleanId);
+        if (channel && handler) {
+          try {
+            channel.presence.unsubscribe(handler);
+          } catch {}
+        }
         this.presenceSubscriptions.delete(cleanId);
         this.presenceHandlers.delete(cleanId);
+      } else {
+        this.presenceSubscribersCount.set(cleanId, currentCount - 1);
       }
     };
   }
 
-  private _attachPresenceChannel(userId: string, callback: UserStatusCallback): void {
+  private _attachPresenceChannel(userId: string): void {
     if (!this.client) return;
 
     const channel = this.client.channels.get(`presence:user:${userId}`);
@@ -392,26 +478,32 @@ class AblyService {
         lastSeen = Date.now();
       }
 
-      callback(isOnline, lastSeen);
+      const cbs = this.presenceCallbacks.get(userId);
+      if (cbs) {
+        cbs.forEach((cb) => cb(isOnline, lastSeen));
+      }
     });
 
     const presenceHandler = (member: PresenceMessage) => {
       const action = member.action;
+      const cbs = this.presenceCallbacks.get(userId);
+      if (!cbs || cbs.size === 0) return;
+
       if (action === 'enter' || action === 'present' || action === 'update') {
         const isStatusOnline = member.data ? (typeof member.data === 'object' && 'status' in member.data ? member.data.status === 'online' : true) : true;
         const timestamp = member.data && typeof member.data === 'object' && 'timestamp' in member.data ? (member.data as any).timestamp : Date.now();
         const isFresh = (Date.now() - timestamp) < 90000;
-        callback(isFresh && isStatusOnline, timestamp);
+        cbs.forEach((cb) => cb(isFresh && isStatusOnline, timestamp));
       } else if (action === 'leave' || action === 'absent') {
         const timestamp = member.data && typeof member.data === 'object' && 'timestamp' in member.data ? (member.data as any).timestamp : Date.now();
-        callback(false, timestamp);
+        cbs.forEach((cb) => cb(false, timestamp));
       }
     };
 
     const oldHandler = this.presenceHandlers.get(userId);
     if (oldHandler) {
       try {
-        channel.presence.unsubscribe();
+        channel.presence.unsubscribe(oldHandler);
       } catch {}
     }
 
@@ -621,31 +713,51 @@ class AblyService {
       return () => {};
     }
     const cleanId = chatId.trim();
-    this.deliveryCallbacks.set(cleanId, callback);
+    let set = this.deliveryCallbacks.get(cleanId);
+    if (!set) {
+      set = new Set();
+      this.deliveryCallbacks.set(cleanId, set);
+    }
+    set.add(callback);
 
-    if (this.client && this.isConnected) {
-      this._attachDeliveryChannel(cleanId, callback);
+    const count = this.deliverySubscribersCount.get(cleanId) || 0;
+    this.deliverySubscribersCount.set(cleanId, count + 1);
+
+    if (this.client && this.isConnected && !this.deliverySubscriptions.has(cleanId)) {
+      this._attachDeliveryChannel(cleanId);
     }
 
     return () => {
-      this.deliveryCallbacks.delete(cleanId);
-
-      const channel = this.deliverySubscriptions.get(cleanId);
-      const deliveredHandler = this.deliveredHandlers.get(cleanId);
-      const readHandler = this.readHandlers.get(cleanId);
-
-      if (channel) {
-        if (deliveredHandler) channel.unsubscribe('delivered', deliveredHandler);
-        if (readHandler) channel.unsubscribe('read', readHandler);
+      const callbacks = this.deliveryCallbacks.get(cleanId);
+      if (callbacks) {
+        callbacks.delete(callback);
+        if (callbacks.size === 0) {
+          this.deliveryCallbacks.delete(cleanId);
+        }
       }
 
-      this.deliverySubscriptions.delete(cleanId);
-      this.deliveredHandlers.delete(cleanId);
-      this.readHandlers.delete(cleanId);
+      const currentCount = this.deliverySubscribersCount.get(cleanId) || 1;
+      if (currentCount <= 1) {
+        this.deliverySubscribersCount.delete(cleanId);
+        const channel = this.deliverySubscriptions.get(cleanId);
+        const deliveredHandler = this.deliveredHandlers.get(cleanId);
+        const readHandler = this.readHandlers.get(cleanId);
+
+        if (channel) {
+          if (deliveredHandler) channel.unsubscribe('delivered', deliveredHandler);
+          if (readHandler) channel.unsubscribe('read', readHandler);
+        }
+
+        this.deliverySubscriptions.delete(cleanId);
+        this.deliveredHandlers.delete(cleanId);
+        this.readHandlers.delete(cleanId);
+      } else {
+        this.deliverySubscribersCount.set(cleanId, currentCount - 1);
+      }
     };
   }
 
-  private _attachDeliveryChannel(chatId: string, callback: DeliveryCallback): void {
+  private _attachDeliveryChannel(chatId: string): void {
     if (!this.client) return;
 
     const channel = this.client.channels.get(`chat:${chatId}`);
@@ -653,23 +765,23 @@ class AblyService {
 
     const deliveredHandler = (message: Ably.Message) => {
       if (message.data && message.data.messageId && message.data.userId) {
-        callback(
-          message.data.messageId,
-          message.data.userId,
-          'delivered',
-          message.data.timestamp || Date.now()
-        );
+        const cbs = this.deliveryCallbacks.get(chatId);
+        if (cbs) {
+          cbs.forEach((cb) =>
+            cb(message.data.messageId, message.data.userId, 'delivered', message.data.timestamp || Date.now())
+          );
+        }
       }
     };
 
     const readHandler = (message: Ably.Message) => {
       if (message.data && message.data.messageId && message.data.userId) {
-        callback(
-          message.data.messageId,
-          message.data.userId,
-          'read',
-          message.data.timestamp || Date.now()
-        );
+        const cbs = this.deliveryCallbacks.get(chatId);
+        if (cbs) {
+          cbs.forEach((cb) =>
+            cb(message.data.messageId, message.data.userId, 'read', message.data.timestamp || Date.now())
+          );
+        }
       }
     };
 

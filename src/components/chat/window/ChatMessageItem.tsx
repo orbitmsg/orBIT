@@ -198,6 +198,11 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         {isPinned && (
           <CustomPinIcon size={12} style={{ color: mIsOwn ? 'rgba(255, 255, 255, 0.95)' : 'var(--accent-color, #7C3AED)', userSelect: 'none' }} className="flex-shrink-0 select-none" />
         )}
+        {m.isEdited && (
+          <span style={{ marginRight: '4px', opacity: 0.75, fontSize: orbitFs(10), fontStyle: 'italic', userSelect: 'none', WebkitUserSelect: 'none' }}>
+            {t('chatWindow.edited')}
+          </span>
+        )}
         <span style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>{formatTime(m.time)}</span>
         {mIsOwn && (
           <span style={{ display: 'inline-flex', width: isFailed ? '20px' : '26px', minWidth: isFailed ? '20px' : '26px', flexShrink: 0, justifyContent: 'flex-end', userSelect: 'none', WebkitUserSelect: 'none' }}>
@@ -878,6 +883,11 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                       WebkitUserSelect: 'none',
                     }}
                   >
+                    {msg.isEdited && (
+                      <span style={{ marginRight: '4px', opacity: 0.75, fontSize: '10px', fontStyle: 'italic', userSelect: 'none', WebkitUserSelect: 'none' }}>
+                        {t('chatWindow.edited')}
+                      </span>
+                    )}
                     <span style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>{formatTimeOfDay(msg.time)}</span>
                     {isOwn && (msg.status || msg.read) && (
                       <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: '5px', flexShrink: 0, userSelect: 'none', WebkitUserSelect: 'none' }}>

@@ -16,6 +16,7 @@ import { SupportTicketsModal } from '../SupportTicketsModal';
 import { MessageContextMenu, type ContextMenuState } from '../MessageContextMenu';
 import { UnsafeLinkModal } from '../UnsafeLinkModal';
 import { AddGroupMemberModal } from '../AddGroupMemberModal';
+import { ForwardModal } from '../ForwardModal';
 import { parseMedia, decryptedUrlCache } from './chatWindowHelpers';
 
 export interface ChatWindowModalsProps {
@@ -91,6 +92,11 @@ export interface ChatWindowModalsProps {
   setIsSupportTicketsModalOpen: (v: boolean) => void;
   isAddMemberModalOpen: boolean;
   setIsAddMemberModalOpen: (v: boolean) => void;
+  isForwardModalOpen?: boolean;
+  setIsForwardModalOpen?: (v: boolean) => void;
+  messagesToForward?: Message[];
+  handleExecuteForward?: (targetChatId: string, hideAuthor: boolean) => void;
+  onForwardMessage?: (messageIdOrIndex?: any) => void;
 }
 
 export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
@@ -113,6 +119,11 @@ export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
   handleMediaGoToMessage,
   handleMediaForwardMessage,
   handleMediaDeleteMessage,
+  isForwardModalOpen = false,
+  setIsForwardModalOpen,
+  messagesToForward = [],
+  handleExecuteForward,
+  onForwardMessage,
   attachedFiles,
   isAttachmentModalOpen,
   setIsAttachmentModalOpen,
@@ -318,6 +329,7 @@ export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
                 }
               } : undefined}
               onSaveAs={() => handleSaveAs(contextMenu.messageId || contextMenu.messageIndex)}
+              onForward={onForwardMessage ? () => onForwardMessage(contextMenu.messageId || contextMenu.messageIndex) : undefined}
               onSelect={handleSelectFromMenu}
               onSelectReaction={(emoji) => triggerReactionMessage(contextMenu.messageId ?? contextMenu.messageIndex, emoji)}
               canManageMessages={activeChat?.type !== 'channel' || isChannelOwner}
@@ -327,6 +339,15 @@ export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
           document.body
         )
       }
+
+      {isForwardModalOpen && (
+        <ForwardModal
+          isOpen={isForwardModalOpen}
+          onClose={() => setIsForwardModalOpen?.(false)}
+          messagesToForward={messagesToForward}
+          onForward={handleExecuteForward || (() => {})}
+        />
+      )}
 
       <style>{`
         :focus-within { outline: none; }

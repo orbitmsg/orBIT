@@ -9,7 +9,8 @@ import { supabaseService, type OfflineMessageRecord } from '../../../services/su
 import { gatewayManager } from '../../../services/gatewayManager';
 import { groupService } from '../../../services/groupService';
 import { channelService } from '../../../services/channelService';
-import { generateKeyPair, deriveSharedSecret, deriveRootKey, derivePublicKey } from '../../../lib/crypto';
+import { generateKeyPair, deriveSharedSecret, deriveRootKey, derivePublicKey, encryptMessage } from '../../../lib/crypto';
+import { networkManager, type OutboxItem } from '../../../services/networkManager';
 import { isValidGroupCode, deriveGroupKey } from '../../../lib/groupCrypto';
 import { DoubleRatchet } from '../../../lib/double-ratchet';
 import { revalidateDevelopersOnConnection } from '../../ui/DeveloperBadge';
@@ -54,6 +55,7 @@ export const useMainLayoutSync = ({
   const isLoadingPendingRef = useRef(false);
 
   const loadPendingHandshakes = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return;
     if (!nickname && !myCode) return;
     const currentNumericId = useAuthStore.getState().numericId;
     const currentUsername = useAuthStore.getState().username;
@@ -249,6 +251,7 @@ export const useMainLayoutSync = ({
   }, [myCode, nickname]);
 
   const loadPendingMessages = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return;
     if (!nickname && !myCode) return;
     if (isLoadingPendingRef.current) {
       return;
@@ -970,6 +973,7 @@ export const useMainLayoutSync = ({
   const lastChannelCheckTimeRef = useRef<Map<string, number>>(new Map());
 
   const syncOfflineFriendProfiles = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return;
     const myCode = useChatStore.getState().myCode;
     const currentChats = useChatStore.getState().chats;
     const privateChats = currentChats.filter((c) => c.type === 'private' && c.id !== 'notes');
@@ -1247,6 +1251,139 @@ export const useMainLayoutSync = ({
       clearInterval(checkTimer);
     };
   }, [step, nickname, myCode]);
+
+  useEffect(() => {
+    const unsubOutbox = networkManager.registerOutboxExecutor(async (item: OutboxItem) => {
+      const chat = useChatStore.getState().chats.find((c) => c.id === item.chatId);
+      if (!chat) return true;
+
+      const myUserId = useAuthStore.getState().userId;
+      const mySenderCode = myCode || '';
+
+      if (item.chatType === 'group') {
+        let groupSecret = chat.sharedSecret || deriveGroupKey(chat.id);
+        if (!groupSecret) return false;
+        const ciphertext = await encryptMessage(JSON.stringify({
+          id: item.id,
+          senderId: mySenderCode,
+          sender: item.sender,
+          text: item.text,
+          time: item.time,
+          mediaType: item.mediaPayload?.type || item.sanitizedMediaItems?.[0]?.type || null,
+          mediaUrl: item.mediaPayload?.url || item.sanitizedMediaItems?.[0]?.url || null,
+          mediaName: item.mediaPayload?.name || item.sanitizedMediaItems?.[0]?.name || null,
+          mime: item.mediaPayload?.mime || item.sanitizedMediaItems?.[0]?.mime || null,
+          mediaItems: item.sanitizedMediaItems,
+          linkPreview: item.linkPreview,
+        }), groupSecret);
+        const res = await groupService.sendGroupMessage({
+          id: item.id,
+          groupId: item.chatId,
+          senderCode: mySenderCode,
+          senderId: myUserId || mySenderCode,
+          senderNickname: item.sender,
+          ciphertext,
+          mediaType: item.mediaPayload?.type || item.sanitizedMediaItems?.[0]?.type || null,
+          mediaUrl: item.mediaPayload?.url || item.sanitizedMediaItems?.[0]?.url || null,
+          mediaName: item.mediaPayload?.name || item.sanitizedMediaItems?.[0]?.name || null,
+          mime: item.mediaPayload?.mime || item.sanitizedMediaItems?.[0]?.mime || null,
+        });
+        if (res) {
+          useChatStore.getState().updateMessageStatus(item.chatId, item.id, 'sent');
+          return true;
+        }
+        return false;
+      }
+
+      const recipientTargets = item.recipientTargets && item.recipientTargets.length > 0
+        ? item.recipientTargets
+        : [chat.peerCode, chat.originalPeerCode, chat.numericId, chat.username].filter(Boolean) as string[];
+
+      const plaintext = JSON.stringify({
+        id: item.id,
+        senderId: mySenderCode,
+        sender: item.sender,
+        text: item.text,
+        time: item.time,
+        mediaType: item.mediaPayload?.type || item.sanitizedMediaItems?.[0]?.type || null,
+        mediaUrl: item.mediaPayload?.url || item.sanitizedMediaItems?.[0]?.url || null,
+        mediaName: item.mediaPayload?.name || item.sanitizedMediaItems?.[0]?.name || null,
+        mime: item.mediaPayload?.mime || item.sanitizedMediaItems?.[0]?.mime || null,
+        mediaItems: item.sanitizedMediaItems,
+        linkPreview: item.linkPreview,
+      });
+
+      if (!chat.ratchetState) {
+        const results = await Promise.allSettled(
+          recipientTargets.map((rId) =>
+            supabaseService.sendOfflineMessage(
+              item.chatId,
+              myUserId || mySenderCode || item.sender,
+              rId,
+              plaintext,
+              0,
+              'PRE_HANDSHAKE',
+              item.id
+            )
+          )
+        );
+        const success = results.some((r) => r.status === 'fulfilled');
+        if (success) {
+          useChatStore.getState().updateMessageStatus(item.chatId, item.id, 'sent');
+          return true;
+        }
+        return false;
+      }
+
+      const ratchet = DoubleRatchet.fromState(chat.ratchetState);
+      if (!ratchet.canSend()) return false;
+      const { ciphertext, index, dhPublicKey, prevChainCount } = await ratchet.encrypt(plaintext);
+      useChatStore.getState().updateChat(item.chatId, { ratchetState: ratchet.getState() });
+
+      let ablyOk = false;
+      try {
+        await ablyService.sendMessage(item.chatId, {
+          sender: item.sender,
+          senderCode: mySenderCode,
+          senderId: myUserId || mySenderCode,
+          ciphertext,
+          type: 'message',
+          index,
+          dhPublicKey,
+          prevChainCount,
+          messageId: item.id,
+          chatId: item.chatId,
+        });
+        ablyOk = true;
+      } catch {}
+
+      const offlineResults = await Promise.allSettled(
+        recipientTargets.map((rId) =>
+          supabaseService.sendOfflineMessage(
+            item.chatId,
+            myUserId || mySenderCode || item.sender,
+            rId,
+            ciphertext,
+            index,
+            dhPublicKey,
+            item.id,
+            prevChainCount
+          )
+        )
+      );
+      const offlineOk = offlineResults.some((r) => r.status === 'fulfilled');
+
+      if (ablyOk || offlineOk) {
+        useChatStore.getState().updateMessageStatus(item.chatId, item.id, 'sent');
+        return true;
+      }
+      return false;
+    });
+
+    return () => {
+      unsubOutbox();
+    };
+  }, [myCode]);
 
 
 };

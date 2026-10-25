@@ -421,6 +421,7 @@
       "are_recording_voice_plural": "are recording voice messages",
       "and_more_recording_voice": "and {{count}} more recording voice",
       "recording": "recording...",
+      "edited": "edited",
       "pinned": "Pinned:",
       "today": "Today",
       "yesterday": "Yesterday",

@@ -9,6 +9,7 @@ import { isEmojiOnly } from '../../lib/emoji-data';
 import { MessageStatus } from '../MessageStatus';
 import { MessageReactions } from './ReactionBadge';
 import { ChannelMegaphoneIcon } from '../common/ChannelMegaphoneIcon';
+import { ForwardedMessageBlock } from './ForwardedMessageBlock';
 
 interface MessageItemProps {
   msg: Message;
@@ -150,6 +151,11 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
           WebkitUserSelect: 'none',
         }}
       >
+        {msg.isEdited && (
+          <span style={{ marginRight: '4px', opacity: 0.75, fontSize: '10px', fontStyle: 'italic', userSelect: 'none', WebkitUserSelect: 'none' }}>
+            {t('chatWindow.edited')}
+          </span>
+        )}
         <span style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>{timeStr}</span>
         {isOwn && (
           <span style={{ display: 'inline-flex', width: (msg.status === 'failed' || msg.status === 'error') ? '20px' : '26px', minWidth: (msg.status === 'failed' || msg.status === 'error') ? '20px' : '26px', flexShrink: 0, justifyContent: 'flex-end', userSelect: 'none', WebkitUserSelect: 'none' }}>
@@ -223,7 +229,12 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                 WebkitUserSelect: 'none',
               }}
             >
-              <span style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>{timeStr}</span>
+              {msg.isEdited && (
+          <span style={{ marginRight: '4px', opacity: 0.75, fontSize: '10px', fontStyle: 'italic', userSelect: 'none', WebkitUserSelect: 'none' }}>
+            {t('chatWindow.edited')}
+          </span>
+        )}
+        <span style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>{timeStr}</span>
               {isOwn && (
                 <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: '5px', flexShrink: 0, userSelect: 'none', WebkitUserSelect: 'none' }}>
                   <MessageStatus
@@ -334,6 +345,12 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                   </span>
                 )}
                 <DeveloperBadge userId={msg.senderId || activeChat?.peerCode} size={20} />
+              </div>
+            )}
+
+            {msg.forwardedFrom && (
+              <div className="mb-1 select-none">
+                <ForwardedMessageBlock forwarded={msg.forwardedFrom} isOwn={isOwn} themeColor={themeColor} />
               </div>
             )}
 

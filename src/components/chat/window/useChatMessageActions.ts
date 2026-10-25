@@ -100,7 +100,8 @@ export const useChatMessageActions = ({
 
     const updatedMessages = [...messages];
     if (updatedMessages[index]) {
-      updatedMessages[index] = { ...updatedMessages[index], text: newText };
+      const editedTarget = { ...updatedMessages[index], text: newText, isEdited: true, editedAt: Date.now() };
+      updatedMessages[index] = editedTarget;
       useChatStore.setState((state) => ({
         messagesByChatId: {
           ...state.messagesByChatId,
@@ -108,6 +109,9 @@ export const useChatMessageActions = ({
         },
         chats: state.chats.map((c) => c.id === activeChatId ? { ...c, lastMsg: newText } : c),
       }));
+      if (editedTarget.id && typeof window !== 'undefined' && (window as any).orbita?.storageAddMessage) {
+        (window as any).orbita.storageAddMessage(activeChatId, editedTarget.id, editedTarget).catch(() => {});
+      }
     }
 
     setContextMenu((prev) => ({ ...prev, visible: false }));
@@ -116,24 +120,30 @@ export const useChatMessageActions = ({
 
     try {
       const chat = useChatStore.getState().chats.find((c) => c.id === activeChatId);
+      const targetId = updatedMessages[index]?.id;
       if (chat && chat.ratchetState) {
         const ratchet = DoubleRatchet.fromState(chat.ratchetState);
         const { ciphertext, index: newIndex, dhPublicKey: editDhPublicKey, prevChainCount: editPrevChainCount } = await ratchet.encrypt(newText);
+        const editPayload = {
+          sender: myNickname,
+          senderUserId: myUserId,
+          senderId: myUserId || myCode,
+          text: ciphertext,
+          type: 'edit',
+          editIndex: index,
+          targetMessageId: targetId,
+          messageId: targetId,
+          isEdited: true,
+          index: newIndex,
+          dhPublicKey: editDhPublicKey,
+          prevChainCount: editPrevChainCount,
+        };
+        ablyService.sendMessage(activeChatId, editPayload).catch(() => {});
         const pusher = getPusher();
         const chanName = `private-chat-${activeChatId}`;
         const channel = pusher.channel(chanName) || pusher.subscribe(chanName);
         const send = () => {
-          channel.trigger('client-message', {
-            sender: myNickname,
-            senderUserId: myUserId,
-            senderId: myUserId || myCode,
-            text: ciphertext,
-            type: 'edit',
-            editIndex: index,
-            index: newIndex,
-            dhPublicKey: editDhPublicKey,
-            prevChainCount: editPrevChainCount,
-          });
+          channel.trigger('client-message', editPayload);
           channel.unbind('pusher:subscription_succeeded', send);
           updateChat(activeChatId, { ratchetState: ratchet.getState() });
         };
@@ -246,6 +256,13 @@ export const useChatMessageActions = ({
       return;
     }
 
+    const pinPayload = {
+      type: 'pin-message',
+      pinData,
+      sender: myNickname,
+    };
+    ablyService.sendMessage(activeChatId, pinPayload).catch(() => {});
+
     const isGroup = activeChat?.type === 'group';
     const pusher = isGroup ? getGroupPusher() : getPusher();
     const chanName = activeChat?.type === 'channel'
@@ -255,11 +272,7 @@ export const useChatMessageActions = ({
       : `private-chat-${activeChatId}`;
     const channel = pusher.channel(chanName) || pusher.subscribe(chanName);
     const send = () => {
-      channel.trigger('client-message', {
-        type: 'pin-message',
-        pinData,
-        sender: myNickname,
-      });
+      channel.trigger('client-message', pinPayload);
       channel.unbind('pusher:subscription_succeeded', send);
     };
     if (channel.subscribed) send(); else channel.bind('pusher:subscription_succeeded', send);
@@ -278,6 +291,12 @@ export const useChatMessageActions = ({
       return;
     }
 
+    const unpinPayload = {
+      type: 'unpin-message',
+      sender: myNickname,
+    };
+    ablyService.sendMessage(activeChatId, unpinPayload).catch(() => {});
+
     const isGroup = activeChat?.type === 'group';
     const pusher = isGroup ? getGroupPusher() : getPusher();
     const chanName = activeChat?.type === 'channel'
@@ -287,10 +306,7 @@ export const useChatMessageActions = ({
       : `private-chat-${activeChatId}`;
     const channel = pusher.channel(chanName) || pusher.subscribe(chanName);
     const send = () => {
-      channel.trigger('client-message', {
-        type: 'unpin-message',
-        sender: myNickname,
-      });
+      channel.trigger('client-message', unpinPayload);
       channel.unbind('pusher:subscription_succeeded', send);
     };
     if (channel.subscribed) send(); else channel.bind('pusher:subscription_succeeded', send);

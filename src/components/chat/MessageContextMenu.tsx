@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { sqliteStorage } from '../../services/sqliteStorage';
 import {
   Copy, Image as ImageIcon, Download as DownloadIcon,
-  CheckCircle, Trash, Search
+  CheckCircle, Trash, Search, Forward
 } from 'lucide-react';
 
 const ChevronIcon: React.FC<{ size?: number; className?: string; style?: React.CSSProperties }> = ({
@@ -354,6 +354,7 @@ interface MessageContextMenuProps {
   onCopy?: () => void;
   onCopyImage?: () => void;
   onSaveAs?: () => void;
+  onForward?: () => void;
   onSelect: () => void;
   onSelectReaction?: (emoji: string) => void;
   canManageMessages?: boolean;
@@ -371,6 +372,7 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
   onCopy,
   onCopyImage,
   onSaveAs,
+  onForward,
   onSelect,
   onSelectReaction,
   canManageMessages,
@@ -503,6 +505,14 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
       label: t('common.delete'),
       onClick: onDelete,
       icon: <Trash size={16} style={{ color: iconColor }} />,
+    });
+  }
+
+  if (onForward) {
+    items.push({
+      label: t('common.forward'),
+      onClick: onForward,
+      icon: <Forward size={16} style={{ color: iconColor }} />,
     });
   }
 

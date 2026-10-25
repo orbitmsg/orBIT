@@ -322,6 +322,8 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     isOpen: false,
     type: null,
   });
+  const [forwardingMessages, setForwardingMessages] = useState<Message[]>([]);
+  const [isForwardModalOpen, setIsForwardModalOpen] = useState(false);
   const activeChatTypingUsers = useChatStore(
     useShallow((s) => (activeChatId ? s.typingByChatId[activeChatId] || EMPTY_TYPING_USERS : EMPTY_TYPING_USERS))
   );
@@ -829,6 +831,89 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     inputRef.current?.focus();
   };
 
+  const handleOpenForwardForMessage = useCallback((messageIdOrIndex?: any) => {
+    let targetMsg: Message | undefined;
+    if (typeof messageIdOrIndex === 'string') {
+      targetMsg = messages.find((m) => m.id === messageIdOrIndex);
+    } else if (typeof messageIdOrIndex === 'number' && messageIdOrIndex >= 0) {
+      targetMsg = messages[messageIdOrIndex];
+    }
+    if (targetMsg) {
+      setForwardingMessages([targetMsg]);
+      setIsForwardModalOpen(true);
+    }
+  }, [messages]);
+
+  const handleOpenForwardForSelected = useCallback(() => {
+    const selectedMsgs = messages.filter((m) => Boolean(m.id && selection.selectedIds.has(m.id)));
+    if (selectedMsgs.length > 0) {
+      setForwardingMessages(selectedMsgs);
+      setIsForwardModalOpen(true);
+    }
+  }, [messages, selection.selectedIds]);
+
+  const handleExecuteForward = useCallback(async (targetChatId: string, hideAuthor: boolean) => {
+    if (!forwardingMessages.length) return;
+    setIsForwardModalOpen(false);
+    selection.exitSelectionMode();
+
+    for (const msg of forwardingMessages) {
+      const forwardedFrom = hideAuthor ? undefined : {
+        sender: msg.sender,
+        senderId: msg.senderId,
+        senderAvatarUrl: null,
+        isIdHidden: false,
+        chatId: activeChatId || undefined,
+        chatTitle: activeChat?.name || undefined,
+        time: msg.time,
+      };
+
+      if (targetChatId === activeChatId) {
+        const mediaPayload = msg.mediaUrl ? {
+          type: msg.mediaType || 'photo',
+          url: msg.mediaUrl,
+          key: msg.mediaKey,
+          name: msg.mediaName,
+          mime: msg.mime,
+          audioMetadata: msg.audioMetadata,
+          duration: msg.duration,
+          waveform: msg.waveform,
+          size: msg.fileSize,
+          width: msg.width,
+          height: msg.height,
+          thumbnail: msg.thumbnail,
+          blurPreview: msg.blurPreview,
+        } : undefined;
+
+        await triggerMessage(
+          msg.text || '',
+          mediaPayload,
+          msg.linkPreview,
+          undefined,
+          msg.mediaItems
+        );
+      } else {
+        const newMsgId = `fwd_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        const forwardedMsg: Message = {
+          ...msg,
+          id: newMsgId,
+          isOutgoing: true,
+          read: true,
+          status: 'sent',
+          time: Date.now(),
+          forwardedFrom,
+        };
+        useChatStore.getState().addMessage(targetChatId, forwardedMsg);
+        useChatStore.getState().updateChat(targetChatId, {
+          lastMsg: msg.text || msg.mediaName || t('chatWindow.forwarded_message', 'Пересланное сообщение'),
+        });
+        (window as any).orbita?.storageAddMessage?.(targetChatId, newMsgId, forwardedMsg)?.catch?.(() => {});
+      }
+    }
+    setForwardingMessages([]);
+    useToastStore.getState().showToast(t('forward.forwarded_success', 'Сообщение переслано'), 'text');
+  }, [forwardingMessages, activeChatId, activeChat, triggerMessage, selection, t]);
+
   useChatRealtime({
     activeChatId,
     activeChat,
@@ -907,7 +992,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     handleAudioCallPress,
     handleCallPress,
     handleMediaGoToMessage,
-    handleMediaForwardMessage,
     handleMediaDeleteMessage,
     isSubscribed,
     isSubscribing,
@@ -1039,6 +1123,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         <SelectionPanel
           selectedCount={selection.selectedIds.size}
           onDelete={activeChat?.type === 'channel' && !isChannelOwner ? undefined : requestDeleteSelected}
+          onForward={handleOpenForwardForSelected}
           onCancel={selection.exitSelectionMode}
           height={headerHeight}
         />
@@ -1290,8 +1375,13 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
           chatMediaViewerItems={chatMediaViewerItems}
           sharedSecret={sharedSecret}
           handleMediaGoToMessage={handleMediaGoToMessage}
-          handleMediaForwardMessage={handleMediaForwardMessage}
+          handleMediaForwardMessage={handleOpenForwardForMessage}
           handleMediaDeleteMessage={handleMediaDeleteMessage}
+          isForwardModalOpen={isForwardModalOpen}
+          setIsForwardModalOpen={setIsForwardModalOpen}
+          messagesToForward={forwardingMessages}
+          handleExecuteForward={handleExecuteForward}
+          onForwardMessage={handleOpenForwardForMessage}
           attachedFiles={attachedFiles}
           isAttachmentModalOpen={isAttachmentModalOpen}
           setIsAttachmentModalOpen={setIsAttachmentModalOpen}

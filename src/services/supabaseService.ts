@@ -2,6 +2,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { relayRouter } from './relayRouter';
 import { getVercelBaseUrl } from './gatewayManager';
 import { SUPPORT_AVATAR_URL } from './supportService';
+import { networkManager } from './networkManager';
 
 export type {
   OfflineMessageRecord,
@@ -58,7 +59,7 @@ class SupabaseService {
 
     for (const relay of allRelays) {
       try {
-        const res = await fetch(`${relay.url}/relay/message`, {
+        const res = await networkManager.safeFetch(`${relay.url}/relay/message`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -71,7 +72,7 @@ class SupabaseService {
             clientMsgId,
             prevChainCount,
           }),
-        });
+        }, 8000, 0);
 
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({ error: res.statusText }));
@@ -431,7 +432,7 @@ class SupabaseService {
       if (Date.now() - lastFail < 60000) continue;
 
       try {
-        const res = await fetch(`${relay.url}/relay/messages?recipientId=${encodeURIComponent(recipientId)}`);
+        const res = await networkManager.safeFetch(`${relay.url}/relay/messages?recipientId=${encodeURIComponent(recipientId)}`, undefined, 8000, 1);
         if (res.ok) {
           const data = (await res.json()) as { messages: OfflineMessageRecord[] };
           for (const msg of data.messages || []) {
@@ -587,7 +588,7 @@ class SupabaseService {
       if (Date.now() - lastFail < 60000) continue;
 
       try {
-        const res = await fetch(`${relay.url}/relay/handshakes?recipientCode=${encodeURIComponent(recipientCode)}`);
+        const res = await networkManager.safeFetch(`${relay.url}/relay/handshakes?recipientCode=${encodeURIComponent(recipientCode)}`, undefined, 8000, 1);
         if (res.ok) {
           const data = (await res.json()) as { handshakes: OfflineHandshakeRecord[] };
           for (const hs of data.handshakes || []) {
@@ -791,45 +792,57 @@ class SupabaseService {
 
   async getLatestProfileUpdate(chatId: string, excludeCode?: string): Promise<ProfileUpdateRecord | null> {
     if (!chatId || chatId === 'notes') return null;
-    const nodes = relayRouter.getNodes();
+    const cacheKey = `profile_update:${chatId}:${excludeCode || ''}`;
+    const cached = networkManager.getCached<ProfileUpdateRecord>(cacheKey);
+    if (cached) return cached;
 
-    for (const relay of nodes) {
-      try {
-        const queryParam = excludeCode ? `&excludeCode=${encodeURIComponent(excludeCode)}` : '';
-        const res = await fetch(`${relay.url}/relay/profile?chatId=${encodeURIComponent(chatId)}${queryParam}`);
-        if (res.ok) {
-          const data = (await res.json()) as { profile: ProfileUpdateRecord | null };
-          if (data?.profile) return this.parseProfileRow(data.profile);
+    return networkManager.deduplicateRequest(cacheKey, async () => {
+      const nodes = relayRouter.getNodes();
+
+      for (const relay of nodes) {
+        try {
+          const queryParam = excludeCode ? `&excludeCode=${encodeURIComponent(excludeCode)}` : '';
+          const res = await networkManager.safeFetch(`${relay.url}/relay/profile?chatId=${encodeURIComponent(chatId)}${queryParam}`, undefined, 7000, 1);
+          if (res.ok) {
+            const data = (await res.json()) as { profile: ProfileUpdateRecord | null };
+            if (data?.profile) {
+              const parsed = this.parseProfileRow(data.profile);
+              if (parsed) networkManager.setCache(cacheKey, parsed, 60000);
+              return parsed;
+            }
+          }
+        } catch (err) {
+          console.warn(`[Relay] Failed to get profile update from ${relay.url}:`, err);
         }
-      } catch (err) {
-        console.warn(`[Relay] Failed to get profile update from ${relay.url}:`, err);
-      }
-    }
-
-    if (this.client) {
-      let queryBuilder = this.client
-        .from('profile_updates')
-        .select('*')
-        .or(`chat_id.eq.${chatId},sender_code.eq.${chatId}`);
-
-      if (excludeCode) {
-        queryBuilder = queryBuilder.neq('sender_code', excludeCode);
       }
 
-      const { data, error } = await queryBuilder
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      if (this.client) {
+        let queryBuilder = this.client
+          .from('profile_updates')
+          .select('*')
+          .or(`chat_id.eq.${chatId},sender_code.eq.${chatId}`);
 
-      if (error) {
-        console.error('[Supabase] Failed to fetch latest profile update:', error);
-        return null;
+        if (excludeCode) {
+          queryBuilder = queryBuilder.neq('sender_code', excludeCode);
+        }
+
+        const { data, error } = await queryBuilder
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) {
+          console.error('[Supabase] Failed to fetch latest profile update:', error);
+          return null;
+        }
+
+        const parsed = this.parseProfileRow(data);
+        if (parsed) networkManager.setCache(cacheKey, parsed, 60000);
+        return parsed;
       }
 
-      return this.parseProfileRow(data);
-    }
-
-    return null;
+      return null;
+    });
   }
 
   async getLatestProfileUpdatesForChats(chatIds: string[]): Promise<ProfileUpdateRecord[]> {
@@ -859,27 +872,34 @@ class SupabaseService {
 
   async lookupPublicProfile(userCode: string): Promise<UserDirectoryRecord | null> {
     if (!userCode) return null;
+    const cacheKey = `public_profile:${userCode}`;
+    const cached = networkManager.getCached<UserDirectoryRecord>(cacheKey);
+    if (cached) return cached;
 
-    try {
-      const update = await this.getLatestProfileUpdate(userCode);
-      if (update && update.nickname) {
-        return {
-          user_code: userCode,
-          numeric_id: update.numeric_id || null,
-          nickname: update.nickname,
-          avatar_url: update.avatar_url,
-          banner_url: update.banner_url,
-          username: update.username,
-          bio: update.bio,
-          birthday: update.birthday,
-          updated_at: update.updated_at,
-        };
+    return networkManager.deduplicateRequest(cacheKey, async () => {
+      try {
+        const update = await this.getLatestProfileUpdate(userCode);
+        if (update && update.nickname) {
+          const profile: UserDirectoryRecord = {
+            user_code: userCode,
+            numeric_id: update.numeric_id || null,
+            nickname: update.nickname,
+            avatar_url: update.avatar_url,
+            banner_url: update.banner_url,
+            username: update.username,
+            bio: update.bio,
+            birthday: update.birthday,
+            updated_at: update.updated_at,
+          };
+          networkManager.setCache(cacheKey, profile, 60000);
+          return profile;
+        }
+      } catch (err) {
+        console.warn('[Directory] Failed to lookup profile from relay:', err);
       }
-    } catch (err) {
-      console.warn('[Directory] Failed to lookup profile from relay:', err);
-    }
 
-    return null;
+      return null;
+    });
   }
 
   async isUsernameAvailable(username: string, excludeCode?: string | null): Promise<boolean> {
@@ -923,61 +943,70 @@ class SupabaseService {
     if (!username) return null;
     const cleanUsername = username.replace(/^@+/, '').trim().toLowerCase();
     if (!cleanUsername) return null;
+    const cacheKey = `profile_username:${cleanUsername}`;
+    const cached = networkManager.getCached<UserDirectoryRecord>(cacheKey);
+    if (cached) return cached;
 
-    const nodes = relayRouter.getNodes();
-    for (const relay of nodes) {
-      try {
-        const res = await fetch(`${relay.url}/relay/resolve-username?username=${encodeURIComponent(cleanUsername)}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.user) {
-            const parsed = this.parseProfileRow(data.user);
-            return {
-              user_code: data.user.user_code || data.user.sender_code || data.user.chat_id,
-              numeric_id: data.user.numeric_id || null,
-              nickname: data.user.nickname,
-              avatar_url: data.user.avatar_url,
-              banner_url: parsed?.banner_url || data.user.banner_url || null,
-              username: data.user.username,
-              bio: parsed?.bio || data.user.bio,
-              birthday: data.user.birthday,
-              updated_at: data.user.updated_at,
-            };
+    return networkManager.deduplicateRequest(cacheKey, async () => {
+      const nodes = relayRouter.getNodes();
+      for (const relay of nodes) {
+        try {
+          const res = await networkManager.safeFetch(`${relay.url}/relay/resolve-username?username=${encodeURIComponent(cleanUsername)}`, undefined, 7000, 1);
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.user) {
+              const parsed = this.parseProfileRow(data.user);
+              const profile: UserDirectoryRecord = {
+                user_code: data.user.user_code || data.user.sender_code || data.user.chat_id,
+                numeric_id: data.user.numeric_id || null,
+                nickname: data.user.nickname,
+                avatar_url: data.user.avatar_url,
+                banner_url: parsed?.banner_url || data.user.banner_url || null,
+                username: data.user.username,
+                bio: parsed?.bio || data.user.bio,
+                birthday: data.user.birthday,
+                updated_at: data.user.updated_at,
+              };
+              networkManager.setCache(cacheKey, profile, 60000);
+              return profile;
+            }
           }
-        }
-      } catch {}
-    }
-
-    if (this.client) {
-      try {
-        const { data, error } = await this.client
-          .from('profile_updates')
-          .select('*')
-          .ilike('username', cleanUsername)
-          .order('updated_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (!error && data && data.nickname) {
-          const parsed = this.parseProfileRow(data);
-          return {
-            user_code: data.sender_code || data.chat_id,
-            numeric_id: data.numeric_id || null,
-            nickname: data.nickname,
-            avatar_url: data.avatar_url,
-            banner_url: parsed?.banner_url || data.banner_url || null,
-            username: data.username,
-            bio: parsed?.bio || data.bio,
-            birthday: data.birthday,
-            updated_at: data.updated_at,
-          };
-        }
-      } catch (err) {
-        console.warn('[Directory] Failed to lookup profile by username from Supabase:', err);
+        } catch {}
       }
-    }
 
-    return null;
+      if (this.client) {
+        try {
+          const { data, error } = await this.client
+            .from('profile_updates')
+            .select('*')
+            .ilike('username', cleanUsername)
+            .order('updated_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (!error && data && data.nickname) {
+            const parsed = this.parseProfileRow(data);
+            const profile: UserDirectoryRecord = {
+              user_code: data.sender_code || data.chat_id,
+              numeric_id: data.numeric_id || null,
+              nickname: data.nickname,
+              avatar_url: data.avatar_url,
+              banner_url: parsed?.banner_url || data.banner_url || null,
+              username: data.username,
+              bio: parsed?.bio || data.bio,
+              birthday: data.birthday,
+              updated_at: data.updated_at,
+            };
+            networkManager.setCache(cacheKey, profile, 60000);
+            return profile;
+          }
+        } catch (err) {
+          console.warn('[Directory] Failed to lookup profile by username from Supabase:', err);
+        }
+      }
+
+      return null;
+    });
   }
 
   async ensureSupportProfile(): Promise<void> {

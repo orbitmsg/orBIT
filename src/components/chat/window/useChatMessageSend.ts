@@ -7,6 +7,7 @@ import { supabaseService } from '../../../services/supabaseService';
 import { channelService } from '../../../services/channelService';
 import { groupService } from '../../../services/groupService';
 import { supportService } from '../../../services/supportService';
+import { networkManager } from '../../../services/networkManager';
 import { deriveGroupKey, isValidGroupCode } from '../../../lib/groupCrypto';
 import { encryptMessage, generateKeyPair } from '../../../lib/crypto';
 import { DoubleRatchet } from '../../../lib/double-ratchet';
@@ -651,11 +652,42 @@ export const useChatMessageSend = ({
             }).then((res) => {
               if (res) {
                 useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sent');
+                networkManager.removeOutboxItem(messageId).catch(() => {});
+              } else {
+                if (typeof navigator !== 'undefined' && !navigator.onLine) {
+                  networkManager.enqueueOutbox({
+                    id: messageId,
+                    chatId: activeChatId,
+                    text,
+                    sender: myNickname,
+                    time: localMessage.time || Date.now(),
+                    recipientTargets: [],
+                    chatType: 'group',
+                    mediaPayload,
+                    sanitizedMediaItems: sanitizedMediaItems || undefined,
+                  }).catch(() => {});
+                  useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sending');
+                } else {
+                  useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');
+                }
+              }
+            }).catch(() => {
+              if (typeof navigator !== 'undefined' && !navigator.onLine) {
+                networkManager.enqueueOutbox({
+                  id: messageId,
+                  chatId: activeChatId,
+                  text,
+                  sender: myNickname,
+                  time: localMessage.time || Date.now(),
+                  recipientTargets: [],
+                  chatType: 'group',
+                  mediaPayload,
+                  sanitizedMediaItems: sanitizedMediaItems || undefined,
+                }).catch(() => {});
+                useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sending');
               } else {
                 useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');
               }
-            }).catch(() => {
-              useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');
             });
           }
           return;
@@ -876,8 +908,24 @@ export const useChatMessageSend = ({
             const hadOfflineSuccess = offlineResults.some((r) => r.status === 'fulfilled');
             if (ablyDirectSent || hadOfflineSuccess) {
               useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sent');
+              networkManager.removeOutboxItem(messageId).catch(() => {});
             } else {
-              useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');
+              if (typeof navigator !== 'undefined' && !navigator.onLine) {
+                networkManager.enqueueOutbox({
+                  id: messageId,
+                  chatId: activeChatId,
+                  text,
+                  sender: myNickname,
+                  time: localMessage.time || Date.now(),
+                  recipientTargets,
+                  chatType: 'private',
+                  mediaPayload,
+                  sanitizedMediaItems: sanitizedMediaItems || undefined,
+                }).catch(() => {});
+                useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sending');
+              } else {
+                useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');
+              }
             }
           }
           return;
@@ -1002,11 +1050,42 @@ export const useChatMessageSend = ({
 
           if (ablySuccess || offlineSuccess) {
             useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sent');
+            networkManager.removeOutboxItem(messageId).catch(() => {});
+          } else {
+            if (typeof navigator !== 'undefined' && !navigator.onLine) {
+              networkManager.enqueueOutbox({
+                id: messageId,
+                chatId: activeChatId,
+                text,
+                sender: myNickname,
+                time: localMessage.time || Date.now(),
+                recipientTargets,
+                chatType: 'private',
+                mediaPayload,
+                sanitizedMediaItems: sanitizedMediaItems || undefined,
+              }).catch(() => {});
+              useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sending');
+            } else {
+              useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');
+            }
+          }
+        })().catch(() => {
+          if (typeof navigator !== 'undefined' && !navigator.onLine) {
+            networkManager.enqueueOutbox({
+              id: messageId,
+              chatId: activeChatId,
+              text,
+              sender: myNickname,
+              time: localMessage.time || Date.now(),
+              recipientTargets,
+              chatType: 'private',
+              mediaPayload,
+              sanitizedMediaItems: sanitizedMediaItems || undefined,
+            }).catch(() => {});
+            useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sending');
           } else {
             useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');
           }
-        })().catch(() => {
-          useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');
         });
       } catch (err) {
         useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');

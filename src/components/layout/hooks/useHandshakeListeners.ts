@@ -490,7 +490,70 @@ export const useHandshakeListeners = ({
         return;
       }
 
-      if (data.type === 'read' || data.type === 'delivered' || data.type === 'reaction' || data.type === 'ping' || data.type === 'pong' || data.type === 'profile-update') {
+      if (data.type === 'reaction') {
+        const targetId = data.messageId || data.id;
+        if (data.chatId && targetId) {
+          useChatStore.getState().setReaction(data.chatId, targetId, data.emoji, data.sender, data.action || 'add');
+        }
+        return;
+      }
+
+      if (data.type === 'pin' || data.type === 'pin-message') {
+        if (data.chatId && data.pinData) {
+          updateChat(data.chatId, { pinnedMessage: data.pinData });
+        }
+        return;
+      }
+
+      if (data.type === 'unpin' || data.type === 'unpin-message') {
+        if (data.chatId) {
+          updateChat(data.chatId, { pinnedMessage: null });
+        }
+        return;
+      }
+
+      if (data.type === 'read') {
+        if (data.chatId) {
+          const currentMessages = useChatStore.getState().messagesByChatId[data.chatId] || [];
+          const updatedMessages = currentMessages.map((msg) => {
+            const isTarget = (data.messageId && msg.id === data.messageId) || (data.time && msg.time <= data.time && msg.isOutgoing);
+            if (isTarget) {
+              return { ...msg, read: true, status: 'read' as const, readAt: data.timestamp || Date.now() };
+            }
+            return msg;
+          });
+          useChatStore.setState((state) => ({
+            messagesByChatId: {
+              ...state.messagesByChatId,
+              [data.chatId]: updatedMessages,
+            }
+          }));
+        }
+        return;
+      }
+
+      if (data.type === 'delivered') {
+        if (data.chatId) {
+          const currentMessages = useChatStore.getState().messagesByChatId[data.chatId] || [];
+          const updatedMessages = currentMessages.map((msg) => {
+            const isTarget = (data.messageId && msg.id === data.messageId) || (data.time && msg.time <= data.time && msg.isOutgoing);
+            if (isTarget) {
+              if (msg.status === 'read' || msg.read) return msg;
+              return { ...msg, status: 'delivered' as const, deliveredAt: data.timestamp || Date.now() };
+            }
+            return msg;
+          });
+          useChatStore.setState((state) => ({
+            messagesByChatId: {
+              ...state.messagesByChatId,
+              [data.chatId]: updatedMessages,
+            }
+          }));
+        }
+        return;
+      }
+
+      if (data.type === 'ping' || data.type === 'pong' || data.type === 'profile-update') {
         return;
       }
 

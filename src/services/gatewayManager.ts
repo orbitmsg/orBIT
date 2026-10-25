@@ -1,4 +1,5 @@
 import { sqliteStorage } from './sqliteStorage';
+import { networkManager } from './networkManager';
 
 export interface GatewayEndpoint {
   id: string;
@@ -103,23 +104,31 @@ class GatewayManager {
   }
 
   public async fetch(path: string, options?: RequestInit): Promise<Response> {
-    const primary = this.getActiveGateway();
-    const primaryPath = this.resolvePathForGateway(path);
-    const url = `${primary.url.replace(/\/+$/, '')}${primaryPath}`;
-    try {
-      const res = await fetch(url, options);
-      if (res.ok || (res.status >= 400 && res.status < 500)) {
-        return res;
+    const isGet = !options?.method || options.method.toUpperCase() === 'GET';
+    const executeFetch = async () => {
+      const primary = this.getActiveGateway();
+      const primaryPath = this.resolvePathForGateway(path);
+      const url = `${primary.url.replace(/\/+$/, '')}${primaryPath}`;
+      try {
+        const res = await networkManager.safeFetch(url, options, 8000, 1);
+        if (res.ok || (res.status >= 400 && res.status < 500)) {
+          return res;
+        }
+        throw new Error(`Primary gateway returned ${res.status}`);
+      } catch (err) {
+        const fallback = this.gateways.find((g) => g.id !== primary.id) || DEFAULT_GATEWAYS[1];
+        if (fallback) {
+          const fallbackUrl = `${fallback.url.replace(/\/+$/, '')}${primaryPath}`;
+          return networkManager.safeFetch(fallbackUrl, options, 8000, 1);
+        }
+        throw err;
       }
-      throw new Error(`Primary gateway returned ${res.status}`);
-    } catch (err) {
-      const fallback = this.gateways.find((g) => g.id !== primary.id) || DEFAULT_GATEWAYS[1];
-      if (fallback) {
-        const fallbackUrl = `${fallback.url.replace(/\/+$/, '')}${primaryPath}`;
-        return fetch(fallbackUrl, options);
-      }
-      throw err;
+    };
+
+    if (isGet) {
+      return networkManager.deduplicateRequest(`gw:${path}`, executeFetch);
     }
+    return executeFetch();
   }
 }
 

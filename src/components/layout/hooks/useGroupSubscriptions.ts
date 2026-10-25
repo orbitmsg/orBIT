@@ -108,8 +108,8 @@ export const useGroupSubscriptions = ({
         }));
         return;
       }
-      if (data.type === 'pin') { updateChat(chatId, { pinnedMessage: data.pinData }); return; }
-      if (data.type === 'unpin') { updateChat(chatId, { pinnedMessage: null }); return; }
+      if (data.type === 'pin' || data.type === 'pin-message') { updateChat(chatId, { pinnedMessage: data.pinData }); return; }
+      if (data.type === 'unpin' || data.type === 'unpin-message') { updateChat(chatId, { pinnedMessage: null }); return; }
       if (data.type === 'member-joined') {
         if (data.members) {
           updateChat(chatId, { members: data.members, membersCount: data.members.length });

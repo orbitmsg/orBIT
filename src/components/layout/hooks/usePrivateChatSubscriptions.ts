@@ -446,7 +446,9 @@ export const usePrivateChatSubscriptions = ({
       }
       if (data.type === 'edit') {
         const messages = useChatStore.getState().messagesByChatId[chatId] || [];
-        const targetMsg = messages[data.editIndex];
+        const targetMsg = (data.targetMessageId || data.messageId)
+          ? messages.find((m) => m.id === (data.targetMessageId || data.messageId))
+          : (data.editIndex !== undefined ? messages[data.editIndex] : null);
         if (!targetMsg) return;
         if (targetMsg.senderId && data.senderId && targetMsg.senderId !== data.senderId) return;
         const prevQueue = decryptQueues.current.get(chatId) || Promise.resolve();
@@ -463,20 +465,29 @@ export const usePrivateChatSubscriptions = ({
           if (decrypted === null) return;
           updateChat(chatId, { ratchetState: ratchet.getState() });
           const currentMsgs = useChatStore.getState().messagesByChatId[chatId] || [];
-          const updatedMessages = [...currentMsgs];
-          if (updatedMessages[data.editIndex]) {
-            updatedMessages[data.editIndex] = {
-              ...updatedMessages[data.editIndex],
+          const targetIndex = (data.targetMessageId || data.messageId)
+            ? currentMsgs.findIndex((m) => m.id === (data.targetMessageId || data.messageId))
+            : (data.editIndex !== undefined ? data.editIndex : -1);
+          if (targetIndex >= 0 && currentMsgs[targetIndex]) {
+            const updatedMessages = [...currentMsgs];
+            const updatedItem = {
+              ...updatedMessages[targetIndex],
               text: decrypted,
               encryptedText: data.text,
               index: data.index,
+              isEdited: true,
+              editedAt: Date.now(),
             };
+            updatedMessages[targetIndex] = updatedItem;
             useChatStore.setState((state) => ({
               messagesByChatId: {
                 ...state.messagesByChatId,
                 [chatId]: updatedMessages,
               }
             }));
+            if (updatedItem.id && typeof window !== 'undefined' && (window as any).orbita?.storageAddMessage) {
+              (window as any).orbita.storageAddMessage(chatId, updatedItem.id, updatedItem).catch(() => {});
+            }
           }
         }).catch(() => {});
         decryptQueues.current.set(chatId, nextQueue);
@@ -503,12 +514,12 @@ export const usePrivateChatSubscriptions = ({
         return;
       }
 
-      if (data.type === 'pin') {
+      if (data.type === 'pin' || data.type === 'pin-message') {
         updateChat(chatId, { pinnedMessage: data.pinData });
         return;
       }
 
-      if (data.type === 'unpin') {
+      if (data.type === 'unpin' || data.type === 'unpin-message') {
         updateChat(chatId, { pinnedMessage: null });
         return;
       }

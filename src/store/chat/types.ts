@@ -178,6 +178,8 @@ export interface Message {
   buttons?: Array<{ text: string; action: string; channelId?: string; url?: string; data?: string; icon?: 'channel' | 'backup' | 'help' | 'link' }>;
   forwarded_from?: ForwardedFrom;
   forwardedFrom?: ForwardedFrom;
+  isEdited?: boolean;
+  editedAt?: number;
 }
 
 export interface ChatMember {

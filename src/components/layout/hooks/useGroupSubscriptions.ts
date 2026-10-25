@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, isMessageOutgoing, type Chat, type Message } from '../../../store/useChatStore';
 import { useAuthStore } from '../../../store/useAuthStore';
@@ -33,6 +33,17 @@ export const useGroupSubscriptions = ({
   updateChat,
 }: UseGroupSubscriptionsParams) => {
   const { t } = useTranslation();
+  const recentNotifsRef = useRef<Map<string, number>>(new Map());
+
+  const sendGroupNotification = useCallback((title: string, body: string, targetChatId: string, avatar: string | null) => {
+    const key = `${targetChatId}:${body}`;
+    const now = Date.now();
+    const lastTime = recentNotifsRef.current.get(key) || 0;
+    if (now - lastTime < 6000) return;
+    recentNotifsRef.current.set(key, now);
+    showNotification(title, body, targetChatId, avatar, true);
+  }, []);
+
   const startPingForChat = useCallback((chatId: string) => {
     void chatId;
   }, []);
@@ -120,23 +131,36 @@ export const useGroupSubscriptions = ({
         const joinText = data.inviterNickname
           ? `${data.inviterNickname} добавил(а) ${data.nickname || 'участника'} в группу`
           : `${data.nickname || 'Новый участник'} вступил(а) в группу`;
-        const sysMsgId = `sys_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-        const sysMsg: Message = {
-          id: sysMsgId,
-          sender: 'system',
-          text: joinText,
-          time: Date.now(),
-          status: 'sent',
-          mediaType: 'system',
-          systemType: 'join',
-          actorNickname: data.nickname || 'Участник',
-        };
-        addMessage(chatId, sysMsg);
-        try {
-          (window as any).orbita?.storageAddMessage?.(chatId, sysMsgId, sysMsg);
-        } catch {}
-        if (!isCurrentActive && !isSelfJoined) {
-          showNotification(chat.name || '', joinText, chatId, chat.avatarUrl || null, true);
+
+        const existingMsgs = useChatStore.getState().messagesByChatId[chatId] || [];
+        const isAlreadyAdded = existingMsgs.some(
+          (m) =>
+            (data.id && m.id === data.id) ||
+            (data.messageId && m.id === data.messageId) ||
+            ((m.systemType === 'join' || m.text === joinText) &&
+              (m.actorNickname === (data.nickname || 'Участник') || m.text === joinText) &&
+              Math.abs((m.time || 0) - Date.now()) < 8000)
+        );
+
+        if (!isAlreadyAdded) {
+          const sysMsgId = data.id || data.messageId || `sys_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+          const sysMsg: Message = {
+            id: sysMsgId,
+            sender: 'system',
+            text: joinText,
+            time: Date.now(),
+            status: 'sent',
+            mediaType: 'system',
+            systemType: 'join',
+            actorNickname: data.nickname || 'Участник',
+          };
+          addMessage(chatId, sysMsg);
+          try {
+            (window as any).orbita?.storageAddMessage?.(chatId, sysMsgId, sysMsg);
+          } catch {}
+          if (!isCurrentActive && !isSelfJoined) {
+            sendGroupNotification(chat.name || '', joinText, chatId, chat.avatarUrl || null);
+          }
         }
         return;
       }
@@ -150,21 +174,34 @@ export const useGroupSubscriptions = ({
         const updatedMembers = (chat.members || []).filter((member: any) => !isTarget(member)) as any;
         updateChat(chatId, { members: updatedMembers, membersCount: updatedMembers.length });
         const leaveText = `${data.nickname || 'Участник'} покинул(а) группу`;
-        const sysMsgId = `sys_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-        const sysMsg: Message = {
-          id: sysMsgId,
-          sender: 'system',
-          text: leaveText,
-          time: Date.now(),
-          status: 'sent',
-          mediaType: 'system',
-          systemType: 'leave',
-          actorNickname: data.nickname || 'Участник',
-        };
-        addMessage(chatId, sysMsg);
-        try {
-          (window as any).orbita?.storageAddMessage?.(chatId, sysMsgId, sysMsg);
-        } catch {}
+
+        const existingMsgs = useChatStore.getState().messagesByChatId[chatId] || [];
+        const isAlreadyAdded = existingMsgs.some(
+          (m) =>
+            (data.id && m.id === data.id) ||
+            (data.messageId && m.id === data.messageId) ||
+            ((m.systemType === 'leave' || m.text === leaveText) &&
+              (m.actorNickname === (data.nickname || 'Участник') || m.text === leaveText) &&
+              Math.abs((m.time || 0) - Date.now()) < 8000)
+        );
+
+        if (!isAlreadyAdded) {
+          const sysMsgId = data.id || data.messageId || `sys_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+          const sysMsg: Message = {
+            id: sysMsgId,
+            sender: 'system',
+            text: leaveText,
+            time: Date.now(),
+            status: 'sent',
+            mediaType: 'system',
+            systemType: 'leave',
+            actorNickname: data.nickname || 'Участник',
+          };
+          addMessage(chatId, sysMsg);
+          try {
+            (window as any).orbita?.storageAddMessage?.(chatId, sysMsgId, sysMsg);
+          } catch {}
+        }
         return;
       }
       if (data.type === 'member-profile-updated' || data.type === 'profile-update') {
@@ -607,7 +644,7 @@ export const useGroupSubscriptions = ({
           const notifSender = (data.sender && data.sender !== 'system') ? data.sender : '';
           const isSys = msgPayload.mediaType === 'system' || (msgPayload as any).systemType || (typeof notifBody === 'string' && notifSender && notifBody.startsWith(notifSender));
           const finalNotifBody = (notifSender && !isSys) ? `${notifSender}: ${notifBody}` : notifBody;
-          showNotification(notifTitle, finalNotifBody, chatId, chat.avatarUrl || null, true);
+          sendGroupNotification(notifTitle, finalNotifBody, chatId, chat.avatarUrl || null);
         }
 
         if (isCurrentActive) {

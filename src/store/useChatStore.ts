@@ -578,6 +578,25 @@ export const useChatStore = create<ChatState>()(
           return;
         }
 
+        const isSys = message.mediaType === 'system' || Boolean(message.systemType) || message.sender === 'system';
+        if (isSys) {
+          const existingMsgs = state.messagesByChatId[chatId] || [];
+          const now = message.time || Date.now();
+          const isDuplicateSys = existingMsgs.some((m) => {
+            if (m.id && message.id && m.id === message.id) return true;
+            const mIsSys = m.mediaType === 'system' || Boolean(m.systemType) || m.sender === 'system';
+            if (!mIsSys) return false;
+            const sameType = m.systemType && message.systemType && m.systemType === message.systemType;
+            const sameActor = m.actorNickname && message.actorNickname && m.actorNickname === message.actorNickname;
+            const sameText = m.text && message.text && m.text.trim() === message.text.trim();
+            const closeTime = Math.abs((m.time || 0) - now) < 10000;
+            return closeTime && (sameText || (sameType && sameActor));
+          });
+          if (isDuplicateSys) {
+            return;
+          }
+        }
+
         const ttl = state.messageTTLSeconds || undefined;
         const enrichedMessage: Message = {
           ...message,

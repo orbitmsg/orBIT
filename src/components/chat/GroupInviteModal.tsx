@@ -7,7 +7,6 @@ import { useChatStore } from '../../store/useChatStore';
 import { groupService, type GroupInfo } from '../../services/groupService';
 import { extractGroupCode } from '../../lib/groupCrypto';
 import { getGroupPusher } from '../../utils/pusher';
-import { ablyService } from '../../services/ablyService';
 import { useToastStore } from '../../store/useToastStore';
 import { Avatar } from '../common/Avatar';
 
@@ -220,9 +219,8 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
 
       if (result?.group) {
         const joinText = `${myNickname} вступил(а) в группу`;
-        const sysMsgId = `sys_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-        const sysMsg: any = {
-          id: sysMsgId,
+        const sysMsg: any = result.systemMessage || {
+          id: `sys_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
           sender: 'system',
           text: joinText,
           time: Date.now(),
@@ -281,57 +279,28 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
 
         useChatStore.getState().addMessage(result.group.id, sysMsg);
         try {
-          (window as any).orbita?.storageAddMessage?.(result.group.id, sysMsgId, sysMsg);
+          (window as any).orbita?.storageAddMessage?.(result.group.id, sysMsg.id, sysMsg);
         } catch {}
 
         useChatStore.getState().setActiveChat(result.group.id);
 
-        const joinPayload = {
-          id: sysMsgId,
-          messageId: sysMsgId,
-          type: 'member-joined',
-          nickname: myNickname,
-          userCode: uCode,
-          chatId: result.group.id,
-          members: result.group.members,
-          membersCount: result.group.membersCount,
-          mediaType: 'system',
-          systemType: 'join',
-          actorNickname: myNickname,
-          text: joinText,
-          time: Date.now(),
-        };
-
         try {
           const grpChannel = getGroupPusher().subscribe(`presence-group-${result.group.id}`);
+          const rosterPayload = {
+            type: 'member-joined',
+            id: sysMsg.id,
+            nickname: myNickname,
+            userCode: uCode,
+            chatId: result.group.id,
+            members: result.group.members,
+            membersCount: result.group.membersCount,
+          };
           const sendJoinEvent = () => {
-            try { grpChannel.trigger('client-message', joinPayload); } catch {}
-            try { grpChannel.trigger('member-joined', joinPayload); } catch {}
+            try { grpChannel.trigger('member-joined', rosterPayload); } catch {}
           };
           if (grpChannel.subscribed) sendJoinEvent();
           else grpChannel.bind('pusher:subscription_succeeded', sendJoinEvent);
         } catch {}
-
-        try {
-          ablyService.sendMessage(result.group.id, joinPayload).catch(() => {});
-        } catch {}
-
-        groupService.sendGroupMessage({
-          id: sysMsgId,
-          groupId: result.group.id,
-          senderNickname: myNickname,
-          senderCode: uCode,
-          ciphertext: JSON.stringify({
-            text: joinText,
-            mediaType: 'system',
-            systemType: 'join',
-            actorNickname: myNickname,
-          }),
-          mediaType: 'system',
-          systemType: 'join',
-          actorNickname: myNickname,
-          text: joinText,
-        }).catch(() => {});
 
         onClose();
       } else {

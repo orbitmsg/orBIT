@@ -199,7 +199,7 @@ class GroupService {
     userCode?: string,
     meta?: { name?: string; creator?: string; avatarUrl?: string; description?: string; userId?: string },
     inviterNickname?: string
-  ): Promise<{ group: GroupInfo; sharedSecret: string }> {
+  ): Promise<{ group: GroupInfo; sharedSecret: string; systemMessage?: Message | null }> {
     const raw = codeOrLink.trim();
     const secret = extractGroupCode(raw) || raw;
 
@@ -306,11 +306,12 @@ class GroupService {
       } catch {}
     }
 
+    let systemMessage: Message | null = null;
     if (!isAlreadyMember) {
       if (inviterNickname) {
-        this.sendSystemMessage(realGroupId, sharedSecret, 'invite', inviterNickname, nickname);
+        systemMessage = await this.sendSystemMessage(realGroupId, sharedSecret, 'invite', inviterNickname, nickname);
       } else {
-        this.sendSystemMessage(realGroupId, sharedSecret, 'join', nickname, nickname);
+        systemMessage = await this.sendSystemMessage(realGroupId, sharedSecret, 'join', nickname, nickname);
       }
     }
 
@@ -355,7 +356,7 @@ class GroupService {
       inviteExpiresAt: expiresAt,
     };
 
-    return { group: resultGroup, sharedSecret };
+    return { group: resultGroup, sharedSecret, systemMessage };
   }
 
   async addMember(
@@ -515,7 +516,6 @@ class GroupService {
       };
       const sendLeave = () => {
         try { channel.trigger('member-left', leaveData); } catch {}
-        try { channel.trigger('client-message', leaveData); } catch {}
       };
       if (channel.subscribed) sendLeave();
       else channel.bind('pusher:subscription_succeeded', sendLeave);
@@ -552,7 +552,6 @@ class GroupService {
       };
       const sendKick = () => {
         try { channel.trigger('kick', kickData); } catch {}
-        try { channel.trigger('client-message', kickData); } catch {}
       };
       if (channel.subscribed) sendKick();
       else channel.bind('pusher:subscription_succeeded', sendKick);
@@ -698,7 +697,7 @@ class GroupService {
     actorNickname: string,
     targetNickname?: string,
     extra?: { roomName?: string }
-  ): Promise<void> {
+  ): Promise<Message> {
     const actor = actorNickname || useAuthStore.getState().nickname || 'Участник';
     const textMap: Record<string, string> = {
       create: `${actor} создал(а) группу`,
@@ -781,6 +780,8 @@ class GroupService {
       ciphertext,
       mediaType: 'system',
     });
+
+    return systemMsg;
   }
 
   async markGroupMessagesRead(payload: {

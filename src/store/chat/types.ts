@@ -408,6 +408,8 @@ export interface ChatState {
   typingIndicatorsEnabled: boolean;
   typingByChatId: Record<string, ChatTypingUser[]>;
   linkPreviewsEnabled: boolean;
+  anonymousForwardingEnabled: boolean;
+  pendingForwardMessages: Message[] | null;
   _hasHydrated: boolean;
   setHasHydrated: (val: boolean) => void;
 
@@ -590,6 +592,8 @@ export interface ChatState {
   setTypingIndicatorsEnabled: (enabled: boolean) => void;
   setChatTyping: (chatId: string, users: ChatTypingUser[]) => void;
   setLinkPreviewsEnabled: (enabled: boolean) => void;
+  setAnonymousForwardingEnabled: (enabled: boolean) => void;
+  setPendingForwardMessages: (messages: Message[] | null) => void;
 
   addRecentEmoji: (emoji: string) => void;
   getRecentEmojis: () => string[];

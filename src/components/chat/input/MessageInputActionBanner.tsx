@@ -1,15 +1,47 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { X } from 'lucide-react';
+import { X, Forward } from 'lucide-react';
 import { CustomEditIcon, CustomReplyIcon } from '../ChatWindow';
 import { ChannelMegaphoneIcon } from '../../common/ChannelMegaphoneIcon';
 import { markdownToHtml, formatPreviewText } from '../../../utils/messageUtils';
+import { Message } from '../../../store/useChatStore';
+
+export const formatForwardPreview = (msg: Message, t: any): string => {
+  if (msg.mediaType === 'sticker' || (msg.text && /^\[Sticker\]/i.test(msg.text.trim()))) {
+    return t('chatWindow.sticker', 'Стикер');
+  }
+  if (msg.mediaType === 'voice' || (msg.text && /^\[Audio\]\s+voice_/i.test(msg.text.trim()))) {
+    return t('chatWindow.voice_message', 'Голосовое сообщение');
+  }
+  if (msg.mediaType === 'audio') {
+    const title = msg.audioMetadata?.title || msg.mediaName;
+    const artist = msg.audioMetadata?.artist;
+    if (artist && title) return `${artist} – ${title}`;
+    if (title) return title;
+    return t('chatWindow.audio', 'Аудиозапись');
+  }
+  if (msg.mediaType === 'photo' || (msg.text && /^\[Photo\]/i.test(msg.text.trim()))) {
+    return t('chatWindow.photo', 'Фотография');
+  }
+  if (msg.mediaType === 'video' || (msg.text && /^\[Video\]/i.test(msg.text.trim()))) {
+    return t('chatWindow.video', 'Видео');
+  }
+  if (msg.mediaType === 'file' || (msg.text && /^\[File\]/i.test(msg.text.trim()))) {
+    return msg.mediaName || t('chatWindow.file', 'Файл');
+  }
+  if (msg.linkPreview || (msg.text && /^https?:\/\/[^\s]+$/i.test(msg.text.trim()))) {
+    return t('chatWindow.link', 'Ссылка');
+  }
+  return msg.text || t('chatWindow.text', 'Текст');
+};
 
 interface MessageInputActionBannerProps {
   editingIndex: number | null;
   editingOriginalText?: string;
   editText: string;
   replyingTo: { index: number; sender: string; text: string; time: number } | null;
+  forwardingMessages?: Message[] | null;
+  anonymousForwardingEnabled?: boolean;
   isChannel?: boolean;
   onCancel: () => void;
 }
@@ -19,10 +51,13 @@ export const MessageInputActionBanner: React.FC<MessageInputActionBannerProps> =
   editingOriginalText,
   editText,
   replyingTo,
+  forwardingMessages,
+  anonymousForwardingEnabled,
   isChannel,
   onCancel,
 }) => {
   const { t } = useTranslation();
+  const hasForward = Boolean(forwardingMessages && forwardingMessages.length > 0);
 
   return (
     <div
@@ -38,12 +73,26 @@ export const MessageInputActionBanner: React.FC<MessageInputActionBannerProps> =
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
         <div style={{ color: 'var(--accent-color)', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-          {editingIndex !== null ? <CustomEditIcon size={18} /> : <CustomReplyIcon size={18} />}
+          {hasForward ? (
+            <Forward size={18} />
+          ) : editingIndex !== null ? (
+            <CustomEditIcon size={18} />
+          ) : (
+            <CustomReplyIcon size={18} />
+          )}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
           <div style={{ color: 'var(--accent-color)', fontSize: '13.5px', fontWeight: 600, lineHeight: 1.2 }}>
-            {editingIndex !== null ? (
+            {hasForward ? (
+              anonymousForwardingEnabled ? (
+                t('forward.names_hidden', 'Имена отправителей скрыты')
+              ) : forwardingMessages && forwardingMessages.length === 1 ? (
+                t('forward.forward_from_author', { sender: forwardingMessages[0].sender })
+              ) : (
+                t('forward.forward_count', { count: forwardingMessages?.length || 0 })
+              )
+            ) : editingIndex !== null ? (
               t('chatWindow.editing')
             ) : isChannel && replyingTo ? (
               (() => {
@@ -73,17 +122,28 @@ export const MessageInputActionBanner: React.FC<MessageInputActionBannerProps> =
               marginTop: '1px',
               maxHeight: '20px',
             }}
-            dangerouslySetInnerHTML={{
-              __html: markdownToHtml(
-                formatPreviewText(
-                  editingIndex !== null ? (editingOriginalText || editText) : (replyingTo?.text || ''),
-                  t
-                ),
-                'inherit',
-                true
-              ).replace(/<br\s*\/?>/gi, ' '),
-            }}
-          />
+          >
+            {hasForward && forwardingMessages ? (
+              forwardingMessages.length === 1 ? (
+                formatForwardPreview(forwardingMessages[0], t)
+              ) : (
+                t('forward.messages_count', { count: forwardingMessages.length })
+              )
+            ) : (
+              <span
+                dangerouslySetInnerHTML={{
+                  __html: markdownToHtml(
+                    formatPreviewText(
+                      editingIndex !== null ? (editingOriginalText || editText) : (replyingTo?.text || ''),
+                      t
+                    ),
+                    'inherit',
+                    true
+                  ).replace(/<br\s*\/?>/gi, ' '),
+                }}
+              />
+            )}
+          </div>
         </div>
       </div>
 
@@ -100,13 +160,17 @@ export const MessageInputActionBanner: React.FC<MessageInputActionBannerProps> =
           alignItems: 'center',
           justifyContent: 'center',
           borderRadius: '50%',
-          transition: 'color 0.2s',
-          flexShrink: 0,
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-main)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-dim)'; }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = 'var(--text-main)';
+          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = 'var(--text-dim)';
+          e.currentTarget.style.backgroundColor = 'transparent';
+        }}
       >
-        <X size={18} />
+        <X size={16} />
       </button>
     </div>
   );

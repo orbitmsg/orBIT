@@ -93,6 +93,9 @@ export const MessageInput = memo<MessageInputProps>(({
   const { t, i18n } = useTranslation();
   const editorRef = useRef<HTMLDivElement>(null);
   const sendOnEnter = useChatStore((state) => state.sendOnEnter);
+  const pendingForwardMessages = useChatStore((state) => state.pendingForwardMessages);
+  const setPendingForwardMessages = useChatStore((state) => state.setPendingForwardMessages);
+  const anonymousForwardingEnabled = useChatStore((state) => state.anonymousForwardingEnabled);
 
   const [hoverAttach, setHoverAttach] = useState(false);
   const [hoverEmoji, setHoverEmoji] = useState(false);
@@ -308,6 +311,8 @@ export const MessageInput = memo<MessageInputProps>(({
       }
     } else if (replyingTo) {
       setReplyingTo(null);
+    } else if (pendingForwardMessages) {
+      setPendingForwardMessages(null);
     }
     if (editorRef.current) {
       placeCaretAtEnd(editorRef.current);
@@ -379,7 +384,8 @@ export const MessageInput = memo<MessageInputProps>(({
     if (targetChatId) {
       useChatStore.getState().clearDraft(targetChatId);
     }
-    if (!textToSend.trim()) return;
+    const hasForward = Boolean(useChatStore.getState().pendingForwardMessages?.length);
+    if (!textToSend.trim() && !hasForward) return;
     if (editingIndex !== null) {
       onEditMessage(textToSend);
       if (onCancelEdit) {
@@ -589,7 +595,7 @@ export const MessageInput = memo<MessageInputProps>(({
   const emojiColor = (hoverEmoji || isEmojiOpen) ? 'var(--text-main)' : 'var(--text-dim)';
   const micColor = (isRecording || (isHasContent && !isRecording)) ? (hoverMic ? 'var(--text-main)' : 'var(--accent-color)') : (hoverMic ? 'var(--text-main)' : 'var(--text-dim)');
 
-  const showActionBanner = editingIndex !== null || replyingTo !== null;
+  const showActionBanner = editingIndex !== null || replyingTo !== null || Boolean(pendingForwardMessages && pendingForwardMessages.length > 0);
   const isRecordingActive = isRecording || isRecordingPaused;
 
   return (
@@ -631,6 +637,8 @@ export const MessageInput = memo<MessageInputProps>(({
           editingOriginalText={editingOriginalText}
           editText={editText}
           replyingTo={replyingTo}
+          forwardingMessages={pendingForwardMessages}
+          anonymousForwardingEnabled={anonymousForwardingEnabled}
           isChannel={isChannel}
           onCancel={cancelCurrentAction}
         />

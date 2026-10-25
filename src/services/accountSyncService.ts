@@ -54,6 +54,7 @@ export interface UserConfigPayload {
     readReceiptsEnabled?: boolean;
     typingIndicatorsEnabled?: boolean;
     linkPreviewsEnabled?: boolean;
+    anonymousForwardingEnabled?: boolean;
     recentEmojis?: string[];
     autoUpdate?: boolean;
     showInSystemTray?: boolean;
@@ -166,6 +167,7 @@ class AccountSyncService {
         readReceiptsEnabled: chatState.readReceiptsEnabled,
         typingIndicatorsEnabled: chatState.typingIndicatorsEnabled,
         linkPreviewsEnabled: chatState.linkPreviewsEnabled,
+        anonymousForwardingEnabled: chatState.anonymousForwardingEnabled,
         recentEmojis: chatState.recentEmojis,
         autoUpdate: chatState.autoUpdate,
         showInSystemTray: chatState.showInSystemTray,

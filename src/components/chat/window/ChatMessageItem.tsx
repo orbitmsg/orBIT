@@ -15,6 +15,7 @@ import { TgsPlayer } from '../TgsPlayer';
 import { MessageReactions } from '../ReactionBadge';
 import { MessageStatus } from '../../MessageStatus';
 import { MessageItem } from '../MessageItem';
+import { ForwardedMessageBlock } from '../ForwardedMessageBlock';
 import { Avatar } from '../../common/Avatar';
 import { CustomPinIcon } from '../ChatIcons';
 import { ChannelMegaphoneIcon } from '../../common/ChannelMegaphoneIcon';
@@ -692,6 +693,11 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     boxSizing: 'border-box',
                   })}
                 >
+                  {msg.forwardedFrom && (
+                    <div className="p-2 pb-1 select-none">
+                      <ForwardedMessageBlock forwarded={msg.forwardedFrom} isOwn={isOwn} themeColor={themeColor} />
+                    </div>
+                  )}
                   {renderMediaGroup(msg, index, isPhotoGroup ? photoRadius : customRadius, effectiveMediaItems)}
                 </div>
                 {renderReactionBadges(msg, index)}
@@ -843,6 +849,11 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             onClick={(e) => handleMessageClick(e, msg.id!)}
             onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}
           >
+            {msg.forwardedFrom && (
+              <div className="mb-1 select-none" style={{ maxWidth: 'min(440px, 75%)' }}>
+                <ForwardedMessageBlock forwarded={msg.forwardedFrom} isOwn={isOwn} themeColor={themeColor} />
+              </div>
+            )}
             {media.type === 'sticker' && (
               <div
                 className={`relative w-fit flex flex-col ${isOwn ? 'items-end' : 'items-start'} group select-none`}

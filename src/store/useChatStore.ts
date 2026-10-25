@@ -180,6 +180,8 @@ export const useChatStore = create<ChatState>()(
       typingIndicatorsEnabled: true,
       typingByChatId: {},
       linkPreviewsEnabled: true,
+      anonymousForwardingEnabled: true,
+      pendingForwardMessages: null,
       _hasHydrated: false,
 
       recentEmojis: [],
@@ -1451,6 +1453,8 @@ export const useChatStore = create<ChatState>()(
           };
         }),
       setLinkPreviewsEnabled: (enabled) => set({ linkPreviewsEnabled: enabled }),
+      setAnonymousForwardingEnabled: (enabled) => set({ anonymousForwardingEnabled: enabled }),
+      setPendingForwardMessages: (messages) => set({ pendingForwardMessages: messages }),
       setHasHydrated: (val) => set({ _hasHydrated: val }),
 
       addRecentEmoji: (emoji: string) => {

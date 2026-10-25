@@ -18,6 +18,8 @@ export const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup, onOpenOrbi
     setTypingIndicatorsEnabled,
     linkPreviewsEnabled,
     setLinkPreviewsEnabled,
+    anonymousForwardingEnabled,
+    setAnonymousForwardingEnabled,
     screenProtectionEnabled,
     setScreenProtectionEnabled,
   } = useChatStore(useShallow((s) => ({
@@ -29,6 +31,8 @@ export const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup, onOpenOrbi
     setTypingIndicatorsEnabled: s.setTypingIndicatorsEnabled,
     linkPreviewsEnabled: s.linkPreviewsEnabled,
     setLinkPreviewsEnabled: s.setLinkPreviewsEnabled,
+    anonymousForwardingEnabled: s.anonymousForwardingEnabled,
+    setAnonymousForwardingEnabled: s.setAnonymousForwardingEnabled,
     screenProtectionEnabled: s.screenProtectionEnabled,
     setScreenProtectionEnabled: s.setScreenProtectionEnabled,
   })));
@@ -130,6 +134,19 @@ export const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup, onOpenOrbi
               <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>{t('settings.link_previews_desc', 'Генерировать предпросмотр для отправляемых ссылок (анонимно на стороне отправителя)')}</div>
             </div>
             <M3Switch checked={linkPreviewsEnabled} onChange={() => setLinkPreviewsEnabled(!linkPreviewsEnabled)} />
+          </div>
+
+          <div style={{
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>{t('settings.anonymous_forwarding_title', 'Анонимная пересылка')}</div>
+              <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>{t('settings.anonymous_forwarding_desc', 'Скрывать имя и ссылку на профиль автора при пересылке сообщений')}</div>
+            </div>
+            <M3Switch checked={anonymousForwardingEnabled} onChange={() => setAnonymousForwardingEnabled(!anonymousForwardingEnabled)} />
           </div>
         </Block>
       </div>

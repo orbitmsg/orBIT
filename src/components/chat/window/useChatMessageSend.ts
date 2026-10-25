@@ -60,7 +60,8 @@ export interface UseChatMessageSendReturn {
     },
     linkPreviewPayload?: LinkPreviewData,
     existingMessageId?: string,
-    mediaItemsPayload?: MediaItem[]
+    mediaItemsPayload?: MediaItem[],
+    forwardedFromPayload?: Message['forwardedFrom']
   ) => Promise<void>;
   handleSendMessage: (overrideText?: string, linkPreview?: LinkPreviewData) => void;
   handleSendAsTxt: (caption: string) => Promise<void>;
@@ -111,7 +112,8 @@ export const useChatMessageSend = ({
     },
     linkPreviewPayload?: LinkPreviewData,
     existingMessageId?: string,
-    mediaItemsPayload?: MediaItem[]
+    mediaItemsPayload?: MediaItem[],
+    forwardedFromPayload?: Message['forwardedFrom']
   ) => {
     if (!activeChatId) return;
 
@@ -174,6 +176,7 @@ export const useChatMessageSend = ({
           thumbnail: mediaPayload?.thumbnail || mediaPayload?.blurPreview,
           mediaItems: mediaItemsPayload,
           linkPreview: linkPreviewPayload,
+          forwardedFrom: forwardedFromPayload,
         };
         addMessage(activeChatId, localMessage);
       }
@@ -241,6 +244,7 @@ export const useChatMessageSend = ({
           blurPreview: mediaPayload?.blurPreview,
           thumbnail: mediaPayload?.thumbnail || mediaPayload?.blurPreview,
           mediaItems: mediaItemsPayload,
+          forwardedFrom: forwardedFromPayload,
         };
         addMessage(activeChatId, localMessage);
       }
@@ -327,6 +331,7 @@ export const useChatMessageSend = ({
           thumbnail: sentMedia?.thumbnail || sentMedia?.blurPreview,
           mediaItems: mediaItemsPayload,
           linkPreview: sentPreview || undefined,
+          forwardedFrom: forwardedFromPayload,
         };
         addMessage(activeChatId, optimisticMessage);
       }
@@ -471,6 +476,7 @@ export const useChatMessageSend = ({
       thumbnail: isVisualMedia ? (mediaPayload?.thumbnail || mediaPayload?.blurPreview || undefined) : undefined,
       mediaItems: mediaItemsPayload,
       linkPreview: linkPreviewPayload,
+      forwardedFrom: forwardedFromPayload,
     };
 
     if (existingMessageId) {
@@ -574,6 +580,7 @@ export const useChatMessageSend = ({
           thumbnail: safeThumbnail,
           mediaItems: sanitizedMediaItems,
           linkPreview: linkPreviewPayload || null,
+          forwardedFrom: forwardedFromPayload || null,
         };
 
         let freshChat = useChatStore.getState().chats.find(c => c.id === activeChatId);
@@ -1093,9 +1100,11 @@ export const useChatMessageSend = ({
     }).catch(() => {});
   };
 
-  const handleSendMessage = useCallback((overrideText?: string, linkPreview?: LinkPreviewData) => {
+  const handleSendMessage = useCallback(async (overrideText?: string, linkPreview?: LinkPreviewData) => {
     const textToSend = (typeof overrideText === 'string' ? overrideText : inputText).trim();
-    if (!textToSend) return;
+    const pendingFwd = useChatStore.getState().pendingForwardMessages;
+    if (!textToSend && (!pendingFwd || pendingFwd.length === 0)) return;
+
     if (draftDebounceTimerRef.current) {
       clearTimeout(draftDebounceTimerRef.current);
       draftDebounceTimerRef.current = null;
@@ -1106,15 +1115,66 @@ export const useChatMessageSend = ({
     }
     setInputText('');
     stopTyping();
-    if (replyingTo) {
-      let cleanText = replyingTo.text.replace(/^↩\s(?:\[id:.+?\]\s)?.+?:.+?,\s\d{2}:\d{2}\n/, '').replace(/\n/g, ' ').trim();
-      if (/^\[Sticker\]/i.test(cleanText) || cleanText.includes('/stickers/') || cleanText.includes('\\stickers\\') || cleanText.includes('.stickers')) {
-        cleanText = '[Sticker]';
+
+    if (pendingFwd && pendingFwd.length > 0) {
+      const isAnon = useChatStore.getState().anonymousForwardingEnabled;
+      useChatStore.getState().setPendingForwardMessages(null);
+
+      for (const msg of pendingFwd) {
+        const forwardedFrom = isAnon
+          ? {
+              isAnonymous: true,
+              isIdHidden: true,
+              time: msg.time,
+            }
+          : {
+              isAnonymous: false,
+              isIdHidden: false,
+              sender: msg.sender,
+              senderId: msg.senderId,
+              senderAvatarUrl: msg.forwardedFrom?.senderAvatarUrl || null,
+              chatId: msg.forwardedFrom?.chatId || activeChatId || undefined,
+              time: msg.time,
+            };
+
+        const mediaPayload = msg.mediaUrl ? {
+          type: msg.mediaType || 'photo',
+          url: msg.mediaUrl,
+          key: msg.mediaKey,
+          name: msg.mediaName,
+          mime: msg.mime,
+          audioMetadata: msg.audioMetadata,
+          duration: msg.duration,
+          waveform: msg.waveform,
+          size: msg.fileSize,
+          width: msg.width,
+          height: msg.height,
+          thumbnail: msg.thumbnail,
+          blurPreview: msg.blurPreview,
+        } : undefined;
+
+        await triggerMessage(
+          msg.text || '',
+          mediaPayload,
+          msg.linkPreview,
+          undefined,
+          msg.mediaItems,
+          forwardedFrom
+        );
       }
-      const idTag = replyingTo.senderId ? `[id:${replyingTo.id || ''}:${replyingTo.senderId}] ` : (replyingTo.id ? `[id:${replyingTo.id}] ` : '');
-      triggerMessage(`↩ ${idTag}${replyingTo.sender}: ${truncateText(cleanText, 200)}, ${formatTime(replyingTo.time)}\n${textToSend}`, undefined, linkPreview);
-    } else {
-      triggerMessage(textToSend, undefined, linkPreview);
+    }
+
+    if (textToSend) {
+      if (replyingTo) {
+        let cleanText = replyingTo.text.replace(/^↩\s(?:\[id:.+?\]\s)?.+?:.+?,\s\d{2}:\d{2}\n/, '').replace(/\n/g, ' ').trim();
+        if (/^\[Sticker\]/i.test(cleanText) || cleanText.includes('/stickers/') || cleanText.includes('\\stickers\\') || cleanText.includes('.stickers')) {
+          cleanText = '[Sticker]';
+        }
+        const idTag = replyingTo.senderId ? `[id:${replyingTo.id || ''}:${replyingTo.senderId}] ` : (replyingTo.id ? `[id:${replyingTo.id}] ` : '');
+        await triggerMessage(`↩ ${idTag}${replyingTo.sender}: ${truncateText(cleanText, 200)}, ${formatTime(replyingTo.time)}\n${textToSend}`, undefined, linkPreview);
+      } else {
+        await triggerMessage(textToSend, undefined, linkPreview);
+      }
     }
     setReplyingTo(null);
     inputRef.current?.focus();

@@ -95,7 +95,7 @@ export interface ChatWindowModalsProps {
   isForwardModalOpen?: boolean;
   setIsForwardModalOpen?: (v: boolean) => void;
   messagesToForward?: Message[];
-  handleExecuteForward?: (targetChatId: string, hideAuthor: boolean) => void;
+  handleExecuteForward?: (targetChatId: string) => void;
   onForwardMessage?: (messageIdOrIndex?: any) => void;
 }
 

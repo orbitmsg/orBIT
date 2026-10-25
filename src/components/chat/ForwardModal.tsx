@@ -1,16 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { X, Search, Bookmark, ShieldCheck } from 'lucide-react';
+import { X, Search, Bookmark } from 'lucide-react';
 import { useChatStore, Message, Chat } from '../../store/useChatStore';
 import { Avatar } from '../common/Avatar';
-import { M3Switch } from '../settings/SettingsShared';
 
 interface ForwardModalProps {
   isOpen: boolean;
   onClose: () => void;
   messagesToForward: Message[];
-  onForward: (targetChatId: string, hideAuthor: boolean) => void;
+  onForward: (targetChatId: string) => void;
 }
 
 export const ForwardModal: React.FC<ForwardModalProps> = ({
@@ -21,7 +20,6 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
-  const [hideAuthor, setHideAuthor] = useState(false);
   const chats = useChatStore((s) => s.chats);
   const activeChatId = useChatStore((s) => s.activeChatId);
 
@@ -136,46 +134,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
               </button>
             </div>
 
-            <div
-              style={{
-                padding: '12px 24px',
-                backgroundColor: 'var(--surface-container, rgba(255, 255, 255, 0.03))',
-                border: 'none',
-              }}
-            >
-              <div
-                onClick={() => setHideAuthor(!hideAuthor)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  cursor: 'pointer',
-                  userSelect: 'none',
-                }}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <span
-                    style={{
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      color: 'var(--text-main, #ffffff)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}
-                  >
-                    <ShieldCheck size={16} style={{ color: hideAuthor ? 'var(--accent-color, #9b7dd4)' : 'var(--text-dim, #8e8e93)' }} />
-                    {t('forward.hide_author', 'Скрыть имя автора')}
-                  </span>
-                  <span style={{ fontSize: '11.5px', color: 'var(--text-dim, #8e8e93)' }}>
-                    {t('forward.hide_author_desc', 'Анонимизировать метаданные перед отправкой')}
-                  </span>
-                </div>
-                <M3Switch checked={hideAuthor} onChange={() => setHideAuthor(!hideAuthor)} />
-              </div>
-            </div>
-
-            <div style={{ padding: '14px 20px 8px' }}>
+            <div style={{ padding: '8px 20px 8px' }}>
               <div
                 style={{
                   display: 'flex',
@@ -234,7 +193,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                   return (
                     <button
                       key={chat.id}
-                      onClick={() => onForward(chat.id, hideAuthor)}
+                      onClick={() => onForward(chat.id)}
                       aria-label={chat.name}
                       style={{
                         display: 'flex',

@@ -497,7 +497,9 @@
       "no_results_desc": "Try adjusting your search query",
       "hold_to_record": "Hold the mouse button to record a voice message.",
       "release_outside_to_cancel": "Release outside the field to cancel",
-      "cancel_recording": "Cancel"
+      "cancel_recording": "Cancel",
+      "link": "Link",
+      "text": "Text"
     },
     "audioPlayer": {
       "reverse_order": "Reverse",
@@ -969,7 +971,9 @@
       "auto_load_audio": "Audio & Music",
       "auto_load_files": "Files & Documents",
       "auto_load_up_to": "up to {{size}} MB",
-      "auto_load_max_size": "Maximum size: {{size}} MB"
+      "auto_load_max_size": "Maximum size: {{size}} MB",
+      "anonymous_forwarding_title": "Anonymous forwarding",
+      "anonymous_forwarding_desc": "Hide author name and profile link when forwarding messages"
     },
     "groupSettings": {
       "title": "Group Settings",
@@ -1546,7 +1550,10 @@
       "current": "current",
       "channel": "Channel",
       "group": "Group",
-      "dialog": "Direct chat"
+      "dialog": "Direct chat",
+      "names_hidden": "Sender names hidden",
+      "forward_from_author": "Forwarded from: {{sender}}",
+      "forward_count": "Forward messages: {{count}}"
     },
     "system": {
       "group_created": "{{actor}} created the group",

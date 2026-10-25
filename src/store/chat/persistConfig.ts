@@ -61,6 +61,7 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
     readReceiptsEnabled: state.readReceiptsEnabled,
     typingIndicatorsEnabled: state.typingIndicatorsEnabled,
     linkPreviewsEnabled: state.linkPreviewsEnabled,
+    anonymousForwardingEnabled: state.anonymousForwardingEnabled,
     recentEmojis: state.recentEmojis,
     autoUpdate: state.autoUpdate,
     showInSystemTray: state.showInSystemTray,

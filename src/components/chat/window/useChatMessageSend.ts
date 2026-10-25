@@ -151,6 +151,11 @@ export const useChatMessageSend = ({
             },
           };
         });
+        const currentMsgs = useChatStore.getState().messagesByChatId[activeChatId] || [];
+        const target = currentMsgs.find((m) => m.id === existingMessageId);
+        if (target) {
+          (window as any).orbita?.storageAddMessage?.(activeChatId, existingMessageId, target).catch(() => {});
+        }
       } else {
         const localMessage: Message = {
           id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -220,6 +225,11 @@ export const useChatMessageSend = ({
             },
           };
         });
+        const currentMsgs = useChatStore.getState().messagesByChatId[activeChatId] || [];
+        const target = currentMsgs.find((m) => m.id === existingMessageId);
+        if (target) {
+          (window as any).orbita?.storageAddMessage?.(activeChatId, existingMessageId, target).catch(() => {});
+        }
       } else {
         const localMessage: Message = {
           id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -306,6 +316,11 @@ export const useChatMessageSend = ({
             },
           };
         });
+        const currentMsgs = useChatStore.getState().messagesByChatId[activeChatId] || [];
+        const target = currentMsgs.find((m) => m.id === existingMessageId);
+        if (target) {
+          (window as any).orbita?.storageAddMessage?.(activeChatId, existingMessageId, target).catch(() => {});
+        }
       } else {
         const optimisticMessage: Message = {
           id: optimisticId,

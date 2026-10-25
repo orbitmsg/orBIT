@@ -163,11 +163,15 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
               status={
                 (msg.status === 'failed' || msg.status === 'error')
                   ? 'failed'
+                  : msg.status === 'read' || (!msg.uploading && msg.read)
+                  ? 'read'
+                  : msg.status === 'delivered'
+                  ? 'delivered'
+                  : msg.status === 'sent'
+                  ? 'sent'
                   : msg.uploading || msg.status === 'sending' || msg.status === 'pending'
                   ? 'sending'
-                  : (msg.status === 'read' || (!msg.uploading && msg.read))
-                  ? 'read'
-                  : (msg.status || 'sent')
+                  : 'sent'
               }
               isOwn={isOwn}
               onRetry={(msg.status === 'failed' || msg.status === 'error') && onRetry ? () => onRetry(msg.id || '') : undefined}
@@ -241,11 +245,15 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                     status={
                       (msg.status === 'failed' || msg.status === 'error')
                         ? 'failed'
+                        : msg.status === 'read' || (!msg.uploading && msg.read)
+                        ? 'read'
+                        : msg.status === 'delivered'
+                        ? 'delivered'
+                        : msg.status === 'sent'
+                        ? 'sent'
                         : msg.uploading || msg.status === 'sending' || msg.status === 'pending'
                         ? 'sending'
-                        : (msg.status === 'read' || (!msg.uploading && msg.read))
-                        ? 'read'
-                        : (msg.status || 'sent')
+                        : 'sent'
                     }
                     isOwn={isOwn}
                     onRetry={(msg.status === 'failed' || msg.status === 'error') && onRetry ? () => onRetry(msg.id || '') : undefined}

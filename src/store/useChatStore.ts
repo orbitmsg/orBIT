@@ -791,11 +791,16 @@ export const useChatStore = create<ChatState>()(
           if (status === 'sending' && (m.status === 'failed' || m.status === 'error')) {
             return { ...m, status: 'sending' as const };
           }
-          const currentStatus = (m.status === 'read' || m.read) ? 'read' : (m.status || 'sent');
+          const currentStatus = m.status === 'read' ? 'read' : (m.status || 'sent');
           const currentRank = STATUS_RANK[currentStatus] || 1;
           const newRank = (status ? STATUS_RANK[status] : undefined) || 1;
           if (currentRank > newRank) return m;
-          return { ...m, status, read: status === 'read' ? true : m.read };
+          return {
+            ...m,
+            status,
+            uploading: status === 'sent' || status === 'delivered' || status === 'read' ? false : m.uploading,
+            read: status === 'read' ? true : m.read,
+          };
         });
         set({
           messagesByChatId: {

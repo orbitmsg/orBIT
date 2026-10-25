@@ -211,11 +211,15 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
               status={
                 isFailed
                   ? 'failed'
+                  : m.status === 'read' || (!m.uploading && m.read)
+                  ? 'read'
+                  : m.status === 'delivered'
+                  ? 'delivered'
+                  : m.status === 'sent'
+                  ? 'sent'
                   : m.uploading || m.status === 'sending' || m.status === 'pending'
                   ? 'sending'
-                  : (m.status === 'read' || (!m.uploading && m.read))
-                  ? 'read'
-                  : (m.status || 'sent')
+                  : 'sent'
               }
               isOwn={mIsOwn}
               onRetry={isFailed && handleRetryMessage ? () => handleRetryMessage(m.id || index) : undefined}

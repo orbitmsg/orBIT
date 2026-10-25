@@ -274,8 +274,11 @@ class MediaManager {
   }
 
   public async isMediaSavedLocally(url: string): Promise<boolean> {
+    if (!url || typeof url !== 'string') return false;
+    if (url.startsWith('blob:') || url.startsWith('data:')) return true;
     const cleanUrl = normalizeMediaUrl(url);
     if (!cleanUrl) return false;
+    if (cleanUrl.startsWith('blob:') || cleanUrl.startsWith('data:')) return true;
     for (const [key] of this.memoryCache) {
       if (key.startsWith(cleanUrl)) return true;
     }

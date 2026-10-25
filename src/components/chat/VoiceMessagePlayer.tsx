@@ -69,7 +69,6 @@ export const VoiceMessagePlayer = memo(({
   const [localDuration, setLocalDuration] = useState<number>(msg?.duration || 0);
   const [isDragging, setIsDragging] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [isUserLoaded, setIsUserLoaded] = useState<boolean>(Boolean(msg?.isListened));
   const [hasPlayedLocally, setHasPlayedLocally] = useState<boolean>(Boolean(msg?.isListened));
 
   const waveformRef = useRef<HTMLDivElement>(null);
@@ -137,16 +136,15 @@ export const VoiceMessagePlayer = memo(({
   const effectiveDuration = isCurrentTrack && globalDuration > 0 ? globalDuration : (localDuration || msg?.duration || 0);
   const effectiveCurrentTime = isCurrentTrack ? globalCurrentTime : savedPosition;
   const isPlaying = isCurrentTrack && isGlobalPlaying;
-  const isLoaded = Boolean(isUserLoaded && blobUrl);
+  const isLoaded = Boolean(blobUrl);
   const isUnplayed = !msg?.isListened && !hasPlayedLocally;
 
   const handleAction = async () => {
     if (isUploading) return;
-    if (!isUserLoaded || !blobUrl) {
+    if (!blobUrl) {
       setIsDownloading(true);
       try {
         await load();
-        setIsUserLoaded(true);
       } catch (err) {
         console.error(err);
       } finally {
@@ -277,7 +275,7 @@ export const VoiceMessagePlayer = memo(({
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isUserLoaded || !blobUrl) {
+    if (!blobUrl) {
       handleAction();
       return;
     }

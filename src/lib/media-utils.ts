@@ -221,12 +221,6 @@ export function useDecryptedMedia(
       return;
     }
 
-    if (!autoLoad) {
-      setBlobUrl(null);
-      setBlob(null);
-      return;
-    }
-
     if (cleanUrl.startsWith('blob:') || cleanUrl.startsWith('data:')) {
       setBlobUrl(cleanUrl);
       setIsLoading(false);
@@ -234,7 +228,23 @@ export function useDecryptedMedia(
       return;
     }
 
-    loadMedia();
+    let isMounted = true;
+    mediaManager.isMediaSavedLocally(cleanUrl).then((isSaved) => {
+      if (!isMounted) return;
+      if (isSaved) {
+        loadMedia();
+      } else if (autoLoad) {
+        loadMedia();
+      } else {
+        setBlobUrl(null);
+        setBlob(null);
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, [cleanUrl, cachedUrl, autoLoad, loadMedia]);
 
   return {

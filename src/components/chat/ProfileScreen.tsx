@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { channelService } from '../../services/channelService';
 import { groupService } from '../../services/groupService';
 import { supabaseService } from '../../services/supabaseService';
+import { deriveGroupKey } from '../../lib/groupCrypto';
 import { ArrowLeft, Check, Pencil } from 'lucide-react';
 import { DeveloperBadge, DeveloperToast } from '../ui/DeveloperBadge';
 import { VerifiedBadge } from '../common/VerifiedBadge';
@@ -559,8 +560,9 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         if (nameChanged) groupUpdate.name = newName;
         if (descChanged) groupUpdate.description = newDesc;
         if (avatarChanged) groupUpdate.avatarUrl = finalAvatarUrl;
-        if (Object.keys(groupUpdate).length > 0 && chat.sharedSecret) {
-          await groupService.updateGroup(chat.id, chat.sharedSecret, groupUpdate, myNickname);
+        if (Object.keys(groupUpdate).length > 0) {
+          const secret = chat.sharedSecret || (chat.inviteCode ? deriveGroupKey(chat.inviteCode) : deriveGroupKey(chat.id));
+          await groupService.updateGroup(chat.id, secret, groupUpdate, myNickname);
         }
       } else {
         const currentUserId = useAuthStore.getState().userId || useChatStore.getState().myCode;

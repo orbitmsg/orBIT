@@ -11,7 +11,7 @@ import { extractGroupCode, isValidGroupCode } from '../../lib/groupCrypto';
 import { generateChannelId } from '../../lib/codes';
 import { useToastStore } from '../../store/useToastStore';
 import { AvatarCropperModal } from '../settings/AvatarCropperModal';
-import { isStaticImageFile, MAX_AVATAR_BANNER_SIZE } from '../../utils/staticImageValidation';
+import { isStaticImageFile, MAX_AVATAR_BANNER_SIZE, getMediaInfoFromDataUrl } from '../../utils/staticImageValidation';
 import { supabaseService, type UserDirectoryRecord } from '../../services/supabaseService';
 import { Avatar } from '../common/Avatar';
 
@@ -266,7 +266,27 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
       setError(null);
       const myUserId = useAuthStore.getState().userId;
       const myUserAvatar = useAuthStore.getState().avatarUrl;
-      groupService.createGroup(trimmed, descriptionValue, myNickname, myCode, avatarUrl, myUserId, myUserAvatar).then((res) => {
+
+      let finalGroupAvatar = avatarUrl;
+      if (avatarUrl && avatarUrl.startsWith('data:')) {
+        const base64 = avatarUrl.includes(',') ? avatarUrl.split(',')[1] : avatarUrl;
+        const { ext } = getMediaInfoFromDataUrl(avatarUrl);
+        if (typeof window !== 'undefined' && window.orbita?.writeTempFile && window.orbita?.uploadToCloudinary) {
+          try {
+            const tempPath = await window.orbita.writeTempFile(base64, ext);
+            if (tempPath) {
+              const publicId = `group_avatar_${Date.now()}`;
+              const uploadRes = await window.orbita.uploadToCloudinary(tempPath, publicId);
+              if (uploadRes.success && uploadRes.secure_url) {
+                finalGroupAvatar = uploadRes.secure_url;
+              }
+              await window.orbita.deleteTempFile(tempPath);
+            }
+          } catch {}
+        }
+      }
+
+      groupService.createGroup(trimmed, descriptionValue, myNickname, myCode, finalGroupAvatar, myUserId, myUserAvatar).then((res) => {
         setIsLoading(false);
         if (res && res.group) {
           const initialMember = {
@@ -290,7 +310,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
             creatorNickname: myNickname,
             creatorId: myCode,
             inviteCode: res.group.code,
-            avatarUrl: res.group.avatarUrl || avatarUrl || undefined,
+            avatarUrl: res.group.avatarUrl || finalGroupAvatar || undefined,
             members: [initialMember],
             membersCount: 1,
             createdAt: Date.now(),

@@ -2253,12 +2253,19 @@ module.exports = async function handler(req, res) {
 
     if (pathname === '/groups/get' && req.method === 'GET') {
       const code = query.code || query.id;
-      if (!code) return sendError(res, 'Missing group code or id', 400);
+      const id = query.id;
+      if (!code && !id) return sendError(res, 'Missing group code or id', 400);
 
       const supabase = getGroupsSupabaseClient();
       if (supabase) {
         try {
-          let queryBuilder = supabase.from('groups').select('*').or(`id.eq.${code},code.eq.${code}`);
+          const target = code || id;
+          let queryBuilder = supabase.from('groups').select('*');
+          if (code && id && code !== id) {
+            queryBuilder = queryBuilder.or(`id.eq.${code},id.eq.${code.toUpperCase()},code.eq.${code},id.eq.${id},id.eq.${id.toUpperCase()},code.eq.${id}`);
+          } else {
+            queryBuilder = queryBuilder.or(`id.eq.${target},id.eq.${target.toUpperCase()},code.eq.${target},code.eq.${target.toUpperCase()}`);
+          }
           const { data: groupData } = await queryBuilder.maybeSingle();
           if (groupData) {
             const { data: membersData } = await supabase
@@ -2276,6 +2283,16 @@ module.exports = async function handler(req, res) {
               avatarUrl: m.avatar_url || null,
             }));
 
+            let inviteActive = true;
+            let expiresAt = null;
+            if (groupData.creator_id && typeof groupData.creator_id === 'string' && groupData.creator_id.startsWith('{')) {
+              try {
+                const parsed = JSON.parse(groupData.creator_id);
+                if (parsed.active === false) inviteActive = false;
+                if (typeof parsed.expiresAt === 'number') expiresAt = parsed.expiresAt;
+              } catch {}
+            }
+
             return sendJson(res, {
               status: 'ok',
               group: {
@@ -2290,6 +2307,8 @@ module.exports = async function handler(req, res) {
                 maxMembers: groupData.max_members || 10,
                 members,
                 createdAt: new Date(groupData.created_at).getTime(),
+                inviteActive,
+                inviteExpiresAt: expiresAt,
               },
             });
           }
@@ -2481,18 +2500,28 @@ module.exports = async function handler(req, res) {
           if (body.creator_id !== undefined) updateData.creator_id = body.creator_id;
           if (body.creatorId !== undefined) updateData.creator_id = body.creatorId;
 
-          await supabase.from('groups').update(updateData).eq('id', groupId);
-
-          let meta = {};
-          if (typeof updateData.creator_id === 'string' && updateData.creator_id.startsWith('{')) {
-            try { meta = JSON.parse(updateData.creator_id); } catch {}
+          if (body.inviteActive !== undefined || body.inviteExpiresAt !== undefined) {
+            try {
+              const { data: curG } = await supabase.from('groups').select('creator_id').eq('id', groupId).maybeSingle();
+              let parsedMeta = {};
+              if (curG?.creator_id && typeof curG.creator_id === 'string' && curG.creator_id.startsWith('{')) {
+                try { parsedMeta = JSON.parse(curG.creator_id); } catch {}
+              }
+              if (body.inviteActive !== undefined) parsedMeta.active = Boolean(body.inviteActive);
+              if (body.inviteExpiresAt !== undefined) parsedMeta.expiresAt = body.inviteExpiresAt;
+              updateData.creator_id = JSON.stringify(parsedMeta);
+            } catch {}
           }
+
+          await supabase.from('groups').update(updateData).eq('id', groupId);
 
           await triggerGroupPusherEvent(`presence-group-${groupId}`, 'group-updated', {
             groupId,
             name: updateData.name,
             description: updateData.description,
-            avatarUrl: updateData.avatar_url,
+            avatarUrl: (updateData.avatar_url && updateData.avatar_url.length < 5000) ? updateData.avatar_url : undefined,
+            inviteActive: body.inviteActive,
+            inviteExpiresAt: body.inviteExpiresAt,
           });
 
           return sendJson(res, { status: 'ok', group: updateData });

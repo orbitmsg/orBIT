@@ -2383,10 +2383,10 @@ export default {
           try {
             let query = supabase.from('groups').select('*');
             if (code && id && code !== id) {
-              query = query.or(`code.eq.${code},id.eq.${code},id.eq.${id},code.eq.${id}`);
+              query = query.or(`code.eq.${code},id.eq.${code},id.eq.${code.toUpperCase()},id.eq.${id},id.eq.${id.toUpperCase()},code.eq.${id}`);
             } else {
               const target = code || id;
-              query = query.or(`code.eq.${target},id.eq.${target}`);
+              query = query.or(`code.eq.${target},id.eq.${target},id.eq.${target.toUpperCase()},code.eq.${target.toUpperCase()}`);
             }
             const { data: groupData } = await query.maybeSingle();
             if (groupData) {
@@ -2639,7 +2639,7 @@ export default {
               groupId,
               name: updateData.name,
               description: updateData.description,
-              avatarUrl: updateData.avatar_url,
+              avatarUrl: (updateData.avatar_url && updateData.avatar_url.length < 5000) ? updateData.avatar_url : undefined,
               inviteActive: body.inviteActive,
               inviteExpiresAt: body.inviteExpiresAt,
             });

@@ -7,6 +7,7 @@ import { useChatStore } from '../../store/useChatStore';
 import { groupService, type GroupInfo } from '../../services/groupService';
 import { extractGroupCode } from '../../lib/groupCrypto';
 import { getGroupPusher } from '../../utils/pusher';
+import { ablyService } from '../../services/ablyService';
 import { useToastStore } from '../../store/useToastStore';
 import { Avatar } from '../common/Avatar';
 
@@ -182,7 +183,9 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
       if (info) {
         setGroupInfo((prev) => ({
           ...info,
-          avatarUrl: info.avatarUrl || prev?.avatarUrl || null,
+          avatarUrl: info.avatarUrl || prev?.avatarUrl || existing?.avatarUrl || null,
+          inviteActive: info.inviteActive !== undefined ? info.inviteActive : (prev?.inviteActive !== undefined ? prev.inviteActive : (existing?.inviteActive !== undefined ? existing.inviteActive : true)),
+          inviteExpiresAt: info.inviteExpiresAt !== undefined ? info.inviteExpiresAt : (prev?.inviteExpiresAt || existing?.inviteExpiresAt || null),
         }));
       }
     }).catch(() => {
@@ -216,6 +219,19 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
       });
 
       if (result?.group) {
+        const joinText = `${myNickname} вступил(а) в группу`;
+        const sysMsgId = `sys_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+        const sysMsg: any = {
+          id: sysMsgId,
+          sender: 'system',
+          text: joinText,
+          time: Date.now(),
+          status: 'sent',
+          mediaType: 'system',
+          systemType: 'join',
+          actorNickname: myNickname,
+        };
+
         const existing = useChatStore.getState().chats.find((c) => c.id === result.group.id);
         if (!existing) {
           useChatStore.getState().addChat({
@@ -223,7 +239,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
             type: 'group',
             name: result.group.name,
             description: result.group.description || '',
-            lastMsg: 'E2EE_SECURE_CHANNEL_READY',
+            lastMsg: joinText,
             online: false,
             sharedSecret: result.sharedSecret,
             role: 'member',
@@ -250,6 +266,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
             ...(result.group.avatarUrl ? { avatarUrl: result.group.avatarUrl } : {}),
             ...(result.group.creatorNickname ? { creatorNickname: result.group.creatorNickname } : {}),
             sharedSecret: result.sharedSecret || existing.sharedSecret,
+            lastMsg: joinText,
             members:
               result.group.members && result.group.members.length > (existing.members?.length || 0)
                 ? (result.group.members as any[])
@@ -262,18 +279,31 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
           });
         }
 
+        useChatStore.getState().addMessage(result.group.id, sysMsg);
+        try {
+          (window as any).orbita?.storageAddMessage?.(result.group.id, sysMsgId, sysMsg);
+        } catch {}
+
         useChatStore.getState().setActiveChat(result.group.id);
+
+        const joinPayload = {
+          id: sysMsgId,
+          messageId: sysMsgId,
+          type: 'member-joined',
+          nickname: myNickname,
+          userCode: uCode,
+          chatId: result.group.id,
+          members: result.group.members,
+          membersCount: result.group.membersCount,
+          mediaType: 'system',
+          systemType: 'join',
+          actorNickname: myNickname,
+          text: joinText,
+          time: Date.now(),
+        };
 
         try {
           const grpChannel = getGroupPusher().subscribe(`presence-group-${result.group.id}`);
-          const joinPayload = {
-            type: 'member-joined',
-            nickname: myNickname,
-            userCode: uCode,
-            chatId: result.group.id,
-            members: result.group.members,
-            membersCount: result.group.membersCount,
-          };
           const sendJoinEvent = () => {
             try { grpChannel.trigger('client-message', joinPayload); } catch {}
             try { grpChannel.trigger('member-joined', joinPayload); } catch {}
@@ -281,6 +311,27 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
           if (grpChannel.subscribed) sendJoinEvent();
           else grpChannel.bind('pusher:subscription_succeeded', sendJoinEvent);
         } catch {}
+
+        try {
+          ablyService.sendMessage(result.group.id, joinPayload).catch(() => {});
+        } catch {}
+
+        groupService.sendGroupMessage({
+          id: sysMsgId,
+          groupId: result.group.id,
+          senderNickname: myNickname,
+          senderCode: uCode,
+          ciphertext: JSON.stringify({
+            text: joinText,
+            mediaType: 'system',
+            systemType: 'join',
+            actorNickname: myNickname,
+          }),
+          mediaType: 'system',
+          systemType: 'join',
+          actorNickname: myNickname,
+          text: joinText,
+        }).catch(() => {});
 
         onClose();
       } else {
@@ -302,7 +353,17 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
 
   if (!inviteUrl) return null;
 
-  const displayName = groupInfo?.name || (isLoading ? '...' : t('chatWindow.group', 'Группа'));
+  const cleanCode = inviteUrl ? (extractGroupCode(inviteUrl) || inviteUrl.trim().replace(/^#/, '')) : '';
+  const existingChat = useChatStore((s) =>
+    s.chats.find(
+      (c) =>
+        c.type === 'group' &&
+        (c.id === groupInfo?.id ||
+          (cleanCode && (c.id === cleanCode || c.code === cleanCode || c.inviteCode === cleanCode)))
+    )
+  );
+  const groupAvatarUrl = groupInfo?.avatarUrl || existingChat?.avatarUrl || null;
+  const displayName = groupInfo?.name || existingChat?.name || (isLoading ? '...' : t('chatWindow.group', 'Группа'));
   const invitationText = t('group.group_invitation', t('groupSettings.group_invitation', 'Приглашение в группу'));
   const linkExpiredText = t('group.link_expired_or_revoked', t('groupSettings.link_expired_or_revoked', 'Ссылка устарела или закрыта'));
   const joinText = t('group.join', t('groupSettings.join', 'Присоединиться'));
@@ -347,9 +408,9 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
               backgroundColor: 'var(--surface-container, rgba(255, 255, 255, 0.08))',
             }}
           >
-            {groupInfo?.avatarUrl ? (
+            {groupAvatarUrl ? (
               <Avatar
-                src={groupInfo.avatarUrl}
+                src={groupAvatarUrl}
                 alt={displayName}
                 style={{ width: '100%', height: '100%' }}
               />

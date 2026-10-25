@@ -14,6 +14,8 @@ interface AudioCoverWithPlayProps {
   customIcon?: React.ReactNode;
   isOwn?: boolean;
   ariaLabel?: string;
+  customBg?: string;
+  customIconColor?: string;
 }
 
 export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
@@ -27,6 +29,8 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
   customIcon,
   isOwn = false,
   ariaLabel,
+  customBg,
+  customIconColor,
 }) => {
   const iconSize = Math.round(size * 0.42);
   const strokeW = size >= 48 ? 3.5 : (size >= 40 ? 3 : 2.5);
@@ -50,6 +54,9 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
   };
 
   const renderContent = () => {
+    const iconFill = customIconColor || (customBg ? '#1e1c2b' : 'currentColor');
+    const strokeColor = customIconColor || (customBg ? '#1e1c2b' : (isOwn ? '#ffffff' : 'var(--accent-color, #6c5ce7)'));
+
     if (state === 'uploading') {
       return (
         <>
@@ -72,7 +79,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke="rgba(255, 255, 255, 0.08)"
+              stroke={customBg ? 'rgba(255, 255, 255, 0.25)' : (isOwn ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.08)')}
               strokeWidth={strokeW}
             />
             <circle
@@ -80,7 +87,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke="var(--accent-color, #6c5ce7)"
+              stroke={customBg ? '#ffffff' : (isOwn ? '#ffffff' : 'var(--accent-color, #6c5ce7)')}
               strokeWidth={strokeW}
               strokeLinecap="round"
               strokeDasharray={circumference}
@@ -100,8 +107,8 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               justifyContent: 'center',
             }}
           >
-            <svg viewBox="0 0 24 24" width={Math.round(size * 0.46)} height={Math.round(size * 0.46)} fill="none" stroke="var(--accent-color, #6c5ce7)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 19V5M5 12l7-7 7 7" />
+            <svg viewBox="0 0 24 24" width={Math.round(size * 0.42)} height={Math.round(size * 0.42)} fill="none" stroke={strokeColor} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 8L8 16M8 8l8 8" />
             </svg>
           </div>
         </>
@@ -131,7 +138,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke="rgba(255, 255, 255, 0.08)"
+              stroke={customBg ? 'rgba(255, 255, 255, 0.25)' : (isOwn ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.08)')}
               strokeWidth={strokeW}
             />
             <circle
@@ -139,7 +146,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke="var(--accent-color, #6c5ce7)"
+              stroke={customBg ? '#ffffff' : (isOwn ? '#ffffff' : 'var(--accent-color, #6c5ce7)')}
               strokeWidth={strokeW}
               strokeLinecap="round"
               strokeDasharray={circumference}
@@ -160,7 +167,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
             }}
           >
             <svg viewBox="0 0 24 24" width={Math.round(size * 0.42)} height={Math.round(size * 0.42)}>
-              <rect x="7" y="7" width="10" height="10" rx="2" fill="#ffffff" />
+              <rect x="7" y="7" width="10" height="10" rx="2" fill={iconFill} />
             </svg>
           </div>
         </>
@@ -196,7 +203,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke="rgba(255, 255, 255, 0.12)"
+              stroke={customBg ? 'rgba(255, 255, 255, 0.25)' : (isOwn ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.12)')}
               strokeWidth={strokeW}
             />
           </svg>
@@ -209,7 +216,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               justifyContent: 'center',
             }}
           >
-            <svg viewBox="0 0 24 24" width={Math.round(size * 0.46)} height={Math.round(size * 0.46)} fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 24 24" width={Math.round(size * 0.46)} height={Math.round(size * 0.46)} fill="none" stroke={strokeColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 4v12m0 0l-5-5m5 5l5-5M5 20h14" />
             </svg>
           </div>
@@ -222,16 +229,16 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
     if (state === 'file') {
       return (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width={iconSize} height={iconSize}>
-          <path fill="currentColor" d="M9 5.5A1.5 1.5 0 0 0 10.5 7H14v5.25A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2H9zm1-3.42c.27.083.517.23.72.433l2.767 2.767c.203.203.35.45.434.72H10.5a.5.5 0 0 1-.5-.5z"/>
+          <path fill={iconFill} d="M9 5.5A1.5 1.5 0 0 0 10.5 7H14v5.25A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2H9zm1-3.42c.27.083.517.23.72.433l2.767 2.767c.203.203.35.45.434.72H10.5a.5.5 0 0 1-.5-.5z"/>
         </svg>
       );
     }
 
     if (isPlayingTrack || state === 'pause') {
-      return <Pause size={iconSize} fill="currentColor" strokeWidth={0} />;
+      return <Pause size={iconSize} fill={iconFill} strokeWidth={0} />;
     }
 
-    return <Play size={iconSize} fill="currentColor" strokeWidth={0} style={{ transform: 'translateX(1px)' }} />;
+    return <Play size={iconSize} fill={iconFill} strokeWidth={0} style={{ transform: 'translateX(1px)' }} />;
   };
 
   return (
@@ -246,7 +253,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
         overflow: 'hidden',
         position: 'relative',
         flexShrink: 0,
-        backgroundColor: cover ? 'transparent' : (state === 'done' ? 'rgba(0, 184, 148, 0.15)' : (isOwn ? 'rgba(255, 255, 255, 0.2)' : 'rgba(45, 48, 62, 0.9)')),
+        backgroundColor: cover ? 'transparent' : (customBg || (state === 'done' ? 'rgba(0, 184, 148, 0.15)' : (isOwn ? 'rgba(255, 255, 255, 0.2)' : 'rgba(45, 48, 62, 0.9)'))),
         border: '1px solid rgba(255, 255, 255, 0.08)',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
         cursor: 'pointer',
@@ -256,7 +263,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
       {cover ? (
         <img src={cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
       ) : (
-        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: customIconColor || (customBg ? '#1e1c2b' : '#fff') }}>
           {renderContent()}
         </div>
       )}

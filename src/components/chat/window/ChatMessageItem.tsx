@@ -1086,6 +1086,11 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   timeNode={timeBadge(msg, isMessagePinned(msg))}
                   isOwn={isOwn}
                   customRadius={customRadius}
+                  onCancelUpload={msg.uploading ? () => {
+                    if (activeChatId && msg.id) {
+                      useChatStore.getState().deleteMessage(activeChatId, msg.id);
+                    }
+                  } : undefined}
                 />
               </div>
             )}

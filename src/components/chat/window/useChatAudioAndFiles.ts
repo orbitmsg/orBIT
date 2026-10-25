@@ -137,6 +137,8 @@ export const useChatAudioAndFiles = ({
       mime: 'audio/ogg;codecs=opus',
       duration,
       waveform,
+      fileSize: blob.size,
+      isListened: false,
     };
 
     addMessage(activeChatId, optimisticMessage);
@@ -204,6 +206,7 @@ export const useChatAudioAndFiles = ({
               mime: 'audio/ogg;codecs=opus',
               duration,
               waveform,
+              size: blob.size,
             },
             undefined,
             optimisticMessageId

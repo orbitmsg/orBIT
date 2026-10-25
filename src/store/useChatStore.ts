@@ -770,6 +770,28 @@ export const useChatStore = create<ChatState>()(
           (window as any).orbita.storageDeleteMessage(messageId).catch(() => {});
         }
       },
+      markVoiceListened: (chatId, messageId) => {
+        if (!chatId || !messageId) return;
+        const state = get();
+        const messages = state.messagesByChatId[chatId];
+        if (!messages) return;
+        let updatedAny = false;
+        const updated = messages.map((m) => {
+          if (m.id === messageId && !m.isListened) {
+            updatedAny = true;
+            return { ...m, isListened: true };
+          }
+          return m;
+        });
+        if (updatedAny) {
+          set({
+            messagesByChatId: {
+              ...state.messagesByChatId,
+              [chatId]: updated,
+            },
+          });
+        }
+      },
       updateMessageStatus: (chatId, messageId, status) => {
         const state = get();
         const messages = state.messagesByChatId[chatId] || [];

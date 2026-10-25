@@ -180,6 +180,7 @@ export interface Message {
   forwardedFrom?: ForwardedFrom;
   isEdited?: boolean;
   editedAt?: number;
+  isListened?: boolean;
 }
 
 export interface ChatMember {
@@ -528,6 +529,7 @@ export interface ChatState {
     }>
   ) => void;
   deleteMessage: (chatId: string, messageId: string) => void;
+  markVoiceListened: (chatId: string, messageId: string) => void;
   updateMessageStatus: (chatId: string, messageId: string, status: Message['status']) => void;
   updateMessageMediaDimensions: (chatId: string, messageId: string, width: number, height: number, itemIdx?: number) => void;
   editMessage: (chatId: string, messageId: string, newText: string, encryptedText?: string, index?: number) => void;

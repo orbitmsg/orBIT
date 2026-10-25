@@ -233,10 +233,10 @@ export const useChatStore = create<ChatState>()(
       autoLoadMaxAudioSizeMb: 10,
       autoLoadMaxFileSizeMb: 10,
 
-      stickersAutoplayPanel: true,
-      stickersAutoplayChat: true,
-      chatAutoPlayVideos: true,
-      callAnimationsEnabled: true,
+      stickersAutoplayPanel: false,
+      stickersAutoplayChat: false,
+      chatAutoPlayVideos: false,
+      callAnimationsEnabled: false,
 
       draftsByChatId: {},
       setDraft: (chatId, text) =>

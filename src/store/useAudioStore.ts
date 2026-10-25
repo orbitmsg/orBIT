@@ -126,6 +126,7 @@ interface AudioStore {
   playbackRate: number;
   isReverseOrder: boolean;
   getLiveTime?: () => number;
+  playbackPositions: Record<string, number>;
 
   setTrack: (track: Track | null) => void;
   play: (track?: Track) => void;
@@ -134,6 +135,7 @@ interface AudioStore {
   seek: (time: number) => void;
   setSeeking: (seeking: boolean) => void;
   setCurrentTime: (time: number) => void;
+  savePlaybackPosition: (id: string, time: number) => void;
   setVolume: (volume: number) => void;
   setPlaybackRate: (rate: number) => void;
   setDuration: (duration: number) => void;
@@ -163,6 +165,11 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
   playbackRate: 1.0,
   isReverseOrder: false,
   getLiveTime: undefined,
+  playbackPositions: {},
+
+  savePlaybackPosition: (id, time) => {
+    set((s) => ({ playbackPositions: { ...s.playbackPositions, [id]: time } }));
+  },
 
   setTrack: (track) => {
     const state = get();
@@ -170,10 +177,12 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
       set({ isPlaying: true });
       return;
     }
+    const savedTime = track ? state.playbackPositions[track.id] || 0 : 0;
+    const initialTime = (track?.duration && savedTime >= track.duration - 0.2) ? 0 : savedTime;
     set({
       currentTrack: track,
       isPlaying: track !== null,
-      currentTime: 0,
+      currentTime: initialTime,
       duration: track?.duration || 0,
     });
   },
@@ -182,13 +191,19 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
     const state = get();
     if (track) {
       if (state.currentTrack?.id === track.id) {
-        if (state.duration > 0 && state.currentTime >= state.duration - 0.1) {
-          set({ currentTime: 0, isPlaying: true });
+        if (state.duration > 0 && state.currentTime >= state.duration - 0.2) {
+          set({
+            currentTime: 0,
+            isPlaying: true,
+            playbackPositions: { ...state.playbackPositions, [track.id]: 0 },
+          });
         } else {
           set({ isPlaying: true });
         }
         return;
       }
+      const savedTime = state.playbackPositions[track.id] || 0;
+      const initialTime = (track.duration > 0 && savedTime >= track.duration - 0.2) ? 0 : savedTime;
       const isVoice = isVoiceTrack(track);
       const isPrevVoice = isVoiceTrack(state.currentTrack);
       const newQueue = isVoice !== isPrevVoice
@@ -199,28 +214,46 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
         queue: newQueue,
         currentTrack: track,
         isPlaying: true,
-        currentTime: 0,
+        currentTime: initialTime,
         duration: track.duration,
+        playbackPositions: { ...state.playbackPositions, [track.id]: initialTime },
       });
     } else {
-      if (state.duration > 0 && state.currentTime >= state.duration - 0.1) {
-        set({ currentTime: 0, isPlaying: true });
-      } else {
-        set({ isPlaying: true });
+      if (state.currentTrack) {
+        const trId = state.currentTrack.id;
+        if (state.duration > 0 && state.currentTime >= state.duration - 0.2) {
+          set({
+            currentTime: 0,
+            isPlaying: true,
+            playbackPositions: trId ? { ...state.playbackPositions, [trId]: 0 } : state.playbackPositions,
+          });
+        } else {
+          set({ isPlaying: true });
+        }
       }
     }
   },
 
   pause: () => {
-    const getLiveTime = get().getLiveTime;
+    const state = get();
+    let time = state.currentTime;
+    const getLiveTime = state.getLiveTime;
     if (getLiveTime) {
       const live = getLiveTime();
       if (typeof live === 'number' && isFinite(live) && live >= 0) {
-        set({ isPlaying: false, currentTime: live });
-        return;
+        time = live;
       }
     }
-    set({ isPlaying: false });
+    const currentTrack = state.currentTrack;
+    if (currentTrack?.id) {
+      set({
+        isPlaying: false,
+        currentTime: time,
+        playbackPositions: { ...state.playbackPositions, [currentTrack.id]: time },
+      });
+    } else {
+      set({ isPlaying: false, currentTime: time });
+    }
   },
 
   togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
@@ -229,14 +262,29 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
 
   setCurrentTime: (time) => {
     if (!get().isSeeking) {
-      set({ currentTime: time });
+      const currentTrack = get().currentTrack;
+      if (currentTrack?.id) {
+        set((state) => ({
+          currentTime: time,
+          playbackPositions: { ...state.playbackPositions, [currentTrack.id]: time },
+        }));
+      } else {
+        set({ currentTime: time });
+      }
     }
   },
 
   seek: (time) => {
     const state = get();
     const clamped = Math.max(0, Math.min(time, state.duration || 0));
-    set({ currentTime: clamped });
+    if (state.currentTrack?.id) {
+      set({
+        currentTime: clamped,
+        playbackPositions: { ...state.playbackPositions, [state.currentTrack.id]: clamped },
+      });
+    } else {
+      set({ currentTime: clamped });
+    }
   },
 
   setVolume: (volume) => {

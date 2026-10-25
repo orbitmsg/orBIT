@@ -3,10 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useChatStore, type Message } from '../../store/useChatStore';
 import { useAudioStore } from '../../store/useAudioStore';
 import { useDecryptedMedia } from '../../lib/media-utils';
-import { AudioCoverWithPlay } from '../audio/AudioCoverWithPlay';
-import { MD3CircularSpinner } from '../common/MD3CircularSpinner';
+import { AudioCoverWithPlay, AudioCoverState } from '../audio/AudioCoverWithPlay';
 import { appVisibility } from '../../utils/appVisibility';
-import { orbitFs } from './chatUtils';
 
 export const formatVoiceTime = (seconds: number) => {
   if (!seconds || !isFinite(seconds) || seconds < 0) return '0:00';
@@ -49,6 +47,7 @@ export const VoiceMessagePlayer = memo(({
   const isGlobalPlaying = useAudioStore((state) => (isCurrentTrack ? state.isPlaying : false));
   const globalCurrentTime = useAudioStore((state) => (isCurrentTrack ? state.currentTime : 0));
   const globalDuration = useAudioStore((state) => (isCurrentTrack ? state.duration : 0));
+  const savedPosition = useAudioStore((state) => (trackId ? state.playbackPositions[trackId] || 0 : 0));
 
   const playTrack = useAudioStore((state) => state.play);
   const pauseTrack = useAudioStore((state) => state.pause);
@@ -62,7 +61,7 @@ export const VoiceMessagePlayer = memo(({
   const progressOverlayRef = useRef<HTMLDivElement>(null);
   const timeDisplayRef = useRef<HTMLSpanElement>(null);
   const effectiveSecret = msg?.mediaKey || sharedSecret;
-  const { blobUrl } = useDecryptedMedia(url, effectiveSecret, fileName, mime, chatId, messageId);
+  const { blobUrl, load, isLoading: mediaLoading } = useDecryptedMedia(url, effectiveSecret, fileName, mime, chatId, messageId);
 
   useEffect(() => {
     if (!blobUrl || (localDuration > 0 && isFinite(localDuration))) return;
@@ -98,18 +97,23 @@ export const VoiceMessagePlayer = memo(({
     }
   }, [isCurrentTrack, localDuration, globalDuration, setStoreDuration]);
 
-  const effectiveDuration = isCurrentTrack && globalDuration > 0 ? globalDuration : localDuration;
-  const effectiveCurrentTime = isCurrentTrack ? globalCurrentTime : 0;
+  const effectiveDuration = isCurrentTrack && globalDuration > 0 ? globalDuration : (localDuration || msg?.duration || 0);
+  const effectiveCurrentTime = isCurrentTrack ? globalCurrentTime : savedPosition;
   const isPlaying = isCurrentTrack && isGlobalPlaying;
+  const isLoaded = Boolean(blobUrl);
 
   const handlePlayToggle = () => {
+    if (!blobUrl) {
+      load();
+      return;
+    }
     if (isCurrentTrack) {
       if (isPlaying) {
         pauseTrack();
       } else {
         playTrack();
       }
-    } else if (blobUrl) {
+    } else {
       const voiceTitle = t('chatWindow.voice_message');
       const voiceArtist = msg?.sender || '';
       playTrack({
@@ -307,30 +311,11 @@ export const VoiceMessagePlayer = memo(({
     };
   }, [isPlaying, isCurrentTrack, effectiveDuration, dragProgressRatio]);
 
-  if (!blobUrl) {
-    return (
-      <div
-        className="inline-flex items-center gap-2 select-none"
-        style={{
-          background: isOwn
-            ? 'var(--chat-bubble-own-bg, #2c6bed)'
-            : 'var(--chat-bubble-incoming-bg, var(--surface-container))',
-          padding: '8px 12px 8px 8px',
-          border: 'none',
-          borderRadius: customRadius || bubbleRadius,
-          width: '280px',
-          height: '64px',
-          boxSizing: 'border-box',
-        }}
-      >
-        <MD3CircularSpinner size="small" color={isOwn ? '#ffffff' : 'var(--accent-color, #7C3AED)'} />
-        <span style={{ fontSize: orbitFs(10), color: isOwn ? 'rgba(255, 255, 255, 0.7)' : 'var(--text-dim)' }}>{t('chatWindow.loading')}</span>
-      </div>
-    );
-  }
-
   const progressRatio = dragProgressRatio !== null ? dragProgressRatio : (effectiveDuration > 0 ? Math.min(1, effectiveCurrentTime / effectiveDuration) : 0);
   const displayCurrentTime = dragProgressRatio !== null ? dragProgressRatio * effectiveDuration : effectiveCurrentTime;
+  const coverState: AudioCoverState = isLoaded
+    ? (isPlaying ? 'pause' : 'play')
+    : (mediaLoading ? 'downloading' : 'play');
 
   return (
     <div
@@ -353,6 +338,7 @@ export const VoiceMessagePlayer = memo(({
       <AudioCoverWithPlay
         cover={null}
         isPlayingTrack={isPlaying}
+        state={coverState}
         size={48}
         onClick={handlePlayToggle}
         isOwn={isOwn}
@@ -366,7 +352,7 @@ export const VoiceMessagePlayer = memo(({
           style={{ height: '22px', gap: '1px', width: 'max-content', userSelect: 'none' }}
         >
           {bars.map((h, idx) => {
-            const barHeight = Math.max(3, Math.round((h / 100) * 20));
+            const barHeight = isLoaded ? Math.max(3, Math.round((h / 100) * 20)) : 3;
             return (
               <div
                 key={idx}
@@ -376,11 +362,16 @@ export const VoiceMessagePlayer = memo(({
                   maxWidth: '2px',
                   height: `${barHeight}px`,
                   flexShrink: 0,
-                  backgroundColor: isOwn
-                    ? 'rgba(255, 255, 255, 0.4)'
-                    : 'color-mix(in srgb, var(--text-main) 30%, transparent)',
+                  backgroundColor: isLoaded
+                    ? (isOwn
+                        ? 'rgba(255, 255, 255, 0.4)'
+                        : 'color-mix(in srgb, var(--text-main) 30%, transparent)')
+                    : (isOwn
+                        ? 'rgba(255, 255, 255, 0.18)'
+                        : 'color-mix(in srgb, var(--text-main) 16%, transparent)'),
                   borderRadius: '1px',
                   transform: 'translateZ(0)',
+                  transition: 'height 0.24s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.24s ease',
                 }}
               />
             );
@@ -410,7 +401,7 @@ export const VoiceMessagePlayer = memo(({
               }}
             >
               {bars.map((h, idx) => {
-                const barHeight = Math.max(3, Math.round((h / 100) * 20));
+                const barHeight = isLoaded ? Math.max(3, Math.round((h / 100) * 20)) : 3;
                 return (
                   <div
                     key={idx}
@@ -425,6 +416,7 @@ export const VoiceMessagePlayer = memo(({
                         : 'var(--accent-color, #7C3AED)',
                       borderRadius: '1px',
                       transform: 'translateZ(0)',
+                      transition: 'height 0.24s cubic-bezier(0.4, 0, 0.2, 1)',
                     }}
                   />
                 );

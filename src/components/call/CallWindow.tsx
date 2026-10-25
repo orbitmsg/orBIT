@@ -17,6 +17,7 @@ import { SignalStrengthIcon } from './SignalStrengthIcon';
 import { GroupParticipantTile, ExpandedGroupParticipantTile } from './GroupParticipantTiles';
 import { accentButtonStyle, rejectButtonStyle, neutralButtonStyle, StaticBackground } from './callButtonStyles';
 import { CallDualStreamView } from './CallDualStreamView';
+import { CallAvatarVoiceWave } from './CallAvatarVoiceWave';
 
 export const CallWindow = () => {
   const { t } = useTranslation();
@@ -40,6 +41,7 @@ export const CallWindow = () => {
   const toggleScreenShare = useCallStore((state) => state.toggleScreenShare);
   const myNickname = useCallStore((state) => state.myNickname);
   const remoteScreenShareTrack = useCallStore((state) => state.remoteScreenShareTrack);
+  const callAnimationsEnabled = useChatStore((state) => state.callAnimationsEnabled);
 
   const [isRemoteVideoActive, setIsRemoteVideoActive] = useState<boolean>(false);
   const [isLocalVideoActive, setIsLocalVideoActive] = useState<boolean>(false);
@@ -1064,7 +1066,14 @@ export const CallWindow = () => {
               </div>
             </div>
 
-            <h2 className="mt-7 text-2xl font-bold tracking-tight text-center px-4" style={{ color: 'var(--text-main)' }}>
+            {callAnimationsEnabled && isConnected && (
+              <CallAvatarVoiceWave
+                isCallActive={isConnected}
+                isGroup={isGroupCall}
+              />
+            )}
+
+            <h2 className={`${callAnimationsEnabled && isConnected ? 'mt-2' : 'mt-7'} text-2xl font-bold tracking-tight text-center px-4`} style={{ color: 'var(--text-main)' }}>
               {otherName}
             </h2>
 

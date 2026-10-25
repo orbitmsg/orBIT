@@ -52,6 +52,9 @@ export const GlobalAudioEngine = () => {
 
     const handleEnded = () => {
       const state = useAudioStore.getState();
+      if (state.currentTrack?.id) {
+        state.savePlaybackPosition(state.currentTrack.id, 0);
+      }
       if (audioRef.current) {
         audioRef.current.volume = state.volume;
       }
@@ -98,15 +101,14 @@ export const GlobalAudioEngine = () => {
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+      const nextTime = useAudioStore.getState().currentTime || 0;
+      audioRef.current.currentTime = nextTime;
       audioRef.current.volume = useAudioStore.getState().volume;
     }
   }, [currentTrack?.id]);
 
   useEffect(() => {
     let animId: number;
-    let lastVoiceTime = 0;
-    let voiceStallFrames = 0;
 
     const checkFade = () => {
       const audio = audioRef.current;
@@ -137,31 +139,14 @@ export const GlobalAudioEngine = () => {
         if (dur > 0 && audio.currentTime >= dur - 0.06) {
           useAudioStore.getState().setCurrentTime(dur);
           const state = useAudioStore.getState();
+          if (state.currentTrack?.id) {
+            state.savePlaybackPosition(state.currentTrack.id, 0);
+          }
           if (audioRef.current) {
             audioRef.current.volume = state.volume;
           }
           state.next();
           return;
-        }
-
-        if (audio.currentTime > 0.2 && Math.abs(audio.currentTime - lastVoiceTime) < 0.001) {
-          voiceStallFrames++;
-          if (voiceStallFrames >= 12) {
-            voiceStallFrames = 0;
-            if (dur > 0 && audio.currentTime < dur) {
-              useAudioStore.getState().setDuration(audio.currentTime);
-            }
-            useAudioStore.getState().setCurrentTime(audio.currentTime);
-            const state = useAudioStore.getState();
-            if (audioRef.current) {
-              audioRef.current.volume = state.volume;
-            }
-            state.next();
-            return;
-          }
-        } else {
-          lastVoiceTime = audio.currentTime;
-          voiceStallFrames = 0;
         }
       }
 
@@ -201,11 +186,18 @@ export const GlobalAudioEngine = () => {
     if (blobUrl && blobUrl !== prevBlobUrlRef.current) {
       audio.volume = useAudioStore.getState().volume;
       audio.src = blobUrl;
+      const targetTime = useAudioStore.getState().currentTime || 0;
+      const onLoaded = () => {
+        if (targetTime > 0 && targetTime < (audio.duration || Infinity)) {
+          audio.currentTime = targetTime;
+        }
+        if (useAudioStore.getState().isPlaying) {
+          audio.play().catch(() => {});
+        }
+      };
+      audio.addEventListener('loadedmetadata', onLoaded, { once: true });
       audio.load();
       prevBlobUrlRef.current = blobUrl;
-      if (isPlaying) {
-        audio.play().catch(() => {});
-      }
     }
   }, [blobUrl, isPlaying]);
 
@@ -219,6 +211,10 @@ export const GlobalAudioEngine = () => {
     }
 
     if (isPlaying) {
+      const targetTime = useAudioStore.getState().currentTime || 0;
+      if (targetTime > 0 && Math.abs(audio.currentTime - targetTime) > 0.3) {
+        audio.currentTime = targetTime;
+      }
       if (audio.duration > 0 && audio.currentTime >= audio.duration - 0.1) {
         audio.currentTime = 0;
       }

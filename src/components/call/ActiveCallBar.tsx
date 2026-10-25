@@ -47,7 +47,6 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const isOwnStreamRef = useRef(false);
   const smoothedVolumeRef = useRef(0.04);
   const timeRef = useRef(0);
   const accentRgbRef = useRef<[number, number, number]>([92, 84, 229]);
@@ -89,14 +88,7 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
   }, [chatColor]);
 
   useEffect(() => {
-    if (!isCallActive || !isMicEnabled || !callAnimationsEnabled) {
-      if (isOwnStreamRef.current && streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => {
-          try { t.stop(); } catch {}
-        });
-      }
-      streamRef.current = null;
-      isOwnStreamRef.current = false;
+    if (!isCallActive || !callAnimationsEnabled) {
       if (mediaSourceRef.current) {
         try { mediaSourceRef.current.disconnect(); } catch {}
         mediaSourceRef.current = null;
@@ -109,49 +101,45 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
         audioContextRef.current.close().catch(() => {});
         audioContextRef.current = null;
       }
+      streamRef.current = null;
       return;
     }
 
     let isCancelled = false;
-    const setupMicAnalyser = async () => {
+    const isGroup = activeCall?.chatType === 'group';
+    const svc = isGroup ? groupLiveKitService : liveKitService;
+
+    const setupRemoteAnalyser = async () => {
       try {
-        let stream: MediaStream | null = null;
-        const isGroup = activeCall?.chatType === 'group';
-        const svc = isGroup ? groupLiveKitService : liveKitService;
-        const localTrack = svc.getLocalAudioTrack();
-        const mediaTrack = localTrack?.mediaStreamTrack;
-
-        if (mediaTrack && mediaTrack.readyState !== 'ended') {
-          stream = new MediaStream([mediaTrack]);
-          isOwnStreamRef.current = false;
-        } else if (navigator.mediaDevices?.getUserMedia) {
-          stream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-              echoCancellation: true,
-              noiseSuppression: true,
-            },
-          });
-          isOwnStreamRef.current = true;
-        }
-
-        if (!stream || isCancelled) {
-          if (stream && isOwnStreamRef.current) {
-            stream.getTracks().forEach((t) => {
-              try { t.stop(); } catch {}
-            });
-          }
+        const remoteTrack = svc.getRemoteAudioTrack();
+        const mediaTrack = remoteTrack?.mediaStreamTrack;
+        if (!mediaTrack || mediaTrack.readyState === 'ended' || isCancelled) {
           return;
         }
 
+        if (streamRef.current && streamRef.current.getAudioTracks()[0] === mediaTrack && analyserRef.current) {
+          return;
+        }
+
+        const stream = new MediaStream([mediaTrack]);
         streamRef.current = stream;
 
         const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
         if (!AudioCtx) return;
 
-        const audioCtx = new AudioCtx();
-        audioContextRef.current = audioCtx;
+        if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+          audioContextRef.current = new AudioCtx();
+        }
+        const audioCtx = audioContextRef.current;
         if (audioCtx.state === 'suspended') {
           await audioCtx.resume();
+        }
+
+        if (mediaSourceRef.current) {
+          try { mediaSourceRef.current.disconnect(); } catch {}
+        }
+        if (analyserRef.current) {
+          try { analyserRef.current.disconnect(); } catch {}
         }
 
         const source = audioCtx.createMediaStreamSource(stream);
@@ -166,17 +154,26 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
       } catch {}
     };
 
-    setupMicAnalyser();
+    setupRemoteAnalyser();
+
+    const onTrackSubscribed = () => {
+      setupRemoteAnalyser();
+    };
+
+    svc.on('trackSubscribed', onTrackSubscribed);
+    svc.on('participantsChanged', onTrackSubscribed);
+
+    const checkInterval = setInterval(() => {
+      if (!analyserRef.current && !isCancelled) {
+        setupRemoteAnalyser();
+      }
+    }, 800);
 
     return () => {
       isCancelled = true;
-      if (isOwnStreamRef.current && streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => {
-          try { t.stop(); } catch {}
-        });
-      }
-      streamRef.current = null;
-      isOwnStreamRef.current = false;
+      clearInterval(checkInterval);
+      try { svc.off('trackSubscribed', onTrackSubscribed); } catch {}
+      try { svc.off('participantsChanged', onTrackSubscribed); } catch {}
       if (mediaSourceRef.current) {
         try { mediaSourceRef.current.disconnect(); } catch {}
         mediaSourceRef.current = null;
@@ -189,8 +186,9 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
         audioContextRef.current.close().catch(() => {});
         audioContextRef.current = null;
       }
+      streamRef.current = null;
     };
-  }, [isCallActive, isMicEnabled, callAnimationsEnabled, activeCall?.chatType]);
+  }, [isCallActive, callAnimationsEnabled, activeCall?.chatType]);
 
   useEffect(() => {
     if (!isCallActive || !callAnimationsEnabled) return;
@@ -264,15 +262,15 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
 
       ctx.clearRect(0, 0, width, height);
 
-      let micVol = 0;
-      if (analyserRef.current && isMicEnabled) {
+      let remoteAudioVol = 0;
+      if (analyserRef.current) {
         analyserRef.current.getByteTimeDomainData(timeData);
         let maxDev = 0;
         for (let i = 0; i < timeData.length; i++) {
           const dev = Math.abs(timeData[i] - 128);
           if (dev > maxDev) maxDev = dev;
         }
-        const timeVol = maxDev > 20 ? Math.min(1, (maxDev - 20) / 35) : 0;
+        const timeVol = maxDev > 6 ? Math.min(1, (maxDev - 6) / 32) : 0;
 
         analyserRef.current.getByteFrequencyData(freqData);
         let sum = 0;
@@ -280,15 +278,15 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
           sum += freqData[i];
         }
         const avg = sum / freqData.length;
-        const freqVol = avg > 18 ? Math.min(1, (avg - 18) / 30) : 0;
+        const freqVol = avg > 6 ? Math.min(1, (avg - 6) / 28) : 0;
 
-        micVol = Math.max(timeVol, freqVol);
+        remoteAudioVol = Math.max(timeVol, freqVol);
       }
 
       const remoteSpeaking = !!activeCall?.participants?.some((p: any) => !p.isLocal && p.isSpeaking);
-      const remoteVol = remoteSpeaking ? 0.70 + Math.sin(timeRef.current * 4) * 0.25 : 0;
-      const rawVol = Math.max(micVol, remoteVol);
-      const targetVol = rawVol > 0.15 ? rawVol : 0;
+      const fallbackVol = remoteSpeaking ? 0.65 + Math.sin(timeRef.current * 4) * 0.25 : 0;
+      const rawVol = Math.max(remoteAudioVol, fallbackVol);
+      const targetVol = rawVol > 0.06 ? rawVol : 0;
 
       if (targetVol > smoothedVolumeRef.current) {
         smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.035;
@@ -315,7 +313,7 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
       if (animId !== null) cancelAnimationFrame(animId);
       observer.disconnect();
     };
-  }, [isCallActive, callAnimationsEnabled, isAppVisible, isMicEnabled, activeCall]);
+  }, [isCallActive, callAnimationsEnabled, isAppVisible, activeCall]);
 
   if (!isCallActive) return null;
 

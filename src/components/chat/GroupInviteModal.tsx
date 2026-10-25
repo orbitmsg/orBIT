@@ -8,6 +8,7 @@ import { groupService, type GroupInfo } from '../../services/groupService';
 import { extractGroupCode } from '../../lib/groupCrypto';
 import { getGroupPusher } from '../../utils/pusher';
 import { useToastStore } from '../../store/useToastStore';
+import { Avatar } from '../common/Avatar';
 
 interface GroupInviteModalProps {
   inviteUrl: string | null;
@@ -136,9 +137,16 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
       return;
     }
 
-    const groupCode = extractGroupCode(inviteUrl) || inviteUrl;
-    const existing = useChatStore.getState().chats.find(
-      (c) => c.id === groupCode || c.code === groupCode || c.inviteCode === groupCode
+    const cleanCode = extractGroupCode(inviteUrl) || inviteUrl.trim().replace(/^#/, '');
+    const allChats = useChatStore.getState().chats;
+    const existing = allChats.find(
+      (c) =>
+        c.type === 'group' &&
+        (c.id === cleanCode ||
+          c.code === cleanCode ||
+          c.inviteCode === cleanCode ||
+          (c.inviteCode && extractGroupCode(c.inviteCode) === cleanCode) ||
+          (cleanCode.length > 8 && (cleanCode.includes(c.id) || (c.inviteCode && cleanCode.includes(c.inviteCode)))))
     );
 
     if (existing) {
@@ -168,11 +176,14 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
 
     setIsLoading(true);
     setIsResolved(false);
-    groupService.getGroup(groupCode).then((info) => {
+    groupService.getGroup(cleanCode).then((info) => {
       setIsLoading(false);
       setIsResolved(true);
       if (info) {
-        setGroupInfo(info);
+        setGroupInfo((prev) => ({
+          ...info,
+          avatarUrl: info.avatarUrl || prev?.avatarUrl || null,
+        }));
       }
     }).catch(() => {
       setIsLoading(false);
@@ -184,7 +195,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
     isResolved &&
       (!groupInfo ||
         groupInfo.inviteActive === false ||
-        (groupInfo.inviteExpiresAt && Date.now() > groupInfo.inviteExpiresAt))
+        Boolean(groupInfo.inviteExpiresAt && Date.now() > groupInfo.inviteExpiresAt))
   );
 
   const handleJoin = useCallback(async () => {
@@ -273,25 +284,29 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
 
         onClose();
       } else {
-        useToastStore.getState().showToast(t('common.error'), 'text');
+        useToastStore.getState().showToast(t('common.error', 'Ошибка'), 'text');
         setIsJoining(false);
       }
     } catch (err: any) {
       setIsJoining(false);
       const msg = err?.message === 'INVITE_EXPIRED'
-        ? t('group.link_expired')
+        ? t('group.link_expired', t('groupSettings.link_expired', 'Срок истек'))
         : err?.message === 'INVITE_REVOKED'
-        ? t('group.link_revoked')
+        ? t('group.link_revoked', t('groupSettings.link_revoked', 'Доступ закрыт'))
         : err?.message === 'GROUP_FULL'
-        ? t('group.max_members_reached')
-        : t('common.error');
+        ? t('group.max_members_reached', t('groupSettings.max_members_reached', 'Группа заполнена'))
+        : t('common.error', 'Ошибка');
       useToastStore.getState().showToast(msg, 'text');
     }
   }, [inviteUrl, isJoining, isExpiredOrRevoked, onClose, t]);
 
   if (!inviteUrl) return null;
 
-  const displayName = groupInfo?.name || (isLoading ? '...' : t('chatWindow.group'));
+  const displayName = groupInfo?.name || (isLoading ? '...' : t('chatWindow.group', 'Группа'));
+  const invitationText = t('group.group_invitation', t('groupSettings.group_invitation', 'Приглашение в группу'));
+  const linkExpiredText = t('group.link_expired_or_revoked', t('groupSettings.link_expired_or_revoked', 'Ссылка устарела или закрыта'));
+  const joinText = t('group.join', t('groupSettings.join', 'Присоединиться'));
+  const cancelText = t('group.cancel', t('common.cancel', 'Отменить'));
 
   return (
     <AnimatePresence>
@@ -333,10 +348,10 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
             }}
           >
             {groupInfo?.avatarUrl ? (
-              <img
+              <Avatar
                 src={groupInfo.avatarUrl}
                 alt={displayName}
-                className="w-full h-full object-cover"
+                style={{ width: '100%', height: '100%' }}
               />
             ) : (
               <div
@@ -371,11 +386,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
             }}
           >
             {isExpiredOrRevoked ? <InactiveLinkIcon /> : <ActiveLinkIcon />}
-            <span>
-              {isExpiredOrRevoked
-                ? t('group.link_expired_or_revoked')
-                : t('group.group_invitation')}
-            </span>
+            <span>{isExpiredOrRevoked ? linkExpiredText : invitationText}</span>
           </div>
 
           {!isExpiredOrRevoked && (
@@ -384,7 +395,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
                 type="button"
                 onClick={handleJoin}
                 disabled={isJoining || isLoading}
-                aria-label={t('group.join')}
+                aria-label={joinText}
                 style={{
                   width: '100%',
                   height: '44px',
@@ -402,13 +413,13 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
                   transition: 'opacity 0.15s ease',
                 }}
               >
-                {isJoining ? '...' : t('group.join')}
+                {isJoining ? '...' : joinText}
               </button>
               <button
                 type="button"
                 onClick={onClose}
                 disabled={isJoining}
-                aria-label={t('group.cancel')}
+                aria-label={cancelText}
                 style={{
                   width: '100%',
                   height: '44px',
@@ -425,7 +436,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
                   transition: 'background-color 0.15s ease',
                 }}
               >
-                {t('group.cancel')}
+                {cancelText}
               </button>
             </div>
           )}

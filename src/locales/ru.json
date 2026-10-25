@@ -1031,6 +1031,12 @@
       "join": "Присоединиться",
       "cancel": "Отменить"
     },
+    "group": {
+      "group_invitation": "Приглашение в группу",
+      "link_expired_or_revoked": "Ссылка устарела или закрыта",
+      "join": "Присоединиться",
+      "cancel": "Отменить"
+    },
     "groupCall": {
       "active_title": "Идёт групповой звонок",
       "max_participants": "До 10 участников",

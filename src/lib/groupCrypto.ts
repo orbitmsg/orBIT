@@ -46,7 +46,7 @@ export function extractGroupCode(input: string): string {
   if (!input) return '';
   const trimmed = input.trim();
 
-  const hashGroupMatch = trimmed.match(/(?:groups?\/)?#([a-zA-Z0-9_-]{8,64})/i);
+  const hashGroupMatch = trimmed.match(/#([a-zA-Z0-9_-]{6,64})/i);
   if (hashGroupMatch && hashGroupMatch[1]) {
     return hashGroupMatch[1];
   }
@@ -61,31 +61,31 @@ export function extractGroupCode(input: string): string {
     return slashMatch[1];
   }
 
-  const urlMatch = trimmed.match(/\/(?:g|group|groups|join|invite)(?:\/group)?\/([a-zA-Z0-9_-]{8,64})/i);
+  const urlMatch = trimmed.match(/\/(?:g|group|groups|join|invite)(?:\/group)?\/([a-zA-Z0-9_-]{6,64})/i);
   if (urlMatch && urlMatch[1]) {
     return urlMatch[1];
   }
 
-  const queryMatch = trimmed.match(/[?&](?:group|code|token)=([a-zA-Z0-9_-]{8,64})/i);
+  const queryMatch = trimmed.match(/[?&](?:group|code|token)=([a-zA-Z0-9_-]{6,64})/i);
   if (queryMatch && queryMatch[1]) {
     return queryMatch[1];
   }
 
-  const deepLinkMatch = trimmed.match(/orbita:\/\/(?:group|groups|join|invite)(?:\/group)?\/([a-zA-Z0-9_-]{8,64})/i);
+  const deepLinkMatch = trimmed.match(/orbita:\/\/(?:group|groups|join|invite)(?:\/group)?\/([a-zA-Z0-9_-]{6,64})/i);
   if (deepLinkMatch && deepLinkMatch[1]) {
     return deepLinkMatch[1];
   }
 
-  const deepLinkParamMatch = trimmed.match(/orbita:\/\/(?:group|groups|join|invite)(?:\/group)?\?(?:code|token|group)=([a-zA-Z0-9_-]{8,64})/i);
+  const deepLinkParamMatch = trimmed.match(/orbita:\/\/(?:group|groups|join|invite)(?:\/group)?\?(?:code|token|group)=([a-zA-Z0-9_-]{6,64})/i);
   if (deepLinkParamMatch && deepLinkParamMatch[1]) {
     return deepLinkParamMatch[1];
   }
 
-  if (trimmed.startsWith('join_') && trimmed.length <= 32) {
-    return trimmed;
+  if (trimmed.startsWith('#')) {
+    return trimmed.slice(1);
   }
 
-  if (/^[a-z0-9]{32}$/.test(trimmed)) {
+  if (/^[0-9A-Za-z_-]{6,64}$/.test(trimmed)) {
     return trimmed;
   }
 

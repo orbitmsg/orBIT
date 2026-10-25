@@ -1031,6 +1031,12 @@
       "join": "Join",
       "cancel": "Cancel"
     },
+    "group": {
+      "group_invitation": "Group invitation",
+      "link_expired_or_revoked": "Link expired or revoked",
+      "join": "Join",
+      "cancel": "Cancel"
+    },
     "groupCall": {
       "active_title": "Group call in progress",
       "max_participants": "Up to 10 participants",

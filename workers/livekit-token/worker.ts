@@ -2375,12 +2375,20 @@ export default {
 
       if (pathname === '/groups/get' && request.method === 'GET') {
         const code = url.searchParams.get('code') || url.searchParams.get('id');
-        if (!code) return errorResponse('Missing group code or id', 400);
+        const id = url.searchParams.get('id');
+        if (!code && !id) return errorResponse('Missing group code or id', 400);
 
         const supabase = getGroupsSupabaseClient(env);
         if (supabase) {
           try {
-            const { data: groupData } = await supabase.from('groups').select('*').or(`id.eq.${code},code.eq.${code}`).maybeSingle();
+            let query = supabase.from('groups').select('*');
+            if (code && id && code !== id) {
+              query = query.or(`code.eq.${code},id.eq.${code},id.eq.${id},code.eq.${id}`);
+            } else {
+              const target = code || id;
+              query = query.or(`code.eq.${target},id.eq.${target}`);
+            }
+            const { data: groupData } = await query.maybeSingle();
             if (groupData) {
               const { data: membersData } = await supabase
                 .from('group_members')
@@ -2612,6 +2620,19 @@ export default {
             if (body.creator_id !== undefined) updateData.creator_id = body.creator_id;
             if (body.creatorId !== undefined) updateData.creator_id = body.creatorId;
 
+            if (body.inviteActive !== undefined || body.inviteExpiresAt !== undefined) {
+              try {
+                const { data: curG } = await supabase.from('groups').select('creator_id').eq('id', groupId).maybeSingle();
+                let parsedMeta: any = {};
+                if (curG?.creator_id && typeof curG.creator_id === 'string' && curG.creator_id.startsWith('{')) {
+                  try { parsedMeta = JSON.parse(curG.creator_id); } catch {}
+                }
+                if (body.inviteActive !== undefined) parsedMeta.active = Boolean(body.inviteActive);
+                if (body.inviteExpiresAt !== undefined) parsedMeta.expiresAt = body.inviteExpiresAt;
+                updateData.creator_id = JSON.stringify(parsedMeta);
+              } catch {}
+            }
+
             await supabase.from('groups').update(updateData).eq('id', groupId);
 
             await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'group-updated', {
@@ -2619,6 +2640,8 @@ export default {
               name: updateData.name,
               description: updateData.description,
               avatarUrl: updateData.avatar_url,
+              inviteActive: body.inviteActive,
+              inviteExpiresAt: body.inviteExpiresAt,
             });
 
             return jsonResponse({ status: 'ok', group: updateData });

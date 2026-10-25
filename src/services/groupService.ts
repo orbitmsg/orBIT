@@ -119,16 +119,17 @@ class GroupService {
 
   async getGroup(groupIdOrCode: string): Promise<GroupInfo | null> {
     const raw = groupIdOrCode.trim();
-    const isIdOnly = raw.length === 36 && /^[0-9A-F]{36}$/i.test(raw);
-    const secret = isIdOnly ? '' : (extractGroupCode(raw) || raw);
-    const groupId = isIdOnly ? raw : deriveGroupId(secret);
+    const cleanCode = extractGroupCode(raw) || raw.replace(/^#/, '');
+    const isIdOnly = cleanCode.length === 36 && /^[0-9A-Fa-f-]{36}$/i.test(cleanCode);
+    const secret = isIdOnly ? '' : cleanCode;
+    const derivedId = deriveGroupId(cleanCode);
 
     try {
       let query = this.supabase.from('groups').select('*');
       if (isIdOnly) {
-        query = query.eq('id', raw);
+        query = query.or(`id.eq.${cleanCode},id.eq.${cleanCode.toUpperCase()},id.eq.${cleanCode.toLowerCase()}`);
       } else {
-        query = query.or(`id.eq.${groupId},code.eq.${secret},code.eq.${raw}`);
+        query = query.or(`code.eq.${cleanCode},code.eq.${raw},id.eq.${cleanCode},id.eq.${derivedId}`);
       }
       const { data: g } = await query.maybeSingle();
       if (g) {
@@ -155,7 +156,7 @@ class GroupService {
 
         return {
           id: g.id,
-          code: g.code || secret || '',
+          code: g.code || secret || cleanCode,
           name: g.name,
           description: g.description || '',
           avatarUrl: g.avatar_url || null,
@@ -173,13 +174,13 @@ class GroupService {
     } catch {}
 
     try {
-      const res = await fetch(`${this.getWorkerUrl()}/groups/get?code=${encodeURIComponent(groupId)}`);
+      const res = await fetch(`${this.getWorkerUrl()}/groups/get?code=${encodeURIComponent(cleanCode)}&id=${encodeURIComponent(isIdOnly ? cleanCode : derivedId)}`);
       if (res.ok) {
         const data = (await res.json()) as { group: GroupInfo };
         if (data.group) {
           return { 
             ...data.group, 
-            code: secret || data.group.code || '', 
+            code: secret || data.group.code || cleanCode, 
             sharedSecret: secret ? deriveGroupKey(secret) : (data.group.code ? deriveGroupKey(data.group.code) : deriveGroupKey(data.group.id)) 
           };
         }
@@ -428,6 +429,12 @@ class GroupService {
   }
 
   async revokeInviteLink(groupId: string): Promise<boolean> {
+    useChatStore.getState().updateChat(groupId, { inviteActive: false });
+    try {
+      this.supabase.from('groups').update({
+        creator_id: JSON.stringify({ active: false })
+      }).eq('id', groupId).then(() => {}, () => {});
+    } catch {}
     try {
       fetch(`${this.getWorkerUrl()}/groups/update`, {
         method: 'POST',
@@ -441,6 +448,12 @@ class GroupService {
   }
 
   async enableInviteLink(groupId: string): Promise<boolean> {
+    useChatStore.getState().updateChat(groupId, { inviteActive: true });
+    try {
+      this.supabase.from('groups').update({
+        creator_id: JSON.stringify({ active: true })
+      }).eq('id', groupId).then(() => {}, () => {});
+    } catch {}
     try {
       fetch(`${this.getWorkerUrl()}/groups/update`, {
         method: 'POST',
@@ -454,6 +467,12 @@ class GroupService {
   }
 
   async setInviteExpiration(groupId: string, expiresAt: number | null): Promise<boolean> {
+    useChatStore.getState().updateChat(groupId, { inviteExpiresAt: expiresAt });
+    try {
+      this.supabase.from('groups').update({
+        creator_id: JSON.stringify({ active: true, expiresAt })
+      }).eq('id', groupId).then(() => {}, () => {});
+    } catch {}
     try {
       fetch(`${this.getWorkerUrl()}/groups/update`, {
         method: 'POST',

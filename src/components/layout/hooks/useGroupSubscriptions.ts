@@ -745,6 +745,8 @@ export const useGroupSubscriptions = ({
       if (data?.name) updates.name = data.name;
       if (data?.description !== undefined) updates.description = data.description;
       if (data?.avatarUrl !== undefined) updates.avatarUrl = data.avatarUrl;
+      if (data?.inviteActive !== undefined) updates.inviteActive = data.inviteActive;
+      if (data?.inviteExpiresAt !== undefined) updates.inviteExpiresAt = data.inviteExpiresAt;
       useChatStore.getState().updateChat(chatId, updates);
     });
     channel.bind('group-deleted', () => {

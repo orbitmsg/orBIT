@@ -231,10 +231,8 @@ export const useChatRealtime = ({
       }).catch(() => {});
 
       groupService.getActiveCall(targetGroupId).then((call) => {
-        if (call && call.status === 'active') {
+        if (call && call.status === 'active' && call.roomName) {
           useChatStore.getState().updateChat(targetGroupId, { activeCallRoom: call.roomName });
-        } else if (call && call.status === 'ended') {
-          useChatStore.getState().updateChat(targetGroupId, { activeCallRoom: null });
         }
       }).catch(() => {});
     }
@@ -383,6 +381,17 @@ export const useChatRealtime = ({
             }
           }
         }
+      } else if (
+        data?.type === 'message' ||
+        data?.type === 'group-message' ||
+        data?.type === 'group-call-started' ||
+        data?.type === 'group-call-active' ||
+        data?.type === 'group-call-ended' ||
+        data?.type === 'client-group-call-started' ||
+        data?.type === 'client-group-call-ended' ||
+        data?.type === 'client-message'
+      ) {
+        handleClientMessage(data);
       }
     });
 
@@ -406,7 +415,8 @@ export const useChatRealtime = ({
       }
     };
 
-    const handleClientMessage = (data: any) => {
+    function handleClientMessage(data: any) {
+      if (!activeChatId) return;
       if (data?.type === 'group-call-ended' || data?.type === 'client-group-call-ended') {
         useChatStore.getState().updateChat(activeChatId, { activeCallRoom: null });
         return;

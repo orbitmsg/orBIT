@@ -7,6 +7,7 @@ import { useChatStore } from '../../store/useChatStore';
 import { groupService, type GroupInfo } from '../../services/groupService';
 import { extractGroupCode } from '../../lib/groupCrypto';
 import { getGroupPusher } from '../../utils/pusher';
+import { ablyService } from '../../services/ablyService';
 import { useToastStore } from '../../store/useToastStore';
 import { Avatar } from '../common/Avatar';
 
@@ -277,10 +278,12 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
           });
         }
 
-        useChatStore.getState().addMessage(result.group.id, sysMsg);
-        try {
-          (window as any).orbita?.storageAddMessage?.(result.group.id, sysMsg.id, sysMsg);
-        } catch {}
+        if (!result.systemMessage) {
+          useChatStore.getState().addMessage(result.group.id, sysMsg);
+          try {
+            (window as any).orbita?.storageAddMessage?.(result.group.id, sysMsg.id, sysMsg);
+          } catch {}
+        }
 
         useChatStore.getState().setActiveChat(result.group.id);
 
@@ -296,10 +299,14 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
             membersCount: result.group.membersCount,
           };
           const sendJoinEvent = () => {
-            try { grpChannel.trigger('member-joined', rosterPayload); } catch {}
+            try { grpChannel.trigger('client-member-joined', rosterPayload); } catch {}
+            try { grpChannel.trigger('client-message', { ...sysMsg, type: 'message', chatId: result.group.id }); } catch {}
           };
           if (grpChannel.subscribed) sendJoinEvent();
           else grpChannel.bind('pusher:subscription_succeeded', sendJoinEvent);
+        } catch {}
+        try {
+          ablyService.sendMessage(result.group.id, { ...sysMsg, type: 'message', chatId: result.group.id }).catch(() => {});
         } catch {}
 
         onClose();

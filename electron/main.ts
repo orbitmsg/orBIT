@@ -3465,30 +3465,6 @@ function saveCallWindowBounds(win: BrowserWindow) {
 }
 
 function buildCallUrlQuery(payload?: any): string {
-  if (nativeModule?.rustBuildCallQuery && payload) {
-    try {
-      const otherName = payload.activeCall?.otherName || payload.incomingCall?.otherName || payload.incomingCall?.from || payload.activeCall?.chatId || '';
-      const otherAvatar = payload.activeCall?.otherAvatar || payload.incomingCall?.otherAvatar || undefined;
-      const chatId = payload.activeCall?.chatId || payload.incomingCall?.chatId || '';
-      const callState = payload.callState || 'preparing';
-      const direction = payload.activeCall?.direction || 'outgoing';
-      const callType = payload.activeCall?.callType || payload.incomingCall?.callType || 'audio';
-      const verificationSecret = payload.activeCall?.verificationSecret || undefined;
-      const verificationSalt = payload.activeCall?.verificationSalt || undefined;
-
-      return nativeModule.rustBuildCallQuery({
-        name: otherName,
-        avatar: otherAvatar,
-        chat_id: chatId,
-        call_state: callState,
-        direction: direction,
-        call_type: callType,
-        verification_secret: verificationSecret,
-        verification_salt: verificationSalt,
-      });
-    } catch { }
-  }
-
   const params = new URLSearchParams();
   params.set('view', 'call');
   if (payload) {
@@ -3500,8 +3476,13 @@ function buildCallUrlQuery(payload?: any): string {
     if (payload.activeCall?.direction) params.set('direction', payload.activeCall.direction);
     if (payload.activeCall?.callType) params.set('type', payload.activeCall.callType);
     if (payload.activeCall?.chatId) params.set('chatId', payload.activeCall.chatId);
-    if (payload.activeCall?.chatType) params.set('chatType', payload.activeCall.chatType);
+    const chatType = payload.activeCall?.chatType || (payload.activeCall?.roomName?.startsWith('group-call-') ? 'group' : 'private');
+    if (chatType) params.set('chatType', chatType);
     if (payload.activeCall?.roomName) params.set('roomName', payload.activeCall.roomName);
+    const secret = payload.activeCall?.verificationSecret;
+    if (secret) params.set('secret', secret);
+    const salt = payload.activeCall?.verificationSalt;
+    if (salt) params.set('salt', salt);
     if (payload.myNickname) params.set('myNickname', payload.myNickname);
   }
   if (currentFontFamily) params.set('font', currentFontFamily);

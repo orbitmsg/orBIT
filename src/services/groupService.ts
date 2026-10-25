@@ -144,8 +144,8 @@ class GroupService {
           avatarUrl: m.avatar_url || null,
         }));
 
-        let inviteActive = true;
-        let expiresAt: number | null = null;
+        let inviteActive = (g as any).inviteActive !== false && (g as any).invite_active !== false;
+        let expiresAt: number | null = (g as any).inviteExpiresAt || null;
         if (g.creator_id && typeof g.creator_id === 'string' && g.creator_id.startsWith('{')) {
           try {
             const parsed = JSON.parse(g.creator_id);
@@ -178,11 +178,21 @@ class GroupService {
       if (res.ok) {
         const data = (await res.json()) as { group: GroupInfo };
         if (data.group) {
+          let inviteActive = data.group.inviteActive !== false && (data.group as any).invite_active !== false;
+          let expiresAt = data.group.inviteExpiresAt || null;
+          const rawCreatorId = (data.group as any).creator_id;
+          if (rawCreatorId && typeof rawCreatorId === 'string' && rawCreatorId.startsWith('{')) {
+            try {
+              const parsed = JSON.parse(rawCreatorId);
+              if (parsed.active === false) inviteActive = false;
+              if (typeof parsed.expiresAt === 'number') expiresAt = parsed.expiresAt;
+            } catch {}
+          }
           return { 
             ...data.group, 
             avatarUrl: data.group.avatarUrl || (data.group as any).avatar_url || null,
-            inviteActive: data.group.inviteActive !== false,
-            inviteExpiresAt: data.group.inviteExpiresAt || null,
+            inviteActive,
+            inviteExpiresAt: expiresAt,
             code: secret || data.group.code || cleanCode, 
             sharedSecret: secret ? deriveGroupKey(secret) : (data.group.code ? deriveGroupKey(data.group.code) : deriveGroupKey(data.group.id)) 
           };
@@ -245,8 +255,8 @@ class GroupService {
       throw new Error('GROUP_NOT_FOUND');
     }
 
-    let inviteActive = true;
-    let expiresAt: number | null = null;
+    let inviteActive = groupRow.inviteActive !== false && groupRow.invite_active !== false;
+    let expiresAt: number | null = groupRow.inviteExpiresAt || null;
     if (groupRow.creator_id) {
       try {
         const parsed = typeof groupRow.creator_id === 'string' && groupRow.creator_id.startsWith('{') ? JSON.parse(groupRow.creator_id) : null;
@@ -433,17 +443,22 @@ class GroupService {
   }
 
   async revokeInviteLink(groupId: string): Promise<boolean> {
+    const chat = useChatStore.getState().chats.find((c) => c.id === groupId);
+    const realId = chat?.id || groupId;
     useChatStore.getState().updateChat(groupId, { inviteActive: false });
+    if (realId !== groupId) {
+      useChatStore.getState().updateChat(realId, { inviteActive: false });
+    }
     try {
       this.supabase.from('groups').update({
         creator_id: JSON.stringify({ active: false })
-      }).eq('id', groupId).then(() => {}, () => {});
+      }).or(`id.eq.${realId},id.eq.${groupId}`).then(() => {}, () => {});
     } catch {}
     try {
       await fetch(`${this.getWorkerUrl()}/groups/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId, inviteActive: false, creator_id: JSON.stringify({ active: false }) }),
+        body: JSON.stringify({ groupId: realId, inviteActive: false, creator_id: JSON.stringify({ active: false }) }),
       });
       return true;
     } catch {
@@ -452,17 +467,22 @@ class GroupService {
   }
 
   async enableInviteLink(groupId: string): Promise<boolean> {
+    const chat = useChatStore.getState().chats.find((c) => c.id === groupId);
+    const realId = chat?.id || groupId;
     useChatStore.getState().updateChat(groupId, { inviteActive: true });
+    if (realId !== groupId) {
+      useChatStore.getState().updateChat(realId, { inviteActive: true });
+    }
     try {
       this.supabase.from('groups').update({
         creator_id: JSON.stringify({ active: true })
-      }).eq('id', groupId).then(() => {}, () => {});
+      }).or(`id.eq.${realId},id.eq.${groupId}`).then(() => {}, () => {});
     } catch {}
     try {
       await fetch(`${this.getWorkerUrl()}/groups/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId, inviteActive: true, creator_id: JSON.stringify({ active: true }) }),
+        body: JSON.stringify({ groupId: realId, inviteActive: true, creator_id: JSON.stringify({ active: true }) }),
       });
       return true;
     } catch {

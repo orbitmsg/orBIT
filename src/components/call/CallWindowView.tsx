@@ -73,11 +73,15 @@ export const CallWindowView = () => {
         const chatId = searchParams.get('chatId') || '';
         const stateParam = (searchParams.get('state') as any) || 'preparing';
         const avatarParam = searchParams.get('avatar') || null;
+        const chatType = (searchParams.get('chatType') as any) || (searchParams.get('roomName')?.startsWith('group-call-') ? 'group' : 'private');
+        const roomName = searchParams.get('roomName') || (chatType === 'group' ? `group-call-${chatId}` : '');
+        const verificationSecret = searchParams.get('secret') || undefined;
+        const verificationSalt = searchParams.get('salt') || undefined;
 
         return {
           activeCall: {
             chatId,
-            roomName: searchParams.get('roomName') || '',
+            roomName,
             direction,
             callType,
             startTime: 0,
@@ -85,6 +89,9 @@ export const CallWindowView = () => {
             isMuted: false,
             otherName: nameParam,
             otherAvatar: avatarParam,
+            chatType,
+            verificationSecret,
+            verificationSalt,
           },
           incomingCall: direction === 'incoming' ? {
             from: nameParam,

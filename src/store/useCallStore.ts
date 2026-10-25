@@ -292,6 +292,7 @@ export const useCallStore = create<CallStore>((set, get) => {
       console.log(`${LOG_PREFIX} LiveKit disconnected event`);
       const state = get();
       if (state.isEnding) return;
+      if (state.activeCall?.chatType !== 'private') return;
       if (liveKitService.isCurrentlyConnecting || liveKitService.status === 'reconnecting') return;
       if (state.activeCall && state.callState === 'connected') {
         get().endCall();
@@ -301,6 +302,7 @@ export const useCallStore = create<CallStore>((set, get) => {
     liveKitService.on('reconnecting', () => {
       console.log(`${LOG_PREFIX} LiveKit reconnecting event`);
       const state = get();
+      if (state.activeCall?.chatType !== 'private') return;
       if (state.activeCall && state.callState === 'connected') {
         set({ callState: 'connecting', statusMessage: i18n.t('call.reconnecting') || 'Reconnecting...' });
       }
@@ -308,11 +310,12 @@ export const useCallStore = create<CallStore>((set, get) => {
 
     liveKitService.on('reconnected', () => {
       console.log(`${LOG_PREFIX} LiveKit reconnected event`);
+      const state = get();
+      if (state.activeCall?.chatType !== 'private') return;
       if (peerLeftGraceTimer) {
         clearTimeout(peerLeftGraceTimer);
         peerLeftGraceTimer = null;
       }
-      const state = get();
       if (state.activeCall) {
         set({ callState: 'connected', statusMessage: '' });
       }
@@ -321,6 +324,7 @@ export const useCallStore = create<CallStore>((set, get) => {
     liveKitService.on('reconnectFailed', () => {
       console.error(`${LOG_PREFIX} LiveKit reconnect failed`);
       const state = get();
+      if (state.activeCall?.chatType !== 'private') return;
       if (state.activeCall) {
         set({ activeCall: { ...state.activeCall, endedStatus: 'failed' }, callState: 'ended', statusMessage: '' });
         get().endCall();
@@ -328,16 +332,16 @@ export const useCallStore = create<CallStore>((set, get) => {
     });
 
     liveKitService.on('connected', () => {
-      const act = get().activeCall;
+      const state = get();
+      if (state.activeCall?.chatType !== 'private') return;
+      const act = state.activeCall;
       if (act) {
         set({ activeCall: { ...act, participants: liveKitService.remoteParticipants } });
       }
       get().updateParticipants(liveKitService.allParticipants);
       const current = get();
-      const isGrp = current.activeCall?.chatType === 'group' ||
-        useChatStore.getState().chats.find((c) => c.id === current.activeCall?.chatId)?.type === 'group';
       if (current.callState === 'connecting' || current.callState === 'ringing') {
-        if (isGrp || liveKitService.remoteParticipants.length > 0) {
+        if (liveKitService.remoteParticipants.length > 0) {
           activateConnected();
         }
       }

@@ -73,7 +73,7 @@ const drawCircularWaveLayer = (
   ctx.closePath();
 
   const [r, g, b] = colorRgb;
-  const innerR = 20;
+  const innerR = 16;
   const outerR = layerRadius + waveHeight + 12;
   const grad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
   grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha})`);
@@ -105,15 +105,15 @@ const renderCircularWaves = (
   const cy = 130;
   const rgb = getAccentRgb();
 
-  const r1 = 23 + vol * 12;
+  const r1 = 19 + vol * 12;
   const h1 = 1.5 + vol * 1.0;
   drawCircularWaveLayer(ctx, cx, cy, r1, h1, 1, 2, phase * 0.7, rgb, 0.75 + vol * 0.15);
 
-  const r2 = 36 + vol * 26;
+  const r2 = 32 + vol * 26;
   const h2 = 2.2 + vol * 1.2;
   drawCircularWaveLayer(ctx, cx, cy, r2, h2, 2, 1, -phase * 0.8 + 1.2, rgb, 0.50 + vol * 0.20);
 
-  const r3 = 52 + vol * 44;
+  const r3 = 48 + vol * 44;
   const h3 = 2.8 + vol * 1.5;
   drawCircularWaveLayer(ctx, cx, cy, r3, h3, 1, 2, phase * 0.6 + 2.4, rgb, 0.35 + vol * 0.18);
 };
@@ -180,12 +180,13 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
         alignItems: 'center',
         justifyContent: 'space-between',
         width: '100%',
-        minHeight: '42px',
+        height: '34px',
+        minHeight: '34px',
         position: 'relative',
         overflow: 'visible',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, height: '34px' }}>
         <span
           style={{
             width: '8px',
@@ -219,6 +220,7 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
             whiteSpace: 'nowrap',
             pointerEvents: 'none',
             userSelect: 'none',
+            lineHeight: '34px',
           }}
         >
           {t('chatWindow.release_outside_to_cancel', 'Для отмены отпустите курсор вне поля')}
@@ -244,6 +246,9 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
             padding: '4px 12px',
             borderRadius: '6px',
             transition: 'background-color 0.15s ease',
+            height: '28px',
+            display: 'flex',
+            alignItems: 'center',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--accent-color, #7C3AED) 12%, transparent)';
@@ -256,13 +261,13 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
         </button>
       )}
 
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible' }}>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible', width: '34px', height: '34px' }}>
         {!isLocked && (
           <div
             style={{
               position: 'absolute',
-              bottom: '65px',
-              right: '0px',
+              bottom: '60px',
+              right: '-4px',
               width: '42px',
               height: '88px',
               borderRadius: '9999px',
@@ -324,14 +329,16 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
             transform: `translateY(${!isLocked ? -Math.min(lockProgress * 14, 10) : 0}px)`,
             transition: 'transform 0.05s ease-out',
             overflow: 'visible',
+            width: '34px',
+            height: '34px',
           }}
         >
           <canvas
             ref={waveCanvasRef}
             style={{
               position: 'absolute',
-              top: '-109px',
-              left: '-109px',
+              top: '-113px',
+              left: '-113px',
               width: '260px',
               height: '260px',
               pointerEvents: 'none',
@@ -351,8 +358,8 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
             style={{
               position: 'relative',
               zIndex: 2,
-              width: '42px',
-              height: '42px',
+              width: '34px',
+              height: '34px',
               borderRadius: '50%',
               backgroundColor: 'var(--accent-color, #7C3AED)',
               color: '#ffffff',
@@ -368,11 +375,13 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
             }}
           >
             {isLocked ? (
-              <span style={{ display: 'inline-flex', transform: 'translate(1px, 1px)' }}>
+              <span style={{ display: 'inline-flex', transform: 'translate(1px, 1px) scale(0.85)' }}>
                 <SendIcon />
               </span>
             ) : (
-              <MicIcon />
+              <span style={{ display: 'inline-flex', transform: 'scale(0.85)' }}>
+                <MicIcon />
+              </span>
             )}
           </button>
         </div>

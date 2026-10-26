@@ -758,7 +758,7 @@ export const MessageInput = memo<MessageInputProps>(({
           }}
         />
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', position: 'relative', transform: 'translateY(2.5px)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', minHeight: '34px', position: 'relative' }}>
           {currentText.length > 256 && onOpenTxtModal && (
             <button
               type="button"
@@ -947,8 +947,8 @@ export const MessageInput = memo<MessageInputProps>(({
               color: !isRatchetReady ? 'var(--text-dim)' : editingIndex !== null ? 'var(--accent-color)' : micColor,
               cursor: !isRatchetReady ? 'not-allowed' : 'pointer',
               opacity: !isRatchetReady ? 0.35 : 1,
-              width: '32px',
-              height: '32px',
+              width: '34px',
+              height: '34px',
               padding: '4px',
               display: 'flex',
               alignItems: 'center',

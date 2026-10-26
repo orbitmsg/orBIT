@@ -20,6 +20,30 @@ const formatDurationWithTenths = (totalSeconds: number) => {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')},${tenths}`;
 };
 
+const getAccentRgb = (): [number, number, number] => {
+  if (typeof document !== 'undefined') {
+    const raw = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim();
+    if (raw.startsWith('#')) {
+      const clean = raw.replace('#', '').trim();
+      if (clean.length === 6) {
+        const n = parseInt(clean, 16);
+        return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+      }
+      if (clean.length === 3) {
+        const r = parseInt(clean[0] + clean[0], 16);
+        const g = parseInt(clean[1] + clean[1], 16);
+        const b = parseInt(clean[2] + clean[2], 16);
+        return [r, g, b];
+      }
+    }
+    const m = raw.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+    if (m) {
+      return [Number(m[1]), Number(m[2]), Number(m[3])];
+    }
+  }
+  return [92, 84, 229];
+};
+
 const drawCircularWaveLayer = (
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -37,7 +61,7 @@ const drawCircularWaveLayer = (
   for (let i = 0; i <= steps; i++) {
     const theta = (i / steps) * Math.PI * 2;
     const s1 = Math.sin(k1 * theta + wavePhase);
-    const s2 = Math.sin(k2 * theta - wavePhase * 0.75 + 1.3);
+    const s2 = Math.sin(k2 * theta - wavePhase * 0.7 + 1.2);
     const norm = (s1 * 0.65 + s2 * 0.35);
     const elevation = norm * waveHeight;
     const r = layerRadius + elevation;
@@ -49,24 +73,15 @@ const drawCircularWaveLayer = (
   ctx.closePath();
 
   const [r, g, b] = colorRgb;
-  const innerR = Math.max(0, layerRadius * 0.5);
+  const innerR = 20;
   const outerR = layerRadius + waveHeight + 12;
   const grad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
   grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha})`);
-  grad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.7})`);
-  grad.addColorStop(0.85, `rgba(${r}, ${g}, ${b}, ${alpha * 0.2})`);
+  grad.addColorStop(0.45, `rgba(${r}, ${g}, ${b}, ${alpha * 0.72})`);
+  grad.addColorStop(0.85, `rgba(${r}, ${g}, ${b}, ${alpha * 0.22})`);
   grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
   ctx.fillStyle = grad;
   ctx.fill();
-};
-
-const parseHexColor = (hex: string): [number, number, number] | null => {
-  const clean = hex.replace('#', '').trim();
-  if (clean.length === 6) {
-    const num = parseInt(clean, 16);
-    return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
-  }
-  return null;
 };
 
 const renderCircularWaves = (
@@ -88,26 +103,19 @@ const renderCircularWaves = (
 
   const cx = 130;
   const cy = 130;
+  const rgb = getAccentRgb();
 
-  let rgb: [number, number, number] = [124, 58, 237];
-  if (typeof document !== 'undefined') {
-    const val = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim();
-    const parsed = parseHexColor(val);
-    if (parsed) rgb = parsed;
-  }
-  const [r, g, b] = rgb;
+  const r1 = 23 + vol * 12;
+  const h1 = 1.5 + vol * 1.0;
+  drawCircularWaveLayer(ctx, cx, cy, r1, h1, 1, 2, phase * 0.7, rgb, 0.75 + vol * 0.15);
 
-  const r1 = 26 + vol * 14;
-  const h1 = 2.5 + vol * 1.5;
-  drawCircularWaveLayer(ctx, cx, cy, r1, h1, 3, 4, phase * 0.55, [r, g, b], 0.28 + vol * 0.15);
+  const r2 = 36 + vol * 26;
+  const h2 = 2.2 + vol * 1.2;
+  drawCircularWaveLayer(ctx, cx, cy, r2, h2, 2, 1, -phase * 0.8 + 1.2, rgb, 0.50 + vol * 0.20);
 
-  const r2 = 38 + vol * 28;
-  const h2 = 3.5 + vol * 2.0;
-  drawCircularWaveLayer(ctx, cx, cy, r2, h2, 4, 5, -phase * 0.75 + 1.4, [Math.min(255, r + 20), Math.min(255, g + 20), Math.min(255, b + 20)], 0.38 + vol * 0.20);
-
-  const r3 = 54 + vol * 46;
-  const h3 = 4.5 + vol * 2.5;
-  drawCircularWaveLayer(ctx, cx, cy, r3, h3, 3, 5, phase, [Math.min(255, r + 40), Math.min(255, g + 40), Math.min(255, b + 40)], 0.55 + vol * 0.25);
+  const r3 = 52 + vol * 44;
+  const h3 = 2.8 + vol * 1.5;
+  drawCircularWaveLayer(ctx, cx, cy, r3, h3, 1, 2, phase * 0.6 + 2.4, rgb, 0.35 + vol * 0.18);
 };
 
 export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps> = ({

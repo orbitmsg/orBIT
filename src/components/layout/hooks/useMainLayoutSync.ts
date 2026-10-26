@@ -1262,12 +1262,26 @@ export const useMainLayoutSync = ({
       lastProfileCheckTimeRef.current.set(grp.id, now);
       groupService.getGroup(grp.id).then((info) => {
         if (info && info.members && info.members.length > 0) {
+          const myUid = useAuthStore.getState().userId;
+          const myC = useChatStore.getState().myCode;
+          const myNick = useAuthStore.getState().nickname;
+          const isStillMember = info.members.some((m: any) => {
+            const mCodes = [m.userId, m.userCode, m.user_id, m.user_code].filter(Boolean);
+            if (myUid && mCodes.includes(myUid)) return true;
+            if (myC && mCodes.includes(myC)) return true;
+            if (myNick && m.nickname === myNick) return true;
+            return false;
+          });
+          if (!isStillMember) {
+            useChatStore.getState().deleteChat(grp.id);
+            return;
+          }
           useChatStore.getState().updateChat(grp.id, {
             name: info.name,
             description: info.description || '',
             avatarUrl: info.avatarUrl || undefined,
             members: info.members as any[],
-            membersCount: Math.max(info.membersCount || 0, info.members.length),
+            membersCount: (info.members && info.members.length > 0) ? info.members.length : (info.membersCount || 1),
             creatorNickname: info.creatorNickname,
           });
         }

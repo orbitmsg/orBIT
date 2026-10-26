@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { getVercelBaseUrl } from './gatewayManager';
+import { getVercelBaseUrl, getCloudflareWorkerUrl } from './gatewayManager';
 import { getPusher, getGroupPusher } from '../utils/pusher';
 import { supabaseService } from './supabaseService';
 import { generateGroupInviteCode, generateGroupId } from '../lib/codes';
@@ -50,6 +50,21 @@ class GroupService {
 
   private getWorkerUrl(): string {
     return getVercelBaseUrl();
+  }
+
+  private async postToWorker(endpoint: string, body: any): Promise<Response | null> {
+    const urls = [getVercelBaseUrl(), getCloudflareWorkerUrl()].filter(Boolean);
+    for (const baseUrl of urls) {
+      try {
+        const res = await fetch(`${baseUrl}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (res.ok) return res;
+      } catch {}
+    }
+    return null;
   }
 
   async createGroup(
@@ -511,73 +526,92 @@ class GroupService {
   }
 
   async leaveGroup(groupId: string, sharedSecret: string, nickname: string, userCode?: string, userId?: string): Promise<void> {
+    const orConditions: string[] = [];
+    if (userCode) orConditions.push(`user_code.eq.${userCode}`, `user_id.eq.${userCode}`);
+    if (userId && userId !== userCode) orConditions.push(`user_code.eq.${userId}`, `user_id.eq.${userId}`);
+    if (nickname) orConditions.push(`nickname.eq.${nickname}`);
+
     try {
-      fetch(`${this.getWorkerUrl()}/groups/leave`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          groupId,
-          nickname,
-          userCode: userCode || null,
-          userId: userId || null,
-        }),
-      }).catch(() => {});
+      if (orConditions.length > 0) {
+        await this.supabase.from('group_members').delete().eq('group_id', groupId).or(orConditions.join(','));
+      }
+    } catch {}
+
+    const leaveData = {
+      type: 'member-left',
+      groupId,
+      nickname,
+      userCode: userCode || null,
+      userId: userId || null,
+    };
+
+    try {
+      await this.postToWorker('/groups/leave', leaveData);
     } catch {}
 
     try {
       const groupPusher = getGroupPusher();
       const channel = groupPusher.subscribe(`presence-group-${groupId}`);
-      const leaveData = {
-        type: 'member-left',
-        groupId,
-        nickname,
-        userCode: userCode || null,
-        userId: userId || null,
-      };
       const sendLeave = () => {
-        try { channel.trigger('member-left', leaveData); } catch {}
+        try { channel.trigger('client-member-left', leaveData); } catch {}
+        try { channel.trigger('client-message', { ...leaveData, systemType: 'leave' }); } catch {}
       };
       if (channel.subscribed) sendLeave();
       else channel.bind('pusher:subscription_succeeded', sendLeave);
     } catch {}
 
-    this.sendSystemMessage(groupId, sharedSecret, 'leave', nickname);
+    try {
+      ablyService.sendMessage(`presence-group-${groupId}`, leaveData).catch(() => {});
+      ablyService.sendMessage(groupId, leaveData).catch(() => {});
+    } catch {}
+
+    await this.sendSystemMessage(groupId, sharedSecret, 'leave', nickname);
   }
 
   async kickMember(groupId: string, sharedSecret: string, targetNickname: string, adminNickname: string, targetUserCode?: string, targetUserId?: string): Promise<void> {
+    const orConditions: string[] = [];
+    if (targetUserCode) orConditions.push(`user_code.eq.${targetUserCode}`, `user_id.eq.${targetUserCode}`);
+    if (targetUserId && targetUserId !== targetUserCode) orConditions.push(`user_code.eq.${targetUserId}`, `user_id.eq.${targetUserId}`);
+    if (targetNickname) orConditions.push(`nickname.eq.${targetNickname}`);
+
     try {
-      fetch(`${this.getWorkerUrl()}/groups/kick`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          groupId,
-          targetNickname,
-          targetUserCode: targetUserCode || null,
-          targetUserId: targetUserId || null,
-          adminNickname,
-        }),
-      }).catch(() => {});
+      if (orConditions.length > 0) {
+        await this.supabase.from('group_members').delete().eq('group_id', groupId).or(orConditions.join(','));
+      }
+    } catch {}
+
+    const kickData = {
+      type: 'kick',
+      groupId,
+      target: targetNickname,
+      targetNickname,
+      targetUserCode: targetUserCode || null,
+      targetUserId: targetUserId || null,
+      admin: adminNickname,
+      adminNickname,
+    };
+
+    try {
+      await this.postToWorker('/groups/kick', kickData);
     } catch {}
 
     try {
       const groupPusher = getGroupPusher();
       const channel = groupPusher.subscribe(`presence-group-${groupId}`);
-      const kickData = {
-        type: 'kick',
-        target: targetNickname,
-        targetNickname,
-        targetUserCode: targetUserCode || null,
-        targetUserId: targetUserId || null,
-        admin: adminNickname,
-      };
       const sendKick = () => {
-        try { channel.trigger('kick', kickData); } catch {}
+        try { channel.trigger('client-kick', kickData); } catch {}
+        try { channel.trigger('client-message', { ...kickData, systemType: 'kick' }); } catch {}
       };
       if (channel.subscribed) sendKick();
       else channel.bind('pusher:subscription_succeeded', sendKick);
     } catch {}
 
-    this.sendSystemMessage(groupId, sharedSecret, 'kick', adminNickname, targetNickname);
+    try {
+      ablyService.sendMessage(`presence-group-${groupId}`, kickData).catch(() => {});
+      ablyService.sendMessage(groupId, kickData).catch(() => {});
+    } catch {}
+
+    await this.sendSystemMessage(groupId, sharedSecret, 'kick', adminNickname, targetNickname);
   }
 
   async updateGroup(
@@ -605,17 +639,13 @@ class GroupService {
     } catch {}
 
     try {
-      const res = await fetch(`${this.getWorkerUrl()}/groups/update`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          groupId,
-          name: data?.name,
-          description: data?.description,
-          avatarUrl: data?.avatarUrl,
-        }),
+      const res = await this.postToWorker('/groups/update', {
+        groupId,
+        name: data?.name,
+        description: data?.description,
+        avatarUrl: data?.avatarUrl,
       });
-      return res.ok;
+      return res ? res.ok : true;
     } catch {
       return true;
     }
@@ -623,11 +653,16 @@ class GroupService {
 
   async deleteGroup(groupId: string): Promise<boolean> {
     try {
+      await this.supabase.from('groups').delete().eq('id', groupId);
+    } catch {}
+
+    const deleteData = { type: 'group-deleted', groupId };
+
+    try {
       const groupPusher = getGroupPusher();
       const channel = groupPusher.subscribe(`presence-group-${groupId}`);
-      const deleteData = { type: 'group-deleted', groupId };
       const sendDelete = () => {
-        try { channel.trigger('group-deleted', deleteData); } catch {}
+        try { channel.trigger('client-group-deleted', deleteData); } catch {}
         try { channel.trigger('client-message', deleteData); } catch {}
       };
       if (channel.subscribed) sendDelete();
@@ -635,12 +670,13 @@ class GroupService {
     } catch {}
 
     try {
-      const res = await fetch(`${this.getWorkerUrl()}/groups/delete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId }),
-      });
-      return res.ok;
+      ablyService.sendMessage(`presence-group-${groupId}`, deleteData).catch(() => {});
+      ablyService.sendMessage(groupId, deleteData).catch(() => {});
+    } catch {}
+
+    try {
+      const res = await this.postToWorker('/groups/delete', { groupId });
+      return res ? res.ok : true;
     } catch {
       return true;
     }
@@ -651,25 +687,38 @@ class GroupService {
     targetNickname: string,
     role: 'admin' | 'member',
     targetUserCode?: string,
-    actorNickname?: string
+    actorNickname?: string,
+    targetUserId?: string
   ): Promise<boolean> {
+    const orConditions: string[] = [];
+    if (targetUserCode) orConditions.push(`user_code.eq.${targetUserCode}`, `user_id.eq.${targetUserCode}`);
+    if (targetUserId && targetUserId !== targetUserCode) orConditions.push(`user_code.eq.${targetUserId}`, `user_id.eq.${targetUserId}`);
+    if (targetNickname) orConditions.push(`nickname.eq.${targetNickname}`);
+
     try {
-      const res = await fetch(`${this.getWorkerUrl()}/groups/role`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId, targetNickname, targetUserCode: targetUserCode || null, role }),
-      });
-      const actor = actorNickname || useAuthStore.getState().nickname || '';
-      const secret = deriveGroupKey(groupId);
-      if (role === 'admin') {
-        this.sendSystemMessage(groupId, secret, 'admin', actor, targetNickname);
-      } else if (role === 'member') {
-        this.sendSystemMessage(groupId, secret, 'unadmin', actor, targetNickname);
+      if (orConditions.length > 0) {
+        await this.supabase.from('group_members').update({ role }).eq('group_id', groupId).or(orConditions.join(','));
       }
-      return res.ok;
-    } catch {
-      return true;
+    } catch {}
+
+    try {
+      await this.postToWorker('/groups/role', {
+        groupId,
+        targetNickname,
+        targetUserCode: targetUserCode || null,
+        targetUserId: targetUserId || null,
+        role,
+      });
+    } catch {}
+
+    const actor = actorNickname || useAuthStore.getState().nickname || '';
+    const secret = deriveGroupKey(groupId);
+    if (role === 'admin') {
+      this.sendSystemMessage(groupId, secret, 'admin', actor, targetNickname);
+    } else if (role === 'member') {
+      this.sendSystemMessage(groupId, secret, 'unadmin', actor, targetNickname);
     }
+    return true;
   }
 
   async fetchGroupMessages(groupId: string, limit = 100): Promise<any[]> {

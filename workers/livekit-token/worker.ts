@@ -2556,19 +2556,30 @@ export default {
         const supabase = getGroupsSupabaseClient(env);
         if (supabase) {
           try {
+            const orConditions: string[] = [];
+            if (userCode) orConditions.push(`user_code.eq.${userCode}`, `user_id.eq.${userCode}`);
+            if (userId && userId !== userCode) orConditions.push(`user_code.eq.${userId}`, `user_id.eq.${userId}`);
+            if (nickname) orConditions.push(`nickname.eq.${nickname}`);
+
             let deleteQuery = supabase.from('group_members').delete().eq('group_id', groupId);
-            if (targetId) {
-              deleteQuery = deleteQuery.or(`user_code.eq.${targetId},user_id.eq.${targetId}`);
-            } else {
-              deleteQuery = deleteQuery.eq('nickname', nickname);
+            if (orConditions.length > 0) {
+              deleteQuery = deleteQuery.or(orConditions.join(','));
             }
             await deleteQuery;
-            await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'member-left', {
+
+            const leavePayload = {
+              type: 'member-left',
               groupId,
               nickname,
-              userCode: targetId || nickname,
-              userId: targetId || null,
-            });
+              userCode: userCode || targetId || nickname,
+              userId: userId || targetId || null,
+            };
+
+            await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'member-left', leavePayload);
+            await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'client-member-left', leavePayload);
+            await triggerAblyEvent(env, `presence-group-${groupId}`, 'member-left', leavePayload);
+            await triggerAblyEvent(env, groupId, 'member-left', leavePayload);
+
             return jsonResponse({ status: 'ok' });
           } catch {}
         }
@@ -2584,20 +2595,32 @@ export default {
         const supabase = getGroupsSupabaseClient(env);
         if (supabase) {
           try {
+            const orConditions: string[] = [];
+            if (targetUserCode) orConditions.push(`user_code.eq.${targetUserCode}`, `user_id.eq.${targetUserCode}`);
+            if (targetUserId && targetUserId !== targetUserCode) orConditions.push(`user_code.eq.${targetUserId}`, `user_id.eq.${targetUserId}`);
+            if (targetNickname) orConditions.push(`nickname.eq.${targetNickname}`);
+
             let deleteQuery = supabase.from('group_members').delete().eq('group_id', groupId);
-            if (targetId) {
-              deleteQuery = deleteQuery.or(`user_code.eq.${targetId},user_id.eq.${targetId}`);
-            } else {
-              deleteQuery = deleteQuery.eq('nickname', targetNickname);
+            if (orConditions.length > 0) {
+              deleteQuery = deleteQuery.or(orConditions.join(','));
             }
             await deleteQuery;
-            await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'kick', {
+
+            const kickPayload = {
+              type: 'kick',
               groupId,
               target: targetNickname,
-              targetUserCode: targetId,
-              targetUserId: targetId,
+              targetNickname,
+              targetUserCode: targetUserCode || targetId || null,
+              targetUserId: targetUserId || targetId || null,
               admin: adminNickname,
-            });
+            };
+
+            await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'kick', kickPayload);
+            await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'client-kick', kickPayload);
+            await triggerAblyEvent(env, `presence-group-${groupId}`, 'kick', kickPayload);
+            await triggerAblyEvent(env, groupId, 'kick', kickPayload);
+
             return jsonResponse({ status: 'ok' });
           } catch {}
         }
@@ -2661,9 +2684,11 @@ export default {
         if (supabase) {
           try {
             await supabase.from('groups').delete().eq('id', groupId);
-            await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'group-deleted', {
-              groupId,
-            });
+            const deletePayload = { type: 'group-deleted', groupId };
+            await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'group-deleted', deletePayload);
+            await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'client-group-deleted', deletePayload);
+            await triggerAblyEvent(env, `presence-group-${groupId}`, 'group-deleted', deletePayload);
+            await triggerAblyEvent(env, groupId, 'group-deleted', deletePayload);
             return jsonResponse({ status: 'ok' });
           } catch (err: any) {
             return errorResponse(err?.message || 'Delete failed', 500);
@@ -2681,20 +2706,31 @@ export default {
         const supabase = getGroupsSupabaseClient(env);
         if (supabase) {
           try {
+            const orConditions: string[] = [];
+            if (targetUserCode) orConditions.push(`user_code.eq.${targetUserCode}`, `user_id.eq.${targetUserCode}`);
+            if (targetUserId && targetUserId !== targetUserCode) orConditions.push(`user_code.eq.${targetUserId}`, `user_id.eq.${targetUserId}`);
+            if (targetNickname) orConditions.push(`nickname.eq.${targetNickname}`);
+
             let roleQuery = supabase.from('group_members').update({ role }).eq('group_id', groupId);
-            if (targetId) {
-              roleQuery = roleQuery.or(`user_code.eq.${targetId},user_id.eq.${targetId}`);
-            } else {
-              roleQuery = roleQuery.eq('nickname', targetNickname);
+            if (orConditions.length > 0) {
+              roleQuery = roleQuery.or(orConditions.join(','));
             }
             await roleQuery;
-            await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'member-role-updated', {
+
+            const rolePayload = {
+              type: 'member-role-updated',
               groupId,
               targetNickname,
-              targetUserCode: targetId,
-              targetUserId: targetId,
+              targetUserCode: targetUserCode || targetId || null,
+              targetUserId: targetUserId || targetId || null,
               role,
-            });
+            };
+
+            await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'member-role-updated', rolePayload);
+            await triggerGroupPusherEvent(env, `presence-group-${groupId}`, 'client-member-role-updated', rolePayload);
+            await triggerAblyEvent(env, `presence-group-${groupId}`, 'member-role-updated', rolePayload);
+            await triggerAblyEvent(env, groupId, 'member-role-updated', rolePayload);
+
             return jsonResponse({ status: 'ok' });
           } catch (err: any) {
             return errorResponse(err?.message || 'Role update failed', 500);

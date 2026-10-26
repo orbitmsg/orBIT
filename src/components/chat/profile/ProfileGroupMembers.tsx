@@ -299,10 +299,10 @@ export const ProfileGroupMembers: React.FC<ProfileGroupMembersProps> = ({
                           onClick={async (e) => {
                             e.stopPropagation();
                             const newRole = isMemberAdmin ? 'member' : 'admin';
-                            await groupService.updateMemberRole(chat.id, member.nickname, newRole, memberCode, myNickname);
+                            await groupService.updateMemberRole(chat.id, member.nickname, newRole, memberCode, myNickname, member.userId);
                             const updatedMembers = (chat.members || []).map((m: any) => {
                               const mCandidates = [(m as any).userCode, (m as any).user_code, m.userId, (m as any).user_id].filter(Boolean);
-                              const isTarget = memberCandidateCodes.some((c) => mCandidates.includes(c));
+                              const isTarget = memberCandidateCodes.some((c) => mCandidates.includes(c)) || (m.nickname && m.nickname === member.nickname);
                               return isTarget ? { ...m, role: newRole as any } : m;
                             });
                             updateChat(chat.id, { members: updatedMembers });
@@ -333,12 +333,12 @@ export const ProfileGroupMembers: React.FC<ProfileGroupMembersProps> = ({
                             await groupService.kickMember(chat.id, chat.sharedSecret!, member.nickname, myNickname || '', memberCode, member.userId);
                             const updatedMembers = (chat.members || []).filter((m: any) => {
                               const mCandidates = [(m as any).userCode, (m as any).user_code, m.userId, (m as any).user_id].filter(Boolean);
-                              const isTarget = memberCandidateCodes.some((c) => mCandidates.includes(c));
+                              const isTarget = memberCandidateCodes.some((c) => mCandidates.includes(c)) || (m.nickname && m.nickname === member.nickname);
                               return !isTarget;
                             });
                             updateChat(chat.id, {
                               members: updatedMembers,
-                              membersCount: Math.max(1, (chat.membersCount || updatedMembers.length + 1) - 1),
+                              membersCount: Math.max(1, updatedMembers.length),
                             });
                           }
                         }}

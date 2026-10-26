@@ -205,9 +205,24 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     if (activeChat?.type === 'group' && activeChatId) {
       groupService.getGroup(activeChatId).then((info) => {
         if (info && info.members && info.members.length > 0) {
+          const myUid = useAuthStore.getState().userId;
+          const myC = useChatStore.getState().myCode;
+          const myNick = useAuthStore.getState().nickname;
+          const isStillMember = info.members.some((m: any) => {
+            const mCodes = [m.userId, m.userCode, m.user_id, m.user_code].filter(Boolean);
+            if (myUid && mCodes.includes(myUid)) return true;
+            if (myC && mCodes.includes(myC)) return true;
+            if (myNick && m.nickname === myNick) return true;
+            return false;
+          });
+          if (!isStillMember) {
+            useChatStore.getState().deleteChat(activeChatId);
+            useChatStore.getState().setActiveChat(null);
+            return;
+          }
           useChatStore.getState().updateChat(activeChatId, {
             members: info.members as any[],
-            membersCount: Math.max(info.membersCount || 0, info.members.length),
+            membersCount: (info.members && info.members.length > 0) ? info.members.length : (info.membersCount || 1),
           });
         }
       }).catch(() => {});

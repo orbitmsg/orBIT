@@ -230,6 +230,23 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
       if (info) {
         const current = useChatStore.getState().chats.find((c) => c.id === chat.id);
         const currentUserId = useAuthStore.getState().userId;
+        const currentCode = useChatStore.getState().myCode;
+
+        if (info.members && info.members.length > 0) {
+          const isStillMember = info.members.some((m: any) => {
+            const mCodes = [m.userId, m.userCode, m.user_id, m.user_code].filter(Boolean);
+            if (currentUserId && mCodes.includes(currentUserId)) return true;
+            if (currentCode && mCodes.includes(currentCode)) return true;
+            if (myNickname && m.nickname === myNickname) return true;
+            return false;
+          });
+          if (!isStillMember) {
+            useChatStore.getState().deleteChat(chat.id);
+            onClose();
+            return;
+          }
+        }
+
         const isCreator = Boolean(
           current?.isOwner ||
           current?.role === 'owner' ||
@@ -253,7 +270,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
           name: validName,
           description: info.description || current?.description,
           avatarUrl: info.avatarUrl || current?.avatarUrl || undefined,
-          membersCount: Math.max(info.membersCount || 0, validMembers?.length || 0, current?.membersCount || 1),
+          membersCount: (validMembers && validMembers.length > 0) ? validMembers.length : (info.membersCount || 1),
           inviteCode: info.code || current?.inviteCode,
           members: validMembers,
         };
@@ -264,7 +281,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         updateChat(chat.id, updates);
       }
     });
-  }, [chat?.id, chat?.type, updateChat, myNickname]);
+  }, [chat?.id, chat?.type, updateChat, myNickname, onClose]);
 
   const [memberAvatars, setMemberAvatars] = useState<Record<string, string>>({});
 
@@ -325,22 +342,6 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         updateChat(chat.id, updates);
       }
     });
-  }, [chat?.id, chat?.type, updateChat]);
-
-  useEffect(() => {
-    if (!chat || chat.type !== 'group') return;
-    groupService.getGroup(chat.id).then((info) => {
-      if (info && info.members && info.members.length > 0) {
-        updateChat(chat.id, {
-          name: info.name,
-          description: info.description || '',
-          avatarUrl: info.avatarUrl || undefined,
-          members: info.members as any[],
-          membersCount: Math.max(info.membersCount || 0, info.members.length),
-          creatorNickname: info.creatorNickname,
-        });
-      }
-    }).catch(() => {});
   }, [chat?.id, chat?.type, updateChat]);
 
   useEffect(() => {

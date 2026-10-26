@@ -23,6 +23,52 @@ const formatFileSize = (bytes: number) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
+const drawCircularWaveLayer = (
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  baseR: number,
+  amp: number,
+  k1: number,
+  k2: number,
+  phase: number,
+  speed2: number,
+  shift2: number,
+  ratio1: number,
+  colorInner: string,
+  colorOuter: string,
+  strokeColor: string,
+  strokeWidth: number
+) => {
+  const steps = 48;
+  ctx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    const theta = (i / steps) * Math.PI * 2;
+    const w1 = Math.sin(k1 * theta + phase);
+    const w2 = Math.sin(k2 * theta - phase * speed2 + shift2);
+    const norm = (w1 * ratio1 + w2 * (1 - ratio1) + 1) * 0.5;
+    const r = baseR + norm * amp;
+    const x = cx + r * Math.cos(theta);
+    const y = cy + r * Math.sin(theta);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+
+  const maxR = baseR + amp + 1;
+  const grad = ctx.createRadialGradient(cx, cy, baseR * 0.75, cx, cy, maxR);
+  grad.addColorStop(0, colorInner);
+  grad.addColorStop(1, colorOuter);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  if (strokeWidth > 0 && strokeColor) {
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = strokeWidth;
+    ctx.stroke();
+  }
+};
+
 interface VoiceMessagePlayerProps {
   url: string;
   fileName?: string;
@@ -75,8 +121,8 @@ export const VoiceMessagePlayer = memo(({
   const waveformRef = useRef<HTMLDivElement>(null);
   const progressOverlayRef = useRef<HTMLDivElement>(null);
   const timeDisplayRef = useRef<HTMLSpanElement>(null);
-  const voicePulseRingRef = useRef<HTMLDivElement>(null);
-  const voicePulseRingRef2 = useRef<HTMLDivElement>(null);
+  const waveCanvasRef = useRef<HTMLCanvasElement>(null);
+  const wavePhaseRef = useRef<number>(0);
   const smoothedVolRef = useRef(0.2);
 
   const liveProgress = useUploadProgressStore((s) => (msg?.id ? s.progressByKey[msg.id] : undefined));
@@ -133,6 +179,18 @@ export const VoiceMessagePlayer = memo(({
       setLocalDuration(globalDuration);
     }
   }, [isCurrentTrack, localDuration, globalDuration, setStoreDuration]);
+
+  useEffect(() => {
+    if (!waveCanvasRef.current) return;
+    const canvas = waveCanvasRef.current;
+    const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2) : 1;
+    canvas.width = 72 * dpr;
+    canvas.height = 72 * dpr;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.scale(dpr, dpr);
+    }
+  }, []);
 
   const effectiveDuration = isCurrentTrack && globalDuration > 0 ? globalDuration : (localDuration || msg?.duration || 0);
   const effectiveCurrentTime = isCurrentTrack ? globalCurrentTime : savedPosition;
@@ -340,27 +398,38 @@ export const VoiceMessagePlayer = memo(({
         timeDisplayRef.current.textContent = `${formatVoiceTime(currentExactTime)} / ${formatVoiceTime(effectiveDuration)}`;
       }
 
-      if (isPlaying) {
-        if (chatElementAnimations !== false) {
-          const barIndex = Math.min(bars.length - 1, Math.floor(ratio * bars.length));
-          const rawVol = (bars[barIndex] || 25) / 100;
-          smoothedVolRef.current += (rawVol - smoothedVolRef.current) * 0.22;
-          const vol = smoothedVolRef.current;
-          if (voicePulseRingRef.current) {
-            voicePulseRingRef.current.style.transform = `scale(${1 + vol * 0.22})`;
-            voicePulseRingRef.current.style.opacity = isOwn
-              ? `${0.22 + vol * 0.22}`
-              : `${0.25 + vol * 0.25}`;
+      if (waveCanvasRef.current) {
+        const canvas = waveCanvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          if (isPlaying && chatElementAnimations !== false) {
+            const barIndex = Math.min(bars.length - 1, Math.floor(ratio * bars.length));
+            const rawVol = (bars[barIndex] || 25) / 100;
+            smoothedVolRef.current += (rawVol - smoothedVolRef.current) * 0.22;
+            const vol = smoothedVolRef.current;
+
+            wavePhaseRef.current += 0.045 + vol * 0.06;
+            const phase = wavePhaseRef.current;
+
+            ctx.clearRect(0, 0, 72, 72);
+
+            const cx = 36;
+            const cy = 36;
+            const baseR = 24;
+            const amp = 2.0 + vol * 7.5;
+
+            if (isOwn) {
+              drawCircularWaveLayer(ctx, cx, cy, baseR, amp * 1.15, 3, 4, phase, 0.7, 1.4, 0.65, 'rgba(255, 255, 255, 0.40)', 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.50)', 1);
+              drawCircularWaveLayer(ctx, cx, cy, baseR, amp * 0.85, 4, 5, -phase * 0.85, 0.6, 2.1, 0.6, 'rgba(255, 255, 255, 0.65)', 'rgba(255, 255, 255, 0.05)', 'rgba(255, 255, 255, 0.80)', 1.2);
+              drawCircularWaveLayer(ctx, cx, cy, baseR, amp * 0.6, 3, 5, phase * 1.2, 0.8, 0.9, 0.7, 'rgba(255, 255, 255, 0.85)', 'rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.95)', 1.4);
+            } else {
+              drawCircularWaveLayer(ctx, cx, cy, baseR, amp * 1.15, 3, 4, phase, 0.7, 1.4, 0.65, 'rgba(167, 139, 250, 0.40)', 'rgba(167, 139, 250, 0.0)', 'rgba(167, 139, 250, 0.50)', 1);
+              drawCircularWaveLayer(ctx, cx, cy, baseR, amp * 0.85, 4, 5, -phase * 0.85, 0.6, 2.1, 0.6, 'rgba(196, 181, 253, 0.65)', 'rgba(196, 181, 253, 0.05)', 'rgba(196, 181, 253, 0.80)', 1.2);
+              drawCircularWaveLayer(ctx, cx, cy, baseR, amp * 0.6, 3, 5, phase * 1.2, 0.8, 0.9, 0.7, 'rgba(221, 214, 254, 0.85)', 'rgba(167, 139, 250, 0.15)', 'rgba(237, 233, 254, 0.95)', 1.4);
+            }
+          } else {
+            ctx.clearRect(0, 0, 72, 72);
           }
-          if (voicePulseRingRef2.current) {
-            voicePulseRingRef2.current.style.transform = `scale(${1 + vol * 0.38})`;
-            voicePulseRingRef2.current.style.opacity = isOwn
-              ? `${0.1 + vol * 0.14}`
-              : `${0.12 + vol * 0.16}`;
-          }
-        } else {
-          if (voicePulseRingRef.current) voicePulseRingRef.current.style.opacity = '0';
-          if (voicePulseRingRef2.current) voicePulseRingRef2.current.style.opacity = '0';
         }
       }
 
@@ -399,13 +468,9 @@ export const VoiceMessagePlayer = memo(({
             : formatVoiceTime(effectiveDuration);
         }
       }
-      if (voicePulseRingRef.current) {
-        voicePulseRingRef.current.style.transform = 'scale(1)';
-        voicePulseRingRef.current.style.opacity = '0';
-      }
-      if (voicePulseRingRef2.current) {
-        voicePulseRingRef2.current.style.transform = 'scale(1)';
-        voicePulseRingRef2.current.style.opacity = '0';
+      if (waveCanvasRef.current) {
+        const ctx = waveCanvasRef.current.getContext('2d');
+        if (ctx) ctx.clearRect(0, 0, 72, 72);
       }
     }
 
@@ -420,6 +485,10 @@ export const VoiceMessagePlayer = memo(({
     return () => {
       cancelAnimationFrame(animId);
       unsubVisibility();
+      if (waveCanvasRef.current) {
+        const ctx = waveCanvasRef.current.getContext('2d');
+        if (ctx) ctx.clearRect(0, 0, 72, 72);
+      }
     };
   }, [isPlaying, isCurrentTrack, effectiveDuration, dragProgressRatio, isUploading, isLoaded, liveProgress, msg?.uploadedMb, msg?.fileSize, itemTotalSize, effectiveCurrentTime, bars, chatElementAnimations]);
 
@@ -450,35 +519,15 @@ export const VoiceMessagePlayer = memo(({
       onContextMenu={(e) => e.preventDefault()}
     >
       <div className="relative flex-shrink-0 flex items-center justify-center" style={{ width: 48, height: 48 }}>
-        <div
-          ref={voicePulseRingRef}
+        <canvas
+          ref={waveCanvasRef}
           style={{
             position: 'absolute',
-            width: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            backgroundColor: isOwn ? 'rgba(255, 255, 255, 0.45)' : 'var(--accent-color, #7C3AED)',
-            opacity: 0,
+            width: '72px',
+            height: '72px',
+            top: '-12px',
+            left: '-12px',
             pointerEvents: 'none',
-            transform: 'scale(1)',
-            willChange: 'transform, opacity',
-            transition: isPlaying ? 'none' : 'opacity 0.25s ease, transform 0.25s ease',
-            zIndex: 0,
-          }}
-        />
-        <div
-          ref={voicePulseRingRef2}
-          style={{
-            position: 'absolute',
-            width: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            backgroundColor: isOwn ? 'rgba(255, 255, 255, 0.28)' : 'var(--accent-color, #7C3AED)',
-            opacity: 0,
-            pointerEvents: 'none',
-            transform: 'scale(1)',
-            willChange: 'transform, opacity',
-            transition: isPlaying ? 'none' : 'opacity 0.25s ease, transform 0.25s ease',
             zIndex: 0,
           }}
         />

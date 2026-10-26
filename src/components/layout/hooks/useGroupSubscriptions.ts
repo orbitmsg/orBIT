@@ -108,7 +108,30 @@ export const useGroupSubscriptions = ({
         }));
         return;
       }
-      if (data.type === 'pin' || data.type === 'pin-message') { updateChat(chatId, { pinnedMessage: data.pinData }); return; }
+      if (data.type === 'pin' || data.type === 'pin-message') {
+        updateChat(chatId, { pinnedMessage: data.pinData });
+        const actor = data.sender || data.actorNickname || data.pinData?.pinnedBy || '';
+        const isAlreadyAdded = (useChatStore.getState().messagesByChatId[chatId] || []).some(
+          (m) => m.systemType === 'pin' && Math.abs((m.time || 0) - (data.pinData?.pinnedAt || Date.now())) < 5000
+        );
+        if (!isAlreadyAdded) {
+          const sysMsg: Message = data.systemMessage || {
+            id: `sys_pin_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+            sender: 'system',
+            text: `${actor || 'Участник'} закрепил(а) сообщение`,
+            time: data.pinData?.pinnedAt || Date.now(),
+            status: 'sent',
+            mediaType: 'system',
+            systemType: 'pin',
+            actorNickname: actor,
+          };
+          addMessage(chatId, sysMsg);
+          try {
+            (window as any).orbita?.storageAddMessage?.(chatId, sysMsg.id, sysMsg);
+          } catch {}
+        }
+        return;
+      }
       if (data.type === 'unpin' || data.type === 'unpin-message') { updateChat(chatId, { pinnedMessage: null }); return; }
       if (data.type === 'member-joined') {
         if (data.members) {
@@ -1033,12 +1056,43 @@ export const useGroupSubscriptions = ({
       }
     };
 
+    const handlePin = (data: any) => {
+      if (data?.type === 'pin' || data?.type === 'pin-message') {
+        useChatStore.getState().updateChat(channelId, { pinnedMessage: data.pinData });
+        const actor = data.sender || data.actorNickname || data.pinData?.pinnedBy || '';
+        const isAlreadyAdded = (useChatStore.getState().messagesByChatId[channelId] || []).some(
+          (m) => m.systemType === 'pin' && Math.abs((m.time || 0) - (data.pinData?.pinnedAt || Date.now())) < 5000
+        );
+        if (!isAlreadyAdded) {
+          const sysMsg: Message = data.systemMessage || {
+            id: `sys_pin_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+            sender: 'system',
+            text: `${actor || 'Канал'} закрепил(а) сообщение`,
+            time: data.pinData?.pinnedAt || Date.now(),
+            status: 'sent',
+            mediaType: 'system',
+            systemType: 'pin',
+            actorNickname: actor,
+          };
+          addMessage(channelId, sysMsg);
+          try {
+            (window as any).orbita?.storageAddMessage?.(channelId, sysMsg.id, sysMsg);
+          } catch {}
+        }
+      } else if (data?.type === 'unpin' || data?.type === 'unpin-message') {
+        useChatStore.getState().updateChat(channelId, { pinnedMessage: null });
+      }
+    };
+
     channel.bind('new-post', handleNewPost);
     channel.bind('delete-post', handleDeletePost);
     channel.bind('post-deleted', handleDeletePost);
     channel.bind('reaction-updated', handleReaction);
     channel.bind('subscribers-updated', handleSubscribers);
     channel.bind('channel-updated', handleChannelUpdated);
+    channel.bind('pin', handlePin);
+    channel.bind('unpin', handlePin);
+    channel.bind('client-message', handlePin);
 
     if (!ablyMessageUnsubscribes.current.has(channelId)) {
       const unsub = ablyService.subscribeToChatMessages(`public-channel-${channelId}`, (data: any) => {
@@ -1052,6 +1106,8 @@ export const useGroupSubscriptions = ({
           handleChannelUpdated(data);
         } else if (data?.type === 'subscribers-updated' && typeof data?.subscribersCount === 'number') {
           useChatStore.getState().updateChat(channelId, { subscribersCount: data.subscribersCount });
+        } else if (data?.type === 'pin' || data?.type === 'pin-message' || data?.type === 'unpin' || data?.type === 'unpin-message') {
+          handlePin(data);
         } else if (data?.id) {
           handleNewPost(data);
         }

@@ -219,7 +219,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
       });
 
       if (result?.group) {
-        const joinText = `${myNickname} вступил(а) в группу`;
+        const joinText = `${myNickname} вступил(а) в группу по ссылке-приглашению`;
         const sysMsg: any = result.systemMessage || {
           id: `sys_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
           sender: 'system',
@@ -227,7 +227,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
           time: Date.now(),
           status: 'sent',
           mediaType: 'system',
-          systemType: 'join',
+          systemType: 'join_link',
           actorNickname: myNickname,
         };
 

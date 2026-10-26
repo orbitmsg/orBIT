@@ -155,7 +155,7 @@ export interface Message {
   uploading?: boolean;
   uploadedMb?: number;
   mediaType?: 'photo' | 'video' | 'audio' | 'voice' | 'file' | 'call' | 'emoji' | 'gif' | 'sticker' | 'system' | null;
-  systemType?: 'join' | 'leave' | 'title' | 'avatar' | 'admin' | 'unadmin' | 'call' | 'call_ended' | 'kick' | 'create' | 'invite';
+  systemType?: 'join' | 'join_link' | 'pin' | 'leave' | 'title' | 'avatar' | 'admin' | 'unadmin' | 'call' | 'call_ended' | 'kick' | 'create' | 'invite';
   actorNickname?: string;
   targetNickname?: string;
   roomName?: string;

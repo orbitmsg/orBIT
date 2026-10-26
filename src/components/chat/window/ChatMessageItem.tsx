@@ -526,11 +526,15 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           fontSize: '12px',
           fontWeight: 500,
           padding: '3px 12px',
-          borderRadius: '12px',
+          borderRadius: '9999px',
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+          boxShadow: 'none',
+          border: 'none',
+          filter: 'none',
+          backdropFilter: 'none',
+          WebkitBackdropFilter: 'none',
           userSelect: 'none',
           WebkitUserSelect: 'none',
         }}
@@ -559,6 +563,10 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           displayedText = t('system.member_invited', { actor: act, target: trg, defaultValue: `${act} пригласил(а) ${trg} в группу` });
         } else if (msg.systemType === 'join') {
           displayedText = act ? t('system.member_joined', { actor: act, defaultValue: `${act} вступил(а) в группу` }) : t('system.member_joined_generic', { defaultValue: 'Участник вступил в группу' });
+        } else if (msg.systemType === 'join_link') {
+          displayedText = act ? t('system.member_joined_link', { actor: act, defaultValue: `${act} вступил(а) в группу по ссылке-приглашению` }) : t('system.member_joined_link_generic', { defaultValue: 'Участник вступил в группу по ссылке-приглашению' });
+        } else if (msg.systemType === 'pin') {
+          displayedText = act ? t('system.message_pinned', { actor: act, defaultValue: `${act} закрепил(а) сообщение` }) : t('system.message_pinned_generic', { defaultValue: 'Сообщение закреплено' });
         } else if (msg.systemType === 'title' && act) {
           displayedText = t('system.title_changed', { actor: act, defaultValue: `${act} изменил(а) имя группы` });
         } else if (msg.systemType === 'avatar' && act) {
@@ -578,12 +586,26 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
       if (!displayedText || displayedText === '[ENCRYPTED MESSAGE]') {
         displayedText = t('system.system_event', { defaultValue: 'Системное сообщение' });
       }
+
+      const targetPin = msg.systemType === 'pin' ? activeChat?.pinnedMessage : null;
+      const canScrollToPin = Boolean(targetPin && (targetPin.id || targetPin.messageId));
+      const handleSystemClick = () => {
+        if (!canScrollToPin || !targetPin) return;
+        handleQuoteClick({
+          id: targetPin.messageId || targetPin.id,
+          sender: targetPin.sender || '',
+          text: targetPin.text || '',
+          time: String(targetPin.time || 0),
+        }, index);
+      };
+
       return (
         <div
           data-message="true"
           data-message-id={msg.id}
-          className="flex justify-center items-center w-full my-1 select-none pointer-events-none"
+          className={`flex justify-center items-center w-full my-1.5 select-none ${canScrollToPin ? 'cursor-pointer pointer-events-auto' : 'pointer-events-none'}`}
           style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+          onClick={canScrollToPin ? handleSystemClick : undefined}
         >
           <div
             style={{
@@ -591,22 +613,44 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
               color: 'var(--text-main, #ffffff)',
               fontSize: '12px',
               fontWeight: 500,
-              padding: '4px 14px',
-              borderRadius: '12px',
+              padding: '3px 6px 3px 12px',
+              borderRadius: '9999px',
               display: 'inline-flex',
-              flexDirection: 'column',
+              flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+              boxShadow: 'none',
+              border: 'none',
+              filter: 'none',
+              backdropFilter: 'none',
+              WebkitBackdropFilter: 'none',
               userSelect: 'none',
               WebkitUserSelect: 'none',
-              maxWidth: '80%',
-              textAlign: 'center',
-              gap: '1px',
+              maxWidth: '92%',
+              gap: '6px',
+              whiteSpace: 'nowrap',
+              cursor: canScrollToPin ? 'pointer' : 'default',
             }}
           >
-            <span>{displayedText}</span>
-            <span style={{ fontSize: '10px', opacity: 0.6, marginTop: '1px' }}>{timeStr}</span>
+            <span className="truncate">{displayedText}</span>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                color: 'rgba(255, 255, 255, 0.9)',
+                backgroundColor: 'rgba(0, 0, 0, 0.35)',
+                padding: '1px 7px',
+                borderRadius: '9999px',
+                lineHeight: 1.35,
+                flexShrink: 0,
+                boxShadow: 'none',
+                filter: 'none',
+                backdropFilter: 'none',
+                WebkitBackdropFilter: 'none',
+              }}
+            >
+              {timeStr}
+            </span>
           </div>
         </div>
       );

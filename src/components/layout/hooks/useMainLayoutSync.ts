@@ -454,6 +454,26 @@ export const useMainLayoutSync = ({
             processedMessageIds.current.add(record.id);
             if (messageData.pinData) {
               updateChat(targetChatId, { pinnedMessage: messageData.pinData });
+              const actor = messageData.sender || messageData.actorNickname || messageData.pinData?.pinnedBy || '';
+              const isAlreadyAdded = (useChatStore.getState().messagesByChatId[targetChatId] || []).some(
+                (m) => m.systemType === 'pin' && Math.abs((m.time || 0) - (messageData.pinData?.pinnedAt || Date.now())) < 5000
+              );
+              if (!isAlreadyAdded) {
+                const sysMsg: Message = messageData.systemMessage || {
+                  id: `sys_pin_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+                  sender: 'system',
+                  text: `${actor || 'Собеседник'} закрепил(а) сообщение`,
+                  time: messageData.pinData?.pinnedAt || Date.now(),
+                  status: 'sent',
+                  mediaType: 'system',
+                  systemType: 'pin',
+                  actorNickname: actor,
+                };
+                addMessage(targetChatId, sysMsg);
+                try {
+                  (window as any).orbita?.storageAddMessage?.(targetChatId, sysMsg.id, sysMsg);
+                } catch {}
+              }
             }
             deliveredIds.push(record.id);
             continue;
@@ -805,6 +825,26 @@ export const useMainLayoutSync = ({
               processedMessageIds.current.add(record.id);
               if (messageData.pinData) {
                 updateChat(record.chat_id, { pinnedMessage: messageData.pinData });
+                const actor = messageData.sender || messageData.actorNickname || messageData.pinData?.pinnedBy || '';
+                const isAlreadyAdded = (useChatStore.getState().messagesByChatId[record.chat_id] || []).some(
+                  (m) => m.systemType === 'pin' && Math.abs((m.time || 0) - (messageData.pinData?.pinnedAt || Date.now())) < 5000
+                );
+                if (!isAlreadyAdded) {
+                  const sysMsg: Message = messageData.systemMessage || {
+                    id: `sys_pin_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+                    sender: 'system',
+                    text: `${actor || 'Участник'} закрепил(а) сообщение`,
+                    time: messageData.pinData?.pinnedAt || Date.now(),
+                    status: 'sent',
+                    mediaType: 'system',
+                    systemType: 'pin',
+                    actorNickname: actor,
+                  };
+                  addMessage(record.chat_id, sysMsg);
+                  try {
+                    (window as any).orbita?.storageAddMessage?.(record.chat_id, sysMsg.id, sysMsg);
+                  } catch {}
+                }
               }
               nonDeliveredIds.push(record.id);
               continue;

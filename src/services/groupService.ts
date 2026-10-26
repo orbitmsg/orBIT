@@ -321,7 +321,7 @@ class GroupService {
       if (inviterNickname) {
         systemMessage = await this.sendSystemMessage(realGroupId, sharedSecret, 'invite', inviterNickname, nickname);
       } else {
-        systemMessage = await this.sendSystemMessage(realGroupId, sharedSecret, 'join', nickname, nickname);
+        systemMessage = await this.sendSystemMessage(realGroupId, sharedSecret, 'join_link', nickname, nickname);
       }
     }
 
@@ -713,7 +713,7 @@ class GroupService {
   async sendSystemMessage(
     groupId: string,
     _sharedSecret: string,
-    eventType: 'join' | 'title' | 'avatar' | 'admin' | 'unadmin' | 'call' | 'call_ended' | 'kick' | 'create' | 'invite' | 'leave',
+    eventType: 'join' | 'join_link' | 'title' | 'avatar' | 'admin' | 'unadmin' | 'call' | 'call_ended' | 'kick' | 'create' | 'invite' | 'leave' | 'pin',
     actorNickname: string,
     targetNickname?: string,
     extra?: { roomName?: string }
@@ -723,6 +723,8 @@ class GroupService {
       create: `${actor} создал(а) группу`,
       invite: `${actor} пригласил(а) ${targetNickname || ''} в группу`,
       join: `${actor} вступил(а) в группу`,
+      join_link: `${actor} вступил(а) в группу по ссылке-приглашению`,
+      pin: `${actor} закрепил(а) сообщение`,
       leave: `${actor} покинул(а) группу`,
       title: `${actor} изменил(а) имя группы`,
       avatar: `${actor} изменил(а) аватарку группы`,

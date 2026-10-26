@@ -521,6 +521,26 @@ export const usePrivateChatSubscriptions = ({
 
       if (data.type === 'pin' || data.type === 'pin-message') {
         updateChat(chatId, { pinnedMessage: data.pinData });
+        const actor = data.sender || data.actorNickname || data.pinData?.pinnedBy || '';
+        const isAlreadyAdded = (useChatStore.getState().messagesByChatId[chatId] || []).some(
+          (m) => m.systemType === 'pin' && Math.abs((m.time || 0) - (data.pinData?.pinnedAt || Date.now())) < 5000
+        );
+        if (!isAlreadyAdded) {
+          const sysMsg: Message = data.systemMessage || {
+            id: `sys_pin_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+            sender: 'system',
+            text: `${actor || 'Собеседник'} закрепил(а) сообщение`,
+            time: data.pinData?.pinnedAt || Date.now(),
+            status: 'sent',
+            mediaType: 'system',
+            systemType: 'pin',
+            actorNickname: actor,
+          };
+          useChatStore.getState().addMessage(chatId, sysMsg);
+          try {
+            (window as any).orbita?.storageAddMessage?.(chatId, sysMsg.id, sysMsg);
+          } catch {}
+        }
         return;
       }
 

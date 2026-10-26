@@ -149,7 +149,13 @@ export const useChatRealtime = ({
 
             if (isSystem && (!text || text === '[ENCRYPTED MESSAGE]' || text === row.ciphertext)) {
               const actor = parsedData?.actorNickname || (row as any).actor_nickname || (row as any).actorNickname || (row.sender_nickname && row.sender_nickname !== 'system' ? row.sender_nickname : '');
-              text = actor ? `${actor} вступил(а) в группу` : 'Участник вступил(а) в группу';
+              if (parsedData?.systemType === 'pin') {
+                text = actor ? `${actor} закрепил(а) сообщение` : 'Сообщение закреплено';
+              } else if (parsedData?.systemType === 'join_link') {
+                text = actor ? `${actor} вступил(а) в группу по ссылке-приглашению` : 'Участник вступил в группу по ссылке-приглашению';
+              } else {
+                text = actor ? `${actor} вступил(а) в группу` : 'Участник вступил(а) в группу';
+              }
             }
 
             const isOutgoing = Boolean(

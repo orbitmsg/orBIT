@@ -1560,6 +1560,8 @@
       "group_created": "{{actor}} created the group",
       "member_invited": "{{actor}} invited {{target}} to the group",
       "member_joined": "{{actor}} joined the group",
+      "member_joined_link": "{{actor}} joined the group via invite link",
+      "message_pinned": "{{actor}} pinned a message",
       "title_changed": "{{actor}} changed the group name",
       "avatar_changed": "{{actor}} changed the group photo",
       "promoted_admin": "{{actor}} promoted {{target}} to admin",
@@ -1570,6 +1572,8 @@
       "group_created_generic": "Group created",
       "call_started_generic": "Voice call started",
       "member_joined_generic": "A member joined the group",
+      "member_joined_link_generic": "Joined the group via invite link",
+      "message_pinned_generic": "Message pinned",
       "system_event": "System message"
     },
     "splash": {

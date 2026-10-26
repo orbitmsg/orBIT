@@ -4,6 +4,7 @@ import { useToastStore } from '../../../store/useToastStore';
 import { ablyService } from '../../../services/ablyService';
 import { supabaseService } from '../../../services/supabaseService';
 import { channelService } from '../../../services/channelService';
+import { groupService } from '../../../services/groupService';
 import { mediaManager } from '../../../services/mediaManager';
 import { getPusher, getGroupPusher, CLIENT_SESSION_ID } from '../../../utils/pusher';
 import { DoubleRatchet } from '../../../lib/double-ratchet';
@@ -324,6 +325,22 @@ export const useChatMessageActions = ({
 
     updateChat(activeChatId, { pinnedMessage: pinData });
 
+    const pinSystemMsg: Message = {
+      id: `sys_pin_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      sender: 'system',
+      text: `${myNickname} закрепил(а) сообщение`,
+      time: Date.now(),
+      status: 'sent',
+      mediaType: 'system',
+      systemType: 'pin',
+      actorNickname: myNickname,
+      targetNickname: pinnedMsg.sender || '',
+    };
+    useChatStore.getState().addMessage(activeChatId, pinSystemMsg);
+    try {
+      (window as any).orbita?.storageAddMessage?.(activeChatId, pinSystemMsg.id, pinSystemMsg);
+    } catch {}
+
     if (activeChatId === 'notes') {
       setContextMenu((prev) => ({ ...prev, visible: false }));
       return;
@@ -333,6 +350,8 @@ export const useChatMessageActions = ({
       type: 'pin-message',
       pinData,
       sender: myNickname,
+      actorNickname: myNickname,
+      systemMessage: pinSystemMsg,
     };
     ablyService.sendMessage(activeChatId, pinPayload).catch(() => {});
 
@@ -349,6 +368,23 @@ export const useChatMessageActions = ({
       channel.unbind('pusher:subscription_succeeded', send);
     };
     if (channel.subscribed) send(); else channel.bind('pusher:subscription_succeeded', send);
+
+    if (isGroup) {
+      groupService.sendGroupMessage({
+        id: pinSystemMsg.id,
+        groupId: activeChatId,
+        senderNickname: myNickname || 'system',
+        senderCode: 'system',
+        ciphertext: JSON.stringify({
+          text: pinSystemMsg.text,
+          mediaType: 'system',
+          systemType: 'pin',
+          actorNickname: myNickname,
+          targetNickname: pinnedMsg.sender || '',
+        }),
+        mediaType: 'system',
+      }).catch(() => {});
+    }
 
     setContextMenu((prev) => ({ ...prev, visible: false }));
   };

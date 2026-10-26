@@ -1560,6 +1560,8 @@
       "group_created": "{{actor}} создал(а) группу",
       "member_invited": "{{actor}} пригласил(а) {{target}} в группу",
       "member_joined": "{{actor}} вступил(а) в группу",
+      "member_joined_link": "{{actor}} вступил(а) в группу по ссылке-приглашению",
+      "message_pinned": "{{actor}} закрепил(а) сообщение",
       "title_changed": "{{actor}} изменил(а) имя группы",
       "avatar_changed": "{{actor}} изменил(а) аватарку группы",
       "promoted_admin": "{{actor}} назначил(а) {{target}} администратором",
@@ -1570,6 +1572,8 @@
       "group_created_generic": "Группа создана",
       "call_started_generic": "Голосовой чат начат",
       "member_joined_generic": "Участник вступил в группу",
+      "member_joined_link_generic": "Участник вступил в группу по ссылке-приглашению",
+      "message_pinned_generic": "Сообщение закреплено",
       "system_event": "Системное сообщение"
     },
     "splash": {

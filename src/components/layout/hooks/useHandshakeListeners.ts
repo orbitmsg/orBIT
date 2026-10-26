@@ -501,6 +501,26 @@ export const useHandshakeListeners = ({
       if (data.type === 'pin' || data.type === 'pin-message') {
         if (data.chatId && data.pinData) {
           updateChat(data.chatId, { pinnedMessage: data.pinData });
+          const actor = data.sender || data.actorNickname || data.pinData?.pinnedBy || '';
+          const isAlreadyAdded = (useChatStore.getState().messagesByChatId[data.chatId] || []).some(
+            (m) => m.systemType === 'pin' && Math.abs((m.time || 0) - (data.pinData?.pinnedAt || Date.now())) < 5000
+          );
+          if (!isAlreadyAdded) {
+            const sysMsg: Message = data.systemMessage || {
+              id: `sys_pin_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+              sender: 'system',
+              text: `${actor || 'Собеседник'} закрепил(а) сообщение`,
+              time: data.pinData?.pinnedAt || Date.now(),
+              status: 'sent',
+              mediaType: 'system',
+              systemType: 'pin',
+              actorNickname: actor,
+            };
+            useChatStore.getState().addMessage(data.chatId, sysMsg);
+            try {
+              (window as any).orbita?.storageAddMessage?.(data.chatId, sysMsg.id, sysMsg);
+            } catch {}
+          }
         }
         return;
       }

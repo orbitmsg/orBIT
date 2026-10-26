@@ -124,10 +124,10 @@ export const MessageInput = memo<MessageInputProps>(({
     const handlePointerMove = (e: MouseEvent) => {
       if (hasLockedRef.current) return;
       const deltaY = dragStartYRef.current - e.clientY;
-      const progress = Math.min(1, Math.max(0, deltaY / 65));
+      const progress = Math.min(1, Math.max(0, deltaY / 80));
       setLockProgress(progress);
 
-      if (deltaY >= 65) {
+      if (deltaY >= 80) {
         hasLockedRef.current = true;
         setIsLockedRecording(true);
         setIsHoldingVoice(false);

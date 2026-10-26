@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../../../store/useChatStore';
 import { SendIcon, MicIcon } from './MessageInputIcons';
@@ -20,6 +20,88 @@ const formatDurationWithTenths = (totalSeconds: number) => {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')},${tenths}`;
 };
 
+const drawCircularWaveLayer = (
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  baseR: number,
+  amplitude: number,
+  k1: number,
+  k2: number,
+  wavePhase: number,
+  colorRgb: [number, number, number],
+  alpha: number
+) => {
+  const steps = 48;
+  ctx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    const theta = (i / steps) * Math.PI * 2;
+    const s1 = Math.sin(k1 * theta + wavePhase);
+    const s2 = Math.sin(k2 * theta - wavePhase * 0.75 + 1.3);
+    const norm = (s1 * 0.68 + s2 * 0.32 + 1) * 0.5;
+    const elevation = Math.min(12, norm * amplitude);
+    const r = baseR + elevation;
+    const x = cx + r * Math.cos(theta);
+    const y = cy + r * Math.sin(theta);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+
+  const [r, g, b] = colorRgb;
+  const maxR = baseR + amplitude + 1;
+  const grad = ctx.createRadialGradient(cx, cy, baseR * 0.65, cx, cy, maxR);
+  grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha})`);
+  grad.addColorStop(0.55, `rgba(${r}, ${g}, ${b}, ${alpha * 0.70})`);
+  grad.addColorStop(0.9, `rgba(${r}, ${g}, ${b}, ${alpha * 0.25})`);
+  grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+  ctx.fillStyle = grad;
+  ctx.fill();
+};
+
+const parseHexColor = (hex: string): [number, number, number] | null => {
+  const clean = hex.replace('#', '').trim();
+  if (clean.length === 6) {
+    const num = parseInt(clean, 16);
+    return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+  }
+  return null;
+};
+
+const renderCircularWaves = (
+  canvas: HTMLCanvasElement,
+  vol: number,
+  phase: number
+) => {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2) : 1;
+  const targetSize = Math.round(76 * dpr);
+  if (canvas.width !== targetSize || canvas.height !== targetSize) {
+    canvas.width = targetSize;
+    canvas.height = targetSize;
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, 76, 76);
+
+  const cx = 38;
+  const cy = 38;
+  const baseR = 21;
+  const baseAmp = 3.5 + vol * 8.5;
+
+  let rgb: [number, number, number] = [124, 58, 237];
+  if (typeof document !== 'undefined') {
+    const val = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim();
+    const parsed = parseHexColor(val);
+    if (parsed) rgb = parsed;
+  }
+  const [r, g, b] = rgb;
+  drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.45, 3, 4, phase * 0.55, [r, g, b], 0.25 + vol * 0.15);
+  drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.75, 4, 5, -phase * 0.75 + 1.4, [Math.min(255, r + 20), Math.min(255, g + 20), Math.min(255, b + 20)], 0.40 + vol * 0.22);
+  drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp, 3, 5, phase, [Math.min(255, r + 40), Math.min(255, g + 40), Math.min(255, b + 40)], 0.65 + vol * 0.30);
+};
+
 export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps> = ({
   recordingTime,
   recordingAmplitude = 0,
@@ -30,7 +112,50 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
 }) => {
   const { t } = useTranslation();
   const chatElementAnimations = useChatStore((state) => state.chatElementAnimations);
-  const voiceScale = 1 + (recordingAmplitude / 100) * 0.45;
+  const waveCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const wavePhaseRef = useRef(0);
+  const smoothedVolRef = useRef(0.04);
+  const ampRef = useRef(recordingAmplitude);
+
+  useEffect(() => {
+    ampRef.current = recordingAmplitude;
+  }, [recordingAmplitude]);
+
+  useEffect(() => {
+    if (chatElementAnimations === false) {
+      if (waveCanvasRef.current) {
+        const ctx = waveCanvasRef.current.getContext('2d');
+        if (ctx) ctx.clearRect(0, 0, waveCanvasRef.current.width, waveCanvasRef.current.height);
+      }
+      return;
+    }
+
+    let animId: number | null = null;
+
+    const render = () => {
+      const canvas = waveCanvasRef.current;
+      if (!canvas) return;
+
+      const target = Math.max(0, Math.min(1, (ampRef.current || 0) / 100));
+      smoothedVolRef.current += (target - smoothedVolRef.current) * 0.15;
+      const vol = smoothedVolRef.current;
+
+      wavePhaseRef.current += 0.025 + vol * 0.035;
+      renderCircularWaves(canvas, vol, wavePhaseRef.current);
+
+      animId = requestAnimationFrame(render);
+    };
+
+    animId = requestAnimationFrame(render);
+
+    return () => {
+      if (animId !== null) cancelAnimationFrame(animId);
+      if (waveCanvasRef.current) {
+        const ctx = waveCanvasRef.current.getContext('2d');
+        if (ctx) ctx.clearRect(0, 0, waveCanvasRef.current.width, waveCanvasRef.current.height);
+      }
+    };
+  }, [chatElementAnimations]);
 
   return (
     <div
@@ -119,13 +244,14 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
           <div
             style={{
               position: 'absolute',
-              bottom: '50px',
+              bottom: '65px',
               right: '1px',
               width: '40px',
-              height: '80px',
+              height: '84px',
               borderRadius: '9999px',
-              backgroundColor: 'var(--surface-container-high, #2b333e)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              backgroundColor: 'var(--surface-container-high, #27303c)',
+              border: 'none',
+              boxShadow: 'none',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -136,15 +262,22 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
               zIndex: 50,
             }}
           >
-            <svg width="18" height="20" viewBox="0 0 18 20" fill="none">
-              <rect x="1" y="8" width="16" height="11" rx="3" fill="#8e9aa8" />
+            <svg
+              width="20"
+              height="24"
+              viewBox="0 0 20 24"
+              fill="none"
+              style={{ overflow: 'visible' }}
+            >
+              <rect x="2" y="11" width="16" height="12" rx="3.5" fill="#8e9aa8" />
               <path
-                d={`M4.5 8V4.5a4.5 4.5 0 0 1 9 0V${Math.max(3.5, 8 - lockProgress * 4.5)}`}
+                d={`M5.5 11V6.5a4.5 4.5 0 0 1 9 0V${Math.max(5.5, 11 - lockProgress * 5.5)}`}
                 stroke="#8e9aa8"
-                strokeWidth="2.2"
+                strokeWidth="2.3"
                 strokeLinecap="round"
                 style={{
-                  transform: `translateY(-${lockProgress * 3.5}px)`,
+                  transformOrigin: '5.5px 11px',
+                  transform: `translateY(-${lockProgress * 3.5}px) rotate(${lockProgress * -8}deg)`,
                   transition: 'all 0.05s ease-out',
                 }}
               />
@@ -157,8 +290,8 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
               style={{ animation: 'orbitaChevronFloat 1.2s infinite ease-in-out' }}
             >
               <path
-                d="M1.5 6.5L7 1.5L12.5 6.5"
-                stroke="#8e9aa8"
+                d="M2 6.5L7 1.5L12 6.5"
+                stroke="#606d7d"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -170,18 +303,22 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
         <div
           className="orbita-voice-btn-wrap"
           style={{
-            '--voice-scale': voiceScale,
             transform: `translateY(${!isLocked ? -Math.min(lockProgress * 14, 10) : 0}px)`,
             transition: 'transform 0.05s ease-out',
-          } as React.CSSProperties}
+          }}
         >
-          {chatElementAnimations !== false && (
-            <>
-              <div className="orbita-voice-wave-layer orbita-voice-wave-layer-1" />
-              <div className="orbita-voice-wave-layer orbita-voice-wave-layer-2" />
-              <div className="orbita-voice-wave-layer orbita-voice-wave-layer-3" />
-            </>
-          )}
+          <canvas
+            ref={waveCanvasRef}
+            style={{
+              position: 'absolute',
+              top: '-17px',
+              left: '-17px',
+              width: '76px',
+              height: '76px',
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          />
 
           <button
             type="button"

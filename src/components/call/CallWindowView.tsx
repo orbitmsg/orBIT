@@ -519,6 +519,112 @@ export const CallWindowView = () => {
   }, [isConnected, isGroupCall]);
 
   useEffect(() => {
+    if (!isConnected) return;
+    const svc = isGroupCall ? groupLiveKitService : liveKitService;
+    let isCancelled = false;
+    let audioCtx: AudioContext | null = null;
+    let analyser: AnalyserNode | null = null;
+    let mediaSource: MediaStreamAudioSourceNode | null = null;
+    let currentTrack: MediaStreamTrack | null = null;
+    const timeData = new Uint8Array(64);
+    const freqData = new Uint8Array(32);
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel('orbita-call-channel');
+    } catch {}
+
+    const setupAudio = () => {
+      try {
+        const rTrack = svc.getRemoteAudioTrack();
+        const mTrack = rTrack?.mediaStreamTrack;
+        if (!mTrack || mTrack.readyState === 'ended' || isCancelled) return;
+        if (currentTrack === mTrack && analyser) return;
+        currentTrack = mTrack;
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioCtx) return;
+        if (!audioCtx || audioCtx.state === 'closed') {
+          audioCtx = new AudioCtx();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume().catch(() => {});
+        }
+        if (mediaSource) {
+          try { mediaSource.disconnect(); } catch {}
+        }
+        if (analyser) {
+          try { analyser.disconnect(); } catch {}
+        }
+        const stream = new MediaStream([mTrack]);
+        mediaSource = audioCtx.createMediaStreamSource(stream);
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 64;
+        analyser.smoothingTimeConstant = 0.2;
+        mediaSource.connect(analyser);
+      } catch {}
+    };
+
+    setupAudio();
+    svc.on('trackSubscribed', setupAudio);
+
+    const interval = setInterval(() => {
+      if (isCancelled) return;
+      if (!analyser) {
+        setupAudio();
+      }
+      let vol = 0;
+      if (analyser) {
+        analyser.getByteTimeDomainData(timeData);
+        let maxDev = 0;
+        for (let i = 0; i < timeData.length; i++) {
+          const dev = Math.abs(timeData[i] - 128);
+          if (dev > maxDev) maxDev = dev;
+        }
+        const timeVol = maxDev > 4 ? Math.min(1, (maxDev - 4) / 32) : 0;
+        analyser.getByteFrequencyData(freqData);
+        let sum = 0;
+        for (let i = 0; i < freqData.length; i++) {
+          sum += freqData[i];
+        }
+        const avg = sum / freqData.length;
+        const freqVol = avg > 4 ? Math.min(1, (avg - 4) / 28) : 0;
+        vol = Math.max(timeVol, freqVol);
+      }
+
+      const participants = svc.getParticipants() || [];
+      const remoteSpeaking = participants.some((p: any) => !p.isLocal && p.isSpeaking);
+      const isSpeaking = remoteSpeaking || vol > 0.05;
+
+      const payload = { volume: vol, isSpeaking };
+      if (channel) {
+        try {
+          channel.postMessage({ type: 'CALL_REMOTE_AUDIO', payload });
+        } catch {}
+      }
+      try {
+        (window as any).orbita?.sendCallAction?.({ type: 'remoteAudio', payload });
+      } catch {}
+    }, 40);
+
+    return () => {
+      isCancelled = true;
+      clearInterval(interval);
+      try { svc.off('trackSubscribed', setupAudio); } catch {}
+      if (mediaSource) {
+        try { mediaSource.disconnect(); } catch {}
+      }
+      if (analyser) {
+        try { analyser.disconnect(); } catch {}
+      }
+      if (audioCtx && audioCtx.state !== 'closed') {
+        audioCtx.close().catch(() => {});
+      }
+      if (channel) {
+        try { channel.close(); } catch {}
+      }
+    };
+  }, [isConnected, isGroupCall]);
+
+  useEffect(() => {
     const onQuality = (quality: any) => {
       setRemoteConnectionQuality(quality);
     };

@@ -684,13 +684,13 @@ export class GroupLiveKitService extends EventEmitter {
       const participant = this.room.remoteParticipants.get(identity);
       if (participant) {
         const pub = participant.getTrackPublication(Track.Source.Microphone)
-          || Array.from(participant.trackPublications.values()).find((t) => t.source === Track.Source.Microphone);
+          || Array.from(participant.trackPublications.values()).find((t) => t.source === Track.Source.Microphone || t.kind === Track.Kind.Audio);
         return (pub?.track as RemoteTrack) || null;
       }
     }
     for (const participant of this.room.remoteParticipants.values()) {
       const pub = participant.getTrackPublication(Track.Source.Microphone)
-        || Array.from(participant.trackPublications.values()).find((t) => t.source === Track.Source.Microphone);
+        || Array.from(participant.trackPublications.values()).find((t) => t.source === Track.Source.Microphone || t.kind === Track.Kind.Audio);
       if (pub?.track) {
         return pub.track as RemoteTrack;
       }

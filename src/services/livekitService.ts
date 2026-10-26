@@ -324,6 +324,10 @@ class LiveKitService extends EventEmitter {
       .on(RoomEvent.TrackMuted, this.onTrackMuted.bind(this))
       .on(RoomEvent.TrackUnmuted, this.onTrackUnmuted.bind(this))
       .on(RoomEvent.ConnectionQualityChanged, this.onConnectionQualityChanged.bind(this))
+      .on(RoomEvent.ActiveSpeakersChanged, (speakers: any[]) => {
+        this.updateParticipants();
+        this.emit('activeSpeakersChanged', speakers);
+      })
       .on(RoomEvent.LocalTrackPublished, (pub: any) => {
         if (pub.source === Track.Source.ScreenShare) {
           this.screenShareTrack = (pub.track as LocalTrack) || null;
@@ -758,13 +762,13 @@ class LiveKitService extends EventEmitter {
         || Array.from(this.room.remoteParticipants.values()).find((part) => part.identity === identity || part.name === identity);
       if (p) {
         const pub = p.getTrackPublication(Track.Source.Microphone)
-          || Array.from(p.trackPublications.values()).find((t) => t.source === Track.Source.Microphone);
+          || Array.from(p.trackPublications.values()).find((t) => t.source === Track.Source.Microphone || t.kind === Track.Kind.Audio);
         return (pub?.track as RemoteTrack) || null;
       }
     }
     for (const p of this.room.remoteParticipants.values()) {
       const pub = p.getTrackPublication(Track.Source.Microphone)
-        || Array.from(p.trackPublications.values()).find((t) => t.source === Track.Source.Microphone);
+        || Array.from(p.trackPublications.values()).find((t) => t.source === Track.Source.Microphone || t.kind === Track.Kind.Audio);
       if (pub?.track) return pub.track as RemoteTrack;
     }
     return null;

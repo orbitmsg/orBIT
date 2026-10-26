@@ -50,6 +50,41 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
   const smoothedVolumeRef = useRef(0.04);
   const timeRef = useRef(0);
   const accentRgbRef = useRef<[number, number, number]>([92, 84, 229]);
+  const broadcastVolRef = useRef(0);
+  const broadcastSpeakingRef = useRef(false);
+  const lastBroadcastTimeRef = useRef(0);
+
+  useEffect(() => {
+    if (!isCallActive) return;
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel('orbita-call-channel');
+      bc.onmessage = (event) => {
+        if (event.data?.type === 'CALL_REMOTE_AUDIO' && event.data.payload) {
+          broadcastVolRef.current = Number(event.data.payload.volume) || 0;
+          broadcastSpeakingRef.current = Boolean(event.data.payload.isSpeaking);
+          lastBroadcastTimeRef.current = Date.now();
+        }
+      };
+    } catch {}
+
+    const unsubAction = (window as any).orbita?.onCallAction?.((action: any) => {
+      if (action?.type === 'remoteAudio' && action.payload) {
+        broadcastVolRef.current = Number(action.payload.volume) || 0;
+        broadcastSpeakingRef.current = Boolean(action.payload.isSpeaking);
+        lastBroadcastTimeRef.current = Date.now();
+      }
+    });
+
+    return () => {
+      if (bc) {
+        try { bc.close(); } catch {}
+      }
+      if (typeof unsubAction === 'function') {
+        try { unsubAction(); } catch {}
+      }
+    };
+  }, [isCallActive]);
 
   useEffect(() => {
     if (!barRef.current) return;
@@ -202,7 +237,7 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
       const rect = container.getBoundingClientRect();
       if (rect.width > 0) {
         canvas.width = rect.width;
-        canvas.height = 20;
+        canvas.height = 24;
       }
     };
 
@@ -232,7 +267,7 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
         const s1 = Math.sin(x * f1 + wavePhase);
         const s2 = Math.sin(x * f2 - wavePhase * 0.75 + 1.3);
         const norm = (s1 * 0.68 + s2 * 0.32 + 1) * 0.5;
-        const elevation = Math.min(15, norm * amplitude);
+        const elevation = Math.min(22, norm * amplitude);
         const y = baseline - elevation;
         ctx.lineTo(x, y);
       }
@@ -240,7 +275,7 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
       ctx.closePath();
 
       const [r, g, b] = colorRgb;
-      const grad = ctx.createLinearGradient(0, baseline - 15, 0, height);
+      const grad = ctx.createLinearGradient(0, Math.max(0, baseline - 22), 0, height);
       grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.25})`);
       grad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.70})`);
       grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, ${alpha})`);
@@ -262,7 +297,12 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
 
       ctx.clearRect(0, 0, width, height);
 
-      let remoteAudioVol = 0;
+      if (Date.now() - lastBroadcastTimeRef.current > 300) {
+        broadcastVolRef.current = 0;
+        broadcastSpeakingRef.current = false;
+      }
+
+      let localAnalyserVol = 0;
       if (analyserRef.current) {
         analyserRef.current.getByteTimeDomainData(timeData);
         let maxDev = 0;
@@ -270,7 +310,7 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
           const dev = Math.abs(timeData[i] - 128);
           if (dev > maxDev) maxDev = dev;
         }
-        const timeVol = maxDev > 6 ? Math.min(1, (maxDev - 6) / 32) : 0;
+        const timeVol = maxDev > 4 ? Math.min(1, (maxDev - 4) / 32) : 0;
 
         analyserRef.current.getByteFrequencyData(freqData);
         let sum = 0;
@@ -278,31 +318,32 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
           sum += freqData[i];
         }
         const avg = sum / freqData.length;
-        const freqVol = avg > 6 ? Math.min(1, (avg - 6) / 28) : 0;
+        const freqVol = avg > 4 ? Math.min(1, (avg - 4) / 28) : 0;
 
-        remoteAudioVol = Math.max(timeVol, freqVol);
+        localAnalyserVol = Math.max(timeVol, freqVol);
       }
 
-      const remoteSpeaking = !!activeCall?.participants?.some((p: any) => !p.isLocal && p.isSpeaking);
-      const fallbackVol = remoteSpeaking ? 0.65 + Math.sin(timeRef.current * 4) * 0.25 : 0;
+      const remoteAudioVol = Math.max(broadcastVolRef.current, localAnalyserVol);
+      const remoteSpeaking = broadcastSpeakingRef.current || !!activeCall?.participants?.some((p: any) => !p.isLocal && p.isSpeaking);
+      const fallbackVol = remoteSpeaking ? 0.70 + Math.sin(timeRef.current * 6) * 0.25 : 0;
       const rawVol = Math.max(remoteAudioVol, fallbackVol);
-      const targetVol = rawVol > 0.06 ? rawVol : 0;
+      const targetVol = rawVol > 0.04 ? rawVol : 0;
 
       if (targetVol > smoothedVolumeRef.current) {
-        smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.035;
+        smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.20;
       } else {
-        smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.025;
+        smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.08;
       }
 
-      timeRef.current += 0.003 + smoothedVolumeRef.current * 0.003;
+      timeRef.current += 0.022 + smoothedVolumeRef.current * 0.040;
 
       const phase = timeRef.current;
       const vol = smoothedVolumeRef.current;
-      const baseline = 20;
+      const baseline = 24;
 
-      drawWaveLayer(ctx, width, height, baseline, 6 + vol * 7, 0.009, 0.018, phase * 0.7, accentRgbRef.current, 0.25);
-      drawWaveLayer(ctx, width, height, baseline, 7 + vol * 8, 0.012, 0.024, phase * 0.9 + 1.8, accentRgbRef.current, 0.42);
-      drawWaveLayer(ctx, width, height, baseline, 9 + vol * 9, 0.014, 0.028, phase * 1.1 + 3.6, accentRgbRef.current, 0.60);
+      drawWaveLayer(ctx, width, height, baseline, 4 + vol * 13, 0.009, 0.018, phase * 0.7, accentRgbRef.current, 0.28);
+      drawWaveLayer(ctx, width, height, baseline, 6 + vol * 15, 0.013, 0.025, phase * 0.95 + 1.8, accentRgbRef.current, 0.45);
+      drawWaveLayer(ctx, width, height, baseline, 8 + vol * 17, 0.016, 0.030, phase * 1.2 + 3.6, accentRgbRef.current, 0.65);
 
       animId = requestAnimationFrame(render);
     };
@@ -345,7 +386,7 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
             bottom: '100%',
             left: 0,
             width: '100%',
-            height: '20px',
+            height: '24px',
             pointerEvents: 'none',
             zIndex: 15,
           }}

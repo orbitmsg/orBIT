@@ -262,7 +262,7 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
     ) => {
       ctx.beginPath();
       ctx.moveTo(0, height);
-      const step = 4;
+      const step = 3;
       for (let x = 0; x <= width; x += step) {
         const s1 = Math.sin(x * f1 + wavePhase);
         const s2 = Math.sin(x * f2 - wavePhase * 0.75 + 1.3);
@@ -310,7 +310,7 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
           const dev = Math.abs(timeData[i] - 128);
           if (dev > maxDev) maxDev = dev;
         }
-        const timeVol = maxDev > 4 ? Math.min(1, (maxDev - 4) / 32) : 0;
+        const timeVol = Math.min(1, maxDev / 120);
 
         analyserRef.current.getByteFrequencyData(freqData);
         let sum = 0;
@@ -318,32 +318,34 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
           sum += freqData[i];
         }
         const avg = sum / freqData.length;
-        const freqVol = avg > 4 ? Math.min(1, (avg - 4) / 28) : 0;
+        const freqVol = Math.min(1, avg / 100);
 
         localAnalyserVol = Math.max(timeVol, freqVol);
       }
 
-      const remoteAudioVol = Math.max(broadcastVolRef.current, localAnalyserVol);
-      const remoteSpeaking = broadcastSpeakingRef.current || !!activeCall?.participants?.some((p: any) => !p.isLocal && p.isSpeaking);
-      const fallbackVol = remoteSpeaking ? 0.70 + Math.sin(timeRef.current * 6) * 0.25 : 0;
-      const rawVol = Math.max(remoteAudioVol, fallbackVol);
-      const targetVol = rawVol > 0.04 ? rawVol : 0;
-
-      if (targetVol > smoothedVolumeRef.current) {
-        smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.20;
-      } else {
-        smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.08;
+      const rawAudioVol = Math.max(broadcastVolRef.current, localAnalyserVol);
+      const NOISE_GATE = 0.32;
+      let targetVol = 0;
+      if (rawAudioVol > NOISE_GATE) {
+        const norm = (rawAudioVol - NOISE_GATE) / (1 - NOISE_GATE);
+        targetVol = Math.pow(Math.min(1, Math.max(0, norm)), 2.2);
       }
 
-      timeRef.current += 0.022 + smoothedVolumeRef.current * 0.040;
+      if (targetVol > smoothedVolumeRef.current) {
+        smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.08;
+      } else {
+        smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.04;
+      }
+
+      timeRef.current += 0.015 + smoothedVolumeRef.current * 0.022;
 
       const phase = timeRef.current;
       const vol = smoothedVolumeRef.current;
       const baseline = 24;
 
-      drawWaveLayer(ctx, width, height, baseline, 4 + vol * 13, 0.009, 0.018, phase * 0.7, accentRgbRef.current, 0.28);
-      drawWaveLayer(ctx, width, height, baseline, 6 + vol * 15, 0.013, 0.025, phase * 0.95 + 1.8, accentRgbRef.current, 0.45);
-      drawWaveLayer(ctx, width, height, baseline, 8 + vol * 17, 0.016, 0.030, phase * 1.2 + 3.6, accentRgbRef.current, 0.65);
+      drawWaveLayer(ctx, width, height, baseline, 2.5 + vol * 14, 0.008, 0.016, phase * 0.7, accentRgbRef.current, 0.28);
+      drawWaveLayer(ctx, width, height, baseline, 3.8 + vol * 16, 0.011, 0.022, phase * 0.95 + 1.8, accentRgbRef.current, 0.45);
+      drawWaveLayer(ctx, width, height, baseline, 5.0 + vol * 18, 0.014, 0.028, phase * 1.2 + 3.6, accentRgbRef.current, 0.65);
 
       animId = requestAnimationFrame(render);
     };

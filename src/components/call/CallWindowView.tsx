@@ -579,20 +579,26 @@ export const CallWindowView = () => {
           const dev = Math.abs(timeData[i] - 128);
           if (dev > maxDev) maxDev = dev;
         }
-        const timeVol = maxDev > 4 ? Math.min(1, (maxDev - 4) / 32) : 0;
+        const timeVol = Math.min(1, maxDev / 120);
         analyser.getByteFrequencyData(freqData);
         let sum = 0;
         for (let i = 0; i < freqData.length; i++) {
           sum += freqData[i];
         }
         const avg = sum / freqData.length;
-        const freqVol = avg > 4 ? Math.min(1, (avg - 4) / 28) : 0;
+        const freqVol = Math.min(1, avg / 100);
         vol = Math.max(timeVol, freqVol);
       }
 
       const participants = svc.getParticipants() || [];
+      const pLevels = participants
+        .filter((p: any) => !p.isLocal)
+        .map((p: any) => (typeof p.audioLevel === 'number' ? p.audioLevel : 0));
+      const maxPLevel = pLevels.length > 0 ? Math.max(0, ...pLevels) : 0;
+      vol = Math.max(vol, maxPLevel);
+
       const remoteSpeaking = participants.some((p: any) => !p.isLocal && p.isSpeaking);
-      const isSpeaking = remoteSpeaking || vol > 0.05;
+      const isSpeaking = remoteSpeaking || vol > 0.15;
 
       const payload = { volume: vol, isSpeaking };
       if (channel) {

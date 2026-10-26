@@ -28,26 +28,22 @@ const drawCircularWaveLayer = (
   cx: number,
   cy: number,
   baseR: number,
-  amp: number,
+  amplitude: number,
   k1: number,
   k2: number,
-  phase: number,
-  speed2: number,
-  shift2: number,
-  ratio1: number,
-  colorInner: string,
-  colorOuter: string,
-  strokeColor: string,
-  strokeWidth: number
+  wavePhase: number,
+  colorRgb: [number, number, number],
+  alpha: number
 ) => {
   const steps = 48;
   ctx.beginPath();
   for (let i = 0; i <= steps; i++) {
     const theta = (i / steps) * Math.PI * 2;
-    const w1 = Math.sin(k1 * theta + phase);
-    const w2 = Math.sin(k2 * theta - phase * speed2 + shift2);
-    const norm = (w1 * ratio1 + w2 * (1 - ratio1) + 1) * 0.5;
-    const r = baseR + norm * amp;
+    const s1 = Math.sin(k1 * theta + wavePhase);
+    const s2 = Math.sin(k2 * theta - wavePhase * 0.75 + 1.3);
+    const norm = (s1 * 0.68 + s2 * 0.32 + 1) * 0.5;
+    const elevation = Math.min(12, norm * amplitude);
+    const r = baseR + elevation;
     const x = cx + r * Math.cos(theta);
     const y = cy + r * Math.sin(theta);
     if (i === 0) ctx.moveTo(x, y);
@@ -55,18 +51,15 @@ const drawCircularWaveLayer = (
   }
   ctx.closePath();
 
-  const maxR = baseR + amp + 1;
-  const grad = ctx.createRadialGradient(cx, cy, baseR * 0.75, cx, cy, maxR);
-  grad.addColorStop(0, colorInner);
-  grad.addColorStop(1, colorOuter);
+  const [r, g, b] = colorRgb;
+  const maxR = baseR + amplitude + 1;
+  const grad = ctx.createRadialGradient(cx, cy, baseR * 0.65, cx, cy, maxR);
+  grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha})`);
+  grad.addColorStop(0.55, `rgba(${r}, ${g}, ${b}, ${alpha * 0.70})`);
+  grad.addColorStop(0.9, `rgba(${r}, ${g}, ${b}, ${alpha * 0.25})`);
+  grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
   ctx.fillStyle = grad;
   ctx.fill();
-
-  if (strokeWidth > 0 && strokeColor) {
-    ctx.strokeStyle = strokeColor;
-    ctx.lineWidth = strokeWidth;
-    ctx.stroke();
-  }
 };
 
 interface VoiceMessagePlayerProps {
@@ -104,7 +97,6 @@ export const VoiceMessagePlayer = memo(({
   const trackId = msg?.id || messageId || url;
   const isCurrentTrack = useAudioStore((state) => state.currentTrack?.id === trackId);
   const isGlobalPlaying = useAudioStore((state) => (isCurrentTrack ? state.isPlaying : false));
-  const globalCurrentTime = useAudioStore((state) => (isCurrentTrack ? state.currentTime : 0));
   const globalDuration = useAudioStore((state) => (isCurrentTrack ? state.duration : 0));
   const savedPosition = useAudioStore((state) => (trackId ? state.playbackPositions[trackId] || 0 : 0));
 
@@ -184,8 +176,8 @@ export const VoiceMessagePlayer = memo(({
     if (!waveCanvasRef.current) return;
     const canvas = waveCanvasRef.current;
     const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2) : 1;
-    canvas.width = 72 * dpr;
-    canvas.height = 72 * dpr;
+    canvas.width = 76 * dpr;
+    canvas.height = 76 * dpr;
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.scale(dpr, dpr);
@@ -193,7 +185,6 @@ export const VoiceMessagePlayer = memo(({
   }, []);
 
   const effectiveDuration = isCurrentTrack && globalDuration > 0 ? globalDuration : (localDuration || msg?.duration || 0);
-  const effectiveCurrentTime = isCurrentTrack ? globalCurrentTime : savedPosition;
   const isPlaying = isCurrentTrack && isGlobalPlaying;
   const isLoaded = Boolean(blobUrl);
   const isUnplayed = !msg?.isListened && !hasPlayedLocally;
@@ -360,37 +351,37 @@ export const VoiceMessagePlayer = memo(({
 
   useEffect(() => {
     let animId: number;
-    let lastAudioTime = 0;
-    let lastSyncTime = performance.now();
+
+    const getLiveTime = useAudioStore.getState().getLiveTime;
+    const initialTime = isCurrentTrack && getLiveTime ? getLiveTime() : savedPosition;
+    let anchorAudioTime = typeof initialTime === 'number' && isFinite(initialTime) && initialTime >= 0 ? initialTime : savedPosition;
+    let anchorPerfTime = performance.now();
+    let hasStartedMoving = false;
 
     const tick = () => {
       if (dragStateRef.current.isDragging) return;
 
-      const getLiveTime = useAudioStore.getState().getLiveTime;
-      const liveAudioTime = isCurrentTrack
-        ? (getLiveTime ? getLiveTime() : useAudioStore.getState().currentTime)
-        : 0;
+      const liveTime = isCurrentTrack && getLiveTime ? getLiveTime() : null;
       const now = performance.now();
-
-      let currentExactTime = liveAudioTime;
       const playbackRate = useAudioStore.getState().playbackRate || 1;
-      if (isPlaying && playbackRate > 0) {
-        let expectedTime = ((now - lastSyncTime) / 1000) * playbackRate;
-        if (Math.abs(liveAudioTime - expectedTime) > 0.3 || liveAudioTime < 0.1) {
-          lastSyncTime = now - (liveAudioTime * 1000) / playbackRate;
-          expectedTime = liveAudioTime;
+
+      if (typeof liveTime === 'number' && isFinite(liveTime) && liveTime > 0) {
+        if (!hasStartedMoving) {
+          hasStartedMoving = true;
+          anchorAudioTime = liveTime;
+          anchorPerfTime = now;
+        } else if (Math.abs(liveTime - (anchorAudioTime + Math.max(0, (now - anchorPerfTime) / 1000) * playbackRate)) > 0.25) {
+          anchorAudioTime = liveTime;
+          anchorPerfTime = now;
         }
-        currentExactTime = Math.min(effectiveDuration, expectedTime);
       }
 
-      if (liveAudioTime !== lastAudioTime) {
-        lastAudioTime = liveAudioTime;
-      }
+      const elapsed = hasStartedMoving
+        ? Math.max(0, (now - anchorPerfTime) / 1000) * playbackRate
+        : 0;
+      const currentExactTime = Math.min(effectiveDuration, anchorAudioTime + elapsed);
+      const ratio = effectiveDuration > 0 ? Math.min(1, Math.max(0, currentExactTime / effectiveDuration)) : 0;
 
-      let ratio = effectiveDuration > 0 ? Math.min(1, currentExactTime / effectiveDuration) : 0;
-      if (effectiveDuration > 0 && currentExactTime >= effectiveDuration - 0.4) {
-        ratio = 1;
-      }
       if (progressOverlayRef.current) {
         progressOverlayRef.current.style.width = `${ratio * 100}%`;
       }
@@ -405,30 +396,34 @@ export const VoiceMessagePlayer = memo(({
           if (isPlaying && chatElementAnimations !== false) {
             const barIndex = Math.min(bars.length - 1, Math.floor(ratio * bars.length));
             const rawVol = (bars[barIndex] || 25) / 100;
-            smoothedVolRef.current += (rawVol - smoothedVolRef.current) * 0.22;
+            smoothedVolRef.current += (rawVol - smoothedVolRef.current) * 0.18;
             const vol = smoothedVolRef.current;
 
-            wavePhaseRef.current += 0.045 + vol * 0.06;
+            wavePhaseRef.current += 0.025 + vol * 0.035;
             const phase = wavePhaseRef.current;
 
-            ctx.clearRect(0, 0, 72, 72);
+            ctx.clearRect(0, 0, 76, 76);
 
-            const cx = 36;
-            const cy = 36;
+            const cx = 38;
+            const cy = 38;
             const baseR = 24;
-            const amp = 2.0 + vol * 7.5;
+            const baseAmp = 3.5 + vol * 8.5;
 
             if (isOwn) {
-              drawCircularWaveLayer(ctx, cx, cy, baseR, amp * 1.15, 3, 4, phase, 0.7, 1.4, 0.65, 'rgba(255, 255, 255, 0.40)', 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.50)', 1);
-              drawCircularWaveLayer(ctx, cx, cy, baseR, amp * 0.85, 4, 5, -phase * 0.85, 0.6, 2.1, 0.6, 'rgba(255, 255, 255, 0.65)', 'rgba(255, 255, 255, 0.05)', 'rgba(255, 255, 255, 0.80)', 1.2);
-              drawCircularWaveLayer(ctx, cx, cy, baseR, amp * 0.6, 3, 5, phase * 1.2, 0.8, 0.9, 0.7, 'rgba(255, 255, 255, 0.85)', 'rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.95)', 1.4);
+              const white: [number, number, number] = [255, 255, 255];
+              drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.45, 3, 4, phase * 0.55, white, 0.22 + vol * 0.15);
+              drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.75, 4, 5, -phase * 0.75 + 1.4, white, 0.35 + vol * 0.22);
+              drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp, 3, 5, phase, white, 0.55 + vol * 0.30);
             } else {
-              drawCircularWaveLayer(ctx, cx, cy, baseR, amp * 1.15, 3, 4, phase, 0.7, 1.4, 0.65, 'rgba(167, 139, 250, 0.40)', 'rgba(167, 139, 250, 0.0)', 'rgba(167, 139, 250, 0.50)', 1);
-              drawCircularWaveLayer(ctx, cx, cy, baseR, amp * 0.85, 4, 5, -phase * 0.85, 0.6, 2.1, 0.6, 'rgba(196, 181, 253, 0.65)', 'rgba(196, 181, 253, 0.05)', 'rgba(196, 181, 253, 0.80)', 1.2);
-              drawCircularWaveLayer(ctx, cx, cy, baseR, amp * 0.6, 3, 5, phase * 1.2, 0.8, 0.9, 0.7, 'rgba(221, 214, 254, 0.85)', 'rgba(167, 139, 250, 0.15)', 'rgba(237, 233, 254, 0.95)', 1.4);
+              const accent1: [number, number, number] = [124, 58, 237];
+              const accent2: [number, number, number] = [147, 51, 234];
+              const accent3: [number, number, number] = [168, 85, 247];
+              drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.45, 3, 4, phase * 0.55, accent1, 0.25 + vol * 0.15);
+              drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.75, 4, 5, -phase * 0.75 + 1.4, accent2, 0.40 + vol * 0.22);
+              drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp, 3, 5, phase, accent3, 0.65 + vol * 0.30);
             }
           } else {
-            ctx.clearRect(0, 0, 72, 72);
+            ctx.clearRect(0, 0, 76, 76);
           }
         }
       }
@@ -445,12 +440,7 @@ export const VoiceMessagePlayer = memo(({
         tick();
       }
     } else {
-      let ratio = dragProgressRatio !== null
-        ? dragProgressRatio
-        : (effectiveDuration > 0 ? Math.min(1, effectiveCurrentTime / effectiveDuration) : 0);
-      if (effectiveDuration > 0 && effectiveCurrentTime >= effectiveDuration - 0.4) {
-        ratio = 1;
-      }
+      const ratio = effectiveDuration > 0 ? Math.min(1, Math.max(0, savedPosition / effectiveDuration)) : 0;
       if (progressOverlayRef.current) {
         progressOverlayRef.current.style.width = `${ratio * 100}%`;
       }
@@ -463,21 +453,21 @@ export const VoiceMessagePlayer = memo(({
           const rawBytes = msg?.fileSize || (itemTotalSize > 0 ? itemTotalSize : (effectiveDuration ? Math.round(effectiveDuration * 2200) : 18500));
           timeDisplayRef.current.textContent = `${formatVoiceTime(effectiveDuration)}, ${formatFileSize(rawBytes)}`;
         } else {
-          timeDisplayRef.current.textContent = isPlaying || effectiveCurrentTime > 0
-            ? `${formatVoiceTime(effectiveCurrentTime)} / ${formatVoiceTime(effectiveDuration)}`
+          timeDisplayRef.current.textContent = savedPosition > 0
+            ? `${formatVoiceTime(savedPosition)} / ${formatVoiceTime(effectiveDuration)}`
             : formatVoiceTime(effectiveDuration);
         }
       }
       if (waveCanvasRef.current) {
         const ctx = waveCanvasRef.current.getContext('2d');
-        if (ctx) ctx.clearRect(0, 0, 72, 72);
+        if (ctx) ctx.clearRect(0, 0, 76, 76);
       }
     }
 
     const unsubVisibility = appVisibility.subscribe((visible) => {
       cancelAnimationFrame(animId);
-      if (visible) {
-        lastSyncTime = performance.now();
+      if (visible && isPlaying) {
+        anchorPerfTime = performance.now();
         tick();
       }
     });
@@ -487,13 +477,13 @@ export const VoiceMessagePlayer = memo(({
       unsubVisibility();
       if (waveCanvasRef.current) {
         const ctx = waveCanvasRef.current.getContext('2d');
-        if (ctx) ctx.clearRect(0, 0, 72, 72);
+        if (ctx) ctx.clearRect(0, 0, 76, 76);
       }
     };
-  }, [isPlaying, isCurrentTrack, effectiveDuration, dragProgressRatio, isUploading, isLoaded, liveProgress, msg?.uploadedMb, msg?.fileSize, itemTotalSize, effectiveCurrentTime, bars, chatElementAnimations]);
+  }, [isPlaying, isCurrentTrack, effectiveDuration, dragProgressRatio, isUploading, isLoaded, liveProgress, msg?.uploadedMb, msg?.fileSize, itemTotalSize, savedPosition, bars, chatElementAnimations, isOwn]);
 
-  const progressRatio = dragProgressRatio !== null ? dragProgressRatio : (effectiveDuration > 0 ? Math.min(1, effectiveCurrentTime / effectiveDuration) : 0);
-  const displayCurrentTime = dragProgressRatio !== null ? dragProgressRatio * effectiveDuration : effectiveCurrentTime;
+  const progressRatio = dragProgressRatio !== null ? dragProgressRatio : (effectiveDuration > 0 ? Math.min(1, Math.max(0, savedPosition / effectiveDuration)) : 0);
+  const displayCurrentTime = dragProgressRatio !== null ? dragProgressRatio * effectiveDuration : savedPosition;
   const coverState: AudioCoverState = isUploading
     ? 'uploading'
     : (!isLoaded
@@ -523,10 +513,10 @@ export const VoiceMessagePlayer = memo(({
           ref={waveCanvasRef}
           style={{
             position: 'absolute',
-            width: '72px',
-            height: '72px',
-            top: '-12px',
-            left: '-12px',
+            width: '76px',
+            height: '76px',
+            top: '-14px',
+            left: '-14px',
             pointerEvents: 'none',
             zIndex: 0,
           }}

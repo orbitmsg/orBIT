@@ -69,7 +69,7 @@ export const MessageInput = memo<MessageInputProps>(({
   isRecording,
   isRecordingPaused = false,
   recordingTime,
-  recordingAmplitude: _recordingAmplitude = 0,
+  recordingAmplitude = 0,
   onSendMessage,
   onEditMessage,
   onStopRecording,
@@ -100,6 +100,88 @@ export const MessageInput = memo<MessageInputProps>(({
   const [hoverAttach, setHoverAttach] = useState(false);
   const [hoverEmoji, setHoverEmoji] = useState(false);
   const [hoverMic, setHoverMic] = useState(false);
+
+  const inputContainerRef = useRef<HTMLDivElement>(null);
+  const [isHoldingVoice, setIsHoldingVoice] = useState(false);
+  const [isLockedRecording, setIsLockedRecording] = useState(false);
+  const [lockProgress, setLockProgress] = useState(0);
+  const dragStartYRef = useRef(0);
+  const holdStartTimeRef = useRef(0);
+  const hasLockedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isRecording) {
+      setIsHoldingVoice(false);
+      setIsLockedRecording(false);
+      setLockProgress(0);
+      hasLockedRef.current = false;
+    }
+  }, [isRecording]);
+
+  useEffect(() => {
+    if (!isHoldingVoice) return;
+
+    const handlePointerMove = (e: MouseEvent) => {
+      if (hasLockedRef.current) return;
+      const deltaY = dragStartYRef.current - e.clientY;
+      const progress = Math.min(1, Math.max(0, deltaY / 65));
+      setLockProgress(progress);
+
+      if (deltaY >= 65) {
+        hasLockedRef.current = true;
+        setIsLockedRecording(true);
+        setIsHoldingVoice(false);
+      }
+    };
+
+    const handlePointerUp = (e: MouseEvent) => {
+      setIsHoldingVoice(false);
+
+      if (hasLockedRef.current) {
+        return;
+      }
+
+      const elapsed = Date.now() - holdStartTimeRef.current;
+      if (elapsed < 400) {
+        if (onCancelRecording) onCancelRecording();
+        return;
+      }
+
+      const rect = inputContainerRef.current?.getBoundingClientRect();
+      if (
+        rect &&
+        (e.clientX < rect.left - 40 ||
+          e.clientX > rect.right + 40 ||
+          e.clientY < rect.top - 120 ||
+          e.clientY > rect.bottom + 60)
+      ) {
+        if (onCancelRecording) onCancelRecording();
+        return;
+      }
+
+      onStopRecording();
+    };
+
+    window.addEventListener('mousemove', handlePointerMove);
+    window.addEventListener('mouseup', handlePointerUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handlePointerMove);
+      window.removeEventListener('mouseup', handlePointerUp);
+    };
+  }, [isHoldingVoice, onCancelRecording, onStopRecording]);
+
+  const handleMicMouseDown = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    if (e.button !== 0 || !isRatchetReady) return;
+    e.preventDefault();
+    setIsHoldingVoice(true);
+    setIsLockedRecording(false);
+    setLockProgress(0);
+    dragStartYRef.current = e.clientY;
+    holdStartTimeRef.current = Date.now();
+    hasLockedRef.current = false;
+    onStartRecording();
+  }, [isRatchetReady, onStartRecording]);
 
   useEffect(() => {
     setHoverMic(false);
@@ -578,6 +660,14 @@ export const MessageInput = memo<MessageInputProps>(({
       }
     }
     if (e.key === 'Escape') {
+      if (isRecordingActive) {
+        setIsLockedRecording(false);
+        setIsHoldingVoice(false);
+        setLockProgress(0);
+        hasLockedRef.current = false;
+        if (onCancelRecording) onCancelRecording();
+        return;
+      }
       cancelCurrentAction();
     }
   };
@@ -596,10 +686,11 @@ export const MessageInput = memo<MessageInputProps>(({
   const micColor = (isRecording || (isHasContent && !isRecording)) ? (hoverMic ? 'var(--text-main)' : 'var(--accent-color)') : (hoverMic ? 'var(--text-main)' : 'var(--text-dim)');
 
   const showActionBanner = editingIndex !== null || replyingTo !== null || Boolean(pendingForwardMessages && pendingForwardMessages.length > 0);
-  const isRecordingActive = isRecording || isRecordingPaused;
+  const isRecordingActive = isRecording || isRecordingPaused || isHoldingVoice || isLockedRecording;
 
   return (
     <div
+      ref={inputContainerRef}
       style={{
         position: 'relative',
         flexShrink: 0,
@@ -647,6 +738,9 @@ export const MessageInput = memo<MessageInputProps>(({
       {isRecordingActive ? (
         <MessageInputVoiceRecorder
           recordingTime={recordingTime}
+          recordingAmplitude={recordingAmplitude}
+          isLocked={isLockedRecording}
+          lockProgress={lockProgress}
           onCancel={() => {
             setHoverMic(false);
             setHoverAttach(false);
@@ -829,15 +923,17 @@ export const MessageInput = memo<MessageInputProps>(({
             type="button"
             tabIndex={-1}
             disabled={!isRatchetReady}
+            onMouseDown={
+              !isRatchetReady || editingIndex !== null || isHasContent
+                ? undefined
+                : handleMicMouseDown
+            }
             onClick={
               !isRatchetReady
                 ? undefined
                 : (editingIndex !== null || isHasContent)
                   ? handleSend
-                  : () => {
-                    setHoverMic(false);
-                    onStartRecording();
-                  }
+                  : undefined
             }
             aria-label={editingIndex !== null ? t('chatWindow.confirm_edit', 'Сохранить') : isHasContent ? t('chatWindow.send', 'Отправить') : t('chatWindow.voice_message', 'Голосовое сообщение')}
             onMouseEnter={() => isRatchetReady && setHoverMic(true)}

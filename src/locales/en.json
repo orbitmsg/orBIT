@@ -498,6 +498,8 @@
       "hold_to_record": "Hold the mouse button to record a voice message.",
       "release_outside_to_cancel": "Release outside the field to cancel",
       "cancel_recording": "Cancel",
+      "send_voice_message": "Send voice message",
+      "lock_recording": "Lock recording",
       "link": "Link",
       "text": "Text"
     },

@@ -39,7 +39,7 @@ const drawCircularWaveLayer = (
     const s1 = Math.sin(k1 * theta + wavePhase);
     const s2 = Math.sin(k2 * theta - wavePhase * 0.75 + 1.3);
     const norm = (s1 * 0.68 + s2 * 0.32 + 1) * 0.5;
-    const elevation = Math.min(16, norm * amplitude);
+    const elevation = Math.min(18, norm * amplitude);
     const r = baseR + elevation;
     const x = cx + r * Math.cos(theta);
     const y = cy + r * Math.sin(theta);
@@ -88,7 +88,11 @@ const renderCircularWaves = (
   const cx = 60;
   const cy = 60;
   const baseR = 34;
-  const baseAmp = 4 + vol * 12;
+  const baseAmp = 7.5 + vol * 11.5;
+
+  const r1 = baseR + Math.sin(phase * 0.7) * 1.8;
+  const r2 = baseR + Math.sin(phase * 0.7 + 1.8) * 2.2;
+  const r3 = baseR + Math.sin(phase * 0.7 + 3.6) * 2.6;
 
   let rgb: [number, number, number] = [124, 58, 237];
   if (typeof document !== 'undefined') {
@@ -97,9 +101,9 @@ const renderCircularWaves = (
     if (parsed) rgb = parsed;
   }
   const [r, g, b] = rgb;
-  drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.45, 3, 4, phase * 0.55, [r, g, b], 0.25 + vol * 0.15);
-  drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.75, 4, 5, -phase * 0.75 + 1.4, [Math.min(255, r + 20), Math.min(255, g + 20), Math.min(255, b + 20)], 0.40 + vol * 0.22);
-  drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp, 3, 5, phase, [Math.min(255, r + 40), Math.min(255, g + 40), Math.min(255, b + 40)], 0.65 + vol * 0.30);
+  drawCircularWaveLayer(ctx, cx, cy, r1, baseAmp * 0.50, 3, 4, phase * 0.55, [r, g, b], 0.25 + vol * 0.15);
+  drawCircularWaveLayer(ctx, cx, cy, r2, baseAmp * 0.78, 4, 5, -phase * 0.75 + 1.4, [Math.min(255, r + 20), Math.min(255, g + 20), Math.min(255, b + 20)], 0.40 + vol * 0.22);
+  drawCircularWaveLayer(ctx, cx, cy, r3, baseAmp, 3, 5, phase, [Math.min(255, r + 40), Math.min(255, g + 40), Math.min(255, b + 40)], 0.65 + vol * 0.30);
 };
 
 export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps> = ({
@@ -140,7 +144,7 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
       smoothedVolRef.current += (target - smoothedVolRef.current) * 0.18;
       const vol = smoothedVolRef.current;
 
-      wavePhaseRef.current += 0.025 + vol * 0.035;
+      wavePhaseRef.current += 0.032 + vol * 0.038;
       renderCircularWaves(canvas, vol, wavePhaseRef.current);
 
       animId = requestAnimationFrame(render);

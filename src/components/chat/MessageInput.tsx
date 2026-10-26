@@ -701,6 +701,7 @@ export const MessageInput = memo<MessageInputProps>(({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'stretch',
+        overflow: 'visible',
       }}
     >
       {showCommandsMenu && filteredCommands.length > 0 && !isRecordingActive && (

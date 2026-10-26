@@ -32,14 +32,14 @@ const drawCircularWaveLayer = (
   colorRgb: [number, number, number],
   alpha: number
 ) => {
-  const steps = 48;
+  const steps = 64;
   ctx.beginPath();
   for (let i = 0; i <= steps; i++) {
     const theta = (i / steps) * Math.PI * 2;
     const s1 = Math.sin(k1 * theta + wavePhase);
     const s2 = Math.sin(k2 * theta - wavePhase * 0.75 + 1.3);
     const norm = (s1 * 0.68 + s2 * 0.32 + 1) * 0.5;
-    const elevation = Math.min(12, norm * amplitude);
+    const elevation = norm * amplitude;
     const r = baseR + elevation;
     const x = cx + r * Math.cos(theta);
     const y = cy + r * Math.sin(theta);
@@ -49,11 +49,11 @@ const drawCircularWaveLayer = (
   ctx.closePath();
 
   const [r, g, b] = colorRgb;
-  const maxR = baseR + amplitude + 1;
+  const maxR = baseR + amplitude + 18;
   const grad = ctx.createRadialGradient(cx, cy, baseR * 0.65, cx, cy, maxR);
   grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha})`);
-  grad.addColorStop(0.55, `rgba(${r}, ${g}, ${b}, ${alpha * 0.70})`);
-  grad.addColorStop(0.9, `rgba(${r}, ${g}, ${b}, ${alpha * 0.25})`);
+  grad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.75})`);
+  grad.addColorStop(0.85, `rgba(${r}, ${g}, ${b}, ${alpha * 0.25})`);
   grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
   ctx.fillStyle = grad;
   ctx.fill();
@@ -77,18 +77,18 @@ const renderCircularWaves = (
   if (!ctx) return;
 
   const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2) : 1;
-  const targetSize = Math.round(76 * dpr);
+  const targetSize = Math.round(260 * dpr);
   if (canvas.width !== targetSize || canvas.height !== targetSize) {
     canvas.width = targetSize;
     canvas.height = targetSize;
   }
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, 76, 76);
+  ctx.clearRect(0, 0, 260, 260);
 
-  const cx = 38;
-  const cy = 38;
+  const cx = 130;
+  const cy = 130;
   const baseR = 21;
-  const baseAmp = 3.5 + vol * 8.5;
+  const baseAmp = 18 + vol * 44;
 
   let rgb: [number, number, number] = [124, 58, 237];
   if (typeof document !== 'undefined') {
@@ -97,9 +97,9 @@ const renderCircularWaves = (
     if (parsed) rgb = parsed;
   }
   const [r, g, b] = rgb;
-  drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.45, 3, 4, phase * 0.55, [r, g, b], 0.25 + vol * 0.15);
-  drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.75, 4, 5, -phase * 0.75 + 1.4, [Math.min(255, r + 20), Math.min(255, g + 20), Math.min(255, b + 20)], 0.40 + vol * 0.22);
-  drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp, 3, 5, phase, [Math.min(255, r + 40), Math.min(255, g + 40), Math.min(255, b + 40)], 0.65 + vol * 0.30);
+  drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.55, 3, 4, phase * 0.55, [r, g, b], 0.28 + vol * 0.16);
+  drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.95, 4, 5, -phase * 0.75 + 1.4, [Math.min(255, r + 20), Math.min(255, g + 20), Math.min(255, b + 20)], 0.42 + vol * 0.22);
+  drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 1.45, 3, 5, phase, [Math.min(255, r + 40), Math.min(255, g + 40), Math.min(255, b + 40)], 0.65 + vol * 0.30);
 };
 
 export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps> = ({
@@ -166,6 +166,7 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
         width: '100%',
         minHeight: '42px',
         position: 'relative',
+        overflow: 'visible',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
@@ -239,15 +240,15 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
         </button>
       )}
 
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible' }}>
         {!isLocked && (
           <div
             style={{
               position: 'absolute',
               bottom: '65px',
-              right: '1px',
-              width: '40px',
-              height: '84px',
+              right: '0px',
+              width: '42px',
+              height: '88px',
               borderRadius: '9999px',
               backgroundColor: 'var(--surface-container-high, #27303c)',
               border: 'none',
@@ -256,28 +257,29 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '12px 0 10px 0',
+              padding: '14px 0 10px 0',
               boxSizing: 'border-box',
               pointerEvents: 'none',
               zIndex: 50,
             }}
           >
             <svg
-              width="20"
-              height="24"
-              viewBox="0 0 20 24"
+              width="22"
+              height="26"
+              viewBox="0 0 22 26"
               fill="none"
               style={{ overflow: 'visible' }}
             >
-              <rect x="2" y="11" width="16" height="12" rx="3.5" fill="#8e9aa8" />
+              <rect x="2.5" y="11" width="17" height="12" rx="3.5" fill="#8e9aa8" />
               <path
-                d={`M5.5 11V6.5a4.5 4.5 0 0 1 9 0V${Math.max(5.5, 11 - lockProgress * 5.5)}`}
+                d={`M6 11V6a5 5 0 0 1 10 0V${Math.max(5, 11 - lockProgress * 6.5)}`}
                 stroke="#8e9aa8"
-                strokeWidth="2.3"
+                strokeWidth="2.4"
                 strokeLinecap="round"
+                strokeLinejoin="round"
                 style={{
-                  transformOrigin: '5.5px 11px',
-                  transform: `translateY(-${lockProgress * 3.5}px) rotate(${lockProgress * -8}deg)`,
+                  transformOrigin: '6px 11px',
+                  transform: `translateY(-${lockProgress * 4}px) rotate(${lockProgress * -10}deg)`,
                   transition: 'all 0.05s ease-out',
                 }}
               />
@@ -305,16 +307,17 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
           style={{
             transform: `translateY(${!isLocked ? -Math.min(lockProgress * 14, 10) : 0}px)`,
             transition: 'transform 0.05s ease-out',
+            overflow: 'visible',
           }}
         >
           <canvas
             ref={waveCanvasRef}
             style={{
               position: 'absolute',
-              top: '-17px',
-              left: '-17px',
-              width: '76px',
-              height: '76px',
+              top: '-109px',
+              left: '-109px',
+              width: '260px',
+              height: '260px',
               pointerEvents: 'none',
               zIndex: 1,
             }}

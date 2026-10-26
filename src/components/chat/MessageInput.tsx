@@ -330,7 +330,6 @@ export const MessageInput = memo<MessageInputProps>(({
     }
   };
 
-  // Handle focus when replying, editing, mounting, or returning to chat
   useEffect(() => {
     if (editorRef.current) {
       setTimeout(() => {
@@ -339,10 +338,11 @@ export const MessageInput = memo<MessageInputProps>(({
         }
       }, 0);
     }
-  }, [editingIndex, replyingTo]);
+  }, [editingIndex, replyingTo, activeChatId]);
 
   const isInternalInputRef = useRef(false);
   const syncDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevEditingIndexRef = useRef(editingIndex);
 
   useEffect(() => {
     return () => {
@@ -354,20 +354,33 @@ export const MessageInput = memo<MessageInputProps>(({
   }, []);
 
   useEffect(() => {
-    if (isInternalInputRef.current) {
-      isInternalInputRef.current = false;
-      return;
-    }
     if (editorRef.current) {
+      if (editingIndex !== prevEditingIndexRef.current) {
+        prevEditingIndexRef.current = editingIndex;
+        editorRef.current.innerHTML = currentText ? markdownToHtml(currentText, 'inherit', true) : '';
+        setIsEditorEmpty(currentText.trim() === '');
+        setTimeout(() => {
+          if (editorRef.current) {
+            placeCaretAtEnd(editorRef.current);
+          }
+        }, 0);
+        return;
+      }
+
+      if (document.activeElement === editorRef.current) {
+        return;
+      }
+
+      if (isInternalInputRef.current) {
+        isInternalInputRef.current = false;
+        return;
+      }
+
       if (currentText === '') {
         if (editorRef.current.innerHTML !== '') {
           editorRef.current.innerHTML = '';
         }
         setIsEditorEmpty(true);
-        return;
-      }
-
-      if (document.activeElement === editorRef.current) {
         return;
       }
 
@@ -382,7 +395,86 @@ export const MessageInput = memo<MessageInputProps>(({
         }, 0);
       }
     }
-  }, [currentText]);
+  }, [currentText, editingIndex]);
+
+  useEffect(() => {
+    const handleWindowPointerDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target === editorRef.current ||
+        editorRef.current?.contains(target) ||
+        target.closest('input') ||
+        target.closest('textarea') ||
+        target.closest('button') ||
+        target.closest('a') ||
+        target.closest('[role="dialog"]') ||
+        target.closest('.modal-container') ||
+        target.closest('.orbita-context-menu') ||
+        target.closest('.orbita-modal')
+      ) {
+        return;
+      }
+      const sel = window.getSelection();
+      if (sel && sel.toString().length > 0) {
+        return;
+      }
+      requestAnimationFrame(() => {
+        if (editorRef.current && document.activeElement !== editorRef.current) {
+          placeCaretAtEnd(editorRef.current);
+        }
+      });
+    };
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const active = document.activeElement as HTMLElement | null;
+      if (
+        active &&
+        (active.tagName === 'INPUT' ||
+          active.tagName === 'TEXTAREA' ||
+          (active !== editorRef.current && active.getAttribute('contenteditable') === 'true') ||
+          active.closest('[role="dialog"]') ||
+          active.closest('.modal-container') ||
+          active.closest('.orbita-modal'))
+      ) {
+        return;
+      }
+      if (e.key.length === 1 && editorRef.current && active !== editorRef.current) {
+        editorRef.current.focus();
+        placeCaretAtEnd(editorRef.current);
+      }
+    };
+
+    window.addEventListener('pointerdown', handleWindowPointerDown);
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => {
+      window.removeEventListener('pointerdown', handleWindowPointerDown);
+      window.removeEventListener('keydown', handleGlobalKeyDown);
+    };
+  }, []);
+
+  const handleEditorBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    const related = e.relatedTarget as HTMLElement | null;
+    if (
+      related &&
+      (related.tagName === 'INPUT' ||
+        related.tagName === 'TEXTAREA' ||
+        related.getAttribute('contenteditable') === 'true' ||
+        related.closest('[role="dialog"]') ||
+        related.closest('.modal-container') ||
+        related.closest('.orbita-modal'))
+    ) {
+      return;
+    }
+    requestAnimationFrame(() => {
+      if (editorRef.current && document.activeElement !== editorRef.current) {
+        placeCaretAtEnd(editorRef.current);
+      }
+    });
+  };
 
   const cancelCurrentAction = () => {
     if (editingIndex !== null) {
@@ -412,6 +504,7 @@ export const MessageInput = memo<MessageInputProps>(({
   const handleEditorInput = () => {
     const el = editorRef.current;
     if (!el) return;
+    isInternalInputRef.current = true;
     const raw = (el.textContent || '').replace(/\u200B/g, '');
     const empty = raw.trim() === '';
     if (empty !== isEditorEmpty) {
@@ -444,10 +537,11 @@ export const MessageInput = memo<MessageInputProps>(({
     if (syncDebounceTimerRef.current) clearTimeout(syncDebounceTimerRef.current);
     syncDebounceTimerRef.current = setTimeout(() => {
       syncEditorToState();
-    }, 450);
+    }, 200);
   };
 
   const handleSend = () => {
+    if (!isRatchetReady) return;
     setShowCommandsMenu(false);
     setSlashQuery('');
     if (syncDebounceTimerRef.current) {
@@ -562,10 +656,6 @@ export const MessageInput = memo<MessageInputProps>(({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!isRatchetReady) {
-      e.preventDefault();
-      return;
-    }
     const isCmdOrCtrl = e.ctrlKey || e.metaKey;
 
     if (isCmdOrCtrl) {
@@ -841,19 +931,18 @@ export const MessageInput = memo<MessageInputProps>(({
           >
             <div
               ref={editorRef}
-              contentEditable={isRatchetReady}
+              contentEditable={true}
               suppressContentEditableWarning
               spellCheck={false}
               data-empty={isEditorEmpty}
               data-placeholder={
-                !isRatchetReady
-                  ? t('chatWindow.waiting_first_message')
-                  : editingIndex !== null
-                    ? t('chatWindow.edit_message_placeholder')
-                    : t('chatWindow.placeholder')
+                editingIndex !== null
+                  ? t('chatWindow.edit_message_placeholder')
+                  : t('chatWindow.placeholder')
               }
               onInput={handleEditorInput}
               onKeyDown={handleKeyDown}
+              onBlur={handleEditorBlur}
               onContextMenu={handleEditorContextMenu}
               className="rich-editor"
               style={{
@@ -871,13 +960,13 @@ export const MessageInput = memo<MessageInputProps>(({
                 overflowY: 'auto',
                 padding: '0',
                 width: '100%',
-                caretColor: 'var(--scroll-thumb-color, rgba(255, 255, 255, 0.45))',
+                caretColor: 'var(--accent-color, #7C3AED)',
                 wordBreak: 'break-word',
                 whiteSpace: 'pre-wrap',
-                userSelect: isRatchetReady ? 'text' : 'none',
-                WebkitUserSelect: isRatchetReady ? 'text' : 'none',
-                cursor: isRatchetReady ? 'text' : 'not-allowed',
-                opacity: isRatchetReady ? 1 : 0.6,
+                userSelect: 'text',
+                WebkitUserSelect: 'text',
+                cursor: 'text',
+                opacity: 1,
               }}
             />
           </div>

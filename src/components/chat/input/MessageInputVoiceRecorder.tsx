@@ -24,8 +24,8 @@ const drawCircularWaveLayer = (
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
-  baseR: number,
-  amplitude: number,
+  layerRadius: number,
+  waveHeight: number,
   k1: number,
   k2: number,
   wavePhase: number,
@@ -38,9 +38,9 @@ const drawCircularWaveLayer = (
     const theta = (i / steps) * Math.PI * 2;
     const s1 = Math.sin(k1 * theta + wavePhase);
     const s2 = Math.sin(k2 * theta - wavePhase * 0.75 + 1.3);
-    const norm = (s1 * 0.68 + s2 * 0.32 + 1) * 0.5;
-    const elevation = norm * amplitude;
-    const r = baseR + elevation;
+    const norm = (s1 * 0.65 + s2 * 0.35);
+    const elevation = norm * waveHeight;
+    const r = layerRadius + elevation;
     const x = cx + r * Math.cos(theta);
     const y = cy + r * Math.sin(theta);
     if (i === 0) ctx.moveTo(x, y);
@@ -49,11 +49,12 @@ const drawCircularWaveLayer = (
   ctx.closePath();
 
   const [r, g, b] = colorRgb;
-  const maxR = baseR + amplitude + 18;
-  const grad = ctx.createRadialGradient(cx, cy, baseR * 0.65, cx, cy, maxR);
+  const innerR = Math.max(0, layerRadius * 0.5);
+  const outerR = layerRadius + waveHeight + 12;
+  const grad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
   grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha})`);
-  grad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.75})`);
-  grad.addColorStop(0.85, `rgba(${r}, ${g}, ${b}, ${alpha * 0.25})`);
+  grad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.7})`);
+  grad.addColorStop(0.85, `rgba(${r}, ${g}, ${b}, ${alpha * 0.2})`);
   grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
   ctx.fillStyle = grad;
   ctx.fill();
@@ -87,8 +88,6 @@ const renderCircularWaves = (
 
   const cx = 130;
   const cy = 130;
-  const baseR = 21;
-  const baseAmp = 18 + vol * 44;
 
   let rgb: [number, number, number] = [124, 58, 237];
   if (typeof document !== 'undefined') {
@@ -97,9 +96,18 @@ const renderCircularWaves = (
     if (parsed) rgb = parsed;
   }
   const [r, g, b] = rgb;
-  drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.55, 3, 4, phase * 0.55, [r, g, b], 0.28 + vol * 0.16);
-  drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.95, 4, 5, -phase * 0.75 + 1.4, [Math.min(255, r + 20), Math.min(255, g + 20), Math.min(255, b + 20)], 0.42 + vol * 0.22);
-  drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 1.45, 3, 5, phase, [Math.min(255, r + 40), Math.min(255, g + 40), Math.min(255, b + 40)], 0.65 + vol * 0.30);
+
+  const r1 = 26 + vol * 14;
+  const h1 = 2.5 + vol * 1.5;
+  drawCircularWaveLayer(ctx, cx, cy, r1, h1, 3, 4, phase * 0.55, [r, g, b], 0.28 + vol * 0.15);
+
+  const r2 = 38 + vol * 28;
+  const h2 = 3.5 + vol * 2.0;
+  drawCircularWaveLayer(ctx, cx, cy, r2, h2, 4, 5, -phase * 0.75 + 1.4, [Math.min(255, r + 20), Math.min(255, g + 20), Math.min(255, b + 20)], 0.38 + vol * 0.20);
+
+  const r3 = 54 + vol * 46;
+  const h3 = 4.5 + vol * 2.5;
+  drawCircularWaveLayer(ctx, cx, cy, r3, h3, 3, 5, phase, [Math.min(255, r + 40), Math.min(255, g + 40), Math.min(255, b + 40)], 0.55 + vol * 0.25);
 };
 
 export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps> = ({
@@ -279,7 +287,7 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
                 strokeLinejoin="round"
                 style={{
                   transformOrigin: '6px 11px',
-                  transform: `translateY(-${lockProgress * 4}px) rotate(${lockProgress * -10}deg)`,
+                  transform: `translateY(-${lockProgress * 4}px) rotate(${lockProgress * -8}deg)`,
                   transition: 'all 0.05s ease-out',
                 }}
               />

@@ -50,7 +50,7 @@ const drawCircularWaveLayer = (
 
   const [r, g, b] = colorRgb;
   const maxR = baseR + amplitude + 1;
-  const grad = ctx.createRadialGradient(cx, cy, 14, cx, cy, maxR);
+  const grad = ctx.createRadialGradient(cx, cy, baseR * 0.8, cx, cy, maxR);
   grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha})`);
   grad.addColorStop(0.55, `rgba(${r}, ${g}, ${b}, ${alpha * 0.70})`);
   grad.addColorStop(0.9, `rgba(${r}, ${g}, ${b}, ${alpha * 0.25})`);
@@ -87,12 +87,12 @@ const renderCircularWaves = (
 
   const cx = 60;
   const cy = 60;
-  const baseR = 34;
+  const coreR = 22 + Math.sin(phase * 0.8) * 1.5 + vol * 13;
   const baseAmp = 7.5 + vol * 11.5;
 
-  const r1 = baseR + Math.sin(phase * 0.7) * 1.8;
-  const r2 = baseR + Math.sin(phase * 0.7 + 1.8) * 2.2;
-  const r3 = baseR + Math.sin(phase * 0.7 + 3.6) * 2.6;
+  const r1 = coreR + Math.sin(phase * 0.7) * 1.4;
+  const r2 = coreR + Math.sin(phase * 0.7 + 1.8) * 1.8;
+  const r3 = coreR + Math.sin(phase * 0.7 + 3.6) * 2.2;
 
   let rgb: [number, number, number] = [124, 58, 237];
   if (typeof document !== 'undefined') {
@@ -104,6 +104,11 @@ const renderCircularWaves = (
   drawCircularWaveLayer(ctx, cx, cy, r1, baseAmp * 0.50, 3, 4, phase * 0.55, [r, g, b], 0.25 + vol * 0.15);
   drawCircularWaveLayer(ctx, cx, cy, r2, baseAmp * 0.78, 4, 5, -phase * 0.75 + 1.4, [Math.min(255, r + 20), Math.min(255, g + 20), Math.min(255, b + 20)], 0.40 + vol * 0.22);
   drawCircularWaveLayer(ctx, cx, cy, r3, baseAmp, 3, 5, phase, [Math.min(255, r + 40), Math.min(255, g + 40), Math.min(255, b + 40)], 0.65 + vol * 0.30);
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${0.82 + vol * 0.15})`;
+  ctx.fill();
 };
 
 export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps> = ({
@@ -354,7 +359,7 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
               color: '#ffffff',
               border: 'none',
               outline: 'none',
-              boxShadow: 'none',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.28)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

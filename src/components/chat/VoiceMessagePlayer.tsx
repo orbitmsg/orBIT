@@ -62,6 +62,142 @@ const drawCircularWaveLayer = (
   ctx.fill();
 };
 
+const parseHexColor = (hex: string): [number, number, number] | null => {
+  const clean = hex.replace('#', '').trim();
+  if (clean.length === 6) {
+    const num = parseInt(clean, 16);
+    return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+  }
+  return null;
+};
+
+const renderCircularWaves = (
+  canvas: HTMLCanvasElement,
+  vol: number,
+  phase: number,
+  isOwn: boolean
+) => {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2) : 1;
+  const targetSize = Math.round(76 * dpr);
+  if (canvas.width !== targetSize || canvas.height !== targetSize) {
+    canvas.width = targetSize;
+    canvas.height = targetSize;
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, 76, 76);
+
+  const cx = 38;
+  const cy = 38;
+  const baseR = 24;
+  const baseAmp = 3.5 + vol * 8.5;
+
+  if (isOwn) {
+    const white: [number, number, number] = [255, 255, 255];
+    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.45, 3, 4, phase * 0.55, white, 0.22 + vol * 0.15);
+    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.75, 4, 5, -phase * 0.75 + 1.4, white, 0.35 + vol * 0.22);
+    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp, 3, 5, phase, white, 0.55 + vol * 0.30);
+  } else {
+    let rgb: [number, number, number] = [124, 58, 237];
+    if (typeof document !== 'undefined') {
+      const val = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim();
+      const parsed = parseHexColor(val);
+      if (parsed) rgb = parsed;
+    }
+    const [r, g, b] = rgb;
+    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.45, 3, 4, phase * 0.55, [r, g, b], 0.25 + vol * 0.15);
+    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.75, 4, 5, -phase * 0.75 + 1.4, [Math.min(255, r + 20), Math.min(255, g + 20), Math.min(255, b + 20)], 0.40 + vol * 0.22);
+    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp, 3, 5, phase, [Math.min(255, r + 40), Math.min(255, g + 40), Math.min(255, b + 40)], 0.65 + vol * 0.30);
+  }
+};
+
+const clearCircularWaves = (canvas: HTMLCanvasElement) => {
+  const ctx = canvas.getContext('2d');
+  if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+};
+
+const drawWaveformCanvas = (
+  canvas: HTMLCanvasElement,
+  bars: number[],
+  ratio: number,
+  isLoaded: boolean,
+  isOwn: boolean
+) => {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1;
+  const w = 198;
+  const h = 22;
+  const targetW = Math.round(w * dpr);
+  const targetH = Math.round(h * dpr);
+
+  if (canvas.width !== targetW || canvas.height !== targetH) {
+    canvas.width = targetW;
+    canvas.height = targetH;
+  }
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const barCount = bars.length;
+  if (barCount === 0) return;
+
+  const inactiveColor = isLoaded
+    ? (isOwn ? 'rgba(255, 255, 255, 0.40)' : 'rgba(255, 255, 255, 0.28)')
+    : (isOwn ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.12)');
+
+  let accentColor = '#7C3AED';
+  if (typeof document !== 'undefined') {
+    const val = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim();
+    if (val) accentColor = val;
+  }
+  const activeColor = isOwn ? '#ffffff' : accentColor;
+
+  ctx.beginPath();
+  for (let i = 0; i < barCount; i++) {
+    const x = i * 3;
+    const barH = isLoaded ? Math.max(3, Math.round((bars[i] / 100) * 20)) : 3;
+    const y = (h - barH) / 2;
+    if (ctx.roundRect) {
+      ctx.roundRect(x, y, 2, barH, 1);
+    } else {
+      ctx.rect(x, y, 2, barH);
+    }
+  }
+  ctx.fillStyle = inactiveColor;
+  ctx.fill();
+
+  const clampedRatio = Math.max(0, Math.min(1, ratio));
+  if (clampedRatio > 0) {
+    const totalWaveWidth = barCount * 3 - 1;
+    const playX = clampedRatio * totalWaveWidth;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, playX, h);
+    ctx.clip();
+
+    ctx.beginPath();
+    for (let i = 0; i < barCount; i++) {
+      const x = i * 3;
+      if (x > playX) break;
+      const barH = isLoaded ? Math.max(3, Math.round((bars[i] / 100) * 20)) : 3;
+      const y = (h - barH) / 2;
+      if (ctx.roundRect) {
+        ctx.roundRect(x, y, 2, barH, 1);
+      } else {
+        ctx.rect(x, y, 2, barH);
+      }
+    }
+    ctx.fillStyle = activeColor;
+    ctx.fill();
+    ctx.restore();
+  }
+};
+
 interface VoiceMessagePlayerProps {
   url: string;
   fileName?: string;
@@ -98,7 +234,11 @@ export const VoiceMessagePlayer = memo(({
   const isCurrentTrack = useAudioStore((state) => state.currentTrack?.id === trackId);
   const isGlobalPlaying = useAudioStore((state) => (isCurrentTrack ? state.isPlaying : false));
   const globalDuration = useAudioStore((state) => (isCurrentTrack ? state.duration : 0));
-  const savedPosition = useAudioStore((state) => (trackId ? state.playbackPositions[trackId] || 0 : 0));
+  const savedPosition = useAudioStore((state) => (
+    (state.isPlaying && state.currentTrack?.id === trackId)
+      ? 0
+      : (trackId ? state.playbackPositions[trackId] || 0 : 0)
+  ));
 
   const playTrack = useAudioStore((state) => state.play);
   const pauseTrack = useAudioStore((state) => state.pause);
@@ -111,7 +251,7 @@ export const VoiceMessagePlayer = memo(({
   const [hasPlayedLocally, setHasPlayedLocally] = useState<boolean>(Boolean(msg?.isListened));
 
   const waveformRef = useRef<HTMLDivElement>(null);
-  const progressOverlayRef = useRef<HTMLDivElement>(null);
+  const waveformCanvasRef = useRef<HTMLCanvasElement>(null);
   const timeDisplayRef = useRef<HTMLSpanElement>(null);
   const waveCanvasRef = useRef<HTMLCanvasElement>(null);
   const wavePhaseRef = useRef<number>(0);
@@ -137,6 +277,11 @@ export const VoiceMessagePlayer = memo(({
     messageId,
     false
   );
+
+  const effectiveDuration = isCurrentTrack && globalDuration > 0 ? globalDuration : (localDuration || msg?.duration || 0);
+  const isPlaying = isCurrentTrack && isGlobalPlaying;
+  const isLoaded = Boolean(blobUrl);
+  const isUnplayed = !msg?.isListened && !hasPlayedLocally;
 
   useEffect(() => {
     if (!blobUrl || (localDuration > 0 && isFinite(localDuration))) return;
@@ -172,22 +317,31 @@ export const VoiceMessagePlayer = memo(({
     }
   }, [isCurrentTrack, localDuration, globalDuration, setStoreDuration]);
 
-  useEffect(() => {
-    if (!waveCanvasRef.current) return;
-    const canvas = waveCanvasRef.current;
-    const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2) : 1;
-    canvas.width = 76 * dpr;
-    canvas.height = 76 * dpr;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.scale(dpr, dpr);
+  const BAR_COUNT = 66;
+  const bars = useMemo(() => {
+    if (msg?.waveform && msg.waveform.length > 0) {
+      const src = msg.waveform;
+      const step = src.length / BAR_COUNT;
+      const res: number[] = [];
+      for (let i = 0; i < BAR_COUNT; i++) {
+        const idx = Math.min(src.length - 1, Math.floor(i * step));
+        res.push(src[idx]);
+      }
+      return res;
     }
-  }, []);
+    const seed = (trackId || 'voice').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    return Array.from({ length: BAR_COUNT }, (_, i) => {
+      const val = Math.sin(seed + i * 0.7) * 40 + Math.cos(seed * 0.3 + i * 1.2) * 30 + 45;
+      return Math.max(12, Math.min(100, Math.round(val)));
+    });
+  }, [msg?.waveform, trackId]);
 
-  const effectiveDuration = isCurrentTrack && globalDuration > 0 ? globalDuration : (localDuration || msg?.duration || 0);
-  const isPlaying = isCurrentTrack && isGlobalPlaying;
-  const isLoaded = Boolean(blobUrl);
-  const isUnplayed = !msg?.isListened && !hasPlayedLocally;
+  useEffect(() => {
+    if (!waveformCanvasRef.current || isPlaying) return;
+    const canvas = waveformCanvasRef.current;
+    const ratio = effectiveDuration > 0 ? Math.min(1, Math.max(0, savedPosition / effectiveDuration)) : 0;
+    drawWaveformCanvas(canvas, bars, ratio, isLoaded, isOwn);
+  }, [bars, isLoaded, isOwn, isPlaying, savedPosition, effectiveDuration]);
 
   const handleAction = async () => {
     if (isUploading) return;
@@ -242,25 +396,6 @@ export const VoiceMessagePlayer = memo(({
     }
   };
 
-  const BAR_COUNT = 66;
-  const bars = useMemo(() => {
-    if (msg?.waveform && msg.waveform.length > 0) {
-      const src = msg.waveform;
-      const step = src.length / BAR_COUNT;
-      const res: number[] = [];
-      for (let i = 0; i < BAR_COUNT; i++) {
-        const idx = Math.min(src.length - 1, Math.floor(i * step));
-        res.push(src[idx]);
-      }
-      return res;
-    }
-    const seed = (trackId || 'voice').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    return Array.from({ length: BAR_COUNT }, (_, i) => {
-      const val = Math.sin(seed + i * 0.7) * 40 + Math.cos(seed * 0.3 + i * 1.2) * 30 + 45;
-      return Math.max(12, Math.min(100, Math.round(val)));
-    });
-  }, [msg?.waveform, trackId]);
-
   const [dragProgressRatio, setDragProgressRatio] = useState<number | null>(null);
   const dragStateRef = useRef<{ isDragging: boolean; targetTime: number; ratio: number }>({
     isDragging: false,
@@ -282,14 +417,14 @@ export const VoiceMessagePlayer = memo(({
     if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     rafIdRef.current = requestAnimationFrame(() => {
       setDragProgressRatio(ratio);
-      if (progressOverlayRef.current) {
-        progressOverlayRef.current.style.width = `${ratio * 100}%`;
+      if (waveformCanvasRef.current) {
+        drawWaveformCanvas(waveformCanvasRef.current, bars, ratio, isLoaded, isOwn);
       }
       if (timeDisplayRef.current) {
         timeDisplayRef.current.textContent = `${formatVoiceTime(newTime)} / ${formatVoiceTime(effectiveDuration)}`;
       }
     });
-  }, [effectiveDuration]);
+  }, [effectiveDuration, bars, isLoaded, isOwn]);
 
   const commitSeek = useCallback(() => {
     if (!dragStateRef.current.isDragging) return;
@@ -353,10 +488,8 @@ export const VoiceMessagePlayer = memo(({
     let animId: number;
 
     const getLiveTime = useAudioStore.getState().getLiveTime;
-    const initialTime = isCurrentTrack && getLiveTime ? getLiveTime() : savedPosition;
-    let anchorAudioTime = typeof initialTime === 'number' && isFinite(initialTime) && initialTime >= 0 ? initialTime : savedPosition;
-    let anchorPerfTime = performance.now();
-    let hasStartedMoving = false;
+    let lastTime = -1;
+    let lastPerf = performance.now();
 
     const tick = () => {
       if (dragStateRef.current.isDragging) return;
@@ -365,66 +498,41 @@ export const VoiceMessagePlayer = memo(({
       const now = performance.now();
       const playbackRate = useAudioStore.getState().playbackRate || 1;
 
-      if (typeof liveTime === 'number' && isFinite(liveTime) && liveTime > 0) {
-        if (!hasStartedMoving) {
-          hasStartedMoving = true;
-          anchorAudioTime = liveTime;
-          anchorPerfTime = now;
-        } else if (Math.abs(liveTime - (anchorAudioTime + Math.max(0, (now - anchorPerfTime) / 1000) * playbackRate)) > 0.25) {
-          anchorAudioTime = liveTime;
-          anchorPerfTime = now;
+      let currentExactTime = 0;
+      if (typeof liveTime === 'number' && isFinite(liveTime) && liveTime >= 0) {
+        if (liveTime !== lastTime) {
+          lastTime = liveTime;
+          lastPerf = now;
+          currentExactTime = liveTime;
+        } else {
+          const delta = Math.max(0, (now - lastPerf) / 1000) * playbackRate;
+          currentExactTime = liveTime + delta;
         }
+      } else {
+        currentExactTime = savedPosition;
       }
 
-      const elapsed = hasStartedMoving
-        ? Math.max(0, (now - anchorPerfTime) / 1000) * playbackRate
-        : 0;
-      const currentExactTime = Math.min(effectiveDuration, anchorAudioTime + elapsed);
-      const ratio = effectiveDuration > 0 ? Math.min(1, Math.max(0, currentExactTime / effectiveDuration)) : 0;
+      currentExactTime = Math.min(effectiveDuration, Math.max(0, currentExactTime));
+      const ratio = effectiveDuration > 0 ? currentExactTime / effectiveDuration : 0;
 
-      if (progressOverlayRef.current) {
-        progressOverlayRef.current.style.width = `${ratio * 100}%`;
+      if (waveformCanvasRef.current) {
+        drawWaveformCanvas(waveformCanvasRef.current, bars, ratio, isLoaded, isOwn);
       }
       if (timeDisplayRef.current) {
         timeDisplayRef.current.textContent = `${formatVoiceTime(currentExactTime)} / ${formatVoiceTime(effectiveDuration)}`;
       }
 
       if (waveCanvasRef.current) {
-        const canvas = waveCanvasRef.current;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          if (isPlaying && chatElementAnimations !== false) {
-            const barIndex = Math.min(bars.length - 1, Math.floor(ratio * bars.length));
-            const rawVol = (bars[barIndex] || 25) / 100;
-            smoothedVolRef.current += (rawVol - smoothedVolRef.current) * 0.18;
-            const vol = smoothedVolRef.current;
+        if (isPlaying && chatElementAnimations !== false) {
+          const barIndex = Math.min(bars.length - 1, Math.floor(ratio * bars.length));
+          const rawVol = (bars[barIndex] || 25) / 100;
+          smoothedVolRef.current += (rawVol - smoothedVolRef.current) * 0.18;
+          const vol = smoothedVolRef.current;
 
-            wavePhaseRef.current += 0.025 + vol * 0.035;
-            const phase = wavePhaseRef.current;
-
-            ctx.clearRect(0, 0, 76, 76);
-
-            const cx = 38;
-            const cy = 38;
-            const baseR = 24;
-            const baseAmp = 3.5 + vol * 8.5;
-
-            if (isOwn) {
-              const white: [number, number, number] = [255, 255, 255];
-              drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.45, 3, 4, phase * 0.55, white, 0.22 + vol * 0.15);
-              drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.75, 4, 5, -phase * 0.75 + 1.4, white, 0.35 + vol * 0.22);
-              drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp, 3, 5, phase, white, 0.55 + vol * 0.30);
-            } else {
-              const accent1: [number, number, number] = [124, 58, 237];
-              const accent2: [number, number, number] = [147, 51, 234];
-              const accent3: [number, number, number] = [168, 85, 247];
-              drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.45, 3, 4, phase * 0.55, accent1, 0.25 + vol * 0.15);
-              drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.75, 4, 5, -phase * 0.75 + 1.4, accent2, 0.40 + vol * 0.22);
-              drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp, 3, 5, phase, accent3, 0.65 + vol * 0.30);
-            }
-          } else {
-            ctx.clearRect(0, 0, 76, 76);
-          }
+          wavePhaseRef.current += 0.025 + vol * 0.035;
+          renderCircularWaves(waveCanvasRef.current, vol, wavePhaseRef.current, isOwn);
+        } else {
+          clearCircularWaves(waveCanvasRef.current);
         }
       }
 
@@ -441,8 +549,8 @@ export const VoiceMessagePlayer = memo(({
       }
     } else {
       const ratio = effectiveDuration > 0 ? Math.min(1, Math.max(0, savedPosition / effectiveDuration)) : 0;
-      if (progressOverlayRef.current) {
-        progressOverlayRef.current.style.width = `${ratio * 100}%`;
+      if (waveformCanvasRef.current) {
+        drawWaveformCanvas(waveformCanvasRef.current, bars, ratio, isLoaded, isOwn);
       }
       if (timeDisplayRef.current) {
         if (isUploading) {
@@ -459,15 +567,14 @@ export const VoiceMessagePlayer = memo(({
         }
       }
       if (waveCanvasRef.current) {
-        const ctx = waveCanvasRef.current.getContext('2d');
-        if (ctx) ctx.clearRect(0, 0, 76, 76);
+        clearCircularWaves(waveCanvasRef.current);
       }
     }
 
     const unsubVisibility = appVisibility.subscribe((visible) => {
       cancelAnimationFrame(animId);
       if (visible && isPlaying) {
-        anchorPerfTime = performance.now();
+        lastPerf = performance.now();
         tick();
       }
     });
@@ -476,13 +583,11 @@ export const VoiceMessagePlayer = memo(({
       cancelAnimationFrame(animId);
       unsubVisibility();
       if (waveCanvasRef.current) {
-        const ctx = waveCanvasRef.current.getContext('2d');
-        if (ctx) ctx.clearRect(0, 0, 76, 76);
+        clearCircularWaves(waveCanvasRef.current);
       }
     };
   }, [isPlaying, isCurrentTrack, effectiveDuration, dragProgressRatio, isUploading, isLoaded, liveProgress, msg?.uploadedMb, msg?.fileSize, itemTotalSize, savedPosition, bars, chatElementAnimations, isOwn]);
 
-  const progressRatio = dragProgressRatio !== null ? dragProgressRatio : (effectiveDuration > 0 ? Math.min(1, Math.max(0, savedPosition / effectiveDuration)) : 0);
   const displayCurrentTime = dragProgressRatio !== null ? dragProgressRatio * effectiveDuration : savedPosition;
   const coverState: AudioCoverState = isUploading
     ? 'uploading'
@@ -553,80 +658,17 @@ export const VoiceMessagePlayer = memo(({
           ref={waveformRef}
           onMouseDown={handleMouseDown}
           className="relative flex items-center cursor-pointer select-none"
-          style={{ height: '22px', gap: '1px', width: 'max-content', userSelect: 'none' }}
+          style={{ height: '22px', width: '198px', userSelect: 'none' }}
         >
-          {bars.map((h, idx) => {
-            const barHeight = isLoaded ? Math.max(3, Math.round((h / 100) * 20)) : 3;
-            return (
-              <div
-                key={idx}
-                style={{
-                  width: '2px',
-                  minWidth: '2px',
-                  maxWidth: '2px',
-                  height: `${barHeight}px`,
-                  flexShrink: 0,
-                  backgroundColor: isLoaded
-                    ? (isOwn
-                        ? 'rgba(255, 255, 255, 0.4)'
-                        : 'color-mix(in srgb, var(--text-main) 30%, transparent)')
-                    : (isOwn
-                        ? 'rgba(255, 255, 255, 0.18)'
-                        : 'color-mix(in srgb, var(--text-main) 16%, transparent)'),
-                  borderRadius: '1px',
-                  transform: 'translateZ(0)',
-                  transition: 'height 0.24s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.24s ease',
-                }}
-              />
-            );
-          })}
-
-          <div
-            ref={progressOverlayRef}
+          <canvas
+            ref={waveformCanvasRef}
             style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              bottom: 0,
-              width: `${progressRatio * 100}%`,
-              overflow: 'hidden',
+              width: '198px',
+              height: '22px',
+              display: 'block',
               pointerEvents: 'none',
-              willChange: 'width',
-              transform: 'translateZ(0)',
             }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                height: '22px',
-                gap: '1px',
-                width: 'max-content',
-              }}
-            >
-              {bars.map((h, idx) => {
-                const barHeight = isLoaded ? Math.max(3, Math.round((h / 100) * 20)) : 3;
-                return (
-                  <div
-                    key={idx}
-                    style={{
-                      width: '2px',
-                      minWidth: '2px',
-                      maxWidth: '2px',
-                      height: `${barHeight}px`,
-                      flexShrink: 0,
-                      backgroundColor: isOwn
-                        ? '#ffffff'
-                        : 'var(--accent-color, #7C3AED)',
-                      borderRadius: '1px',
-                      transform: 'translateZ(0)',
-                      transition: 'height 0.24s cubic-bezier(0.4, 0, 0.2, 1)',
-                    }}
-                  />
-                );
-              })}
-            </div>
-          </div>
+          />
         </div>
 
         <div className="flex items-center justify-between" style={{ fontSize: '10.5px', color: isOwn ? 'rgba(255, 255, 255, 0.7)' : 'var(--text-dim)', marginTop: '1px' }}>
@@ -648,7 +690,7 @@ export const VoiceMessagePlayer = memo(({
                   width: '6px',
                   height: '6px',
                   borderRadius: '50%',
-                  backgroundColor: 'var(--accent-color, #7C3AED)',
+                  backgroundColor: isOwn ? '#ffffff' : 'var(--accent-color, #7C3AED)',
                   marginLeft: '5px',
                   flexShrink: 0,
                 }}

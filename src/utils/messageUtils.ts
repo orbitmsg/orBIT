@@ -1,27 +1,76 @@
-export function formatPreviewText(rawText: string, t: any): string {
-  if (!rawText) return '';
-  const clean = rawText.replace(/^↩\s(?:\[id:.+?\]\s)?.+?:.+?,\s\d{2}:\d{2}\n?/, '').trim();
-  if (clean.startsWith('[Call]') || /^(?:исходящий|входящий|пропущенный|отклонённый)\s+звонок/i.test(clean)) {
-    const isMissed = /missed|пропущен/i.test(clean);
-    const isRejected = /rejected|busy|отклон/i.test(clean);
-    const isOutgoing = /исходящ|outgoing/i.test(clean);
-    return isMissed ? t('call.missed_call', 'Пропущенный звонок') : (isRejected ? t('call.rejected_call', 'Отклонённый звонок') : (isOutgoing ? t('call.outgoing_call', 'Исходящий звонок') : t('call.incoming_call', 'Входящий звонок')));
+export function formatPreviewText(
+  rawText: string,
+  t: any,
+  mediaType?: string | null,
+  mediaName?: string | null
+): string {
+  const clean = (rawText || '').replace(/^↩\s(?:\[id:.+?\]\s)?.+?:.+?,\s\d{2}:\d{2}\n?/, '').trim();
+  const lower = (clean + ' ' + (mediaName || '')).toLowerCase();
+
+  const isCall = mediaType === 'call' || clean.startsWith('[Call]') || /^(?:исходящий|входящий|пропущенный|отклонённый)\s+звонок/i.test(clean) || /call/i.test(clean);
+  if (isCall && (clean.startsWith('[Call]') || mediaType === 'call' || /звонок|call/i.test(clean))) {
+    const isMissed = /missed|пропущен/i.test(lower);
+    const isRejected = /rejected|busy|отклон/i.test(lower);
+    const isOutgoing = /исходящ|outgoing/i.test(lower);
+    return isMissed
+      ? t('call.missed_call', 'Пропущенный звонок')
+      : isRejected
+      ? t('call.rejected_call', 'Отклонённый звонок')
+      : isOutgoing
+      ? t('call.outgoing_call', 'Исходящий звонок')
+      : t('call.incoming_call', 'Входящий звонок');
   }
-  if (/^\[Sticker\]/i.test(clean) || clean.includes('/stickers/') || clean.includes('\\stickers\\') || clean.includes('.stickers')) return t('chatWindow.sticker', 'Стикер');
-  if (/^\[GIF\]/i.test(clean)) return 'GIF';
-  if (/^\[(?:Photo|Image)\]/i.test(clean) || /^(?:фото|фотография|photo)$/i.test(clean)) return t('chatWindow.photo', 'Фотография');
-  if (/^\[Video\]/i.test(clean) || /^(?:видео|видеозапись|video)$/i.test(clean)) return t('chatWindow.video', 'Видео');
-  if (/^\[MediaGroup\]/i.test(clean)) return t('chatWindow.media_items', 'Медиа');
-  if (/^\[Voice\]/i.test(clean) || /^(?:голосовое\s+сообщение|голосовое|voice\s+message)$/i.test(clean)) return t('chatWindow.voice_message', 'Голосовое сообщение');
-  if (/^\[Audio\]/i.test(clean)) {
+
+  const isSticker =
+    mediaType === 'sticker' ||
+    /^\[Sticker\]/i.test(clean) ||
+    clean.includes('/stickers/') ||
+    clean.includes('\\stickers\\') ||
+    clean.includes('.stickers') ||
+    clean.endsWith('.tgs') ||
+    clean.endsWith('.webp');
+  if (isSticker) return t('chatWindow.sticker', 'Стикер');
+
+  const isVoice =
+    mediaType === 'voice' ||
+    /^\[Voice\]/i.test(clean) ||
+    (mediaName && /^voice_/i.test(mediaName)) ||
+    /^voice_\d+\.ogg/i.test(clean) ||
+    /\.ogg(\?.*)?$/i.test(clean) ||
+    /^(?:голосовое\s+сообщение|голосовое|voice\s+message)$/i.test(clean);
+  if (isVoice) return t('chatWindow.voice_message', 'Голосовое сообщение');
+
+  if (mediaType === 'gif' || /^\[GIF\]/i.test(clean)) return 'GIF';
+
+  if (mediaType === 'photo' || /^\[(?:Photo|Image)\]/i.test(clean)) {
+    const caption = clean.replace(/^\[(?:Photo|Image)\]\s*(https?:\/\/[^\s]+)?/i, '').trim();
+    return caption || t('chatWindow.photo', 'Фотография');
+  }
+
+  if (mediaType === 'video' || /^\[Video\]/i.test(clean)) {
+    const caption = clean.replace(/^\[Video\]\s*(https?:\/\/[^\s]+)?/i, '').trim();
+    return caption || t('chatWindow.video', 'Видео');
+  }
+
+  if (mediaType === 'audio' || /^\[Audio\]/i.test(clean)) {
     if (/voice_/i.test(clean)) return t('chatWindow.voice_message', 'Голосовое сообщение');
-    const match = clean.match(/^\[Audio\]\s+(.+?)(?:\s+https?:\/\/|$)/i);
-    return match ? match[1] : t('chatWindow.audio', 'Аудио');
+    const caption = clean.replace(/^\[Audio\]\s*/i, '').replace(/https?:\/\/[^\s]+/i, '').trim();
+    return caption || mediaName || t('chatWindow.audio', 'Аудио');
   }
-  if (/^\[(?:File|Document)\]/i.test(clean)) {
-    const match = clean.match(/^\[(?:File|Document)\]\s+(.+?)(?:\s+https?:\/\/|$)/i);
-    return match ? match[1] : t('chatWindow.file', 'Файл');
+
+  if (mediaType === 'file' || /^\[(?:File|Document)\]/i.test(clean)) {
+    const caption = clean.replace(/^\[(?:File|Document)\]\s*/i, '').replace(/https?:\/\/[^\s]+/i, '').trim();
+    return caption || mediaName || t('chatWindow.file', 'Файл');
   }
+
+  if (mediaType === 'media_group' || /^\[MediaGroup\]/i.test(clean)) {
+    return t('chatWindow.media_items', 'Медиа');
+  }
+
+  if (!clean && mediaName) {
+    return mediaName;
+  }
+
   return clean.replace(/\n+/g, ' ');
 }
 

@@ -479,11 +479,13 @@ export interface ChatState {
   stickersAutoplayPanel: boolean;
   stickersAutoplayChat: boolean;
   chatAutoPlayVideos: boolean;
+  chatElementAnimations: boolean;
   callAnimationsEnabled: boolean;
 
   setStickersAutoplayPanel: (enabled: boolean) => void;
   setStickersAutoplayChat: (enabled: boolean) => void;
   setChatAutoPlayVideos: (enabled: boolean) => void;
+  setChatElementAnimations: (enabled: boolean) => void;
   setCallAnimationsEnabled: (enabled: boolean) => void;
 
   setAutoLoadMedia: (enabled: boolean) => void;

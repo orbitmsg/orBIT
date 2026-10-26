@@ -236,6 +236,7 @@ export const useChatStore = create<ChatState>()(
       stickersAutoplayPanel: false,
       stickersAutoplayChat: false,
       chatAutoPlayVideos: false,
+      chatElementAnimations: true,
       callAnimationsEnabled: false,
 
       draftsByChatId: {},
@@ -1551,6 +1552,7 @@ export const useChatStore = create<ChatState>()(
       setStickersAutoplayPanel: (enabled) => set({ stickersAutoplayPanel: enabled }),
       setStickersAutoplayChat: (enabled) => set({ stickersAutoplayChat: enabled }),
       setChatAutoPlayVideos: (enabled) => set({ chatAutoPlayVideos: enabled }),
+      setChatElementAnimations: (enabled) => set({ chatElementAnimations: enabled }),
       setCallAnimationsEnabled: (enabled) => set({ callAnimationsEnabled: enabled }),
 
       shouldAutoLoadMedia: (type, sizeBytes, isOwn) => {

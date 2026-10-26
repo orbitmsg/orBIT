@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { AudioQueueMenu } from './AudioQueueMenu';
 import { AudioVolumePopover, AudioOrderPopover, AudioSpeedPopover } from './AudioControlsPopups';
+import { SmoothPlayPauseIcon } from './SmoothPlayPauseIcon';
 import { appVisibility } from '../../utils/appVisibility';
 
 const formatTime = (seconds: number) => {
@@ -442,15 +443,7 @@ export const GlobalAudioPlayer = () => {
             cursor: 'pointer',
           }}
         >
-          {isPlaying ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
-              <path fill="currentColor" d="M14 19V5h4v14zm-8 0V5h4v14z"/>
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
-              <path fill="currentColor" d="M8 19V5l11 7z"/>
-            </svg>
-          )}
+          <SmoothPlayPauseIcon isPlaying={isPlaying} size={18} fill="currentColor" />
         </button>
 
         <button

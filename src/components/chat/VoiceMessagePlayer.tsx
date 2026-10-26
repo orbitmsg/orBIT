@@ -53,6 +53,7 @@ export const VoiceMessagePlayer = memo(({
   const { t } = useTranslation();
   const bubbleRadius = useChatStore((state) => state.bubbleRadius);
   const markVoiceListened = useChatStore((state) => state.markVoiceListened);
+  const chatElementAnimations = useChatStore((state) => state.chatElementAnimations);
 
   const trackId = msg?.id || messageId || url;
   const isCurrentTrack = useAudioStore((state) => state.currentTrack?.id === trackId);
@@ -340,21 +341,26 @@ export const VoiceMessagePlayer = memo(({
       }
 
       if (isPlaying) {
-        const barIndex = Math.min(bars.length - 1, Math.floor(ratio * bars.length));
-        const rawVol = (bars[barIndex] || 25) / 100;
-        smoothedVolRef.current += (rawVol - smoothedVolRef.current) * 0.22;
-        const vol = smoothedVolRef.current;
-        if (voicePulseRingRef.current) {
-          voicePulseRingRef.current.style.transform = `scale(${1 + vol * 0.24})`;
-          voicePulseRingRef.current.style.opacity = isOwn
-            ? `${0.2 + vol * 0.22}`
-            : `${0.22 + vol * 0.28}`;
-        }
-        if (voicePulseRingRef2.current) {
-          voicePulseRingRef2.current.style.transform = `scale(${1 + vol * 0.4})`;
-          voicePulseRingRef2.current.style.opacity = isOwn
-            ? `${0.08 + vol * 0.12}`
-            : `${0.08 + vol * 0.16}`;
+        if (chatElementAnimations !== false) {
+          const barIndex = Math.min(bars.length - 1, Math.floor(ratio * bars.length));
+          const rawVol = (bars[barIndex] || 25) / 100;
+          smoothedVolRef.current += (rawVol - smoothedVolRef.current) * 0.22;
+          const vol = smoothedVolRef.current;
+          if (voicePulseRingRef.current) {
+            voicePulseRingRef.current.style.transform = `scale(${1 + vol * 0.22})`;
+            voicePulseRingRef.current.style.opacity = isOwn
+              ? `${0.22 + vol * 0.22}`
+              : `${0.25 + vol * 0.25}`;
+          }
+          if (voicePulseRingRef2.current) {
+            voicePulseRingRef2.current.style.transform = `scale(${1 + vol * 0.38})`;
+            voicePulseRingRef2.current.style.opacity = isOwn
+              ? `${0.1 + vol * 0.14}`
+              : `${0.12 + vol * 0.16}`;
+          }
+        } else {
+          if (voicePulseRingRef.current) voicePulseRingRef.current.style.opacity = '0';
+          if (voicePulseRingRef2.current) voicePulseRingRef2.current.style.opacity = '0';
         }
       }
 
@@ -415,7 +421,7 @@ export const VoiceMessagePlayer = memo(({
       cancelAnimationFrame(animId);
       unsubVisibility();
     };
-  }, [isPlaying, isCurrentTrack, effectiveDuration, dragProgressRatio, isUploading, isLoaded, liveProgress, msg?.uploadedMb, msg?.fileSize, itemTotalSize, effectiveCurrentTime, bars]);
+  }, [isPlaying, isCurrentTrack, effectiveDuration, dragProgressRatio, isUploading, isLoaded, liveProgress, msg?.uploadedMb, msg?.fileSize, itemTotalSize, effectiveCurrentTime, bars, chatElementAnimations]);
 
   const progressRatio = dragProgressRatio !== null ? dragProgressRatio : (effectiveDuration > 0 ? Math.min(1, effectiveCurrentTime / effectiveDuration) : 0);
   const displayCurrentTime = dragProgressRatio !== null ? dragProgressRatio * effectiveDuration : effectiveCurrentTime;
@@ -451,12 +457,13 @@ export const VoiceMessagePlayer = memo(({
             width: '48px',
             height: '48px',
             borderRadius: '50%',
-            backgroundColor: isOwn ? '#ffffff' : 'var(--accent-color, #7C3AED)',
+            backgroundColor: isOwn ? 'rgba(255, 255, 255, 0.45)' : 'var(--accent-color, #7C3AED)',
             opacity: 0,
             pointerEvents: 'none',
             transform: 'scale(1)',
             willChange: 'transform, opacity',
             transition: isPlaying ? 'none' : 'opacity 0.25s ease, transform 0.25s ease',
+            zIndex: 0,
           }}
         />
         <div
@@ -466,24 +473,40 @@ export const VoiceMessagePlayer = memo(({
             width: '48px',
             height: '48px',
             borderRadius: '50%',
-            backgroundColor: isOwn ? '#ffffff' : 'var(--accent-color, #7C3AED)',
+            backgroundColor: isOwn ? 'rgba(255, 255, 255, 0.28)' : 'var(--accent-color, #7C3AED)',
             opacity: 0,
             pointerEvents: 'none',
             transform: 'scale(1)',
             willChange: 'transform, opacity',
             transition: isPlaying ? 'none' : 'opacity 0.25s ease, transform 0.25s ease',
+            zIndex: 0,
           }}
         />
-        <AudioCoverWithPlay
-          cover={null}
-          isPlayingTrack={isPlaying}
-          state={coverState}
-          size={48}
-          progress={isUploading ? uploadFraction : (isDownloading || mediaLoading ? downloadProgress : undefined)}
-          onClick={handleAction}
-          onCancel={isUploading ? onCancelUpload : undefined}
-          isOwn={isOwn}
+        <div
+          style={{
+            position: 'absolute',
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            backgroundColor: isOwn
+              ? 'var(--chat-bubble-own-bg, #2c6bed)'
+              : 'var(--chat-bubble-incoming-bg, var(--surface-container))',
+            zIndex: 1,
+            pointerEvents: 'none',
+          }}
         />
+        <div style={{ position: 'relative', zIndex: 2 }}>
+          <AudioCoverWithPlay
+            cover={null}
+            isPlayingTrack={isPlaying}
+            state={coverState}
+            size={48}
+            progress={isUploading ? uploadFraction : (isDownloading || mediaLoading ? downloadProgress : undefined)}
+            onClick={handleAction}
+            onCancel={isUploading ? onCancelUpload : undefined}
+            isOwn={isOwn}
+          />
+        </div>
       </div>
 
       <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">

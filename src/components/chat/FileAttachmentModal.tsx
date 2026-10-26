@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
-import { X, FileText, MoreVertical, Smile, Play } from 'lucide-react';
+import { X, FileText, MoreVertical, Smile } from 'lucide-react';
+import { SmoothPlayPauseIcon } from '../audio/SmoothPlayPauseIcon';
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MD3CircularSpinner } from '../common/MD3CircularSpinner';
@@ -253,7 +254,7 @@ export const FileAttachmentModal = ({
                           />
                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
                             <div className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white shadow-lg">
-                              <Play size={22} className="ml-1" fill="white" />
+                              <SmoothPlayPauseIcon isPlaying={false} size={22} fill="white" />
                             </div>
                           </div>
                           {firstFile.duration ? (
@@ -323,7 +324,7 @@ export const FileAttachmentModal = ({
 
                           {file.fileType === 'video' && (
                             <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 bg-black/60 backdrop-blur-sm text-white px-1.5 py-0.5 rounded text-[11px] font-medium">
-                              <Play size={10} fill="white" />
+                              <SmoothPlayPauseIcon isPlaying={false} size={11} fill="white" />
                               {file.duration ? formatDuration(file.duration) : ''}
                             </div>
                           )}

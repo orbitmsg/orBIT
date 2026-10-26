@@ -7,6 +7,7 @@ import { Avatar } from '../common/Avatar';
 import { NotesAvatar } from '../common/NotesAvatar';
 import { DeveloperBadge } from '../ui/DeveloperBadge';
 import { MessageStatus } from '../MessageStatus';
+import { formatPreviewText } from '../../utils/messageUtils';
 
 interface InChatSidebarSearchProps {
   onClose: () => void;
@@ -198,22 +199,17 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
         const senderName = isOwn ? myNickname : (m.sender || chatInfo.name);
         const senderAvatar = isOwn ? myAvatarUrl : chatInfo.avatarUrl;
 
-        const matchText = rawText.toLowerCase().includes(q);
+        const cleanSnippet = formatPreviewText(rawText, t, m.mediaType, mediaName);
+        const matchClean = cleanSnippet.toLowerCase().includes(q);
+        const matchRaw = rawText.toLowerCase().includes(q);
         const matchMedia = mediaName.toLowerCase().includes(q);
         const matchSender = senderName.toLowerCase().includes(q);
 
-        if (matchText || matchMedia || matchSender) {
-          let cleanSnippet = rawText;
-          if (cleanSnippet.startsWith('[')) {
-            cleanSnippet = cleanSnippet.replace(/^\[(?:Photo|GIF|Sticker|Video|Audio|File)\]\s*(https?:\/\/[^\s]+)?/i, '').trim();
-          }
-          if (cleanSnippet.startsWith('↩')) {
-            cleanSnippet = cleanSnippet.replace(/^↩\s(?:\[id:.+?\]\s)?.+?:.+?,\s\d{2}:\d{2}\n?/, '').trim();
-          }
-
+        if (matchClean || matchRaw || matchMedia || matchSender) {
           const matchIdx = cleanSnippet.toLowerCase().indexOf(q);
+          let displaySnippet = cleanSnippet;
           if (matchIdx > 20) {
-            cleanSnippet = '...' + cleanSnippet.slice(matchIdx - 12);
+            displaySnippet = '...' + cleanSnippet.slice(matchIdx - 12);
           }
 
           results.push({
@@ -226,7 +222,7 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
             senderName,
             senderAvatar: senderAvatar || undefined,
             isOwn,
-            snippet: cleanSnippet || mediaName || (m.mediaType ? `[${m.mediaType}]` : rawText),
+            snippet: displaySnippet,
           });
         }
       }
@@ -235,7 +231,7 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
     results.sort((a, b) => b.message.time - a.message.time);
 
     return results;
-  }, [debouncedQuery, targetChats, messagesByChatId, myNickname, myAvatarUrl]);
+  }, [debouncedQuery, targetChats, messagesByChatId, myNickname, myAvatarUrl, t]);
 
   const visibleResults = useMemo(() => {
     return searchResults.slice(0, visibleCount);

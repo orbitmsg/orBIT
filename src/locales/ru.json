@@ -1069,6 +1069,7 @@
       "emoji_animations": "Анимация эмодзи",
       "chat_animations": "Анимации в чатах",
       "autoplay_videos": "Проигрывать видео",
+      "element_animations": "Анимации элементов",
       "call_animations": "Анимации звонков",
       "not_available": "Пока недоступно"
     },

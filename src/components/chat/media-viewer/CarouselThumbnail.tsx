@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play } from 'lucide-react';
+import { SmoothPlayPauseIcon } from '../../audio/SmoothPlayPauseIcon';
 import { MediaViewerItem } from './types';
 import { useDecryptedMedia } from '../../../lib/media-utils';
 
@@ -103,7 +103,7 @@ export const CarouselThumbnail = React.memo(({
             backgroundColor: 'rgba(0,0,0,0.25)',
           }}
         >
-          <Play size={14} fill="white" color="white" />
+          <SmoothPlayPauseIcon isPlaying={false} size={14} fill="white" />
         </div>
       )}
     </div>

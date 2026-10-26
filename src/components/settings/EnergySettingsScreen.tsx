@@ -15,6 +15,8 @@ export const EnergySettingsScreen: React.FC = () => {
 
   const chatAutoPlayVideos = useChatStore((s) => s.chatAutoPlayVideos);
   const setChatAutoPlayVideos = useChatStore((s) => s.setChatAutoPlayVideos);
+  const chatElementAnimations = useChatStore((s) => s.chatElementAnimations);
+  const setChatElementAnimations = useChatStore((s) => s.setChatElementAnimations);
 
   const callAnimationsEnabled = useChatStore((s) => s.callAnimationsEnabled);
   const setCallAnimationsEnabled = useChatStore((s) => s.setCallAnimationsEnabled);
@@ -23,7 +25,7 @@ export const EnergySettingsScreen: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   const stickersCount = (stickersAutoplayPanel ? 1 : 0) + (stickersAutoplayChat ? 1 : 0);
-  const chatCount = chatAutoPlayVideos ? 1 : 0;
+  const chatCount = (chatAutoPlayVideos ? 1 : 0) + (chatElementAnimations ? 1 : 0);
 
   const handleToggleStickers = () => {
     const next = stickersCount === 0;
@@ -32,7 +34,9 @@ export const EnergySettingsScreen: React.FC = () => {
   };
 
   const handleToggleChat = () => {
-    setChatAutoPlayVideos(!chatAutoPlayVideos);
+    const next = chatCount === 0;
+    setChatAutoPlayVideos(next);
+    setChatElementAnimations(next);
   };
 
   const handleToggleCalls = () => {
@@ -261,7 +265,7 @@ export const EnergySettingsScreen: React.FC = () => {
                     color: MD3.onSurfaceVar,
                   }}
                 >
-                  {chatCount}/1
+                  {chatCount}/2
                 </span>
                 <motion.div
                   animate={{ rotate: isChatOpen ? 180 : 0 }}
@@ -322,6 +326,43 @@ export const EnergySettingsScreen: React.FC = () => {
                   </div>
                   <span style={{ fontSize: '14px', color: chatAutoPlayVideos ? MD3.onSurface : MD3.onSurfaceVar }}>
                     {t('energy.autoplay_videos', 'Проигрывать видео')}
+                  </span>
+                </div>
+
+                <div
+                  onClick={() => setChatElementAnimations(!chatElementAnimations)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '8px 16px 8px 48px',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                  }}
+                  className="hover:bg-white/[0.04]"
+                >
+                  <div
+                    style={{
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: chatElementAnimations ? 'var(--accent-color, #7C3AED)' : 'transparent',
+                      border: chatElementAnimations ? 'none' : '2px solid rgba(255, 255, 255, 0.35)',
+                      transition: 'all 0.15s ease',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {chatElementAnimations && (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </div>
+                  <span style={{ fontSize: '14px', color: chatElementAnimations ? MD3.onSurface : MD3.onSurfaceVar }}>
+                    {t('energy.element_animations', 'Анимации элементов')}
                   </span>
                 </div>
               </motion.div>

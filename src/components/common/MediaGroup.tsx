@@ -1,6 +1,6 @@
-// src/components/common/MediaGroup.tsx
 import React, { useMemo } from 'react';
-import { Play, Volume2 } from 'lucide-react';
+import { Volume2 } from 'lucide-react';
+import { SmoothPlayPauseIcon } from '../audio/SmoothPlayPauseIcon';
 import { useDecryptedMedia } from '../../lib/media-utils';
 
 export interface MediaGroupItem {
@@ -324,7 +324,7 @@ const MediaTile = React.memo(({ box, sharedSecret }: MediaTileProps) => {
             style={{ opacity: blobUrl ? 1 : 0, transition: 'opacity 0.2s' }}
           />
           <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none">
-            <Play className="w-8 h-8 text-white" fill="white" />
+            <SmoothPlayPauseIcon isPlaying={false} size={30} fill="white" />
           </div>
           {media.duration && (
             <div className="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded flex items-center gap-1 pointer-events-none">

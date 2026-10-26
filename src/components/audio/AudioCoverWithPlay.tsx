@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Pause } from 'lucide-react';
+import { SmoothPlayPauseIcon } from './SmoothPlayPauseIcon';
 
 export type AudioCoverState = 'play' | 'pause' | 'download' | 'downloading' | 'uploading' | 'file' | 'done';
 
@@ -32,7 +32,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
   customBg,
   customIconColor,
 }) => {
-  const iconSize = Math.round(size * 0.42);
+  const iconSize = Math.round(size * 0.46);
   const strokeW = size >= 48 ? 3.5 : (size >= 40 ? 3 : 2.5);
   const radius = Math.max(2, size / 2 - 4);
   const circumference = 2 * Math.PI * radius;
@@ -234,11 +234,8 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
       );
     }
 
-    if (isPlayingTrack || state === 'pause') {
-      return <Pause size={iconSize} fill={iconFill} strokeWidth={0} />;
-    }
-
-    return <Play size={iconSize} fill={iconFill} strokeWidth={0} style={{ transform: 'translateX(1px)' }} />;
+    const isPlaying = Boolean(isPlayingTrack || state === 'pause');
+    return <SmoothPlayPauseIcon isPlaying={isPlaying} size={iconSize} fill={iconFill} />;
   };
 
   return (
@@ -254,7 +251,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
         position: 'relative',
         flexShrink: 0,
         backgroundColor: cover ? 'transparent' : (customBg || (state === 'done' ? 'rgba(0, 184, 148, 0.15)' : (isOwn ? 'rgba(255, 255, 255, 0.2)' : 'rgba(45, 48, 62, 0.9)'))),
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        border: 'none',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
         cursor: 'pointer',
         transition: 'background-color 0.3s ease',

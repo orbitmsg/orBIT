@@ -390,7 +390,7 @@ export const MessageInput = memo<MessageInputProps>(({
         setIsEditorEmpty(currentText.trim() === '');
         setTimeout(() => {
           if (editorRef.current) {
-            placeCaretAtEnd(editorRef.current);
+            editorRef.current.focus({ preventScroll: true });
           }
         }, 0);
       }
@@ -423,7 +423,7 @@ export const MessageInput = memo<MessageInputProps>(({
       }
       requestAnimationFrame(() => {
         if (editorRef.current && document.activeElement !== editorRef.current) {
-          placeCaretAtEnd(editorRef.current);
+          editorRef.current.focus({ preventScroll: true });
         }
       });
     };
@@ -444,7 +444,7 @@ export const MessageInput = memo<MessageInputProps>(({
       }
       if (e.key.length === 1 && editorRef.current && active !== editorRef.current) {
         editorRef.current.focus();
-        placeCaretAtEnd(editorRef.current);
+        editorRef.current.focus({ preventScroll: true });
       }
     };
 
@@ -471,7 +471,7 @@ export const MessageInput = memo<MessageInputProps>(({
     }
     requestAnimationFrame(() => {
       if (editorRef.current && document.activeElement !== editorRef.current) {
-        placeCaretAtEnd(editorRef.current);
+        editorRef.current.focus({ preventScroll: true });
       }
     });
   };
@@ -489,7 +489,7 @@ export const MessageInput = memo<MessageInputProps>(({
       setPendingForwardMessages(null);
     }
     if (editorRef.current) {
-      placeCaretAtEnd(editorRef.current);
+      editorRef.current.focus({ preventScroll: true });
     }
   };
 
@@ -651,7 +651,7 @@ export const MessageInput = memo<MessageInputProps>(({
     }
     syncEditorToState();
     if (editorRef.current) {
-      placeCaretAtEnd(editorRef.current);
+      editorRef.current.focus({ preventScroll: true });
     }
   };
 
@@ -960,7 +960,7 @@ export const MessageInput = memo<MessageInputProps>(({
                 overflowY: 'auto',
                 padding: '0',
                 width: '100%',
-                caretColor: 'var(--accent-color, #7C3AED)',
+                caretColor: 'var(--scroll-thumb-color, rgba(255, 255, 255, 0.45))',
                 wordBreak: 'break-word',
                 whiteSpace: 'pre-wrap',
                 userSelect: 'text',
@@ -1201,7 +1201,7 @@ export const MessageInput = memo<MessageInputProps>(({
                     }
                     syncEditorToState();
                     if (editorRef.current) {
-                      placeCaretAtEnd(editorRef.current);
+                      editorRef.current.focus({ preventScroll: true });
                     }
                   }
                 }}

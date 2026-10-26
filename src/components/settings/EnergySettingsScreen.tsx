@@ -50,20 +50,6 @@ export const EnergySettingsScreen: React.FC = () => {
       transition={{ duration: 0.18 }}
       style={{ padding: '0 0 32px' }}
     >
-      <div style={{ padding: '0 16px 10px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <span
-          style={{
-            fontSize: '13px',
-            fontWeight: 600,
-            color: 'var(--accent-color, #9b7dd4)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.04em',
-          }}
-        >
-          {t('energy.section_title', 'Параметры энергосбережения')}
-        </span>
-      </div>
-
       <Block style={{ marginBottom: 12 }}>
         <div>
           <div
@@ -112,7 +98,6 @@ export const EnergySettingsScreen: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '1px', height: '20px', backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
               <M3Switch checked={stickersCount > 0} onChange={handleToggleStickers} />
             </div>
           </div>
@@ -213,7 +198,6 @@ export const EnergySettingsScreen: React.FC = () => {
             minHeight: '48px',
             boxSizing: 'border-box',
             opacity: 0.45,
-            borderTop: '1px solid rgba(255, 255, 255, 0.05)',
             cursor: 'not-allowed',
           }}
         >
@@ -231,7 +215,7 @@ export const EnergySettingsScreen: React.FC = () => {
           <M3Switch checked={false} onChange={() => {}} disabled={true} />
         </div>
 
-        <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
+        <div>
           <div
             style={{
               display: 'flex',
@@ -278,7 +262,6 @@ export const EnergySettingsScreen: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '1px', height: '20px', backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
               <M3Switch checked={chatCount > 0} onChange={handleToggleChat} />
             </div>
           </div>
@@ -378,7 +361,6 @@ export const EnergySettingsScreen: React.FC = () => {
             padding: '12px 16px',
             minHeight: '48px',
             boxSizing: 'border-box',
-            borderTop: '1px solid rgba(255, 255, 255, 0.05)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

@@ -21,7 +21,6 @@ import { supabaseService } from '../../services/supabaseService';
 import { groupService } from '../../services/groupService';
 import { formatBirthday } from '../../utils/birthday';
 import { isStaticImageDataUrl, isStaticImageFile, MAX_AVATAR_BANNER_SIZE, isAnimatedMedia, getMediaInfoFromDataUrl, SUPPORTED_MEDIA_EXTENSIONS } from '../../utils/staticImageValidation';
-import { OptimizedBanner } from '../common/OptimizedBanner';
 
 const sendProfileUpdate = (updates: {
   avatarUrl?: string | null;
@@ -172,7 +171,7 @@ interface MyProfileModalProps {
 
 export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onClose, isMobileView = false }) => {
   const { t, i18n } = useTranslation();
-  const { nickname, avatarUrl, bannerUrl, username, bio, birthday, userId, setNickname, setAvatarUrl } = useAuthStore(useShallow((s) => ({
+  const { nickname, avatarUrl, username, bio, birthday, userId, setNickname, setAvatarUrl } = useAuthStore(useShallow((s) => ({
     nickname: s.nickname,
     avatarUrl: s.avatarUrl,
     bannerUrl: s.bannerUrl,
@@ -617,11 +616,11 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                   }}
                   aria-label={t('common.edit')}
                   style={{
-                    background: bannerUrl ? 'rgba(0, 0, 0, 0.45)' : 'none',
-                    backdropFilter: bannerUrl ? 'blur(8px)' : 'none',
-                    WebkitBackdropFilter: bannerUrl ? 'blur(8px)' : 'none',
+                    background: 'none',
+                    backdropFilter: 'none',
+                    WebkitBackdropFilter: 'none',
                     border: 'none',
-                    color: bannerUrl ? '#ffffff' : 'var(--text-dim)',
+                    color: 'var(--text-dim)',
                     cursor: 'pointer',
                     width: '32px',
                     height: '32px',
@@ -633,12 +632,12 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                     transition: 'color 150ms, background 150ms',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = bannerUrl ? 'rgba(0, 0, 0, 0.65)' : 'rgba(255,255,255,0.08)';
+                    e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
                     e.currentTarget.style.color = 'var(--text-main)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = bannerUrl ? 'rgba(0, 0, 0, 0.45)' : 'transparent';
-                    e.currentTarget.style.color = bannerUrl ? '#ffffff' : 'var(--text-dim)';
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = 'var(--text-dim)';
                   }}
                 >
                   <Pencil size={18} />
@@ -648,11 +647,11 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                   onClick={onClose}
                   aria-label={t('common.close')}
                   style={{
-                    background: bannerUrl ? 'rgba(0, 0, 0, 0.45)' : 'none',
-                    backdropFilter: bannerUrl ? 'blur(8px)' : 'none',
-                    WebkitBackdropFilter: bannerUrl ? 'blur(8px)' : 'none',
+                    background: 'none',
+                    backdropFilter: 'none',
+                    WebkitBackdropFilter: 'none',
                     border: 'none',
-                    color: bannerUrl ? '#ffffff' : 'var(--text-dim)',
+                    color: 'var(--text-dim)',
                     cursor: 'pointer',
                     width: '32px',
                     height: '32px',
@@ -664,12 +663,12 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                     transition: 'color 150ms, background 150ms',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = bannerUrl ? 'rgba(0, 0, 0, 0.65)' : 'rgba(255,255,255,0.08)';
+                    e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
                     e.currentTarget.style.color = 'var(--text-main)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = bannerUrl ? 'rgba(0, 0, 0, 0.45)' : 'transparent';
-                    e.currentTarget.style.color = bannerUrl ? '#ffffff' : 'var(--text-dim)';
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = 'var(--text-dim)';
                   }}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
@@ -720,33 +719,9 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                     <QrCodeView userId={myCode} avatarUrl={avatarUrl} nickname={nickname} />
                   ) : (
                     <>
-                      {bannerUrl && (
-                        <div
-                          style={{
-                            width: '100%',
-                            height: '135px',
-                            minHeight: '135px',
-                            maxHeight: '135px',
-                            overflow: 'hidden',
-                            position: 'relative',
-                            flexShrink: 0,
-                            userSelect: 'none',
-                          }}
-                        >
-                          <OptimizedBanner
-                            src={bannerUrl}
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover',
-                              display: 'block',
-                            }}
-                          />
-                        </div>
-                      )}
-                      <div
+                                            <div
                         style={{
-                          padding: bannerUrl ? '0 0 16px' : '20px 0 16px',
+                          padding: '20px 0 16px',
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
@@ -761,8 +736,8 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                             position: 'relative',
                             width: 96,
                             height: 96,
-                            marginBottom: bannerUrl ? 20 : 10,
-                            marginTop: bannerUrl ? -48 : 0,
+                            marginBottom: 10,
+                            marginTop: 0,
                             zIndex: 10,
                             flexShrink: 0,
                           }}
@@ -774,7 +749,7 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                               cursor: avatarUrl ? 'pointer' : 'default',
                               borderRadius: '50%',
                               backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
-                              boxShadow: bannerUrl ? '0 0 0 6px var(--settings-bg, var(--bg-secondary))' : 'none',
+                              boxShadow: 'none',
                               flexShrink: 0,
                             }}
                             onClick={() => {

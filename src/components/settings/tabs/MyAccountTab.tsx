@@ -1,15 +1,13 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { Trash2, Image as ImageIcon } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
-import { OptimizedBanner } from '../../common/OptimizedBanner';
 import { DeveloperBadge } from '../../ui/DeveloperBadge';
 import { formatBirthday } from '../../../utils/birthday';
 import { MD3, Block } from '../SettingsShared';
 
 export interface MyAccountTabProps {
-  bannerUrl: string | null;
   avatarUrl: string | null;
   nickname: string;
   username: string | null;
@@ -28,8 +26,6 @@ export interface MyAccountTabProps {
   handleToggleAvatarMenu: (e: React.MouseEvent) => void;
   handlePickFile: () => void;
   handlePasteClipboard: () => void;
-  handlePickBanner: () => void;
-  handleDeleteBanner: () => void;
   handleOpenEmojiAvatar: () => void;
   handleDeleteAvatar: () => void;
   triggerDevToast: () => void;
@@ -38,7 +34,6 @@ export interface MyAccountTabProps {
 }
 
 export const MyAccountTab = ({
-  bannerUrl,
   avatarUrl,
   nickname,
   username,
@@ -57,8 +52,6 @@ export const MyAccountTab = ({
   handleToggleAvatarMenu,
   handlePickFile,
   handlePasteClipboard,
-  handlePickBanner,
-  handleDeleteBanner,
   handleOpenEmojiAvatar,
   handleDeleteAvatar,
   triggerDevToast,
@@ -73,107 +66,7 @@ export const MyAccountTab = ({
       transition={{ duration: 0.18 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 24 }}
     >
-      <Block>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '12px 16px',
-            boxSizing: 'border-box',
-            width: '100%',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
-            {bannerUrl ? (
-              <div
-                style={{
-                  width: '56px',
-                  height: '36px',
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  flexShrink: 0,
-                  backgroundColor: 'rgba(255,255,255,0.06)',
-                  border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
-                }}
-              >
-                <OptimizedBanner src={bannerUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-            ) : (
-              <div
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: 'rgba(255,255,255,0.06)',
-                  color: MD3.onSurfaceVar,
-                  flexShrink: 0,
-                }}
-              >
-                <ImageIcon size={20} />
-              </div>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-              <span style={{ fontSize: '14.5px', fontWeight: 600, color: MD3.onSurface }}>
-                {t('settings.banner', 'Баннер')}
-              </span>
-              <span style={{ fontSize: '12px', color: MD3.onSurfaceVar, marginTop: '2px' }}>
-                {bannerUrl
-                  ? t('settings.banner_active', 'Установлен')
-                  : t('settings.banner_description', 'Статичное изображение в шапке профиля')}
-              </span>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-            <button
-              type="button"
-              onClick={handlePickBanner}
-              aria-label={bannerUrl ? t('common.edit', 'Изменить') : t('settings.set_banner', 'Поставить')}
-              style={{
-                background: 'var(--accent-color, #7C3AED)',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '6px 14px',
-                fontSize: '13px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'opacity 0.15s ease',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
-            >
-              {bannerUrl ? t('common.edit', 'Изменить') : t('settings.set_banner', 'Поставить')}
-            </button>
-            {bannerUrl && (
-              <button
-                type="button"
-                onClick={handleDeleteBanner}
-                aria-label={t('settings.delete_banner', 'Удалить баннер')}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--md-error, #ff595a)',
-                  cursor: 'pointer',
-                  padding: '6px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255,89,90,0.12)')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-              >
-                <Trash2 size={16} />
-              </button>
-            )}
-          </div>
-        </div>
-      </Block>
+      
 
       <div
         style={{
@@ -185,182 +78,245 @@ export const MyAccountTab = ({
           userSelect: 'none',
         }}
       >
-        <div style={{ position: 'relative', width: '84px', height: '84px', marginBottom: 12 }}>
-          <Avatar
-            src={avatarUrl}
-            alt={nickname || '?'}
-            className="w-[84px] h-[84px] rounded-full object-cover"
-            style={{ width: '84px', height: '84px', borderRadius: '50%' }}
-          />
-          <button
-            ref={cameraBtnRef}
-            type="button"
-            onClick={handleToggleAvatarMenu}
-            aria-label={t('common.edit', 'Изменить')}
+        <div style={{ position: 'relative', width: '96px', height: '96px', marginBottom: 12 }}>
+          <div
             style={{
-              position: 'absolute',
-              bottom: 0,
-              right: 0,
-              width: '28px',
-              height: '28px',
-              borderRadius: '50%',
-              backgroundColor: 'var(--accent-color, #7C3AED)',
-              color: '#ffffff',
-              border: '2px solid var(--bg-secondary, #211d2f)',
+              position: 'relative',
+              width: '96px',
+              height: '96px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-              padding: 0,
             }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-              <circle cx="12" cy="13" r="4" />
+            <Avatar
+              src={avatarUrl}
+              alt={nickname || 'User'}
+              className="w-24 h-24 rounded-full"
+              style={{ width: '96px', height: '96px', backgroundColor: 'var(--settings-bg, var(--bg-secondary))' }}
+            />
+          </div>
+          <button
+            ref={cameraBtnRef}
+            onClick={handleToggleAvatarMenu}
+            aria-label={t('settings.change_avatar', 'Изменить аватар')}
+            style={{
+              position: 'absolute',
+              bottom: '-2px',
+              right: '-2px',
+              width: '35px',
+              height: '35px',
+              boxSizing: 'border-box',
+              borderRadius: '50%',
+              background: 'var(--accent-color)',
+              color: '#fff',
+              border: '3.5px solid var(--settings-bg, var(--bg-secondary))',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 0,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.35)',
+              transition: 'opacity 0.15s ease',
+              zIndex: 10,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="17" height="17">
+              <path fill="currentColor" d="M12 17.5q1.875 0 3.188-1.312T16.5 13t-1.312-3.187T12 8.5T8.813 9.813T7.5 13t1.313 3.188T12 17.5m0-2q-1.05 0-1.775-.725T9.5 13t.725-1.775T12 10.5t1.775.725T14.5 13t-.725 1.775T12 15.5M4 21q-.825 0-1.412-.587T2 19V7q0-.825.588-1.412T4 5h3.15L9 3h6l1.85 2H20q.825 0 1.413.588T22 7v12q0 .825-.587 1.413T20 21z" />
             </svg>
           </button>
 
-          <AnimatePresence>
-            {avatarMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.12 }}
+          {avatarMenuOpen && (
+            <>
+              <div
+                style={{ position: 'fixed', inset: 0, zIndex: 999998 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggleAvatarMenu(e);
+                }}
+              />
+              <div
                 onClick={(e) => e.stopPropagation()}
                 style={{
                   position: 'fixed',
-                  top: menuPos.top,
-                  left: menuPos.left,
-                  backgroundColor: 'var(--bg-secondary, #2a253b)',
-                  borderRadius: '12px',
-                  boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
-                  padding: '6px',
-                  minWidth: '200px',
-                  zIndex: 350,
+                  top: menuPos.top + 'px',
+                  left: menuPos.left + 'px',
+                  backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
+                  borderRadius: '9px',
+                  border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
+                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3)',
+                  padding: '0',
+                  overflow: 'hidden',
+                  minWidth: '145px',
+                  width: 'max-content',
+                  zIndex: 999999,
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '2px',
-                  border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
+                  gap: '0px',
+                  animation: 'fadeIn 0.12s ease',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 <button
                   type="button"
-                  onClick={handlePickFile}
-                  aria-label={t('profile.choose_file', 'Выбрать файл')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePickFile();
+                  }}
                   style={{
+                    width: '100%',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
+                    gap: '8px',
+                    padding: '7px 11px',
+                    borderRadius: '0px',
+                    background: 'transparent',
                     border: 'none',
-                    backgroundColor: 'transparent',
-                    color: 'var(--text-main, #ffffff)',
+                    color: 'var(--text-main, #fff)',
+                    fontSize: '12.5px',
+                    fontWeight: 500,
                     cursor: 'pointer',
-                    fontSize: '13px',
                     textAlign: 'left',
-                    width: '100%',
+                    whiteSpace: 'nowrap',
+                    boxSizing: 'border-box',
+                    transition: 'background-color 0.12s ease',
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.08))')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <polyline points="21 15 16 10 5 21" />
-                  </svg>
-                  {t('profile.choose_file', 'Выбрать файл')}
+                  <div style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" style={{ color: 'var(--text-main, rgba(255, 255, 255, 0.85))' }}>
+                      <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+                        <path d="M15 8h.01M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z" />
+                        <path d="m3 16l5-5c.928-.893 2.072-.893 3 0l5 5" />
+                        <path d="m14 14l1-1c.928-.893 2.072-.893 3 0l3 3" />
+                      </g>
+                    </svg>
+                  </div>
+                  <span style={{ whiteSpace: 'nowrap' }}>{t('common.file', 'Файл')}</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={handlePasteClipboard}
-                  aria-label={t('profile.paste_clipboard', 'Вставить из буфера')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePasteClipboard();
+                  }}
                   style={{
+                    width: '100%',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
+                    gap: '8px',
+                    padding: '7px 11px',
+                    borderRadius: '0px',
+                    background: 'transparent',
                     border: 'none',
-                    backgroundColor: 'transparent',
-                    color: 'var(--text-main, #ffffff)',
+                    color: 'var(--text-main, #fff)',
+                    fontSize: '12.5px',
+                    fontWeight: 500,
                     cursor: 'pointer',
-                    fontSize: '13px',
                     textAlign: 'left',
-                    width: '100%',
+                    whiteSpace: 'nowrap',
+                    boxSizing: 'border-box',
+                    transition: 'background-color 0.12s ease',
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.08))')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-                  </svg>
-                  {t('profile.paste_clipboard', 'Вставить из буфера')}
+                  <div style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" style={{ color: 'var(--text-main, rgba(255, 255, 255, 0.85))' }}>
+                      <path fill="currentColor" d="M5 5h2v1c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V5h2v6h2V5c0-1.1-.9-2-2-2h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h5v-2H5zm7-2c.55 0 1 .45 1 1s-.45 1-1 1s-1-.45-1-1s.45-1 1-1" />
+                      <path fill="currentColor" d="m21.29 16.29l-2.58-2.58a.996.996 0 1 0-1.41 1.41l.87.88H13c-.55 0-1 .45-1 1s.45 1 1 1h5.17l-.87.88a.996.996 0 1 0 1.41 1.41l2.58-2.58c.39-.4.39-1.03 0-1.42" />
+                    </svg>
+                  </div>
+                  <span style={{ whiteSpace: 'nowrap' }}>{t('common.from_clipboard', 'Из буфера обмена')}</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={handleOpenEmojiAvatar}
-                  aria-label={t('profile.choose_emoji', 'Выбрать эмодзи-аватар')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenEmojiAvatar();
+                  }}
                   style={{
+                    width: '100%',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
+                    gap: '8px',
+                    padding: '7px 11px',
+                    borderRadius: '0px',
+                    background: 'transparent',
                     border: 'none',
-                    backgroundColor: 'transparent',
-                    color: 'var(--text-main, #ffffff)',
+                    color: 'var(--text-main, #fff)',
+                    fontSize: '12.5px',
+                    fontWeight: 500,
                     cursor: 'pointer',
-                    fontSize: '13px',
                     textAlign: 'left',
-                    width: '100%',
+                    whiteSpace: 'nowrap',
+                    boxSizing: 'border-box',
+                    transition: 'background-color 0.12s ease',
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.08))')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M8 14s1.5 2 4 2 4-2 4-2" />
-                    <line x1="9" y1="9" x2="9.01" y2="9" />
-                    <line x1="15" y1="9" x2="15.01" y2="9" />
-                  </svg>
-                  {t('profile.choose_emoji', 'Выбрать эмодзи-аватар')}
+                  <div
+                    style={{
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <span className="emoji-font" style={{ fontSize: '15px', lineHeight: 1 }}>
+                      🙈
+                    </span>
+                  </div>
+                  <span style={{ whiteSpace: 'nowrap' }}>{t('avatar.choose_emoji', 'Выбрать эмодзи')}</span>
                 </button>
 
                 {avatarUrl && (
                   <button
                     type="button"
-                    onClick={handleDeleteAvatar}
-                    aria-label={t('profile.delete_photo', 'Удалить фото')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteAvatar();
+                    }}
                     style={{
+                      width: '100%',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '10px',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
+                      gap: '8px',
+                      padding: '7px 11px',
+                      borderRadius: '0px',
+                      background: 'transparent',
                       border: 'none',
-                      backgroundColor: 'transparent',
                       color: 'var(--md-error, #ff595a)',
+                      fontSize: '12.5px',
+                      fontWeight: 500,
                       cursor: 'pointer',
-                      fontSize: '13px',
                       textAlign: 'left',
-                      width: '100%',
+                      whiteSpace: 'nowrap',
+                      boxSizing: 'border-box',
+                      transition: 'background-color 0.12s ease',
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,89,90,0.12)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.08))')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
-                    <Trash2 size={16} />
-                    {t('profile.delete_photo', 'Удалить фото')}
+                    <div style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Trash2 size={16} />
+                    </div>
+                    <span style={{ whiteSpace: 'nowrap' }}>{t('profile.delete_photo', 'Удалить фото')}</span>
                   </button>
                 )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+              </div>
+            </>
+          )}
         </div>
 
         <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 2 }}>

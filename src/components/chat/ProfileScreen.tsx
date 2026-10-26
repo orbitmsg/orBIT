@@ -13,7 +13,6 @@ import { AddGroupMemberModal } from './AddGroupMemberModal';
 import { DeleteGroupModal } from './DeleteGroupModal';
 import { formatLastSeen } from '../../utils/messageUtils';
 import { isStaticImageFile, MAX_AVATAR_BANNER_SIZE, getMediaInfoFromDataUrl } from '../../utils/staticImageValidation';
-import { OptimizedBanner } from '../common/OptimizedBanner';
 import {
   Picture as GravityPictureIcon,
   Video as GravityVideoIcon,
@@ -804,32 +803,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         flexShrink: 0,
       }}
     >
-      {effectiveBannerUrl && (
-        <div
-          style={{
-            width: '100%',
-            height: '135px',
-            minHeight: '135px',
-            maxHeight: '135px',
-            overflow: 'hidden',
-            position: 'relative',
-            flexShrink: 0,
-            marginBottom: '0',
-            userSelect: 'none',
-          }}
-        >
-          <OptimizedBanner
-            src={effectiveBannerUrl}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              display: 'block',
-            }}
-          />
-        </div>
-      )}
-      <div
+            <div
         style={{
           display: 'flex',
           justifyContent: 'center',
@@ -840,7 +814,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
           transformOrigin: 'top center',
           pointerEvents: scrollOffset > 60 ? 'none' : 'auto',
           transition: 'none',
-          marginTop: effectiveBannerUrl ? -48 : 0,
+          marginTop: 0,
           zIndex: 10,
           flexShrink: 0,
         }}

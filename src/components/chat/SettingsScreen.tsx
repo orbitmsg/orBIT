@@ -39,7 +39,6 @@ import { QrCodeView } from './QrCodeView';
 
 import { EmojiAvatarModal } from '../settings/EmojiAvatarModal';
 import { AvatarCropperModal } from '../settings/AvatarCropperModal';
-import { BannerCropperModal } from '../settings/BannerCropperModal';
 import { isStaticImageFile, isStaticImageDataUrl, MAX_AVATAR_BANNER_SIZE, isAnimatedMedia, getMediaInfoFromDataUrl, SUPPORTED_MEDIA_EXTENSIONS } from '../../utils/staticImageValidation';
 
 import { ChatFoldersSettings } from '../settings/ChatFoldersSettings';
@@ -149,17 +148,15 @@ export const SettingsScreen = () => {
   const micVolume = useCallStore((state) => state.micVolume);
   const setPeerVolume = useCallStore((state) => state.setPeerVolume);
   const setMicVolume = useCallStore((state) => state.setMicVolume);
-  const { nickname, avatarUrl, bannerUrl, username, bio, birthday, userId, setNickname, setAvatarUrl, setBannerUrl, setUsername, setBio, setBirthday } = useAuthStore(useShallow((s) => ({
+  const { nickname, avatarUrl, username, bio, birthday, userId, setNickname, setAvatarUrl, setUsername, setBio, setBirthday } = useAuthStore(useShallow((s) => ({
     nickname: s.nickname,
     avatarUrl: s.avatarUrl,
-    bannerUrl: s.bannerUrl,
     username: s.username,
     bio: s.bio,
     birthday: s.birthday,
     userId: s.userId,
     setNickname: s.setNickname,
     setAvatarUrl: s.setAvatarUrl,
-    setBannerUrl: s.setBannerUrl,
     setUsername: s.setUsername,
     setBio: s.setBio,
     setBirthday: s.setBirthday,
@@ -379,8 +376,6 @@ export const SettingsScreen = () => {
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [cropperModalOpen, setCropperModalOpen] = useState(false);
   const [cropperImageSrc, setCropperImageSrc] = useState<string | null>(null);
-  const [bannerCropperOpen, setBannerCropperOpen] = useState(false);
-  const [bannerCropperImageSrc, setBannerCropperImageSrc] = useState<string | null>(null);
   const [emojiModalOpen, setEmojiModalOpen] = useState(false);
   const [localBio, setLocalBio] = useState(bio || '');
   const cameraBtnRef = useRef<HTMLButtonElement>(null);
@@ -583,112 +578,6 @@ export const SettingsScreen = () => {
     }
   };
 
-  const handlePickBanner = async () => {
-    try {
-      if (window.orbita?.pickFile) {
-        const raw = await window.orbita.pickFile(SUPPORTED_MEDIA_EXTENSIONS);
-        if (!raw) return;
-        const filePath = Array.isArray(raw) ? raw[0] : raw;
-        if (!filePath) return;
-        const sizeBytes = await window.orbita.getFileSize(filePath);
-        if (sizeBytes > MAX_AVATAR_BANNER_SIZE) {
-          alert(t('settings.file_too_large_3mb'));
-          return;
-        }
-        const dataUrl = await window.orbita.readFileAsDataURL(filePath);
-        if (dataUrl) {
-          if (!isStaticImageDataUrl(dataUrl) && !isAnimatedMedia(dataUrl)) {
-            alert(t('settings.static_images_only'));
-            return;
-          }
-          setBannerCropperImageSrc(dataUrl);
-          setBannerCropperOpen(true);
-        }
-      } else {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime';
-        input.onchange = async (e: any) => {
-          const file = e.target.files?.[0];
-          if (file) {
-            if (file.size > MAX_AVATAR_BANNER_SIZE) {
-              alert(t('settings.file_too_large_3mb'));
-              return;
-            }
-            const check = await isStaticImageFile(file);
-            const isAnim = file.type.startsWith('video/') || file.type === 'image/gif' || file.name.match(/\.(gif|mp4|webm|mov)$/i);
-            if (!check.ok && !isAnim) {
-              alert(t('settings.static_images_only'));
-              return;
-            }
-            const reader = new FileReader();
-            reader.onload = () => {
-              const res = reader.result as string;
-              if (!isStaticImageDataUrl(res) && !isAnimatedMedia(res)) {
-                alert(t('settings.static_images_only'));
-                return;
-              }
-              setBannerCropperImageSrc(res);
-              setBannerCropperOpen(true);
-            };
-            reader.readAsDataURL(file);
-          }
-        };
-        input.click();
-      }
-    } catch (err) {
-      console.error('Error picking banner file:', err);
-    }
-  };
-
-  const handleBannerSave = async (dataUrl: string) => {
-    setBannerCropperOpen(false);
-    setBannerCropperImageSrc(null);
-    try {
-      setBannerUrl(dataUrl);
-      let finalUrl = dataUrl;
-      const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
-      const { ext, mime } = getMediaInfoFromDataUrl(dataUrl);
-      try {
-        const binaryStr = atob(base64);
-        const bytes = new Uint8Array(binaryStr.length);
-        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-        const bannerBlob = new Blob([bytes], { type: mime });
-        mediaManager.setDirectDecryptedMedia(dataUrl, '', bannerBlob, mime);
-      } catch {}
-
-      if (typeof window !== 'undefined' && window.orbita?.writeTempFile && window.orbita?.uploadToCloudinary) {
-        const tempPath = await window.orbita.writeTempFile(base64, ext);
-        if (tempPath) {
-          const publicId = `banner_${Date.now()}`;
-          const result = await window.orbita.uploadToCloudinary(tempPath, publicId);
-          if (result.success && result.secure_url) {
-            finalUrl = result.secure_url;
-            try {
-              const binaryStr = atob(base64);
-              const bytes = new Uint8Array(binaryStr.length);
-              for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-              const bannerBlob = new Blob([bytes], { type: mime });
-              mediaManager.setDirectDecryptedMedia(finalUrl, '', bannerBlob, mime);
-            } catch {}
-            setBannerUrl(finalUrl);
-          }
-          await window.orbita.deleteTempFile(tempPath);
-        }
-      }
-      broadcastProfileUpdate({ bannerUrl: finalUrl });
-    } catch (err) {
-      console.error('Banner save error:', err);
-      setBannerUrl(dataUrl);
-      broadcastProfileUpdate({ bannerUrl: dataUrl });
-    }
-  };
-
-  const handleDeleteBanner = () => {
-    setBannerUrl(null);
-    broadcastProfileUpdate({ bannerUrl: null });
-  };
-
   const handleOpenEmojiAvatar = () => {
     setAvatarMenuOpen(false);
     setEmojiModalOpen(true);
@@ -885,7 +774,6 @@ export const SettingsScreen = () => {
 
   const renderMyAccount = () => (
     <MyAccountTab
-      bannerUrl={bannerUrl}
       avatarUrl={avatarUrl}
       nickname={nickname}
       username={username}
@@ -904,8 +792,6 @@ export const SettingsScreen = () => {
       handleToggleAvatarMenu={handleToggleAvatarMenu}
       handlePickFile={handlePickFile}
       handlePasteClipboard={handlePasteClipboard}
-      handlePickBanner={handlePickBanner}
-      handleDeleteBanner={handleDeleteBanner}
       handleOpenEmojiAvatar={handleOpenEmojiAvatar}
       handleDeleteAvatar={handleDeleteAvatar}
       triggerDevToast={triggerDevToast}
@@ -1302,15 +1188,7 @@ export const SettingsScreen = () => {
         imageSrc={cropperImageSrc}
         onSave={handleAvatarSave}
       />
-      <BannerCropperModal
-        isOpen={bannerCropperOpen}
-        onClose={() => {
-          setBannerCropperOpen(false);
-          setBannerCropperImageSrc(null);
-        }}
-        imageSrc={bannerCropperImageSrc}
-        onSave={handleBannerSave}
-      />
+
       <NicknameEditModal open={nicknameEditOpen} onClose={() => setNicknameEditOpen(false)} currentNickname={nickname || ''} onSave={handleNicknameSave} />
       <DeleteAccountModal
         isOpen={deleteModalOpen}

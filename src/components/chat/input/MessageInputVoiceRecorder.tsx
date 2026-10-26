@@ -32,14 +32,14 @@ const drawCircularWaveLayer = (
   colorRgb: [number, number, number],
   alpha: number
 ) => {
-  const steps = 48;
+  const steps = 64;
   ctx.beginPath();
   for (let i = 0; i <= steps; i++) {
     const theta = (i / steps) * Math.PI * 2;
     const s1 = Math.sin(k1 * theta + wavePhase);
     const s2 = Math.sin(k2 * theta - wavePhase * 0.75 + 1.3);
     const norm = (s1 * 0.68 + s2 * 0.32 + 1) * 0.5;
-    const elevation = Math.min(12, norm * amplitude);
+    const elevation = Math.min(16, norm * amplitude);
     const r = baseR + elevation;
     const x = cx + r * Math.cos(theta);
     const y = cy + r * Math.sin(theta);
@@ -50,7 +50,7 @@ const drawCircularWaveLayer = (
 
   const [r, g, b] = colorRgb;
   const maxR = baseR + amplitude + 1;
-  const grad = ctx.createRadialGradient(cx, cy, baseR * 0.65, cx, cy, maxR);
+  const grad = ctx.createRadialGradient(cx, cy, 14, cx, cy, maxR);
   grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha})`);
   grad.addColorStop(0.55, `rgba(${r}, ${g}, ${b}, ${alpha * 0.70})`);
   grad.addColorStop(0.9, `rgba(${r}, ${g}, ${b}, ${alpha * 0.25})`);
@@ -77,18 +77,18 @@ const renderCircularWaves = (
   if (!ctx) return;
 
   const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2) : 1;
-  const targetSize = Math.round(76 * dpr);
+  const targetSize = Math.round(120 * dpr);
   if (canvas.width !== targetSize || canvas.height !== targetSize) {
     canvas.width = targetSize;
     canvas.height = targetSize;
   }
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, 76, 76);
+  ctx.clearRect(0, 0, 120, 120);
 
-  const cx = 38;
-  const cy = 38;
-  const baseR = 17;
-  const baseAmp = 3.5 + vol * 8.5;
+  const cx = 60;
+  const cy = 60;
+  const baseR = 34;
+  const baseAmp = 4 + vol * 12;
 
   let rgb: [number, number, number] = [124, 58, 237];
   if (typeof document !== 'undefined') {
@@ -310,6 +310,7 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
         <div
           className="orbita-voice-btn-wrap"
           style={{
+            position: 'relative',
             transform: `translateY(${!isLocked ? -Math.min(lockProgress * 14, 10) : 0}px)`,
             transition: 'transform 0.05s ease-out',
             overflow: 'visible',
@@ -321,10 +322,10 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
             ref={waveCanvasRef}
             style={{
               position: 'absolute',
-              top: '-21px',
-              left: '-21px',
-              width: '76px',
-              height: '76px',
+              top: '-43px',
+              left: '-43px',
+              width: '120px',
+              height: '120px',
               pointerEvents: 'none',
               zIndex: 1,
             }}

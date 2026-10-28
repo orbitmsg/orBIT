@@ -875,14 +875,12 @@ export const MessageInput = memo<MessageInputProps>(({
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                transition: 'transform 0.15s ease, background-color 0.15s ease',
+                transition: 'background-color 0.15s ease',
                 zIndex: 20,
                 pointerEvents: 'auto',
                 backdropFilter: 'blur(24px) saturate(180%)',
                 WebkitBackdropFilter: 'blur(24px) saturate(180%)',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
             >
               <FileWithArrowIcon />
             </button>
@@ -912,8 +910,7 @@ export const MessageInput = memo<MessageInputProps>(({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'transform 0.15s ease, background-color 0.15s ease, color 0.15s ease',
-              transform: hoverAttach ? 'scale(1.05)' : 'scale(1)',
+              transition: 'background-color 0.15s ease, color 0.15s ease',
               userSelect: 'none',
               WebkitUserSelect: 'none',
               flexShrink: 0,
@@ -1005,11 +1002,11 @@ export const MessageInput = memo<MessageInputProps>(({
               if (onEmojiMouseLeave) onEmojiMouseLeave();
             }}
             style={{
-              backgroundColor: isEmojiOpen ? 'var(--accent-color)' : 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-              border: isEmojiOpen ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
+              backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
               outline: 'none',
-              boxShadow: isEmojiOpen ? '0 4px 16px rgba(124, 58, 237, 0.35)' : '0 4px 16px rgba(0, 0, 0, 0.18)',
-              color: isEmojiOpen ? '#ffffff' : emojiColor,
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
+              color: emojiColor,
               cursor: isRatchetReady ? 'pointer' : 'not-allowed',
               opacity: !isRatchetReady ? 0.35 : 1,
               width: '42px',
@@ -1019,8 +1016,7 @@ export const MessageInput = memo<MessageInputProps>(({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'transform 0.15s ease, background-color 0.15s ease, color 0.15s ease',
-              transform: hoverEmoji ? 'scale(1.05)' : 'scale(1)',
+              transition: 'background-color 0.15s ease, color 0.15s ease',
               flexShrink: 0,
               pointerEvents: 'auto',
               backdropFilter: 'blur(24px) saturate(180%)',
@@ -1064,8 +1060,7 @@ export const MessageInput = memo<MessageInputProps>(({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'transform 0.15s ease, background-color 0.15s ease, color 0.15s ease',
-              transform: hoverMic ? 'scale(1.06)' : 'scale(1)',
+              transition: 'background-color 0.15s ease, color 0.15s ease',
               flexShrink: 0,
               pointerEvents: 'auto',
               backdropFilter: 'blur(24px) saturate(180%)',

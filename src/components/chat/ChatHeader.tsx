@@ -129,7 +129,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                transition: 'transform 0.15s ease, background-color 0.15s ease, color 0.15s ease',
+                transition: 'background-color 0.15s ease, color 0.15s ease',
                 userSelect: 'none',
                 WebkitUserSelect: 'none',
                 flexShrink: 0,
@@ -137,8 +137,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 backdropFilter: 'blur(24px) saturate(180%)',
                 WebkitBackdropFilter: 'blur(24px) saturate(180%)',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
             >
               <ArrowLeft size={18} />
             </button>
@@ -187,11 +185,9 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               backdropFilter: 'blur(24px) saturate(180%)',
               WebkitBackdropFilter: 'blur(24px) saturate(180%)',
               pointerEvents: 'auto',
-              transition: 'transform 0.15s ease, background-color 0.15s ease',
+              transition: 'background-color 0.15s ease',
               boxSizing: 'border-box',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.008)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
           >
             <div className="flex flex-col items-center justify-center w-full min-w-0 select-none text-center" style={{ gap: 0, userSelect: 'none', WebkitUserSelect: 'none' }}>
               <div className="flex items-center justify-center gap-1.5 w-full min-w-0 select-none">
@@ -333,14 +329,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  transition: 'transform 0.15s ease, background-color 0.15s ease, color 0.15s ease',
+                  transition: 'background-color 0.15s ease, color 0.15s ease',
                   flexShrink: 0,
                   pointerEvents: 'auto',
                   backdropFilter: 'blur(24px) saturate(180%)',
                   WebkitBackdropFilter: 'blur(24px) saturate(180%)',
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
@@ -374,14 +368,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  transition: 'transform 0.15s ease, background-color 0.15s ease, color 0.15s ease',
+                  transition: 'background-color 0.15s ease, color 0.15s ease',
                   flexShrink: 0,
                   pointerEvents: 'auto',
                   backdropFilter: 'blur(24px) saturate(180%)',
                   WebkitBackdropFilter: 'blur(24px) saturate(180%)',
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.color = 'var(--text-main)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.color = 'var(--text-dim)'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-main)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-dim)'; }}
               >
                 <UserPlus size={18} />
               </button>
@@ -409,14 +403,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                transition: 'transform 0.15s ease, background-color 0.15s ease, color 0.15s ease',
+                transition: 'background-color 0.15s ease, color 0.15s ease',
                 flexShrink: 0,
                 pointerEvents: 'auto',
                 backdropFilter: 'blur(24px) saturate(180%)',
                 WebkitBackdropFilter: 'blur(24px) saturate(180%)',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.color = 'var(--text-main)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.color = 'var(--text-dim)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-main)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-dim)'; }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M21.71 20.29L18 16.61A9 9 0 1 0 16.61 18l3.68 3.68a1 1 0 0 0 1.42 0a1 1 0 0 0 0-1.39M11 18a7 7 0 1 1 7-7a7 7 0 0 1-7 7" />
@@ -446,14 +440,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  transition: 'transform 0.15s ease, background-color 0.15s ease, color 0.15s ease',
+                  transition: 'background-color 0.15s ease, color 0.15s ease',
                   flexShrink: 0,
                   pointerEvents: 'auto',
                   backdropFilter: 'blur(24px) saturate(180%)',
                   WebkitBackdropFilter: 'blur(24px) saturate(180%)',
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.color = 'var(--text-main)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.color = 'var(--text-dim)'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-main)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-dim)'; }}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
                   <path fill="currentColor" d="m19.23 15.26l-2.54-.29a1.99 1.99 0 0 0-1.64.57l-1.84 1.84a15.05 15.05 0 0 1-6.59-6.59l1.85-1.85c.43-.43.64-1.03.57-1.64l-.29-2.52a2 2 0 0 0-1.99-1.77H5.03c-1.13 0-2.07.94-2 2.07c.53 8.54 7.36 15.36 15.89 15.89c1.13.07 2.07-.87 2.07-2v-1.73c.01-1.01-.75-1.86-1.76-1.98" />

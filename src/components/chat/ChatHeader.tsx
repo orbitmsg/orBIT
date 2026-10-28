@@ -116,14 +116,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               }}
               aria-label={t('chatWindow.back')}
               style={{
-                backgroundColor: 'var(--surface-container, #33363f)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
+                backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
                 outline: 'none',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.22)',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
                 color: 'var(--text-main)',
                 cursor: 'pointer',
-                width: '38px',
-                height: '38px',
+                width: '42px',
+                height: '42px',
                 borderRadius: '50%',
                 padding: 0,
                 display: 'flex',
@@ -134,8 +134,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 WebkitUserSelect: 'none',
                 flexShrink: 0,
                 pointerEvents: 'auto',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
+                backdropFilter: 'blur(24px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(24px) saturate(180%)',
               }}
               onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
@@ -147,14 +147,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             <div
               onClick={onProfileClick}
               style={{
-                width: '38px',
-                height: '38px',
+                width: '42px',
+                height: '42px',
                 borderRadius: '50%',
                 overflow: 'hidden',
                 flexShrink: 0,
                 cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.22)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
+                border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
                 pointerEvents: 'auto',
               }}
             >
@@ -176,14 +176,16 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               cursor: 'pointer',
               userSelect: 'none',
               WebkitUserSelect: 'none',
-              backgroundColor: 'var(--surface-container, #33363f)',
-              borderRadius: '20px',
-              minHeight: '38px',
-              padding: '2px 16px',
-              border: '1px solid rgba(255, 255, 255, 0.06)',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.22)',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
+              backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
+              borderRadius: '21px',
+              height: '42px',
+              minHeight: '42px',
+              maxHeight: '42px',
+              padding: '0 16px',
+              border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
+              backdropFilter: 'blur(24px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
               pointerEvents: 'auto',
               transition: 'transform 0.15s ease, background-color 0.15s ease',
               boxSizing: 'border-box',
@@ -318,14 +320,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 }}
                 aria-label={t('support.open_tickets_modal', 'Тикеты поддержки')}
                 style={{
-                  backgroundColor: 'var(--surface-container, #33363f)',
-                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
                   outline: 'none',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.22)',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
                   color: 'var(--accent-color, #7C3AED)',
                   cursor: 'pointer',
-                  width: '38px',
-                  height: '38px',
+                  width: '42px',
+                  height: '42px',
                   borderRadius: '50%',
                   padding: 0,
                   display: 'flex',
@@ -334,8 +336,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   transition: 'transform 0.15s ease, background-color 0.15s ease, color 0.15s ease',
                   flexShrink: 0,
                   pointerEvents: 'auto',
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
+                  backdropFilter: 'blur(24px) saturate(180%)',
+                  WebkitBackdropFilter: 'blur(24px) saturate(180%)',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
@@ -359,14 +361,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 }}
                 aria-label={t('groupSettings.add_member', 'Добавить участника')}
                 style={{
-                  backgroundColor: 'var(--surface-container, #33363f)',
-                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
                   outline: 'none',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.22)',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
                   color: 'var(--text-dim)',
                   cursor: 'pointer',
-                  width: '38px',
-                  height: '38px',
+                  width: '42px',
+                  height: '42px',
                   borderRadius: '50%',
                   padding: 0,
                   display: 'flex',
@@ -375,8 +377,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   transition: 'transform 0.15s ease, background-color 0.15s ease, color 0.15s ease',
                   flexShrink: 0,
                   pointerEvents: 'auto',
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
+                  backdropFilter: 'blur(24px) saturate(180%)',
+                  WebkitBackdropFilter: 'blur(24px) saturate(180%)',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.color = 'var(--text-main)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.color = 'var(--text-dim)'; }}
@@ -394,14 +396,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               }}
               aria-label={t('common.search', 'Поиск')}
               style={{
-                backgroundColor: 'var(--surface-container, #33363f)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
+                backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
                 outline: 'none',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.22)',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
                 color: 'var(--text-dim)',
                 cursor: 'pointer',
-                width: '38px',
-                height: '38px',
+                width: '42px',
+                height: '42px',
                 borderRadius: '50%',
                 padding: 0,
                 display: 'flex',
@@ -410,8 +412,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 transition: 'transform 0.15s ease, background-color 0.15s ease, color 0.15s ease',
                 flexShrink: 0,
                 pointerEvents: 'auto',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
+                backdropFilter: 'blur(24px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(24px) saturate(180%)',
               }}
               onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.color = 'var(--text-main)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.color = 'var(--text-dim)'; }}
@@ -431,14 +433,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 }}
                 aria-label={t('call.call', 'Позвонить')}
                 style={{
-                  backgroundColor: 'var(--surface-container, #33363f)',
-                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
                   outline: 'none',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.22)',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
                   color: 'var(--text-dim)',
                   cursor: 'pointer',
-                  width: '38px',
-                  height: '38px',
+                  width: '42px',
+                  height: '42px',
                   borderRadius: '50%',
                   padding: 0,
                   display: 'flex',
@@ -447,8 +449,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   transition: 'transform 0.15s ease, background-color 0.15s ease, color 0.15s ease',
                   flexShrink: 0,
                   pointerEvents: 'auto',
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
+                  backdropFilter: 'blur(24px) saturate(180%)',
+                  WebkitBackdropFilter: 'blur(24px) saturate(180%)',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.color = 'var(--text-main)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.color = 'var(--text-dim)'; }}

@@ -22,7 +22,7 @@ export const MessageInputLinkPreview: React.FC<MessageInputLinkPreviewProps> = (
         backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
         backdropFilter: 'blur(24px) saturate(180%)',
         WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-        border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
+        border: 'none',
         borderRadius: '18px',
         boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
         padding: '8px 14px',

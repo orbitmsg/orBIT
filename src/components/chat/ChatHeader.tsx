@@ -117,7 +117,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               aria-label={t('chatWindow.back')}
               style={{
                 backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-                border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
+                border: 'none',
                 outline: 'none',
                 boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
                 color: 'var(--text-main)',
@@ -152,7 +152,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 flexShrink: 0,
                 cursor: 'pointer',
                 boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-                border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
+                border: 'none',
                 pointerEvents: 'auto',
               }}
             >
@@ -180,7 +180,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               minHeight: '42px',
               maxHeight: '42px',
               padding: '0 16px',
-              border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
+              border: 'none',
               boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
               backdropFilter: 'blur(24px) saturate(180%)',
               WebkitBackdropFilter: 'blur(24px) saturate(180%)',
@@ -190,14 +190,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             }}
           >
             <div className="flex flex-col items-center justify-center w-full min-w-0 select-none text-center" style={{ gap: 0, userSelect: 'none', WebkitUserSelect: 'none' }}>
-              <div className="flex items-center justify-center gap-1.5 w-full min-w-0 select-none">
+              <div className="flex items-center justify-center gap-1.5 w-full min-w-0 select-none" style={{ transform: 'translateY(1px)' }}>
                 {activeChat?.type === 'channel' && (
                   <ChannelMegaphoneIcon size={16} className="flex-shrink-0 text-[var(--accent-color)]" style={{ marginRight: 2 }} />
                 )}
                 {activeChat?.type === 'group' && (
                   <GroupUsersIcon size={16} className="flex-shrink-0 text-[var(--accent-color)]" style={{ marginRight: 2 }} />
                 )}
-                <h2 className="font-bold text-[14px] truncate select-none m-0 text-center" style={{ color: 'var(--text-main)', userSelect: 'none', WebkitUserSelect: 'none' }}>
+                <h2 className="font-bold text-[14px] truncate select-none m-0 text-center" style={{ color: 'var(--text-main)', userSelect: 'none', WebkitUserSelect: 'none', lineHeight: '16px' }}>
                   {activeChatId === 'notes' ? t('connectModal.notes') : activeChat?.name}
                 </h2>
                 {(activeChat?.isOfficial || activeChatId === 'system_support') && (
@@ -216,7 +216,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   </span>
                 )}
               </div>
-              <div className="select-none" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
+              <div className="select-none" style={{ userSelect: 'none', WebkitUserSelect: 'none', transform: 'translateY(-1px)', lineHeight: '13px' }}>
                 {activeChatId === 'notes' ? null : activeChat?.type === 'channel' ? (
                   <span className="text-[11px] font-medium text-[var(--text-dim)]">
                     {activeChat.subscribersCount
@@ -317,7 +317,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 aria-label={t('support.open_tickets_modal', 'Тикеты поддержки')}
                 style={{
                   backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-                  border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
+                  border: 'none',
                   outline: 'none',
                   boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
                   color: 'var(--accent-color, #7C3AED)',
@@ -356,7 +356,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 aria-label={t('groupSettings.add_member', 'Добавить участника')}
                 style={{
                   backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-                  border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
+                  border: 'none',
                   outline: 'none',
                   boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
                   color: 'var(--text-dim)',
@@ -391,7 +391,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               aria-label={t('common.search', 'Поиск')}
               style={{
                 backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-                border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
+                border: 'none',
                 outline: 'none',
                 boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
                 color: 'var(--text-dim)',
@@ -428,7 +428,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 aria-label={t('call.call', 'Позвонить')}
                 style={{
                   backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-                  border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
+                  border: 'none',
                   outline: 'none',
                   boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
                   color: 'var(--text-dim)',

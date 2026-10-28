@@ -864,7 +864,7 @@ export const MessageInput = memo<MessageInputProps>(({
                 left: '0px',
                 marginBottom: '6px',
                 backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-                border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
+                border: 'none',
                 outline: 'none',
                 boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
                 color: 'var(--accent-color, #7C3AED)',
@@ -897,7 +897,7 @@ export const MessageInput = memo<MessageInputProps>(({
             onMouseLeave={() => setHoverAttach(false)}
             style={{
               backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-              border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
+              border: 'none',
               outline: 'none',
               boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
               color: attachColor,
@@ -935,8 +935,8 @@ export const MessageInput = memo<MessageInputProps>(({
               boxSizing: 'border-box',
               position: 'relative',
               boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-              border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
-              transition: 'background-color 0.15s ease, border-color 0.15s ease',
+              border: 'none',
+              transition: 'background-color 0.15s ease',
               pointerEvents: 'auto',
               backdropFilter: 'blur(24px) saturate(180%)',
               WebkitBackdropFilter: 'blur(24px) saturate(180%)',
@@ -1003,7 +1003,7 @@ export const MessageInput = memo<MessageInputProps>(({
             }}
             style={{
               backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-              border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
+              border: 'none',
               outline: 'none',
               boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
               color: emojiColor,
@@ -1047,7 +1047,7 @@ export const MessageInput = memo<MessageInputProps>(({
             onMouseLeave={() => setHoverMic(false)}
             style={{
               backgroundColor: editingIndex !== null || isHasContent ? 'var(--accent-color, #7C3AED)' : 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-              border: editingIndex !== null || isHasContent ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
+              border: 'none',
               outline: 'none',
               boxShadow: editingIndex !== null || isHasContent ? '0 4px 16px rgba(124, 58, 237, 0.35)' : '0 4px 16px rgba(0, 0, 0, 0.18)',
               color: !isRatchetReady ? 'var(--text-dim)' : (editingIndex !== null || isHasContent) ? '#ffffff' : micColor,

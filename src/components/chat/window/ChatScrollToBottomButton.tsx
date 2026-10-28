@@ -34,7 +34,7 @@ export const ChatScrollToBottomButton: React.FC<ChatScrollToBottomButtonProps> =
         backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
         color: 'var(--text-main)',
         boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-        border: '1px solid color-mix(in srgb, var(--text-main) 12%, transparent)',
+        border: 'none',
         backdropFilter: 'blur(24px) saturate(180%)',
         WebkitBackdropFilter: 'blur(24px) saturate(180%)',
         outline: 'none',

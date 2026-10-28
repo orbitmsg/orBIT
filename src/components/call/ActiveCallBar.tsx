@@ -363,13 +363,16 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
   return (
     <div
       ref={barRef}
-      className={`active-call-header-bar w-full flex items-center justify-between select-none cursor-pointer relative flex-shrink-0 ${className}`}
+      className={`active-call-header-bar flex items-center justify-between select-none cursor-pointer relative flex-shrink-0 ${className}`}
       style={{
         height: '42px',
+        margin: '0 14px 6px 14px',
+        borderRadius: '21px',
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
         background: gradientBackground,
         border: 'none',
         borderBottom: 'none',
-        overflow: 'visible',
+        overflow: 'hidden',
         transition: 'background 0.3s ease',
         ...style,
       }}
@@ -450,7 +453,7 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
               setTimeout(() => { try { bc.close(); } catch {} }, 300);
             } catch {}
           }}
-          className="w-9 h-9 bg-transparent border-0 outline-none p-0 cursor-pointer flex items-center justify-center text-white transition-all hover:scale-110 hover:text-red-400 flex-shrink-0"
+          className="w-9 h-9 bg-transparent border-0 outline-none p-0 cursor-pointer flex items-center justify-center text-white transition-colors hover:text-red-400 flex-shrink-0"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" className="w-[22px] h-[22px] text-white">
             <path fill="currentColor" d="m4.51 15.48l2-1.59c.48-.38.76-.96.76-1.57v-2.6c3.02-.98 6.29-.99 9.32 0v2.61c0 .61.28 1.19.76 1.57l1.99 1.58c.8.63 1.94.57 2.66-.15l1.22-1.22c.8-.8.8-2.13-.05-2.88c-6.41-5.66-16.07-5.66-22.48 0c-.85.75-.85 2.08-.05 2.88l1.22 1.22c.71.72 1.85.78 2.65.15" />

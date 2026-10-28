@@ -11,6 +11,7 @@ interface ChatPinnedBarProps {
   onScrollToPinned: () => void;
   onUnpin: () => void;
   onLinkClick?: (url: string) => void;
+  topOffset?: number;
 }
 
 export const ChatPinnedBar: React.FC<ChatPinnedBarProps> = ({
@@ -20,6 +21,7 @@ export const ChatPinnedBar: React.FC<ChatPinnedBarProps> = ({
   onScrollToPinned,
   onUnpin,
   onLinkClick,
+  topOffset,
 }) => {
   const { t } = useTranslation();
 
@@ -31,7 +33,7 @@ export const ChatPinnedBar: React.FC<ChatPinnedBarProps> = ({
       className="flex-shrink-0 flex items-center justify-between cursor-pointer transition-colors select-none"
       style={{
         position: 'absolute',
-        top: '58px',
+        top: topOffset ? `${topOffset + 4}px` : '58px',
         left: '14px',
         right: '14px',
         zIndex: 19,

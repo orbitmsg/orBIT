@@ -1116,6 +1116,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         onScrollToPinned={scrollToPinnedMessage}
         onUnpin={requestUnpinMessage}
         onLinkClick={handleLinkClick}
+        topOffset={headerHeight}
       />
 
       <div
@@ -1132,7 +1133,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               exit={{ opacity: 0 }}
               transition={{ opacity: { duration: 0.1 }, y: { duration: 0 } }}
               className="absolute left-1/2 -translate-x-1/2 z-20 pointer-events-none select-none date-badge"
-              style={{ top: `${(pinnedMessage ? 104 : 58) + 6}px`, userSelect: 'none', WebkitUserSelect: 'none' }}
+              style={{ top: `${(headerHeight || 58) + (pinnedMessage ? 48 : 0) + 6}px`, userSelect: 'none', WebkitUserSelect: 'none' }}
             >
               <div
                 className="date-badge-pill select-none"
@@ -1189,7 +1190,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               flex: '1 0 auto',
             }}
           >
-            <div style={{ height: `${pinnedMessage ? 104 : 58}px`, flexShrink: 0, transition: 'height 0.2s ease' }} />
+            <div style={{ height: `${(headerHeight || 58) + (pinnedMessage ? 48 : 0)}px`, flexShrink: 0, transition: 'height 0.2s ease' }} />
 
             {messages.length === 0 ? (
               activeChat?.type === 'channel' ? (

@@ -367,14 +367,18 @@ export const GlobalAudioPlayer = () => {
       onClick={handleOpenMenu}
       onContextMenu={handleContextMenu}
       style={{
-        height: '34px',
-        backgroundColor: 'var(--surface-container-soft, rgba(255,255,255,0.02))',
-        borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.05))',
+        height: '42px',
+        margin: '0 14px 6px 14px',
+        backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
+        borderRadius: '21px',
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
+        backdropFilter: 'blur(24px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        border: 'none',
         overflow: 'hidden',
         position: 'relative',
         zIndex: 10,
-        willChange: 'transform',
-        transform: 'translateZ(0)',
+        pointerEvents: 'auto',
         userSelect: 'none',
         WebkitUserSelect: 'none',
       }}
@@ -400,29 +404,31 @@ export const GlobalAudioPlayer = () => {
           -webkit-user-drag: none !important;
         }
       `}</style>
-      <div className="flex items-center px-2 py-1 gap-1.5" style={{ height: '32px' }}>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            previous();
-          }}
-          className="player-control"
-          style={{
-            width: 20,
-            height: 20,
-            color: 'var(--player-accent)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-          }}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 8 8">
-            <path fill="currentColor" d="M4 1L0 4l4 3zm0 3l4 3V1z"/>
-          </svg>
-        </button>
+      <div className="flex items-center px-3 py-1 gap-1.5" style={{ height: '42px' }}>
+        {!isVoice && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              previous();
+            }}
+            className="player-control"
+            style={{
+              width: 20,
+              height: 20,
+              color: 'var(--player-accent)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 8 8">
+              <path fill="currentColor" d="M4 1L0 4l4 3zm0 3l4 3V1z"/>
+            </svg>
+          </button>
+        )}
 
         <button
           onClick={(e) => {
@@ -446,28 +452,30 @@ export const GlobalAudioPlayer = () => {
           <SmoothPlayPauseIcon isPlaying={isPlaying} size={18} fill="currentColor" />
         </button>
 
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            next();
-          }}
-          className="player-control"
-          style={{
-            width: 20,
-            height: 20,
-            color: 'var(--player-accent)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-          }}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 8 8">
-            <path fill="currentColor" d="M0 1v6l4-3zm4 3v3l4-3l-4-3z"/>
-          </svg>
-        </button>
+        {!isVoice && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              next();
+            }}
+            className="player-control"
+            style={{
+              width: 20,
+              height: 20,
+              color: 'var(--player-accent)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 8 8">
+              <path fill="currentColor" d="M0 1v6l4-3zm4 3v3l4-3l-4-3z"/>
+            </svg>
+          </button>
+        )}
 
         {/* Track Title & Artist */}
         <div
@@ -546,129 +554,135 @@ export const GlobalAudioPlayer = () => {
           )}
         </button>
 
-        <button
-          ref={orderBtnRef}
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsOrderOpen(!isOrderOpen);
-            setIsVolumeOpen(false);
-            setIsSpeedOpen(false);
-          }}
-          className="player-control"
-          style={{
-            width: 22,
-            height: 22,
-            color: isOrderActive || isOrderOpen ? 'var(--player-accent)' : 'var(--text-dim)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            opacity: isOrderActive || isOrderOpen ? 1 : 0.75,
-            transition: 'color 0.15s, opacity 0.15s',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-          onMouseLeave={(e) => { if (!isOrderActive && !isOrderOpen) e.currentTarget.style.opacity = '0.75'; }}
-        >
-          {shuffle ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="16 3 21 3 21 8"/>
-              <line x1="4" y1="20" x2="21" y2="3"/>
-              <polyline points="21 16 21 21 16 21"/>
-              <line x1="15" y1="15" x2="21" y2="21"/>
-              <line x1="4" y1="4" x2="9" y2="9"/>
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="17 3 21 7 17 11"/>
-              <line x1="21" y1="7" x2="9" y2="7"/>
-              <polyline points="7 21 3 17 7 13"/>
-              <line x1="3" y1="17" x2="15" y2="17"/>
-            </svg>
-          )}
-        </button>
+        {!isVoice && (
+          <button
+            ref={orderBtnRef}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOrderOpen(!isOrderOpen);
+              setIsVolumeOpen(false);
+              setIsSpeedOpen(false);
+            }}
+            className="player-control"
+            style={{
+              width: 22,
+              height: 22,
+              color: isOrderActive || isOrderOpen ? 'var(--player-accent)' : 'var(--text-dim)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              opacity: isOrderActive || isOrderOpen ? 1 : 0.75,
+              transition: 'color 0.15s, opacity 0.15s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+            onMouseLeave={(e) => { if (!isOrderActive && !isOrderOpen) e.currentTarget.style.opacity = '0.75'; }}
+          >
+            {shuffle ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="16 3 21 3 21 8"/>
+                <line x1="4" y1="20" x2="21" y2="3"/>
+                <polyline points="21 16 21 21 16 21"/>
+                <line x1="15" y1="15" x2="21" y2="21"/>
+                <line x1="4" y1="4" x2="9" y2="9"/>
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="17 3 21 7 17 11"/>
+                <line x1="21" y1="7" x2="9" y2="7"/>
+                <polyline points="7 21 3 17 7 13"/>
+                <line x1="3" y1="17" x2="15" y2="17"/>
+              </svg>
+            )}
+          </button>
+        )}
 
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleRepeat();
-          }}
-          className="player-control"
-          style={{
-            width: 22,
-            height: 22,
-            color: repeat !== 'none' ? 'var(--player-accent)' : 'var(--text-dim)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            opacity: repeat !== 'none' ? 1 : 0.6,
-            transition: 'color 0.15s, opacity 0.15s',
-            position: 'relative',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-          onMouseLeave={(e) => { if (repeat === 'none') e.currentTarget.style.opacity = '0.6'; }}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="17 1 21 5 17 9"/>
-            <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
-            <polyline points="7 23 3 19 7 15"/>
-            <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-          </svg>
-          {repeat === 'one' && (
-            <span
-              style={{
-                position: 'absolute',
-                top: '0px',
-                right: '1px',
-                fontSize: '9px',
-                fontWeight: 700,
-                lineHeight: 1,
-                color: 'var(--player-accent)',
-                textShadow: '0 0 2px rgba(0,0,0,0.8)',
-              }}
-            >
-              1
-            </span>
-          )}
-        </button>
+        {!isVoice && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleRepeat();
+            }}
+            className="player-control"
+            style={{
+              width: 22,
+              height: 22,
+              color: repeat !== 'none' ? 'var(--player-accent)' : 'var(--text-dim)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              opacity: repeat !== 'none' ? 1 : 0.6,
+              transition: 'color 0.15s, opacity 0.15s',
+              position: 'relative',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+            onMouseLeave={(e) => { if (repeat === 'none') e.currentTarget.style.opacity = '0.6'; }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="17 1 21 5 17 9"/>
+              <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+              <polyline points="7 23 3 19 7 15"/>
+              <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+            </svg>
+            {repeat === 'one' && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '0px',
+                  right: '1px',
+                  fontSize: '9px',
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  color: 'var(--player-accent)',
+                  textShadow: '0 0 2px rgba(0,0,0,0.8)',
+                }}
+              >
+                1
+              </span>
+            )}
+          </button>
+        )}
 
-        <button
-          ref={speedBtnRef}
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsSpeedOpen(!isSpeedOpen);
-            setIsVolumeOpen(false);
-            setIsOrderOpen(false);
-          }}
-          className="player-control"
-          style={{
-            height: '18px',
-            padding: '0 2px',
-            borderTop: `1px dashed ${playbackRate !== 1 || isSpeedOpen ? 'var(--player-accent)' : 'var(--text-dim)'}`,
-            borderBottom: `1px dashed ${playbackRate !== 1 || isSpeedOpen ? 'var(--player-accent)' : 'var(--text-dim)'}`,
-            borderLeft: 'none',
-            borderRight: 'none',
-            background: 'none',
-            color: playbackRate !== 1 || isSpeedOpen ? 'var(--player-accent)' : 'var(--text-dim)',
-            fontSize: '11px',
-            fontWeight: 700,
-            letterSpacing: '-0.2px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: playbackRate !== 1 || isSpeedOpen ? 1 : 0.75,
-            transition: 'color 0.15s, opacity 0.15s',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-          onMouseLeave={(e) => { if (playbackRate === 1 && !isSpeedOpen) e.currentTarget.style.opacity = '0.75'; }}
-        >
-          {playbackRate === 1 ? '1X' : `${playbackRate.toFixed(1)}X`}
-        </button>
+        {!isVoice && (
+          <button
+            ref={speedBtnRef}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsSpeedOpen(!isSpeedOpen);
+              setIsVolumeOpen(false);
+              setIsOrderOpen(false);
+            }}
+            className="player-control"
+            style={{
+              height: '18px',
+              padding: '0 2px',
+              borderTop: `1px dashed ${playbackRate !== 1 || isSpeedOpen ? 'var(--player-accent)' : 'var(--text-dim)'}`,
+              borderBottom: `1px dashed ${playbackRate !== 1 || isSpeedOpen ? 'var(--player-accent)' : 'var(--text-dim)'}`,
+              borderLeft: 'none',
+              borderRight: 'none',
+              background: 'none',
+              color: playbackRate !== 1 || isSpeedOpen ? 'var(--player-accent)' : 'var(--text-dim)',
+              fontSize: '11px',
+              fontWeight: 700,
+              letterSpacing: '-0.2px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: playbackRate !== 1 || isSpeedOpen ? 1 : 0.75,
+              transition: 'color 0.15s, opacity 0.15s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+            onMouseLeave={(e) => { if (playbackRate === 1 && !isSpeedOpen) e.currentTarget.style.opacity = '0.75'; }}
+          >
+            {playbackRate === 1 ? '1X' : `${playbackRate.toFixed(1)}X`}
+          </button>
+        )}
 
         {/* Close / Clear Button */}
         <button

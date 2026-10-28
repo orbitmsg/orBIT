@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, UserPlus } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useChatStore, type Chat, type ChatAction, type ChatTypingUser } from '../../store/useChatStore';
 import { Avatar } from '../common/Avatar';
 import { NotesAvatar } from '../common/NotesAvatar';
@@ -10,6 +10,7 @@ import { DeveloperBadge } from '../ui/DeveloperBadge';
 import { ChannelMegaphoneIcon } from '../common/ChannelMegaphoneIcon';
 import { GroupUsersIcon } from '../common/GroupUsersIcon';
 import { ActiveCallBar } from '../call/ActiveCallBar';
+import { GlobalAudioPlayer } from '../audio/GlobalAudioPlayer';
 import { supportService, SUPPORT_AVATAR_URL } from '../../services/supportService';
 import { formatLastSeen } from '../../utils/messageUtils';
 
@@ -26,7 +27,7 @@ interface ChatHeaderProps {
   isServerConnected: boolean;
   voiceCallsEnabled: boolean;
   onAudioCallPress: () => void;
-  onAddMember: () => void;
+  onAddMember?: () => void;
   onOpenSupportTickets: () => void;
   onProfileClick: () => void;
 }
@@ -71,7 +72,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   isServerConnected,
   voiceCallsEnabled,
   onAudioCallPress,
-  onAddMember,
   onOpenSupportTickets,
   onProfileClick,
 }) => {
@@ -141,19 +141,40 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               <ArrowLeft size={18} />
             </button>
           )}
-          {isMobileView && (
+          <div
+            onClick={onProfileClick}
+            aria-label={activeChat?.name || t('chatHeader.profile', 'Профиль')}
+            style={{
+              width: '42px',
+              height: '42px',
+              borderRadius: '50%',
+              backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
+              border: 'none',
+              backdropFilter: 'blur(24px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+              flexShrink: 0,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '2px',
+              boxSizing: 'border-box',
+              pointerEvents: 'auto',
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+            }}
+          >
             <div
-              onClick={onProfileClick}
               style={{
-                width: '42px',
-                height: '42px',
+                width: '38px',
+                height: '38px',
                 borderRadius: '50%',
                 overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 flexShrink: 0,
-                cursor: 'pointer',
-                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-                border: 'none',
-                pointerEvents: 'auto',
               }}
             >
               {activeChatId === 'notes' ? (
@@ -166,7 +187,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 <Avatar src={activeChat?.avatarUrl} alt={activeChat?.name} className="w-full h-full object-cover" />
               )}
             </div>
-          )}
+          </div>
           <div
             className="flex items-center justify-center flex-1 min-w-0 select-none"
             onClick={onProfileClick}
@@ -344,42 +365,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 </svg>
               </button>
             )}
-            {activeChat?.type === 'group' && (
-              <button
-                type="button"
-                tabIndex={-1}
-                className="cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddMember();
-                }}
-                aria-label={t('groupSettings.add_member', 'Добавить участника')}
-                style={{
-                  backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-                  border: 'none',
-                  outline: 'none',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-                  color: 'var(--text-dim)',
-                  cursor: 'pointer',
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '50%',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'background-color 0.15s ease, color 0.15s ease',
-                  flexShrink: 0,
-                  pointerEvents: 'auto',
-                  backdropFilter: 'blur(24px) saturate(180%)',
-                  WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-main)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-dim)'; }}
-              >
-                <UserPlus size={18} />
-              </button>
-            )}
             <button
               type="button"
               tabIndex={-1}
@@ -457,6 +442,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </div>
         </div>
       </header>
+      <GlobalAudioPlayer />
       <ActiveCallBar style={{ pointerEvents: 'auto' }} />
     </div>
   );

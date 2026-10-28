@@ -8,7 +8,6 @@ import { ablyService } from '../../services/ablyService';
 import { deriveChannelKey } from '../../lib/crypto';
 import { useTranslation } from 'react-i18next';
 import { useCallStore } from '../../store/useCallStore';
-import { useAudioStore } from '../../store/useAudioStore';
 import { useConnectionStore } from '../../store/useConnectionStore';
 import { supabaseService } from '../../services/supabaseService';
 import { AttachedFile } from './FileAttachmentModal';
@@ -679,8 +678,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
 
   const startCall = useCallStore((state) => state.startCall);
   const isUserInCall = useCallStore((state) => state.callState !== 'idle' && state.callState !== 'ended' && !!state.activeCall);
-  useAudioStore((state) => !!state.currentTrack);
-  useCallStore((state) => !!state.activeCall);
 
 
   const scrollbarTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1190,7 +1187,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               flex: '1 0 auto',
             }}
           >
-            <div style={{ height: `${(headerHeight || 58) + (pinnedMessage ? 48 : 0)}px`, flexShrink: 0, transition: 'height 0.2s ease' }} />
+            <div style={{ height: `${pinnedMessage ? 104 : 58}px`, flexShrink: 0 }} />
 
             {messages.length === 0 ? (
               activeChat?.type === 'channel' ? (

@@ -589,32 +589,34 @@ a:hover {
 }
 
 .scroll-btn {
-  background-color: var(--surface-container, #33363f) !important;
+  background-color: color-mix(in srgb, var(--surface-container) 70%, transparent) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
   border: none !important;
   outline: none !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18) !important;
   opacity: 0;
   transform: translateY(20px);
   pointer-events: none;
   will-change: transform, opacity;
-  transition: transform 0.16s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.14s ease-in, filter 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.16s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.14s ease-in, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .scroll-btn.visible {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.16s ease-out, filter 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.16s ease-out, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .scroll-btn.visible:hover {
-  background-color: var(--surface-container, #33363f) !important;
-  filter: brightness(1.08);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35) !important;
+  background-color: color-mix(in srgb, var(--surface-container) 80%, transparent) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.24) !important;
 }
 
 .scroll-btn.visible:active {
-  transform: translateY(0) scale(0.96) !important;
-  filter: brightness(0.96);
+  transform: translateY(0) !important;
+  background-color: color-mix(in srgb, var(--surface-container) 90%, transparent) !important;
 }
 
 .m3-switch-root {

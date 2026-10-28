@@ -30,10 +30,20 @@ export const ChatPinnedBar: React.FC<ChatPinnedBarProps> = ({
       onClick={onScrollToPinned}
       className="flex-shrink-0 flex items-center justify-between cursor-pointer transition-colors select-none"
       style={{
-        backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
-        padding: '8px 16px',
-        borderBottom: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
+        position: 'absolute',
+        top: '56px',
+        left: '14px',
+        right: '14px',
+        zIndex: 19,
+        backgroundColor: 'var(--surface-container, #33363f)',
+        borderRadius: '16px',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.28)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        padding: '6px 14px',
         gap: '12px',
+        pointerEvents: 'auto',
       }}
     >
       <div className="flex items-center gap-3 min-w-0 flex-1">

@@ -98,7 +98,7 @@ export const useChatScroll = ({
       setChatThumb(null);
       return;
     }
-    const trackHeight = Math.max(10, clientHeight - 74);
+    const trackHeight = Math.max(10, clientHeight - 128);
     const thumbHeight = Math.max(24, (clientHeight / scrollHeight) * trackHeight);
     const maxTop = Math.max(0, trackHeight - thumbHeight);
     const scrollableDistance = scrollHeight - clientHeight;

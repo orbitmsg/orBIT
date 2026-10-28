@@ -180,11 +180,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               {activeChatId === 'notes' ? (
                 <NotesAvatar className="w-full h-full" />
               ) : (activeChat?.avatarUrl || activeChatId === 'system_support') ? (
-                <Avatar src={activeChat?.avatarUrl || SUPPORT_AVATAR_URL} alt={activeChat?.name} className="w-full h-full object-cover" />
+                <Avatar src={activeChat?.avatarUrl || SUPPORT_AVATAR_URL} alt={activeChat?.name} className="w-full h-full object-cover" style={{ width: '100%', height: '100%', fontSize: '15px' }} />
               ) : activeChat?.type === 'bot' ? (
                 <BotAvatar className="w-full h-full" />
               ) : (
-                <Avatar src={activeChat?.avatarUrl} alt={activeChat?.name} className="w-full h-full object-cover" />
+                <Avatar src={activeChat?.avatarUrl} alt={activeChat?.name} className="w-full h-full object-cover" style={{ width: '100%', height: '100%', fontSize: '15px' }} />
               )}
             </div>
           </div>

@@ -137,7 +137,7 @@ export const Avatar = ({ src, alt = '', className = '', style }: AvatarProps) =>
 
   const computedFontSize = useMemo(() => {
     if (style?.fontSize) return style.fontSize;
-    if (className.includes('w-24') || className.includes('w-[100px]') || className.includes('w-28') || className.includes('w-32') || className.includes('w-full')) {
+    if (className.includes('w-24') || className.includes('w-[100px]') || className.includes('w-28') || className.includes('w-32')) {
       return '44px';
     }
     if (className.includes('w-16') || className.includes('w-20')) {

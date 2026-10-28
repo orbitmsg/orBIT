@@ -648,41 +648,39 @@ export const GlobalAudioPlayer = () => {
           </button>
         )}
 
-        {!isVoice && (
-          <button
-            ref={speedBtnRef}
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsSpeedOpen(!isSpeedOpen);
-              setIsVolumeOpen(false);
-              setIsOrderOpen(false);
-            }}
-            className="player-control"
-            style={{
-              height: '18px',
-              padding: '0 2px',
-              borderTop: `1px dashed ${playbackRate !== 1 || isSpeedOpen ? 'var(--player-accent)' : 'var(--text-dim)'}`,
-              borderBottom: `1px dashed ${playbackRate !== 1 || isSpeedOpen ? 'var(--player-accent)' : 'var(--text-dim)'}`,
-              borderLeft: 'none',
-              borderRight: 'none',
-              background: 'none',
-              color: playbackRate !== 1 || isSpeedOpen ? 'var(--player-accent)' : 'var(--text-dim)',
-              fontSize: '11px',
-              fontWeight: 700,
-              letterSpacing: '-0.2px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: playbackRate !== 1 || isSpeedOpen ? 1 : 0.75,
-              transition: 'color 0.15s, opacity 0.15s',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-            onMouseLeave={(e) => { if (playbackRate === 1 && !isSpeedOpen) e.currentTarget.style.opacity = '0.75'; }}
-          >
-            {playbackRate === 1 ? '1X' : `${playbackRate.toFixed(1)}X`}
-          </button>
-        )}
+        <button
+          ref={speedBtnRef}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsSpeedOpen(!isSpeedOpen);
+            setIsVolumeOpen(false);
+            setIsOrderOpen(false);
+          }}
+          className="player-control"
+          style={{
+            height: '18px',
+            padding: '0 2px',
+            borderTop: `1px dashed ${playbackRate !== 1 || isSpeedOpen ? 'var(--player-accent)' : 'var(--text-dim)'}`,
+            borderBottom: `1px dashed ${playbackRate !== 1 || isSpeedOpen ? 'var(--player-accent)' : 'var(--text-dim)'}`,
+            borderLeft: 'none',
+            borderRight: 'none',
+            background: 'none',
+            color: playbackRate !== 1 || isSpeedOpen ? 'var(--player-accent)' : 'var(--text-dim)',
+            fontSize: '11px',
+            fontWeight: 700,
+            letterSpacing: '-0.2px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: playbackRate !== 1 || isSpeedOpen ? 1 : 0.75,
+            transition: 'color 0.15s, opacity 0.15s',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+          onMouseLeave={(e) => { if (playbackRate === 1 && !isSpeedOpen) e.currentTarget.style.opacity = '0.75'; }}
+        >
+          {playbackRate === 1 ? '1X' : `${playbackRate.toFixed(1)}X`}
+        </button>
 
         {/* Close / Clear Button */}
         <button

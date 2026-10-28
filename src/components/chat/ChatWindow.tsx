@@ -8,6 +8,7 @@ import { ablyService } from '../../services/ablyService';
 import { deriveChannelKey } from '../../lib/crypto';
 import { useTranslation } from 'react-i18next';
 import { useCallStore } from '../../store/useCallStore';
+import { useAudioStore } from '../../store/useAudioStore';
 import { useConnectionStore } from '../../store/useConnectionStore';
 import { supabaseService } from '../../services/supabaseService';
 import { AttachedFile } from './FileAttachmentModal';
@@ -678,6 +679,8 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
 
   const startCall = useCallStore((state) => state.startCall);
   const isUserInCall = useCallStore((state) => state.callState !== 'idle' && state.callState !== 'ended' && !!state.activeCall);
+  useAudioStore((state) => !!state.currentTrack);
+  useCallStore((state) => !!state.activeCall);
 
 
   const scrollbarTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1211,7 +1214,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               />
             )}
 
-            <div style={{ height: '10px', flexShrink: 0 }} />
+            <div style={{ height: `${(editingIndex !== null || replyingTo !== null || hasPendingForward) ? 116 : 68}px`, flexShrink: 0, transition: 'height 0.2s ease' }} />
           </div>
         </div>
 
@@ -1222,7 +1225,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               onMouseDown={(e) => handleScrollbarTrackMouseDown(e, messagesContainerRef.current)}
               style={{
                 top: '6px',
-                bottom: '6px',
+                bottom: `${(editingIndex !== null || replyingTo !== null || hasPendingForward) ? 116 : 68}px`,
                 opacity: isChatActive ? 1 : 0,
               }}
             />
@@ -1243,6 +1246,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
           show={showScrollDown}
           unreadCount={unreadCount}
           isMobileView={isMobileView}
+          bottomOffset={((editingIndex !== null || replyingTo !== null || hasPendingForward) ? 116 : 68) + 6}
           onClick={() => scrollToBottom(false)}
         />
       </div>
@@ -1251,12 +1255,18 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         !isSubscribed ? (
           <div
             style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
               padding: '12px 16px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               width: '100%',
               margin: '0 auto',
+              zIndex: 20,
+              pointerEvents: 'none',
             }}
           >
             <button
@@ -1264,6 +1274,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               disabled={isSubscribing}
               aria-label={t('channel_settings.subscribe', 'Подписаться')}
               style={{
+                pointerEvents: 'auto',
                 width: '100%',
                 maxWidth: '280px',
                 padding: '11px 28px',

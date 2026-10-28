@@ -19,9 +19,15 @@ export const MessageInputLinkPreview: React.FC<MessageInputLinkPreviewProps> = (
         justifyContent: 'space-between',
         gap: '12px',
         width: '100%',
-        paddingBottom: '8px',
-        marginBottom: '6px',
-        borderBottom: '1px solid var(--border-color)',
+        backgroundColor: 'var(--surface-container, #33363f)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        borderRadius: '16px',
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.28)',
+        padding: '8px 14px',
+        marginBottom: '8px',
+        pointerEvents: 'auto',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { useChatStore, type Message, isMessageOutgoing } from '../../../store/useChatStore';
 import { useUploadProgressStore } from '../../../store/useUploadProgressStore';
 import { getPusher, getGroupPusher } from '../../../utils/pusher';
@@ -98,9 +98,9 @@ export const useChatScroll = ({
       setChatThumb(null);
       return;
     }
-    const trackHeight = clientHeight - 12;
+    const trackHeight = Math.max(10, clientHeight - 74);
     const thumbHeight = Math.max(24, (clientHeight / scrollHeight) * trackHeight);
-    const maxTop = trackHeight - thumbHeight;
+    const maxTop = Math.max(0, trackHeight - thumbHeight);
     const scrollableDistance = scrollHeight - clientHeight;
     const ratio = scrollableDistance > 0 ? scrollTop / scrollableDistance : 0;
     setChatThumb({ top: maxTop * ratio, height: thumbHeight });
@@ -124,6 +124,24 @@ export const useChatScroll = ({
     updateChatThumb();
   }, [visibleMessages.length, updateChatThumb]);
 
+  const prevClientHeightRef = useRef<number | null>(null);
+
+  useLayoutEffect(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const currentHeight = el.clientHeight;
+    if (prevClientHeightRef.current !== null && Math.abs(currentHeight - prevClientHeightRef.current) > 1) {
+      const heightDiff = prevClientHeightRef.current - currentHeight;
+      const isCurrentlyAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= 100;
+      if (isCurrentlyAtBottom && atBottomRef.current) {
+        el.scrollTop = el.scrollHeight;
+      } else {
+        el.scrollTop += heightDiff;
+      }
+    }
+    prevClientHeightRef.current = currentHeight;
+  });
+
   useEffect(() => {
     const el = messagesContainerRef.current;
     const content = messagesContentRef.current;
@@ -136,20 +154,19 @@ export const useChatScroll = ({
         if (entry.target === el) {
           const newHeight = entry.contentRect.height;
           if (prevHeight && Math.abs(newHeight - prevHeight) > 1) {
+            const heightDiff = prevHeight - newHeight;
             const isCurrentlyAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= 100;
             if (isCurrentlyAtBottom && atBottomRef.current) {
               el.scrollTop = el.scrollHeight;
-              requestAnimationFrame(() => {
-                if (el) {
-                  el.scrollTop = el.scrollHeight;
-                  atBottomRef.current = true;
-                  setShowScrollDown(false);
-                }
-              });
+              setShowScrollDown(false);
+            } else {
+              el.scrollTop += heightDiff;
             }
             prevHeight = newHeight;
+            prevClientHeightRef.current = newHeight;
           } else if (!prevHeight) {
             prevHeight = newHeight;
+            prevClientHeightRef.current = newHeight;
           }
         } else if (content && entry.target === content) {
           const currentContentHeight = content.scrollHeight || content.offsetHeight;

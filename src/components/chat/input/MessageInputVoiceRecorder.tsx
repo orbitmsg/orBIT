@@ -173,10 +173,18 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
         alignItems: 'center',
         justifyContent: 'space-between',
         width: '100%',
-        height: '34px',
-        minHeight: '34px',
+        height: '38px',
+        minHeight: '38px',
         position: 'relative',
         overflow: 'visible',
+        backgroundColor: 'var(--surface-container, #33363f)',
+        borderRadius: '20px',
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.22)',
+        border: '1px solid rgba(255, 255, 255, 0.06)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        padding: '0 4px 0 14px',
+        pointerEvents: 'auto',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, height: '34px' }}>

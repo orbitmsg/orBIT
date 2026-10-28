@@ -30,12 +30,16 @@ export const MessageInputCommandsMenu: React.FC<MessageInputCommandsMenuProps> =
         maxHeight: '136px',
         overflowY: 'auto',
         backgroundColor: 'var(--bg-secondary, #20222b)',
-        borderTop: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
-        borderBottom: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
-        boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.3)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        borderRadius: '16px',
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
         zIndex: 50,
         display: 'flex',
         flexDirection: 'column',
+        marginBottom: '8px',
+        pointerEvents: 'auto',
       }}
     >
       {commands.map((cmd, idx) => (

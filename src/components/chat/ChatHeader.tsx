@@ -77,6 +77,17 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 }) => {
   const { t } = useTranslation();
 
+  const hasBack = Boolean(isMobileView && onBack);
+  const leftCount = (hasBack ? 1 : 0) + 1;
+  const leftWidth = leftCount * 42 + (leftCount - 1) * 8;
+
+  const hasSupportTickets = Boolean(activeChatId === 'system_support' && supportService.isAdmin);
+  const hasCall = Boolean(activeChatId !== 'notes' && activeChat?.type !== 'channel' && voiceCallsEnabled);
+  const rightCount = (hasSupportTickets ? 1 : 0) + 1 + (hasCall ? 1 : 0);
+  const rightWidth = rightCount * 42 + (rightCount - 1) * 8;
+
+  const sideWidth = Math.max(leftWidth, rightWidth);
+
   return (
     <div
       ref={headerRef as any}
@@ -106,86 +117,94 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             pointerEvents: 'none',
           }}
         >
-          {isMobileView && onBack && (
-            <button
-              type="button"
-              tabIndex={-1}
-              onClick={(e) => {
-                e.stopPropagation();
-                onBack();
-              }}
-              aria-label={t('chatWindow.back')}
+          <div
+            className="flex items-center gap-2 flex-shrink-0"
+            style={{
+              minWidth: `${sideWidth}px`,
+              pointerEvents: 'none',
+            }}
+          >
+            {hasBack && (
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onBack?.();
+                }}
+                aria-label={t('chatWindow.back')}
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
+                  border: 'none',
+                  outline: 'none',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
+                  color: 'var(--text-main)',
+                  cursor: 'pointer',
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '50%',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background-color 0.15s ease, color 0.15s ease',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  flexShrink: 0,
+                  pointerEvents: 'auto',
+                  backdropFilter: 'blur(24px) saturate(180%)',
+                  WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+                }}
+              >
+                <ArrowLeft size={18} />
+              </button>
+            )}
+            <div
+              onClick={onProfileClick}
+              aria-label={activeChat?.name || t('chatHeader.profile', 'Профиль')}
               style={{
-                backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-                border: 'none',
-                outline: 'none',
-                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-                color: 'var(--text-main)',
-                cursor: 'pointer',
                 width: '42px',
                 height: '42px',
                 borderRadius: '50%',
-                padding: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'background-color 0.15s ease, color 0.15s ease',
-                userSelect: 'none',
-                WebkitUserSelect: 'none',
-                flexShrink: 0,
-                pointerEvents: 'auto',
+                backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
+                border: 'none',
                 backdropFilter: 'blur(24px) saturate(180%)',
                 WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-              }}
-            >
-              <ArrowLeft size={18} />
-            </button>
-          )}
-          <div
-            onClick={onProfileClick}
-            aria-label={activeChat?.name || t('chatHeader.profile', 'Профиль')}
-            style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '50%',
-              backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-              border: 'none',
-              backdropFilter: 'blur(24px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-              flexShrink: 0,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '2px',
-              boxSizing: 'border-box',
-              pointerEvents: 'auto',
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-            }}
-          >
-            <div
-              style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '50%',
-                overflow: 'hidden',
+                flexShrink: 0,
+                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                flexShrink: 0,
+                padding: '2px',
+                boxSizing: 'border-box',
+                pointerEvents: 'auto',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
               }}
             >
-              {activeChatId === 'notes' ? (
-                <NotesAvatar className="w-full h-full" />
-              ) : (activeChat?.avatarUrl || activeChatId === 'system_support') ? (
-                <Avatar src={activeChat?.avatarUrl || SUPPORT_AVATAR_URL} alt={activeChat?.name} className="w-full h-full object-cover" style={{ width: '100%', height: '100%', fontSize: '15px' }} />
-              ) : activeChat?.type === 'bot' ? (
-                <BotAvatar className="w-full h-full" />
-              ) : (
-                <Avatar src={activeChat?.avatarUrl} alt={activeChat?.name} className="w-full h-full object-cover" style={{ width: '100%', height: '100%', fontSize: '15px' }} />
-              )}
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                {activeChatId === 'notes' ? (
+                  <NotesAvatar className="w-full h-full" />
+                ) : (activeChat?.avatarUrl || activeChatId === 'system_support') ? (
+                  <Avatar src={activeChat?.avatarUrl || SUPPORT_AVATAR_URL} alt={activeChat?.name} className="w-full h-full object-cover" style={{ width: '100%', height: '100%', fontSize: '15px' }} />
+                ) : activeChat?.type === 'bot' ? (
+                  <BotAvatar className="w-full h-full" />
+                ) : (
+                  <Avatar src={activeChat?.avatarUrl} alt={activeChat?.name} className="w-full h-full object-cover" style={{ width: '100%', height: '100%', fontSize: '15px' }} />
+                )}
+              </div>
             </div>
           </div>
           <div
@@ -325,8 +344,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0" style={{ pointerEvents: 'none' }}>
-            {activeChatId === 'system_support' && supportService.isAdmin && (
+          <div
+            className="flex items-center justify-end gap-2 flex-shrink-0"
+            style={{
+              minWidth: `${sideWidth}px`,
+              pointerEvents: 'none',
+            }}
+          >
+            {hasSupportTickets && (
               <button
                 type="button"
                 tabIndex={-1}
@@ -401,7 +426,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 <path fill="currentColor" d="M21.71 20.29L18 16.61A9 9 0 1 0 16.61 18l3.68 3.68a1 1 0 0 0 1.42 0a1 1 0 0 0 0-1.39M11 18a7 7 0 1 1 7-7a7 7 0 0 1-7 7" />
               </svg>
             </button>
-            {activeChatId !== 'notes' && activeChat?.type !== 'channel' && voiceCallsEnabled && (
+            {hasCall && (
               <button
                 type="button"
                 tabIndex={-1}

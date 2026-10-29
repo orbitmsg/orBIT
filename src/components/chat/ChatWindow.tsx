@@ -1135,20 +1135,19 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               <div
                 className="date-badge-pill select-none"
                 style={{
-                  backgroundColor: 'color-mix(in srgb, var(--surface-container, rgba(255,255,255,0.06)) 92%, #000)',
+                  backgroundColor: 'color-mix(in srgb, var(--surface-container) 75%, transparent)',
                   color: 'var(--text-main, #ffffff)',
                   fontSize: '12px',
                   fontWeight: 500,
-                  padding: '3px 12px',
+                  padding: '4px 14px',
                   borderRadius: '9999px',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: 'none',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
                   border: 'none',
-                  filter: 'none',
-                  backdropFilter: 'none',
-                  WebkitBackdropFilter: 'none',
+                  backdropFilter: 'blur(20px) saturate(180%)',
+                  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
                   userSelect: 'none',
                   WebkitUserSelect: 'none',
                 }}

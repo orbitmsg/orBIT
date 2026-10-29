@@ -12,6 +12,7 @@ interface ChatPinnedBarProps {
   onUnpin: () => void;
   onLinkClick?: (url: string) => void;
   topOffset?: number;
+  barRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export const ChatPinnedBar: React.FC<ChatPinnedBarProps> = ({
@@ -22,6 +23,7 @@ export const ChatPinnedBar: React.FC<ChatPinnedBarProps> = ({
   onUnpin,
   onLinkClick,
   topOffset,
+  barRef,
 }) => {
   const { t } = useTranslation();
 
@@ -29,6 +31,7 @@ export const ChatPinnedBar: React.FC<ChatPinnedBarProps> = ({
 
   return (
     <div
+      ref={barRef as any}
       onClick={onScrollToPinned}
       className="flex-shrink-0 flex items-center justify-between cursor-pointer transition-colors select-none"
       style={{
@@ -46,6 +49,7 @@ export const ChatPinnedBar: React.FC<ChatPinnedBarProps> = ({
         padding: '6px 14px',
         gap: '12px',
         pointerEvents: 'auto',
+        transition: 'top 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
       }}
     >
       <div className="flex items-center gap-3 min-w-0 flex-1">

@@ -30,6 +30,7 @@ interface ChatHeaderProps {
   onAddMember?: () => void;
   onOpenSupportTickets: () => void;
   onProfileClick: () => void;
+  children?: React.ReactNode;
 }
 
 export const TypingDots: React.FC = React.memo(() => (
@@ -74,6 +75,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   onAudioCallPress,
   onOpenSupportTickets,
   onProfileClick,
+  children,
 }) => {
   const { t } = useTranslation();
 
@@ -469,6 +471,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       </header>
       <GlobalAudioPlayer />
       <ActiveCallBar style={{ pointerEvents: 'auto' }} />
+      {children}
     </div>
   );
 };

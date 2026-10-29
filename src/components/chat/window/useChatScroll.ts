@@ -38,6 +38,8 @@ export interface UseChatScrollProps {
   setShowFloatingDate: (v: boolean) => void;
   setFloatingDate: (v: string) => void;
   setFloatingDateOffsetY: (v: number) => void;
+  topOffset?: number;
+  bottomOffset?: number;
 }
 
 export interface UseChatScrollReturn {
@@ -82,6 +84,8 @@ export const useChatScroll = ({
   setShowFloatingDate,
   setFloatingDate,
   setFloatingDateOffsetY,
+  topOffset = 58,
+  bottomOffset = 68,
 }: UseChatScrollProps): UseChatScrollReturn => {
   const floatingDateRef = useRef<string | null>(null);
   const scrollRafRef = useRef<number | null>(null);
@@ -98,13 +102,13 @@ export const useChatScroll = ({
       setChatThumb(null);
       return;
     }
-    const trackHeight = Math.max(10, clientHeight - 128);
+    const trackHeight = Math.max(10, clientHeight - (topOffset + bottomOffset));
     const thumbHeight = Math.max(24, (clientHeight / scrollHeight) * trackHeight);
     const maxTop = Math.max(0, trackHeight - thumbHeight);
     const scrollableDistance = scrollHeight - clientHeight;
     const ratio = scrollableDistance > 0 ? scrollTop / scrollableDistance : 0;
     setChatThumb({ top: maxTop * ratio, height: thumbHeight });
-  }, [messagesContainerRef]);
+  }, [messagesContainerRef, topOffset, bottomOffset]);
 
   const triggerChatActive = useCallback(() => {
     updateChatThumb();
@@ -264,8 +268,13 @@ export const useChatScroll = ({
       setShowFloatingDate(false);
       setFloatingDateOffsetY(0);
       if (messagesContainerRef.current) {
-        messagesContainerRef.current.querySelectorAll<HTMLElement>('[data-date-divider]').forEach((d) => {
-          d.style.opacity = '1';
+        const container = messagesContainerRef.current;
+        const rect = container.getBoundingClientRect();
+        const TARGET_TOP = topOffset + 6;
+        container.querySelectorAll<HTMLElement>('[data-date-divider]').forEach((d) => {
+          const pill = d.querySelector<HTMLElement>('.date-badge-pill') || d;
+          const top = pill.getBoundingClientRect().top - rect.top;
+          d.style.opacity = top <= TARGET_TOP ? '0' : '1';
         });
       }
     }, 1200);
@@ -275,7 +284,7 @@ export const useChatScroll = ({
       if (!messagesContainerRef.current) return;
       const container = messagesContainerRef.current;
       const rect = container.getBoundingClientRect();
-      const TARGET_TOP = 12;
+      const TARGET_TOP = topOffset + 6;
 
       const allDividers = Array.from(container.querySelectorAll<HTMLElement>('[data-date-divider]'));
       const passedDividers: { el: HTMLElement; label: string; top: number }[] = [];
@@ -304,8 +313,8 @@ export const useChatScroll = ({
 
       if (upcomingDividers.length > 0 && activeDate) {
         const nextDist = upcomingDividers[0].top;
-        if (nextDist < 42) {
-          pushOffsetY = nextDist - 42;
+        if (nextDist < TARGET_TOP + 42) {
+          pushOffsetY = nextDist - (TARGET_TOP + 42);
         }
       }
 
@@ -315,14 +324,18 @@ export const useChatScroll = ({
         setShowFloatingDate(true);
         setFloatingDateOffsetY(pushOffsetY);
         for (const div of allDividers) {
-          const isHidden = div.getAttribute('data-date-divider') === activeDate;
+          const pill = div.querySelector<HTMLElement>('.date-badge-pill') || div;
+          const top = pill.getBoundingClientRect().top - rect.top;
+          const isHidden = (div.getAttribute('data-date-divider') === activeDate && top <= TARGET_TOP) || (top <= TARGET_TOP);
           div.style.opacity = isHidden ? '0' : '1';
         }
       } else {
         setShowFloatingDate(false);
         setFloatingDateOffsetY(0);
         for (const div of allDividers) {
-          div.style.opacity = '1';
+          const pill = div.querySelector<HTMLElement>('.date-badge-pill') || div;
+          const top = pill.getBoundingClientRect().top - rect.top;
+          div.style.opacity = top <= TARGET_TOP ? '0' : '1';
         }
       }
     });
@@ -343,7 +356,13 @@ export const useChatScroll = ({
     setShowFloatingDate,
     setFloatingDate,
     setFloatingDateOffsetY,
+    topOffset,
   ]);
+
+  useEffect(() => {
+    updateChatThumb();
+    handleScroll();
+  }, [topOffset, bottomOffset, updateChatThumb, handleScroll]);
 
   const notifyPeerReadBatch = useCallback((lastMsgId: string, lastTime: number, readIds?: string[]) => {
     if (!readReceiptsEnabled || !activeChatId || activeChatId === 'notes') return;

@@ -94,12 +94,13 @@ export const ChatListItem = React.memo(({
       onContextMenu={(e) => onContextMenu(e, chat.id)}
       className="group relative cursor-pointer"
       style={{
-        borderRadius: '12px',
+        borderRadius: '14px',
         margin: '2px 8px',
         width: 'calc(100% - 16px)',
         backgroundColor: isActive
-          ? (isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)')
+          ? 'color-mix(in srgb, var(--surface-container-strong, var(--surface-container)) 75%, transparent)'
           : 'transparent',
+        boxShadow: isActive ? '0 2px 10px rgba(0, 0, 0, 0.14)' : 'none',
         border: 'none',
         padding: '8px 10px',
         minHeight: 48,
@@ -107,13 +108,11 @@ export const ChatListItem = React.memo(({
         contentVisibility: 'auto',
         containIntrinsicSize: '64px',
         willChange: 'transform',
-        transition: 'background-color 0.12s ease',
+        transition: 'background-color 0.15s ease, box-shadow 0.15s ease',
       }}
       onMouseEnter={(e) => {
         if (!isActive) {
-          e.currentTarget.style.backgroundColor = isLightTheme
-            ? 'rgba(0, 0, 0, 0.04)'
-            : 'rgba(255, 255, 255, 0.04)';
+          e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--surface-container) 42%, transparent)';
         }
       }}
       onMouseLeave={(e) => {
@@ -369,7 +368,7 @@ export const ArchiveListItem = React.memo(({
       onClick={onOpenArchive}
       className="group relative cursor-pointer"
       style={{
-        borderRadius: '12px',
+        borderRadius: '14px',
         margin: '2px 8px',
         width: 'calc(100% - 16px)',
         backgroundColor: 'transparent',
@@ -377,12 +376,10 @@ export const ArchiveListItem = React.memo(({
         padding: '8px 10px',
         minHeight: 48,
         boxSizing: 'border-box',
-        transition: 'background-color 0.12s ease',
+        transition: 'background-color 0.15s ease',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = isLightTheme
-          ? 'rgba(0, 0, 0, 0.04)'
-          : 'rgba(255, 255, 255, 0.04)';
+        e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--surface-container) 42%, transparent)';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.backgroundColor = 'transparent';
@@ -395,7 +392,7 @@ export const ArchiveListItem = React.memo(({
               width: 48,
               height: 48,
               borderRadius: '50%',
-              backgroundColor: isLightTheme ? '#6c7a89' : 'rgba(255, 255, 255, 0.12)',
+              backgroundColor: isLightTheme ? '#6c7a89' : 'color-mix(in srgb, var(--surface-container) 80%, transparent)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

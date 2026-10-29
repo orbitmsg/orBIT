@@ -182,12 +182,15 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
         borderRadius: '14px',
       }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className="relative backdrop-blur-xl select-none overflow-hidden flex flex-col"
+      className="relative select-none overflow-hidden flex flex-col"
       style={{
         width: '256px',
-        backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
+        backgroundColor: 'color-mix(in srgb, var(--surface-container) 80%, transparent)',
+        backdropFilter: 'blur(24px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        borderRadius: '16px',
         border: 'none',
-        boxShadow: 'none',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.35)',
         marginBottom: isExpanded ? '0px' : '8px',
         willChange: 'height',
       }}
@@ -548,14 +551,16 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
           pointerEvents: isExpanded ? 'none' : 'auto',
         }}
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-        className="backdrop-blur-xl select-none overflow-hidden absolute top-[48px] left-0 z-[1]"
+        className="select-none overflow-hidden absolute top-[48px] left-0 z-[1]"
         style={{
           width: '256px',
-          backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
-          borderRadius: '14px',
+          backgroundColor: 'color-mix(in srgb, var(--surface-container) 80%, transparent)',
+          backdropFilter: 'blur(24px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+          borderRadius: '16px',
           border: 'none',
-          boxShadow: 'none',
-          padding: '4px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.35)',
+          padding: '6px',
           display: 'flex',
           flexDirection: 'column',
           gap: '2px',

@@ -186,6 +186,9 @@ class MediaManager {
     if (!cleanUrl) {
       throw new Error('Invalid media URL after normalization');
     }
+    if (this.unavailableMediaUrls.has(cleanUrl)) {
+      throw new Error('Media permanently unavailable');
+    }
     const cacheKey = `${cleanUrl}::${sharedSecret || 'public'}`;
 
     console.log('[MediaManager] getMedia called:', { cleanUrl, hasSecret: Boolean(sharedSecret), fileName, chatId, messageId, forcedMime });

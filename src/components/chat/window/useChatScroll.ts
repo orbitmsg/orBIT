@@ -126,7 +126,7 @@ export const useChatScroll = ({
 
   useEffect(() => {
     updateChatThumb();
-  }, [visibleMessages.length, topOffset, bottomOffset, updateChatThumb]);
+  }, [visibleMessages.length, updateChatThumb]);
 
   const prevClientHeightRef = useRef<number | null>(null);
 

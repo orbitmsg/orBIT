@@ -126,7 +126,7 @@ export const useChatScroll = ({
 
   useEffect(() => {
     updateChatThumb();
-  }, [visibleMessages.length, updateChatThumb]);
+  }, [visibleMessages.length, topOffset, bottomOffset, updateChatThumb]);
 
   const prevClientHeightRef = useRef<number | null>(null);
 
@@ -267,16 +267,6 @@ export const useChatScroll = ({
     floatingDateTimeoutRef.current = setTimeout(() => {
       setShowFloatingDate(false);
       setFloatingDateOffsetY(0);
-      if (messagesContainerRef.current) {
-        const container = messagesContainerRef.current;
-        const rect = container.getBoundingClientRect();
-        const TARGET_TOP = topOffset + 6;
-        container.querySelectorAll<HTMLElement>('[data-date-divider]').forEach((d) => {
-          const pill = d.querySelector<HTMLElement>('.date-badge-pill') || d;
-          const top = pill.getBoundingClientRect().top - rect.top;
-          d.style.opacity = top <= TARGET_TOP ? '0' : '1';
-        });
-      }
     }, 1200);
 
     if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
@@ -318,25 +308,25 @@ export const useChatScroll = ({
         }
       }
 
+      for (const item of passedDividers) {
+        if (item.el.style.opacity !== '0') {
+          item.el.style.opacity = '0';
+        }
+      }
+      for (const item of upcomingDividers) {
+        if (item.el.style.opacity !== '1') {
+          item.el.style.opacity = '1';
+        }
+      }
+
       if (activeDate) {
         floatingDateRef.current = activeDate;
         setFloatingDate(activeDate);
         setShowFloatingDate(true);
         setFloatingDateOffsetY(pushOffsetY);
-        for (const div of allDividers) {
-          const pill = div.querySelector<HTMLElement>('.date-badge-pill') || div;
-          const top = pill.getBoundingClientRect().top - rect.top;
-          const isHidden = (div.getAttribute('data-date-divider') === activeDate && top <= TARGET_TOP) || (top <= TARGET_TOP);
-          div.style.opacity = isHidden ? '0' : '1';
-        }
       } else {
         setShowFloatingDate(false);
         setFloatingDateOffsetY(0);
-        for (const div of allDividers) {
-          const pill = div.querySelector<HTMLElement>('.date-badge-pill') || div;
-          const top = pill.getBoundingClientRect().top - rect.top;
-          div.style.opacity = top <= TARGET_TOP ? '0' : '1';
-        }
       }
     });
   }, [
@@ -358,11 +348,6 @@ export const useChatScroll = ({
     setFloatingDateOffsetY,
     topOffset,
   ]);
-
-  useEffect(() => {
-    updateChatThumb();
-    handleScroll();
-  }, [topOffset, bottomOffset, updateChatThumb, handleScroll]);
 
   const notifyPeerReadBatch = useCallback((lastMsgId: string, lastTime: number, readIds?: string[]) => {
     if (!readReceiptsEnabled || !activeChatId || activeChatId === 'notes') return;

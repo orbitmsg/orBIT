@@ -699,26 +699,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
 
   const hasPendingForward = Boolean(pendingForwardMessages && pendingForwardMessages.length > 0);
   const bottomBarHeight = (editingIndex !== null || replyingTo !== null || hasPendingForward) ? 116 : 68;
-
-  const pinnedBarRef = useRef<HTMLDivElement>(null);
-  const [pinnedHeight, setPinnedHeight] = useState(0);
-
-  useEffect(() => {
-    if (!pinnedMessage) {
-      setPinnedHeight(0);
-      return;
-    }
-    if (!pinnedBarRef.current) return;
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setPinnedHeight(entry.contentRect.height + 4);
-      }
-    });
-    observer.observe(pinnedBarRef.current);
-    return () => observer.disconnect();
-  }, [pinnedMessage]);
-
-  const totalTopOffset = (headerHeight || 58) + (pinnedMessage ? (pinnedHeight || 48) : 0);
+  const totalTopOffset = (headerHeight || 58) + (pinnedMessage ? 48 : 0);
 
   const getDateLabel = useCallback((ts: number) => getChatDateLabel(ts, i18n.language), [i18n.language]);
 
@@ -1138,7 +1119,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         onUnpin={requestUnpinMessage}
         onLinkClick={handleLinkClick}
         topOffset={headerHeight}
-        barRef={pinnedBarRef}
       />
 
       <div
@@ -1159,7 +1139,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
                 top: `${totalTopOffset + 6}px`,
                 userSelect: 'none',
                 WebkitUserSelect: 'none',
-                transition: 'top 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
               }}
             >
               <div
@@ -1216,7 +1195,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               flex: '1 0 auto',
             }}
           >
-            <div style={{ height: `${totalTopOffset}px`, flexShrink: 0, transition: 'height 0.2s cubic-bezier(0.16, 1, 0.3, 1)' }} />
+            <div style={{ height: `${totalTopOffset}px`, flexShrink: 0 }} />
 
             {messages.length === 0 ? (
               activeChat?.type === 'channel' ? (
@@ -1256,7 +1235,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
                 top: `${totalTopOffset + 6}px`,
                 bottom: `${bottomBarHeight}px`,
                 opacity: isChatActive ? 1 : 0,
-                transition: 'top 0.2s cubic-bezier(0.16, 1, 0.3, 1), bottom 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
               }}
             />
 
@@ -1267,7 +1245,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
                 top: chatThumb.top + totalTopOffset + 6,
                 height: chatThumb.height,
                 opacity: isChatActive ? 1 : 0,
-                transition: 'top 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
               }}
             />
           </>

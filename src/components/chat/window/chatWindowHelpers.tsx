@@ -1,5 +1,4 @@
 import React, { memo } from 'react';
-import { Virtuoso } from 'react-virtuoso';
 import type { Message, ChatTypingUser } from '../../../store/useChatStore';
 import { resolveStickerUrl } from '../../../lib/stickers-and-gifs';
 import { getOrbitaMediaUrl } from '../../../lib/media-utils';
@@ -8,20 +7,7 @@ import type { MediaViewerItem } from '../TelegramMediaViewer';
 export const MAX_FILE_MB = 10;
 
 export const getOptimalMessageBatchSize = (): number => {
-  if (typeof window === 'undefined') return 35;
-  const height = window.innerHeight || 800;
-  const width = window.innerWidth || 1200;
-
-  if (width < 768 || height < 650) {
-    return 30;
-  }
-  if (height < 900) {
-    return 40;
-  }
-  if (height < 1200) {
-    return 50;
-  }
-  return 60;
+  return 30;
 };
 
 export const MessageRowWrapper = memo(
@@ -41,64 +27,39 @@ export const MessageRowWrapper = memo(
 );
 MessageRowWrapper.displayName = 'MessageRowWrapper';
 
-export interface MessageListProps {
-  messages: Message[];
-  startIndex: number;
-  renderFn: (i: number, m: Message) => React.ReactNode;
-  scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
-}
-
 export const MessageList = memo(
   ({
     messages,
     startIndex,
     renderFn,
-    scrollContainerRef,
-  }: MessageListProps) => {
-    const scrollParent = scrollContainerRef?.current;
-
-    if (!scrollParent || messages.length < 25) {
-      const virtualTopHeight = startIndex > 0 ? startIndex * 46 : 0;
-      return (
-        <>
-          {virtualTopHeight > 0 ? (
-            <div style={{ height: `${virtualTopHeight}px`, flexShrink: 0 }} />
-          ) : (
-            <div style={{ flex: '1 1 auto', minHeight: '8px' }} />
-          )}
-          {messages.map((msg, idx) => (
-            <MessageRowWrapper
-              key={msg.id || `msg_${msg.time}_${startIndex + idx}`}
-              index={startIndex + idx}
-              msg={msg}
-              renderFn={renderFn}
-            />
-          ))}
-        </>
-      );
-    }
-
+  }: {
+    messages: Message[];
+    startIndex: number;
+    renderFn: (i: number, m: Message) => React.ReactNode;
+  }) => {
+    const virtualTopHeight = startIndex > 0 ? startIndex * 46 : 0;
     return (
-      <Virtuoso
-        customScrollParent={scrollParent}
-        data={messages}
-        overscan={350}
-        itemContent={(idx, msg) => (
+      <>
+        {virtualTopHeight > 0 ? (
+          <div style={{ height: `${virtualTopHeight}px`, flexShrink: 0 }} />
+        ) : (
+          <div style={{ flex: '1 1 auto', minHeight: '8px' }} />
+        )}
+        {messages.map((msg, idx) => (
           <MessageRowWrapper
             key={msg.id || `msg_${msg.time}_${startIndex + idx}`}
             index={startIndex + idx}
             msg={msg}
             renderFn={renderFn}
           />
-        )}
-      />
+        ))}
+      </>
     );
   },
   (prev, next) =>
     prev.messages === next.messages &&
     prev.startIndex === next.startIndex &&
-    prev.renderFn === next.renderFn &&
-    prev.scrollContainerRef?.current === next.scrollContainerRef?.current
+    prev.renderFn === next.renderFn
 );
 MessageList.displayName = 'MessageList';
 

@@ -1212,7 +1212,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
                 messages={visibleMessages}
                 startIndex={startIndex}
                 renderFn={renderMessage}
-                scrollContainerRef={messagesContainerRef}
               />
             )}
 

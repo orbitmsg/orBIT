@@ -194,7 +194,15 @@ export const MessageInput = memo<MessageInputProps>(({
   const [hasSelection, setHasSelection] = useState(false);
 
   const [linkModalData, setLinkModalData] = useState<{ open: boolean; text: string; url: string; range: Range | null }>({ open: false, text: '', url: '', range: null });
-  const [flyingAnim, setFlyingAnim] = useState<{ id: number; text: string; top: number; left: number } | null>(null);
+  interface FlyingTextAnimState {
+    id: number;
+    text: string;
+    startX: number;
+    startY: number;
+    deltaX: number;
+    deltaY: number;
+  }
+  const [flyingAnim, setFlyingAnim] = useState<FlyingTextAnimState | null>(null);
 
   const currentText = editingIndex !== null ? editText : inputText;
   const setCurrentText = editingIndex !== null ? setEditText : setInputText;
@@ -554,16 +562,26 @@ export const MessageInput = memo<MessageInputProps>(({
       textToSend = htmlToMarkdown(editorRef.current);
       if (textToSend.trim() && editingIndex === null) {
         const rect = editorRef.current.getBoundingClientRect();
+        const containerRect = inputContainerRef.current?.getBoundingClientRect();
         const id = Date.now();
+        const approxTextWidth = Math.min(Math.max(textToSend.trim().length * 7.5, 28), 360);
+        const rightEdge = containerRect ? containerRect.right : window.innerWidth;
+        const targetX = rightEdge - 28 - approxTextWidth;
+        const deltaX = targetX - rect.left;
+        const targetY = containerRect ? containerRect.top - 42 : rect.top - 50;
+        const deltaY = targetY - rect.top;
+
         setFlyingAnim({
           id,
           text: textToSend,
-          top: rect.top,
-          left: rect.left,
+          startX: rect.left,
+          startY: rect.top,
+          deltaX,
+          deltaY,
         });
         setTimeout(() => {
           setFlyingAnim((cur) => (cur?.id === id ? null : cur));
-        }, 180);
+        }, 130);
       }
       editorRef.current.innerHTML = '';
       setIsEditorEmpty(true);
@@ -1294,20 +1312,21 @@ export const MessageInput = memo<MessageInputProps>(({
           className="tg-flying-text"
           style={{
             position: 'fixed',
-            top: flyingAnim.top,
-            left: flyingAnim.left,
-            maxWidth: 380,
-            padding: '6.5px 12px 6.5px 11px',
-            borderRadius: '16px 16px 4px 16px',
-            background: 'var(--chat-bubble-own-bg, #2c6bed)',
-            color: '#ffffff',
-            fontSize: '12.5px',
+            top: flyingAnim.startY,
+            left: flyingAnim.startX,
+            background: 'transparent',
+            color: 'var(--text-main, #ffffff)',
+            fontSize: '13px',
+            lineHeight: '1.3',
             pointerEvents: 'none',
-            zIndex: 9999,
+            zIndex: 99999,
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
-            boxShadow: '0 4px 14px rgba(0, 0, 0, 0.25)',
-          }}
+            boxShadow: 'none',
+            border: 'none',
+            '--delta-x': `${flyingAnim.deltaX}px`,
+            '--delta-y': `${flyingAnim.deltaY}px`,
+          } as React.CSSProperties}
         >
           {flyingAnim.text}
         </div>,

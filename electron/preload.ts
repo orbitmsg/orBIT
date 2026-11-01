@@ -63,6 +63,9 @@ contextBridge.exposeInMainWorld('orbita', {
   fetchUrl: (url: string) =>
     ipcRenderer.invoke('orbita:fetchUrl', url),
 
+  fetchLinkPreview: (url: string) =>
+    ipcRenderer.invoke('orbita:fetchLinkPreview', url),
+
   onUploadProgress: (
     callback: (data: { publicId: string; uploadedBytes: number; totalBytes: number }) => void
   ) => {

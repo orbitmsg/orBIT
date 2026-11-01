@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, type LinkPreviewData } from '../../store/useChatStore';
 import { InputContextMenu, FormattingType } from './InputContextMenu';
-import { extractFirstUrl, fetchLinkPreview } from '../../utils/linkPreviewUtils';
+import { extractFirstUrl, fetchLinkPreview, isOrbitaInviteUrl } from '../../utils/linkPreviewUtils';
 import { htmlToMarkdown, markdownToHtml } from '../../utils/messageUtils';
 import { supportService } from '../../services/supportService';
 import {
@@ -288,7 +288,7 @@ export const MessageInput = memo<MessageInputProps>(({
     if (linkPreviewTimerRef.current) clearTimeout(linkPreviewTimerRef.current);
     linkPreviewTimerRef.current = setTimeout(() => {
       const url = extractFirstUrl(currentText);
-      if (!url || url === dismissedUrl) {
+      if (!url || url === dismissedUrl || isOrbitaInviteUrl(url)) {
         if (!url) setDismissedUrl(null);
         setLiveLinkPreview(null);
         return;

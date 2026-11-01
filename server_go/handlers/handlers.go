@@ -41,6 +41,7 @@ func (h *APIHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/groups/delete", h.DeleteGroup)
 	mux.HandleFunc("/groups/leave", h.LeaveGroup)
 	mux.HandleFunc("/groups/kick", h.KickMember)
+	mux.HandleFunc("/api/preview", h.HandlePreview)
 	mux.HandleFunc("/health", h.Health)
 }
 

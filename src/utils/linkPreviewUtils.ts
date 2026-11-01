@@ -1,11 +1,29 @@
-// src/utils/linkPreviewUtils.ts
 import { LinkPreviewData } from '../store/useChatStore';
 
 const previewCache = new Map<string, LinkPreviewData | null>();
 
-/**
- * Extracts the first URL from a text message.
- */
+export function isOrbitaInviteUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  return (
+    lower.includes('orbitachat.vercel.app') ||
+    lower.includes('orbitad.vercel.app') ||
+    lower.includes('orbita.workers.dev') ||
+    lower.includes('/groups/#') ||
+    lower.includes('/groups/') ||
+    lower.includes('localhost') ||
+    lower.includes('127.0.0.1')
+  );
+}
+
+export function isValidLinkPreview(data: LinkPreviewData | null | undefined): boolean {
+  if (!data) return false;
+  if (isOrbitaInviteUrl(data.url)) return false;
+  const hasImage = Boolean(data.image && data.image.trim().length > 0);
+  const hasDesc = Boolean(data.description && data.description.trim().length > 10);
+  return hasImage || hasDesc;
+}
+
 export function extractFirstUrl(text: string): string | null {
   if (!text) return null;
   const match = text.match(
@@ -19,21 +37,15 @@ export function extractFirstUrl(text: string): string | null {
   return url;
 }
 
-/**
- * Helper to extract domain hostname from URL.
- */
 export function getDomainHost(urlStr: string): string {
   try {
     const parsed = new URL(urlStr);
     return parsed.hostname.replace(/^www\./i, '');
-  } catch (e) {
+  } catch {
     return urlStr;
   }
 }
 
-/**
- * Extracts YouTube video ID from various YouTube URL formats.
- */
 export function extractYouTubeVideoId(urlStr: string): string | null {
   try {
     const url = new URL(urlStr);
@@ -46,17 +58,15 @@ export function extractYouTubeVideoId(urlStr: string): string | null {
       }
       return url.searchParams.get('v');
     }
-  } catch (e) {
+  } catch {
     return null;
   }
   return null;
 }
 
-/**
- * Special handler for YouTube links using public oEmbed API & direct thumbnail CDN.
- */
 async function fetchYouTubePreview(cleanUrl: string): Promise<LinkPreviewData | null> {
   const videoId = extractYouTubeVideoId(cleanUrl);
+  if (!videoId) return null;
   try {
     const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(cleanUrl)}&format=json`;
     let responseText = '';
@@ -64,14 +74,12 @@ async function fetchYouTubePreview(cleanUrl: string): Promise<LinkPreviewData | 
       responseText = await (window as any).orbita.fetchUrl(oembedUrl);
     } else {
       const resp = await fetch(oembedUrl);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      if (!resp.ok) throw new Error();
       responseText = await resp.text();
     }
 
     const data = JSON.parse(responseText);
-    const image = videoId
-      ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
-      : data.thumbnail_url || '';
+    const image = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 
     return {
       url: cleanUrl,
@@ -80,24 +88,18 @@ async function fetchYouTubePreview(cleanUrl: string): Promise<LinkPreviewData | 
       description: data.author_name ? `Автор: ${data.author_name}` : '',
       image,
     };
-  } catch (e) {
-    if (videoId) {
-      return {
-        url: cleanUrl,
-        siteName: 'YouTube',
-        title: 'YouTube Video',
-        description: '',
-        image: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-      };
-    }
-    return null;
+  } catch {
+    return {
+      url: cleanUrl,
+      siteName: 'YouTube',
+      title: 'YouTube Video',
+      description: '',
+      image: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+    };
   }
 }
 
-/**
- * Parses OpenGraph metadata from HTML string.
- */
-function parseOpenGraph(html: string, targetUrl: string): LinkPreviewData {
+function parseOpenGraph(html: string, targetUrl: string): LinkPreviewData | null {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
 
@@ -115,7 +117,7 @@ function parseOpenGraph(html: string, targetUrl: string): LinkPreviewData {
     getMeta('twitter:title') ||
     getMeta('title') ||
     doc.querySelector('title')?.textContent?.trim() ||
-    getDomainHost(targetUrl);
+    '';
 
   const description =
     getMeta('og:description') ||
@@ -135,7 +137,7 @@ function parseOpenGraph(html: string, targetUrl: string): LinkPreviewData {
   if (image && !image.match(/^(https?:\/\/|data:)/i)) {
     try {
       image = new URL(image, targetUrl).href;
-    } catch (e) {
+    } catch {
       image = '';
     }
   }
@@ -145,45 +147,90 @@ function parseOpenGraph(html: string, targetUrl: string): LinkPreviewData {
     getMeta('application-name') ||
     getDomainHost(targetUrl);
 
-  return {
+  const preview: LinkPreviewData = {
     url: targetUrl,
-    siteName: siteName,
+    siteName,
     title,
     description: description.length > 250 ? `${description.slice(0, 250)}...` : description,
     image,
   };
+
+  if (!isValidLinkPreview(preview)) {
+    return null;
+  }
+
+  return preview;
 }
 
-/**
- * Fetches OpenGraph link preview metadata safely on sender client side.
- */
 export async function fetchLinkPreview(url: string): Promise<LinkPreviewData | null> {
   if (!url) return null;
   const cleanUrl = url.trim();
+
+  if (isOrbitaInviteUrl(cleanUrl)) {
+    return null;
+  }
 
   if (previewCache.has(cleanUrl)) {
     return previewCache.get(cleanUrl) || null;
   }
 
-  // Handle YouTube specially via public oEmbed & CDN
   if (extractYouTubeVideoId(cleanUrl)) {
     const ytPreview = await fetchYouTubePreview(cleanUrl);
-    if (ytPreview) {
+    if (ytPreview && isValidLinkPreview(ytPreview)) {
       previewCache.set(cleanUrl, ytPreview);
       return ytPreview;
+    }
+    return null;
+  }
+
+  if (typeof window !== 'undefined' && (window as any).orbita?.fetchLinkPreview) {
+    try {
+      const nativePreview = await (window as any).orbita.fetchLinkPreview(cleanUrl);
+      if (isValidLinkPreview(nativePreview)) {
+        previewCache.set(cleanUrl, nativePreview);
+        return nativePreview;
+      }
+      previewCache.set(cleanUrl, null);
+      return null;
+    } catch {
+      previewCache.set(cleanUrl, null);
+      return null;
     }
   }
 
   try {
-    let html = '';
+    const goBackendUrl = `http://localhost:8080/api/preview?url=${encodeURIComponent(cleanUrl)}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2500);
+    const goResp = await fetch(goBackendUrl, { signal: controller.signal }).catch(() => null);
+    clearTimeout(timeoutId);
 
-    // If running in Electron with IPC fetch available
+    if (goResp && goResp.ok) {
+      const goData = await goResp.json();
+      if (goData.has_preview && isValidLinkPreview(goData)) {
+        const preview: LinkPreviewData = {
+          url: goData.url || cleanUrl,
+          title: goData.title,
+          description: goData.description,
+          image: goData.image,
+          siteName: goData.site_name,
+        };
+        previewCache.set(cleanUrl, preview);
+        return preview;
+      }
+      previewCache.set(cleanUrl, null);
+      return null;
+    }
+  } catch {
+  }
+
+  try {
+    let html = '';
     if (typeof window !== 'undefined' && (window as any).orbita?.fetchUrl) {
       html = await (window as any).orbita.fetchUrl(cleanUrl);
     } else {
-      // Fallback fetch with timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
       const resp = await fetch(cleanUrl, {
         signal: controller.signal,
         headers: {
@@ -191,23 +238,19 @@ export async function fetchLinkPreview(url: string): Promise<LinkPreviewData | n
         },
       });
       clearTimeout(timeoutId);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      if (!resp.ok) throw new Error();
       html = await resp.text();
     }
 
     const preview = parseOpenGraph(html, cleanUrl);
-    previewCache.set(cleanUrl, preview);
-    return preview;
-  } catch (err) {
-    console.warn('[LinkPreview] Could not fetch OpenGraph for:', cleanUrl, err);
-    const fallback: LinkPreviewData = {
-      url: cleanUrl,
-      siteName: getDomainHost(cleanUrl),
-      title: getDomainHost(cleanUrl),
-      description: '',
-      image: '',
-    };
-    previewCache.set(cleanUrl, fallback);
-    return fallback;
+    if (preview && isValidLinkPreview(preview)) {
+      previewCache.set(cleanUrl, preview);
+      return preview;
+    }
+    previewCache.set(cleanUrl, null);
+    return null;
+  } catch {
+    previewCache.set(cleanUrl, null);
+    return null;
   }
 }

@@ -2958,6 +2958,40 @@ async function fetchWithRedirects(targetUrl: string): Promise<string> {
 
 ipcMain.handle('orbita:fetchUrl', async (_event, url: string) => await fetchWithRedirects(url));
 
+ipcMain.handle('orbita:fetchLinkPreview', async (_event, url: string) => {
+  if (!url || typeof url !== 'string') return null;
+  const lower = url.toLowerCase();
+  if (
+    lower.includes('orbitachat.vercel.app') ||
+    lower.includes('orbitad.vercel.app') ||
+    lower.includes('orbita.workers.dev') ||
+    lower.includes('/groups/#') ||
+    lower.includes('/groups/') ||
+    lower.includes('localhost') ||
+    lower.includes('127.0.0.1')
+  ) {
+    return null;
+  }
+  if (nativeModule && typeof nativeModule.rustFetchLinkPreview === 'function') {
+    try {
+      const res = await nativeModule.rustFetchLinkPreview(url);
+      if (res && (res.image || (res.description && res.description.length > 10))) {
+        return {
+          url: res.url || url,
+          title: res.title || '',
+          description: res.description || '',
+          image: res.image || '',
+          siteName: res.site_name || '',
+        };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+});
+
 // -----------------------------------------------------------------------------
 // 8. Theme, Icons, and System Tray
 // -----------------------------------------------------------------------------

@@ -10,6 +10,7 @@ import { MessageStatus } from '../MessageStatus';
 import { MessageReactions } from './ReactionBadge';
 import { ChannelMegaphoneIcon } from '../common/ChannelMegaphoneIcon';
 import { ForwardedMessageBlock } from './ForwardedMessageBlock';
+import { isValidLinkPreview } from '../../utils/linkPreviewUtils';
 
 interface MessageItemProps {
   msg: Message;
@@ -185,13 +186,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
     const hasReactions = Boolean(msgReactions && Object.keys(msgReactions).some((k) => !k.startsWith('_') && Array.isArray(msgReactions[k]) && msgReactions[k]!.length > 0));
     const hasLinkPreview = Boolean(
       msg.linkPreview &&
-      (
-        Boolean(msg.linkPreview.description) ||
-        Boolean(msg.linkPreview.image) ||
-        (Boolean(msg.linkPreview.title) &&
-          Boolean(msg.linkPreview.siteName) &&
-          msg.linkPreview.title!.trim().toLowerCase() !== msg.linkPreview.siteName!.trim().toLowerCase())
-      )
+      isValidLinkPreview(msg.linkPreview)
     );
 
     const isShortMessage = (parsed.body.length < 35 && !parsed.quotes.length && !msg.linkPreview);
@@ -294,67 +289,96 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                 fontSize: bubbleFontSize,
               }}
             >
-            {!isOwn && isGroup && msg.sender && !isPrevSameSender && (
-              <div
-                className="flex items-center mb-1 select-none message-sender-name"
-                style={{
-                  userSelect: 'none',
-                  WebkitUserSelect: 'none',
-                  width: 'fit-content',
-                  maxWidth: '100%',
-                }}
-              >
-                <span
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const sMember = activeChat?.members?.find(
-                      (m) =>
-                        (m.userId && m.userId === msg.senderId) ||
-                        ((m as any).userCode && (m as any).userCode === msg.senderId)
-                    );
-                    const sDisplayName = sMember?.nickname || msg.sender;
-                    onSenderClick?.(msg.senderId, sDisplayName);
-                  }}
-                  className="font-semibold select-none message-sender-name hover:underline cursor-pointer"
+            {!isOwn && isGroup && msg.sender && !isPrevSameSender && (() => {
+              const sMember = activeChat?.members?.find(
+                (m) =>
+                  (m.userId && m.userId === msg.senderId) ||
+                  ((m as any).userCode && (m as any).userCode === msg.senderId) ||
+                  ((m as any).user_code && (m as any).user_code === msg.senderId) ||
+                  ((m as any).user_id && (m as any).user_id === msg.senderId) ||
+                  (m.nickname && msg.sender && m.nickname === msg.sender)
+              );
+              const sDisplayName = sMember?.nickname || msg.sender;
+              const isSenderOwner = Boolean(
+                sMember?.role === 'owner' ||
+                (activeChat?.creatorCode && (activeChat.creatorCode === msg.senderId || activeChat.creatorCode === (msg as any).senderUserId || activeChat.creatorCode === (msg as any).senderCode)) ||
+                (activeChat?.creatorId && (activeChat.creatorId === msg.senderId || activeChat.creatorId === (msg as any).senderUserId)) ||
+                activeChat?.members?.some((m) => {
+                  const mId = m.userId || (m as any).userCode || (m as any).user_code;
+                  const sId = msg.senderId || (msg as any).senderUserId || (msg as any).senderCode;
+                  return Boolean(mId && sId && mId === sId && m.role === 'owner');
+                })
+              );
+              const isSenderAdmin = !isSenderOwner && Boolean(
+                sMember?.role === 'admin' ||
+                activeChat?.members?.some((m) => {
+                  const mId = m.userId || (m as any).userCode || (m as any).user_code;
+                  const sId = msg.senderId || (msg as any).senderUserId || (msg as any).senderCode;
+                  return Boolean(mId && sId && mId === sId && m.role === 'admin');
+                })
+              );
+
+              return (
+                <div
+                  className="flex items-center mb-1 select-none message-sender-name"
                   style={{
-                    color: themeColor || 'var(--accent-color, #7C3AED)',
-                    fontSize: '12.5px',
-                    lineHeight: '1.2',
                     userSelect: 'none',
                     WebkitUserSelect: 'none',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    maxWidth: 380,
+                    width: 'fit-content',
+                    maxWidth: '100%',
                   }}
                 >
-                  {activeChat?.members?.find((m) => (m.userId && m.userId === msg.senderId) || ((m as any).userCode && (m as any).userCode === msg.senderId))?.nickname || msg.sender}
-                </span>
-                {(
-                  (activeChat?.creatorCode && (activeChat.creatorCode === msg.senderId || activeChat.creatorCode === (msg as any).senderUserId || activeChat.creatorCode === (msg as any).senderCode)) ||
-                  (activeChat?.creatorId && (activeChat.creatorId === msg.senderId || activeChat.creatorId === (msg as any).senderUserId)) ||
-                  activeChat?.members?.some((m) => {
-                    const mId = m.userId || (m as any).userCode;
-                    const sId = msg.senderId || (msg as any).senderUserId || (msg as any).senderCode;
-                    return Boolean(mId && sId && mId === sId && m.role === 'owner');
-                  })
-                ) && (
                   <span
-                    className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold flex-shrink-0 tracking-wide uppercase select-none"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSenderClick?.(msg.senderId, sDisplayName);
+                    }}
+                    className="font-semibold select-none message-sender-name hover:underline cursor-pointer"
                     style={{
-                      backgroundColor: 'rgba(124, 58, 237, 0.18)',
-                      color: 'var(--accent-color, #7C3AED)',
-                      lineHeight: 1.1,
+                      color: themeColor || 'var(--accent-color, #7C3AED)',
+                      fontSize: '12.5px',
+                      lineHeight: '1.2',
                       userSelect: 'none',
                       WebkitUserSelect: 'none',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      maxWidth: 380,
                     }}
                   >
-                    {t('groupSettings.owner', 'Владелец')}
+                    {sDisplayName}
                   </span>
-                )}
-                <DeveloperBadge userId={msg.senderId || activeChat?.peerCode} size={20} />
-              </div>
-            )}
+                  {isSenderOwner && (
+                    <span
+                      className="ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0 select-none inline-flex items-center"
+                      style={{
+                        backgroundColor: 'color-mix(in srgb, var(--accent-color, #7C3AED) 20%, transparent)',
+                        color: 'var(--accent-color, #9b7dd4)',
+                        lineHeight: 1.2,
+                        userSelect: 'none',
+                        WebkitUserSelect: 'none',
+                      }}
+                    >
+                      {(sMember as any)?.customTitle || (sMember as any)?.roleTitle || t('groupSettings.owner', 'владелец').toLowerCase()}
+                    </span>
+                  )}
+                  {isSenderAdmin && (
+                    <span
+                      className="ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0 select-none inline-flex items-center"
+                      style={{
+                        backgroundColor: 'rgba(34, 197, 94, 0.18)',
+                        color: '#22c55e',
+                        lineHeight: 1.2,
+                        userSelect: 'none',
+                        WebkitUserSelect: 'none',
+                      }}
+                    >
+                      {(sMember as any)?.customTitle || (sMember as any)?.roleTitle || t('groupSettings.admin_badge', 'администратор').toLowerCase()}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
 
             {msg.forwardedFrom && (
               <div className="mb-1 select-none">

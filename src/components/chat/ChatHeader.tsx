@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, UserPlus } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useChatStore, type Chat, type ChatAction, type ChatTypingUser } from '../../store/useChatStore';
 import { Avatar } from '../common/Avatar';
 import { NotesAvatar } from '../common/NotesAvatar';
@@ -26,7 +26,7 @@ interface ChatHeaderProps {
   isServerConnected: boolean;
   voiceCallsEnabled: boolean;
   onAudioCallPress: () => void;
-  onAddMember: () => void;
+  onAddMember?: () => void;
   onOpenSupportTickets: () => void;
   onProfileClick: () => void;
 }
@@ -71,7 +71,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   isServerConnected,
   voiceCallsEnabled,
   onAudioCallPress,
-  onAddMember,
   onOpenSupportTickets,
   onProfileClick,
 }) => {
@@ -267,18 +266,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 </svg>
               </button>
             )}
-            {activeChat?.type === 'group' && (
-              <button
-                className="p-2 transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddMember();
-                }}
-                aria-label={t('groupSettings.add_member', 'Добавить участника')}
-              >
-                <UserPlus size={20} />
-              </button>
-            )}
+            
             <button
               className="p-2 transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
               onClick={(e) => {

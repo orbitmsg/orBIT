@@ -1588,5 +1588,11 @@
   "group": {
     "open_chat": "Перейти к чату",
     "already_member": "Вы уже состоите в этой группе"
+  },
+  "groupSettings": {
+    "admin_badge": "администратор"
+  },
+  "chatWindow": {
+    "link_preview": "Предпросмотр ссылки"
   }
 }

@@ -1588,5 +1588,11 @@
   "group": {
     "open_chat": "Open chat",
     "already_member": "You are already a member of this group"
+  },
+  "groupSettings": {
+    "admin_badge": "admin"
+  },
+  "chatWindow": {
+    "link_preview": "Link preview"
   }
 }

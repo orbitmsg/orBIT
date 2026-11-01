@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import type { LinkPreviewData } from '../../../store/useChatStore';
 
@@ -11,6 +12,8 @@ export const MessageInputLinkPreview: React.FC<MessageInputLinkPreviewProps> = (
   preview,
   onDismiss,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <div
       style={{
@@ -28,7 +31,7 @@ export const MessageInputLinkPreview: React.FC<MessageInputLinkPreviewProps> = (
         <div style={{ width: '3px', height: '32px', borderRadius: '2px', backgroundColor: 'var(--accent-color)', flexShrink: 0 }} />
         <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
           <div style={{ color: 'var(--accent-color)', fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            {preview.siteName || 'Предпросмотр ссылки'}
+            {preview.siteName || t('chatWindow.link_preview', 'Предпросмотр ссылки')}
           </div>
           <div style={{ color: 'var(--text-main)', fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {preview.title || preview.url}
@@ -37,7 +40,7 @@ export const MessageInputLinkPreview: React.FC<MessageInputLinkPreviewProps> = (
       </div>
       <button
         onClick={() => onDismiss(preview.url)}
-        aria-label="Закрыть предпросмотр"
+        aria-label={t('common.close', 'Закрыть')}
         style={{
           color: 'var(--text-dim)',
           background: 'none',

@@ -194,6 +194,7 @@ export const MessageInput = memo<MessageInputProps>(({
   const [hasSelection, setHasSelection] = useState(false);
 
   const [linkModalData, setLinkModalData] = useState<{ open: boolean; text: string; url: string; range: Range | null }>({ open: false, text: '', url: '', range: null });
+  const [flyingAnim, setFlyingAnim] = useState<{ id: number; text: string; top: number; left: number } | null>(null);
 
   const currentText = editingIndex !== null ? editText : inputText;
   const setCurrentText = editingIndex !== null ? setEditText : setInputText;
@@ -551,6 +552,19 @@ export const MessageInput = memo<MessageInputProps>(({
     let textToSend = currentText;
     if (editorRef.current) {
       textToSend = htmlToMarkdown(editorRef.current);
+      if (textToSend.trim() && editingIndex === null) {
+        const rect = editorRef.current.getBoundingClientRect();
+        const id = Date.now();
+        setFlyingAnim({
+          id,
+          text: textToSend,
+          top: rect.top,
+          left: rect.left,
+        });
+        setTimeout(() => {
+          setFlyingAnim((cur) => (cur?.id === id ? null : cur));
+        }, 180);
+      }
       editorRef.current.innerHTML = '';
       setIsEditorEmpty(true);
     }
@@ -1275,6 +1289,30 @@ export const MessageInput = memo<MessageInputProps>(({
           color: inherit !important;
         }
       `}</style>
+      {flyingAnim && typeof document !== 'undefined' && createPortal(
+        <div
+          className="tg-flying-text"
+          style={{
+            position: 'fixed',
+            top: flyingAnim.top,
+            left: flyingAnim.left,
+            maxWidth: 380,
+            padding: '6.5px 12px 6.5px 11px',
+            borderRadius: '16px 16px 4px 16px',
+            background: 'var(--chat-bubble-own-bg, #2c6bed)',
+            color: '#ffffff',
+            fontSize: '12.5px',
+            pointerEvents: 'none',
+            zIndex: 9999,
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            boxShadow: '0 4px 14px rgba(0, 0, 0, 0.25)',
+          }}
+        >
+          {flyingAnim.text}
+        </div>,
+        document.body
+      )}
     </div>
   );
 });

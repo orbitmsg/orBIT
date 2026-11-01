@@ -581,7 +581,7 @@ export const MessageInput = memo<MessageInputProps>(({
         });
         setTimeout(() => {
           setFlyingAnim((cur) => (cur?.id === id ? null : cur));
-        }, 130);
+        }, 100);
       }
       editorRef.current.innerHTML = '';
       setIsEditorEmpty(true);
@@ -966,7 +966,7 @@ export const MessageInput = memo<MessageInputProps>(({
               contentEditable={true}
               suppressContentEditableWarning
               spellCheck={false}
-              data-empty={isEditorEmpty}
+              data-empty={isEditorEmpty && !flyingAnim}
               data-placeholder={
                 editingIndex !== null
                   ? t('chatWindow.edit_message_placeholder')
@@ -1316,14 +1316,16 @@ export const MessageInput = memo<MessageInputProps>(({
             left: flyingAnim.startX,
             background: 'transparent',
             color: 'var(--text-main, #ffffff)',
-            fontSize: '13px',
-            lineHeight: '1.3',
+            fontSize: '14px',
+            lineHeight: '20px',
+            fontFamily: 'inherit',
             pointerEvents: 'none',
             zIndex: 99999,
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
             boxShadow: 'none',
             border: 'none',
+            textShadow: '0 0 1px rgba(255, 255, 255, 0.4)',
             '--delta-x': `${flyingAnim.deltaX}px`,
             '--delta-y': `${flyingAnim.deltaY}px`,
           } as React.CSSProperties}

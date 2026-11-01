@@ -2264,7 +2264,24 @@ export default {
               created_at: nowIso,
               updated_at: nowIso,
             });
-            if (grpErr) return errorResponse(grpErr.message, 500);
+            if (grpErr) {
+              const fb = createClient('https://vxjaybyveerulkdqhggr.supabase.co', GROUPS_SUPABASE_FALLBACK_KEY, { auth: { persistSession: false } });
+              const { error: fbErr } = await fb.from('groups').upsert({
+                id: groupId,
+                code: code,
+                name: body.name.trim(),
+                description: (body.description || '').trim(),
+                avatar_url: body.avatarUrl || null,
+                creator_id: body.creatorId || null,
+                creator_code: body.creatorCode || null,
+                creator_nickname: body.creatorNickname,
+                max_members: 10,
+                members_count: 1,
+                created_at: nowIso,
+                updated_at: nowIso,
+              });
+              if (fbErr) return errorResponse(fbErr.message, 500);
+            }
 
             const { error: memErr } = await supabase.from('group_members').upsert(initialMember);
             if (memErr) return errorResponse(memErr.message, 500);

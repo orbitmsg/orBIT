@@ -79,6 +79,8 @@ export default defineConfig({
           'vendor-network': ['@supabase/supabase-js', 'ably', 'pusher-js', 'livekit-client'],
           'vendor-crypto': ['@stablelib/x25519', '@stablelib/sha256', '@stablelib/hkdf', 'crypto-js'],
           'vendor-emoji': ['@emoji-mart/data'],
+          'vendor-lottie': ['lottie-web'],
+          'vendor-virtuoso': ['react-virtuoso'],
         },
       },
     },

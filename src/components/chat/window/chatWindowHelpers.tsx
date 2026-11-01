@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { Virtuoso } from 'react-virtuoso';
 import type { Message, ChatTypingUser } from '../../../store/useChatStore';
 import { resolveStickerUrl } from '../../../lib/stickers-and-gifs';
 import { getOrbitaMediaUrl } from '../../../lib/media-utils';
@@ -40,38 +41,64 @@ export const MessageRowWrapper = memo(
 );
 MessageRowWrapper.displayName = 'MessageRowWrapper';
 
+export interface MessageListProps {
+  messages: Message[];
+  startIndex: number;
+  renderFn: (i: number, m: Message) => React.ReactNode;
+  scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
+}
+
 export const MessageList = memo(
   ({
     messages,
     startIndex,
     renderFn,
-  }: {
-    messages: Message[];
-    startIndex: number;
-    renderFn: (i: number, m: Message) => React.ReactNode;
-  }) => {
-    const virtualTopHeight = startIndex > 0 ? startIndex * 46 : 0;
+    scrollContainerRef,
+  }: MessageListProps) => {
+    const scrollParent = scrollContainerRef?.current;
+
+    if (!scrollParent || messages.length < 25) {
+      const virtualTopHeight = startIndex > 0 ? startIndex * 46 : 0;
+      return (
+        <>
+          {virtualTopHeight > 0 ? (
+            <div style={{ height: `${virtualTopHeight}px`, flexShrink: 0 }} />
+          ) : (
+            <div style={{ flex: '1 1 auto', minHeight: '8px' }} />
+          )}
+          {messages.map((msg, idx) => (
+            <MessageRowWrapper
+              key={msg.id || `msg_${msg.time}_${startIndex + idx}`}
+              index={startIndex + idx}
+              msg={msg}
+              renderFn={renderFn}
+            />
+          ))}
+        </>
+      );
+    }
+
     return (
-      <>
-        {virtualTopHeight > 0 ? (
-          <div style={{ height: `${virtualTopHeight}px`, flexShrink: 0 }} />
-        ) : (
-          <div style={{ flex: '1 1 auto', minHeight: '8px' }} />
-        )}
-        {messages.map((msg, idx) => (
+      <Virtuoso
+        customScrollParent={scrollParent}
+        data={messages}
+        overscan={350}
+        itemContent={(idx, msg) => (
           <MessageRowWrapper
             key={msg.id || `msg_${msg.time}_${startIndex + idx}`}
             index={startIndex + idx}
             msg={msg}
             renderFn={renderFn}
           />
-        ))}
-      </>
+        )}
+      />
     );
   },
   (prev, next) =>
     prev.messages === next.messages &&
-    prev.startIndex === next.startIndex
+    prev.startIndex === next.startIndex &&
+    prev.renderFn === next.renderFn &&
+    prev.scrollContainerRef?.current === next.scrollContainerRef?.current
 );
 MessageList.displayName = 'MessageList';
 

@@ -31,7 +31,9 @@ import { NotesAvatar } from '../common/NotesAvatar';
 import { getOrbitaMediaUrl } from '../../lib/media-utils';
 import { mediaManager } from '../../services/mediaManager';
 import { useShallow } from 'zustand/react/shallow';
-import { TelegramMediaViewer, type MediaViewerItem } from './TelegramMediaViewer';
+import { type MediaViewerItem } from './TelegramMediaViewer';
+import { lazy, Suspense } from 'react';
+const TelegramMediaViewer = lazy(() => import('./TelegramMediaViewer').then((m) => ({ default: m.TelegramMediaViewer })));
 import {
   type MediaGridItem,
   type MediaType,
@@ -1441,14 +1443,14 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
 
       {/* Fullscreen Telegram-style Media Viewer for Photos, Videos, GIFs */}
       {viewerState.isOpen && (
-        <TelegramMediaViewer
+        <Suspense fallback={null}><TelegramMediaViewer
           isOpen={viewerState.isOpen}
           items={viewerState.items}
           initialIndex={viewerState.initialIndex}
           sharedSecret={chat.sharedSecret}
           showCarouselAlways={true}
           onClose={() => setViewerState((prev) => ({ ...prev, isOpen: false }))}
-        />
+        /></Suspense>
       )}
 
       {isGroup && chat && (

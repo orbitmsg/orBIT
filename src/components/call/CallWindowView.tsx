@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { VideoOff, Maximize2, Minimize2 } from 'lucide-react';
@@ -58,7 +59,7 @@ interface CallStatePayload {
 }
 
 import { GroupParticipantTile, ExpandedGroupParticipantTile } from './GroupParticipantTiles';
-import { CallDualStreamView } from './CallDualStreamView';
+const CallDualStreamView = lazy(() => import('./CallDualStreamView').then((m) => ({ default: m.CallDualStreamView })));
 import { CallWindowControls } from './CallWindowControls';
 
 export const CallWindowView = () => {
@@ -1365,7 +1366,7 @@ export const CallWindowView = () => {
         ) : (
           <>
             {isDualStream ? (
-              <CallDualStreamView
+              <Suspense fallback={null}><CallDualStreamView
                 expandedShare={expandedShare}
                 setExpandedShare={setExpandedShare}
                 isRemoteScreenShareActive={isRemoteScreenShareActive}
@@ -1374,7 +1375,7 @@ export const CallWindowView = () => {
                 attachRemoteScreenShare={attachRemoteScreenShare}
                 attachRemoteVideo={attachRemoteVideo}
                 attachLocalScreenShare={attachLocalScreenShare}
-              />
+              /></Suspense>
             ) : hasRemoteStream ? (
           <div
             onClick={() => setExpandedShare(expandedShare === 'remote' ? null : 'remote')}

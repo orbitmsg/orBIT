@@ -8,7 +8,7 @@ import { FriendRequestsModal } from './FriendRequestsModal';
 import { DeleteAccountModal } from '../common/DeleteAccountModal';
 import { ActionConfirmModal, type ConfirmActionType } from '../common/ActionConfirmModal';
 import { IncomingCallModal } from '../call/IncomingCallModal';
-import { CallWindow } from '../call/CallWindow';
+const CallWindow = React.lazy(() => import('../call/CallWindow').then((m) => ({ default: m.CallWindow })));
 import { DevicePermissionModal } from '../common/DevicePermissionModal';
 import { GroupInviteModal } from '../chat/GroupInviteModal';
 import { useChatStore, type IncomingFriendRequest } from '../../store/useChatStore';
@@ -237,7 +237,7 @@ export const MainLayoutModals: React.FC<MainLayoutModalsProps> = ({
       />
 
       {showCallModalsInWindow && <IncomingCallModal />}
-      {showCallModalsInWindow && <CallWindow />}
+      {showCallModalsInWindow && <React.Suspense fallback={null}><CallWindow /></React.Suspense>}
       <DevicePermissionModal />
       {groupInviteUrl && (
         <GroupInviteModal

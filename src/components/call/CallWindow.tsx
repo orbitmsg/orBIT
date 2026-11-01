@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCallStore } from '../../store/useCallStore';
@@ -16,7 +17,7 @@ import { SignalStrengthIcon } from './SignalStrengthIcon';
 
 import { GroupParticipantTile, ExpandedGroupParticipantTile } from './GroupParticipantTiles';
 import { accentButtonStyle, rejectButtonStyle, neutralButtonStyle, StaticBackground } from './callButtonStyles';
-import { CallDualStreamView } from './CallDualStreamView';
+const CallDualStreamView = lazy(() => import('./CallDualStreamView').then((m) => ({ default: m.CallDualStreamView })));
 import { CallAvatarVoiceWave } from './CallAvatarVoiceWave';
 
 export const CallWindow = () => {
@@ -949,7 +950,7 @@ export const CallWindow = () => {
         ) : (
           <>
             {isDualStream ? (
-              <CallDualStreamView
+              <Suspense fallback={null}><CallDualStreamView
                 expandedShare={expandedShare}
                 setExpandedShare={setExpandedShare}
                 isRemoteScreenShareActive={isRemoteScreenShareActive}
@@ -958,7 +959,7 @@ export const CallWindow = () => {
                 attachRemoteScreenShare={attachRemoteScreenShare}
                 attachRemoteVideo={attachRemoteVideo}
                 attachLocalScreenShare={attachLocalScreenShare}
-              />
+              /></Suspense>
             ) : hasRemoteStream ? (
           <div
             onClick={() => setExpandedShare(expandedShare === 'remote' ? null : 'remote')}

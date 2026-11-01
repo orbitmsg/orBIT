@@ -782,20 +782,16 @@ export const MessageInput = memo<MessageInputProps>(({
     <div
       ref={inputContainerRef}
       style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
+        position: 'relative',
         flexShrink: 0,
-        zIndex: 20,
+        zIndex: 10,
         backgroundColor: 'transparent',
-        padding: '8px 14px 12px 14px',
+        padding: '6px 14px 10px 14px',
         borderTop: 'none',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'stretch',
         overflow: 'visible',
-        pointerEvents: 'none',
       }}
     >
       {showCommandsMenu && filteredCommands.length > 0 && !isRecordingActive && (
@@ -852,7 +848,7 @@ export const MessageInput = memo<MessageInputProps>(({
           }}
         />
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', minHeight: '42px', position: 'relative', pointerEvents: 'auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', minHeight: '34px', position: 'relative' }}>
           {currentText.length > 256 && onOpenTxtModal && (
             <button
               type="button"
@@ -863,24 +859,23 @@ export const MessageInput = memo<MessageInputProps>(({
                 bottom: '100%',
                 left: '0px',
                 marginBottom: '6px',
-                backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-                border: 'none',
+                backgroundColor: 'var(--bg-secondary, #252836)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
                 outline: 'none',
-                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
+                boxShadow: '0 4px 14px rgba(0, 0, 0, 0.4)',
                 color: 'var(--accent-color, #7C3AED)',
                 borderRadius: '50%',
-                width: '42px',
-                height: '42px',
+                width: '34px',
+                height: '34px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                transition: 'background-color 0.15s ease',
+                transition: 'transform 0.15s ease, background-color 0.15s ease',
                 zIndex: 20,
-                pointerEvents: 'auto',
-                backdropFilter: 'blur(24px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(24px) saturate(180%)',
               }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
             >
               <FileWithArrowIcon />
             </button>
@@ -896,27 +891,24 @@ export const MessageInput = memo<MessageInputProps>(({
             onMouseEnter={() => isRatchetReady && setHoverAttach(true)}
             onMouseLeave={() => setHoverAttach(false)}
             style={{
-              backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
+              background: 'transparent',
+              backgroundColor: 'transparent',
               border: 'none',
               outline: 'none',
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
+              boxShadow: 'none',
               color: attachColor,
               cursor: isRatchetReady ? 'pointer' : 'not-allowed',
               opacity: isRatchetReady ? 1 : 0.35,
-              width: '42px',
-              height: '42px',
-              borderRadius: '50%',
-              padding: 0,
+              width: '32px',
+              height: '32px',
+              padding: '4px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'background-color 0.15s ease, color 0.15s ease',
+              transition: 'color 0.2s, opacity 0.2s',
               userSelect: 'none',
               WebkitUserSelect: 'none',
               flexShrink: 0,
-              pointerEvents: 'auto',
-              backdropFilter: 'blur(24px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
             }}
           >
             <AttachIcon />
@@ -925,21 +917,16 @@ export const MessageInput = memo<MessageInputProps>(({
           <div
             style={{
               flex: 1,
-              backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-              borderRadius: '21px',
-              padding: '0 16px',
-              minHeight: '42px',
+              backgroundColor: 'var(--surface-container, #33363f)',
+              borderRadius: '20px',
+              padding: '0 14px',
+              minHeight: '34px',
               maxHeight: '120px',
               display: 'flex',
               alignItems: 'center',
               boxSizing: 'border-box',
               position: 'relative',
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-              border: 'none',
               transition: 'background-color 0.15s ease',
-              pointerEvents: 'auto',
-              backdropFilter: 'blur(24px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
             }}
           >
             <div
@@ -1002,25 +989,21 @@ export const MessageInput = memo<MessageInputProps>(({
               if (onEmojiMouseLeave) onEmojiMouseLeave();
             }}
             style={{
-              backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
+              background: 'none',
               border: 'none',
               outline: 'none',
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
+              boxShadow: 'none',
               color: emojiColor,
               cursor: isRatchetReady ? 'pointer' : 'not-allowed',
-              opacity: !isRatchetReady ? 0.35 : 1,
-              width: '42px',
-              height: '42px',
-              borderRadius: '50%',
-              padding: 0,
+              opacity: isRatchetReady ? 1 : 0.35,
+              width: '32px',
+              height: '32px',
+              padding: '4px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'background-color 0.15s ease, color 0.15s ease',
+              transition: 'color 0.2s, opacity 0.2s',
               flexShrink: 0,
-              pointerEvents: 'auto',
-              backdropFilter: 'blur(24px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
             }}
           >
             <EmojiIcon />
@@ -1046,25 +1029,21 @@ export const MessageInput = memo<MessageInputProps>(({
             onMouseEnter={() => isRatchetReady && setHoverMic(true)}
             onMouseLeave={() => setHoverMic(false)}
             style={{
-              backgroundColor: editingIndex !== null || isHasContent ? 'var(--accent-color, #7C3AED)' : 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
+              background: 'none',
               border: 'none',
               outline: 'none',
-              boxShadow: editingIndex !== null || isHasContent ? '0 4px 16px rgba(124, 58, 237, 0.35)' : '0 4px 16px rgba(0, 0, 0, 0.18)',
-              color: !isRatchetReady ? 'var(--text-dim)' : (editingIndex !== null || isHasContent) ? '#ffffff' : micColor,
+              boxShadow: 'none',
+              color: !isRatchetReady ? 'var(--text-dim)' : editingIndex !== null ? 'var(--accent-color)' : micColor,
               cursor: !isRatchetReady ? 'not-allowed' : 'pointer',
               opacity: !isRatchetReady ? 0.35 : 1,
-              width: '42px',
-              height: '42px',
-              borderRadius: '50%',
-              padding: 0,
+              width: '34px',
+              height: '34px',
+              padding: '4px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'background-color 0.15s ease, color 0.15s ease',
+              transition: 'color 0.2s, opacity 0.2s',
               flexShrink: 0,
-              pointerEvents: 'auto',
-              backdropFilter: 'blur(24px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
             }}
           >
             {editingIndex !== null ? (

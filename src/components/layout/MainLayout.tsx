@@ -1164,7 +1164,7 @@ export const MainLayout = () => {
       )}
 
       <div className="flex flex-1 min-w-0 relative flex-col">
-        {isCallMinimized && <CallMiniPlayer />}
+        {!(isMobileView && !activeChatId) && (isCallMinimized ? <CallMiniPlayer /> : <GlobalAudioPlayer />)}
 
         {(!isMobileView || activeChatId) && (
           <main
@@ -1184,7 +1184,6 @@ export const MainLayout = () => {
                 ) : (
                   <>
                     <ActiveCallBar />
-                    <GlobalAudioPlayer />
                     <ChatPlaceholder />
                   </>
                 )}

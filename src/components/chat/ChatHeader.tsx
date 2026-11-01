@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, UserPlus } from 'lucide-react';
 import { useChatStore, type Chat, type ChatAction, type ChatTypingUser } from '../../store/useChatStore';
 import { Avatar } from '../common/Avatar';
 import { NotesAvatar } from '../common/NotesAvatar';
@@ -10,7 +10,6 @@ import { DeveloperBadge } from '../ui/DeveloperBadge';
 import { ChannelMegaphoneIcon } from '../common/ChannelMegaphoneIcon';
 import { GroupUsersIcon } from '../common/GroupUsersIcon';
 import { ActiveCallBar } from '../call/ActiveCallBar';
-import { GlobalAudioPlayer } from '../audio/GlobalAudioPlayer';
 import { supportService, SUPPORT_AVATAR_URL } from '../../services/supportService';
 import { formatLastSeen } from '../../utils/messageUtils';
 
@@ -27,10 +26,9 @@ interface ChatHeaderProps {
   isServerConnected: boolean;
   voiceCallsEnabled: boolean;
   onAudioCallPress: () => void;
-  onAddMember?: () => void;
+  onAddMember: () => void;
   onOpenSupportTickets: () => void;
   onProfileClick: () => void;
-  children?: React.ReactNode;
 }
 
 export const TypingDots: React.FC = React.memo(() => (
@@ -73,173 +71,78 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   isServerConnected,
   voiceCallsEnabled,
   onAudioCallPress,
+  onAddMember,
   onOpenSupportTickets,
   onProfileClick,
-  children,
 }) => {
   const { t } = useTranslation();
-
-  const hasBack = Boolean(isMobileView && onBack);
-  const leftCount = (hasBack ? 1 : 0) + 1;
-  const leftWidth = leftCount * 42 + (leftCount - 1) * 8;
-
-  const hasSupportTickets = Boolean(activeChatId === 'system_support' && supportService.isAdmin);
-  const hasCall = Boolean(activeChatId !== 'notes' && activeChat?.type !== 'channel' && voiceCallsEnabled);
-  const rightCount = (hasSupportTickets ? 1 : 0) + 1 + (hasCall ? 1 : 0);
-  const rightWidth = rightCount * 42 + (rightCount - 1) * 8;
-
-  const sideWidth = Math.max(leftWidth, rightWidth);
 
   return (
     <div
       ref={headerRef as any}
-      className="absolute top-0 left-0 right-0 z-20 w-full select-none"
+      className="sticky top-0 z-20 w-full select-none"
       style={{
-        backgroundColor: 'transparent',
+        backgroundColor: 'var(--bg-primary)',
         borderBottom: 'none',
         userSelect: 'none',
         WebkitUserSelect: 'none',
-        pointerEvents: 'none',
       }}
     >
       <header
-        className="flex items-center w-full select-none relative z-10"
+        className="flex justify-center w-full select-none relative z-10"
         style={{
-          padding: '8px 14px',
+          padding: '10px 16px',
           userSelect: 'none',
           WebkitUserSelect: 'none',
-          pointerEvents: 'none',
         }}
       >
         <div
-          className="flex items-center gap-2 w-full select-none"
+          className="flex items-center justify-between w-full select-none"
           style={{
             maxWidth: '100%',
+            borderRadius: 0,
             backgroundColor: 'transparent',
-            pointerEvents: 'none',
+            padding: '0',
           }}
         >
           <div
-            className="flex items-center gap-2 flex-shrink-0"
-            style={{
-              minWidth: `${sideWidth}px`,
-              pointerEvents: 'none',
-            }}
+            className="flex items-center gap-3 flex-1 min-w-0 select-none"
+            onClick={onProfileClick}
+            style={{ cursor: 'pointer', userSelect: 'none', WebkitUserSelect: 'none' }}
           >
-            {hasBack && (
+            {isMobileView && onBack && (
               <button
                 type="button"
-                tabIndex={-1}
                 onClick={(e) => {
                   e.stopPropagation();
-                  onBack?.();
+                  onBack();
                 }}
                 aria-label={t('chatWindow.back')}
-                style={{
-                  backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-                  border: 'none',
-                  outline: 'none',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-                  color: 'var(--text-main)',
-                  cursor: 'pointer',
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '50%',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'background-color 0.15s ease, color 0.15s ease',
-                  userSelect: 'none',
-                  WebkitUserSelect: 'none',
-                  flexShrink: 0,
-                  pointerEvents: 'auto',
-                  backdropFilter: 'blur(24px) saturate(180%)',
-                  WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                }}
+                className="flex h-9 w-9 items-center justify-center text-[var(--text-main)] transition-opacity hover:opacity-80 border-none bg-transparent cursor-pointer"
               >
-                <ArrowLeft size={18} />
+                <ArrowLeft size={20} />
               </button>
             )}
-            <div
-              onClick={onProfileClick}
-              aria-label={activeChat?.name || t('chatHeader.profile', 'Профиль')}
-              style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '50%',
-                backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-                border: 'none',
-                backdropFilter: 'blur(24px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                flexShrink: 0,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '2px',
-                boxSizing: 'border-box',
-                pointerEvents: 'auto',
-                userSelect: 'none',
-                WebkitUserSelect: 'none',
-              }}
-            >
-              <div
-                style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                {activeChatId === 'notes' ? (
-                  <NotesAvatar className="w-full h-full" />
-                ) : (activeChat?.avatarUrl || activeChatId === 'system_support') ? (
-                  <Avatar src={activeChat?.avatarUrl || SUPPORT_AVATAR_URL} alt={activeChat?.name} className="w-full h-full object-cover" style={{ width: '100%', height: '100%', fontSize: '15px' }} />
-                ) : activeChat?.type === 'bot' ? (
-                  <BotAvatar className="w-full h-full" />
-                ) : (
-                  <Avatar src={activeChat?.avatarUrl} alt={activeChat?.name} className="w-full h-full object-cover" style={{ width: '100%', height: '100%', fontSize: '15px' }} />
-                )}
-              </div>
-            </div>
-          </div>
-          <div
-            className="flex items-center justify-center flex-1 min-w-0 select-none"
-            onClick={onProfileClick}
-            style={{
-              cursor: 'pointer',
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-              backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-              borderRadius: '21px',
-              height: '42px',
-              minHeight: '42px',
-              maxHeight: '42px',
-              padding: '0 16px',
-              border: 'none',
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-              backdropFilter: 'blur(24px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-              pointerEvents: 'auto',
-              transition: 'background-color 0.15s ease',
-              boxSizing: 'border-box',
-            }}
-          >
-            <div className="flex flex-col items-center justify-center w-full min-w-0 select-none text-center" style={{ gap: 0, userSelect: 'none', WebkitUserSelect: 'none' }}>
-              <div className="flex items-center justify-center gap-1.5 w-full min-w-0 select-none" style={{ transform: 'translateY(1px)' }}>
+            {isMobileView && (
+              activeChatId === 'notes' ? (
+                <NotesAvatar className="w-10 h-10" />
+              ) : (activeChat?.avatarUrl || activeChatId === 'system_support') ? (
+                <Avatar src={activeChat?.avatarUrl || SUPPORT_AVATAR_URL} alt={activeChat?.name} className="w-10 h-10 rounded-full flex-shrink-0" />
+              ) : activeChat?.type === 'bot' ? (
+                <BotAvatar className="w-10 h-10" />
+              ) : (
+                <Avatar src={activeChat?.avatarUrl} alt={activeChat?.name} className="w-10 h-10 rounded-full flex-shrink-0" />
+              )
+            )}
+            <div className="flex flex-col min-w-0 flex-1 select-none" style={{ gap: 0, userSelect: 'none', WebkitUserSelect: 'none' }}>
+              <div className="flex items-center gap-1.5 min-w-0 select-none">
                 {activeChat?.type === 'channel' && (
                   <ChannelMegaphoneIcon size={16} className="flex-shrink-0 text-[var(--accent-color)]" style={{ marginRight: 2 }} />
                 )}
                 {activeChat?.type === 'group' && (
                   <GroupUsersIcon size={16} className="flex-shrink-0 text-[var(--accent-color)]" style={{ marginRight: 2 }} />
                 )}
-                <h2 className="font-bold text-[14px] truncate select-none m-0 text-center" style={{ color: 'var(--text-main)', userSelect: 'none', WebkitUserSelect: 'none', lineHeight: '16px' }}>
+                <h2 className="font-bold text-[14px] truncate select-none m-0" style={{ color: 'var(--text-main)', userSelect: 'none', WebkitUserSelect: 'none' }}>
                   {activeChatId === 'notes' ? t('connectModal.notes') : activeChat?.name}
                 </h2>
                 {(activeChat?.isOfficial || activeChatId === 'system_support') && (
@@ -258,7 +161,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   </span>
                 )}
               </div>
-              <div className="select-none" style={{ userSelect: 'none', WebkitUserSelect: 'none', transform: 'translateY(-1px)', lineHeight: '13px' }}>
+              <div className="select-none" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
                 {activeChatId === 'notes' ? null : activeChat?.type === 'channel' ? (
                   <span className="text-[11px] font-medium text-[var(--text-dim)]">
                     {activeChat.subscribersCount
@@ -267,7 +170,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   </span>
                 ) : activeChat?.type === 'group' ? (
                   groupTypingUsers && groupTypingUsers.length > 0 ? (
-                    <span className="text-[11px] font-semibold text-[var(--accent-color)] inline-flex items-center justify-center gap-1.5 truncate text-center">
+                    <span className="text-[11px] font-semibold text-[var(--accent-color)] inline-flex items-center gap-1.5">
                       <span>
                         {(() => {
                           const count = groupTypingUsers.length;
@@ -298,7 +201,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                       <ActionIcon action={groupTypingUsers[0].action} />
                     </span>
                   ) : (
-                    <span className="text-[11px] font-medium text-[var(--text-dim)] truncate text-center">
+                    <span className="text-[11px] font-medium text-[var(--text-dim)]">
                       {activeChat.onlineCount && activeChat.onlineCount > 0
                         ? t('groupSettings.members_and_online', {
                             count: activeChat.membersCount || activeChat.members?.length || 1,
@@ -311,24 +214,24 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   )
                 ) : activeChat?.type === 'bot' ? (
                   activeChat.username ? (
-                    <span className="text-[11.5px] font-normal text-[var(--text-dim)] font-mono truncate text-center">
+                    <span className="text-[11.5px] font-normal text-[var(--text-dim)] font-mono">
                       @{activeChat.username}
                     </span>
                   ) : null
                 ) : !isServerConnected ? (
-                  <span className="text-[11px] font-semibold text-[var(--accent-color)] animate-pulse truncate text-center">
+                  <span className="text-[11px] font-semibold text-[var(--accent-color)] animate-pulse">
                     {t('common.connecting') || 'соединение...'}
                   </span>
                 ) : (
                   <span
-                    className="text-[11.5px] font-normal truncate text-center"
+                    className="text-[11.5px] font-normal"
                     style={{
                       color: isOnline ? 'var(--accent-color)' : 'var(--text-dim)',
                       textShadow: isOnline ? '0 0 1.5px color-mix(in srgb, var(--accent-color) 30%, transparent)' : 'none',
                     }}
                   >
                     {otherUserTyping && activeChatId !== 'notes' ? (
-                      <span className="text-[11.5px] font-semibold inline-flex items-center justify-center gap-1.5" style={{ color: 'var(--accent-color)' }}>
+                      <span className="text-[11.5px] font-semibold inline-flex items-center gap-1.5" style={{ color: 'var(--accent-color)' }}>
                         <span>
                           {otherUserAction === 'sticker'
                             ? t('chatWindow.choosing_sticker')
@@ -346,45 +249,17 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               </div>
             </div>
           </div>
-          <div
-            className="flex items-center justify-end gap-2 flex-shrink-0"
-            style={{
-              minWidth: `${sideWidth}px`,
-              pointerEvents: 'none',
-            }}
-          >
-            {hasSupportTickets && (
+          <div className="flex items-center gap-1">
+            {activeChatId === 'system_support' && supportService.isAdmin && (
               <button
-                type="button"
-                tabIndex={-1}
-                className="cursor-pointer"
+                className="p-2 transition-colors duration-200 text-[var(--accent-color, #7C3AED)] hover:opacity-80 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center relative"
                 onClick={(e) => {
                   e.stopPropagation();
                   onOpenSupportTickets();
                 }}
                 aria-label={t('support.open_tickets_modal', 'Тикеты поддержки')}
-                style={{
-                  backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-                  border: 'none',
-                  outline: 'none',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-                  color: 'var(--accent-color, #7C3AED)',
-                  cursor: 'pointer',
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '50%',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'background-color 0.15s ease, color 0.15s ease',
-                  flexShrink: 0,
-                  pointerEvents: 'auto',
-                  backdropFilter: 'blur(24px) saturate(180%)',
-                  WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
                   <path d="M13 5v2"/>
                   <path d="M13 17v2"/>
@@ -392,76 +267,40 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 </svg>
               </button>
             )}
+            {activeChat?.type === 'group' && (
+              <button
+                className="p-2 transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddMember();
+                }}
+                aria-label={t('groupSettings.add_member', 'Добавить участника')}
+              >
+                <UserPlus size={20} />
+              </button>
+            )}
             <button
-              type="button"
-              tabIndex={-1}
-              className="cursor-pointer"
+              className="p-2 transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
               onClick={(e) => {
                 e.stopPropagation();
                 useChatStore.getState().openInChatSearch('this_chat');
               }}
               aria-label={t('common.search', 'Поиск')}
-              style={{
-                backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-                border: 'none',
-                outline: 'none',
-                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-                color: 'var(--text-dim)',
-                cursor: 'pointer',
-                width: '42px',
-                height: '42px',
-                borderRadius: '50%',
-                padding: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'background-color 0.15s ease, color 0.15s ease',
-                flexShrink: 0,
-                pointerEvents: 'auto',
-                backdropFilter: 'blur(24px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-main)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-dim)'; }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M21.71 20.29L18 16.61A9 9 0 1 0 16.61 18l3.68 3.68a1 1 0 0 0 1.42 0a1 1 0 0 0 0-1.39M11 18a7 7 0 1 1 7-7a7 7 0 0 1-7 7" />
               </svg>
             </button>
-            {hasCall && (
+            {activeChatId !== 'notes' && activeChat?.type !== 'channel' && voiceCallsEnabled && (
               <button
-                type="button"
-                tabIndex={-1}
-                className="cursor-pointer"
+                className="p-2 transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
                 onClick={(e) => {
                   e.stopPropagation();
                   onAudioCallPress();
                 }}
                 aria-label={t('call.call', 'Позвонить')}
-                style={{
-                  backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-                  border: 'none',
-                  outline: 'none',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-                  color: 'var(--text-dim)',
-                  cursor: 'pointer',
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '50%',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'background-color 0.15s ease, color 0.15s ease',
-                  flexShrink: 0,
-                  pointerEvents: 'auto',
-                  backdropFilter: 'blur(24px) saturate(180%)',
-                  WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-main)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-dim)'; }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
                   <path fill="currentColor" d="m19.23 15.26l-2.54-.29a1.99 1.99 0 0 0-1.64.57l-1.84 1.84a15.05 15.05 0 0 1-6.59-6.59l1.85-1.85c.43-.43.64-1.03.57-1.64l-.29-2.52a2 2 0 0 0-1.99-1.77H5.03c-1.13 0-2.07.94-2 2.07c.53 8.54 7.36 15.36 15.89 15.89c1.13.07 2.07-.87 2.07-2v-1.73c.01-1.01-.75-1.86-1.76-1.98" />
                 </svg>
               </button>
@@ -469,9 +308,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </div>
         </div>
       </header>
-      <GlobalAudioPlayer />
-      <ActiveCallBar style={{ pointerEvents: 'auto' }} />
-      {children}
+      <ActiveCallBar />
     </div>
   );
 };

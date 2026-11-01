@@ -125,11 +125,19 @@ function getChannelsSupabaseClient() {
   });
 }
 
+const GROUPS_SUPABASE_DEFAULT_KEY = 'sb_publishable_x6OPhg68nS-xBcPn4K47NQ_2nSS4Kfu';
+
 function getGroupsSupabaseClient() {
   const url = ENV.GROUPS_SUPABASE_URL || 'https://vxjaybyveerulkdqhggr.supabase.co';
-  const key = ENV.GROUPS_SUPABASE_KEY || '';
-  if (!url || !key) return null;
+  const key = ENV.GROUPS_SUPABASE_KEY || GROUPS_SUPABASE_DEFAULT_KEY;
   return createClient(url, key, {
+    auth: { persistSession: false },
+  });
+}
+
+function getFallbackGroupsSupabaseClient() {
+  const url = 'https://vxjaybyveerulkdqhggr.supabase.co';
+  return createClient(url, GROUPS_SUPABASE_DEFAULT_KEY, {
     auth: { persistSession: false },
   });
 }
@@ -406,6 +414,14 @@ module.exports = async function handler(req, res) {
         groups_host: ENV.GROUPS_SUPABASE_URL ? new URL(ENV.GROUPS_SUPABASE_URL).hostname : null,
         timestamp: Date.now(),
       });
+    }
+
+    if (req.method === 'GET' && (pathname === '/groups' || pathname === '/groups/' || (pathname.startsWith('/groups/') && !['/groups/get', '/groups/my', '/groups/messages', '/groups/calls/active', '/groups/token', '/groups/livekit/token', '/groups/livekit-token'].includes(pathname)))) {
+      const htmlPath = path.join(process.cwd(), 'website', 'groups', 'index.html');
+      if (fs.existsSync(htmlPath)) {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        return res.end(fs.readFileSync(htmlPath, 'utf8'));
+      }
     }
 
     if (!checkRateLimit(req)) {
@@ -2139,7 +2155,22 @@ module.exports = async function handler(req, res) {
             updated_at: nowIso,
           });
           if (grpErr) {
-            return sendError(res, grpErr.message, 500);
+            const fb = getFallbackGroupsSupabaseClient();
+            const { error: fbErr } = await fb.from('groups').upsert({
+              id: groupId,
+              code: code,
+              name: body.name.trim(),
+              description: (body.description || '').trim(),
+              avatar_url: body.avatarUrl || null,
+              creator_id: body.creatorId || null,
+              creator_code: body.creatorCode || null,
+              creator_nickname: body.creatorNickname,
+              max_members: 10,
+              members_count: 1,
+              created_at: nowIso,
+              updated_at: nowIso,
+            });
+            if (fbErr) return sendError(res, fbErr.message, 500);
           }
 
           const { error: memErr } = await supabase.from('group_members').upsert(initialMember);

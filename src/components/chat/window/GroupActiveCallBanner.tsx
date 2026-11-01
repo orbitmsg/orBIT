@@ -3,10 +3,9 @@ import { useTranslation } from 'react-i18next';
 
 interface GroupActiveCallBannerProps {
   onJoin: () => void;
-  style?: React.CSSProperties;
 }
 
-export const GroupActiveCallBanner: React.FC<GroupActiveCallBannerProps> = ({ onJoin, style }) => {
+export const GroupActiveCallBanner: React.FC<GroupActiveCallBannerProps> = ({ onJoin }) => {
   const { t } = useTranslation();
 
   return (
@@ -15,8 +14,6 @@ export const GroupActiveCallBanner: React.FC<GroupActiveCallBannerProps> = ({ on
       style={{
         backgroundColor: 'color-mix(in srgb, var(--accent-color, #7C3AED) 14%, var(--bg-secondary))',
         borderBottom: 'none',
-        pointerEvents: 'auto',
-        ...style,
       }}
     >
       <div className="flex items-center gap-2.5 min-w-0">

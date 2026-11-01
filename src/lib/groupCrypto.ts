@@ -99,7 +99,7 @@ export function buildGroupInviteLink(
 ): string {
   if (!groupCode) return '';
   const cleanCode = groupCode.trim();
-  return `https://orbitachat.vercel.app/groups/#${encodeURIComponent(cleanCode)}`;
+  return `https://orbitad.vercel.app/groups/#${encodeURIComponent(cleanCode)}`;
 }
 
 export function extractGroupMetadata(input: string): {

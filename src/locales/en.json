@@ -1584,5 +1584,9 @@
       "preparing_interface": "Preparing interface...",
       "starting": "Starting..."
     }
+  },
+  "group": {
+    "open_chat": "Open chat",
+    "already_member": "You are already a member of this group"
   }
 }

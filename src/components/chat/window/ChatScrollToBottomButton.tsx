@@ -6,7 +6,6 @@ interface ChatScrollToBottomButtonProps {
   show: boolean;
   unreadCount: number;
   isMobileView?: boolean;
-  bottomOffset?: number;
   onClick: () => void;
 }
 
@@ -14,7 +13,6 @@ export const ChatScrollToBottomButton: React.FC<ChatScrollToBottomButtonProps> =
   show,
   unreadCount,
   isMobileView = false,
-  bottomOffset,
   onClick,
 }) => {
   const { t } = useTranslation();
@@ -27,16 +25,14 @@ export const ChatScrollToBottomButton: React.FC<ChatScrollToBottomButtonProps> =
       style={{
         position: 'absolute',
         right: isMobileView ? '12px' : '20px',
-        bottom: bottomOffset ? `${bottomOffset}px` : '68px',
+        bottom: '16px',
         width: '48px',
         height: '48px',
         borderRadius: '50%',
-        backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
+        backgroundColor: 'var(--surface-container, #33363f)',
         color: 'var(--text-main)',
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
+        boxShadow: '0 4px 14px rgba(0, 0, 0, 0.28)',
         border: 'none',
-        backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
         outline: 'none',
         cursor: 'pointer',
         display: 'flex',

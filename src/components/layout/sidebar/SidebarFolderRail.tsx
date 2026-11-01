@@ -35,9 +35,9 @@ export const SidebarFolderRail = ({
           }}
         >
           <div
-            className="w-full flex items-center justify-center select-none"
+            className="w-full flex items-center justify-center"
             style={{
-              height: '58px',
+              height: '61px',
               boxSizing: 'border-box',
             }}
           >
@@ -45,22 +45,17 @@ export const SidebarFolderRail = ({
               type="button"
               onClick={() => setIsMainMenuOpen(true)}
               aria-label={t('mainMenu.open_menu', 'Открыть меню')}
-              className="flex items-center justify-center cursor-pointer transition-all active:scale-95 text-[var(--text-dim)] hover:text-[var(--text-main)] shrink-0"
+              className="flex items-center justify-center cursor-pointer transition-all active:scale-95 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-container)] rounded-xl"
               style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '50%',
-                backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-                backdropFilter: 'blur(24px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+                width: '40px',
+                height: '40px',
                 border: 'none',
+                background: 'transparent',
                 outline: 'none',
-                padding: 0,
               }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
-                <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M3 6h18M3 12h18M3 18h18"/>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">
+                <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 6h18M3 12h18M3 18h18"/>
               </svg>
             </button>
           </div>
@@ -86,23 +81,24 @@ export const SidebarFolderRail = ({
                     minHeight: '64px',
                     padding: '6px 4px',
                     margin: '2px 0',
-                    borderRadius: '16px',
+                    borderRadius: '12px',
                     border: 'none',
                     outline: 'none',
                     boxSizing: 'border-box',
                     flexShrink: 0,
                     backgroundColor: isAllActive
-                      ? 'color-mix(in srgb, var(--surface-container-strong, var(--surface-container)) 80%, transparent)'
+                      ? (isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)')
                       : 'transparent',
-                    boxShadow: isAllActive ? '0 2px 10px rgba(0, 0, 0, 0.16)' : 'none',
                     color: isAllActive
                       ? (isLightTheme ? '#000000' : '#ffffff')
                       : 'var(--text-dim, #8e8e93)',
-                    transition: 'background-color 0.15s ease, color 0.15s ease',
+                    transition: 'background-color 0.12s ease, color 0.12s ease',
                   }}
                   onMouseEnter={(e) => {
                     if (!isAllActive) {
-                      e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--surface-container) 45%, transparent)';
+                      e.currentTarget.style.backgroundColor = isLightTheme
+                        ? 'rgba(0, 0, 0, 0.04)'
+                        : 'rgba(255, 255, 255, 0.04)';
                       e.currentTarget.style.color = isLightTheme ? '#000000' : '#ffffff';
                     }
                   }}
@@ -156,23 +152,24 @@ export const SidebarFolderRail = ({
                     minHeight: '64px',
                     padding: '6px 4px',
                     margin: '2px 0',
-                    borderRadius: '16px',
+                    borderRadius: '12px',
                     border: 'none',
                     outline: 'none',
                     boxSizing: 'border-box',
                     flexShrink: 0,
                     backgroundColor: isFolderActive
-                      ? 'color-mix(in srgb, var(--surface-container-strong, var(--surface-container)) 80%, transparent)'
+                      ? (isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)')
                       : 'transparent',
-                    boxShadow: isFolderActive ? '0 2px 10px rgba(0, 0, 0, 0.16)' : 'none',
                     color: isFolderActive
                       ? (isLightTheme ? '#000000' : '#ffffff')
                       : 'var(--text-dim, #8e8e93)',
-                    transition: 'background-color 0.15s ease, color 0.15s ease',
+                    transition: 'background-color 0.12s ease, color 0.12s ease',
                   }}
                   onMouseEnter={(e) => {
                     if (!isFolderActive) {
-                      e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--surface-container) 45%, transparent)';
+                      e.currentTarget.style.backgroundColor = isLightTheme
+                        ? 'rgba(0, 0, 0, 0.04)'
+                        : 'rgba(255, 255, 255, 0.04)';
                       e.currentTarget.style.color = isLightTheme ? '#000000' : '#ffffff';
                     }
                   }}

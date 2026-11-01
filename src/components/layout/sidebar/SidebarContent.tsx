@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, ArrowLeft, RotateCw, WifiOff, Search } from 'lucide-react';
+import { X, ArrowLeft, RotateCw, WifiOff } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
 import { VerifiedBadge } from '../../common/VerifiedBadge';
 import { ArchiveListItem } from './ChatListItems';
@@ -87,6 +87,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   const activeFolderId = useChatStore((s) => s.activeFolderId);
   const isServerConnected = useConnectionStore((s) => s.isServerConnected);
   const isCallMinimized = useCallStore((s) => s.isMinimized);
+  const isCallActive = useCallStore((s) => Boolean(s.activeCall));
 
   if (inChatSearch?.isOpen) {
     return (
@@ -99,56 +100,42 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   }
 
   return (
-    <div className="relative flex flex-col h-full overflow-hidden select-none">
+    <div className="flex flex-col h-full">
       {isMobileView && !activeChatId && (isCallMinimized ? <CallMiniPlayer /> : <GlobalAudioPlayer />)}
 
       <div
-        className="absolute top-0 left-0 right-0 z-20 w-full select-none"
+        className="px-4 py-1 select-none"
         style={{
-          padding: '8px 10px',
-          boxSizing: 'border-box',
-          pointerEvents: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingTop: '12px',
         }}
       >
-        <div className="flex items-center min-w-0 w-full gap-2">
+        <div className="flex items-center min-w-0" style={{ width: '100%' }}>
           {isViewingArchive ? (
-            <div className="flex items-center w-full gap-2" style={{ pointerEvents: 'auto' }}>
+            <div className="flex items-center w-full gap-2">
               <button
                 type="button"
                 onClick={() => setIsViewingArchive(false)}
                 aria-label={t('common.back', 'Назад')}
-                className="flex items-center justify-center cursor-pointer transition-all active:scale-95 text-[var(--text-dim)] hover:text-[var(--text-main)] shrink-0"
+                className="flex items-center justify-center cursor-pointer transition-all active:scale-95 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-container)] rounded-full shrink-0"
                 style={{
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '50%',
-                  backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-                  backdropFilter: 'blur(24px) saturate(180%)',
-                  WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+                  width: '36px',
+                  height: '36px',
                   border: 'none',
+                  background: 'transparent',
                   outline: 'none',
                   padding: 0,
                 }}
               >
-                <ArrowLeft size={19} />
+                <ArrowLeft size={20} />
               </button>
-              <div
-                className="flex items-center justify-between flex-1 min-w-0 px-4"
-                style={{
-                  height: '42px',
-                  borderRadius: '21px',
-                  backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-                  backdropFilter: 'blur(24px) saturate(180%)',
-                  WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                  border: 'none',
-                }}
-              >
-                <span className="font-bold text-[14px] text-[var(--text-main)] truncate">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <span className="font-bold text-[16px] text-[var(--text-main)]">
                   {t('common.archive', 'Архив')}
                 </span>
-                <span className="text-xs text-[var(--text-dim)] font-medium">
+                <span className="text-xs text-[var(--text-dim)]">
                   {archivedChats.length}
                 </span>
               </div>
@@ -160,61 +147,40 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   type="button"
                   onClick={() => setIsMainMenuOpen(true)}
                   aria-label={t('mainMenu.open_menu', 'Открыть меню')}
-                  className="flex items-center justify-center cursor-pointer transition-all active:scale-95 text-[var(--text-dim)] hover:text-[var(--text-main)] shrink-0"
+                  className="flex items-center justify-center cursor-pointer transition-all active:scale-95 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-container)] rounded-full shrink-0"
                   style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: '50%',
-                    backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-                    backdropFilter: 'blur(24px) saturate(180%)',
-                    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+                    width: '36px',
+                    height: '36px',
                     border: 'none',
+                    background: 'transparent',
                     outline: 'none',
+                    marginRight: '8px',
                     padding: 0,
-                    pointerEvents: 'auto',
                   }}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
-                    <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M3 6h18M3 12h18M3 18h18" />
+                    <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 6h18M3 12h18M3 18h18" />
                   </svg>
                 </button>
               )}
-              <div
-                style={{
-                  flex: 1,
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  height: '42px',
-                  borderRadius: '21px',
-                  backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-                  backdropFilter: 'blur(24px) saturate(180%)',
-                  WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                  border: 'none',
-                  pointerEvents: 'auto',
-                  transition: 'background-color 0.15s ease',
-                }}
-              >
-                <Search size={17} className="text-[var(--text-dim)] shrink-0 ml-3.5 pointer-events-none" />
+              <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t('common.search', 'Поиск')}
                   style={{
-                    flex: 1,
                     width: '100%',
-                    height: '100%',
-                    borderRadius: '21px',
+                    height: '36px',
+                    borderRadius: '999px',
                     border: 'none',
                     outline: 'none',
-                    backgroundColor: 'transparent',
+                    boxShadow: 'none',
+                    backgroundColor: 'var(--md-surface, var(--surface-container, rgba(255,255,255,0.05)))',
                     color: 'var(--text-main, #e0e0e0)',
                     fontSize: '13px',
-                    paddingLeft: '8px',
-                    paddingRight: searchQuery ? '36px' : '14px',
+                    paddingLeft: '14px',
+                    paddingRight: searchQuery ? '32px' : '14px',
                     boxSizing: 'border-box',
                   }}
                 />
@@ -231,14 +197,14 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                       border: 'none',
                       cursor: 'pointer',
                       color: 'var(--text-dim, #9ca3af)',
-                      padding: '4px',
+                      padding: '2px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      borderRadius: '50%',
+                      zIndex: 1,
                     }}
                   >
-                    <X size={16} />
+                    <X size={18} />
                   </button>
                 )}
               </div>
@@ -246,6 +212,56 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           )}
         </div>
       </div>
+
+      {isMobileView && (
+        <div
+          className="flex items-center px-4 pt-2.5 pb-1 gap-5 overflow-x-auto no-scrollbar select-none"
+          style={{
+            borderBottom: '1px solid var(--border-color)',
+          }}
+        >
+          <div className="relative pb-1.5 cursor-pointer text-[13px] font-semibold text-[var(--accent-color)] flex-shrink-0">
+            <span>{t('common.all', 'Все')}</span>
+            <div
+              className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full"
+              style={{ backgroundColor: 'var(--accent-color, #7C3AED)' }}
+            />
+          </div>
+        </div>
+      )}
+
+      {incomingFriendRequests.length > 0 && (
+        <div className="px-4 pt-2.5 pb-1">
+          <button
+            onClick={() => setShowFriendRequestsModal(true)}
+            className="w-full flex items-center justify-between px-4 py-2.5 rounded-full hover:opacity-90 transition-opacity text-xs font-medium cursor-pointer shadow-none select-none"
+            style={{
+              borderRadius: '9999px',
+              border: 'none',
+              backgroundColor: 'var(--surface-container, rgba(255,255,255,0.06))',
+              color: 'var(--text-main, #ffffff)',
+            }}
+          >
+            <span className="font-semibold text-xs text-[var(--text-main)]">
+              {t('friendRequests.pending_banner', 'Запросы на переписку')}
+            </span>
+            <span
+              className="px-2 py-0.5 rounded-full font-bold text-[11px]"
+              style={{
+                borderRadius: '9999px',
+                backgroundColor: 'var(--accent-color, #7C3AED)',
+                color: '#ffffff',
+              }}
+            >
+              {incomingFriendRequests.length}
+            </span>
+          </button>
+        </div>
+      )}
+
+      {isMobileView && !activeChatId && (
+        <ActiveCallBar />
+      )}
 
       <div
         className="relative flex-1 min-h-0 overflow-hidden flex flex-col"
@@ -257,63 +273,12 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           onScroll={handleChatListScroll}
           className="flex-1 chat-list-scrollbar select-none"
           style={{
-            paddingTop: '58px',
+            marginTop: (isMobileView && isCallActive) ? '0px' : '9px',
+            paddingTop: '0px',
             overflowY: 'scroll',
             overflowX: 'hidden',
           }}
         >
-          {isMobileView && (
-            <div
-              className="flex items-center px-4 pt-1 pb-2 gap-5 overflow-x-auto no-scrollbar select-none"
-              style={{
-                borderBottom: '1px solid color-mix(in srgb, var(--border-color) 40%, transparent)',
-              }}
-            >
-              <div className="relative pb-1 cursor-pointer text-[13px] font-semibold text-[var(--accent-color)] flex-shrink-0">
-                <span>{t('common.all', 'Все')}</span>
-                <div
-                  className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full"
-                  style={{ backgroundColor: 'var(--accent-color, #7C3AED)' }}
-                />
-              </div>
-            </div>
-          )}
-
-          {incomingFriendRequests.length > 0 && (
-            <div className="px-3 pt-1 pb-2">
-              <button
-                onClick={() => setShowFriendRequestsModal(true)}
-                className="w-full flex items-center justify-between px-4 py-2.5 rounded-full hover:opacity-90 transition-opacity text-xs font-medium cursor-pointer shadow-none select-none"
-                style={{
-                  borderRadius: '21px',
-                  border: 'none',
-                  backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-                  backdropFilter: 'blur(24px) saturate(180%)',
-                  WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-                  color: 'var(--text-main, #ffffff)',
-                }}
-              >
-                <span className="font-semibold text-xs text-[var(--text-main)]">
-                  {t('friendRequests.pending_banner', 'Запросы на переписку')}
-                </span>
-                <span
-                  className="px-2 py-0.5 rounded-full font-bold text-[11px]"
-                  style={{
-                    borderRadius: '9999px',
-                    backgroundColor: 'var(--accent-color, #7C3AED)',
-                    color: '#ffffff',
-                  }}
-                >
-                  {incomingFriendRequests.length}
-                </span>
-              </button>
-            </div>
-          )}
-
-          {isMobileView && !activeChatId && (
-            <ActiveCallBar />
-          )}
           {isMobileView && chats.length === 0 && (isServerConnected && isNetworkOnline) ? (
             <div className="h-full flex items-center justify-center">
               <ChatPlaceholder />
@@ -517,16 +482,17 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                     onClick={() => handleSelectFoundChannel(searchChannelResult)}
                     className="flex items-center gap-3 cursor-pointer transition-colors"
                     style={{
-                      borderRadius: '14px',
+                      borderRadius: '12px',
                       margin: '2px 8px',
                       width: 'calc(100% - 16px)',
                       padding: '8px 10px',
                       boxSizing: 'border-box',
                       backgroundColor: 'transparent',
-                      transition: 'background-color 0.15s ease',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--surface-container) 42%, transparent)';
+                      e.currentTarget.style.backgroundColor = isLightTheme
+                        ? 'rgba(0, 0, 0, 0.04)'
+                        : 'rgba(255, 255, 255, 0.04)';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.backgroundColor = 'transparent';
@@ -590,16 +556,17 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                         onClick={() => handleSelectFoundUser(user)}
                         className="flex items-center gap-3 cursor-pointer transition-colors"
                         style={{
-                          borderRadius: '14px',
+                          borderRadius: '12px',
                           margin: '2px 8px',
                           width: 'calc(100% - 16px)',
                           padding: '8px 10px',
                           boxSizing: 'border-box',
                           backgroundColor: 'transparent',
-                          transition: 'background-color 0.15s ease',
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--surface-container) 42%, transparent)';
+                          e.currentTarget.style.backgroundColor = isLightTheme
+                            ? 'rgba(0, 0, 0, 0.04)'
+                            : 'rgba(255, 255, 255, 0.04)';
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.backgroundColor = 'transparent';
@@ -686,7 +653,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           className="overlay-scroll-track"
           onMouseDown={(e) => handleScrollbarTrackMouseDown(e, chatListScrollRef.current)}
           style={{
-            top: '58px',
+            top: '15px',
             bottom: '6px',
             opacity: 0,
             transition: 'opacity 0.2s ease',
@@ -699,7 +666,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           className="overlay-scroll-thumb"
           onMouseDown={(e) => handleScrollbarThumbMouseDown(e, chatListScrollRef.current)}
           style={{
-            top: '58px',
+            top: '15px',
             opacity: 0,
             transition: 'opacity 0.2s ease',
             willChange: 'transform',

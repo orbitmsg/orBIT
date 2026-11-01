@@ -123,6 +123,10 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
   const [isJoining, setIsJoining] = useState(false);
   const [isResolved, setIsResolved] = useState(false);
 
+  const myNickname = useAuthStore((s) => s.nickname);
+  const myUserId = useAuthStore((s) => s.userId);
+  const myCode = useChatStore((s) => s.myCode);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -144,6 +148,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
       (c) =>
         c.type === 'group' &&
         (c.id === cleanCode ||
+          c.id === cleanCode.toUpperCase() ||
           c.code === cleanCode ||
           c.inviteCode === cleanCode ||
           (c.inviteCode && extractGroupCode(c.inviteCode) === cleanCode) ||
@@ -158,7 +163,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
         description: existing.description || '',
         avatarUrl: existing.avatarUrl || null,
         creatorNickname: existing.creatorNickname || '',
-        membersCount: existing.membersCount || 1,
+        membersCount: existing.membersCount || (existing.members || []).length || 1,
         maxMembers: 10,
         members: (existing.members || []).map((m: any) => ({
           nickname: m.nickname,
@@ -183,6 +188,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
       if (info) {
         setGroupInfo((prev) => ({
           ...info,
+          name: info.name || prev?.name || existing?.name || '',
           avatarUrl: info.avatarUrl || prev?.avatarUrl || existing?.avatarUrl || null,
           inviteActive: info.inviteActive !== undefined ? info.inviteActive : (prev?.inviteActive !== undefined ? prev.inviteActive : (existing?.inviteActive !== undefined ? existing.inviteActive : true)),
           inviteExpiresAt: info.inviteExpiresAt !== undefined ? info.inviteExpiresAt : (prev?.inviteExpiresAt || existing?.inviteExpiresAt || null),
@@ -194,32 +200,67 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
     });
   }, [inviteUrl]);
 
+  const cleanCode = inviteUrl ? (extractGroupCode(inviteUrl) || inviteUrl.trim().replace(/^#/, '')) : '';
+  const existingChat = useChatStore((s) =>
+    s.chats.find(
+      (c) =>
+        c.type === 'group' &&
+        (c.id === groupInfo?.id ||
+          (cleanCode && (c.id === cleanCode || c.id === cleanCode.toUpperCase() || c.code === cleanCode || c.inviteCode === cleanCode)))
+    )
+  );
+
+  const isAlreadyMember = Boolean(
+    existingChat ||
+    (groupInfo?.members &&
+      groupInfo.members.some((m) => {
+        const uid = m.userId || m.userCode;
+        if (myUserId && (uid === myUserId || m.nickname === myNickname)) return true;
+        if (myCode && (uid === myCode || m.nickname === myNickname)) return true;
+        if (myNickname && m.nickname && m.nickname.toLowerCase() === myNickname.toLowerCase()) return true;
+        return false;
+      }))
+  );
+
   const isExpiredOrRevoked = Boolean(
-    isResolved &&
+    !isAlreadyMember &&
+      isResolved &&
       (!groupInfo ||
         groupInfo.inviteActive === false ||
         Boolean(groupInfo.inviteExpiresAt && Date.now() > groupInfo.inviteExpiresAt))
   );
 
+  const handleOpenExisting = useCallback(() => {
+    const targetId = existingChat?.id || groupInfo?.id;
+    if (targetId) {
+      useChatStore.getState().setActiveChat(targetId);
+      onClose();
+    }
+  }, [existingChat, groupInfo, onClose]);
+
   const handleJoin = useCallback(async () => {
     if (!inviteUrl || isJoining || isExpiredOrRevoked) return;
+    if (isAlreadyMember) {
+      handleOpenExisting();
+      return;
+    }
     setIsJoining(true);
 
     const authData = useAuthStore.getState();
-    const myNickname = authData.nickname || '';
-    const myCode = useChatStore.getState().myCode;
-    const uCode = myCode || (authData.userId?.length === 36 ? authData.userId : undefined);
+    const myNick = authData.nickname || '';
+    const myCd = useChatStore.getState().myCode;
+    const uCode = myCd || (authData.userId?.length === 36 ? authData.userId : undefined);
     const uAvatar = authData.avatarUrl;
     const uId = authData.userId;
 
     try {
-      const result = await groupService.joinGroup(inviteUrl, myNickname, uCode, {
+      const result = await groupService.joinGroup(inviteUrl, myNick, uCode, {
         avatarUrl: uAvatar || undefined,
         userId: uId || undefined,
       });
 
       if (result?.group) {
-        const joinText = `${myNickname} вступил(а) в группу по ссылке-приглашению`;
+        const joinText = `${myNick} вступил(а) в группу по ссылке-приглашению`;
         const sysMsg: any = result.systemMessage || {
           id: `sys_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
           sender: 'system',
@@ -228,7 +269,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
           status: 'sent',
           mediaType: 'system',
           systemType: 'join_link',
-          actorNickname: myNickname,
+          actorNickname: myNick,
         };
 
         const existing = useChatStore.getState().chats.find((c) => c.id === result.group.id);
@@ -292,7 +333,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
           const rosterPayload = {
             type: 'member-joined',
             id: sysMsg.id,
-            nickname: myNickname,
+            nickname: myNick,
             userCode: uCode,
             chatId: result.group.id,
             members: result.group.members,
@@ -325,25 +366,31 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
         : t('common.error', 'Ошибка');
       useToastStore.getState().showToast(msg, 'text');
     }
-  }, [inviteUrl, isJoining, isExpiredOrRevoked, onClose, t]);
+  }, [inviteUrl, isJoining, isExpiredOrRevoked, isAlreadyMember, handleOpenExisting, onClose, t]);
 
   if (!inviteUrl) return null;
 
-  const cleanCode = inviteUrl ? (extractGroupCode(inviteUrl) || inviteUrl.trim().replace(/^#/, '')) : '';
-  const existingChat = useChatStore((s) =>
-    s.chats.find(
-      (c) =>
-        c.type === 'group' &&
-        (c.id === groupInfo?.id ||
-          (cleanCode && (c.id === cleanCode || c.code === cleanCode || c.inviteCode === cleanCode)))
-    )
-  );
   const groupAvatarUrl = groupInfo?.avatarUrl || existingChat?.avatarUrl || null;
   const displayName = groupInfo?.name || existingChat?.name || (isLoading ? '...' : t('chatWindow.group', 'Группа'));
   const invitationText = t('group.group_invitation', t('groupSettings.group_invitation', 'Приглашение в группу'));
   const linkExpiredText = t('group.link_expired_or_revoked', t('groupSettings.link_expired_or_revoked', 'Ссылка устарела или закрыта'));
+  const alreadyMemberText = t('group.already_member', t('groupSettings.already_member', 'Вы уже состоите в этой группе'));
+  const openChatText = t('group.open_chat', 'Перейти к чату');
   const joinText = t('group.join', t('groupSettings.join', 'Присоединиться'));
   const cancelText = t('group.cancel', t('common.cancel', 'Отменить'));
+
+  let subtitleText = invitationText;
+  if (isAlreadyMember) {
+    subtitleText = alreadyMemberText;
+  } else if (isExpiredOrRevoked) {
+    if (groupInfo?.inviteActive === false) {
+      subtitleText = t('groupSettings.link_revoked', 'Доступ закрыт');
+    } else if (groupInfo?.inviteExpiresAt && Date.now() > groupInfo.inviteExpiresAt) {
+      subtitleText = t('groupSettings.link_expired', 'Срок истек');
+    } else {
+      subtitleText = linkExpiredText;
+    }
+  }
 
   return (
     <AnimatePresence>
@@ -423,35 +470,60 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
             }}
           >
             {isExpiredOrRevoked ? <InactiveLinkIcon /> : <ActiveLinkIcon />}
-            <span>{isExpiredOrRevoked ? linkExpiredText : invitationText}</span>
+            <span>{subtitleText}</span>
           </div>
 
           {!isExpiredOrRevoked && (
             <div className="w-full flex flex-col gap-2.5" style={{ marginTop: '28px' }}>
-              <button
-                type="button"
-                onClick={handleJoin}
-                disabled={isJoining || isLoading}
-                aria-label={joinText}
-                style={{
-                  width: '100%',
-                  height: '44px',
-                  borderRadius: '9999px',
-                  backgroundColor: 'var(--accent-color, #7C3AED)',
-                  color: '#ffffff',
-                  border: 'none',
-                  fontWeight: 600,
-                  fontSize: '15px',
-                  cursor: isJoining || isLoading ? 'default' : 'pointer',
-                  opacity: isJoining || isLoading ? 0.7 : 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'opacity 0.15s ease',
-                }}
-              >
-                {isJoining ? '...' : joinText}
-              </button>
+              {isAlreadyMember ? (
+                <button
+                  type="button"
+                  onClick={handleOpenExisting}
+                  aria-label={openChatText}
+                  style={{
+                    width: '100%',
+                    height: '44px',
+                    borderRadius: '9999px',
+                    backgroundColor: 'var(--accent-color, #7C3AED)',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'opacity 0.15s ease',
+                  }}
+                >
+                  {openChatText}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleJoin}
+                  disabled={isJoining || isLoading}
+                  aria-label={joinText}
+                  style={{
+                    width: '100%',
+                    height: '44px',
+                    borderRadius: '9999px',
+                    backgroundColor: 'var(--accent-color, #7C3AED)',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    cursor: isJoining || isLoading ? 'default' : 'pointer',
+                    opacity: isJoining || isLoading ? 0.7 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'opacity 0.15s ease',
+                  }}
+                >
+                  {isJoining ? '...' : joinText}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={onClose}

@@ -91,24 +91,48 @@ class GroupService {
       avatarUrl: creatorAvatarUrl || null,
     };
 
+    const nowIso = new Date().toISOString();
     try {
-      fetch(`${this.getWorkerUrl()}/groups/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id,
-          code,
-          name: name.trim(),
-          description: description.trim(),
-          avatarUrl: avatarUrl || null,
-          creatorNickname,
-          creatorCode: creatorCode || null,
-          creatorUserId: creatorUserId || null,
-          maxMembers: 10,
-          members: [initialMember],
-          membersCount: 1,
-        }),
-      }).catch(() => {});
+      await this.supabase.from('groups').upsert({
+        id,
+        code,
+        name: name.trim(),
+        description: description.trim(),
+        avatar_url: avatarUrl || null,
+        creator_id: JSON.stringify({ active: true, expiresAt: null }),
+        creator_code: creatorCode || null,
+        creator_nickname: creatorNickname,
+        max_members: 10,
+        members_count: 1,
+        created_at: nowIso,
+        updated_at: nowIso,
+      });
+      await this.supabase.from('group_members').upsert({
+        group_id: id,
+        user_code: creatorCode || creatorNickname,
+        user_id: creatorUserId || creatorCode || creatorNickname,
+        nickname: creatorNickname,
+        role: 'owner',
+        avatar_url: creatorAvatarUrl || null,
+        joined_at: nowIso,
+        last_seen: nowIso,
+      });
+    } catch {}
+
+    try {
+      this.postToWorker('/groups/create', {
+        id,
+        code,
+        name: name.trim(),
+        description: description.trim(),
+        avatarUrl: avatarUrl || null,
+        creatorNickname,
+        creatorCode: creatorCode || null,
+        creatorUserId: creatorUserId || null,
+        maxMembers: 10,
+        members: [initialMember],
+        membersCount: 1,
+      });
     } catch {}
 
     const group: GroupInfo = {
@@ -135,18 +159,15 @@ class GroupService {
   async getGroup(groupIdOrCode: string): Promise<GroupInfo | null> {
     const raw = groupIdOrCode.trim();
     const cleanCode = extractGroupCode(raw) || raw.replace(/^#/, '');
-    const isIdOnly = (cleanCode.length === 36 && /^[0-9A-Za-z-]{36}$/.test(cleanCode)) || (cleanCode.length >= 32 && /^[0-9A-Z]{32,64}$/i.test(cleanCode));
-    const secret = isIdOnly ? '' : cleanCode;
     const derivedId = deriveGroupId(cleanCode);
 
     try {
-      let query = this.supabase.from('groups').select('*');
-      if (isIdOnly) {
-        query = query.or(`id.eq.${cleanCode},id.eq.${cleanCode.toUpperCase()},id.eq.${cleanCode.toLowerCase()},code.eq.${cleanCode}`);
-      } else {
-        query = query.or(`code.eq.${cleanCode},code.eq.${raw},id.eq.${cleanCode},id.eq.${cleanCode.toUpperCase()},id.eq.${derivedId}`);
-      }
-      const { data: g } = await query.maybeSingle();
+      const { data: g } = await this.supabase
+        .from('groups')
+        .select('*')
+        .or(`id.eq.${cleanCode},id.eq.${cleanCode.toUpperCase()},code.eq.${cleanCode},code.eq.${raw},id.eq.${derivedId}`)
+        .maybeSingle();
+
       if (g) {
         const { data: membersRows } = await this.supabase.from('group_members').select('*').eq('group_id', g.id);
         const members: GroupMemberInfo[] = (membersRows || []).map((m: any) => ({
@@ -171,7 +192,7 @@ class GroupService {
 
         return {
           id: g.id,
-          code: g.code || secret || cleanCode,
+          code: g.code || cleanCode,
           name: g.name,
           description: g.description || '',
           avatarUrl: g.avatar_url || null,
@@ -181,7 +202,7 @@ class GroupService {
           maxMembers: g.max_members || 10,
           members,
           createdAt: new Date(g.created_at).getTime(),
-          sharedSecret: deriveGroupKey(g.code || secret || g.id),
+          sharedSecret: deriveGroupKey(g.code || cleanCode || g.id),
           inviteActive,
           inviteExpiresAt: expiresAt,
         };
@@ -203,17 +224,52 @@ class GroupService {
               if (typeof parsed.expiresAt === 'number') expiresAt = parsed.expiresAt;
             } catch {}
           }
-          return { 
-            ...data.group, 
+          return {
+            ...data.group,
             avatarUrl: data.group.avatarUrl || (data.group as any).avatar_url || null,
             inviteActive,
             inviteExpiresAt: expiresAt,
-            code: secret || data.group.code || cleanCode, 
-            sharedSecret: secret ? deriveGroupKey(secret) : (data.group.code ? deriveGroupKey(data.group.code) : deriveGroupKey(data.group.id)) 
+            code: data.group.code || cleanCode,
+            sharedSecret: deriveGroupKey(data.group.code || cleanCode || data.group.id),
           };
         }
       }
     } catch {}
+
+    const localChat = useChatStore.getState().chats.find(
+      (c) =>
+        c.type === 'group' &&
+        (c.id === cleanCode ||
+          c.id === cleanCode.toUpperCase() ||
+          c.inviteCode === cleanCode ||
+          c.code === cleanCode)
+    );
+    if (localChat) {
+      return {
+        id: localChat.id,
+        code: localChat.inviteCode || localChat.code || cleanCode,
+        name: localChat.name,
+        description: localChat.description || '',
+        avatarUrl: localChat.avatarUrl || null,
+        creatorNickname: localChat.creatorNickname || '',
+        creatorCode: localChat.creatorCode || null,
+        membersCount: localChat.membersCount || localChat.members?.length || 1,
+        maxMembers: 10,
+        members: (localChat.members || []).map((m: any) => ({
+          nickname: m.nickname,
+          userCode: m.userCode || m.user_code,
+          userId: m.userId || m.user_id,
+          role: m.role || 'member',
+          joinedAt: m.joinedAt || Date.now(),
+          lastSeen: m.lastSeen,
+          avatarUrl: m.avatarUrl || null,
+        })),
+        createdAt: localChat.createdAt || Date.now(),
+        sharedSecret: localChat.sharedSecret || deriveGroupKey(localChat.inviteCode || localChat.id),
+        inviteActive: localChat.inviteActive !== false,
+        inviteExpiresAt: localChat.inviteExpiresAt || null,
+      };
+    }
 
     return null;
   }
@@ -313,21 +369,35 @@ class GroupService {
         throw new Error('GROUP_FULL');
       }
 
+      const nowIso = new Date().toISOString();
       try {
-        fetch(`${this.getWorkerUrl()}/groups/join`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: realGroupId,
-            code: secret,
-            nickname,
-            userCode: memberCode,
-            userId: meta?.userId || candidateId || memberCode,
-            name: groupRow.name,
-            creatorNickname: groupRow.creator_nickname || groupRow.creatorNickname,
-            avatarUrl: groupRow.avatar_url || groupRow.avatarUrl || meta?.avatarUrl || null,
-          }),
-        }).catch(() => {});
+        await this.supabase.from('group_members').upsert({
+          group_id: realGroupId,
+          user_code: memberCode,
+          user_id: meta?.userId || candidateId || memberCode,
+          nickname,
+          role: 'member',
+          avatar_url: meta?.avatarUrl || null,
+          joined_at: nowIso,
+          last_seen: nowIso,
+        });
+        await this.supabase.from('groups').update({
+          members_count: currentMembers.length + 1,
+          updated_at: nowIso,
+        }).eq('id', realGroupId);
+      } catch {}
+
+      try {
+        this.postToWorker('/groups/join', {
+          id: realGroupId,
+          code: secret,
+          nickname,
+          userCode: memberCode,
+          userId: meta?.userId || candidateId || memberCode,
+          name: groupRow.name,
+          creatorNickname: groupRow.creator_nickname || groupRow.creatorNickname,
+          avatarUrl: groupRow.avatar_url || groupRow.avatarUrl || meta?.avatarUrl || null,
+        });
       } catch {}
     }
 
@@ -439,20 +509,30 @@ class GroupService {
         .maybeSingle();
 
       const realId = existing?.id || groupId;
+      const nowIso = new Date().toISOString();
 
-      fetch(`${this.getWorkerUrl()}/groups/update`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId: realId, code: newCode, inviteActive: true }),
-      }).catch(() => {});
+      try {
+        await this.supabase.from('groups').update({
+          code: newCode,
+          creator_id: JSON.stringify({ active: true, expiresAt: null }),
+          updated_at: nowIso,
+        }).eq('id', realId);
+      } catch {}
 
-      useChatStore.getState().updateChat(groupId, { inviteCode: newCode, inviteActive: true });
+      this.postToWorker('/groups/update', {
+        groupId: realId,
+        code: newCode,
+        inviteActive: true,
+        creator_id: JSON.stringify({ active: true, expiresAt: null }),
+      });
+
+      useChatStore.getState().updateChat(groupId, { inviteCode: newCode, inviteActive: true, inviteExpiresAt: null });
       if (realId !== groupId) {
-        useChatStore.getState().updateChat(realId, { inviteCode: newCode, inviteActive: true });
+        useChatStore.getState().updateChat(realId, { inviteCode: newCode, inviteActive: true, inviteExpiresAt: null });
       }
       return newCode;
     } catch {
-      useChatStore.getState().updateChat(groupId, { inviteCode: newCode, inviteActive: true });
+      useChatStore.getState().updateChat(groupId, { inviteCode: newCode, inviteActive: true, inviteExpiresAt: null });
       return newCode;
     }
   }
@@ -464,16 +544,18 @@ class GroupService {
     if (realId !== groupId) {
       useChatStore.getState().updateChat(realId, { inviteActive: false });
     }
+    const meta = JSON.stringify({ active: false });
     try {
-      this.supabase.from('groups').update({
-        creator_id: JSON.stringify({ active: false })
-      }).or(`id.eq.${realId},id.eq.${groupId}`).then(() => {}, () => {});
+      await this.supabase.from('groups').update({
+        creator_id: meta,
+        updated_at: new Date().toISOString(),
+      }).eq('id', realId);
     } catch {}
     try {
-      await fetch(`${this.getWorkerUrl()}/groups/update`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId: realId, inviteActive: false, creator_id: JSON.stringify({ active: false }) }),
+      this.postToWorker('/groups/update', {
+        groupId: realId,
+        inviteActive: false,
+        creator_id: meta,
       });
       return true;
     } catch {
@@ -488,16 +570,18 @@ class GroupService {
     if (realId !== groupId) {
       useChatStore.getState().updateChat(realId, { inviteActive: true });
     }
+    const meta = JSON.stringify({ active: true });
     try {
-      this.supabase.from('groups').update({
-        creator_id: JSON.stringify({ active: true })
-      }).or(`id.eq.${realId},id.eq.${groupId}`).then(() => {}, () => {});
+      await this.supabase.from('groups').update({
+        creator_id: meta,
+        updated_at: new Date().toISOString(),
+      }).eq('id', realId);
     } catch {}
     try {
-      await fetch(`${this.getWorkerUrl()}/groups/update`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId: realId, inviteActive: true, creator_id: JSON.stringify({ active: true }) }),
+      this.postToWorker('/groups/update', {
+        groupId: realId,
+        inviteActive: true,
+        creator_id: meta,
       });
       return true;
     } catch {
@@ -506,18 +590,25 @@ class GroupService {
   }
 
   async setInviteExpiration(groupId: string, expiresAt: number | null): Promise<boolean> {
+    const chat = useChatStore.getState().chats.find((c) => c.id === groupId);
+    const realId = chat?.id || groupId;
     useChatStore.getState().updateChat(groupId, { inviteExpiresAt: expiresAt });
+    if (realId !== groupId) {
+      useChatStore.getState().updateChat(realId, { inviteExpiresAt: expiresAt });
+    }
     const meta = JSON.stringify({ active: true, expiresAt });
     try {
-      this.supabase.from('groups').update({
-        creator_id: meta
-      }).eq('id', groupId).then(() => {}, () => {});
+      await this.supabase.from('groups').update({
+        creator_id: meta,
+        updated_at: new Date().toISOString(),
+      }).eq('id', realId);
     } catch {}
     try {
-      await fetch(`${this.getWorkerUrl()}/groups/update`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId, inviteActive: true, inviteExpiresAt: expiresAt, creator_id: meta }),
+      this.postToWorker('/groups/update', {
+        groupId: realId,
+        inviteActive: true,
+        inviteExpiresAt: expiresAt,
+        creator_id: meta,
       });
       return true;
     } catch {

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { X, ChevronDown, Check, Search } from 'lucide-react';
+import { X, ChevronDown, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, Message } from '../../store/useChatStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -274,23 +274,8 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
 
   return (
     <div className="flex flex-col h-full overflow-hidden select-none relative bg-transparent">
-      <div className="px-3 pt-2 pb-1 flex items-center gap-2">
-        <div
-          style={{
-            flex: 1,
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
-            height: '42px',
-            borderRadius: '21px',
-            backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-            backdropFilter: 'blur(24px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-            border: 'none',
-          }}
-        >
-          <Search size={17} className="text-[var(--text-dim)] shrink-0 ml-3.5 pointer-events-none" />
+      <div className="px-4 pt-3 pb-1 flex items-center">
+        <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
           <input
             ref={searchInputRef}
             type="text"
@@ -298,17 +283,17 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t('common.search', 'Поиск')}
             style={{
-              flex: 1,
               width: '100%',
-              height: '100%',
-              borderRadius: '21px',
+              height: '36px',
+              borderRadius: '999px',
               border: 'none',
               outline: 'none',
-              backgroundColor: 'transparent',
+              boxShadow: 'none',
+              backgroundColor: 'var(--md-surface, var(--surface-container, rgba(255,255,255,0.05)))',
               color: 'var(--text-main, #e0e0e0)',
               fontSize: '13px',
-              paddingLeft: '8px',
-              paddingRight: searchQuery ? '36px' : '14px',
+              paddingLeft: '14px',
+              paddingRight: searchQuery ? '32px' : '14px',
               boxSizing: 'border-box',
             }}
           />
@@ -320,7 +305,6 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
                 setDebouncedQuery('');
                 searchInputRef.current?.focus();
               }}
-              aria-label={t('common.close', 'Закрыть')}
               style={{
                 position: 'absolute',
                 right: '8px',
@@ -330,52 +314,32 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
                 border: 'none',
                 cursor: 'pointer',
                 color: 'var(--text-dim, #9ca3af)',
-                padding: '4px',
+                padding: '2px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: '50%',
+                zIndex: 1,
               }}
             >
-              <X size={16} />
+              <X size={18} />
             </button>
           )}
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={t('common.close', 'Закрыть')}
-          className="flex items-center justify-center cursor-pointer transition-all active:scale-95 text-[var(--text-dim)] hover:text-[var(--text-main)] shrink-0"
-          style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '50%',
-            backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-            backdropFilter: 'blur(24px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-            border: 'none',
-            outline: 'none',
-            padding: 0,
-          }}
-        >
-          <X size={19} />
-        </button>
       </div>
 
-      <div className="px-3 pb-1.5 pt-1 flex items-center justify-between relative">
+      <div className="px-4 pt-2.5 pb-0.5">
+        <span className="text-[12px] font-medium text-[var(--text-dim)]">
+          {t('chatSearch.in_chat', 'Поиск в чате:')}
+        </span>
+      </div>
+
+      <div className="px-3 pb-1.5 flex items-center justify-between relative">
         <div className="relative" ref={scopeMenuRef}>
           <button
             type="button"
             onClick={() => setIsScopeMenuOpen((prev) => !prev)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-colors cursor-pointer text-left"
-            style={{
-              border: 'none',
-              backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-              backdropFilter: 'blur(24px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.12)',
-            }}
+            className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer text-left"
+            style={{ border: 'none', background: 'transparent' }}
           >
             {scope === 'this_chat' ? (
               activeChatId === 'notes' ? (
@@ -410,12 +374,10 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
 
           {isScopeMenuOpen && (
             <div
-              className="absolute left-0 top-[38px] z-50 min-w-[170px] py-1.5 px-1 rounded-2xl shadow-2xl"
+              className="absolute left-0 top-[38px] z-50 min-w-[170px] py-1 rounded-xl shadow-2xl backdrop-blur-xl"
               style={{
-                backgroundColor: 'color-mix(in srgb, var(--surface-container) 85%, transparent)',
-                backdropFilter: 'blur(24px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                border: 'none',
+                backgroundColor: 'var(--settings-bg, var(--bg-secondary, #1e2932))',
+                border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
                 boxShadow: '0 8px 30px rgba(0, 0, 0, 0.45)',
               }}
             >
@@ -425,7 +387,7 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
                   setInChatSearchScope('this_chat');
                   setIsScopeMenuOpen(false);
                 }}
-                className="w-full flex items-center justify-between px-3 py-2 text-[13px] transition-colors hover:bg-white/5 text-left cursor-pointer rounded-xl"
+                className="w-full flex items-center justify-between px-3 py-2 text-[13px] transition-colors hover:bg-white/5 text-left cursor-pointer"
                 style={{ border: 'none', background: 'transparent' }}
               >
                 <div className="flex items-center gap-2 min-w-0">
@@ -453,7 +415,7 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
                   setInChatSearchScope('all_chats');
                   setIsScopeMenuOpen(false);
                 }}
-                className="w-full flex items-center justify-between px-3 py-2 text-[13px] transition-colors hover:bg-white/5 text-left cursor-pointer rounded-xl"
+                className="w-full flex items-center justify-between px-3 py-2 text-[13px] transition-colors hover:bg-white/5 text-left cursor-pointer"
                 style={{ border: 'none', background: 'transparent' }}
               >
                 <div className="flex items-center gap-2 min-w-0">
@@ -479,6 +441,16 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
             </div>
           )}
         </div>
+
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={t('common.close', 'Закрыть')}
+          className="p-1.5 rounded-full hover:bg-white/10 text-[var(--text-dim)] hover:text-[var(--text-main)] transition-colors cursor-pointer"
+          style={{ border: 'none', background: 'transparent' }}
+        >
+          <X size={16} />
+        </button>
       </div>
 
       {debouncedQuery.trim() !== '' && (

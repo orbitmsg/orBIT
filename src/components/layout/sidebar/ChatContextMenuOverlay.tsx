@@ -44,25 +44,22 @@ export const ChatContextMenuOverlay = ({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.1 }}
-            className="fixed z-[300] min-w-[190px] select-none overflow-hidden"
+            className="fixed z-[300] min-w-[190px] backdrop-blur-xl select-none overflow-hidden py-1 shadow-2xl"
             style={{
               left: Math.min(chatContextMenu.x, (typeof window !== 'undefined' ? window.innerWidth : 800) - 200),
               top: Math.min(chatContextMenu.y, (typeof window !== 'undefined' ? window.innerHeight : 600) - 170),
               transformOrigin: 'top left',
-              backgroundColor: 'color-mix(in srgb, var(--surface-container) 80%, transparent)',
-              backdropFilter: 'blur(24px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-              borderRadius: '16px',
+              backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
+              borderRadius: '12px',
               border: 'none',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.35)',
-              padding: '6px',
+              boxShadow: '0 8px 30px rgba(0, 0, 0, 0.45)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             {(() => {
               const iconColor = 'var(--text-main)';
               const baseBtnClass =
-                "w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] font-normal normal-case transition-colors hover:bg-[var(--surface-container-strong)] rounded-xl text-left select-none cursor-pointer";
+                "w-full flex items-center gap-2.5 px-3.5 py-1.5 text-[13px] font-normal normal-case transition-colors hover:bg-[var(--surface-container-strong)] rounded-none text-left select-none";
               const isNotes = chatContextMenu.chatId === 'notes';
               const targetChat = chats.find(c => c.id === chatContextMenu.chatId);
               const isChannel = targetChat?.type === 'channel';

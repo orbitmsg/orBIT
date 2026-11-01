@@ -521,19 +521,20 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
       <div
         className="date-badge-pill select-none"
         style={{
-          backgroundColor: 'color-mix(in srgb, var(--surface-container) 75%, transparent)',
+          backgroundColor: 'color-mix(in srgb, var(--surface-container, rgba(255,255,255,0.06)) 92%, #000)',
           color: 'var(--text-main, #ffffff)',
           fontSize: '12px',
           fontWeight: 500,
-          padding: '4px 14px',
+          padding: '3px 12px',
           borderRadius: '9999px',
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.14)',
+          boxShadow: 'none',
           border: 'none',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+          filter: 'none',
+          backdropFilter: 'none',
+          WebkitBackdropFilter: 'none',
           userSelect: 'none',
           WebkitUserSelect: 'none',
         }}

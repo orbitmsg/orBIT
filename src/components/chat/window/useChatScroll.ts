@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useChatStore, type Message, isMessageOutgoing } from '../../../store/useChatStore';
 import { useUploadProgressStore } from '../../../store/useUploadProgressStore';
 import { getPusher, getGroupPusher } from '../../../utils/pusher';
@@ -38,8 +38,6 @@ export interface UseChatScrollProps {
   setShowFloatingDate: (v: boolean) => void;
   setFloatingDate: (v: string) => void;
   setFloatingDateOffsetY: (v: number) => void;
-  topOffset?: number;
-  bottomOffset?: number;
 }
 
 export interface UseChatScrollReturn {
@@ -84,8 +82,6 @@ export const useChatScroll = ({
   setShowFloatingDate,
   setFloatingDate,
   setFloatingDateOffsetY,
-  topOffset = 58,
-  bottomOffset = 68,
 }: UseChatScrollProps): UseChatScrollReturn => {
   const floatingDateRef = useRef<string | null>(null);
   const scrollRafRef = useRef<number | null>(null);
@@ -102,13 +98,13 @@ export const useChatScroll = ({
       setChatThumb(null);
       return;
     }
-    const trackHeight = Math.max(10, clientHeight - (topOffset + bottomOffset));
+    const trackHeight = clientHeight - 12;
     const thumbHeight = Math.max(24, (clientHeight / scrollHeight) * trackHeight);
-    const maxTop = Math.max(0, trackHeight - thumbHeight);
+    const maxTop = trackHeight - thumbHeight;
     const scrollableDistance = scrollHeight - clientHeight;
     const ratio = scrollableDistance > 0 ? scrollTop / scrollableDistance : 0;
     setChatThumb({ top: maxTop * ratio, height: thumbHeight });
-  }, [messagesContainerRef, topOffset, bottomOffset]);
+  }, [messagesContainerRef]);
 
   const triggerChatActive = useCallback(() => {
     updateChatThumb();
@@ -128,24 +124,6 @@ export const useChatScroll = ({
     updateChatThumb();
   }, [visibleMessages.length, updateChatThumb]);
 
-  const prevClientHeightRef = useRef<number | null>(null);
-
-  useLayoutEffect(() => {
-    const el = messagesContainerRef.current;
-    if (!el) return;
-    const currentHeight = el.clientHeight;
-    if (prevClientHeightRef.current !== null && Math.abs(currentHeight - prevClientHeightRef.current) > 1) {
-      const heightDiff = prevClientHeightRef.current - currentHeight;
-      const isCurrentlyAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= 100;
-      if (isCurrentlyAtBottom && atBottomRef.current) {
-        el.scrollTop = el.scrollHeight;
-      } else {
-        el.scrollTop += heightDiff;
-      }
-    }
-    prevClientHeightRef.current = currentHeight;
-  });
-
   useEffect(() => {
     const el = messagesContainerRef.current;
     const content = messagesContentRef.current;
@@ -158,19 +136,20 @@ export const useChatScroll = ({
         if (entry.target === el) {
           const newHeight = entry.contentRect.height;
           if (prevHeight && Math.abs(newHeight - prevHeight) > 1) {
-            const heightDiff = prevHeight - newHeight;
             const isCurrentlyAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= 100;
             if (isCurrentlyAtBottom && atBottomRef.current) {
               el.scrollTop = el.scrollHeight;
-              setShowScrollDown(false);
-            } else {
-              el.scrollTop += heightDiff;
+              requestAnimationFrame(() => {
+                if (el) {
+                  el.scrollTop = el.scrollHeight;
+                  atBottomRef.current = true;
+                  setShowScrollDown(false);
+                }
+              });
             }
             prevHeight = newHeight;
-            prevClientHeightRef.current = newHeight;
           } else if (!prevHeight) {
             prevHeight = newHeight;
-            prevClientHeightRef.current = newHeight;
           }
         } else if (content && entry.target === content) {
           const currentContentHeight = content.scrollHeight || content.offsetHeight;
@@ -267,6 +246,11 @@ export const useChatScroll = ({
     floatingDateTimeoutRef.current = setTimeout(() => {
       setShowFloatingDate(false);
       setFloatingDateOffsetY(0);
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.querySelectorAll<HTMLElement>('[data-date-divider]').forEach((d) => {
+          d.style.opacity = '1';
+        });
+      }
     }, 1200);
 
     if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
@@ -274,7 +258,7 @@ export const useChatScroll = ({
       if (!messagesContainerRef.current) return;
       const container = messagesContainerRef.current;
       const rect = container.getBoundingClientRect();
-      const TARGET_TOP = topOffset + 6;
+      const TARGET_TOP = 12;
 
       const allDividers = Array.from(container.querySelectorAll<HTMLElement>('[data-date-divider]'));
       const passedDividers: { el: HTMLElement; label: string; top: number }[] = [];
@@ -303,19 +287,8 @@ export const useChatScroll = ({
 
       if (upcomingDividers.length > 0 && activeDate) {
         const nextDist = upcomingDividers[0].top;
-        if (nextDist < TARGET_TOP + 42) {
-          pushOffsetY = nextDist - (TARGET_TOP + 42);
-        }
-      }
-
-      for (const item of passedDividers) {
-        if (item.el.style.opacity !== '0') {
-          item.el.style.opacity = '0';
-        }
-      }
-      for (const item of upcomingDividers) {
-        if (item.el.style.opacity !== '1') {
-          item.el.style.opacity = '1';
+        if (nextDist < 42) {
+          pushOffsetY = nextDist - 42;
         }
       }
 
@@ -324,9 +297,16 @@ export const useChatScroll = ({
         setFloatingDate(activeDate);
         setShowFloatingDate(true);
         setFloatingDateOffsetY(pushOffsetY);
+        for (const div of allDividers) {
+          const isHidden = div.getAttribute('data-date-divider') === activeDate;
+          div.style.opacity = isHidden ? '0' : '1';
+        }
       } else {
         setShowFloatingDate(false);
         setFloatingDateOffsetY(0);
+        for (const div of allDividers) {
+          div.style.opacity = '1';
+        }
       }
     });
   }, [
@@ -346,7 +326,6 @@ export const useChatScroll = ({
     setShowFloatingDate,
     setFloatingDate,
     setFloatingDateOffsetY,
-    topOffset,
   ]);
 
   const notifyPeerReadBatch = useCallback((lastMsgId: string, lastTime: number, readIds?: string[]) => {

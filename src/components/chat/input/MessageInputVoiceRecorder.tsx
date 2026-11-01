@@ -173,18 +173,10 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
         alignItems: 'center',
         justifyContent: 'space-between',
         width: '100%',
-        height: '42px',
-        minHeight: '42px',
+        height: '34px',
+        minHeight: '34px',
         position: 'relative',
         overflow: 'visible',
-        backgroundColor: 'color-mix(in srgb, var(--surface-container) 70%, transparent)',
-        borderRadius: '21px',
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
-        border: 'none',
-        backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-        padding: '0 2px 0 16px',
-        pointerEvents: 'auto',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, height: '34px' }}>
@@ -331,16 +323,16 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
             transform: `translateY(${!isLocked ? -Math.min(lockProgress * 14, 10) : 0}px)`,
             transition: 'transform 0.05s ease-out',
             overflow: 'visible',
-            width: '42px',
-            height: '42px',
+            width: '34px',
+            height: '34px',
           }}
         >
           <canvas
             ref={waveCanvasRef}
             style={{
               position: 'absolute',
-              top: '-39px',
-              left: '-39px',
+              top: '-43px',
+              left: '-43px',
               width: '120px',
               height: '120px',
               pointerEvents: 'none',
@@ -360,14 +352,14 @@ export const MessageInputVoiceRecorder: React.FC<MessageInputVoiceRecorderProps>
             style={{
               position: 'relative',
               zIndex: 2,
-              width: '42px',
-              height: '42px',
+              width: '34px',
+              height: '34px',
               borderRadius: '50%',
               backgroundColor: 'var(--accent-color, #7C3AED)',
               color: '#ffffff',
               border: 'none',
               outline: 'none',
-              boxShadow: '0 4px 16px rgba(124, 58, 237, 0.35)',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.28)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

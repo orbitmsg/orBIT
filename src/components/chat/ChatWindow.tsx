@@ -182,7 +182,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
   const typingIndicatorsEnabled = useChatStore((s) => s.typingIndicatorsEnabled);
   const readReceiptsEnabled = useChatStore((s) => s.readReceiptsEnabled);
   const myCode = useChatStore((s) => s.myCode);
-  const pendingForwardMessages = useChatStore((s) => s.pendingForwardMessages);
 
   const [inputText, setInputText] = useState('');
   const [isDiscordFileLimitModalOpen, setIsDiscordFileLimitModalOpen] = useState(false);
@@ -697,10 +696,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     }
   }, []);
 
-  const hasPendingForward = Boolean(pendingForwardMessages && pendingForwardMessages.length > 0);
-  const bottomBarHeight = (editingIndex !== null || replyingTo !== null || hasPendingForward) ? 116 : 68;
-  const totalTopOffset = (headerHeight || 58) + (pinnedMessage ? 48 : 0);
-
   const getDateLabel = useCallback((ts: number) => getChatDateLabel(ts, i18n.language), [i18n.language]);
 
   const {
@@ -734,8 +729,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     myUserId,
     readReceiptsEnabled,
     pinnedMessage,
-    topOffset: totalTopOffset,
-    bottomOffset: bottomBarHeight,
     getDateLabel,
     handleIsScrolling,
     floatingDateTimeoutRef,
@@ -908,6 +901,8 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     return true;
   }, [activeChat]);
 
+  const pendingForwardMessages = useChatStore((s) => s.pendingForwardMessages);
+  const hasPendingForward = Boolean(pendingForwardMessages && pendingForwardMessages.length > 0);
   const canSend = (!!inputText.trim() || !!attachedFiles.length || hasPendingForward) && editingIndex === null && isRatchetReady;
 
   const {
@@ -1095,11 +1090,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         onAddMember={() => setIsAddMemberModalOpen(true)}
         onOpenSupportTickets={() => setIsSupportTicketsModalOpen(true)}
         onProfileClick={() => setActiveProfileChatId(activeChatId)}
-      >
-        {activeChat?.type === 'group' && activeChat.activeCallRoom && !isUserInCall && (
-          <GroupActiveCallBanner onJoin={handleAudioCallPress} />
-        )}
-      </ChatHeader>
+      />
 
       {selection.isSelectionMode && (
         <SelectionPanel
@@ -1111,6 +1102,10 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         />
       )}
 
+      {activeChat?.type === 'group' && activeChat.activeCallRoom && !isUserInCall && (
+        <GroupActiveCallBanner onJoin={handleAudioCallPress} />
+      )}
+
       <ChatPinnedBar
         pinnedMessage={pinnedMessage}
         activeChat={activeChat}
@@ -1118,7 +1113,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         onScrollToPinned={scrollToPinnedMessage}
         onUnpin={requestUnpinMessage}
         onLinkClick={handleLinkClick}
-        topOffset={headerHeight}
       />
 
       <div
@@ -1135,28 +1129,25 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               exit={{ opacity: 0 }}
               transition={{ opacity: { duration: 0.1 }, y: { duration: 0 } }}
               className="absolute left-1/2 -translate-x-1/2 z-20 pointer-events-none select-none date-badge"
-              style={{
-                top: `${totalTopOffset + 6}px`,
-                userSelect: 'none',
-                WebkitUserSelect: 'none',
-              }}
+              style={{ top: '12px', userSelect: 'none', WebkitUserSelect: 'none' }}
             >
               <div
                 className="date-badge-pill select-none"
                 style={{
-                  backgroundColor: 'color-mix(in srgb, var(--surface-container) 75%, transparent)',
+                  backgroundColor: 'color-mix(in srgb, var(--surface-container, rgba(255,255,255,0.06)) 92%, #000)',
                   color: 'var(--text-main, #ffffff)',
                   fontSize: '12px',
                   fontWeight: 500,
-                  padding: '4px 14px',
+                  padding: '3px 12px',
                   borderRadius: '9999px',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
+                  boxShadow: 'none',
                   border: 'none',
-                  backdropFilter: 'blur(20px) saturate(180%)',
-                  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                  filter: 'none',
+                  backdropFilter: 'none',
+                  WebkitBackdropFilter: 'none',
                   userSelect: 'none',
                   WebkitUserSelect: 'none',
                 }}
@@ -1195,8 +1186,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               flex: '1 0 auto',
             }}
           >
-            <div style={{ height: `${totalTopOffset}px`, flexShrink: 0 }} />
-
             {messages.length === 0 ? (
               activeChat?.type === 'channel' ? (
                 <ChannelEmptyCard key={activeChat.id} chat={activeChat} />
@@ -1222,7 +1211,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               />
             )}
 
-            <div style={{ height: `${bottomBarHeight}px`, flexShrink: 0, transition: 'height 0.2s ease' }} />
+            <div style={{ height: '10px', flexShrink: 0 }} />
           </div>
         </div>
 
@@ -1232,8 +1221,8 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               className="overlay-scroll-track"
               onMouseDown={(e) => handleScrollbarTrackMouseDown(e, messagesContainerRef.current)}
               style={{
-                top: `${totalTopOffset + 6}px`,
-                bottom: `${bottomBarHeight}px`,
+                top: '6px',
+                bottom: '6px',
                 opacity: isChatActive ? 1 : 0,
               }}
             />
@@ -1242,7 +1231,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               className="overlay-scroll-thumb"
               onMouseDown={(e) => handleScrollbarThumbMouseDown(e, messagesContainerRef.current)}
               style={{
-                top: chatThumb.top + totalTopOffset + 6,
+                top: chatThumb.top + 6,
                 height: chatThumb.height,
                 opacity: isChatActive ? 1 : 0,
               }}
@@ -1254,7 +1243,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
           show={showScrollDown}
           unreadCount={unreadCount}
           isMobileView={isMobileView}
-          bottomOffset={bottomBarHeight + 6}
           onClick={() => scrollToBottom(false)}
         />
       </div>
@@ -1263,18 +1251,12 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         !isSubscribed ? (
           <div
             style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
               padding: '12px 16px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               width: '100%',
               margin: '0 auto',
-              zIndex: 20,
-              pointerEvents: 'none',
             }}
           >
             <button
@@ -1282,7 +1264,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               disabled={isSubscribing}
               aria-label={t('channel_settings.subscribe', 'Подписаться')}
               style={{
-                pointerEvents: 'auto',
                 width: '100%',
                 maxWidth: '280px',
                 padding: '11px 28px',

@@ -1,3 +1,4 @@
+// src/hooks/useTypingStatus.ts
 import { useState, useEffect, useRef } from 'react';
 import { ablyService } from '../services/ablyService';
 
@@ -11,43 +12,41 @@ export function useTypingStatus({ chatId, userId }: UseTypingStatusProps) {
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!chatId) return;
+    console.log(`[useTypingStatus] Подписываемся на typing для чата ${chatId}`);
 
-    let unsubscribe: (() => void) | null = null;
-    let isCancelled = false;
+    const unsubscribe = ablyService.subscribeToTyping(chatId, (typingUserId, typingStatus) => {
+      console.log(`[useTypingStatus] Событие: userId=${typingUserId}, isTyping=${typingStatus}, myUserId=${userId}`);
+      
+      if (typingUserId === userId) {
+        console.log('[useTypingStatus] Игнорируем своё событие');
+        return;
+      }
 
-    const timer = setTimeout(() => {
-      if (isCancelled) return;
-
-      unsubscribe = ablyService.subscribeToTyping(chatId, (typingUserId, typingStatus) => {
-        if (typingUserId === userId) {
-          return;
+      if (typingStatus) {
+        console.log('[useTypingStatus] Устанавливаем isTyping = true');
+        setIsTyping(true);
+        
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
         }
 
-        if (typingStatus) {
-          setIsTyping(true);
-          if (typingTimeoutRef.current) {
-            clearTimeout(typingTimeoutRef.current);
-          }
-          typingTimeoutRef.current = setTimeout(() => {
-            setIsTyping(false);
-          }, 3000);
-        } else {
+        typingTimeoutRef.current = setTimeout(() => {
+          console.log('[useTypingStatus] Таймер сработал: isTyping = false');
           setIsTyping(false);
-          if (typingTimeoutRef.current) {
-            clearTimeout(typingTimeoutRef.current);
-            typingTimeoutRef.current = null;
-          }
+        }, 3000);
+      } else {
+        console.log('[useTypingStatus] Явное false: isTyping = false');
+        setIsTyping(false);
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = null;
         }
-      });
-    }, 150);
+      }
+    });
 
     return () => {
-      isCancelled = true;
-      clearTimeout(timer);
-      if (unsubscribe) {
-        unsubscribe();
-      }
+      console.log(`[useTypingStatus] Отписываемся от typing для чата ${chatId}`);
+      unsubscribe();
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }

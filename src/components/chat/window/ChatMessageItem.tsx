@@ -1,4 +1,3 @@
-import { useMessageEditStore } from '../../../store/useMessageEditStore';
 import React, { useCallback } from 'react';
 import { File } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -45,11 +44,10 @@ export interface ChatMessageItemProps {
     isSelectionMode: boolean;
     selectedIds: Set<string>;
   };
-  isEditing?: boolean;
-  editingIndex?: number | null;
-  editText?: string;
-  setEditText?: (v: string) => void;
-  setEditingIndex?: (v: number | null) => void;
+  editingIndex: number | null;
+  editText: string;
+  setEditText: (v: string) => void;
+  setEditingIndex: (v: number | null) => void;
   memberAvatars: Record<string, string>;
   isMessagePinned: (msgOrId: any) => boolean;
   getDateLabel: (time: number) => string;
@@ -66,63 +64,6 @@ export interface ChatMessageItemProps {
   handleRetryMessage?: (indexOrId: number | string) => void;
 }
 
-
-const InlineMessageEditor: React.FC<{
-  index: number;
-  triggerEditMessage: (index: number, newText: string) => void | Promise<void>;
-}> = ({ index, triggerEditMessage }) => {
-  const { t } = useTranslation();
-  const editText = useMessageEditStore((s) => s.editText);
-  const setEditText = useMessageEditStore((s) => s.setEditText);
-  const clearEditing = useMessageEditStore((s) => s.clearEditing);
-
-  return (
-    <div className="flex flex-col gap-2" style={{ minWidth: '160px' }}>
-      <input
-        value={editText}
-        onChange={(e) => setEditText(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            triggerEditMessage(index, editText);
-            clearEditing();
-          }
-          if (e.key === 'Escape') {
-            clearEditing();
-          }
-        }}
-        className="bg-transparent border-b outline-none py-1 select-text w-full"
-        style={{
-          borderColor: 'color-mix(in srgb, var(--accent-color, #7C3AED) 30%, transparent)',
-          color: 'var(--text-main, #ffffff)',
-          fontSize: orbitFs(11),
-        }}
-        autoFocus
-      />
-      <div className="flex gap-2 justify-end select-none">
-        <button
-          type="button"
-          onClick={() => clearEditing()}
-          className="uppercase"
-          style={{ color: 'var(--text-dim, #4b5563)', fontSize: orbitFs(8) }}
-        >
-          {t('common.cancel')}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            triggerEditMessage(index, editText);
-            clearEditing();
-          }}
-          className="uppercase font-bold"
-          style={{ color: 'var(--accent-color, #7C3AED)', fontSize: orbitFs(8) }}
-        >
-          {t('common.save')}
-        </button>
-      </div>
-    </div>
-  );
-};
-
 export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   index,
   msg,
@@ -138,11 +79,10 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   themeColor,
   highlightedIndex,
   selection,
-  isEditing,
   editingIndex,
-  editText: _editText,
-  setEditText: _setEditText,
-  setEditingIndex: _setEditingIndex,
+  editText,
+  setEditText,
+  setEditingIndex,
   memberAvatars,
   isMessagePinned,
   getDateLabel,
@@ -210,8 +150,6 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   );
 
   const topGap = (index === 0 || !prevMsg) ? '4px' : (isPrevSameSenderGroup ? '2px' : '6px');
-  const isItemEditing = isEditing !== undefined ? isEditing : (editingIndex === index);
-  const isJustSent = isOwn && (Date.now() - msg.time < 600);
 
   const baseRadius = typeof bubbleRadius === 'number' ? `${bubbleRadius}px` : bubbleRadius;
   const smallRadius = '8px';
@@ -883,7 +821,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}
               >
                 <div
-                  className={`max-w-[min(440px, 75%)] min-w-[60px] w-fit relative ${isJustSent ? 'telegram-send-anim' : ''}`}
+                  className="max-w-[min(440px, 75%)] min-w-[60px] w-fit relative"
                   style={bubbleStyle(isOwn, isMessagePinned(msg) ? { outline: '1px solid color-mix(in srgb, var(--md-sys-color-primary) 35%, transparent)' } : {})}
                 >
                   <div
@@ -1113,12 +1051,25 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 className="max-w-[min(440px, 75%)] min-w-[60px] w-fit relative"
                 style={bubbleStyle(isOwn, {
                   borderRadius: customRadius,
-                  ...(isItemEditing ? { outline: '1px solid color-mix(in srgb, var(--md-sys-color-primary) 50%, transparent)' } : {}),
+                  ...(editingIndex === index ? { outline: '1px solid color-mix(in srgb, var(--md-sys-color-primary) 50%, transparent)' } : {}),
                   ...(isMessagePinned(msg) ? { outline: '1px solid color-mix(in srgb, var(--md-sys-color-primary) 35%, transparent)' } : {}),
                 })}
               >
-                {isItemEditing ? (
-                  <InlineMessageEditor index={index} triggerEditMessage={triggerEditMessage} />
+                {editingIndex === index ? (
+                  <div className="flex flex-col gap-2" style={{ minWidth: '160px' }}>
+                    <input
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { triggerEditMessage(index, editText); setEditingIndex(null); setEditText(''); } if (e.key === 'Escape') { setEditingIndex(null); setEditText(''); } }}
+                      className="bg-transparent border-b outline-none py-1 select-text w-full"
+                      style={{ borderColor: 'color-mix(in srgb, var(--accent-color, #7C3AED) 30%, transparent)', color: 'var(--text-main, #ffffff)', fontSize: orbitFs(11) }}
+                      autoFocus
+                    />
+                    <div className="flex gap-2 justify-end select-none">
+                      <button type="button" onClick={() => { setEditingIndex(null); setEditText(''); }} className="uppercase" style={{ color: 'var(--text-dim, #4b5563)', fontSize: orbitFs(8) }}>{t('common.cancel')}</button>
+                      <button type="button" onClick={() => { triggerEditMessage(index, editText); setEditingIndex(null); setEditText(''); }} className="uppercase font-bold" style={{ color: 'var(--accent-color, #7C3AED)', fontSize: orbitFs(8) }}>{t('common.save')}</button>
+                    </div>
+                  </div>
                 ) : quotes.length > 0 ? (
                   <div className="flex flex-col min-w-0" style={{ gap: '4px' }}>
                     {quotes.map((q, depth) => (

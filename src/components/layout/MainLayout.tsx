@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback, useMemo, Suspense } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useChatStore, type Chat, type ChatFolder } from '../../store/useChatStore';
 import { useAuthStore, getInitialNumericId } from '../../store/useAuthStore';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -32,7 +32,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { type ConfirmActionType } from '../common/ActionConfirmModal';
 import { useConnectionStore } from '../../store/useConnectionStore';
 import { InChatSidebarSearch } from './InChatSidebarSearch';
-const SettingsScreen = React.lazy(() => import('../chat/SettingsScreen').then((m) => ({ default: m.SettingsScreen })));
+import { SettingsScreen } from '../chat/SettingsScreen';
 import { ProfileScreen } from '../chat/ProfileScreen';
 import { MainLayoutModals } from './MainLayoutModals';
 import { useAccountStore } from '../../services/accountManager';
@@ -1195,9 +1195,7 @@ export const MainLayout = () => {
 
         <AnimatePresence>
           {currentView === 'settings' && (
-            <Suspense fallback={null}>
-              <SettingsScreen />
-            </Suspense>
+            <SettingsScreen />
           )}
         </AnimatePresence>
 

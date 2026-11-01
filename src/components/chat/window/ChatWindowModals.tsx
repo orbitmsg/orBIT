@@ -10,7 +10,7 @@ import { EmojiPicker } from '../EmojiPicker';
 import { DiscordFileLimitModal } from '../DiscordFileLimitModal';
 import { SendAsTxtModal } from '../SendAsTxtModal';
 import { FileAttachmentModal, type AttachedFile } from '../FileAttachmentModal';
-const TelegramMediaViewer = React.lazy(() => import('../TelegramMediaViewer').then((m) => ({ default: m.TelegramMediaViewer })));
+import { TelegramMediaViewer } from '../TelegramMediaViewer';
 import { ActionConfirmModal } from '../../common/ActionConfirmModal';
 import { SupportTicketsModal } from '../SupportTicketsModal';
 import { MessageContextMenu, type ContextMenuState } from '../MessageContextMenu';
@@ -195,23 +195,21 @@ export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
       />
 
       {mediaViewerState.isOpen && (
-        <React.Suspense fallback={null}>
-          <TelegramMediaViewer
-            isOpen={mediaViewerState.isOpen}
-            items={mediaViewerState.customItems || chatMediaViewerItems}
-            initialIndex={mediaViewerState.initialIndex}
-            sharedSecret={sharedSecret ?? undefined}
-            onClose={() => setMediaViewerState((prev) => ({ ...prev, isOpen: false }))}
-            onGoToMessage={handleMediaGoToMessage}
-            onForwardMessage={handleMediaForwardMessage}
-            onDeleteMessage={handleMediaDeleteMessage}
-            onOpenAllMedia={() => {
-              if (activeChatId) {
-                useChatStore.getState().setActiveProfileChatId(activeChatId);
-              }
-            }}
-          />
-        </React.Suspense>
+        <TelegramMediaViewer
+          isOpen={mediaViewerState.isOpen}
+          items={mediaViewerState.customItems || chatMediaViewerItems}
+          initialIndex={mediaViewerState.initialIndex}
+          sharedSecret={sharedSecret ?? undefined}
+          onClose={() => setMediaViewerState((prev) => ({ ...prev, isOpen: false }))}
+          onGoToMessage={handleMediaGoToMessage}
+          onForwardMessage={handleMediaForwardMessage}
+          onDeleteMessage={handleMediaDeleteMessage}
+          onOpenAllMedia={() => {
+            if (activeChatId) {
+              useChatStore.getState().setActiveProfileChatId(activeChatId);
+            }
+          }}
+        />
       )}
 
       <FileAttachmentModal

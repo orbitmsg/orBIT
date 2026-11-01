@@ -11,7 +11,7 @@ import { LinkCopiedToast } from '../common/LinkCopiedToast';
 import { NicknameEditModal } from './SettingsScreen';
 import { EmojiAvatarModal } from '../settings/EmojiAvatarModal';
 import { AvatarCropperModal } from '../settings/AvatarCropperModal';
-const TelegramMediaViewer = React.lazy(() => import('./TelegramMediaViewer').then((m) => ({ default: m.TelegramMediaViewer })));
+import { TelegramMediaViewer } from './TelegramMediaViewer';
 import { QrCodeView } from './QrCodeView';
 import { ablyService } from '../../services/ablyService';
 import { getPusher, getGroupPusher } from '../../utils/pusher';
@@ -1234,7 +1234,7 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
             />
 
             {isAvatarViewerOpen && avatarUrl && (
-              <React.Suspense fallback={null}><TelegramMediaViewer
+              <TelegramMediaViewer
                 isOpen={isAvatarViewerOpen}
                 items={[{
                   id: 'my-avatar',
@@ -1247,7 +1247,7 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                 initialIndex={0}
                 showCarouselAlways={false}
                 onClose={() => setIsAvatarViewerOpen(false)}
-              /></React.Suspense>
+              />
             )}
           </motion.div>
         </div>

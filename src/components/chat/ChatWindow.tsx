@@ -1,4 +1,3 @@
-import { useMessageEditStore } from '../../store/useMessageEditStore';
 import React, { useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -284,18 +283,12 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
   const [isSendingFiles, setIsSendingFiles] = useState(false);
-  const editingIndex = useMessageEditStore((s) => s.editingIndex);
-  const editText = useMessageEditStore((s) => s.editText);
-  const setEditing = useMessageEditStore((s) => s.setEditing);
-  const setEditText = useMessageEditStore((s) => s.setEditText);
-  const clearEditing = useMessageEditStore((s) => s.clearEditing);
-  const setEditingIndex = useCallback((idx: number | null) => {
-    if (idx === null) clearEditing();
-    else setEditing(idx, messagesRef.current[idx]?.text || '');
-  }, [clearEditing, setEditing]);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editText, setEditText] = useState('');
   const handleCancelEdit = useCallback(() => {
-    clearEditing();
-  }, [clearEditing]);
+    setEditingIndex(null);
+    setEditText('');
+  }, []);
   const handleOpenTxtModal = useCallback(() => {
     setIsSendAsTxtModalOpen(true);
   }, []);
@@ -1045,7 +1038,10 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         themeColor={themeColor}
         highlightedIndex={highlightedIndex}
         selection={selection}
-        isEditing={editingIndex === index}
+        editingIndex={editingIndex}
+        editText={editText}
+        setEditText={setEditText}
+        setEditingIndex={setEditingIndex}
         memberAvatars={memberAvatars}
         isMessagePinned={isMessagePinned}
         getDateLabel={getDateLabel}
@@ -1062,7 +1058,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         handleRetryMessage={handleRetryMessage}
       />
     );
-  }, [myCode, myNickname, myUserId, activeChat, activeChatId, sharedSecret, bubbleRadius, themeColor, highlightedIndex, selection, editingIndex, memberAvatars, isMessagePinned, getDateLabel, openMediaViewer, triggerReactionMessage, triggerEditMessage, handleMessageClick, handleContextMenu, handleCallPress, handleQuoteClick, handleLinkClick, handleMessageButtonClick, handleOpenDirectChat, handleRetryMessage]);
+  }, [myCode, myNickname, myUserId, activeChat, activeChatId, sharedSecret, bubbleRadius, themeColor, highlightedIndex, selection, editingIndex, editText, memberAvatars, isMessagePinned, getDateLabel, openMediaViewer, triggerReactionMessage, triggerEditMessage, handleMessageClick, handleContextMenu, handleCallPress, handleQuoteClick, handleLinkClick, handleMessageButtonClick, handleOpenDirectChat, handleRetryMessage]);
 
 
 

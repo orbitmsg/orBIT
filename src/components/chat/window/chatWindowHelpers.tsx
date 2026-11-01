@@ -7,7 +7,20 @@ import type { MediaViewerItem } from '../TelegramMediaViewer';
 export const MAX_FILE_MB = 10;
 
 export const getOptimalMessageBatchSize = (): number => {
-  return 30;
+  if (typeof window === 'undefined') return 35;
+  const height = window.innerHeight || 800;
+  const width = window.innerWidth || 1200;
+
+  if (width < 768 || height < 650) {
+    return 30;
+  }
+  if (height < 900) {
+    return 40;
+  }
+  if (height < 1200) {
+    return 50;
+  }
+  return 60;
 };
 
 export const MessageRowWrapper = memo(
@@ -58,8 +71,7 @@ export const MessageList = memo(
   },
   (prev, next) =>
     prev.messages === next.messages &&
-    prev.startIndex === next.startIndex &&
-    prev.renderFn === next.renderFn
+    prev.startIndex === next.startIndex
 );
 MessageList.displayName = 'MessageList';
 

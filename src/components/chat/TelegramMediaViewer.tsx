@@ -181,16 +181,6 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
   }, [currentIndex]);
 
   useEffect(() => {
-    return () => {
-      if (fallbackBlobUrl && fallbackBlobUrl.startsWith('blob:')) {
-        try {
-          URL.revokeObjectURL(fallbackBlobUrl);
-        } catch {}
-      }
-    };
-  }, [fallbackBlobUrl]);
-
-  useEffect(() => {
     if (!isOpen) return;
 
     const handleWheel = (e: WheelEvent) => {

@@ -179,22 +179,11 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
     return list;
   }, [scope, activeChatId, chats, messagesByChatId, t]);
 
-  const [searchResults, setSearchResults] = useState<MessageSearchResult[]>([]);
-
-  useEffect(() => {
-    let active = true;
+  const searchResults: MessageSearchResult[] = useMemo(() => {
     const q = debouncedQuery.trim().toLowerCase();
-    if (!q) {
-      setSearchResults([]);
-      return;
-    }
+    if (!q) return [];
 
-    interface CandidateItem {
-      result: MessageSearchResult;
-      haystack: string;
-    }
-
-    const candidates: CandidateItem[] = [];
+    const results: MessageSearchResult[] = [];
 
     for (const chatInfo of targetChats) {
       const msgs = messagesByChatId[chatInfo.id];
@@ -211,65 +200,37 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
         const senderAvatar = isOwn ? myAvatarUrl : chatInfo.avatarUrl;
 
         const cleanSnippet = formatPreviewText(rawText, t, m.mediaType, mediaName);
-        const matchIdx = cleanSnippet.toLowerCase().indexOf(q);
-        let displaySnippet = cleanSnippet;
-        if (matchIdx > 20) {
-          displaySnippet = '...' + cleanSnippet.slice(matchIdx - 12);
+        const matchClean = cleanSnippet.toLowerCase().includes(q);
+        const matchRaw = rawText.toLowerCase().includes(q);
+        const matchMedia = mediaName.toLowerCase().includes(q);
+        const matchSender = senderName.toLowerCase().includes(q);
+
+        if (matchClean || matchRaw || matchMedia || matchSender) {
+          const matchIdx = cleanSnippet.toLowerCase().indexOf(q);
+          let displaySnippet = cleanSnippet;
+          if (matchIdx > 20) {
+            displaySnippet = '...' + cleanSnippet.slice(matchIdx - 12);
+          }
+
+          results.push({
+            chatId: chatInfo.id,
+            chatName: chatInfo.name,
+            chatAvatar: chatInfo.avatarUrl,
+            isNotes: chatInfo.isNotes,
+            message: m,
+            messageIndex: i,
+            senderName,
+            senderAvatar: senderAvatar || undefined,
+            isOwn,
+            snippet: displaySnippet,
+          });
         }
-
-        const res: MessageSearchResult = {
-          chatId: chatInfo.id,
-          chatName: chatInfo.name,
-          chatAvatar: chatInfo.avatarUrl,
-          isNotes: chatInfo.isNotes,
-          message: m,
-          messageIndex: i,
-          senderName,
-          senderAvatar: senderAvatar || undefined,
-          isOwn,
-          snippet: displaySnippet,
-        };
-
-        const haystack = [cleanSnippet, rawText, mediaName, senderName].join(' ').toLowerCase();
-        candidates.push({ result: res, haystack });
       }
     }
 
-    const orb = typeof window !== 'undefined' ? (window as any).orbita : null;
-    if (orb && typeof orb.rustFastTextSearch === 'function') {
-      const haystacks = candidates.map((c) => c.haystack);
-      orb.rustFastTextSearch(haystacks, q).then((indices: number[] | null) => {
-        if (!active) return;
-        if (Array.isArray(indices)) {
-          const matched = indices.map((idx) => candidates[idx].result);
-          matched.sort((a, b) => b.message.time - a.message.time);
-          setSearchResults(matched);
-        } else {
-          const matched = candidates
-            .filter((c) => c.haystack.includes(q))
-            .map((c) => c.result);
-          matched.sort((a, b) => b.message.time - a.message.time);
-          setSearchResults(matched);
-        }
-      }).catch(() => {
-        if (!active) return;
-        const matched = candidates
-          .filter((c) => c.haystack.includes(q))
-          .map((c) => c.result);
-        matched.sort((a, b) => b.message.time - a.message.time);
-        setSearchResults(matched);
-      });
-    } else {
-      const matched = candidates
-        .filter((c) => c.haystack.includes(q))
-        .map((c) => c.result);
-      matched.sort((a, b) => b.message.time - a.message.time);
-      setSearchResults(matched);
-    }
+    results.sort((a, b) => b.message.time - a.message.time);
 
-    return () => {
-      active = false;
-    };
+    return results;
   }, [debouncedQuery, targetChats, messagesByChatId, myNickname, myAvatarUrl, t]);
 
   const visibleResults = useMemo(() => {

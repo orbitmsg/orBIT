@@ -787,8 +787,15 @@ export const useChatStore = create<ChatState>()(
         if (!chatId || !messageIds || messageIds.length === 0) return;
         const state = get();
         if (state.messageDeleteAnimation !== false && typeof document !== 'undefined' && state.activeChatId === chatId) {
-          const particleBudget = Math.max(350, Math.floor(6000 / messageIds.length));
-          messageIds.forEach((messageId) => {
+          const visibleIds = messageIds.filter((id) => {
+            const el = document.querySelector(`[data-message-id="${id}"]`);
+            if (!el) return false;
+            const r = el.getBoundingClientRect();
+            return r.bottom > 0 && r.top < window.innerHeight;
+          });
+          const count = visibleIds.length || 1;
+          const particleBudget = Math.max(28, Math.min(220, Math.floor(1000 / count)));
+          visibleIds.forEach((messageId) => {
             const domEl = document.querySelector(`[data-message-id="${messageId}"]`);
             if (domEl) {
               const bubbleEl = (domEl.querySelector<HTMLElement>('[data-bubble="true"]') ||

@@ -87,13 +87,12 @@ export function runTelegramDisintegration(
   container.style.width = `${width}px`;
   container.style.height = `${height}px`;
 
-  const fragment = document.createDocumentFragment();
-
   const totalArea = width * height;
-  const targetCount = Math.min(maxParticlesCount, Math.max(80, Math.round(totalArea / 75)));
+  const targetCount = Math.min(maxParticlesCount, Math.max(40, Math.round(totalArea / 75)));
   const step = Math.max(3.2, Math.sqrt(totalArea / targetCount));
 
   let count = 0;
+  let html = '';
 
   for (let y = 1; y < height && count < targetCount; y += step) {
     for (let x = 1; x < width && count < targetCount; x += step) {
@@ -122,25 +121,12 @@ export function runTelegramDisintegration(
       const sway = Math.round((Math.random() - 0.5) * 14);
       const size = Math.max(1.5, Math.min(3.2, 1.8 + Math.random() * 1.2));
 
-      const pixel = document.createElement('span');
-      pixel.className = 'orbita-pixel';
-      pixel.style.left = `${Math.round(px)}px`;
-      pixel.style.top = `${Math.round(py)}px`;
-      pixel.style.width = `${size.toFixed(1)}px`;
-      pixel.style.height = `${size.toFixed(1)}px`;
-      pixel.style.backgroundColor = pixelColor;
-      pixel.style.setProperty('--tx', `${vx}px`);
-      pixel.style.setProperty('--ty', `${vy}px`);
-      pixel.style.setProperty('--sway', `${sway}px`);
-      pixel.style.setProperty('--delay', `${delay}ms`);
-      pixel.style.setProperty('--life', `${life}ms`);
-
-      fragment.appendChild(pixel);
+      html += `<span class="orbita-pixel" style="left:${Math.round(px)}px;top:${Math.round(py)}px;width:${size.toFixed(1)}px;height:${size.toFixed(1)}px;background-color:${pixelColor};--tx:${vx}px;--ty:${vy}px;--sway:${sway}px;--delay:${delay}ms;--life:${life}ms"></span>`;
       count++;
     }
   }
 
-  container.appendChild(fragment);
+  container.innerHTML = html;
   document.body.appendChild(container);
 
   let isCleanedUp = false;

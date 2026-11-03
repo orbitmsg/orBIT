@@ -40,7 +40,9 @@ export interface ChatMessageItemProps {
   bubbleRadius: string | number;
   themeColor: string;
   highlightedIndex: number | null;
-  selection: {
+  isSelected?: boolean;
+  isSelectionMode?: boolean;
+  selection?: {
     isSelectionMode: boolean;
     selectedIds: Set<string>;
   };
@@ -78,6 +80,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   bubbleRadius,
   themeColor,
   highlightedIndex,
+  isSelected: isSelectedProp,
+  isSelectionMode: isSelectionModeProp,
   selection,
   editingIndex,
   editText,
@@ -103,8 +107,12 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
 
   const isOwn = isMessageOutgoing(msg, myCode, myNickname, activeChat, myUserId);
   const media = parseMedia(msg);
-  const isSelected = selection.isSelectionMode && msg.id && selection.selectedIds.has(msg.id);
-  const isUnselected = selection.isSelectionMode && !isSelected;
+  const isSelectionMode = typeof isSelectionModeProp === 'boolean'
+    ? isSelectionModeProp
+    : Boolean(selection?.isSelectionMode);
+  const isSelected = typeof isSelectedProp === 'boolean'
+    ? isSelectedProp
+    : Boolean(isSelectionMode && msg.id && selection?.selectedIds?.has(msg.id));
   const isHighlighted = index === highlightedIndex;
 
   const isGif = Boolean(
@@ -515,15 +523,15 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     transition: 'background-color 0.2s ease, padding-right 0.2s ease',
     paddingTop: topGap,
     paddingBottom: '0px',
-    paddingRight: selection.isSelectionMode ? '48px' : '10px',
+    paddingRight: isSelectionMode ? '48px' : '10px',
     paddingLeft: '10px',
     boxSizing: 'border-box',
     position: 'relative',
-    cursor: selection.isSelectionMode ? 'pointer' : 'default',
+    cursor: isSelectionMode ? 'pointer' : 'default',
   };
 
   const renderSelectionCircle = () => {
-    if (!selection.isSelectionMode) return null;
+    if (!isSelectionMode) return null;
     return (
       <div
         style={{
@@ -539,7 +547,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           justifyContent: 'center',
           backgroundColor: isSelected ? 'var(--accent-color, #7C3AED)' : 'rgba(255, 255, 255, 0.12)',
           border: isSelected ? 'none' : '1px solid rgba(255, 255, 255, 0.18)',
-          transition: 'all 0.15s ease',
+          transition: 'background-color 0.1s ease, border-color 0.1s ease, transform 0.1s ease',
           pointerEvents: 'none',
           zIndex: 10,
           boxSizing: 'border-box',
@@ -757,7 +765,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           style={{ ...highlightWrapperStyle }}
           data-datelabel={getDateLabel(msg.time)}
           onClick={(e) => {
-            if (selection.isSelectionMode && msg.id) {
+            if (isSelectionMode && msg.id) {
               handleMessageClick(e, msg.id);
             }
           }}
@@ -771,12 +779,11 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 data-sender={msg.sender}
                 data-read={String(msg.read)}
                 data-datelabel={getDateLabel(msg.time)}
-                className={`group relative flex flex-col ${isOwn ? 'items-end' : 'items-start'} ${isUnselected ? 'message-unselected' : ''}`}
+                className={`group relative flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
                 style={{
                   transformOrigin: isOwn ? 'top right' : 'top left',
                   flex: 1,
-                  filter: isUnselected ? 'brightness(0.55)' : (isSelected ? 'brightness(0.88) contrast(1.05)' : 'none'),
-                  transition: 'filter 0.15s ease',
+
                 }}
                 onClick={(e) => handleMessageClick(e, msg.id!)}
                 onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}
@@ -819,7 +826,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           style={{ ...highlightWrapperStyle }}
           data-datelabel={getDateLabel(msg.time)}
           onClick={(e) => {
-            if (selection.isSelectionMode && msg.id) {
+            if (isSelectionMode && msg.id) {
               handleMessageClick(e, msg.id);
             }
           }}
@@ -873,7 +880,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           style={{ ...highlightWrapperStyle }}
           data-datelabel={getDateLabel(msg.time)}
           onClick={(e) => {
-            if (selection.isSelectionMode && msg.id) {
+            if (isSelectionMode && msg.id) {
               handleMessageClick(e, msg.id);
             }
           }}
@@ -887,12 +894,11 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 data-sender={msg.sender}
                 data-read={String(msg.read)}
                 data-datelabel={getDateLabel(msg.time)}
-                className={`group relative flex flex-col ${isOwn ? 'items-end' : 'items-start'} ${isUnselected ? 'message-unselected' : ''}`}
+                className={`group relative flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
                 style={{
                   transformOrigin: isOwn ? 'top right' : 'top left',
                   flex: 1,
-                  filter: isUnselected ? 'brightness(0.55)' : (isSelected ? 'brightness(0.88) contrast(1.05)' : 'none'),
-                  transition: 'filter 0.15s ease',
+
                 }}
                 onClick={(e) => handleMessageClick(e, msg.id!)}
                 onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}
@@ -962,7 +968,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           style={{ ...highlightWrapperStyle }}
           data-datelabel={getDateLabel(msg.time)}
           onClick={(e) => {
-            if (selection.isSelectionMode && msg.id) {
+            if (isSelectionMode && msg.id) {
               handleMessageClick(e, msg.id);
             }
           }}
@@ -976,12 +982,11 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             data-sender={msg.sender}
             data-read={String(msg.read)}
             data-datelabel={getDateLabel(msg.time)}
-            className={`group relative flex flex-col ${isOwn ? 'items-end' : 'items-start'} ${isUnselected ? 'message-unselected' : ''}`}
+            className={`group relative flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
             style={{
               transformOrigin: isOwn ? 'top right' : 'top left',
               flex: 1,
-              filter: isUnselected ? 'brightness(0.55)' : (isSelected ? 'brightness(0.88) contrast(1.05)' : 'none'),
-              transition: 'filter 0.15s ease',
+
             }}
             onClick={(e) => handleMessageClick(e, msg.id!)}
             onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}

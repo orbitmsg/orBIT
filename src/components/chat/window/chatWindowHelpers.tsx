@@ -24,8 +24,19 @@ export const getOptimalMessageBatchSize = (): number => {
 };
 
 export const MessageRowWrapper = memo(
-  ({ index, msg, renderFn }: { index: number; msg: Message; renderFn: (i: number, m: Message) => React.ReactNode }) =>
-    renderFn(index, msg) as React.ReactElement,
+  ({
+    index,
+    msg,
+    isSelected,
+    isSelectionMode,
+    renderFn,
+  }: {
+    index: number;
+    msg: Message;
+    isSelected: boolean;
+    isSelectionMode: boolean;
+    renderFn: (i: number, m: Message, isSelected: boolean, isSelectionMode: boolean) => React.ReactNode;
+  }) => renderFn(index, msg, isSelected, isSelectionMode) as React.ReactElement,
   (prev, next) =>
     prev.index === next.index &&
     prev.msg.id === next.msg.id &&
@@ -36,6 +47,8 @@ export const MessageRowWrapper = memo(
     prev.msg.mediaUrl === next.msg.mediaUrl &&
     prev.msg.mediaType === next.msg.mediaType &&
     prev.msg.uploading === next.msg.uploading &&
+    prev.isSelected === next.isSelected &&
+    prev.isSelectionMode === next.isSelectionMode &&
     prev.renderFn === next.renderFn
 );
 MessageRowWrapper.displayName = 'MessageRowWrapper';
@@ -44,11 +57,15 @@ export const MessageList = memo(
   ({
     messages,
     startIndex,
+    selectedIds,
+    isSelectionMode,
     renderFn,
   }: {
     messages: Message[];
     startIndex: number;
-    renderFn: (i: number, m: Message) => React.ReactNode;
+    selectedIds: Set<string>;
+    isSelectionMode: boolean;
+    renderFn: (i: number, m: Message, isSelected: boolean, isSelectionMode: boolean) => React.ReactNode;
   }) => {
     const virtualTopHeight = startIndex > 0 ? startIndex * 46 : 0;
     return (
@@ -58,20 +75,27 @@ export const MessageList = memo(
         ) : (
           <div style={{ flex: '1 1 auto', minHeight: '8px' }} />
         )}
-        {messages.map((msg, idx) => (
-          <MessageRowWrapper
-            key={msg.id || `msg_${msg.time}_${startIndex + idx}`}
-            index={startIndex + idx}
-            msg={msg}
-            renderFn={renderFn}
-          />
-        ))}
+        {messages.map((msg, idx) => {
+          const isSelected = isSelectionMode && Boolean(msg.id && selectedIds.has(msg.id));
+          return (
+            <MessageRowWrapper
+              key={msg.id || `msg_${msg.time}_${startIndex + idx}`}
+              index={startIndex + idx}
+              msg={msg}
+              isSelected={isSelected}
+              isSelectionMode={isSelectionMode}
+              renderFn={renderFn}
+            />
+          );
+        })}
       </>
     );
   },
   (prev, next) =>
     prev.messages === next.messages &&
     prev.startIndex === next.startIndex &&
+    prev.selectedIds === next.selectedIds &&
+    prev.isSelectionMode === next.isSelectionMode &&
     prev.renderFn === next.renderFn
 );
 MessageList.displayName = 'MessageList';

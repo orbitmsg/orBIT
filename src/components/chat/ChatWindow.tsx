@@ -1035,7 +1035,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     return () => document.removeEventListener('contextmenu', blockBrowserMenu);
   }, []);
 
-  const renderMessage = useCallback((index: number, msg: Message) => {
+  const renderMessage = useCallback((index: number, msg: Message, isSelected: boolean, isSelectionMode: boolean) => {
     const prevMsg = index > 0 ? messagesRef.current[index - 1] : null;
     const nextMsg = index < messagesRef.current.length - 1 ? messagesRef.current[index + 1] : null;
 
@@ -1055,7 +1055,8 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         bubbleRadius={bubbleRadius}
         themeColor={themeColor}
         highlightedIndex={highlightedIndex}
-        selection={selection}
+        isSelected={isSelected}
+        isSelectionMode={isSelectionMode}
         editingIndex={editingIndex}
         editText={editText}
         setEditText={setEditText}
@@ -1076,7 +1077,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         handleRetryMessage={handleRetryMessage}
       />
     );
-  }, [myCode, myNickname, myUserId, activeChat, activeChatId, sharedSecret, bubbleRadius, themeColor, highlightedIndex, selection, editingIndex, editText, memberAvatars, isMessagePinned, getDateLabel, openMediaViewer, triggerReactionMessage, triggerEditMessage, handleMessageClick, handleContextMenu, handleCallPress, handleQuoteClick, handleLinkClick, handleMessageButtonClick, handleOpenDirectChat, handleRetryMessage]);
+  }, [myCode, myNickname, myUserId, activeChat, activeChatId, sharedSecret, bubbleRadius, themeColor, highlightedIndex, editingIndex, editText, memberAvatars, isMessagePinned, getDateLabel, openMediaViewer, triggerReactionMessage, triggerEditMessage, handleMessageClick, handleContextMenu, handleCallPress, handleQuoteClick, handleLinkClick, handleMessageButtonClick, handleOpenDirectChat, handleRetryMessage]);
 
 
 
@@ -1225,6 +1226,8 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
               <MessageList
                 messages={visibleMessages}
                 startIndex={startIndex}
+                selectedIds={selection.selectedIds}
+                isSelectionMode={selection.isSelectionMode}
                 renderFn={renderMessage}
               />
             )}

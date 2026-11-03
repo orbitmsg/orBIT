@@ -28,17 +28,32 @@ export function useSelection() {
 
   const selectRange = useCallback((ids: string[]) => {
     const limited = ids.slice(0, MAX_SELECT_LIMIT);
-    setSelectedIds(new Set(limited));
-    setIsSelectionMode(limited.length > 0);
+    setSelectedIds((prev) => {
+      if (prev.size === limited.length) {
+        let same = true;
+        for (let i = 0; i < limited.length; i++) {
+          if (!prev.has(limited[i])) {
+            same = false;
+            break;
+          }
+        }
+        if (same) return prev;
+      }
+      return new Set(limited);
+    });
+    setIsSelectionMode((prev) => {
+      const next = limited.length > 0;
+      return prev === next ? prev : next;
+    });
   }, []);
 
   const exitSelectionMode = useCallback(() => {
     setIsSelectionMode(false);
-    setSelectedIds(new Set());
+    setSelectedIds((prev) => (prev.size === 0 ? prev : new Set()));
   }, []);
 
   const clearSelection = useCallback(() => {
-    setSelectedIds(new Set());
+    setSelectedIds((prev) => (prev.size === 0 ? prev : new Set()));
   }, []);
 
   useEffect(() => {

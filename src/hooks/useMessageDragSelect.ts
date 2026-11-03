@@ -22,8 +22,8 @@ interface DragState {
   startY: number;
   anchorId: string | null;
   isTextClick: boolean;
-  isDragging: false | true;
-  hasMoved: false | true;
+  isDragging: boolean;
+  hasMoved: boolean;
 }
 
 export function useMessageDragSelect({
@@ -42,12 +42,112 @@ export function useMessageDragSelect({
   const autoScrollRafRef = useRef<number>(0);
   const autoScrollSpeedRef = useRef<number>(0);
 
+  const dragRafRef = useRef<number>(0);
+  const latestMousePosRef = useRef<{ x: number; y: number } | null>(null);
+  const lastRangeRef = useRef<{ start: number; end: number } | null>(null);
+
   const stopAutoScroll = () => {
     if (autoScrollRafRef.current) {
       cancelAnimationFrame(autoScrollRafRef.current);
       autoScrollRafRef.current = 0;
     }
     autoScrollSpeedRef.current = 0;
+  };
+
+  const processDragTick = () => {
+    dragRafRef.current = 0;
+    const state = dragStateRef.current;
+    const pos = latestMousePosRef.current;
+    const container = containerRef.current;
+
+    if (!state || !state.isDragging || !pos || !container) {
+      return;
+    }
+
+    const msgs = messagesRef.current;
+    if (msgs.length === 0) return;
+
+    if (!state.anchorId) {
+      const elAtStart = document.elementFromPoint(state.startX, state.startY);
+      const rowAtStart = elAtStart ? (elAtStart.closest('[data-message-id]') as HTMLElement | null) : null;
+      state.anchorId = rowAtStart ? rowAtStart.getAttribute('data-message-id') : null;
+      if (!state.anchorId) {
+        const firstVisible = container.querySelector<HTMLElement>('[data-message-id]');
+        state.anchorId = firstVisible ? firstVisible.getAttribute('data-message-id') : msgs[0]?.id || null;
+      }
+    }
+
+    let hoveredId: string | null = null;
+    const directEl = document.elementFromPoint(pos.x, pos.y);
+    const directRow = directEl ? (directEl.closest('[data-message-id]') as HTMLElement | null) : null;
+
+    if (directRow) {
+      hoveredId = directRow.getAttribute('data-message-id');
+    } else {
+      const containerRect = container.getBoundingClientRect();
+      if (pos.y <= containerRect.top + 4) {
+        const firstVisible = container.querySelector<HTMLElement>('[data-message-id]');
+        hoveredId = firstVisible ? firstVisible.getAttribute('data-message-id') : msgs[0]?.id || null;
+      } else if (pos.y >= containerRect.bottom - 4) {
+        const allVisible = container.querySelectorAll<HTMLElement>('[data-message-id]');
+        const lastVisible = allVisible.length > 0 ? allVisible[allVisible.length - 1] : null;
+        hoveredId = lastVisible ? lastVisible.getAttribute('data-message-id') : msgs[msgs.length - 1]?.id || null;
+      } else {
+        const centerX = Math.round(containerRect.left + containerRect.width / 2);
+        const centerEl = document.elementFromPoint(centerX, pos.y);
+        const centerRow = centerEl ? (centerEl.closest('[data-message-id]') as HTMLElement | null) : null;
+        if (centerRow) {
+          hoveredId = centerRow.getAttribute('data-message-id');
+        }
+      }
+    }
+
+    if (state.anchorId && hoveredId) {
+      const anchorIdx = msgs.findIndex((m) => m.id === state.anchorId);
+      const hoverIdx = msgs.findIndex((m) => m.id === hoveredId);
+
+      if (anchorIdx !== -1 && hoverIdx !== -1) {
+        let start = Math.min(anchorIdx, hoverIdx);
+        let end = Math.max(anchorIdx, hoverIdx);
+
+        const limit = maxLimit || 200;
+        if (end - start + 1 > limit) {
+          if (hoverIdx > anchorIdx) {
+            end = anchorIdx + limit - 1;
+          } else {
+            start = Math.max(0, anchorIdx - (limit - 1));
+          }
+        }
+
+        if (!lastRangeRef.current || lastRangeRef.current.start !== start || lastRangeRef.current.end !== end) {
+          lastRangeRef.current = { start, end };
+          const rangeIds = msgs
+            .slice(start, end + 1)
+            .map((m) => m.id)
+            .filter(Boolean) as string[];
+          selectionRef.current.selectRange(rangeIds);
+        }
+      }
+    }
+
+    const rect = container.getBoundingClientRect();
+    const topThreshold = rect.top + 60;
+    const bottomThreshold = rect.bottom - 60;
+
+    if (pos.y < topThreshold) {
+      const speed = Math.min(22, (topThreshold - pos.y) * 0.35);
+      startAutoScroll(-speed);
+    } else if (pos.y > bottomThreshold) {
+      const speed = Math.min(22, (pos.y - bottomThreshold) * 0.35);
+      startAutoScroll(speed);
+    } else {
+      stopAutoScroll();
+    }
+  };
+
+  const scheduleDragTick = () => {
+    if (dragRafRef.current) return;
+    dragRafRef.current = requestAnimationFrame(processDragTick);
   };
 
   const startAutoScroll = (speed: number) => {
@@ -61,6 +161,7 @@ export function useMessageDragSelect({
         return;
       }
       container.scrollTop += autoScrollSpeedRef.current;
+      scheduleDragTick();
       autoScrollRafRef.current = requestAnimationFrame(scrollStep);
     };
     autoScrollRafRef.current = requestAnimationFrame(scrollStep);
@@ -110,15 +211,19 @@ export function useMessageDragSelect({
         isDragging: false,
         hasMoved: false,
       };
+      lastRangeRef.current = null;
+      latestMousePosRef.current = { x: e.clientX, y: e.clientY };
 
       const handleMouseMove = (moveEvent: MouseEvent) => {
         const state = dragStateRef.current;
         if (!state) return;
 
-        const dx = Math.abs(moveEvent.clientX - state.startX);
-        const dy = Math.abs(moveEvent.clientY - state.startY);
+        latestMousePosRef.current = { x: moveEvent.clientX, y: moveEvent.clientY };
 
         if (!state.isDragging) {
+          const dx = Math.abs(moveEvent.clientX - state.startX);
+          const dy = Math.abs(moveEvent.clientY - state.startY);
+
           if (selectionRef.current.isSelectionMode) {
             if (dx > 3 || dy > 3) {
               state.isDragging = true;
@@ -137,100 +242,17 @@ export function useMessageDragSelect({
         if (state.isDragging) {
           state.hasMoved = true;
           window.getSelection()?.removeAllRanges();
-
-          if (!state.anchorId) {
-            const rows = containerRef.current?.querySelectorAll<HTMLElement>('[data-message-id]');
-            if (rows && rows.length > 0) {
-              let closestId: string | null = null;
-              let minDiff = Infinity;
-              rows.forEach((r) => {
-                const rect = r.getBoundingClientRect();
-                const midY = (rect.top + rect.bottom) / 2;
-                const diff = Math.abs(state.startY - midY);
-                if (diff < minDiff) {
-                  minDiff = diff;
-                  closestId = r.getAttribute('data-message-id');
-                }
-              });
-              state.anchorId = closestId;
-            }
-          }
-
-          const hoveredEl = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY);
-          let hoveredRow = hoveredEl ? (hoveredEl.closest('[data-message-id]') as HTMLElement | null) : null;
-          let hoveredId = hoveredRow ? hoveredRow.getAttribute('data-message-id') : null;
-
-          if (!hoveredId) {
-            const rows = containerRef.current?.querySelectorAll<HTMLElement>('[data-message-id]');
-            if (rows && rows.length > 0) {
-              let closestId: string | null = null;
-              let minDiff = Infinity;
-              rows.forEach((r) => {
-                const rect = r.getBoundingClientRect();
-                if (moveEvent.clientY >= rect.top && moveEvent.clientY <= rect.bottom) {
-                  closestId = r.getAttribute('data-message-id');
-                  minDiff = 0;
-                  return;
-                }
-                const midY = (rect.top + rect.bottom) / 2;
-                const diff = Math.abs(moveEvent.clientY - midY);
-                if (diff < minDiff) {
-                  minDiff = diff;
-                  closestId = r.getAttribute('data-message-id');
-                }
-              });
-              hoveredId = closestId;
-            }
-          }
-
-          if (state.anchorId && hoveredId) {
-            const msgs = messagesRef.current;
-            const anchorIdx = msgs.findIndex((m) => m.id === state.anchorId);
-            const hoverIdx = msgs.findIndex((m) => m.id === hoveredId);
-
-            if (anchorIdx !== -1 && hoverIdx !== -1) {
-              let start = Math.min(anchorIdx, hoverIdx);
-              let end = Math.max(anchorIdx, hoverIdx);
-
-              const limit = maxLimit || 200;
-              if (end - start + 1 > limit) {
-                if (hoverIdx > anchorIdx) {
-                  end = anchorIdx + limit - 1;
-                } else {
-                  start = Math.max(0, anchorIdx - (limit - 1));
-                }
-              }
-
-              const rangeIds = msgs
-                .slice(start, end + 1)
-                .map((m) => m.id)
-                .filter(Boolean) as string[];
-
-              selectionRef.current.selectRange(rangeIds);
-            }
-          }
-
-          const c = containerRef.current;
-          if (c) {
-            const rect = c.getBoundingClientRect();
-            const topThreshold = rect.top + 60;
-            const bottomThreshold = rect.bottom - 60;
-
-            if (moveEvent.clientY < topThreshold) {
-              const speed = Math.min(22, (topThreshold - moveEvent.clientY) * 0.35);
-              startAutoScroll(-speed);
-            } else if (moveEvent.clientY > bottomThreshold) {
-              const speed = Math.min(22, (moveEvent.clientY - bottomThreshold) * 0.35);
-              startAutoScroll(speed);
-            } else {
-              stopAutoScroll();
-            }
-          }
+          scheduleDragTick();
         }
       };
 
       const handleMouseUp = () => {
         stopAutoScroll();
+        if (dragRafRef.current) {
+          cancelAnimationFrame(dragRafRef.current);
+          dragRafRef.current = 0;
+        }
+
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('mouseup', handleMouseUp);
 
@@ -252,6 +274,8 @@ export function useMessageDragSelect({
         }
 
         dragStateRef.current = null;
+        lastRangeRef.current = null;
+        latestMousePosRef.current = null;
       };
 
       window.addEventListener('mousemove', handleMouseMove, { passive: true });
@@ -263,6 +287,10 @@ export function useMessageDragSelect({
     return () => {
       container.removeEventListener('mousedown', handleMouseDown);
       stopAutoScroll();
+      if (dragRafRef.current) {
+        cancelAnimationFrame(dragRafRef.current);
+        dragRafRef.current = 0;
+      }
     };
   }, [containerRef, maxLimit]);
 }

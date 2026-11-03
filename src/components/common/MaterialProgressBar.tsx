@@ -1,73 +1,84 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
-import '@material/web/progress/linear-progress.js';
-import type { MdLinearProgress } from '@material/web/progress/linear-progress.js';
+import React, { useRef, useState, useCallback, useEffect, useImperativeHandle, forwardRef } from 'react';
+
+export interface MaterialProgressBarHandle {
+  setProgress: (fraction: number) => void;
+  setPlaying: (playing: boolean) => void;
+}
 
 interface MaterialProgressBarProps {
   value: number;
   max?: number;
-  buffer?: number;
-  indeterminate?: boolean;
+  isPlaying?: boolean;
   interactive?: boolean;
   onSeek?: (newFraction: number) => void;
   onDragStart?: () => void;
   onDragEnd?: (finalFraction: number) => void;
+  onMouseDown?: (e: React.MouseEvent<HTMLDivElement>) => void;
+  onTouchStart?: (e: React.TouchEvent<HTMLDivElement>) => void;
   ariaLabel?: string;
   className?: string;
   style?: React.CSSProperties;
-  trackHeight?: number;
-  hoverHeight?: number;
+  height?: number;
   activeColor?: string;
   trackColor?: string;
   showThumb?: boolean;
-  forwardedProgressRef?: React.RefObject<HTMLDivElement | null>;
-  forwardedFillRef?: React.RefObject<HTMLDivElement | null>;
-  thumbRef?: React.RefObject<HTMLDivElement | null>;
+  forwardedContainerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
-export const MaterialProgressBar: React.FC<MaterialProgressBarProps> = ({
+export const MaterialProgressBar = forwardRef<MaterialProgressBarHandle, MaterialProgressBarProps>(({
   value,
   max = 1,
-  buffer = 0,
-  indeterminate = false,
+  isPlaying = false,
   interactive = true,
   onSeek,
   onDragStart,
   onDragEnd,
+  onMouseDown,
+  onTouchStart,
   ariaLabel,
   className = '',
   style,
-  trackHeight = 4,
-  hoverHeight = 6,
+  height = 14,
   activeColor,
   trackColor,
   showThumb = true,
-  forwardedProgressRef,
-  forwardedFillRef,
-  thumbRef,
-}) => {
+  forwardedContainerRef,
+}, ref) => {
   const localContainerRef = useRef<HTMLDivElement>(null);
-  const containerRef = forwardedProgressRef || localContainerRef;
-  const mdLinearRef = useRef<MdLinearProgress>(null);
-  const localFillRef = useRef<HTMLDivElement>(null);
-  const fillRef = forwardedFillRef || localFillRef;
-  const localThumbRef = useRef<HTMLDivElement>(null);
-  const activeThumbRef = thumbRef || localThumbRef;
+  const containerRef = forwardedContainerRef || localContainerRef;
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [isHovered, setIsHovered] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const isDraggingRef = useRef(false);
-  const lastFractionRef = useRef(0);
 
-  const normalizedFraction = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
+  const isDraggingRef = useRef(false);
+  const isHoveredRef = useRef(false);
+  const isPlayingRef = useRef(isPlaying);
+  const fractionRef = useRef(max > 0 ? Math.max(0, Math.min(1, value / max)) : 0);
+  const amplitudeRef = useRef(isPlaying ? 3.5 : 0);
+  const phaseRef = useRef(0);
+  const lastTimeRef = useRef(performance.now());
+  const rafIdRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (mdLinearRef.current && !isDraggingRef.current) {
-      mdLinearRef.current.value = normalizedFraction;
-      if (buffer > 0) {
-        mdLinearRef.current.buffer = Math.max(0, Math.min(1, buffer / max));
-      }
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  useEffect(() => {
+    if (!isDraggingRef.current) {
+      fractionRef.current = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
     }
-  }, [normalizedFraction, buffer, max]);
+  }, [value, max]);
+
+  useImperativeHandle(ref, () => ({
+    setProgress: (newFraction: number) => {
+      if (!isDraggingRef.current) {
+        fractionRef.current = Math.max(0, Math.min(1, newFraction));
+      }
+    },
+    setPlaying: (playing: boolean) => {
+      isPlayingRef.current = playing;
+    },
+  }), []);
 
   const updateFromPointer = useCallback((clientX: number) => {
     const el = containerRef.current;
@@ -75,25 +86,15 @@ export const MaterialProgressBar: React.FC<MaterialProgressBarProps> = ({
     const rect = el.getBoundingClientRect();
     if (rect.width <= 0) return;
     const fraction = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    lastFractionRef.current = fraction;
-
-    if (mdLinearRef.current) {
-      mdLinearRef.current.value = fraction;
-    }
-    if (fillRef.current) {
-      fillRef.current.style.width = `${fraction * 100}%`;
-    }
-    if (activeThumbRef.current) {
-      activeThumbRef.current.style.left = `${fraction * 100}%`;
-    }
+    fractionRef.current = fraction;
     onSeek?.(fraction);
-  }, [containerRef, fillRef, activeThumbRef, onSeek]);
+  }, [containerRef, onSeek]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    onMouseDown?.(e);
     if (!interactive) return;
     e.stopPropagation();
     isDraggingRef.current = true;
-    setIsDragging(true);
     onDragStart?.();
     updateFromPointer(e.clientX);
 
@@ -105,21 +106,20 @@ export const MaterialProgressBar: React.FC<MaterialProgressBarProps> = ({
     const handleMouseUp = () => {
       if (!isDraggingRef.current) return;
       isDraggingRef.current = false;
-      setIsDragging(false);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
-      onDragEnd?.(lastFractionRef.current);
+      onDragEnd?.(fractionRef.current);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
-  }, [interactive, updateFromPointer, onDragStart, onDragEnd]);
+  }, [interactive, updateFromPointer, onDragStart, onDragEnd, onMouseDown]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    onTouchStart?.(e);
     if (!interactive || !e.touches[0]) return;
     e.stopPropagation();
     isDraggingRef.current = true;
-    setIsDragging(true);
     onDragStart?.();
     updateFromPointer(e.touches[0].clientX);
 
@@ -131,41 +131,169 @@ export const MaterialProgressBar: React.FC<MaterialProgressBarProps> = ({
     const handleTouchEnd = () => {
       if (!isDraggingRef.current) return;
       isDraggingRef.current = false;
-      setIsDragging(false);
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
       window.removeEventListener('touchcancel', handleTouchEnd);
-      onDragEnd?.(lastFractionRef.current);
+      onDragEnd?.(fractionRef.current);
     };
 
     window.addEventListener('touchmove', handleTouchMove, { passive: true });
     window.addEventListener('touchend', handleTouchEnd);
     window.addEventListener('touchcancel', handleTouchEnd);
-  }, [interactive, updateFromPointer, onDragStart, onDragEnd]);
+  }, [interactive, updateFromPointer, onDragStart, onDragEnd, onTouchStart]);
 
-  const isExpanded = isHovered || isDragging;
-  const currentTrackHeight = isExpanded ? hoverHeight : trackHeight;
+  useEffect(() => {
+    isHoveredRef.current = isHovered;
+  }, [isHovered]);
 
-  const resolvedActiveColor = activeColor || 'var(--md-sys-color-primary, var(--accent-color, #7C3AED))';
-  const resolvedTrackColor = trackColor || 'var(--md-sys-color-surface-container-highest, rgba(255, 255, 255, 0.16))';
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let isRunning = true;
+
+    const render = (now: number) => {
+      if (!isRunning) return;
+
+      const dt = Math.min(0.1, (now - lastTimeRef.current) / 1000);
+      lastTimeRef.current = now;
+
+      const targetAmplitude = isPlayingRef.current ? 3.5 : 0;
+      amplitudeRef.current += (targetAmplitude - amplitudeRef.current) * Math.min(1, dt * 10);
+
+      if (isPlayingRef.current || amplitudeRef.current > 0.05) {
+        phaseRef.current -= dt * 18;
+      }
+
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const expectedWidth = Math.round(rect.width * dpr);
+      const expectedHeight = Math.round(rect.height * dpr);
+
+      if (canvas.width !== expectedWidth || canvas.height !== expectedHeight) {
+        canvas.width = expectedWidth;
+        canvas.height = expectedHeight;
+      }
+
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, rect.width, rect.height);
+
+      const width = rect.width;
+      const h = rect.height;
+      const centerY = h / 2;
+      const fraction = fractionRef.current;
+      const progressX = Math.max(0, Math.min(width, fraction * width));
+
+      const isCurrentHovered = isHoveredRef.current;
+      const isCurrentDragging = isDraggingRef.current;
+      const isExpanded = isCurrentHovered || isCurrentDragging;
+
+      const strokeW = isExpanded ? 5 : 4;
+      let computedActive = '#7C3AED';
+      let computedTrack = 'rgba(255, 255, 255, 0.16)';
+
+      const containerEl = containerRef.current;
+      if (containerEl) {
+        const comp = getComputedStyle(containerEl);
+        computedActive = activeColor || comp.getPropertyValue('--player-progress').trim() || comp.getPropertyValue('--accent-color').trim() || '#7C3AED';
+        computedTrack = trackColor || comp.getPropertyValue('--player-track-bg').trim() || comp.getPropertyValue('--surface-muted').trim() || 'rgba(255, 255, 255, 0.16)';
+      }
+
+      if (progressX < width) {
+        ctx.beginPath();
+        ctx.moveTo(progressX, centerY);
+        ctx.lineTo(width, centerY);
+        ctx.strokeStyle = computedTrack;
+        ctx.lineWidth = strokeW;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+      }
+
+      if (progressX > 0) {
+        ctx.beginPath();
+        ctx.moveTo(0, centerY);
+
+        const currentAmp = amplitudeRef.current;
+        const currentPhase = phaseRef.current;
+        const wavelength = 32;
+        const step = 2;
+
+        for (let x = 0; x <= progressX; x += step) {
+          const taperStart = Math.min(1, x / 16);
+          const taperEnd = Math.min(1, (progressX - x) / 16);
+          const taper = taperStart * taperEnd;
+          const y = centerY + Math.sin((x / wavelength) * 2 * Math.PI + currentPhase) * currentAmp * taper;
+          ctx.lineTo(x, y);
+        }
+        ctx.lineTo(progressX, centerY);
+
+        ctx.strokeStyle = computedActive;
+        ctx.lineWidth = strokeW;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+      }
+
+      if (showThumb) {
+        if (isExpanded) {
+          ctx.beginPath();
+          ctx.arc(progressX, centerY, 13, 0, Math.PI * 2);
+          ctx.fillStyle = computedActive;
+          ctx.globalAlpha = isCurrentDragging ? 0.22 : 0.12;
+          ctx.fill();
+          ctx.globalAlpha = 1.0;
+        }
+
+        const thumbRadius = isExpanded ? 6 : 3.5;
+        ctx.beginPath();
+        ctx.arc(progressX, centerY, thumbRadius, 0, Math.PI * 2);
+        ctx.fillStyle = computedActive;
+        if (isExpanded) {
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+          ctx.shadowBlur = 4;
+          ctx.shadowOffsetY = 1;
+        }
+        ctx.fill();
+        ctx.shadowColor = 'transparent';
+      }
+
+      ctx.restore();
+
+      rafIdRef.current = requestAnimationFrame(render);
+    };
+
+    rafIdRef.current = requestAnimationFrame(render);
+
+    return () => {
+      isRunning = false;
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
+  }, [showThumb, activeColor, trackColor]);
+
+  const normalizedFraction = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
 
   return (
     <div
       ref={containerRef}
-      className={`material-progress-container ${className}`}
+      className={`material-wavy-progress-container ${className}`}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      aria-label={ariaLabel}
       role={interactive ? 'slider' : 'progressbar'}
+      aria-label={ariaLabel}
       aria-valuenow={Math.round(normalizedFraction * 100)}
       aria-valuemin={0}
       aria-valuemax={100}
       style={{
         position: 'relative',
         width: '100%',
-        height: `${Math.max(14, currentTrackHeight + 10)}px`,
+        height: `${height}px`,
         display: 'flex',
         alignItems: 'center',
         cursor: interactive ? 'pointer' : 'default',
@@ -175,93 +303,17 @@ export const MaterialProgressBar: React.FC<MaterialProgressBarProps> = ({
         ...style,
       }}
     >
-      <div
+      <canvas
+        ref={canvasRef}
         style={{
-          position: 'relative',
           width: '100%',
-          height: `${currentTrackHeight}px`,
-          borderRadius: '9999px',
-          overflow: 'hidden',
-          backgroundColor: resolvedTrackColor,
-          transition: 'height 0.15s cubic-bezier(0.2, 0, 0, 1)',
+          height: '100%',
+          display: 'block',
+          pointerEvents: 'none',
         }}
-      >
-        <md-linear-progress
-          ref={mdLinearRef}
-          value={normalizedFraction}
-          max={1}
-          buffer={buffer > 0 ? buffer / max : 0}
-          indeterminate={indeterminate}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            pointerEvents: 'none',
-            '--md-linear-progress-active-indicator-color': resolvedActiveColor,
-            '--md-linear-progress-track-color': resolvedTrackColor,
-            '--md-linear-progress-track-height': `${currentTrackHeight}px`,
-            '--md-linear-progress-active-indicator-height': `${currentTrackHeight}px`,
-            '--md-linear-progress-track-shape': '9999px',
-          } as React.CSSProperties}
-        />
-        <div
-          ref={fillRef}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            height: '100%',
-            width: `${normalizedFraction * 100}%`,
-            backgroundColor: resolvedActiveColor,
-            borderRadius: '9999px',
-            pointerEvents: 'none',
-            willChange: 'width',
-          }}
-        />
-      </div>
-
-      {showThumb && interactive && (
-        <div
-          ref={activeThumbRef}
-          style={{
-            position: 'absolute',
-            left: `${normalizedFraction * 100}%`,
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
-            pointerEvents: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10,
-            transition: isDragging ? 'none' : 'left 0.05s linear',
-          }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              width: '28px',
-              height: '28px',
-              borderRadius: '9999px',
-              backgroundColor: resolvedActiveColor,
-              opacity: isDragging ? 0.16 : isHovered ? 0.08 : 0,
-              transform: isExpanded ? 'scale(1)' : 'scale(0)',
-              transition: 'transform 0.15s cubic-bezier(0.2, 0, 0, 1), opacity 0.15s ease',
-            }}
-          />
-          <div
-            style={{
-              width: isExpanded ? '12px' : '4px',
-              height: isExpanded ? '12px' : `${currentTrackHeight}px`,
-              borderRadius: '9999px',
-              backgroundColor: resolvedActiveColor,
-              boxShadow: isExpanded ? '0 1px 3px rgba(0, 0, 0, 0.4)' : 'none',
-              transform: isExpanded ? 'scale(1)' : 'scale(0.8)',
-              transition: 'width 0.15s ease, height 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease',
-            }}
-          />
-        </div>
-      )}
+      />
     </div>
   );
-};
+});
+
+MaterialProgressBar.displayName = 'MaterialProgressBar';

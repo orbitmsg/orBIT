@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import '@material/web/progress/linear-progress.js';
 import { useAudioStore } from '../../store/useAudioStore';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
@@ -7,6 +6,7 @@ import { AudioQueueMenu } from './AudioQueueMenu';
 import { AudioVolumePopover, AudioOrderPopover, AudioSpeedPopover } from './AudioControlsPopups';
 import { SmoothPlayPauseIcon } from './SmoothPlayPauseIcon';
 import { appVisibility } from '../../utils/appVisibility';
+import { MaterialProgressBar, type MaterialProgressBarHandle } from '../common/MaterialProgressBar';
 
 const formatTime = (seconds: number) => {
   if (!seconds || !isFinite(seconds)) return '00:00';
@@ -36,20 +36,8 @@ export const GlobalAudioPlayer = () => {
   const toggleRepeat = useAudioStore((state) => state.toggleRepeat);
   const clearQueue = useAudioStore((state) => state.clearQueue);
 
-  const progressRef = useRef<HTMLDivElement>(null);
-  const progressFillRef = useRef<HTMLDivElement>(null);
-  const progressThumbRef = useRef<HTMLDivElement>(null);
+  const wavyBarRef = useRef<MaterialProgressBarHandle>(null);
   const timeDisplayRef = useRef<HTMLSpanElement>(null);
-  const rafIdRef = useRef<number | null>(null);
-  const dragStateRef = useRef<{ isDragging: boolean; percent: number; targetTime: number }>({
-    isDragging: false,
-    percent: 0,
-    targetTime: 0,
-  });
-
-  const [isDragging, setIsDragging] = useState(false);
-  const [isHovering, setIsHovering] = useState(false);
-
   // Popups & Menus
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
@@ -66,111 +54,13 @@ export const GlobalAudioPlayer = () => {
 
   const playerRef = useRef<HTMLDivElement>(null);
 
-  const updateVisualProgress = useCallback((clientX: number) => {
-    if (!progressRef.current || !duration || duration <= 0) return;
-    const rect = progressRef.current.getBoundingClientRect();
-    const rawPercent = (clientX - rect.left) / rect.width;
-    const clampedPercent = Math.max(0, Math.min(rawPercent, 1));
-    const newTime = clampedPercent * duration;
-
-    dragStateRef.current.percent = clampedPercent;
-    dragStateRef.current.targetTime = newTime;
-
-    if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
-    rafIdRef.current = requestAnimationFrame(() => {
-      if (progressFillRef.current) {
-        progressFillRef.current.style.width = `${clampedPercent * 100}%`;
-      }
-      if (progressThumbRef.current) {
-        progressThumbRef.current.style.left = `${clampedPercent * 100}%`;
-      }
-      if (timeDisplayRef.current) {
-        timeDisplayRef.current.textContent = formatTime(newTime);
-      }
-    });
-  }, [duration]);
-
-  const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!progressRef.current || !duration || duration <= 0) return;
-    const rect = progressRef.current.getBoundingClientRect();
-    const percent = Math.max(0, Math.min((e.clientX - rect.left) / rect.width, 1));
-    const newTime = percent * duration;
-    seek(newTime);
-  }, [duration, seek]);
-
-  const handleProgressMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-    dragStateRef.current.isDragging = true;
-    setIsDragging(true);
-    setSeeking(true);
-    updateVisualProgress(e.clientX);
-  }, [updateVisualProgress, setSeeking]);
-
-  const handleProgressMouseMove = useCallback((e: MouseEvent) => {
-    if (!dragStateRef.current.isDragging) return;
-    updateVisualProgress(e.clientX);
-  }, [updateVisualProgress]);
-
-  const handleProgressMouseUp = useCallback(() => {
-    if (!dragStateRef.current.isDragging) return;
-    dragStateRef.current.isDragging = false;
-    setIsDragging(false);
-    setSeeking(false);
-    seek(dragStateRef.current.targetTime);
-  }, [seek, setSeeking]);
-
-  const handleProgressTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
-    if (!e.touches[0]) return;
-    e.stopPropagation();
-    dragStateRef.current.isDragging = true;
-    setIsDragging(true);
-    setSeeking(true);
-    updateVisualProgress(e.touches[0].clientX);
-  }, [updateVisualProgress, setSeeking]);
-
-  const handleProgressTouchMove = useCallback((e: TouchEvent) => {
-    if (!dragStateRef.current.isDragging || !e.touches[0]) return;
-    updateVisualProgress(e.touches[0].clientX);
-  }, [updateVisualProgress]);
-
-  const handleProgressTouchEnd = useCallback(() => {
-    if (!dragStateRef.current.isDragging) return;
-    dragStateRef.current.isDragging = false;
-    setIsDragging(false);
-    setSeeking(false);
-    seek(dragStateRef.current.targetTime);
-  }, [seek, setSeeking]);
-
-  useEffect(() => {
-    if (isDragging) {
-      window.addEventListener('mousemove', handleProgressMouseMove, { passive: true });
-      window.addEventListener('mouseup', handleProgressMouseUp);
-      window.addEventListener('touchmove', handleProgressTouchMove, { passive: true });
-      window.addEventListener('touchend', handleProgressTouchEnd);
-      window.addEventListener('touchcancel', handleProgressTouchEnd);
-    } else {
-      window.removeEventListener('mousemove', handleProgressMouseMove);
-      window.removeEventListener('mouseup', handleProgressMouseUp);
-      window.removeEventListener('touchmove', handleProgressTouchMove);
-      window.removeEventListener('touchend', handleProgressTouchEnd);
-      window.removeEventListener('touchcancel', handleProgressTouchEnd);
-    }
-    return () => {
-      window.removeEventListener('mousemove', handleProgressMouseMove);
-      window.removeEventListener('mouseup', handleProgressMouseUp);
-      window.removeEventListener('touchmove', handleProgressTouchMove);
-      window.removeEventListener('touchend', handleProgressTouchEnd);
-      window.removeEventListener('touchcancel', handleProgressTouchEnd);
-    };
-  }, [isDragging, handleProgressMouseMove, handleProgressMouseUp, handleProgressTouchMove, handleProgressTouchEnd]);
-
   useEffect(() => {
     let animId: number;
     let lastAudioTime = 0;
     let lastSyncTime = performance.now();
 
     const tick = () => {
-      if (dragStateRef.current.isDragging) return;
+      if (useAudioStore.getState().isSeeking) return;
 
       const getLiveTime = useAudioStore.getState().getLiveTime;
       const liveAudioTime = getLiveTime ? getLiveTime() : useAudioStore.getState().currentTime;
@@ -190,13 +80,8 @@ export const GlobalAudioPlayer = () => {
         lastAudioTime = liveAudioTime;
       }
 
-      const pct = duration > 0 ? (currentExactTime / duration) * 100 : 0;
-      if (progressFillRef.current) {
-        progressFillRef.current.style.width = `${pct}%`;
-      }
-      if (progressThumbRef.current) {
-        progressThumbRef.current.style.left = `${pct}%`;
-      }
+      const fraction = duration > 0 ? currentExactTime / duration : 0;
+      wavyBarRef.current?.setProgress(fraction);
       if (timeDisplayRef.current) {
         timeDisplayRef.current.textContent = formatTime(currentExactTime);
       }
@@ -213,13 +98,8 @@ export const GlobalAudioPlayer = () => {
         tick();
       }
     } else {
-      const pct = duration > 0 ? (currentTime / duration) * 100 : 0;
-      if (progressFillRef.current) {
-        progressFillRef.current.style.width = `${pct}%`;
-      }
-      if (progressThumbRef.current) {
-        progressThumbRef.current.style.left = `${pct}%`;
-      }
+      const fraction = duration > 0 ? currentTime / duration : 0;
+      wavyBarRef.current?.setProgress(fraction);
       if (timeDisplayRef.current) {
         timeDisplayRef.current.textContent = formatTime(currentTime);
       }
@@ -302,9 +182,6 @@ export const GlobalAudioPlayer = () => {
 
   if (!currentTrack) return null;
 
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
-  const isExpanded = isHovering || isDragging;
-
   const isInteractiveElement = (target: HTMLElement): boolean => {
     let el: HTMLElement | null = target;
     while (el && el !== playerRef.current) {
@@ -378,7 +255,7 @@ export const GlobalAudioPlayer = () => {
       onClick={handleOpenMenu}
       onContextMenu={handleContextMenu}
       style={{
-        height: '34px',
+        height: '42px',
         backgroundColor: 'var(--surface-container-soft, rgba(255,255,255,0.02))',
         borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.05))',
         overflow: 'hidden',
@@ -411,7 +288,7 @@ export const GlobalAudioPlayer = () => {
           -webkit-user-drag: none !important;
         }
       `}</style>
-      <div className="flex items-center px-2 py-1 gap-1.5" style={{ height: '32px' }}>
+      <div className="flex items-center px-2 pt-1 gap-1.5" style={{ height: '26px' }}>
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -710,115 +587,33 @@ export const GlobalAudioPlayer = () => {
         </button>
       </div>
 
-      <div
-        ref={progressRef}
-        onClick={handleProgressClick}
-        onMouseDown={handleProgressMouseDown}
-        onTouchStart={handleProgressTouchStart}
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
-        role="slider"
-        aria-label={t('mediaViewer.progress', 'Прогресс воспроизведения')}
-        aria-valuenow={Math.round(progress)}
-        aria-valuemin={0}
-        aria-valuemax={100}
+      <MaterialProgressBar
+        ref={wavyBarRef}
+        value={currentTime}
+        max={duration}
+        isPlaying={isPlaying}
+        onSeek={(fraction) => {
+          if (duration > 0) {
+            seek(fraction * duration);
+          }
+        }}
+        onDragStart={() => setSeeking(true)}
+        onDragEnd={(fraction) => {
+          setSeeking(false);
+          if (duration > 0) {
+            seek(fraction * duration);
+          }
+        }}
+        ariaLabel={t('mediaViewer.progress', 'Прогресс воспроизведения')}
+        height={14}
         style={{
           position: 'absolute',
           bottom: 0,
           left: 0,
           right: 0,
-          height: isExpanded ? '12px' : '6px',
-          display: 'flex',
-          alignItems: 'flex-end',
-          cursor: 'pointer',
           zIndex: 5,
-          touchAction: 'none',
         }}
-      >
-        <div
-          style={{
-            position: 'relative',
-            width: '100%',
-            height: isExpanded ? '6px' : '4px',
-            backgroundColor: 'var(--player-track-bg, var(--md-sys-color-surface-container-highest, rgba(255, 255, 255, 0.14)))',
-            borderRadius: '9999px',
-            overflow: 'hidden',
-            transition: 'height 0.15s cubic-bezier(0.2, 0, 0, 1)',
-            willChange: isExpanded ? 'height' : 'auto',
-          }}
-        >
-          <md-linear-progress
-            value={duration > 0 ? currentTime / duration : 0}
-            max={1}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
-              pointerEvents: 'none',
-              '--md-linear-progress-active-indicator-color': 'var(--player-progress, var(--md-sys-color-primary, var(--accent-color)))',
-              '--md-linear-progress-track-color': 'var(--player-track-bg, var(--md-sys-color-surface-container-highest, rgba(255, 255, 255, 0.14)))',
-              '--md-linear-progress-track-height': isExpanded ? '6px' : '4px',
-              '--md-linear-progress-active-indicator-height': isExpanded ? '6px' : '4px',
-              '--md-linear-progress-track-shape': '9999px',
-            } as React.CSSProperties}
-          />
-          <div
-            ref={progressFillRef}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              height: '100%',
-              width: `${progress}%`,
-              backgroundColor: 'var(--player-progress, var(--md-sys-color-primary, var(--accent-color)))',
-              borderRadius: '9999px',
-              transition: 'none',
-              pointerEvents: 'none',
-              willChange: 'width',
-            }}
-          />
-        </div>
-
-        <div
-          ref={progressThumbRef}
-          style={{
-            position: 'absolute',
-            left: `${progress}%`,
-            bottom: isExpanded ? '3px' : '2px',
-            transform: 'translate(-50%, 50%)',
-            pointerEvents: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: isExpanded ? 1 : 0,
-            transition: isDragging ? 'none' : 'opacity 0.12s ease, bottom 0.15s ease',
-            zIndex: 6,
-          }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              width: '24px',
-              height: '24px',
-              borderRadius: '9999px',
-              backgroundColor: 'var(--player-progress, var(--md-sys-color-primary, var(--accent-color)))',
-              opacity: isDragging ? 0.2 : 0.1,
-              transform: isExpanded ? 'scale(1)' : 'scale(0)',
-              transition: 'transform 0.15s cubic-bezier(0.2, 0, 0, 1)',
-            }}
-          />
-          <div
-            style={{
-              width: '10px',
-              height: '10px',
-              borderRadius: '9999px',
-              backgroundColor: 'var(--player-progress, var(--md-sys-color-primary, var(--accent-color)))',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.4)',
-            }}
-          />
-        </div>
-      </div>
+      />
 
       {/* Volume Popover */}
       {isVolumeOpen && (

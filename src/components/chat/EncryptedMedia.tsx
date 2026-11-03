@@ -1,5 +1,4 @@
 import React, { useMemo, memo, useState, useRef, useEffect, useCallback } from 'react';
-import '@material/web/progress/linear-progress.js';
 import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../../store/useChatStore';
 import { useDecryptedMedia, calculateMediaDisplaySize } from '../../lib/media-utils';
@@ -8,6 +7,7 @@ import { SmartGifPlayer } from './SmartGifPlayer';
 import { orbitFs } from './chatUtils';
 import { AnimatedVideoVolumeIcon } from './ChatIcons';
 import { useAppVisibility } from '../../utils/appVisibility';
+import { MaterialProgressBar } from '../common/MaterialProgressBar';
 
 interface EncryptedMediaProps {
   url: string;
@@ -540,44 +540,14 @@ export const EncryptedMedia = memo(({
                 userSelect: 'none',
               }}
             >
-              <div
-                style={{
-                  position: 'relative',
-                  width: '100%',
-                  height: '4px',
-                  backgroundColor: 'var(--md-sys-color-surface-container-highest, rgba(255, 255, 255, 0.22))',
-                  borderRadius: '9999px',
-                  overflow: 'hidden',
-                }}
-              >
-                <md-linear-progress
-                  value={(videoDuration || duration || 0) > 0 ? Math.min(1, Math.max(0, (videoRef.current?.currentTime || 0) / (videoDuration || duration || 1))) : 0}
-                  max={1}
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    width: '100%',
-                    height: '100%',
-                    pointerEvents: 'none',
-                    '--md-linear-progress-active-indicator-color': 'var(--md-sys-color-primary, var(--accent-color, #7C3AED))',
-                    '--md-linear-progress-track-color': 'var(--md-sys-color-surface-container-highest, rgba(255, 255, 255, 0.22))',
-                    '--md-linear-progress-track-height': '4px',
-                    '--md-linear-progress-active-indicator-height': '4px',
-                    '--md-linear-progress-track-shape': '9999px',
-                  } as React.CSSProperties}
-                />
-                <div
-                  ref={progressFillRef}
-                  style={{
-                    height: '100%',
-                    width: `${(videoDuration || duration || 0) > 0 ? Math.min(100, Math.max(0, ((videoRef.current?.currentTime || 0) / (videoDuration || duration || 1)) * 100)) : 0}%`,
-                    backgroundColor: 'var(--md-sys-color-primary, var(--accent-color, #7C3AED))',
-                    borderRadius: '9999px',
-                    willChange: 'width',
-                    pointerEvents: 'none',
-                  }}
-                />
-              </div>
+              <MaterialProgressBar
+                value={videoRef.current?.currentTime || 0}
+                max={videoDuration || duration || 1}
+                isPlaying={Boolean(shouldPlay && blobUrl)}
+                interactive={false}
+                height={10}
+                showThumb={false}
+              />
             </div>
           )}
         </div>

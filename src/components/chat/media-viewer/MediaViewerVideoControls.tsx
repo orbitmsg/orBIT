@@ -1,6 +1,7 @@
 import React, { RefObject, useState, useRef, useEffect, useCallback } from 'react';
 import '@material/web/progress/linear-progress.js';
 import { useTranslation } from 'react-i18next';
+import { MaterialProgressBar } from '../../common/MaterialProgressBar';
 import {
   Volume2,
   VolumeX,
@@ -42,7 +43,7 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
   isPlaying,
   areControlsVisible,
   isVideoControlsHovered,
-  isVideoProgressHovered,
+  isVideoProgressHovered: _isVideoProgressHovered,
   isMuted,
   volume = 1,
   playbackRate,
@@ -50,7 +51,7 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
   duration,
   isWindowMaximized = false,
   videoProgressRef,
-  videoProgressFillRef,
+  videoProgressFillRef: _videoProgressFillRef,
   videoTimeDisplayRef,
   onTogglePlay,
   onToggleMute,
@@ -469,109 +470,19 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
           {formatVideoTime(currentTime)}
         </span>
 
-        <div
-          ref={videoProgressRef}
+        <MaterialProgressBar
+          value={currentTime}
+          max={duration}
+          isPlaying={isPlaying}
+          forwardedContainerRef={videoProgressRef}
           onMouseDown={onProgressMouseDown}
           onTouchStart={onProgressTouchStart}
-          onMouseEnter={() => setIsVideoProgressHovered(true)}
-          onMouseLeave={() => setIsVideoProgressHovered(false)}
-          role="slider"
-          aria-label={t('mediaViewer.progress', 'Прогресс воспроизведения')}
-          aria-valuenow={Math.round(duration > 0 ? (currentTime / duration) * 100 : 0)}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          style={{
-            position: 'relative',
-            flex: 1,
-            height: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            cursor: 'pointer',
-            userSelect: 'none',
-            touchAction: 'none',
-          }}
-        >
-          <div
-            style={{
-              position: 'relative',
-              width: '100%',
-              height: isVideoProgressHovered ? '6px' : '4px',
-              backgroundColor: 'var(--md-sys-color-surface-container-highest, rgba(255, 255, 255, 0.2))',
-              borderRadius: '9999px',
-              transition: 'height 0.15s cubic-bezier(0.2, 0, 0, 1)',
-              overflow: 'hidden',
-            }}
-          >
-            <md-linear-progress
-              value={duration > 0 ? currentTime / duration : 0}
-              max={1}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                width: '100%',
-                height: '100%',
-                pointerEvents: 'none',
-                '--md-linear-progress-active-indicator-color': 'var(--md-sys-color-primary, var(--accent-color, #7C3AED))',
-                '--md-linear-progress-track-color': 'var(--md-sys-color-surface-container-highest, rgba(255, 255, 255, 0.2))',
-                '--md-linear-progress-track-height': isVideoProgressHovered ? '6px' : '4px',
-                '--md-linear-progress-active-indicator-height': isVideoProgressHovered ? '6px' : '4px',
-                '--md-linear-progress-track-shape': '9999px',
-              } as React.CSSProperties}
-            />
-            <div
-              ref={videoProgressFillRef}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                height: '100%',
-                width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`,
-                backgroundColor: 'var(--md-sys-color-primary, var(--accent-color, #7C3AED))',
-                borderRadius: '9999px',
-                willChange: 'width',
-                pointerEvents: 'none',
-              }}
-            />
-          </div>
-          <div
-            style={{
-              position: 'absolute',
-              left: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`,
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-              pointerEvents: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 10,
-              opacity: isVideoProgressHovered ? 1 : 0,
-              transition: 'opacity 0.15s ease',
-            }}
-          >
-            <div
-              style={{
-                position: 'absolute',
-                width: '24px',
-                height: '24px',
-                borderRadius: '9999px',
-                backgroundColor: 'var(--md-sys-color-primary, var(--accent-color, #7C3AED))',
-                opacity: 0.16,
-                transform: isVideoProgressHovered ? 'scale(1)' : 'scale(0)',
-                transition: 'transform 0.15s cubic-bezier(0.2, 0, 0, 1)',
-              }}
-            />
-            <div
-              style={{
-                width: isVideoProgressHovered ? '12px' : '6px',
-                height: isVideoProgressHovered ? '12px' : '6px',
-                borderRadius: '9999px',
-                backgroundColor: 'var(--md-sys-color-primary, var(--accent-color, #7C3AED))',
-                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.5)',
-                transition: 'width 0.15s ease, height 0.15s ease',
-              }}
-            />
-          </div>
-        </div>
+          onDragStart={() => setIsVideoProgressHovered(true)}
+          onDragEnd={() => setIsVideoProgressHovered(false)}
+          ariaLabel={t('mediaViewer.progress', 'Прогресс воспроизведения')}
+          height={16}
+          style={{ flex: 1 }}
+        />
 
         <span
           onClick={() => setShowRemaining((prev) => !prev)}

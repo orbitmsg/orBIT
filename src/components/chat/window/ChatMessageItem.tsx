@@ -1,5 +1,4 @@
-import React, { useCallback, useRef, useEffect } from 'react';
-import { runTelegramDisintegration } from '../../../utils/telegramDisintegration';
+import React, { useCallback } from 'react';
 import { File } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, type Message, type MediaItem, isMessageOutgoing } from '../../../store/useChatStore';
@@ -101,48 +100,6 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
 }) => {
   const { t } = useTranslation();
   const stickersAutoplayChat = useChatStore((s) => s.stickersAutoplayChat);
-  const isDeleting = useChatStore((s) => Boolean(msg.id && s.deletingMessageIds?.[msg.id]));
-  const itemContainerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isDeleting || !itemContainerRef.current) return;
-    const containerEl = itemContainerRef.current;
-    const initialHeight = containerEl.offsetHeight;
-
-    const bubbleEl =
-      containerEl.querySelector<HTMLElement>('[data-bubble="true"]') ||
-      containerEl.querySelector<HTMLElement>('[data-message="true"]') ||
-      containerEl;
-
-    if (bubbleEl) {
-      bubbleEl.style.opacity = '0';
-    }
-
-    containerEl.style.height = `${initialHeight}px`;
-    containerEl.style.overflow = 'hidden';
-    containerEl.style.pointerEvents = 'none';
-    containerEl.style.transition =
-      'height 380ms cubic-bezier(0.4, 0, 0.2, 1), opacity 320ms ease, margin 380ms cubic-bezier(0.4, 0, 0.2, 1), padding 380ms cubic-bezier(0.4, 0, 0.2, 1)';
-
-    requestAnimationFrame(() => {
-      containerEl.style.height = '0px';
-      containerEl.style.marginTop = '0px';
-      containerEl.style.marginBottom = '0px';
-      containerEl.style.paddingTop = '0px';
-      containerEl.style.paddingBottom = '0px';
-      containerEl.style.opacity = '0';
-    });
-
-    const cancel = runTelegramDisintegration(bubbleEl, () => {
-      if (activeChatId && msg.id) {
-        useChatStore.getState().deleteMessage(activeChatId, msg.id, true);
-      }
-    });
-
-    return () => {
-      cancel();
-    };
-  }, [isDeleting, activeChatId, msg.id]);
 
   const isOwn = isMessageOutgoing(msg, myCode, myNickname, activeChat, myUserId);
   const media = parseMedia(msg);
@@ -1219,9 +1176,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   };
 
   return (
-    <div ref={itemContainerRef} className="w-full flex flex-col">
+    <>
       {dateDividerNode}
       {renderContent()}
-    </div>
+    </>
   );
 };

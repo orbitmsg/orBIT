@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { runTelegramDisintegration } from '../utils/telegramDisintegration';
 import { persist } from 'zustand/middleware';
 import { ThemeId, DEFAULT_CHAT_COLOR, applyThemeToRoot } from '../theme';
 import { generateChatId as genChatId } from '../lib/crypto';
@@ -749,36 +750,21 @@ export const useChatStore = create<ChatState>()(
           }
         }
       },
-      deleteMessage: (chatId, messageId, immediate = false) => {
+      deleteMessage: (chatId, messageId) => {
         const state = get();
-        if (!immediate && state.activeChatId === chatId) {
-          const messages = state.messagesByChatId[chatId] || [];
-          const baseId = messageId.replace(/_part_\d+$/, '');
-          const msg = messages.find(m => m.id === messageId || m.id === baseId);
-          if (msg) {
-            const domEl = typeof document !== 'undefined' ? document.querySelector(`[data-message-id="${messageId}"]`) : null;
-            if (domEl) {
-              set({
-                deletingMessageIds: {
-                  ...state.deletingMessageIds,
-                  [messageId]: true,
-                },
-              });
-              setTimeout(() => {
-                get().deleteMessage(chatId, messageId, true);
-              }, 550);
-              return;
-            }
+        if (typeof document !== 'undefined' && state.activeChatId === chatId) {
+          const domEl = document.querySelector(`[data-message-id="${messageId}"]`);
+          if (domEl) {
+            const bubbleEl = (domEl.querySelector<HTMLElement>('[data-bubble="true"]') ||
+              domEl.querySelector<HTMLElement>('[data-message="true"]') ||
+              domEl) as HTMLElement;
+            runTelegramDisintegration(bubbleEl);
           }
         }
         const messages = state.messagesByChatId[chatId] || [];
         const baseId = messageId.replace(/_part_\d+$/, '');
         const updated = messages.filter(m => m.id !== messageId && m.id !== baseId);
-        const nextDeleting = { ...(state.deletingMessageIds || {}) };
-        delete nextDeleting[messageId];
-        delete nextDeleting[baseId];
         set({
-          deletingMessageIds: nextDeleting,
           messagesByChatId: {
             ...state.messagesByChatId,
             [chatId]: updated,

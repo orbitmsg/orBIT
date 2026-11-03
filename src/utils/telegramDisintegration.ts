@@ -3,6 +3,7 @@ interface Particle {
   y: number;
   vx: number;
   vy: number;
+  sway: number;
   size: number;
   delay: number;
   life: number;
@@ -37,15 +38,15 @@ function isInsideRoundedRect(x: number, y: number, w: number, h: number, r: numb
 
 export function runTelegramDisintegration(
   bubbleEl: HTMLElement,
-  onComplete: () => void
+  onComplete?: () => void
 ): () => void {
   if (typeof window === 'undefined') {
-    onComplete();
+    onComplete?.();
     return () => {};
   }
 
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    onComplete();
+    onComplete?.();
     return () => {};
   }
 
@@ -54,7 +55,7 @@ export function runTelegramDisintegration(
   const height = Math.ceil(bubbleRect.height);
 
   if (width < 4 || height < 4) {
-    onComplete();
+    onComplete?.();
     return () => {};
   }
 
@@ -63,15 +64,17 @@ export function runTelegramDisintegration(
 
   const canvas = document.createElement('canvas');
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const offsetY = 20;
-  const extraBottom = 6;
-  const totalCanvasWidth = width;
+  const offsetY = 65;
+  const extraLeft = 35;
+  const extraRight = 35;
+  const extraBottom = 25;
+  const totalCanvasWidth = width + extraLeft + extraRight;
   const totalCanvasHeight = height + offsetY + extraBottom;
 
   canvas.width = Math.round(totalCanvasWidth * dpr);
   canvas.height = Math.round(totalCanvasHeight * dpr);
   canvas.style.position = 'absolute';
-  canvas.style.left = `${Math.round(bubbleRect.left - containerRect.left)}px`;
+  canvas.style.left = `${Math.round(bubbleRect.left - containerRect.left - extraLeft)}px`;
   canvas.style.top = `${Math.round(bubbleRect.top - containerRect.top + container.scrollTop - offsetY)}px`;
   canvas.style.width = `${totalCanvasWidth}px`;
   canvas.style.height = `${totalCanvasHeight}px`;
@@ -80,7 +83,7 @@ export function runTelegramDisintegration(
 
   const ctx = canvas.getContext('2d', { alpha: true });
   if (!ctx) {
-    onComplete();
+    onComplete?.();
     return () => {};
   }
   ctx.scale(dpr, dpr);
@@ -111,7 +114,7 @@ export function runTelegramDisintegration(
   });
 
   const borderRadius = parseFloat(computedStyle.borderRadius) || 12;
-  const STEP = 3.5;
+  const STEP = 2.4;
   const particles: Particle[] = [];
 
   for (let y = 1; y < height; y += STEP) {
@@ -131,7 +134,7 @@ export function runTelegramDisintegration(
         }
       }
 
-      if (!isText && Math.random() < 0.38) {
+      if (!isText && Math.random() < 0.12) {
         continue;
       }
 
@@ -140,17 +143,19 @@ export function runTelegramDisintegration(
       const px = Math.max(0, Math.min(width, x + jx));
       const py = Math.max(0, Math.min(height, y + jy));
 
-      const delay = Math.random() * 90 + (px / width) * 45;
-      const life = 260 + Math.random() * 80;
-      const vx = (Math.random() - 0.5) * 1.6;
-      const vy = -(1.2 + Math.random() * 1.8);
-      const size = 2.4 + Math.random() * 1.2;
+      const delay = Math.random() * 180 + (px / width) * 120;
+      const life = 550 + Math.random() * 250;
+      const vx = (Math.random() - 0.5) * (20 + Math.random() * 24);
+      const vy = -(24 + Math.random() * 32);
+      const sway = (Math.random() - 0.5) * 8;
+      const size = 2.2 + Math.random() * 1.4;
 
       particles.push({
-        x: px,
+        x: px + extraLeft,
         y: py + offsetY,
         vx,
         vy,
+        sway,
         size,
         delay,
         life,
@@ -159,7 +164,7 @@ export function runTelegramDisintegration(
     }
   }
 
-  const MAX_PARTICLES = 450;
+  const MAX_PARTICLES = 1400;
   if (particles.length > MAX_PARTICLES) {
     const stride = particles.length / MAX_PARTICLES;
     const filtered: Particle[] = [];
@@ -181,12 +186,12 @@ export function runTelegramDisintegration(
     if (canvas.parentNode) {
       canvas.parentNode.removeChild(canvas);
     }
-    onComplete();
+    onComplete?.();
   };
 
   const frame = (now: number) => {
     const elapsed = now - startTime;
-    if (elapsed >= 420) {
+    if (elapsed >= 880) {
       cleanup();
       return;
     }
@@ -209,10 +214,12 @@ export function runTelegramDisintegration(
       }
 
       const progress = particleElapsed / p.life;
-      const currX = p.x + p.vx * progress * 6;
-      const currY = p.y + p.vy * progress * 5 - progress * progress * 4;
-      const alpha = Math.max(0, 1 - Math.pow(progress, 1.15));
-      const currSize = Math.max(0.6, p.size * (1 - progress * 0.55));
+      const easeOut = 1 - Math.pow(1 - progress, 2.4);
+      const sway = Math.sin(progress * Math.PI) * p.sway;
+      const currX = p.x + p.vx * easeOut + sway;
+      const currY = p.y + p.vy * easeOut;
+      const alpha = Math.max(0, 1 - Math.pow(progress, 1.45));
+      const currSize = Math.max(0.6, p.size * (1 - Math.pow(progress, 1.2) * 0.45));
 
       ctx.globalAlpha = alpha;
       ctx.fillStyle = p.color;

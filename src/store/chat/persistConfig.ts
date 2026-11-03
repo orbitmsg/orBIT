@@ -88,6 +88,7 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
     stickersAutoplayChat: state.stickersAutoplayChat,
     chatAutoPlayVideos: state.chatAutoPlayVideos,
     chatElementAnimations: state.chatElementAnimations,
+    messageDeleteAnimation: state.messageDeleteAnimation,
     callAnimationsEnabled: state.callAnimationsEnabled,
     draftsByChatId: state.draftsByChatId,
     callSoundsEnabled: state.callSoundsEnabled,

@@ -59,7 +59,7 @@ export const SelectionPanel: React.FC<SelectionPanelProps> = ({
             onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
           >
             <Trash size={16} />
-            {t('common.delete')}
+            {t('common.delete')} {selectedCount > 0 ? selectedCount : ''}
           </button>
         )}
 
@@ -85,7 +85,7 @@ export const SelectionPanel: React.FC<SelectionPanelProps> = ({
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)')}
           >
             <Forward size={16} />
-            {t('common.forward')}
+            {t('common.forward')} {selectedCount > 0 ? selectedCount : ''}
           </button>
         )}
       </div>

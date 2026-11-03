@@ -1074,6 +1074,7 @@
       "chat_animations": "Animations in chats",
       "autoplay_videos": "Play videos",
       "element_animations": "Element animations",
+      "message_delete_animation": "Message deletion animation",
       "call_animations": "Call animations",
       "not_available": "Not available yet"
     },

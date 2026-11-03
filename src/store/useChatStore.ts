@@ -239,6 +239,7 @@ export const useChatStore = create<ChatState>()(
       stickersAutoplayChat: false,
       chatAutoPlayVideos: false,
       chatElementAnimations: true,
+      messageDeleteAnimation: true,
       callAnimationsEnabled: false,
 
       draftsByChatId: {},
@@ -752,7 +753,7 @@ export const useChatStore = create<ChatState>()(
       },
       deleteMessage: (chatId, messageId) => {
         const state = get();
-        if (typeof document !== 'undefined' && state.activeChatId === chatId) {
+        if (state.messageDeleteAnimation !== false && typeof document !== 'undefined' && state.activeChatId === chatId) {
           const domEl = document.querySelector(`[data-message-id="${messageId}"]`);
           if (domEl) {
             const bubbleEl = (domEl.querySelector<HTMLElement>('[data-bubble="true"]') ||
@@ -785,17 +786,15 @@ export const useChatStore = create<ChatState>()(
       deleteMessages: (chatId, messageIds) => {
         if (!chatId || !messageIds || messageIds.length === 0) return;
         const state = get();
-        if (typeof document !== 'undefined' && state.activeChatId === chatId) {
+        if (state.messageDeleteAnimation !== false && typeof document !== 'undefined' && state.activeChatId === chatId) {
           const particleBudget = Math.max(350, Math.floor(6000 / messageIds.length));
-          messageIds.forEach((messageId, index) => {
+          messageIds.forEach((messageId) => {
             const domEl = document.querySelector(`[data-message-id="${messageId}"]`);
             if (domEl) {
               const bubbleEl = (domEl.querySelector<HTMLElement>('[data-bubble="true"]') ||
                 domEl.querySelector<HTMLElement>('[data-message="true"]') ||
                 domEl) as HTMLElement;
-              setTimeout(() => {
-                runTelegramDisintegration(bubbleEl, undefined, particleBudget);
-              }, Math.min(index * 15, 150));
+              runTelegramDisintegration(bubbleEl, undefined, particleBudget);
             }
           });
         }
@@ -1604,6 +1603,7 @@ export const useChatStore = create<ChatState>()(
       setStickersAutoplayChat: (enabled) => set({ stickersAutoplayChat: enabled }),
       setChatAutoPlayVideos: (enabled) => set({ chatAutoPlayVideos: enabled }),
       setChatElementAnimations: (enabled) => set({ chatElementAnimations: enabled }),
+      setMessageDeleteAnimation: (enabled) => set({ messageDeleteAnimation: enabled }),
       setCallAnimationsEnabled: (enabled) => set({ callAnimationsEnabled: enabled }),
 
       shouldAutoLoadMedia: (type, sizeBytes, isOwn) => {

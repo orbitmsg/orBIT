@@ -71,7 +71,8 @@ export const MessageList = memo(
   },
   (prev, next) =>
     prev.messages === next.messages &&
-    prev.startIndex === next.startIndex
+    prev.startIndex === next.startIndex &&
+    prev.renderFn === next.renderFn
 );
 MessageList.displayName = 'MessageList';
 

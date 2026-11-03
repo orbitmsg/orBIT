@@ -506,11 +506,11 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
       : isHighlighted
       ? 'color-mix(in srgb, var(--accent-color) 22%, transparent)'
       : 'transparent',
-    transition: 'background-color 0.2s ease, padding-left 0.2s ease',
+    transition: 'background-color 0.2s ease, padding-right 0.2s ease',
     paddingTop: topGap,
     paddingBottom: '0px',
-    paddingRight: '10px',
-    paddingLeft: selection.isSelectionMode ? '42px' : '10px',
+    paddingRight: selection.isSelectionMode ? '48px' : '10px',
+    paddingLeft: '10px',
     boxSizing: 'border-box',
     position: 'relative',
     cursor: selection.isSelectionMode ? 'pointer' : 'default',
@@ -522,17 +522,17 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
       <div
         style={{
           position: 'absolute',
-          left: '12px',
+          right: '16px',
           top: '50%',
           transform: 'translateY(-50%)',
-          width: '20px',
-          height: '20px',
+          width: '22px',
+          height: '22px',
           borderRadius: '50%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: isSelected ? 'var(--accent-color, #7C3AED)' : 'transparent',
-          border: isSelected ? 'none' : '2px solid rgba(255, 255, 255, 0.4)',
+          backgroundColor: isSelected ? 'var(--accent-color, #7C3AED)' : 'rgba(255, 255, 255, 0.12)',
+          border: isSelected ? 'none' : '1px solid rgba(255, 255, 255, 0.18)',
           transition: 'all 0.15s ease',
           pointerEvents: 'none',
           zIndex: 10,
@@ -540,7 +540,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         }}
       >
         {isSelected && (
-          <Check size={13} strokeWidth={3} color="#ffffff" />
+          <Check size={14} strokeWidth={3.2} color="#ffffff" />
         )}
       </div>
     );

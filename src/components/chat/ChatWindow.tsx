@@ -12,6 +12,7 @@ import { useConnectionStore } from '../../store/useConnectionStore';
 import { supabaseService } from '../../services/supabaseService';
 import { AttachedFile } from './FileAttachmentModal';
 import { useSelection } from '../../hooks/useSelection';
+import { useMessageDragSelect } from '../../hooks/useMessageDragSelect';
 import { SelectionPanel } from './SelectionPanel';
 import { handleScrollbarThumbMouseDown, handleScrollbarTrackMouseDown } from '../../utils/scrollbarDrag';
 import { MessageInput } from './MessageInput';
@@ -333,6 +334,8 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     messageIndex?: number;
     messageId?: string;
     selectedIndices?: number[];
+    selectedIds?: string[];
+    selectedCount?: number;
   }>({
     isOpen: false,
     type: null,
@@ -416,6 +419,13 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
   const prevMessagesLengthRef = useRef(messages.length);
   const messagesRef = useRef<Message[]>(messages);
   messagesRef.current = messages;
+
+  useMessageDragSelect({
+    containerRef: messagesContainerRef,
+    messages,
+    selection,
+    maxLimit: 20,
+  });
 
   const activeChatIdRef = useRef<string | null>(activeChatId);
   const sendQueueRef = useRef<Promise<void>>(Promise.resolve());

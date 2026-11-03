@@ -782,6 +782,46 @@ export const useChatStore = create<ChatState>()(
           (window as any).orbita.storageDeleteMessage(messageId).catch(() => {});
         }
       },
+      deleteMessages: (chatId, messageIds) => {
+        if (!chatId || !messageIds || messageIds.length === 0) return;
+        const state = get();
+        if (typeof document !== 'undefined' && state.activeChatId === chatId) {
+          const particleBudget = Math.max(350, Math.floor(6000 / messageIds.length));
+          messageIds.forEach((messageId, index) => {
+            const domEl = document.querySelector(`[data-message-id="${messageId}"]`);
+            if (domEl) {
+              const bubbleEl = (domEl.querySelector<HTMLElement>('[data-bubble="true"]') ||
+                domEl.querySelector<HTMLElement>('[data-message="true"]') ||
+                domEl) as HTMLElement;
+              setTimeout(() => {
+                runTelegramDisintegration(bubbleEl, undefined, particleBudget);
+              }, Math.min(index * 15, 150));
+            }
+          });
+        }
+        const messages = state.messagesByChatId[chatId] || [];
+        const idSet = new Set(messageIds);
+        const updated = messages.filter(m => m.id ? (!idSet.has(m.id) && !idSet.has(m.id.replace(/_part_\d+$/, ''))) : true);
+        set({
+          messagesByChatId: {
+            ...state.messagesByChatId,
+            [chatId]: updated,
+          },
+          chats: state.chats.map(c =>
+            c.id === chatId
+              ? {
+                  ...c,
+                  lastMsg: updated.length > 0 ? updated[updated.length - 1].text : 'История очищена',
+                }
+              : c
+          ),
+        });
+        if (typeof window !== 'undefined' && (window as any).orbita?.storageDeleteMessage) {
+          messageIds.forEach(id => {
+            (window as any).orbita.storageDeleteMessage(id).catch(() => {});
+          });
+        }
+      },
       markVoiceListened: (chatId, messageId) => {
         if (!chatId || !messageId) return;
         const state = get();

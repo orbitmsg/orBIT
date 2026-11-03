@@ -34,6 +34,8 @@ export interface UseChatMessageActionsProps {
     messageId?: string;
     messageIndex?: number;
     selectedIndices?: number[];
+    selectedIds?: string[];
+    selectedCount?: number;
   };
   setConfirmModal: React.Dispatch<React.SetStateAction<{
     isOpen: boolean;
@@ -41,6 +43,8 @@ export interface UseChatMessageActionsProps {
     messageId?: string;
     messageIndex?: number;
     selectedIndices?: number[];
+    selectedIds?: string[];
+    selectedCount?: number;
   }>>;
   contextMenu: ContextMenuState;
   setContextMenu: React.Dispatch<React.SetStateAction<ContextMenuState>>;
@@ -447,14 +451,13 @@ export const useChatMessageActions = ({
 
   const requestDeleteSelected = () => {
     if (!selection.selectedIds || selection.selectedIds.size === 0) return;
-    const indices = Array.from(selection.selectedIds as Set<string>)
-      .map((id) => messages.findIndex((m) => m.id === id))
-      .filter((idx) => idx !== -1);
-    if (indices.length === 0) return;
+    const ids = Array.from(selection.selectedIds as Set<string>).slice(0, 20);
+    if (ids.length === 0) return;
     setConfirmModal({
       isOpen: true,
       type: 'delete_message',
-      selectedIndices: indices,
+      selectedIds: ids,
+      selectedCount: ids.length,
     });
   };
 
@@ -488,7 +491,24 @@ export const useChatMessageActions = ({
   const handleConfirmAction = () => {
     if (!confirmModal.type) return;
     if (confirmModal.type === 'delete_message') {
-      if (confirmModal.selectedIndices && confirmModal.selectedIndices.length > 0) {
+      if (confirmModal.selectedIds && confirmModal.selectedIds.length > 0) {
+        const ids = confirmModal.selectedIds.slice(0, 20);
+        if (activeChatId) {
+          useChatStore.getState().deleteMessages(activeChatId, ids);
+          for (const id of ids) {
+            const payload = {
+              sender: myNickname,
+              senderUserId: myUserId,
+              senderId: myUserId || myCode,
+              text: '',
+              type: 'delete-message',
+              targetMessageId: id,
+            };
+            ablyService.sendMessage(activeChatId, payload).catch(() => {});
+          }
+        }
+        selection.exitSelectionMode();
+      } else if (confirmModal.selectedIndices && confirmModal.selectedIndices.length > 0) {
         for (const idx of confirmModal.selectedIndices) {
           triggerDeleteMessage(idx);
         }

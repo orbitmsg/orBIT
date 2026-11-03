@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { File } from 'lucide-react';
+import { File, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, type Message, type MediaItem, isMessageOutgoing } from '../../../store/useChatStore';
 import { mediaManager } from '../../../services/mediaManager';
@@ -501,13 +501,49 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
 
   const highlightWrapperStyle: React.CSSProperties = {
     width: '100%',
-    backgroundColor: isHighlighted ? 'color-mix(in srgb, var(--accent-color) 22%, transparent)' : 'transparent',
-    transition: 'background-color 0.3s ease',
+    backgroundColor: isSelected
+      ? 'color-mix(in srgb, var(--accent-color, #7C3AED) 18%, transparent)'
+      : isHighlighted
+      ? 'color-mix(in srgb, var(--accent-color) 22%, transparent)'
+      : 'transparent',
+    transition: 'background-color 0.2s ease, padding-left 0.2s ease',
     paddingTop: topGap,
     paddingBottom: '0px',
     paddingRight: '10px',
-    paddingLeft: '10px',
+    paddingLeft: selection.isSelectionMode ? '42px' : '10px',
     boxSizing: 'border-box',
+    position: 'relative',
+    cursor: selection.isSelectionMode ? 'pointer' : 'default',
+  };
+
+  const renderSelectionCircle = () => {
+    if (!selection.isSelectionMode) return null;
+    return (
+      <div
+        style={{
+          position: 'absolute',
+          left: '12px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: '20px',
+          height: '20px',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: isSelected ? 'var(--accent-color, #7C3AED)' : 'transparent',
+          border: isSelected ? 'none' : '2px solid rgba(255, 255, 255, 0.4)',
+          transition: 'all 0.15s ease',
+          pointerEvents: 'none',
+          zIndex: 10,
+          boxSizing: 'border-box',
+        }}
+      >
+        {isSelected && (
+          <Check size={13} strokeWidth={3} color="#ffffff" />
+        )}
+      </div>
+    );
   };
 
   const isFirstOfDay = !prevMsg || !isSameDay(prevMsg.time, msg.time);
@@ -709,7 +745,18 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
       }
 
       return (
-        <div style={{ ...highlightWrapperStyle }} data-datelabel={getDateLabel(msg.time)}>
+        <div
+          data-message-row="true"
+          data-message-id={msg.id}
+          style={{ ...highlightWrapperStyle }}
+          data-datelabel={getDateLabel(msg.time)}
+          onClick={(e) => {
+            if (selection.isSelectionMode && msg.id) {
+              handleMessageClick(e, msg.id);
+            }
+          }}
+        >
+          {renderSelectionCircle()}
           {wrapWithGroupAvatar(
             <div style={{ display: 'flex', alignItems: 'flex-end', width: '100%' }}>
               <div
@@ -760,7 +807,18 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     if (!media.type) {
       const isPinned = isMessagePinned(msg);
       return (
-        <div style={{ ...highlightWrapperStyle }} data-datelabel={getDateLabel(msg.time)}>
+        <div
+          data-message-row="true"
+          data-message-id={msg.id}
+          style={{ ...highlightWrapperStyle }}
+          data-datelabel={getDateLabel(msg.time)}
+          onClick={(e) => {
+            if (selection.isSelectionMode && msg.id) {
+              handleMessageClick(e, msg.id);
+            }
+          }}
+        >
+          {renderSelectionCircle()}
           {wrapWithGroupAvatar(
             <MessageItem
               msg={msg}
@@ -802,7 +860,18 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
       const spacerWidth = isOwn ? (isMessagePinned(msg) ? '72px' : '60px') : (isMessagePinned(msg) ? '52px' : '40px');
 
       return (
-        <div style={{ ...highlightWrapperStyle }} data-datelabel={getDateLabel(msg.time)}>
+        <div
+          data-message-row="true"
+          data-message-id={msg.id}
+          style={{ ...highlightWrapperStyle }}
+          data-datelabel={getDateLabel(msg.time)}
+          onClick={(e) => {
+            if (selection.isSelectionMode && msg.id) {
+              handleMessageClick(e, msg.id);
+            }
+          }}
+        >
+          {renderSelectionCircle()}
           {wrapWithGroupAvatar(
             <div style={{ display: 'flex', alignItems: 'flex-end', width: '100%' }}>
               <div
@@ -880,7 +949,18 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     }
 
     return (
-      <div style={{ ...highlightWrapperStyle }} data-datelabel={getDateLabel(msg.time)}>
+      <div
+          data-message-row="true"
+          data-message-id={msg.id}
+          style={{ ...highlightWrapperStyle }}
+          data-datelabel={getDateLabel(msg.time)}
+          onClick={(e) => {
+            if (selection.isSelectionMode && msg.id) {
+              handleMessageClick(e, msg.id);
+            }
+          }}
+        >
+          {renderSelectionCircle()}
         {wrapWithGroupAvatar(
           <div style={{ display: 'flex', alignItems: 'flex-end', width: '100%' }}>
           <div

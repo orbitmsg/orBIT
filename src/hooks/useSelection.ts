@@ -1,5 +1,6 @@
-// src/hooks/useSelection.ts
 import { useState, useCallback, useEffect, useMemo } from 'react';
+
+const MAX_SELECT_LIMIT = 20;
 
 export function useSelection() {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -16,10 +17,19 @@ export function useSelection() {
       if (newSet.has(messageId)) {
         newSet.delete(messageId);
       } else {
+        if (newSet.size >= MAX_SELECT_LIMIT) {
+          return prev;
+        }
         newSet.add(messageId);
       }
       return newSet;
     });
+  }, []);
+
+  const selectRange = useCallback((ids: string[]) => {
+    const limited = ids.slice(0, MAX_SELECT_LIMIT);
+    setSelectedIds(new Set(limited));
+    setIsSelectionMode(limited.length > 0);
   }, []);
 
   const exitSelectionMode = useCallback(() => {
@@ -31,7 +41,6 @@ export function useSelection() {
     setSelectedIds(new Set());
   }, []);
 
-  // Автоматический выход при 0 выбранных сообщений
   useEffect(() => {
     if (isSelectionMode && selectedIds.size === 0) {
       exitSelectionMode();
@@ -44,9 +53,11 @@ export function useSelection() {
       selectedIds,
       enterSelectionMode,
       toggleSelection,
+      selectRange,
       exitSelectionMode,
       clearSelection,
+      maxLimit: MAX_SELECT_LIMIT,
     }),
-    [isSelectionMode, selectedIds, enterSelectionMode, toggleSelection, exitSelectionMode, clearSelection]
+    [isSelectionMode, selectedIds, enterSelectionMode, toggleSelection, selectRange, exitSelectionMode, clearSelection]
   );
 }

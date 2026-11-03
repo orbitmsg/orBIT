@@ -38,7 +38,8 @@ function isInsideRoundedRect(x: number, y: number, w: number, h: number, r: numb
 
 export function runTelegramDisintegration(
   bubbleEl: HTMLElement,
-  onComplete?: () => void
+  onComplete?: () => void,
+  maxParticlesCount: number = 2800
 ): () => void {
   if (typeof window === 'undefined') {
     onComplete?.();
@@ -157,7 +158,7 @@ export function runTelegramDisintegration(
     }
   }
 
-  const MAX_PARTICLES = 2800;
+  const MAX_PARTICLES = maxParticlesCount;
   if (particles.length > MAX_PARTICLES) {
     const stride = particles.length / MAX_PARTICLES;
     const filtered: Particle[] = [];

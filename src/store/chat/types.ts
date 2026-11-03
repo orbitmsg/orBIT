@@ -532,6 +532,7 @@ export interface ChatState {
     }>
   ) => void;
   deleteMessage: (chatId: string, messageId: string, immediate?: boolean) => void;
+  deleteMessages: (chatId: string, messageIds: string[]) => void;
   markVoiceListened: (chatId: string, messageId: string) => void;
   updateMessageStatus: (chatId: string, messageId: string, status: Message['status']) => void;
   updateMessageMediaDimensions: (chatId: string, messageId: string, width: number, height: number, itemIdx?: number) => void;

@@ -5,6 +5,7 @@
       "delete_chat_title": "Are you sure you want to delete this chat and all messages saved in it?",
       "leave_channel_title": "Are you sure you want to leave the channel {{name}}?",
       "delete_message_title": "Delete this message?",
+      "delete_selected_title": "Delete selected messages ({{count}})?",
       "pin_message_title": "Pin this message?",
       "unpin_message_title": "Unpin this message?",
       "discard_voice_title": "Are you sure you want to stop recording and discard this voice message?",

@@ -21,6 +21,7 @@ interface ActionConfirmModalProps {
   chatName?: string;
   avatarUrl?: string;
   isNotes?: boolean;
+  selectedCount?: number;
   onClose: () => void;
   onConfirm: () => void;
 }
@@ -31,6 +32,7 @@ export const ActionConfirmModal: React.FC<ActionConfirmModalProps> = ({
   chatName = '',
   avatarUrl,
   isNotes = false,
+  selectedCount,
   onClose,
   onConfirm,
 }) => {
@@ -74,6 +76,12 @@ export const ActionConfirmModal: React.FC<ActionConfirmModalProps> = ({
           defaultValue: `Вы точно хотите покинуть канал ${chatName}?`,
         });
       case 'delete_message':
+        if (selectedCount && selectedCount > 1) {
+          return t('confirmModal.delete_selected_title', {
+            count: selectedCount,
+            defaultValue: `Удалить выбранные сообщения (${selectedCount})?`,
+          });
+        }
         return t('confirmModal.delete_message_title', {
           defaultValue: 'Удалить это сообщение?',
         });

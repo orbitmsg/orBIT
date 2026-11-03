@@ -30,6 +30,7 @@ export interface ChatWindowModalsProps {
   confirmModal: {
     isOpen: boolean;
     type: ConfirmActionType | null;
+    selectedCount?: number;
   };
   setConfirmModal: React.Dispatch<React.SetStateAction<{ isOpen: boolean; type: ConfirmActionType | null }>>;
   activeChatId: string | null;
@@ -190,6 +191,7 @@ export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
         chatName={activeChatId === 'notes' ? t('connectModal.notes') : activeChat?.name}
         avatarUrl={activeChat?.avatarUrl}
         isNotes={Boolean(activeChatId === 'notes')}
+        selectedCount={confirmModal.selectedCount}
         onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false, type: null }))}
         onConfirm={handleConfirmAction}
       />

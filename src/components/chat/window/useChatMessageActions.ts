@@ -234,13 +234,17 @@ export const useChatMessageActions = ({
     const targetMsgId = targetMsg?.id || (typeof indexOrId === 'string' ? indexOrId : undefined);
     const resolvedIndex = targetMsg ? messages.findIndex((m) => m.id === targetMsg.id) : (typeof indexOrId === 'number' ? indexOrId : -1);
     if (activeChatId === 'notes') {
-      const updatedMessages = messages.filter((m, i) => targetMsgId ? m.id !== targetMsgId : i !== resolvedIndex);
-      useChatStore.setState((state) => ({
-        messagesByChatId: {
-          ...state.messagesByChatId,
-          [activeChatId]: updatedMessages,
-        },
-      }));
+      if (targetMsgId) {
+        useChatStore.getState().deleteMessage(activeChatId, targetMsgId);
+      } else {
+        const updatedMessages = messages.filter((m, i) => targetMsgId ? m.id !== targetMsgId : i !== resolvedIndex);
+        useChatStore.setState((state) => ({
+          messagesByChatId: {
+            ...state.messagesByChatId,
+            [activeChatId]: updatedMessages,
+          },
+        }));
+      }
       setContextMenu((prev) => ({ ...prev, visible: false }));
       return;
     }

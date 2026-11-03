@@ -360,6 +360,7 @@ export interface ChatState {
   activeChatId: string | null;
   activeProfileChatId: string | null;
   messagesByChatId: Record<string, Message[]>;
+  deletingMessageIds?: Record<string, boolean>;
   passcode: string | null;
   currentTheme: ThemeId;
   chatColor: string;
@@ -530,7 +531,7 @@ export interface ChatState {
       index?: number;
     }>
   ) => void;
-  deleteMessage: (chatId: string, messageId: string) => void;
+  deleteMessage: (chatId: string, messageId: string, immediate?: boolean) => void;
   markVoiceListened: (chatId: string, messageId: string) => void;
   updateMessageStatus: (chatId: string, messageId: string, status: Message['status']) => void;
   updateMessageMediaDimensions: (chatId: string, messageId: string, width: number, height: number, itemIdx?: number) => void;

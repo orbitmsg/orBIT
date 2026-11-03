@@ -195,11 +195,14 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
     return (
       <div
         onContextMenu={onContextMenu}
+        data-message="true"
+        data-message-id={msg.id}
         className={`group relative flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
         style={{ transformOrigin: isOwn ? 'top right' : 'top left' }}
       >
         {isEmojiNoBubble ? (
           <div
+            data-bubble="true"
             className={`max-w-[min(440px,75%)] min-w-[50px] w-fit relative flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
             style={{ padding: '0px' }}
           >
@@ -276,6 +279,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
             }}
           >
             <div
+              data-bubble="true"
               className={`w-full relative flex flex-col ${isJustSent ? 'telegram-send-anim' : ''}`}
               style={{
                 padding: '6.5px 12px 6.5px 11px',

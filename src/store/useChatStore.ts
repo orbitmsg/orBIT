@@ -119,6 +119,7 @@ export const useChatStore = create<ChatState>()(
       activeChatId: null,
       activeProfileChatId: null,
       messagesByChatId: {},
+      deletingMessageIds: {},
       passcode: null,
       currentTheme: 'system',
       chatColor: DEFAULT_CHAT_COLOR,
@@ -748,12 +749,36 @@ export const useChatStore = create<ChatState>()(
           }
         }
       },
-      deleteMessage: (chatId, messageId) => {
+      deleteMessage: (chatId, messageId, immediate = false) => {
         const state = get();
+        if (!immediate && state.activeChatId === chatId) {
+          const messages = state.messagesByChatId[chatId] || [];
+          const baseId = messageId.replace(/_part_\d+$/, '');
+          const msg = messages.find(m => m.id === messageId || m.id === baseId);
+          if (msg) {
+            const domEl = typeof document !== 'undefined' ? document.querySelector(`[data-message-id="${messageId}"]`) : null;
+            if (domEl) {
+              set({
+                deletingMessageIds: {
+                  ...state.deletingMessageIds,
+                  [messageId]: true,
+                },
+              });
+              setTimeout(() => {
+                get().deleteMessage(chatId, messageId, true);
+              }, 550);
+              return;
+            }
+          }
+        }
         const messages = state.messagesByChatId[chatId] || [];
         const baseId = messageId.replace(/_part_\d+$/, '');
         const updated = messages.filter(m => m.id !== messageId && m.id !== baseId);
+        const nextDeleting = { ...(state.deletingMessageIds || {}) };
+        delete nextDeleting[messageId];
+        delete nextDeleting[baseId];
         set({
+          deletingMessageIds: nextDeleting,
           messagesByChatId: {
             ...state.messagesByChatId,
             [chatId]: updated,

@@ -1,4 +1,5 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
+import { runTelegramDisintegration } from '../../../utils/telegramDisintegration';
 import { File } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, type Message, type MediaItem, isMessageOutgoing } from '../../../store/useChatStore';
@@ -100,6 +101,48 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
 }) => {
   const { t } = useTranslation();
   const stickersAutoplayChat = useChatStore((s) => s.stickersAutoplayChat);
+  const isDeleting = useChatStore((s) => Boolean(msg.id && s.deletingMessageIds?.[msg.id]));
+  const itemContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isDeleting || !itemContainerRef.current) return;
+    const containerEl = itemContainerRef.current;
+    const initialHeight = containerEl.offsetHeight;
+
+    const bubbleEl =
+      containerEl.querySelector<HTMLElement>('[data-bubble="true"]') ||
+      containerEl.querySelector<HTMLElement>('[data-message="true"]') ||
+      containerEl;
+
+    if (bubbleEl) {
+      bubbleEl.style.opacity = '0';
+    }
+
+    containerEl.style.height = `${initialHeight}px`;
+    containerEl.style.overflow = 'hidden';
+    containerEl.style.pointerEvents = 'none';
+    containerEl.style.transition =
+      'height 380ms cubic-bezier(0.4, 0, 0.2, 1), opacity 320ms ease, margin 380ms cubic-bezier(0.4, 0, 0.2, 1), padding 380ms cubic-bezier(0.4, 0, 0.2, 1)';
+
+    requestAnimationFrame(() => {
+      containerEl.style.height = '0px';
+      containerEl.style.marginTop = '0px';
+      containerEl.style.marginBottom = '0px';
+      containerEl.style.paddingTop = '0px';
+      containerEl.style.paddingBottom = '0px';
+      containerEl.style.opacity = '0';
+    });
+
+    const cancel = runTelegramDisintegration(bubbleEl, () => {
+      if (activeChatId && msg.id) {
+        useChatStore.getState().deleteMessage(activeChatId, msg.id, true);
+      }
+    });
+
+    return () => {
+      cancel();
+    };
+  }, [isDeleting, activeChatId, msg.id]);
 
   const isOwn = isMessageOutgoing(msg, myCode, myNickname, activeChat, myUserId);
   const media = parseMedia(msg);
@@ -729,6 +772,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}
               >
                 <div
+                  data-bubble="true"
                   className="relative"
                   style={bubbleStyle(isOwn, {
                     borderRadius: isPhotoGroup ? photoRadius : customRadius,
@@ -821,6 +865,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}
               >
                 <div
+                  data-bubble="true"
                   className="max-w-[min(440px, 75%)] min-w-[60px] w-fit relative"
                   style={bubbleStyle(isOwn, isMessagePinned(msg) ? { outline: '1px solid color-mix(in srgb, var(--md-sys-color-primary) 35%, transparent)' } : {})}
                 >
@@ -904,6 +949,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             )}
             {media.type === 'sticker' && (
               <div
+                data-bubble="true"
                 className={`relative w-fit flex flex-col ${isOwn ? 'items-end' : 'items-start'} group select-none`}
                 style={{ padding: '0px', overflowAnchor: 'none' }}
                 onClick={(e) => handleMessageClick(e, msg.id!)}
@@ -1047,6 +1093,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
 
             {!media.type && !isEmojiOnlyMessage && (
               <div
+                data-bubble="true"
                 onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}
                 className="max-w-[min(440px, 75%)] min-w-[60px] w-fit relative"
                 style={bubbleStyle(isOwn, {
@@ -1101,6 +1148,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             )}
 
             {media.type === 'music' && (
+              <div data-bubble="true">
               <AudioMessageBubble
                 msg={msg}
                 chatId={activeChatId || undefined}
@@ -1115,10 +1163,11 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   }
                 } : undefined}
               />
+              </div>
             )}
 
             {media.type === 'voice' && (
-              <div onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}>
+              <div data-bubble="true" onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}>
                 <VoiceMessagePlayer
                   url={media.url!}
                   fileName={media.fileName}
@@ -1140,7 +1189,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             )}
 
             {media.type === 'file' && (
-              <div onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}>
+              <div data-bubble="true" onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}>
                 <FileMessage
                   url={media.url!}
                   fileName={media.fileName}
@@ -1157,7 +1206,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             )}
 
             {media.type === 'call' && (
-              <div onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}>
+              <div data-bubble="true" onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}>
                 <CallMessage msg={msg} chatId={activeChatId!} onCall={handleCallPress} isOwn={isOwn} customRadius={customRadius} />
               </div>
             )}
@@ -1170,9 +1219,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   };
 
   return (
-    <>
+    <div ref={itemContainerRef} className="w-full flex flex-col">
       {dateDividerNode}
       {renderContent()}
-    </>
+    </div>
   );
 };

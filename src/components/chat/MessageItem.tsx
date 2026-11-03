@@ -29,6 +29,7 @@ interface MessageItemProps {
   onSenderClick?: (senderId?: string, senderName?: string) => void;
   activeChat?: Chat;
   onRetry?: (messageId: string) => void;
+  isSelected?: boolean;
 }
 
 const MessageText = ({
@@ -106,7 +107,7 @@ const MessageText = ({
 };
 
 export const MessageItem: React.FC<MessageItemProps> = React.memo(
-  ({ msg, isOwn, isPinned, onContextMenu, themeColor, bubbleRadius, currentUserId, onToggleReaction, onQuoteClick, isGroup = false, isPrevSameSender = false, onLinkClick, onButtonClick, onSenderClick, activeChat: activeChatProp, onRetry }) => {
+  ({ msg, isOwn, isPinned, onContextMenu, themeColor, bubbleRadius, currentUserId, onToggleReaction, onQuoteClick, isGroup = false, isPrevSameSender = false, onLinkClick, onButtonClick, onSenderClick, activeChat: activeChatProp, onRetry, isSelected }) => {
     const { t } = useTranslation();
     const myCode = useChatStore((s) => s.myCode);
     const myNickname = useAuthStore((s) => s.nickname);
@@ -285,9 +286,15 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                 padding: '6.5px 12px 6.5px 11px',
                 borderRadius: bubbleRadius,
                 boxSizing: 'border-box',
-                background: isOwn
-                  ? 'var(--chat-bubble-own-bg, #2c6bed)'
-                  : 'var(--chat-bubble-incoming-bg, var(--surface-container))',
+                background: isSelected
+                  ? (isOwn
+                      ? 'color-mix(in srgb, var(--chat-bubble-own-bg, #2c6bed) 76%, #000)'
+                      : 'color-mix(in srgb, var(--chat-bubble-incoming-bg, var(--surface-container)) 78%, var(--accent-color, #7C3AED))')
+                  : (isOwn
+                      ? 'var(--chat-bubble-own-bg, #2c6bed)'
+                      : 'var(--chat-bubble-incoming-bg, var(--surface-container))'),
+                filter: isSelected ? 'brightness(0.9) contrast(1.05)' : 'none',
+                transition: 'background-color 0.15s ease, filter 0.15s ease',
                 color: isOwn
                   ? '#ffffff'
                   : 'var(--chat-bubble-incoming-text, var(--text-main, #ffffff))',
@@ -616,5 +623,6 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
     prev.isPrevSameSender === next.isPrevSameSender &&
     prev.bubbleRadius === next.bubbleRadius &&
     prev.currentUserId === next.currentUserId &&
-    prev.onButtonClick === next.onButtonClick
+    prev.onButtonClick === next.onButtonClick &&
+    prev.isSelected === next.isSelected
 );

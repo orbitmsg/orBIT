@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 
-const MAX_SELECT_LIMIT = 20;
+const MAX_SELECT_LIMIT = 200;
 
 export function useSelection() {
   const [isSelectionMode, setIsSelectionMode] = useState(false);

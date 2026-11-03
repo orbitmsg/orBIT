@@ -424,7 +424,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     containerRef: messagesContainerRef,
     messages,
     selection,
-    maxLimit: 20,
+    maxLimit: 200,
   });
 
   const activeChatIdRef = useRef<string | null>(activeChatId);

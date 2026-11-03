@@ -327,10 +327,14 @@ export const useChatRealtime = ({
         if (targetId) {
           useChatStore.getState().setReaction(activeChatId, targetId, data.emoji, data.sender, data.action || 'add');
         }
-      } else if (data?.type === 'delete' || data?.type === 'delete-message') {
-        const targetId = data.targetMessageId || data.messageId;
-        if (targetId) {
-          useChatStore.getState().deleteMessage(activeChatId, targetId);
+      } else if (data?.type === 'delete' || data?.type === 'delete-message' || data?.type === 'delete-messages') {
+        const targetIds = data.targetMessageIds || (data.targetMessageId ? [data.targetMessageId] : (data.messageId ? [data.messageId] : []));
+        if (targetIds && targetIds.length > 0) {
+          if (targetIds.length === 1) {
+            useChatStore.getState().deleteMessage(activeChatId, targetIds[0]);
+          } else {
+            useChatStore.getState().deleteMessages(activeChatId, targetIds);
+          }
         } else if (data.deleteIndex !== undefined) {
           const currentMsgs = useChatStore.getState().messagesByChatId[activeChatId] || [];
           const updated = currentMsgs.filter((_, i) => i !== data.deleteIndex);
@@ -636,10 +640,14 @@ export const useChatRealtime = ({
         if (targetId) {
           useChatStore.getState().setReaction(activeChatId, targetId, data.emoji, data.sender, data.action || 'add');
         }
-      } else if (data.type === 'delete' || data.type === 'delete-message') {
-        const targetId = data.targetMessageId || data.messageId;
-        if (targetId) {
-          useChatStore.getState().deleteMessage(activeChatId, targetId);
+      } else if (data.type === 'delete' || data.type === 'delete-message' || data.type === 'delete-messages') {
+        const targetIds = data.targetMessageIds || (data.targetMessageId ? [data.targetMessageId] : (data.messageId ? [data.messageId] : []));
+        if (targetIds && targetIds.length > 0) {
+          if (targetIds.length === 1) {
+            useChatStore.getState().deleteMessage(activeChatId, targetIds[0]);
+          } else {
+            useChatStore.getState().deleteMessages(activeChatId, targetIds);
+          }
         } else if (data.deleteIndex !== undefined) {
           const currentMsgs = useChatStore.getState().messagesByChatId[activeChatId] || [];
           const updated = currentMsgs.filter((_, i) => i !== data.deleteIndex);

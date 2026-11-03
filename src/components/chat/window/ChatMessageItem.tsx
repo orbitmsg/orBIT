@@ -230,16 +230,24 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     );
   }, [myCode, myNickname, activeChat, myUserId, handleRetryMessage, index]);
 
-  const bubbleStyle = useCallback((bIsOwn: boolean, extra?: React.CSSProperties): React.CSSProperties => ({
-    padding: '6.5px 12px 6.5px 11px',
-    borderRadius: bubbleRadius,
-    background: bIsOwn ? 'var(--chat-bubble-own-bg, #2c6bed)' : 'var(--chat-bubble-incoming-bg, var(--surface-container))',
-    border: 'none',
-    color: bIsOwn ? '#ffffff' : 'var(--chat-bubble-incoming-text, var(--text-main, #ffffff))',
-    fontSize: orbitFs(12),
-    maxWidth: 'min(440px, 75%)',
-    ...extra,
-  }), [bubbleRadius]);
+  const bubbleStyle = useCallback((bIsOwn: boolean, extra?: React.CSSProperties): React.CSSProperties => {
+    const baseBg = bIsOwn ? 'var(--chat-bubble-own-bg, #2c6bed)' : 'var(--chat-bubble-incoming-bg, var(--surface-container))';
+    const selectedBg = bIsOwn
+      ? 'color-mix(in srgb, var(--chat-bubble-own-bg, #2c6bed) 76%, #000)'
+      : 'color-mix(in srgb, var(--chat-bubble-incoming-bg, var(--surface-container)) 78%, var(--accent-color, #7C3AED))';
+    return {
+      padding: '6.5px 12px 6.5px 11px',
+      borderRadius: bubbleRadius,
+      background: isSelected ? selectedBg : baseBg,
+      filter: isSelected ? 'brightness(0.9) contrast(1.05)' : 'none',
+      border: 'none',
+      color: bIsOwn ? '#ffffff' : 'var(--chat-bubble-incoming-text, var(--text-main, #ffffff))',
+      fontSize: orbitFs(12),
+      maxWidth: 'min(440px, 75%)',
+      transition: 'background-color 0.15s ease, filter 0.15s ease',
+      ...extra,
+    };
+  }, [bubbleRadius, isSelected]);
 
   const renderMediaGroup = useCallback((m: Message, _idx: number, cRadius?: string, overrideItems?: MediaItem[]) => {
     const mediaItems = overrideItems || m.mediaItems;
@@ -501,9 +509,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
 
   const highlightWrapperStyle: React.CSSProperties = {
     width: '100%',
-    backgroundColor: isSelected
-      ? 'color-mix(in srgb, var(--accent-color, #7C3AED) 18%, transparent)'
-      : isHighlighted
+    backgroundColor: isHighlighted
       ? 'color-mix(in srgb, var(--accent-color) 22%, transparent)'
       : 'transparent',
     transition: 'background-color 0.2s ease, padding-right 0.2s ease',
@@ -769,7 +775,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 style={{
                   transformOrigin: isOwn ? 'top right' : 'top left',
                   flex: 1,
-                  filter: isUnselected ? 'brightness(0.55)' : 'none',
+                  filter: isUnselected ? 'brightness(0.55)' : (isSelected ? 'brightness(0.88) contrast(1.05)' : 'none'),
                   transition: 'filter 0.15s ease',
                 }}
                 onClick={(e) => handleMessageClick(e, msg.id!)}
@@ -824,6 +830,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
               msg={msg}
               isOwn={isOwn}
               isPinned={isPinned}
+              isSelected={Boolean(isSelected)}
               onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}
               themeColor={themeColor}
               bubbleRadius={customRadius}
@@ -884,7 +891,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 style={{
                   transformOrigin: isOwn ? 'top right' : 'top left',
                   flex: 1,
-                  filter: isUnselected ? 'brightness(0.55)' : 'none',
+                  filter: isUnselected ? 'brightness(0.55)' : (isSelected ? 'brightness(0.88) contrast(1.05)' : 'none'),
                   transition: 'filter 0.15s ease',
                 }}
                 onClick={(e) => handleMessageClick(e, msg.id!)}
@@ -973,7 +980,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             style={{
               transformOrigin: isOwn ? 'top right' : 'top left',
               flex: 1,
-              filter: isUnselected ? 'brightness(0.55)' : 'none',
+              filter: isUnselected ? 'brightness(0.55)' : (isSelected ? 'brightness(0.88) contrast(1.05)' : 'none'),
               transition: 'filter 0.15s ease',
             }}
             onClick={(e) => handleMessageClick(e, msg.id!)}

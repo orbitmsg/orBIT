@@ -451,7 +451,7 @@ export const useChatMessageActions = ({
 
   const requestDeleteSelected = () => {
     if (!selection.selectedIds || selection.selectedIds.size === 0) return;
-    const ids = Array.from(selection.selectedIds as Set<string>).slice(0, 20);
+    const ids = Array.from(selection.selectedIds as Set<string>).slice(0, 200);
     if (ids.length === 0) return;
     setConfirmModal({
       isOpen: true,
@@ -492,20 +492,19 @@ export const useChatMessageActions = ({
     if (!confirmModal.type) return;
     if (confirmModal.type === 'delete_message') {
       if (confirmModal.selectedIds && confirmModal.selectedIds.length > 0) {
-        const ids = confirmModal.selectedIds.slice(0, 20);
+        const ids = confirmModal.selectedIds.slice(0, 200);
         if (activeChatId) {
           useChatStore.getState().deleteMessages(activeChatId, ids);
-          for (const id of ids) {
-            const payload = {
-              sender: myNickname,
-              senderUserId: myUserId,
-              senderId: myUserId || myCode,
-              text: '',
-              type: 'delete-message',
-              targetMessageId: id,
-            };
-            ablyService.sendMessage(activeChatId, payload).catch(() => {});
-          }
+          const payload = {
+            sender: myNickname,
+            senderUserId: myUserId,
+            senderId: myUserId || myCode,
+            text: '',
+            type: 'delete-messages',
+            targetMessageIds: ids,
+            targetMessageId: ids[0],
+          };
+          ablyService.sendMessage(activeChatId, payload).catch(() => {});
         }
         selection.exitSelectionMode();
       } else if (confirmModal.selectedIndices && confirmModal.selectedIndices.length > 0) {

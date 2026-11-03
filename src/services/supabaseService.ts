@@ -222,34 +222,22 @@ class SupabaseService {
 
     const relays = relayRouter.getNodes();
     await Promise.all(
-      relays.flatMap((relay) =>
-        cleanIds.map((mid) =>
-          fetch(`${relay.url}/relay/delete-message`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chatId, messageId: mid }),
-          }).catch(() => {})
-        )
+      relays.map((relay) =>
+        fetch(`${relay.url}/relay/delete-messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chatId, messageIds: cleanIds }),
+        }).catch(() => {})
       )
     );
 
     if (this.client) {
-      for (const id of cleanIds) {
-        try {
-          await this.client.from('messages').delete().eq('id', id);
-        } catch {}
-        try {
-          await this.client.from('non_messages').delete().eq('id', id);
-        } catch {}
-        if (chatId) {
-          try {
-            await this.client.from('non_messages').delete().eq('chat_id', chatId).ilike('ciphertext', `%${id}%`);
-          } catch {}
-          try {
-            await this.client.from('messages').delete().eq('chat_id', chatId).ilike('ciphertext', `%${id}%`);
-          } catch {}
-        }
-      }
+      try {
+        await this.client.from('messages').delete().in('id', cleanIds);
+      } catch {}
+      try {
+        await this.client.from('non_messages').delete().in('id', cleanIds);
+      } catch {}
     }
   }
 

@@ -381,6 +381,8 @@ contextBridge.exposeInMainWorld('orbita', {
     ipcRenderer.invoke('storage:delete-messages', getScopedChatId(chatId)),
   storageDeleteMessage: (messageId: string) =>
     ipcRenderer.invoke('storage:delete-message', getScopedMsgId(messageId)),
+  storageDeleteMessagesByIds: (messageIds: string[]) =>
+    ipcRenderer.invoke('storage:delete-messages-by-ids', messageIds.map(getScopedMsgId)),
   storageMigrateChat: (fromChatId: string, toChatId: string) =>
     ipcRenderer.invoke('storage:migrate-chat', getScopedChatId(fromChatId), getScopedChatId(toChatId)),
 

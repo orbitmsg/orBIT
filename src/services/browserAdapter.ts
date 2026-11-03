@@ -208,6 +208,7 @@ class BrowserOrbitaAdapter {
         } catch {}
       },
       storageDeleteMessage: async () => {},
+      storageDeleteMessagesByIds: async () => {},
       storageMigrateChat: async (fromChatId: string, toChatId: string) => {
         try {
           const scopedFrom = getScopedChatId(fromChatId);

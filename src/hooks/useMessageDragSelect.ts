@@ -30,7 +30,7 @@ export function useMessageDragSelect({
   containerRef,
   messages,
   selection,
-  maxLimit = 20,
+  maxLimit = 200,
 }: UseMessageDragSelectProps) {
   const dragStateRef = useRef<DragState | null>(null);
   const messagesRef = useRef(messages);
@@ -192,7 +192,7 @@ export function useMessageDragSelect({
               let start = Math.min(anchorIdx, hoverIdx);
               let end = Math.max(anchorIdx, hoverIdx);
 
-              const limit = maxLimit || 20;
+              const limit = maxLimit || 200;
               if (end - start + 1 > limit) {
                 if (hoverIdx > anchorIdx) {
                   end = anchorIdx + limit - 1;

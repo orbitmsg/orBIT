@@ -1090,3 +1090,33 @@ html.app-paused *::after {
   animation: tgFlyingTextTrajectory 90ms cubic-bezier(0.2, 0.7, 0.25, 1) forwards;
   will-change: transform, opacity;
 }
+
+
+@keyframes orbitaPixelDisintegrate {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate3d(calc(var(--tx, 0px) + var(--sway, 0px)), var(--ty, -35px), 0) scale(0.2);
+    opacity: 0;
+  }
+}
+
+.orbita-disintegrate-container {
+  position: fixed;
+  pointer-events: none;
+  z-index: 99999;
+  contain: layout style paint;
+}
+
+.orbita-pixel {
+  position: absolute;
+  pointer-events: none;
+  animation: orbitaPixelDisintegrate var(--life, 650ms) cubic-bezier(0.12, 0.72, 0.28, 1) var(--delay, 0ms) forwards;
+  will-change: transform, opacity;
+  transform-origin: center center;
+}

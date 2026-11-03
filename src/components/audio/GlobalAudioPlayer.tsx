@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import '@material/web/progress/linear-progress.js';
 import { useAudioStore } from '../../store/useAudioStore';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
@@ -37,6 +38,7 @@ export const GlobalAudioPlayer = () => {
 
   const progressRef = useRef<HTMLDivElement>(null);
   const progressFillRef = useRef<HTMLDivElement>(null);
+  const progressThumbRef = useRef<HTMLDivElement>(null);
   const timeDisplayRef = useRef<HTMLSpanElement>(null);
   const rafIdRef = useRef<number | null>(null);
   const dragStateRef = useRef<{ isDragging: boolean; percent: number; targetTime: number }>({
@@ -78,6 +80,9 @@ export const GlobalAudioPlayer = () => {
     rafIdRef.current = requestAnimationFrame(() => {
       if (progressFillRef.current) {
         progressFillRef.current.style.width = `${clampedPercent * 100}%`;
+      }
+      if (progressThumbRef.current) {
+        progressThumbRef.current.style.left = `${clampedPercent * 100}%`;
       }
       if (timeDisplayRef.current) {
         timeDisplayRef.current.textContent = formatTime(newTime);
@@ -189,6 +194,9 @@ export const GlobalAudioPlayer = () => {
       if (progressFillRef.current) {
         progressFillRef.current.style.width = `${pct}%`;
       }
+      if (progressThumbRef.current) {
+        progressThumbRef.current.style.left = `${pct}%`;
+      }
       if (timeDisplayRef.current) {
         timeDisplayRef.current.textContent = formatTime(currentExactTime);
       }
@@ -208,6 +216,9 @@ export const GlobalAudioPlayer = () => {
       const pct = duration > 0 ? (currentTime / duration) * 100 : 0;
       if (progressFillRef.current) {
         progressFillRef.current.style.width = `${pct}%`;
+      }
+      if (progressThumbRef.current) {
+        progressThumbRef.current.style.left = `${pct}%`;
       }
       if (timeDisplayRef.current) {
         timeDisplayRef.current.textContent = formatTime(currentTime);
@@ -699,7 +710,6 @@ export const GlobalAudioPlayer = () => {
         </button>
       </div>
 
-      {/* Progress Bar Hover / Drag Area */}
       <div
         ref={progressRef}
         onClick={handleProgressClick}
@@ -707,41 +717,104 @@ export const GlobalAudioPlayer = () => {
         onTouchStart={handleProgressTouchStart}
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
+        role="slider"
+        aria-label={t('mediaViewer.progress', 'Прогресс воспроизведения')}
+        aria-valuenow={Math.round(progress)}
+        aria-valuemin={0}
+        aria-valuemax={100}
         style={{
           position: 'absolute',
           bottom: 0,
           left: 0,
           right: 0,
-          height: '7px',
+          height: isExpanded ? '12px' : '6px',
           display: 'flex',
           alignItems: 'flex-end',
           cursor: 'pointer',
           zIndex: 5,
+          touchAction: 'none',
         }}
       >
         <div
           style={{
             position: 'relative',
             width: '100%',
-            height: isExpanded ? '7px' : '2px',
-            backgroundColor: 'var(--player-track-bg)',
-            transition: 'height 0.18s ease-out',
-            borderRadius: 0,
+            height: isExpanded ? '6px' : '4px',
+            backgroundColor: 'var(--player-track-bg, var(--md-sys-color-surface-container-highest, rgba(255, 255, 255, 0.14)))',
+            borderRadius: '9999px',
+            overflow: 'hidden',
+            transition: 'height 0.15s cubic-bezier(0.2, 0, 0, 1)',
             willChange: isExpanded ? 'height' : 'auto',
           }}
         >
+          <md-linear-progress
+            value={duration > 0 ? currentTime / duration : 0}
+            max={1}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              pointerEvents: 'none',
+              '--md-linear-progress-active-indicator-color': 'var(--player-progress, var(--md-sys-color-primary, var(--accent-color)))',
+              '--md-linear-progress-track-color': 'var(--player-track-bg, var(--md-sys-color-surface-container-highest, rgba(255, 255, 255, 0.14)))',
+              '--md-linear-progress-track-height': isExpanded ? '6px' : '4px',
+              '--md-linear-progress-active-indicator-height': isExpanded ? '6px' : '4px',
+              '--md-linear-progress-track-shape': '9999px',
+            } as React.CSSProperties}
+          />
           <div
             ref={progressFillRef}
             style={{
               position: 'absolute',
-              bottom: 0,
+              top: 0,
               left: 0,
               height: '100%',
               width: `${progress}%`,
-              backgroundColor: 'var(--player-progress)',
+              backgroundColor: 'var(--player-progress, var(--md-sys-color-primary, var(--accent-color)))',
+              borderRadius: '9999px',
               transition: 'none',
-              borderRadius: 0,
+              pointerEvents: 'none',
               willChange: 'width',
+            }}
+          />
+        </div>
+
+        <div
+          ref={progressThumbRef}
+          style={{
+            position: 'absolute',
+            left: `${progress}%`,
+            bottom: isExpanded ? '3px' : '2px',
+            transform: 'translate(-50%, 50%)',
+            pointerEvents: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: isExpanded ? 1 : 0,
+            transition: isDragging ? 'none' : 'opacity 0.12s ease, bottom 0.15s ease',
+            zIndex: 6,
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              width: '24px',
+              height: '24px',
+              borderRadius: '9999px',
+              backgroundColor: 'var(--player-progress, var(--md-sys-color-primary, var(--accent-color)))',
+              opacity: isDragging ? 0.2 : 0.1,
+              transform: isExpanded ? 'scale(1)' : 'scale(0)',
+              transition: 'transform 0.15s cubic-bezier(0.2, 0, 0, 1)',
+            }}
+          />
+          <div
+            style={{
+              width: '10px',
+              height: '10px',
+              borderRadius: '9999px',
+              backgroundColor: 'var(--player-progress, var(--md-sys-color-primary, var(--accent-color)))',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.4)',
             }}
           />
         </div>

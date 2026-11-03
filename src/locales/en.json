@@ -1516,6 +1516,7 @@
       "nextPhoto": "Next",
       "play": "Play",
       "pause": "Pause",
+      "progress": "Playback progress",
       "mute": "Mute",
       "unmute": "Unmute",
       "playbackSpeed": "Playback speed",

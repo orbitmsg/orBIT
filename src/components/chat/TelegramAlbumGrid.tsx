@@ -1,4 +1,5 @@
 import { memo, useMemo, useState, useCallback, useRef, useEffect } from 'react';
+import '@material/web/progress/linear-progress.js';
 import { useTranslation } from 'react-i18next';
 import { MediaItem, Message, useChatStore } from '../../store/useChatStore';
 import { useUploadProgressStore } from '../../store/useUploadProgressStore';
@@ -589,17 +590,35 @@ const AlbumTile = memo(({
                 style={{
                   position: 'relative',
                   width: '100%',
-                  height: '5px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.22)',
+                  height: '4px',
+                  backgroundColor: 'var(--md-sys-color-surface-container-highest, rgba(255, 255, 255, 0.22))',
+                  borderRadius: '9999px',
                   overflow: 'hidden',
                 }}
               >
+                <md-linear-progress
+                  value={(videoDuration || item.duration || 0) > 0 ? Math.min(1, Math.max(0, (videoRef.current?.currentTime || 0) / (videoDuration || item.duration || 1))) : 0}
+                  max={1}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    pointerEvents: 'none',
+                    '--md-linear-progress-active-indicator-color': 'var(--md-sys-color-primary, var(--accent-color, #7C3AED))',
+                    '--md-linear-progress-track-color': 'var(--md-sys-color-surface-container-highest, rgba(255, 255, 255, 0.22))',
+                    '--md-linear-progress-track-height': '4px',
+                    '--md-linear-progress-active-indicator-height': '4px',
+                    '--md-linear-progress-track-shape': '9999px',
+                  } as React.CSSProperties}
+                />
                 <div
                   ref={progressFillRef}
                   style={{
                     height: '100%',
                     width: `${(videoDuration || item.duration || 0) > 0 ? Math.min(100, Math.max(0, ((videoRef.current?.currentTime || 0) / (videoDuration || item.duration || 1)) * 100)) : 0}%`,
-                    backgroundColor: 'var(--accent-color, #7C3AED)',
+                    backgroundColor: 'var(--md-sys-color-primary, var(--accent-color, #7C3AED))',
+                    borderRadius: '9999px',
                     willChange: 'width',
                     pointerEvents: 'none',
                   }}

@@ -1,4 +1,5 @@
 import React, { RefObject, useState, useRef, useEffect, useCallback } from 'react';
+import '@material/web/progress/linear-progress.js';
 import { useTranslation } from 'react-i18next';
 import {
   Volume2,
@@ -206,12 +207,29 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
               style={{
                 position: 'relative',
                 width: '100%',
-                height: '3px',
-                backgroundColor: 'rgba(255, 255, 255, 0.22)',
-                borderRadius: '999px',
-                overflow: 'visible',
+                height: isVolumeHovered ? '5px' : '4px',
+                backgroundColor: 'var(--md-sys-color-surface-container-highest, rgba(255, 255, 255, 0.22))',
+                borderRadius: '9999px',
+                overflow: 'hidden',
+                transition: 'height 0.15s cubic-bezier(0.2, 0, 0, 1)',
               }}
             >
+              <md-linear-progress
+                value={currentVol}
+                max={1}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  pointerEvents: 'none',
+                  '--md-linear-progress-active-indicator-color': 'var(--md-sys-color-primary, var(--accent-color, #7C3AED))',
+                  '--md-linear-progress-track-color': 'var(--md-sys-color-surface-container-highest, rgba(255, 255, 255, 0.22))',
+                  '--md-linear-progress-track-height': isVolumeHovered ? '5px' : '4px',
+                  '--md-linear-progress-active-indicator-height': isVolumeHovered ? '5px' : '4px',
+                  '--md-linear-progress-track-shape': '9999px',
+                } as React.CSSProperties}
+              />
               <div
                 style={{
                   position: 'absolute',
@@ -219,26 +237,11 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
                   left: 0,
                   height: '100%',
                   width: `${currentVol * 100}%`,
-                  backgroundColor: 'var(--accent-color, #7C3AED)',
-                  borderRadius: '999px',
+                  backgroundColor: 'var(--md-sys-color-primary, var(--accent-color, #7C3AED))',
+                  borderRadius: '9999px',
+                  pointerEvents: 'none',
                 }}
-              >
-                <div
-                  style={{
-                    position: 'absolute',
-                    right: '-4px',
-                    top: '50%',
-                    width: '9px',
-                    height: '9px',
-                    borderRadius: '50%',
-                    backgroundColor: 'var(--accent-color, #7C3AED)',
-                    opacity: isVolumeHovered ? 1 : 0,
-                    transform: isVolumeHovered ? 'translateY(-50%) scale(1)' : 'translateY(-50%) scale(0)',
-                    transition: 'opacity 0.12s ease, transform 0.12s ease',
-                    pointerEvents: 'none',
-                  }}
-                />
-              </div>
+              />
             </div>
           </div>
         </div>
@@ -472,27 +475,49 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
           onTouchStart={onProgressTouchStart}
           onMouseEnter={() => setIsVideoProgressHovered(true)}
           onMouseLeave={() => setIsVideoProgressHovered(false)}
+          role="slider"
+          aria-label={t('mediaViewer.progress', 'Прогресс воспроизведения')}
+          aria-valuenow={Math.round(duration > 0 ? (currentTime / duration) * 100 : 0)}
+          aria-valuemin={0}
+          aria-valuemax={100}
           style={{
             position: 'relative',
             flex: 1,
-            height: '14px',
+            height: '16px',
             display: 'flex',
             alignItems: 'center',
             cursor: 'pointer',
             userSelect: 'none',
+            touchAction: 'none',
           }}
         >
           <div
             style={{
               position: 'relative',
               width: '100%',
-              height: isVideoProgressHovered ? '4px' : '3px',
-              backgroundColor: 'rgba(255, 255, 255, 0.22)',
-              borderRadius: '999px',
-              transition: 'height 0.12s ease',
-              overflow: 'visible',
+              height: isVideoProgressHovered ? '6px' : '4px',
+              backgroundColor: 'var(--md-sys-color-surface-container-highest, rgba(255, 255, 255, 0.2))',
+              borderRadius: '9999px',
+              transition: 'height 0.15s cubic-bezier(0.2, 0, 0, 1)',
+              overflow: 'hidden',
             }}
           >
+            <md-linear-progress
+              value={duration > 0 ? currentTime / duration : 0}
+              max={1}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+                '--md-linear-progress-active-indicator-color': 'var(--md-sys-color-primary, var(--accent-color, #7C3AED))',
+                '--md-linear-progress-track-color': 'var(--md-sys-color-surface-container-highest, rgba(255, 255, 255, 0.2))',
+                '--md-linear-progress-track-height': isVideoProgressHovered ? '6px' : '4px',
+                '--md-linear-progress-active-indicator-height': isVideoProgressHovered ? '6px' : '4px',
+                '--md-linear-progress-track-shape': '9999px',
+              } as React.CSSProperties}
+            />
             <div
               ref={videoProgressFillRef}
               style={{
@@ -501,28 +526,50 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
                 left: 0,
                 height: '100%',
                 width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`,
-                backgroundColor: 'var(--accent-color, #7C3AED)',
-                borderRadius: '999px',
+                backgroundColor: 'var(--md-sys-color-primary, var(--accent-color, #7C3AED))',
+                borderRadius: '9999px',
                 willChange: 'width',
+                pointerEvents: 'none',
               }}
-            >
-              <div
-                style={{
-                  position: 'absolute',
-                  right: '-5px',
-                  top: '50%',
-                  width: isVideoProgressHovered ? '10px' : '8px',
-                  height: isVideoProgressHovered ? '10px' : '8px',
-                  borderRadius: '50%',
-                  backgroundColor: 'var(--accent-color, #7C3AED)',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.5)',
-                  opacity: isVideoProgressHovered ? 1 : 0,
-                  transform: isVideoProgressHovered ? 'translateY(-50%) scale(1)' : 'translateY(-50%) scale(0)',
-                  transition: 'opacity 0.12s ease, transform 0.12s ease',
-                  pointerEvents: 'none',
-                }}
-              />
-            </div>
+            />
+          </div>
+          <div
+            style={{
+              position: 'absolute',
+              left: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`,
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              pointerEvents: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 10,
+              opacity: isVideoProgressHovered ? 1 : 0,
+              transition: 'opacity 0.15s ease',
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                width: '24px',
+                height: '24px',
+                borderRadius: '9999px',
+                backgroundColor: 'var(--md-sys-color-primary, var(--accent-color, #7C3AED))',
+                opacity: 0.16,
+                transform: isVideoProgressHovered ? 'scale(1)' : 'scale(0)',
+                transition: 'transform 0.15s cubic-bezier(0.2, 0, 0, 1)',
+              }}
+            />
+            <div
+              style={{
+                width: isVideoProgressHovered ? '12px' : '6px',
+                height: isVideoProgressHovered ? '12px' : '6px',
+                borderRadius: '9999px',
+                backgroundColor: 'var(--md-sys-color-primary, var(--accent-color, #7C3AED))',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.5)',
+                transition: 'width 0.15s ease, height 0.15s ease',
+              }}
+            />
           </div>
         </div>
 

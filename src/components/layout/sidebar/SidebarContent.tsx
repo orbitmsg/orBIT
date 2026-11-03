@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, ArrowLeft, RotateCw, WifiOff } from 'lucide-react';
+import { X, ArrowLeft, RotateCw, WifiOff, ChevronUp } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
 import { VerifiedBadge } from '../../common/VerifiedBadge';
 import { ArchiveListItem } from './ChatListItems';
@@ -77,6 +77,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   setIsMainMenuOpen,
 }) => {
   const { t } = useTranslation();
+  const [showScrollTop, setShowScrollTop] = React.useState(false);
   const activeChatId = useChatStore((s) => s.activeChatId);
   const inChatSearch = useChatStore((s) => s.inChatSearch);
   const closeInChatSearch = useChatStore((s) => s.closeInChatSearch);
@@ -270,7 +271,11 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
       >
         <div
           ref={chatListScrollRef}
-          onScroll={handleChatListScroll}
+          onScroll={(e) => {
+            handleChatListScroll(e);
+            const el = e.currentTarget;
+            setShowScrollTop(el.scrollTop > 180);
+          }}
           className="flex-1 chat-list-scrollbar select-none"
           style={{
             marginTop: (isMobileView && isCallActive) ? '0px' : '9px',
@@ -673,6 +678,34 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
             pointerEvents: 'auto',
           }}
         />
+
+        <button
+          className={`scroll-btn ${showScrollTop ? 'visible' : ''}`}
+          onClick={() => {
+            chatListScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          aria-label={t('chatWindow.scroll_up', 'Прокрутить наверх')}
+          style={{
+            position: 'absolute',
+            right: '16px',
+            bottom: '16px',
+            width: '42px',
+            height: '42px',
+            borderRadius: '50%',
+            backgroundColor: 'var(--surface-container, #33363f)',
+            color: 'var(--text-main)',
+            boxShadow: '0 4px 14px rgba(0, 0, 0, 0.28)',
+            border: 'none',
+            outline: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 30,
+          }}
+        >
+          <ChevronUp size={22} strokeWidth={2.4} style={{ color: 'var(--text-main)' }} />
+        </button>
       </div>
     </div>
   );

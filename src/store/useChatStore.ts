@@ -781,6 +781,15 @@ export const useChatStore = create<ChatState>()(
         if (typeof window !== 'undefined' && (window as any).orbita?.storageDeleteMessage) {
           (window as any).orbita.storageDeleteMessage(messageId).catch(() => {});
         }
+        if (typeof document !== 'undefined') {
+          const container = document.querySelector('.chat-list-scrollbar') as HTMLElement;
+          if (container) {
+            container.scrollTop = container.scrollHeight;
+            requestAnimationFrame(() => {
+              container.scrollTop = container.scrollHeight;
+            });
+          }
+        }
       },
       markVoiceListened: (chatId, messageId) => {
         if (!chatId || !messageId) return;

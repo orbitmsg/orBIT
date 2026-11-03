@@ -522,8 +522,16 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
       } else {
         setShowScrollDown(true);
       }
-    } else if (atBottomRef.current && performance.now() - lastChatSwitchTimeRef.current < 1500) {
+    } else if (atBottomRef.current || (el.scrollHeight - el.scrollTop - el.clientHeight <= 240)) {
       el.scrollTop = el.scrollHeight;
+      atBottomRef.current = true;
+      setShowScrollDown(false);
+      if (activeChatId) {
+        saveChatScroll(activeChatId, el);
+      }
+      requestAnimationFrame(() => {
+        if (el) el.scrollTop = el.scrollHeight;
+      });
     }
   }, [messages, myCode, myNickname, activeChat, activeChatId, myUserId]);
 

@@ -682,15 +682,18 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
         <button
           className={`scroll-btn ${showScrollTop ? 'visible' : ''}`}
           onClick={() => {
-            chatListScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+            if (chatListScrollRef.current) {
+              chatListScrollRef.current.scrollTop = 0;
+            }
+            setShowScrollTop(false);
           }}
           aria-label={t('chatWindow.scroll_up', 'Прокрутить наверх')}
           style={{
             position: 'absolute',
             right: '16px',
             bottom: '16px',
-            width: '42px',
-            height: '42px',
+            width: '48px',
+            height: '48px',
             borderRadius: '50%',
             backgroundColor: 'var(--surface-container, #33363f)',
             color: 'var(--text-main)',
@@ -704,7 +707,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
             zIndex: 30,
           }}
         >
-          <ChevronUp size={22} strokeWidth={2.4} style={{ color: 'var(--text-main)' }} />
+          <ChevronUp size={24} strokeWidth={2.4} style={{ color: 'var(--text-main)' }} />
         </button>
       </div>
     </div>

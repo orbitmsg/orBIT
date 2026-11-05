@@ -32,7 +32,6 @@ import { getLocalKey, isPinLocked, isPinSet, unlockWithPin, setupPin, removePin,
 
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=384 --expose-gc');
-app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -74,7 +73,6 @@ app.commandLine.appendSwitch('disk-cache-size', '67108864');
 app.commandLine.appendSwitch('media-cache-size', '33554432');
 app.commandLine.appendSwitch('disable-gpu-process-crash-limit');
 app.commandLine.appendSwitch('enable-gpu-rasterization');
-app.commandLine.appendSwitch('enable-zero-copy');
 app.commandLine.appendSwitch('enable-smooth-scrolling');
 app.commandLine.appendSwitch('ignore-gpu-blocklist');
 app.commandLine.appendSwitch('enable-accelerated-video-decode');
@@ -114,6 +112,28 @@ for (const candidate of candidatePaths) {
     } catch (e) {
       console.error('Native module failed to load from ' + candidate + ':', e);
     }
+  }
+}
+
+function trimAppMemory() {
+  if (global.gc) {
+    try { global.gc(); } catch {}
+  }
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    try {
+      mainWindow.webContents.executeJavaScript('if (typeof window !== "undefined" && window.gc) window.gc();', true).catch(() => {});
+    } catch {}
+  }
+  if (process.platform === 'win32' && nativeModule && typeof nativeModule.trimMemory === 'function') {
+    try {
+      nativeModule.trimMemory();
+      const metrics = app.getAppMetrics();
+      for (const m of metrics) {
+        if (m.pid && m.pid !== process.pid) {
+          nativeModule.trimMemory(m.pid);
+        }
+      }
+    } catch {}
   }
 }
 
@@ -188,7 +208,7 @@ function getOrCreateNotificationWindow(settings: { position: string; maxCount: n
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
-      backgroundThrottling: false,
+      backgroundThrottling: true,
     },
     show: false,
   });
@@ -212,7 +232,8 @@ function getOrCreateNotificationWindow(settings: { position: string; maxCount: n
     }
     if (channel === 'notif-window:all-closed') {
       if (notifWindow && !notifWindow.isDestroyed()) {
-        notifWindow.hide();
+        notifWindow.destroy();
+        notifWindow = null;
       }
     }
   });
@@ -3552,7 +3573,7 @@ function initOrGetCallWindow(initialPayload?: any): BrowserWindow {
       contextIsolation: true,
       sandbox: false,
       preload: path.join(__dirname, 'preload.cjs'),
-      backgroundThrottling: false,
+      backgroundThrottling: true,
       devTools: !app.isPackaged,
     },
     title: 'Orbita Call',
@@ -3565,17 +3586,10 @@ function initOrGetCallWindow(initialPayload?: any): BrowserWindow {
     callWindow.setContentProtection(true);
   }
 
-  callWindow.on('close', (e) => {
-    if (!isQuitting) {
-      e.preventDefault();
-      currentCallStateCache = null;
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('orbita:call-action', { type: 'endCall', payload: { remainingRemotes: 0 } });
-      }
-      if (callWindow && !callWindow.isDestroyed()) {
-        callWindow.hide();
-        callWindow.webContents.send('orbita:call-state', null);
-      }
+  callWindow.on('close', () => {
+    currentCallStateCache = null;
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('orbita:call-action', { type: 'endCall', payload: { remainingRemotes: 0 } });
     }
   });
 
@@ -3631,6 +3645,7 @@ function initOrGetCallWindow(initialPayload?: any): BrowserWindow {
   callWindow.on('closed', () => {
     callWindow = null;
     currentCallStateCache = null;
+    trimAppMemory();
   });
 
   const queryStr = buildCallUrlQuery(initialPayload || currentCallStateCache);
@@ -3672,16 +3687,6 @@ function createOrShowCallWindow(initialPayload?: any): BrowserWindow {
   return win;
 }
 
-function initCallWindowPrewarm() {
-  setTimeout(() => {
-    try {
-      if (!isQuitting && (!callWindow || callWindow.isDestroyed())) {
-        initOrGetCallWindow();
-      }
-    } catch { }
-  }, 45000);
-}
-
 ipcMain.handle('orbita:open-call-window', (_event, payload?: any) => {
   createOrShowCallWindow(payload);
   return { success: true };
@@ -3690,15 +3695,10 @@ ipcMain.handle('orbita:open-call-window', (_event, payload?: any) => {
 ipcMain.handle('orbita:close-call-window', () => {
   if (callWindow && !callWindow.isDestroyed()) {
     currentCallStateCache = null;
-    callWindow.hide();
-    callWindow.webContents.send('orbita:call-state', null);
-    if (global.gc) {
-      try { global.gc(); } catch { }
-    }
-    try {
-      callWindow.webContents.executeJavaScript('if (typeof window !== "undefined" && window.gc) window.gc();', true).catch(() => {});
-    } catch { }
+    callWindow.destroy();
+    callWindow = null;
   }
+  trimAppMemory();
   return { success: true };
 });
 
@@ -3794,7 +3794,7 @@ function initOrGetMediaWindow(initialPayload?: any): BrowserWindow {
       contextIsolation: true,
       sandbox: false,
       preload: path.join(__dirname, 'preload.cjs'),
-      backgroundThrottling: false,
+      backgroundThrottling: true,
       devTools: !app.isPackaged,
     },
     title: 'Orbita',
@@ -3822,17 +3822,8 @@ function initOrGetMediaWindow(initialPayload?: any): BrowserWindow {
     }
   });
 
-  mediaWindow.on('close', (e) => {
-    if (!isQuitting) {
-      e.preventDefault();
-      currentMediaPayloadCache = null;
-      if (mediaWindow && !mediaWindow.isDestroyed()) {
-        mediaWindow.setOpacity(0);
-        mediaWindow.webContents.send('orbita:media-payload', null);
-        mediaWindow.hide();
-        mediaWindow.webContents.setBackgroundThrottling(true);
-      }
-    }
+  mediaWindow.on('close', () => {
+    currentMediaPayloadCache = null;
   });
 
   mediaWindow.on('resize', () => {
@@ -3863,9 +3854,7 @@ function initOrGetMediaWindow(initialPayload?: any): BrowserWindow {
   mediaWindow.on('closed', () => {
     mediaWindow = null;
     currentMediaPayloadCache = null;
-    if (!isQuitting) {
-      initMediaWindowPrewarm();
-    }
+    trimAppMemory();
   });
 
   if (isPackaged) {
@@ -3875,16 +3864,6 @@ function initOrGetMediaWindow(initialPayload?: any): BrowserWindow {
   }
 
   return mediaWindow;
-}
-
-function initMediaWindowPrewarm() {
-  setTimeout(() => {
-    try {
-      if (!isQuitting && (!mediaWindow || mediaWindow.isDestroyed())) {
-        initOrGetMediaWindow();
-      }
-    } catch { }
-  }, 45000);
 }
 
 function createOrShowMediaWindow(initialPayload?: any): BrowserWindow {
@@ -3945,17 +3924,10 @@ ipcMain.handle('orbita:open-media-window', (_event, payload?: any) => {
 ipcMain.handle('orbita:close-media-window', () => {
   if (mediaWindow && !mediaWindow.isDestroyed()) {
     currentMediaPayloadCache = null;
-    mediaWindow.setOpacity(0);
-    mediaWindow.webContents.send('orbita:media-payload', null);
-    mediaWindow.hide();
-    mediaWindow.webContents.setBackgroundThrottling(true);
-    if (global.gc) {
-      try { global.gc(); } catch { }
-    }
-    try {
-      mediaWindow.webContents.executeJavaScript('if (typeof window !== "undefined" && window.gc) window.gc();', true).catch(() => {});
-    } catch { }
+    mediaWindow.destroy();
+    mediaWindow = null;
   }
+  trimAppMemory();
   return { success: true };
 });
 
@@ -4014,14 +3986,15 @@ ipcMain.handle('window:close', (event) => {
           mainWindow.webContents.send('orbita:call-action', { type: 'cancelCall' });
         }
         currentCallStateCache = null;
-        callWindow.webContents.send('orbita:call-state', null);
-        callWindow.hide();
+        callWindow.destroy();
+        callWindow = null;
+        trimAppMemory();
       }
     } else if (mediaWindow && win === mediaWindow) {
       currentMediaPayloadCache = null;
-      mediaWindow.setOpacity(0);
-      mediaWindow.webContents.send('orbita:media-payload', null);
-      mediaWindow.hide();
+      mediaWindow.destroy();
+      mediaWindow = null;
+      trimAppMemory();
     } else if (win === mainWindow) {
       if (showInTraySetting) {
         mainWindow.hide();
@@ -4288,7 +4261,7 @@ function createMainWindow() {
       contextIsolation: true,
       sandbox: false,
       preload: path.join(__dirname, 'preload.cjs'),
-      backgroundThrottling: false,
+      backgroundThrottling: true,
       devTools: !app.isPackaged,
     },
     title: 'Orbita Desktop',
@@ -4419,14 +4392,7 @@ function createMainWindow() {
     try {
       mainWindow.webContents.setBackgroundThrottling(true);
     } catch { }
-    if (global.gc) {
-      try { global.gc(); } catch { }
-    }
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      try {
-        mainWindow.webContents.executeJavaScript('if (typeof window !== "undefined" && window.gc) window.gc();', true).catch(() => {});
-      } catch { }
-    }
+    trimAppMemory();
   });
 
   mainWindow.on('restore', () => {
@@ -4439,6 +4405,7 @@ function createMainWindow() {
     try {
       mainWindow.webContents.setBackgroundThrottling(true);
     } catch { }
+    trimAppMemory();
   });
 
   mainWindow.on('show', () => {
@@ -4453,29 +4420,14 @@ function createMainWindow() {
       e.preventDefault();
       mainWindow.hide();
       if (callWindow && !callWindow.isDestroyed() && !currentCallStateCache) {
-        callWindow.hide();
+        callWindow.destroy();
+        callWindow = null;
       }
       if (mediaWindow && !mediaWindow.isDestroyed()) {
-        mediaWindow.setPosition(-32000, -32000);
+        mediaWindow.destroy();
+        mediaWindow = null;
       }
-      if (global.gc) {
-        try { global.gc(); } catch { }
-      }
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        try {
-          mainWindow.webContents.executeJavaScript('if (typeof window !== "undefined" && window.gc) window.gc();', true).catch(() => {});
-        } catch { }
-      }
-      if (callWindow && !callWindow.isDestroyed()) {
-        try {
-          callWindow.webContents.executeJavaScript('if (typeof window !== "undefined" && window.gc) window.gc();', true).catch(() => {});
-        } catch { }
-      }
-      if (mediaWindow && !mediaWindow.isDestroyed()) {
-        try {
-          mediaWindow.webContents.executeJavaScript('if (typeof window !== "undefined" && window.gc) window.gc();', true).catch(() => {});
-        } catch { }
-      }
+      trimAppMemory();
     }
   });
 
@@ -4840,11 +4792,7 @@ app.whenReady().then(async () => {
   }
 
   setInterval(() => {
-    if (global.gc) {
-      try {
-        global.gc();
-      } catch {}
-    }
+    trimAppMemory();
   }, 180000);
 
   if (process.defaultApp) {

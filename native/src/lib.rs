@@ -12,6 +12,7 @@ pub mod call;
 pub mod tray;
 pub mod dialog;
 pub mod preview;
+pub mod memory;
 
 pub use types::*;
 pub use crypto::*;
@@ -24,3 +25,4 @@ pub use call::*;
 pub use tray::*;
 pub use dialog::*;
 pub use preview::*;
+pub use memory::*;

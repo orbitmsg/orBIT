@@ -13,13 +13,21 @@ interface TgsPlayerProps {
   onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
-const MAX_CACHE_SIZE = 256;
+const MAX_CACHE_SIZE = 32;
 const tgsCache = new Map<string, any>();
 const pendingRequests = new Map<string, Promise<any>>();
 
 export function clearTgsCache(): void {
   tgsCache.clear();
   pendingRequests.clear();
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      clearTgsCache();
+    }
+  });
 }
 
 function getFromCache(key: string): any {

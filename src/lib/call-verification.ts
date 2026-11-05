@@ -1,11 +1,9 @@
-// src/lib/call-verification.ts
-import { allEmojis } from './emoji-data';
-
 export async function generateCallVerificationEmojis(secret: string): Promise<string[]> {
   const encoder = new TextEncoder();
   const data = encoder.encode(secret + ':call-verification');
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = new Uint8Array(hashBuffer);
+  const { allEmojis } = await import('./emoji-data');
   const emojis: string[] = [];
   const total = allEmojis.length;
   for (let i = 0; i < 4; i++) {

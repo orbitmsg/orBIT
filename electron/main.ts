@@ -384,12 +384,30 @@ function getMediaDbPath(): string {
 }
 
 function getMediaDir(): string {
+  const baseDownloads = app.getPath('downloads');
   if (nativeModule && typeof nativeModule.rustCacheResolveFolder === 'function') {
     try {
-      return nativeModule.rustCacheResolveFolder(configuredMediaDir);
+      return nativeModule.rustCacheResolveFolder(configuredMediaDir, baseDownloads);
     } catch {}
   }
-  return configuredMediaDir || path.join(app.getPath('downloads'), 'Orbita Desktop');
+  return configuredMediaDir || path.join(baseDownloads, 'Orbita Desktop');
+}
+
+function ensureMediaDir(): string {
+  const baseDownloads = app.getPath('downloads');
+  if (nativeModule && typeof nativeModule.rustCacheEnsureFolder === 'function') {
+    try {
+      return nativeModule.rustCacheEnsureFolder(configuredMediaDir, baseDownloads);
+    } catch {}
+  }
+  const dir = getMediaDir();
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    try {
+      fs.writeFileSync(path.join(dir, '.orbita_cache'), '{"app":"orbita_desktop"}');
+    } catch {}
+  }
+  return dir;
 }
 
 async function initMediaDb(): Promise<sqlite3.Database> {
@@ -503,12 +521,14 @@ async function saveMediaToCache(
   data: Buffer,
   mimeType: string,
   chatId?: string,
-  messageId?: string
+  messageId?: string,
+  fileName?: string
 ): Promise<string> {
   const dbPath = getMediaDbPath();
   const masterKey = getMasterKey();
+  const baseDownloads = app.getPath('downloads');
 
-  if (nativeModule && nativeModule.rustCacheSaveMedia && masterKey) {
+  if (nativeModule && nativeModule.rustCacheSaveMedia) {
     try {
       const res = nativeModule.rustCacheSaveMedia(
         dbPath,
@@ -518,7 +538,9 @@ async function saveMediaToCache(
         mimeType,
         chatId || null,
         messageId || null,
-        masterKey.toString('hex')
+        fileName || null,
+        masterKey ? masterKey.toString('hex') : null,
+        baseDownloads
       );
       if (res && res.localPath) {
         if (res.resolvedDir && configuredMediaDir && path.resolve(res.resolvedDir) !== path.resolve(configuredMediaDir)) {
@@ -526,7 +548,7 @@ async function saveMediaToCache(
         }
         return res.localPath;
       }
-    } catch { }
+    } catch {}
   } else if (nativeModule && nativeModule.rustMediaSave && masterKey) {
     try {
       const dir = getMediaDir();
@@ -541,15 +563,21 @@ async function saveMediaToCache(
         masterKey.toString('hex')
       );
       if (savedPath) return savedPath;
-    } catch { }
+    } catch {}
   }
 
-  const filename = generateRandomDataFilename();
-  const localPath = path.join(dir, filename);
-  const encrypted = encryptData(data);
-
-  await fs.promises.writeFile(localPath, encrypted);
-  const fileSize = encrypted.length;
+  const dir = ensureMediaDir();
+  const sanitized = (fileName || 'file').replace(/[<>:"/\\|?*]/g, '_');
+  let target = path.join(dir, sanitized);
+  let counter = 1;
+  while (fs.existsSync(target)) {
+    const ext = path.extname(sanitized);
+    const base = path.basename(sanitized, ext);
+    target = path.join(dir, `${base} (${counter})${ext}`);
+    counter++;
+  }
+  await fs.promises.writeFile(target, data);
+  const fileSize = data.length;
   const db = await initMediaDb();
 
   await new Promise<void>((resolve, reject) => {
@@ -557,7 +585,7 @@ async function saveMediaToCache(
       `INSERT OR REPLACE INTO media_cache
       (cache_key, local_path, original_url, mime_type, file_size, created_at, last_accessed, download_status, chat_id, message_id)
       VALUES (?, ?, ?, ?, ?, ?, ?, 'downloaded', ?, ?)`,
-      [cacheKey, localPath, cacheKey, mimeType, fileSize, Date.now(), Date.now(), chatId, messageId],
+      [cacheKey, path.basename(target), cacheKey, mimeType, fileSize, Date.now(), Date.now(), chatId, messageId],
       (err) => {
         if (err) reject(err);
         else resolve();
@@ -566,27 +594,34 @@ async function saveMediaToCache(
   });
 
   await evictOldMediaIfNeeded(fileSize);
-  return localPath;
+  return target;
 }
 
 async function getMediaFromCache(cacheKey: string): Promise<{ data: Buffer | null; mime: string | null }> {
   const dbPath = getMediaDbPath();
   const masterKey = getMasterKey();
+  const baseDownloads = app.getPath('downloads');
 
-  if (nativeModule && nativeModule.rustCacheGetMedia && masterKey) {
+  if (nativeModule && nativeModule.rustCacheGetMedia) {
     try {
-      const res = nativeModule.rustCacheGetMedia(dbPath, configuredMediaDir, cacheKey, masterKey.toString('hex'));
+      const res = nativeModule.rustCacheGetMedia(
+        dbPath,
+        configuredMediaDir,
+        cacheKey,
+        masterKey ? masterKey.toString('hex') : null,
+        baseDownloads
+      );
       if (res && res.data) {
         return { data: Buffer.from(res.data), mime: res.mime };
       }
-    } catch { }
+    } catch {}
   } else if (nativeModule && nativeModule.rustMediaGet && masterKey) {
     try {
       const res = nativeModule.rustMediaGet(dbPath, cacheKey, masterKey.toString('hex'));
       if (res && res.data) {
         return { data: Buffer.from(res.data), mime: res.mime };
       }
-    } catch { }
+    } catch {}
   }
 
   const db = await initMediaDb();
@@ -618,8 +653,8 @@ async function getMediaFromCache(cacheKey: string): Promise<{ data: Buffer | nul
   }
 
   const raw = fs.readFileSync(localPath);
-  const decrypted = decryptData(raw);
-  if (!decrypted) return { data: null, mime: null };
+  const decrypted = masterKey ? decryptData(raw) : null;
+  const resultData = decrypted || raw;
 
   const now = Date.now();
   const lastUpdate = lastAccessedCache.get(cacheKey);
@@ -628,14 +663,14 @@ async function getMediaFromCache(cacheKey: string): Promise<{ data: Buffer | nul
     db.run('UPDATE media_cache SET last_accessed = ? WHERE cache_key = ?', [now, cacheKey]);
   }
 
-  return { data: decrypted, mime: record.mime_type };
+  return { data: resultData, mime: record.mime_type };
 }
 
 async function deleteMediaByChat(chatId: string): Promise<number> {
   const dbPath = getMediaDbPath();
   if (nativeModule && nativeModule.rustCacheDeleteByChat) {
     try {
-      return nativeModule.rustCacheDeleteByChat(dbPath, configuredMediaDir, chatId);
+      return nativeModule.rustCacheDeleteByChat(dbPath, configuredMediaDir, chatId, app.getPath('downloads'));
     } catch { }
   }
   const db = await initMediaDb();
@@ -664,7 +699,7 @@ async function clearAllMediaCache(categories?: string[]): Promise<number> {
   const dbPath = getMediaDbPath();
   if (nativeModule && nativeModule.rustCacheClear) {
     try {
-      return nativeModule.rustCacheClear(dbPath, configuredMediaDir, categories && categories.length > 0 ? categories : null);
+      return nativeModule.rustCacheClear(dbPath, configuredMediaDir, categories && categories.length > 0 ? categories : null, app.getPath('downloads'));
     } catch { }
   }
   const db = await initMediaDb();
@@ -735,7 +770,7 @@ async function evictMediaByAge(maxAgeMs: number): Promise<number> {
   const dbPath = getMediaDbPath();
   if (nativeModule && nativeModule.rustCacheEvictByAge) {
     try {
-      return nativeModule.rustCacheEvictByAge(dbPath, configuredMediaDir, maxAgeMs);
+      return nativeModule.rustCacheEvictByAge(dbPath, configuredMediaDir, maxAgeMs, app.getPath('downloads'));
     } catch { }
   }
   const db = await initMediaDb();
@@ -767,7 +802,7 @@ async function evictMediaToSizeLimit(limitBytes: number): Promise<number> {
   const dbPath = getMediaDbPath();
   if (nativeModule && nativeModule.rustCacheEvictToLimit) {
     try {
-      return nativeModule.rustCacheEvictToLimit(dbPath, configuredMediaDir, limitBytes);
+      return nativeModule.rustCacheEvictToLimit(dbPath, configuredMediaDir, limitBytes, app.getPath('downloads'));
     } catch { }
   }
   const db = await initMediaDb();
@@ -844,7 +879,7 @@ function registerMediaIpcHandlers() {
     return result;
   });
 
-  ipcMain.handle('media:save', async (_event, cacheKey: string, dataInput: any, mimeType: string, chatId?: string, messageId?: string) => {
+  ipcMain.handle('media:save', async (_event, cacheKey: string, dataInput: any, mimeType: string, chatId?: string, messageId?: string, fileName?: string) => {
     let buf: Buffer;
     if (Buffer.isBuffer(dataInput)) {
       buf = dataInput;
@@ -855,8 +890,7 @@ function registerMediaIpcHandlers() {
     } else {
       return false;
     }
-    console.log('[Main] media:save called:', { cacheKey, mimeType, chatId, messageId, bytes: buf.length });
-    const pathSaved = await saveMediaToCache(cacheKey, buf, mimeType, chatId, messageId);
+    const pathSaved = await saveMediaToCache(cacheKey, buf, mimeType, chatId, messageId, fileName);
     return !!pathSaved;
   });
 
@@ -1357,45 +1391,37 @@ function registerOrbitaMediaProtocol() {
 // -----------------------------------------------------------------------------
 // 4. Downloads Helpers
 // -----------------------------------------------------------------------------
-const DOWNLOADS_SUBDIR = 'Orbita';
-
-function getDownloadsDir(): string {
-  return path.join(app.getPath('downloads'), DOWNLOADS_SUBDIR);
-}
-
-function ensureDownloadsDir(): void {
-  const dir = getDownloadsDir();
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-}
-
-function saveDownloadedFile(buffer: Buffer, fileName: string): string {
-  const dir = getDownloadsDir();
-  ensureDownloadsDir();
-  let target = path.join(dir, fileName);
-  let counter = 1;
-
-  while (fs.existsSync(target)) {
-    const ext = path.extname(fileName);
-    const base = path.basename(fileName, ext);
-    target = path.join(dir, `${base} (${counter})${ext}`);
-    counter++;
-  }
-
-  fs.writeFileSync(target, buffer);
-  return target;
-}
-
 function registerDownloadsIpcHandlers() {
-  ensureDownloadsDir();
   ipcMain.handle('downloads:save', async (_event, base64Data: string, fileName: string) => {
+    const dir = ensureMediaDir();
     const buf = Buffer.from(base64Data, 'base64');
-    const savedPath = saveDownloadedFile(buf, fileName);
-    return { path: savedPath };
+    const safeName = (fileName || 'file').replace(/[<>:"/\\|?*]/g, '_');
+    let target = path.join(dir, safeName);
+    let counter = 1;
+    while (fs.existsSync(target)) {
+      const ext = path.extname(safeName);
+      const base = path.basename(safeName, ext);
+      target = path.join(dir, `${base} (${counter})${ext}`);
+      counter++;
+    }
+    fs.writeFileSync(target, buf);
+    try {
+      const db = await initMediaDb();
+      db.run(
+        `INSERT OR REPLACE INTO media_cache
+        (cache_key, local_path, original_url, mime_type, file_size, created_at, last_accessed, download_status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'downloaded')`,
+        [target, path.basename(target), target, 'application/octet-stream', buf.length, Date.now(), Date.now()]
+      );
+    } catch {}
+    return { path: target };
   });
 
   ipcMain.handle('downloads:save-as', async (_event, dataOrUrl: string | Uint8Array | ArrayBuffer, fileName: string, filters?: Array<{ name: string; extensions: string[] }>) => {
     try {
-      const defaultPath = path.join(app.getPath('downloads'), fileName || 'file');
+      const mediaDir = ensureMediaDir();
+      const sanitizedFileName = (fileName || 'file').replace(/[<>:"/\\|?*]/g, '_');
+      const defaultPath = path.join(mediaDir, sanitizedFileName);
       const targetWindow = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
       const res = targetWindow
         ? await dialog.showSaveDialog(targetWindow, { defaultPath, filters })
@@ -1422,6 +1448,28 @@ function registerDownloadsIpcHandlers() {
         buf = Buffer.from(dataOrUrl.buffer, dataOrUrl.byteOffset, dataOrUrl.byteLength);
       }
       await fs.promises.writeFile(res.filePath, buf);
+
+      try {
+        const ext = path.extname(res.filePath).toLowerCase();
+        let mime = 'application/octet-stream';
+        if (['.jpg', '.jpeg'].includes(ext)) mime = 'image/jpeg';
+        else if (ext === '.png') mime = 'image/png';
+        else if (ext === '.webp') mime = 'image/webp';
+        else if (ext === '.gif') mime = 'image/gif';
+        else if (ext === '.mp4') mime = 'video/mp4';
+        else if (['.ogg', '.opus'].includes(ext)) mime = 'audio/ogg';
+        else if (ext === '.mp3') mime = 'audio/mp3';
+        else if (ext === '.pdf') mime = 'application/pdf';
+
+        const db = await initMediaDb();
+        db.run(
+          `INSERT OR REPLACE INTO media_cache
+          (cache_key, local_path, original_url, mime_type, file_size, created_at, last_accessed, download_status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'downloaded')`,
+          [res.filePath, path.basename(res.filePath), res.filePath, mime, buf.length, Date.now(), Date.now()]
+        );
+      } catch {}
+
       return { success: true, path: res.filePath };
     } catch (err) {
       console.error('downloads:save-as error:', err);
@@ -1448,11 +1496,13 @@ function registerDownloadsIpcHandlers() {
   ipcMain.handle('orbita:open-file', async (_event, data: string | Uint8Array | ArrayBuffer, fileName: string) => {
     try {
       const sanitizedName = (fileName || 'file.dat').replace(/[<>:"/\\|?*]/g, '_');
-      const tempDir = path.join(app.getPath('temp'), 'Orbita_Files');
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
+      const mediaDir = ensureMediaDir();
+      const directPath = path.join(mediaDir, sanitizedName);
+      if (fs.existsSync(directPath)) {
+        const err = await shell.openPath(directPath);
+        if (!err) return { success: true, path: directPath };
       }
-      const filePath = path.join(tempDir, sanitizedName);
+
       let buf: Buffer;
       if (typeof data === 'string') {
         const cleanBase64 = data.replace(/^data:[^;]+;base64,/, '');
@@ -1464,12 +1514,13 @@ function registerDownloadsIpcHandlers() {
       } else {
         buf = Buffer.from(data.buffer, data.byteOffset, data.byteLength);
       }
-      fs.writeFileSync(filePath, buf);
-      const err = await shell.openPath(filePath);
+
+      fs.writeFileSync(directPath, buf);
+      const err = await shell.openPath(directPath);
       if (err) {
         return { success: false, error: err };
       }
-      return { success: true, path: filePath };
+      return { success: true, path: directPath };
     } catch (err) {
       console.error('orbita:open-file error:', err);
       return { success: false, error: String(err) };
@@ -1477,14 +1528,18 @@ function registerDownloadsIpcHandlers() {
   });
 
   ipcMain.handle('downloads:open', async (_event, fileName?: string) => {
-    const dir = getDownloadsDir();
+    const dir = getMediaDir();
     if (fileName) {
       const full = path.join(dir, fileName);
       if (fs.existsSync(full)) {
         await shell.openPath(full);
+        return;
       }
-    } else {
+    }
+    if (fs.existsSync(dir)) {
       await shell.openPath(dir);
+    } else {
+      await shell.openPath(app.getPath('downloads'));
     }
   });
 }

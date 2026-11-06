@@ -44,8 +44,11 @@ pub fn scan_dir_for_marker(parent: &Path) -> Option<PathBuf> {
     None
 }
 
-pub fn resolve_media_folder(configured_path: Option<&str>) -> PathBuf {
-    let downloads_dir = get_default_downloads_dir();
+pub fn resolve_media_folder(configured_path: Option<&str>, base_downloads: Option<&str>) -> PathBuf {
+    let downloads_dir = match base_downloads {
+        Some(b) if !b.trim().is_empty() && Path::new(b).is_dir() => PathBuf::from(b),
+        _ => get_default_downloads_dir(),
+    };
     let default_target = downloads_dir.join(DEFAULT_MEDIA_DIR_NAME);
 
     if let Some(cfg) = configured_path {

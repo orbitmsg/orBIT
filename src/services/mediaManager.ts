@@ -131,7 +131,8 @@ class MediaManager {
     blob: Blob,
     mimeType: string,
     chatId?: string,
-    messageId?: string
+    messageId?: string,
+    fileName?: string
   ): DecryptedMedia {
     const cleanUrl = normalizeMediaUrl(url);
     const cacheKey = `${cleanUrl}::${sharedSecret || 'public'}`;
@@ -151,7 +152,7 @@ class MediaManager {
 
     if (typeof window !== 'undefined' && (window as any).orbita?.mediaSave) {
       blob.arrayBuffer().then((ab) => {
-        (window as any).orbita.mediaSave(cleanUrl, new Uint8Array(ab), mimeType || blob.type || 'application/octet-stream', chatId, messageId).catch(() => {});
+        (window as any).orbita.mediaSave(cleanUrl, new Uint8Array(ab), mimeType || blob.type || 'application/octet-stream', chatId, messageId, fileName).catch(() => {});
       }).catch(() => {});
     }
 
@@ -387,7 +388,7 @@ class MediaManager {
           decryptedData = await this.decryptFile(rawBytes, sharedSecret);
           mime = this.detectMime(new Uint8Array(decryptedData.slice(0, 16)), fileName);
           if (window.orbita?.mediaSave) {
-            window.orbita.mediaSave(url, new Uint8Array(decryptedData), mime, chatId || '', messageId || '').catch(() => {});
+            window.orbita.mediaSave(url, new Uint8Array(decryptedData), mime, chatId || '', messageId || '', fileName).catch(() => {});
           } else {
             const b64 = this.arrayBufferToBase64(decryptedData);
             idbMediaStorage.save(url, b64, mime, chatId, messageId).catch(() => {});
@@ -456,7 +457,7 @@ class MediaManager {
 
       if (window.orbita?.mediaSave) {
         try {
-          await window.orbita.mediaSave(url, new Uint8Array(decryptedData), mime, chatId || '', messageId || '');
+          await window.orbita.mediaSave(url, new Uint8Array(decryptedData), mime, chatId || '', messageId || '', fileName);
         } catch (_) {}
       } else {
         const b64 = this.arrayBufferToBase64(decryptedData);

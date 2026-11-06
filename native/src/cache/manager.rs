@@ -1,14 +1,9 @@
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
-use aes_gcm::{
-    aead::{Aead, KeyInit},
-    Aes256Gcm, Nonce,
-};
 use rusqlite::{params, Connection};
 use std::path::{Path, PathBuf};
 use crate::cache::folder::{create_media_folder_if_needed, resolve_media_folder};
 use crate::media::RustMediaResult;
-use crate::types::{SensitiveBuffer, SensitiveKey};
 
 #[napi(object)]
 pub struct RustCacheSaveResult {
@@ -51,20 +46,6 @@ pub fn open_media_db(db_path: &str) -> Result<Connection> {
     Ok(conn)
 }
 
-fn derive_cipher(local_key_hex: &str) -> Result<Aes256Gcm> {
-    let key_vec = hex::decode(local_key_hex)
-        .map_err(|e| Error::new(Status::InvalidArg, format!("Invalid key hex: {}", e)))?;
-    if key_vec.len() != 32 {
-        return Err(Error::new(Status::InvalidArg, "Key must be 32 bytes"));
-    }
-    let sensitive_key_vec = SensitiveBuffer(key_vec);
-    let mut key_bytes = SensitiveKey([0u8; 32]);
-    key_bytes.0.copy_from_slice(&sensitive_key_vec.0);
-
-    Aes256Gcm::new_from_slice(&key_bytes.0)
-        .map_err(|e| Error::new(Status::GenericFailure, format!("Invalid AES key: {}", e)))
-}
-
 fn sanitize_filename(raw_name: &str) -> String {
     let mut clean = String::with_capacity(raw_name.len());
     for c in raw_name.chars() {
@@ -82,7 +63,67 @@ fn sanitize_filename(raw_name: &str) -> String {
     }
 }
 
-fn mime_to_extension(mime: &str) -> &'static str {
+fn is_sticker(cache_key: &str, mime_type: &str, file_name: Option<&str>) -> bool {
+    let lower_key = cache_key.to_lowercase();
+    let lower_mime = mime_type.to_lowercase();
+    let lower_name = file_name.map(|n| n.to_lowercase()).unwrap_or_default();
+
+    lower_key.contains("sticker")
+        || lower_key.ends_with(".tgs")
+        || lower_key.contains("spotty")
+        || lower_key.contains("utyaduck")
+        || lower_mime.contains("tgsticker")
+        || lower_name.contains("spotty")
+        || lower_name.contains("sticker")
+        || lower_name.ends_with(".tgs")
+}
+
+fn detect_extension(data: &[u8], mime: &str) -> &'static str {
+    if data.len() >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF {
+        return "jpg";
+    }
+    if data.len() >= 8 && &data[0..8] == b"\x89PNG\r\n\x1a\n" {
+        return "png";
+    }
+    if data.len() >= 6 && (&data[0..6] == b"GIF87a" || &data[0..6] == b"GIF89a") {
+        return "gif";
+    }
+    if data.len() >= 12 && &data[0..4] == b"RIFF" && &data[8..12] == b"WEBP" {
+        return "webp";
+    }
+    if data.len() >= 8 && (&data[4..8] == b"ftyp" || (data.len() >= 12 && &data[4..8] == b"moov")) {
+        let lower = mime.to_lowercase();
+        if lower.contains("audio") || lower.contains("m4a") {
+            return "m4a";
+        }
+        return "mp4";
+    }
+    if data.len() >= 4 && &data[0..4] == b"OggS" {
+        return "ogg";
+    }
+    if data.len() >= 3 && &data[0..3] == b"ID3" {
+        return "mp3";
+    }
+    if data.len() >= 2 && data[0] == 0xFF && (data[1] & 0xE0) == 0xE0 {
+        return "mp3";
+    }
+    if data.len() >= 4 && &data[0..4] == b"%PDF" {
+        return "pdf";
+    }
+    if data.len() >= 4 && &data[0..4] == b"PK\x03\x04" {
+        let lower = mime.to_lowercase();
+        if lower.contains("wordprocessing") || lower.contains("docx") {
+            return "docx";
+        }
+        if lower.contains("presentation") || lower.contains("pptx") {
+            return "pptx";
+        }
+        if lower.contains("spreadsheet") || lower.contains("xlsx") {
+            return "xlsx";
+        }
+        return "zip";
+    }
+
     let lower = mime.to_lowercase();
     if lower.contains("jpeg") || lower.contains("jpg") {
         "jpg"
@@ -93,7 +134,11 @@ fn mime_to_extension(mime: &str) -> &'static str {
     } else if lower.contains("gif") {
         "gif"
     } else if lower.contains("mp4") {
-        "mp4"
+        if lower.contains("audio") {
+            "m4a"
+        } else {
+            "mp4"
+        }
     } else if lower.contains("webm") {
         "webm"
     } else if lower.contains("ogg") || lower.contains("opus") {
@@ -107,7 +152,9 @@ fn mime_to_extension(mime: &str) -> &'static str {
     }
 }
 
-fn generate_media_filename(mime_type: &str, file_name: Option<&str>) -> String {
+fn generate_media_filename(mime_type: &str, file_name: Option<&str>, data: &[u8]) -> String {
+    let ext = detect_extension(data, mime_type);
+
     if let Some(name) = file_name {
         let trimmed = name.trim();
         if !trimmed.is_empty() {
@@ -115,7 +162,6 @@ fn generate_media_filename(mime_type: &str, file_name: Option<&str>) -> String {
             if clean.contains('.') {
                 return clean;
             }
-            let ext = mime_to_extension(mime_type);
             return format!("{}.{}", clean, ext);
         }
     }
@@ -125,13 +171,12 @@ fn generate_media_filename(mime_type: &str, file_name: Option<&str>) -> String {
         .unwrap_or_default()
         .as_secs();
 
-    let ext = mime_to_extension(mime_type);
     let lower = mime_type.to_lowercase();
     let prefix = if lower.starts_with("image/") {
         "photo"
     } else if lower.starts_with("video/") {
         "video"
-    } else if lower.starts_with("audio/") || lower.contains("opus") || lower.contains("ogg") {
+    } else if lower.starts_with("audio/") || lower.contains("opus") || lower.contains("ogg") || lower.contains("m4a") {
         "audio"
     } else {
         "file"
@@ -197,10 +242,19 @@ pub fn save_media_internal(
     base_downloads: Option<&str>,
 ) -> Result<RustCacheSaveResult> {
     let resolved_dir = resolve_media_folder(configured_dir, base_downloads);
+
+    if is_sticker(cache_key, mime_type, file_name) {
+        return Ok(RustCacheSaveResult {
+            local_path: String::new(),
+            file_size: data.len() as i64,
+            resolved_dir: resolved_dir.to_string_lossy().to_string(),
+        });
+    }
+
     create_media_folder_if_needed(&resolved_dir)
         .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to create folder {}: {}", resolved_dir.display(), e)))?;
 
-    let desired_filename = generate_media_filename(mime_type, file_name);
+    let desired_filename = generate_media_filename(mime_type, file_name, data);
     let (full_file_path, actual_filename) = get_unique_filepath(&resolved_dir, &desired_filename, data);
 
     std::fs::write(&full_file_path, data)
@@ -239,7 +293,7 @@ pub fn get_media_internal(
     db_path: &str,
     configured_dir: Option<&str>,
     cache_key: &str,
-    local_key_hex: Option<&str>,
+    _local_key_hex: Option<&str>,
     base_downloads: Option<&str>,
 ) -> Result<Option<RustMediaResult>> {
     let conn = open_media_db(db_path)?;
@@ -251,6 +305,10 @@ pub fn get_media_internal(
     ).ok();
 
     if let Some((row_id, local_path_str, mime_type)) = row {
+        if local_path_str.is_empty() {
+            return Ok(None);
+        }
+
         let resolved_dir = resolve_media_folder(configured_dir, base_downloads);
         let path_obj = Path::new(&local_path_str);
         let candidate_in_resolved = path_obj.file_name().map(|f| resolved_dir.join(f));
@@ -281,31 +339,6 @@ pub fn get_media_internal(
             Ok(b) => b,
             Err(_) => return Ok(None),
         };
-
-        if bytes.len() >= 28 {
-            if let Some(key_hex) = local_key_hex {
-                if let Ok(cipher) = derive_cipher(key_hex) {
-                    let (nonce_slice, ciphertext) = bytes.split_at(12);
-                    let nonce = Nonce::from_slice(nonce_slice);
-                    if let Ok(plaintext) = cipher.decrypt(nonce, ciphertext) {
-                        let now = std::time::SystemTime::now()
-                            .duration_since(std::time::UNIX_EPOCH)
-                            .unwrap_or_default()
-                            .as_millis() as i64;
-
-                        let _ = conn.execute(
-                            "UPDATE media_cache SET last_accessed = ?1 WHERE id = ?2",
-                            params![now, row_id],
-                        );
-
-                        return Ok(Some(RustMediaResult {
-                            data: plaintext.into(),
-                            mime: mime_type,
-                        }));
-                    }
-                }
-            }
-        }
 
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -344,6 +377,9 @@ pub fn exists_media_internal(
     ).ok();
 
     if let Some(local_path_str) = row {
+        if local_path_str.is_empty() {
+            return false;
+        }
         let resolved_dir = resolve_media_folder(configured_dir, base_downloads);
         let path_obj = Path::new(&local_path_str);
         if let Some(file_name) = path_obj.file_name() {

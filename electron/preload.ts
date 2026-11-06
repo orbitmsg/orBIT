@@ -345,6 +345,13 @@ contextBridge.exposeInMainWorld('orbita', {
   mediaDeleteByChatId: (chatId: string) =>
     ipcRenderer.invoke('media:delete-by-chat', chatId),
 
+  mediaGetFolderInfo: () => ipcRenderer.invoke('media:get-folder-info'),
+  mediaPickFolder: () => ipcRenderer.invoke('media:pick-folder'),
+  mediaResetFolder: () => ipcRenderer.invoke('media:reset-folder'),
+  mediaOpenFolder: () => ipcRenderer.invoke('media:open-folder'),
+  optimizeMemory: () => ipcRenderer.invoke('system:optimize-memory'),
+  getMemoryInfo: () => ipcRenderer.invoke('system:get-memory'),
+
   getDiskSpace: () =>
     ipcRenderer.invoke('system:disk-space'),
 

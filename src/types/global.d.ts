@@ -134,6 +134,12 @@ declare global {
       mediaSetLimit: (type: 'total' | 'media', size: number) => Promise<{ deleted: number }>;
       mediaGetBatch: (requests: Array<{ url: string; sharedSecret: string; fileName?: string }>) => Promise<Array<{ url: string; data: string | null; mime: string | null }>>;
       mediaDeleteByChatId?: (chatId: string) => Promise<{ deleted: number }>;
+      mediaGetFolderInfo?: () => Promise<{ path: string; isDefault: boolean; exists: boolean }>;
+      mediaPickFolder?: () => Promise<{ success: boolean; path: string }>;
+      mediaResetFolder?: () => Promise<{ success: boolean; path: string }>;
+      mediaOpenFolder?: () => Promise<boolean>;
+      optimizeMemory?: () => Promise<{ success: boolean; trimmed: boolean; memory?: { workingSetBytes: number; pagefileBytes: number } }>;
+      getMemoryInfo?: () => Promise<{ workingSetBytes: number; peakWorkingSetBytes: number; pagefileBytes: number }>;
       destroyCloudinaryMedia?: (publicId: string, resourceType?: string) => Promise<{ success: boolean }>;
       setProxy?: (config: { host: string; port: number; username?: string; password?: string; type?: string; proxyCalls?: boolean }) => Promise<{ success: boolean; error?: string }>;
       clearProxy?: () => Promise<{ success: boolean; error?: string }>;

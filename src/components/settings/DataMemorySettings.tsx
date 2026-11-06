@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { Check, Trash2, RefreshCw, Database } from 'lucide-react';
+import { Check, Trash2, RefreshCw, Database, Folder, ExternalLink, RotateCcw, Cpu } from 'lucide-react';
 import { useChatStore } from '../../store/useChatStore';
 import { Avatar } from '../common/Avatar';
 import { mediaManager } from '../../services/mediaManager';
@@ -77,6 +77,9 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
   const [isClearing, setIsClearing] = useState(false);
   const [clearingChatId, setClearingChatId] = useState<string | null>(null);
   const [feedbackToast, setFeedbackToast] = useState<string | null>(null);
+  const [folderInfo, setFolderInfo] = useState<{ path: string; isDefault: boolean; exists: boolean } | null>(null);
+  const [ramUsage, setRamUsage] = useState<number | null>(null);
+  const [isOptimizingRam, setIsOptimizingRam] = useState(false);
 
   const [selectedCategories, setSelectedCategories] = useState<Record<string, boolean>>({
     photos: true,
@@ -166,11 +169,79 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
     } catch {}
   }, []);
 
+  const loadFolderInfo = useCallback(async () => {
+    if (typeof window === 'undefined' || !window.orbita?.mediaGetFolderInfo) return;
+    try {
+      const info = await window.orbita.mediaGetFolderInfo();
+      setFolderInfo(info);
+    } catch {}
+  }, []);
+
+  const loadRamUsage = useCallback(async () => {
+    if (typeof window === 'undefined' || !window.orbita?.getMemoryInfo) return;
+    try {
+      const info = await window.orbita.getMemoryInfo();
+      if (info && typeof info.workingSetBytes === 'number') {
+        setRamUsage(info.workingSetBytes);
+      }
+    } catch {}
+  }, []);
+
+  const handlePickFolder = async () => {
+    if (!window.orbita?.mediaPickFolder) return;
+    try {
+      const res = await window.orbita.mediaPickFolder();
+      if (res?.success) {
+        await loadFolderInfo();
+        await loadStats();
+        await loadChatStats();
+        showToast(t('settings.cache_cleared_success'));
+      }
+    } catch {}
+  };
+
+  const handleResetFolder = async () => {
+    if (!window.orbita?.mediaResetFolder) return;
+    try {
+      await window.orbita.mediaResetFolder();
+      await loadFolderInfo();
+      await loadStats();
+      await loadChatStats();
+      showToast(t('settings.cache_cleared_success'));
+    } catch {}
+  };
+
+  const handleOpenFolder = async () => {
+    if (!window.orbita?.mediaOpenFolder) return;
+    try {
+      await window.orbita.mediaOpenFolder();
+    } catch {}
+  };
+
+  const handleOptimizeRam = async () => {
+    if (!window.orbita?.optimizeMemory || isOptimizingRam) return;
+    setIsOptimizingRam(true);
+    try {
+      const res = await window.orbita.optimizeMemory();
+      if (res?.memory?.workingSetBytes) {
+        setRamUsage(res.memory.workingSetBytes);
+      } else {
+        await loadRamUsage();
+      }
+      mediaManager.clearMemoryCache();
+      showToast(t('settings.memory_freed_success'));
+    } catch {} finally {
+      setIsOptimizingRam(false);
+    }
+  };
+
   useEffect(() => {
     loadStats();
     loadChatStats();
     loadDiskSpace();
-  }, [loadStats, loadChatStats, loadDiskSpace]);
+    loadFolderInfo();
+    loadRamUsage();
+  }, [loadStats, loadChatStats, loadDiskSpace, loadFolderInfo, loadRamUsage]);
 
   const categoryStats = useMemo(() => {
     const result: Record<string, { count: number; size: number }> = {
@@ -540,8 +611,94 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
         </div>
       </div>
 
-      <div style={{ padding: '10px 20px 20px', fontSize: 12, color: '#8a82a2', lineHeight: 1.45 }}>
+      <div style={{ padding: '10px 20px 14px', fontSize: 12, color: '#8a82a2', lineHeight: 1.45 }}>
         {t('settings.cloud_storage_notice')}
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: MD3.onSurfaceVar, padding: '0 20px', marginBottom: 8 }}>
+          {t('settings.media_folder_title')}
+        </div>
+        <div style={{ backgroundColor: MD3.surface, borderRadius: 16, margin: '0 10px', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <div style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(124, 58, 237, 0.15)', color: '#a78bfa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Folder size={18} />
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#ffffff', wordBreak: 'break-all' }}>
+                {folderInfo?.path || '...'}
+              </div>
+              <div style={{ fontSize: 11.5, color: folderInfo?.exists ? 'rgba(255, 255, 255, 0.5)' : '#f59e0b', marginTop: 2 }}>
+                {folderInfo?.exists ? (folderInfo.isDefault ? t('settings.reset_folder_default') : 'Custom') : t('settings.media_folder_not_created')}
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={handlePickFolder}
+              aria-label={t('settings.change_folder')}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: 'none', backgroundColor: 'var(--accent-color, #7c3aed)', color: '#ffffff', fontSize: 12.5, fontWeight: 500, cursor: 'pointer' }}
+            >
+              <Folder size={14} />
+              <span>{t('settings.change_folder')}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleOpenFolder}
+              aria-label={t('settings.open_in_explorer')}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: 'none', backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#ffffff', fontSize: 12.5, fontWeight: 500, cursor: 'pointer' }}
+            >
+              <ExternalLink size={14} />
+              <span>{t('settings.open_in_explorer')}</span>
+            </button>
+            {folderInfo && !folderInfo.isDefault && (
+              <button
+                type="button"
+                onClick={handleResetFolder}
+                aria-label={t('settings.reset_folder_default')}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: 'none', backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#ffffff', fontSize: 12.5, fontWeight: 500, cursor: 'pointer' }}
+              >
+                <RotateCcw size={14} />
+                <span>{t('settings.reset_folder_default')}</span>
+              </button>
+            )}
+          </div>
+        </div>
+        <div style={{ padding: '8px 20px 0', fontSize: 12, color: '#8a82a2', lineHeight: 1.45 }}>
+          {t('settings.media_folder_desc')}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: MD3.onSurfaceVar, padding: '0 20px', marginBottom: 8 }}>
+          {t('settings.memory_management_title')}
+        </div>
+        <div style={{ backgroundColor: MD3.surface, borderRadius: 16, margin: '0 10px', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <div style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Cpu size={18} />
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#ffffff' }}>
+                {t('settings.current_ram_usage', { size: formatBytes(ramUsage || 0) })}
+              </div>
+              <div style={{ fontSize: 11.5, color: 'rgba(255, 255, 255, 0.5)', marginTop: 2 }}>
+                {t('settings.memory_management_desc')}
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleOptimizeRam}
+            disabled={isOptimizingRam}
+            aria-label={t('settings.optimize_ram_action')}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: 'none', backgroundColor: 'var(--accent-color, #7c3aed)', color: '#ffffff', fontSize: 12.5, fontWeight: 500, cursor: isOptimizingRam ? 'default' : 'pointer', flexShrink: 0 }}
+          >
+            {isOptimizingRam ? <RefreshCw size={14} className="animate-spin" /> : <Cpu size={14} />}
+            <span>{t('settings.optimize_ram_action')}</span>
+          </button>
+        </div>
       </div>
 
       <div style={{ marginTop: 8, marginBottom: 24 }}>

@@ -355,23 +355,46 @@ function decryptData(data: Buffer): Buffer | null {
 // -----------------------------------------------------------------------------
 // 3. SQLite Media Cache
 // -----------------------------------------------------------------------------
-const MEDIA_DIR_NAME = 'media';
 const MEDIA_DB_NAME = 'media_cache.db';
 const MAX_CACHE_SIZE = 1024 * 1024 * 1024;
 let mediaDbInstance: sqlite3.Database | null = null;
 const lastAccessedCache = new Map<string, number>();
 const LAST_ACCESSED_TTL = 5 * 60 * 1000;
 
+const MEDIA_CONFIG_FILE = path.join(app.getPath('userData'), 'media_folder_config.json');
+let configuredMediaDir: string | null = null;
+try {
+  if (fs.existsSync(MEDIA_CONFIG_FILE)) {
+    const raw = JSON.parse(fs.readFileSync(MEDIA_CONFIG_FILE, 'utf8'));
+    if (raw && typeof raw.folder === 'string' && raw.folder.trim()) {
+      configuredMediaDir = raw.folder.trim();
+    }
+  }
+} catch {}
+
+function setConfiguredMediaDir(dir: string | null) {
+  configuredMediaDir = dir ? dir.trim() : null;
+  try {
+    fs.writeFileSync(MEDIA_CONFIG_FILE, JSON.stringify({ folder: configuredMediaDir }), 'utf8');
+  } catch {}
+}
+
+function getMediaDbPath(): string {
+  return path.join(app.getPath('userData'), MEDIA_DB_NAME);
+}
+
 function getMediaDir(): string {
-  return path.join(app.getPath('userData'), MEDIA_DIR_NAME);
+  if (nativeModule && typeof nativeModule.rustCacheResolveFolder === 'function') {
+    try {
+      return nativeModule.rustCacheResolveFolder(configuredMediaDir);
+    } catch {}
+  }
+  return configuredMediaDir || path.join(app.getPath('downloads'), 'Orbita Desktop');
 }
 
 async function initMediaDb(): Promise<sqlite3.Database> {
   if (mediaDbInstance) return mediaDbInstance;
-  const dir = getMediaDir();
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
-  const dbPath = path.join(dir, MEDIA_DB_NAME);
+  const dbPath = getMediaDbPath();
   mediaDbInstance = new sqlite3.Database(dbPath);
   mediaDbInstance.run('PRAGMA journal_mode = WAL;');
   mediaDbInstance.run('PRAGMA synchronous = OFF;');
@@ -482,12 +505,31 @@ async function saveMediaToCache(
   chatId?: string,
   messageId?: string
 ): Promise<string> {
-  const dir = getMediaDir();
-  const dbPath = path.join(dir, MEDIA_DB_NAME);
+  const dbPath = getMediaDbPath();
   const masterKey = getMasterKey();
 
-  if (nativeModule && nativeModule.rustMediaSave) {
+  if (nativeModule && nativeModule.rustCacheSaveMedia && masterKey) {
     try {
+      const res = nativeModule.rustCacheSaveMedia(
+        dbPath,
+        configuredMediaDir,
+        cacheKey,
+        data,
+        mimeType,
+        chatId || null,
+        messageId || null,
+        masterKey.toString('hex')
+      );
+      if (res && res.localPath) {
+        if (res.resolvedDir && configuredMediaDir && path.resolve(res.resolvedDir) !== path.resolve(configuredMediaDir)) {
+          setConfiguredMediaDir(res.resolvedDir);
+        }
+        return res.localPath;
+      }
+    } catch { }
+  } else if (nativeModule && nativeModule.rustMediaSave && masterKey) {
+    try {
+      const dir = getMediaDir();
       const savedPath = nativeModule.rustMediaSave(
         dbPath,
         dir,
@@ -528,11 +570,17 @@ async function saveMediaToCache(
 }
 
 async function getMediaFromCache(cacheKey: string): Promise<{ data: Buffer | null; mime: string | null }> {
-  const dir = getMediaDir();
-  const dbPath = path.join(dir, MEDIA_DB_NAME);
+  const dbPath = getMediaDbPath();
   const masterKey = getMasterKey();
 
-  if (nativeModule && nativeModule.rustMediaGet) {
+  if (nativeModule && nativeModule.rustCacheGetMedia && masterKey) {
+    try {
+      const res = nativeModule.rustCacheGetMedia(dbPath, configuredMediaDir, cacheKey, masterKey.toString('hex'));
+      if (res && res.data) {
+        return { data: Buffer.from(res.data), mime: res.mime };
+      }
+    } catch { }
+  } else if (nativeModule && nativeModule.rustMediaGet && masterKey) {
     try {
       const res = nativeModule.rustMediaGet(dbPath, cacheKey, masterKey.toString('hex'));
       if (res && res.data) {
@@ -554,8 +602,12 @@ async function getMediaFromCache(cacheKey: string): Promise<{ data: Buffer | nul
   });
 
   if (!record) return { data: null, mime: null };
-  const localPath = record.local_path;
-  if (!fs.existsSync(localPath)) {
+  let localPath = record.local_path;
+  const resolvedDir = getMediaDir();
+  const candidateInResolved = path.join(resolvedDir, path.basename(localPath));
+  if (fs.existsSync(candidateInResolved)) {
+    localPath = candidateInResolved;
+  } else if (!fs.existsSync(localPath)) {
     await new Promise<void>((resolve, reject) => {
       db.run('DELETE FROM media_cache WHERE cache_key = ?', cacheKey, (err) => {
         if (err) reject(err);
@@ -580,6 +632,12 @@ async function getMediaFromCache(cacheKey: string): Promise<{ data: Buffer | nul
 }
 
 async function deleteMediaByChat(chatId: string): Promise<number> {
+  const dbPath = getMediaDbPath();
+  if (nativeModule && nativeModule.rustCacheDeleteByChat) {
+    try {
+      return nativeModule.rustCacheDeleteByChat(dbPath, configuredMediaDir, chatId);
+    } catch { }
+  }
   const db = await initMediaDb();
   const rows: any[] = await new Promise((resolve, reject) => {
     db.all('SELECT local_path FROM media_cache WHERE chat_id = ?', chatId, (err, res) => {
@@ -603,6 +661,12 @@ async function deleteMediaByChat(chatId: string): Promise<number> {
 }
 
 async function clearAllMediaCache(categories?: string[]): Promise<number> {
+  const dbPath = getMediaDbPath();
+  if (nativeModule && nativeModule.rustCacheClear) {
+    try {
+      return nativeModule.rustCacheClear(dbPath, configuredMediaDir, categories && categories.length > 0 ? categories : null);
+    } catch { }
+  }
   const db = await initMediaDb();
   let whereClause = '';
   if (categories && categories.length > 0 && categories.length < 5) {
@@ -668,6 +732,12 @@ async function getMediaStats(): Promise<{ count: number; totalSize: number }> {
 }
 
 async function evictMediaByAge(maxAgeMs: number): Promise<number> {
+  const dbPath = getMediaDbPath();
+  if (nativeModule && nativeModule.rustCacheEvictByAge) {
+    try {
+      return nativeModule.rustCacheEvictByAge(dbPath, configuredMediaDir, maxAgeMs);
+    } catch { }
+  }
   const db = await initMediaDb();
   const threshold = Date.now() - maxAgeMs;
   const rows: any[] = await new Promise((resolve, reject) => {
@@ -694,6 +764,12 @@ async function evictMediaByAge(maxAgeMs: number): Promise<number> {
 }
 
 async function evictMediaToSizeLimit(limitBytes: number): Promise<number> {
+  const dbPath = getMediaDbPath();
+  if (nativeModule && nativeModule.rustCacheEvictToLimit) {
+    try {
+      return nativeModule.rustCacheEvictToLimit(dbPath, configuredMediaDir, limitBytes);
+    } catch { }
+  }
   const db = await initMediaDb();
   let currentTotal = await getTotalDownloadedSize();
   let evicted = 0;
@@ -791,6 +867,22 @@ function registerMediaIpcHandlers() {
   ipcMain.handle('media:evict-by-size', async (_event, targetBytes: number) => ({ deleted: await evictMediaToSizeLimit(targetBytes) }));
 
   ipcMain.handle('media:detailed-stats', async () => {
+    const dbPath = getMediaDbPath();
+    if (nativeModule && nativeModule.rustCacheGetDetailedStats) {
+      try {
+        const stats = nativeModule.rustCacheGetDetailedStats(dbPath);
+        return {
+          totalCount: stats.totalCount,
+          totalSize: stats.totalSize,
+          photos: stats.photos,
+          stickers: stats.stickers,
+          voice: stats.voice,
+          videos: stats.videos,
+          other: stats.other,
+          byType: stats.byType,
+        };
+      } catch { }
+    }
     const db = await initMediaDb();
     const rows: any[] = await new Promise((resolve, reject) => {
       db.all(
@@ -814,6 +906,17 @@ function registerMediaIpcHandlers() {
   });
 
   ipcMain.handle('media:chat-stats', async () => {
+    const dbPath = getMediaDbPath();
+    if (nativeModule && nativeModule.rustCacheGetChatStats) {
+      try {
+        const rows = nativeModule.rustCacheGetChatStats(dbPath);
+        return rows.map((r: any) => ({
+          chat_id: r.chatId,
+          count: r.count,
+          size: r.size,
+        }));
+      } catch { }
+    }
     const db = await initMediaDb();
     return new Promise((resolve, reject) => {
       db.all(
@@ -852,6 +955,98 @@ function registerMediaIpcHandlers() {
   });
 
   ipcMain.handle('media:delete-by-chat', async (_event, chatId: string) => ({ deleted: await deleteMediaByChat(chatId) }));
+
+  ipcMain.handle('media:get-folder-info', async () => {
+    const currentPath = getMediaDir();
+    const defaultDir = path.join(app.getPath('downloads'), 'Orbita Desktop');
+    const isDefault = !configuredMediaDir || path.resolve(currentPath) === path.resolve(defaultDir);
+    const exists = fs.existsSync(currentPath);
+    return { path: currentPath, isDefault, exists };
+  });
+
+  ipcMain.handle('media:pick-folder', async () => {
+    if (nativeModule && nativeModule.rustCachePickDirectory) {
+      try {
+        const picked = await nativeModule.rustCachePickDirectory();
+        if (picked) {
+          setConfiguredMediaDir(picked);
+          return { success: true, path: picked };
+        }
+      } catch { }
+    }
+    const res = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] });
+    if (!res.canceled && res.filePaths.length > 0) {
+      setConfiguredMediaDir(res.filePaths[0]);
+      return { success: true, path: res.filePaths[0] };
+    }
+    return { success: false, path: getMediaDir() };
+  });
+
+  ipcMain.handle('media:reset-folder', async () => {
+    setConfiguredMediaDir(null);
+    return { success: true, path: getMediaDir() };
+  });
+
+  ipcMain.handle('media:open-folder', async () => {
+    const currentPath = getMediaDir();
+    if (fs.existsSync(currentPath)) {
+      await shell.openPath(currentPath);
+      return true;
+    }
+    await shell.openPath(app.getPath('downloads'));
+    return false;
+  });
+
+  ipcMain.handle('system:optimize-memory', async () => {
+    let pids: number[] = [];
+    try {
+      pids = app.getAppMetrics().map((m) => m.pid);
+    } catch { }
+    let trimmed = false;
+    if (nativeModule && nativeModule.rustOptimizeMemoryAll) {
+      try {
+        trimmed = nativeModule.rustOptimizeMemoryAll(pids);
+      } catch { }
+    } else if (nativeModule && nativeModule.trimMemory) {
+      try {
+        nativeModule.trimMemory();
+        for (const pid of pids) nativeModule.trimMemory(pid);
+        trimmed = true;
+      } catch { }
+    }
+    if (global.gc) {
+      try { global.gc(); } catch { }
+    }
+    let info: any = null;
+    if (nativeModule && nativeModule.rustGetProcessMemoryInfo) {
+      try {
+        info = nativeModule.rustGetProcessMemoryInfo();
+      } catch { }
+    }
+    if (!info) {
+      const mem = process.memoryUsage();
+      info = {
+        workingSetBytes: mem.rss,
+        peakWorkingSetBytes: mem.rss,
+        pagefileBytes: mem.heapUsed,
+      };
+    }
+    return { success: true, trimmed, memory: info };
+  });
+
+  ipcMain.handle('system:get-memory', async () => {
+    if (nativeModule && nativeModule.rustGetProcessMemoryInfo) {
+      try {
+        return nativeModule.rustGetProcessMemoryInfo();
+      } catch { }
+    }
+    const mem = process.memoryUsage();
+    return {
+      workingSetBytes: mem.rss,
+      peakWorkingSetBytes: mem.rss,
+      pagefileBytes: mem.heapUsed,
+    };
+  });
 }
 
 function isBufferPlaintext(buf: Buffer): boolean {

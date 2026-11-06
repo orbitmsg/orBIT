@@ -977,7 +977,18 @@
       "auto_load_up_to": "up to {{size}} MB",
       "auto_load_max_size": "Maximum size: {{size}} MB",
       "anonymous_forwarding_title": "Anonymous forwarding",
-      "anonymous_forwarding_desc": "Hide author name and profile link when forwarding messages"
+      "anonymous_forwarding_desc": "Hide author name and profile link when forwarding messages",
+      "media_folder_title": "Media folder",
+      "media_folder_desc": "Cached media files are saved to the Orbita Desktop folder in Downloads. You can freely rename it in File Explorer or choose another folder.",
+      "media_folder_not_created": "The folder will appear after downloading at least one file",
+      "change_folder": "Change folder",
+      "open_in_explorer": "Open in Explorer",
+      "reset_folder_default": "Default",
+      "memory_management_title": "RAM management",
+      "memory_management_desc": "Frees unused memory from messenger worker processes and triggers garbage collection.",
+      "optimize_ram_action": "Optimize RAM",
+      "current_ram_usage": "RAM usage: {{size}}",
+      "memory_freed_success": "Memory optimized successfully"
     },
     "groupSettings": {
       "title": "Group Settings",
@@ -1280,7 +1291,8 @@
       "calls": "Calls",
       "saved_messages": "Saved Messages",
       "settings": "Settings",
-      "night_mode": "Night Mode"
+      "night_mode": "Night Mode",
+      "version": "Version"
     },
     "callsModal": {
       "title": "Calls",

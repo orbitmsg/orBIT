@@ -94,15 +94,15 @@ export const ChatListItem = React.memo(({
       onContextMenu={(e) => onContextMenu(e, chat.id)}
       className="group relative cursor-pointer"
       style={{
-        borderRadius: '12px',
-        margin: '2px 8px',
-        width: 'calc(100% - 16px)',
+        borderRadius: '10px',
+        margin: '1.5px 6px',
+        width: 'calc(100% - 12px)',
         backgroundColor: isActive
           ? (isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)')
           : 'transparent',
         border: 'none',
-        padding: '8px 10px',
-        minHeight: 48,
+        padding: '7px 9px',
+        minHeight: 46,
         boxSizing: 'border-box',
         contentVisibility: 'auto',
         containIntrinsicSize: '64px',
@@ -203,7 +203,7 @@ export const ChatListItem = React.memo(({
                 />
               )}
               <span
-                className="text-[14px] font-bold truncate whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
+                className="text-[13.5px] font-semibold truncate whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
                 style={{
                   color: isLightTheme ? '#111111' : 'rgba(255,255,255,0.85)',
                   fontFamily: 'inherit'
@@ -219,7 +219,7 @@ export const ChatListItem = React.memo(({
                 nickname={chat.name}
                 username={chat.username}
                 numericId={chat.numericId}
-                size={24}
+                size={16}
                 style={{ pointerEvents: 'none' }}
               />
               {chat.type === 'channel' && chat.isOfficial && (
@@ -369,13 +369,13 @@ export const ArchiveListItem = React.memo(({
       onClick={onOpenArchive}
       className="group relative cursor-pointer"
       style={{
-        borderRadius: '12px',
-        margin: '2px 8px',
-        width: 'calc(100% - 16px)',
+        borderRadius: '10px',
+        margin: '1.5px 6px',
+        width: 'calc(100% - 12px)',
         backgroundColor: 'transparent',
         border: 'none',
-        padding: '8px 10px',
-        minHeight: 48,
+        padding: '7px 9px',
+        minHeight: 46,
         boxSizing: 'border-box',
         transition: 'background-color 0.12s ease',
       }}

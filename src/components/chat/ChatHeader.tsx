@@ -90,7 +90,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       <header
         className="flex justify-center w-full select-none relative z-10"
         style={{
-          padding: '10px 16px',
+          padding: '8px 16px',
           userSelect: 'none',
           WebkitUserSelect: 'none',
         }}
@@ -141,18 +141,18 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 {activeChat?.type === 'group' && (
                   <GroupUsersIcon size={16} className="flex-shrink-0 text-[var(--accent-color)]" style={{ marginRight: 2 }} />
                 )}
-                <h2 className="font-bold text-[14px] truncate select-none m-0" style={{ color: 'var(--text-main)', userSelect: 'none', WebkitUserSelect: 'none' }}>
+                <h2 className="font-semibold text-[13.5px] truncate select-none m-0" style={{ color: 'var(--text-main)', userSelect: 'none', WebkitUserSelect: 'none' }}>
                   {activeChatId === 'notes' ? t('connectModal.notes') : activeChat?.name}
                 </h2>
                 {(activeChat?.isOfficial || activeChatId === 'system_support') && (
-                  <VerifiedBadge size={18} className="flex-shrink-0" />
+                  <VerifiedBadge size={16} className="flex-shrink-0" />
                 )}
                 <DeveloperBadge
                   userId={activeChat?.peerCode || activeChat?.originalPeerCode || (activeChat?.name && activeChat.name.length === 36 ? activeChat.name : undefined) || (activeChat?.type === 'private' ? (activeChatId ?? undefined) : undefined)}
                   nickname={activeChat?.name}
                   username={activeChat?.username}
                   numericId={activeChat?.numericId}
-                  size={20}
+                  size={16}
                 />
                 {activeChat?.type === 'channel' && activeChat.isOfficial && (
                   <span className="px-1.5 py-0.5 rounded-md bg-[var(--accent-color)]/20 text-[var(--accent-color)] text-[10px] font-bold uppercase tracking-wider flex-shrink-0">

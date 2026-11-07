@@ -29,7 +29,7 @@ export const SidebarFolderRail = ({
         <div
           className="flex flex-col items-center shrink-0 select-none"
           style={{
-            width: '78px',
+            width: '66px',
             backgroundColor: 'var(--chat-list-bg, #1e1e1e)',
             borderRight: 'none',
           }}
@@ -37,7 +37,7 @@ export const SidebarFolderRail = ({
           <div
             className="w-full flex items-center justify-center"
             style={{
-              height: '61px',
+              height: '52px',
               boxSizing: 'border-box',
             }}
           >
@@ -47,14 +47,14 @@ export const SidebarFolderRail = ({
               aria-label={t('mainMenu.open_menu', 'Открыть меню')}
               className="flex items-center justify-center cursor-pointer transition-all active:scale-95 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-container)] rounded-xl"
               style={{
-                width: '40px',
-                height: '40px',
+                width: '36px',
+                height: '36px',
                 border: 'none',
                 background: 'transparent',
                 outline: 'none',
               }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
                 <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 6h18M3 12h18M3 18h18"/>
               </svg>
             </button>
@@ -76,12 +76,12 @@ export const SidebarFolderRail = ({
                   aria-label={t('folderManager.all_chats', 'Все чаты')}
                   className="flex flex-col items-center justify-center cursor-pointer select-none"
                   style={{
-                    width: '66px',
-                    height: '64px',
-                    minHeight: '64px',
+                    width: '56px',
+                    height: '54px',
+                    minHeight: '54px',
                     padding: '6px 4px',
                     margin: '2px 0',
-                    borderRadius: '12px',
+                    borderRadius: '10px',
                     border: 'none',
                     outline: 'none',
                     boxSizing: 'border-box',
@@ -124,7 +124,7 @@ export const SidebarFolderRail = ({
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
-                      maxWidth: '62px',
+                      maxWidth: '52px',
                     }}
                   >
                     {t('folderManager.all_chats', 'Все чаты')}
@@ -147,12 +147,12 @@ export const SidebarFolderRail = ({
                   aria-label={folder.name}
                   className="flex flex-col items-center justify-center cursor-pointer select-none relative"
                   style={{
-                    width: '66px',
-                    height: '64px',
-                    minHeight: '64px',
+                    width: '56px',
+                    height: '54px',
+                    minHeight: '54px',
                     padding: '6px 4px',
                     margin: '2px 0',
-                    borderRadius: '12px',
+                    borderRadius: '10px',
                     border: 'none',
                     outline: 'none',
                     boxSizing: 'border-box',
@@ -211,7 +211,7 @@ export const SidebarFolderRail = ({
                       fontSize: '10.5px',
                       fontWeight: 500,
                       marginTop: '4px',
-                      maxWidth: '62px',
+                      maxWidth: '52px',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',

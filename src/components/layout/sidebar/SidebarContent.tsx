@@ -110,7 +110,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingTop: '12px',
+          paddingTop: '9px',
         }}
       >
         <div className="flex items-center min-w-0" style={{ width: '100%' }}>
@@ -151,7 +151,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   className="flex items-center justify-center cursor-pointer transition-all active:scale-95 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-container)] rounded-full shrink-0"
                   style={{
                     width: '36px',
-                    height: '36px',
+                    height: '32px',
                     border: 'none',
                     background: 'transparent',
                     outline: 'none',
@@ -172,14 +172,14 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   placeholder={t('common.search', 'Поиск')}
                   style={{
                     width: '100%',
-                    height: '36px',
+                    height: '32px',
                     borderRadius: '999px',
                     border: 'none',
                     outline: 'none',
                     boxShadow: 'none',
                     backgroundColor: 'var(--md-surface, var(--surface-container, rgba(255,255,255,0.05)))',
                     color: 'var(--text-main, #e0e0e0)',
-                    fontSize: '13px',
+                    fontSize: '12.5px',
                     paddingLeft: '14px',
                     paddingRight: searchQuery ? '32px' : '14px',
                     boxSizing: 'border-box',
@@ -340,7 +340,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                     <div className="flex flex-col min-w-0 flex-1 justify-center overflow-hidden">
                       <span
                         style={{
-                          fontSize: '13px',
+                          fontSize: '12.5px',
                           fontWeight: 700,
                           color: '#ffffff',
                           fontFamily: 'inherit',
@@ -448,7 +448,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                     <div className="flex flex-col min-w-0 flex-1 justify-center overflow-hidden">
                       <span
                         style={{
-                          fontSize: '13px',
+                          fontSize: '12.5px',
                           fontWeight: 700,
                           color: '#000000',
                           fontFamily: 'inherit',

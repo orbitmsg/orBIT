@@ -64,48 +64,48 @@ export const MainTab = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.16 }}
-      style={{ display: 'flex', flexDirection: 'column', gap: 7, paddingBottom: 12 }}
+      style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingBottom: 10 }}
     >
       <div
         onClick={() => pushTab('myAccount')}
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '12px',
-          padding: '9px 12px',
+          gap: '10px',
+          padding: '8px 10px',
           margin: '0 8px 1px',
           width: 'calc(100% - 16px)',
           userSelect: 'none',
           cursor: 'pointer',
           borderRadius: '12px',
-          backgroundColor: 'var(--surface-container, rgba(255, 255, 255, 0.04))',
-          border: '1px solid rgba(255, 255, 255, 0.06)',
+          backgroundColor: 'var(--surface-container, rgba(255, 255, 255, 0.035))',
+          border: '1px solid rgba(255, 255, 255, 0.055)',
           boxSizing: 'border-box',
           transition: 'background-color 150ms ease, border-color 150ms ease',
         }}
         onMouseEnter={e => {
-          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.07)';
-          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.09)';
         }}
         onMouseLeave={e => {
-          e.currentTarget.style.backgroundColor = 'var(--surface-container, rgba(255, 255, 255, 0.04))';
-          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)';
+          e.currentTarget.style.backgroundColor = 'var(--surface-container, rgba(255, 255, 255, 0.035))';
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.055)';
         }}
       >
-        <div style={{ position: 'relative', width: '42px', height: '42px', flexShrink: 0 }}>
+        <div style={{ position: 'relative', width: '38px', height: '38px', flexShrink: 0 }}>
           <Avatar
             src={avatarUrl}
             alt={nickname || '?'}
-            className="w-[42px] h-[42px] rounded-full object-cover ring-1 ring-white/10"
-            style={{ width: '42px', height: '42px' }}
+            className="w-[38px] h-[38px] rounded-full object-cover ring-1 ring-white/10"
+            style={{ width: '38px', height: '38px' }}
           />
         </div>
 
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '1.5px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0 }}>
             <span
               style={{
-                fontSize: '13.5px',
+                fontSize: '13px',
                 fontWeight: 600,
                 color: 'var(--text-main, #ffffff)',
                 lineHeight: 1.25,
@@ -117,7 +117,7 @@ export const MainTab = ({
             <DeveloperBadge
               userId={userId || myCode}
               nickname={nickname}
-              size={15}
+              size={14}
               onClick={(e) => { e?.stopPropagation(); triggerDevToast(); }}
             />
           </div>
@@ -125,7 +125,7 @@ export const MainTab = ({
           <div
             onClick={(e) => { e.stopPropagation(); handleCopyCode(); }}
             style={{
-              fontSize: '11.5px',
+              fontSize: '11px',
               fontWeight: 500,
               color: 'var(--accent-color, #a78bfa)',
               cursor: 'pointer',
@@ -147,7 +147,7 @@ export const MainTab = ({
                 }
               }}
               style={{
-                fontSize: '11.5px',
+                fontSize: '11px',
                 fontWeight: 400,
                 color: 'var(--text-dim, #9ca3af)',
                 cursor: 'pointer',
@@ -170,8 +170,8 @@ export const MainTab = ({
               border: 'none',
               color: MD3.onSurfaceVar,
               cursor: 'pointer',
-              padding: '6px',
-              borderRadius: '8px',
+              padding: '5px',
+              borderRadius: '7px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -186,19 +186,19 @@ export const MainTab = ({
               e.currentTarget.style.color = MD3.onSurfaceVar;
             }}
           >
-            <QrCodeMiniIcon size={17} color="currentColor" />
+            <QrCodeMiniIcon size={16} color="currentColor" />
           </button>
         </div>
       </div>
 
       <Block>
         <MenuItem
-          icon={<User size={17} />}
+          icon={<User size={16} />}
           label={t('settings.my_account', 'Мой аккаунт')}
           onClick={() => pushTab('myAccount')}
         />
         <MenuItem
-          icon={<ShieldCheck size={17} />}
+          icon={<ShieldCheck size={16} />}
           label={t('settings.privacy', 'Приватность')}
           onClick={() => pushTab('security')}
         />
@@ -206,29 +206,29 @@ export const MainTab = ({
 
       <Block>
         <MenuItem
-          icon={<Palette size={17} />}
+          icon={<Palette size={16} />}
           label={t('settings.appearance', 'Внешний вид')}
           onClick={() => pushTab('chats')}
         />
         <MenuItem
-          icon={<FolderTree size={17} />}
+          icon={<FolderTree size={16} />}
           label={t('settings.chat_folders', 'Папки с чатами')}
           onClick={() => pushTab('folders')}
           rightElement={
             folders.length > 0 ? (
-              <span style={{ fontSize: 12, color: 'var(--text-dim, #9ca3af)', fontWeight: 500 }}>
+              <span style={{ fontSize: 11, color: 'var(--text-dim, #9ca3af)', fontWeight: 500 }}>
                 {folders.length}
               </span>
             ) : undefined
           }
         />
         <MenuItem
-          icon={<Bell size={17} />}
+          icon={<Bell size={16} />}
           label={t('settings.notifications_and_sounds', 'Уведомления и звуки')}
           onClick={() => pushTab('notifications')}
         />
         <MenuItem
-          icon={<Database size={17} />}
+          icon={<Database size={16} />}
           label={t('settings.data_memory', 'Данные и память')}
           onClick={() => pushTab('dataMemory')}
         />
@@ -236,43 +236,43 @@ export const MainTab = ({
 
       <Block>
         <MenuItem
-          icon={<Wifi size={17} />}
+          icon={<Wifi size={16} />}
           label={t('settings.connection', 'Подключение')}
           onClick={() => pushTab('connection')}
           rightElement={
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
-              <span style={{ fontSize: 12, color: proxyEnabled ? 'var(--accent-color, #a78bfa)' : 'var(--text-dim, #9ca3af)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
+              <span style={{ fontSize: 11.5, color: proxyEnabled ? 'var(--accent-color, #a78bfa)' : 'var(--text-dim, #9ca3af)' }}>
                 {proxyEnabled ? (activeProxy ? activeProxy.name : 'Включено') : 'Прямое'}
               </span>
-              <ChevronRight size={14} style={{ color: 'var(--text-dim, #9ca3af)', opacity: 0.6 }} />
+              <ChevronRight size={13} style={{ color: 'var(--text-dim, #9ca3af)', opacity: 0.6 }} />
             </div>
           }
         />
         <MenuItem
-          icon={<Phone size={17} />}
+          icon={<Phone size={16} />}
           label={t('settings.calls', 'Звонки')}
           onClick={() => pushTab('calls')}
         />
         <MenuItem
-          icon={<Zap size={17} />}
+          icon={<Zap size={16} />}
           label={t('settings.energy_and_animations', 'Заряд батареи и анимации')}
           onClick={() => pushTab('energy')}
         />
         <MenuItem
-          icon={<Languages size={17} />}
+          icon={<Languages size={16} />}
           label={t('settings.language', 'Язык')}
           onClick={() => pushTab('language')}
           rightElement={
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
-              <span style={{ fontSize: 12, color: 'var(--text-dim, #9ca3af)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
+              <span style={{ fontSize: 11.5, color: 'var(--text-dim, #9ca3af)' }}>
                 {languageDisplayOptions.find(o => o.value === language)?.label || language || '...'}
               </span>
-              <ChevronRight size={14} style={{ color: 'var(--text-dim, #9ca3af)', opacity: 0.6 }} />
+              <ChevronRight size={13} style={{ color: 'var(--text-dim, #9ca3af)', opacity: 0.6 }} />
             </div>
           }
         />
         <MenuItem
-          icon={<Sliders size={17} />}
+          icon={<Sliders size={16} />}
           label={t('settings.preferences', 'Предпочтения')}
           onClick={() => pushTab('preferences')}
         />
@@ -280,7 +280,7 @@ export const MainTab = ({
 
       <Block>
         <MenuItem
-          icon={<HelpCircle size={17} />}
+          icon={<HelpCircle size={16} />}
           label={t('common.help', 'Помощь')}
           onClick={() => {
             if ((window as any).orbita?.openExternal) {
@@ -289,17 +289,17 @@ export const MainTab = ({
           }}
         />
         <MenuItem
-          icon={<Trash2 size={17} style={{ color: MD3.error }} />}
+          icon={<Trash2 size={16} style={{ color: MD3.error }} />}
           label={t('common.clear_identity', 'Удалить аккаунт')}
           onClick={() => setDeleteModalOpen(true)}
         />
       </Block>
 
-      <div style={{ padding: '6px 20px 8px', textAlign: 'center', userSelect: 'none', backgroundColor: 'transparent' }}>
-        <div style={{ fontWeight: 600, fontSize: 11, letterSpacing: '0.08em', color: 'var(--text-dim, #9ca3af)', opacity: 0.8, textTransform: 'uppercase' }}>
+      <div style={{ padding: '4px 20px 6px', textAlign: 'center', userSelect: 'none', backgroundColor: 'transparent' }}>
+        <div style={{ fontWeight: 600, fontSize: 10.5, letterSpacing: '0.08em', color: 'var(--text-dim, #9ca3af)', opacity: 0.75, textTransform: 'uppercase' }}>
           ORBITA MESSENGER
         </div>
-        <div style={{ fontSize: 10.5, color: 'var(--text-dim, #6b7280)', marginTop: 2 }}>
+        <div style={{ fontSize: 10, color: 'var(--text-dim, #6b7280)', marginTop: 1.5 }}>
           {t('common.version', { version: appVersion || '2.0.2' })}
         </div>
       </div>

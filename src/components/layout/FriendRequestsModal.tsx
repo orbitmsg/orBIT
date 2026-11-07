@@ -1,4 +1,3 @@
-// src/components/layout/FriendRequestsModal.tsx
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -61,10 +60,9 @@ export const FriendRequestsModal: React.FC<FriendRequestsModalProps> = ({
             flexDirection: 'column',
             padding: '16px',
             userSelect: 'none',
-            border: 'none',
+            border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
           }}
         >
-          {/* Header with Title Centered and Close Cross on Right */}
           <div className="relative flex items-center justify-center mb-3 w-full select-none min-h-[32px]">
             <h3 className="text-base font-semibold text-[var(--text-main)] text-center">
               {t('friendRequests.title', 'Запросы на переписку')}

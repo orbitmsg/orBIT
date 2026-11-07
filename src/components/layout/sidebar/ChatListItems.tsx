@@ -94,20 +94,21 @@ export const ChatListItem = React.memo(({
       onContextMenu={(e) => onContextMenu(e, chat.id)}
       className="group relative cursor-pointer"
       style={{
-        borderRadius: '10px',
-        margin: '1.5px 6px',
+        borderRadius: '6px',
+        margin: '1px 6px',
         width: 'calc(100% - 12px)',
         backgroundColor: isActive
-          ? (isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)')
+          ? (isLightTheme ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.06)')
           : 'transparent',
+        boxShadow: isActive ? 'inset 2.5px 0 0 var(--accent-color)' : 'none',
         border: 'none',
-        padding: '7px 9px',
-        minHeight: 46,
+        padding: '6px 8px 6px 10px',
+        minHeight: 44,
         boxSizing: 'border-box',
         contentVisibility: 'auto',
-        containIntrinsicSize: '64px',
+        containIntrinsicSize: '56px',
         willChange: 'transform',
-        transition: 'background-color 0.12s ease',
+        transition: 'background-color 0.1s ease',
       }}
       onMouseEnter={(e) => {
         if (!isActive) {
@@ -123,27 +124,27 @@ export const ChatListItem = React.memo(({
       }}
     >
       <div className="flex justify-between items-center min-w-0">
-        <div style={{ width: 48, height: 48, marginRight: 10, flexShrink: 0, position: 'relative' }}>
+        <div style={{ width: 38, height: 38, marginRight: 10, flexShrink: 0, position: 'relative' }}>
           {chat.id === 'notes' ? (
-            <NotesAvatar className="w-12 h-12" />
+            <NotesAvatar className="w-[38px] h-[38px]" />
           ) : (chat.avatarUrl || chat.id === 'system_support') ? (
-            <Avatar src={chat.avatarUrl || SUPPORT_AVATAR_URL} alt={chat.name} className="w-12 h-12" style={{ borderRadius: '50%' }} />
+            <Avatar src={chat.avatarUrl || SUPPORT_AVATAR_URL} alt={chat.name} className="w-[38px] h-[38px]" style={{ borderRadius: '50%' }} />
           ) : chat.type === 'bot' ? (
-            <BotAvatar className="w-12 h-12" />
+            <BotAvatar className="w-[38px] h-[38px]" />
           ) : (
-            <Avatar src={chat.avatarUrl} alt={chat.name} className="w-12 h-12" style={{ borderRadius: '50%' }} />
+            <Avatar src={chat.avatarUrl} alt={chat.name} className="w-[38px] h-[38px]" style={{ borderRadius: '50%' }} />
           )}
           {chat.type === 'private' && chat.id !== 'notes' && chat.online && (
             <span
               aria-label={t('common.online', 'В сети')}
               style={{
                 position: 'absolute',
-                bottom: 0,
-                right: 0,
-                width: 12,
-                height: 12,
+                bottom: -1,
+                right: -1,
+                width: 10,
+                height: 10,
                 borderRadius: '50%',
-                backgroundColor: 'var(--accent-color, #7C3AED)',
+                backgroundColor: '#10b981',
                 boxShadow: `0 0 0 2px ${ringColor}`,
                 zIndex: 2,
                 pointerEvents: 'none',
@@ -159,10 +160,10 @@ export const ChatListItem = React.memo(({
                 position: 'absolute',
                 bottom: -2,
                 right: -2,
-                width: 22,
-                height: 22,
+                width: 18,
+                height: 18,
                 borderRadius: '50%',
-                backgroundColor: '#22c55e',
+                backgroundColor: '#10b981',
                 boxShadow: `0 0 0 2px ${ringColor}`,
                 zIndex: 3,
                 pointerEvents: 'none',
@@ -173,7 +174,7 @@ export const ChatListItem = React.memo(({
                 transition: 'box-shadow 0.12s ease',
               }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" style={{ color: '#ffffff' }}>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="11" height="11" style={{ color: '#ffffff' }}>
                 <path fill="currentColor" d="m19.23 15.26l-2.54-.29a1.99 1.99 0 0 0-1.64.57l-1.84 1.84a15.05 15.05 0 0 1-6.59-6.59l1.85-1.85c.43-.43.64-1.03.57-1.64l-.29-2.52a2 2 0 0 0-1.99-1.77H5.03c-1.13 0-2.07.94-2 2.07c.53 8.54 7.36 15.36 15.89 15.89c1.13.07 2.07-.87 2.07-2v-1.73c.01-1.01-.75-1.86-1.76-1.98" />
               </svg>
             </span>
@@ -184,7 +185,7 @@ export const ChatListItem = React.memo(({
             <div className="flex items-center gap-1 min-w-0 flex-1">
               {chat.type === 'channel' && (
                 <ChannelMegaphoneIcon
-                  size={15}
+                  size={14}
                   className="flex-shrink-0"
                   style={{
                     color: isLightTheme ? '#555555' : 'rgba(255, 255, 255, 0.85)',
@@ -194,7 +195,7 @@ export const ChatListItem = React.memo(({
               )}
               {chat.type === 'group' && (
                 <GroupUsersIcon
-                  size={15}
+                  size={14}
                   className="flex-shrink-0"
                   style={{
                     color: isLightTheme ? '#555555' : 'rgba(255, 255, 255, 0.85)',
@@ -203,23 +204,23 @@ export const ChatListItem = React.memo(({
                 />
               )}
               <span
-                className="text-[13.5px] font-semibold truncate whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
+                className="text-[13px] font-semibold truncate whitespace-nowrap overflow-hidden text-ellipsis min-w-0 tracking-tight"
                 style={{
-                  color: isLightTheme ? '#111111' : 'rgba(255,255,255,0.85)',
+                  color: isLightTheme ? '#111111' : 'rgba(255,255,255,0.9)',
                   fontFamily: 'inherit'
                 }}
               >
                 {chat.id === 'notes' ? t('connectModal.notes') : chat.name}
               </span>
               {(chat.isOfficial || chat.id === 'system_support') && (
-                <VerifiedBadge size={16} className="flex-shrink-0" />
+                <VerifiedBadge size={15} className="flex-shrink-0" />
               )}
               <DeveloperBadge
                 userId={chat.peerCode || chat.originalPeerCode || (chat.name && chat.name.length === 36 ? chat.name : undefined) || (chat.type === 'private' ? chat.id : undefined)}
                 nickname={chat.name}
                 username={chat.username}
                 numericId={chat.numericId}
-                size={16}
+                size={15}
                 style={{ pointerEvents: 'none' }}
               />
               {chat.type === 'channel' && chat.isOfficial && (
@@ -230,17 +231,17 @@ export const ChatListItem = React.memo(({
             </div>
             <div className="ml-auto flex items-center flex-shrink-0" style={{ gap: 3 }}>
               {status && (
-                <div style={{ display: 'flex', alignItems: 'center', transform: 'translateY(-2.5px)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', transform: 'translateY(-2px)' }}>
                   <MessageStatus
                     status={status}
                     isOwn={true}
-                    color={status === 'read' ? 'var(--accent-color, #7C3AED)' : (isLightTheme ? '#757575' : '#ffffff')}
+                    color={status === 'read' ? 'var(--accent-color, #6366f1)' : (isLightTheme ? '#757575' : '#ffffff')}
                   />
                 </div>
               )}
               {timeStr && (
                 <span
-                  className="text-[12px] font-medium tabular-nums whitespace-nowrap"
+                  className="text-[11px] font-mono tabular-nums whitespace-nowrap"
                   style={{
                     color: isLightTheme ? '#757575' : 'var(--text-dim, #808080)',
                   }}
@@ -252,10 +253,10 @@ export const ChatListItem = React.memo(({
           </div>
           <div className="flex items-center min-w-0 w-full overflow-hidden">
             <div
-              className="text-[13px] font-normal whitespace-nowrap overflow-hidden text-ellipsis flex-1 min-w-0"
+              className="text-[12px] font-normal whitespace-nowrap overflow-hidden text-ellipsis flex-1 min-w-0 leading-snug"
               style={{
                 color: isChatTyping
-                  ? 'var(--accent-color, #7C3AED)'
+                  ? 'var(--accent-color, #6366f1)'
                   : showDraft
                   ? (isLightTheme ? '#111111' : 'rgba(255,255,255,0.85)')
                   : (isLightTheme ? '#757575' : 'var(--text-dim, #8e8e93)'),
@@ -306,17 +307,16 @@ export const ChatListItem = React.memo(({
             {(isPinned || (chat.unreadCount ?? 0) > 0) && (
               <div className="ml-1.5 flex items-center gap-1.5 flex-shrink-0">
                 {isPinned && (
-                  <CustomPinIcon size={13} style={{ color: 'var(--accent-color, #7C3AED)' }} className="flex-shrink-0" />
+                  <CustomPinIcon size={12} style={{ color: 'var(--accent-color, #6366f1)' }} className="flex-shrink-0" />
                 )}
                 {(chat.unreadCount ?? 0) > 0 && (
                   <span
-                    className="text-[12px] font-bold px-2 rounded-full text-gray flex-shrink-0"
+                    className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-full text-white flex-shrink-0 tracking-tight"
                     style={{
-                      backgroundColor: 'var(--accent-color, #7C3AED)',
-                      paddingTop: '0.1rem',
-                      paddingBottom: '0.1rem',
-                      minWidth: '24px',
+                      backgroundColor: 'var(--accent-color, #6366f1)',
+                      minWidth: '18px',
                       textAlign: 'center',
+                      lineHeight: 1.2,
                     }}
                   >
                     {formatUnreadCount(chat.unreadCount!)}
@@ -369,15 +369,15 @@ export const ArchiveListItem = React.memo(({
       onClick={onOpenArchive}
       className="group relative cursor-pointer"
       style={{
-        borderRadius: '10px',
-        margin: '1.5px 6px',
+        borderRadius: '6px',
+        margin: '1px 6px',
         width: 'calc(100% - 12px)',
         backgroundColor: 'transparent',
         border: 'none',
-        padding: '7px 9px',
-        minHeight: 46,
+        padding: '6px 8px 6px 10px',
+        minHeight: 44,
         boxSizing: 'border-box',
-        transition: 'background-color 0.12s ease',
+        transition: 'background-color 0.1s ease',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.backgroundColor = isLightTheme
@@ -389,28 +389,28 @@ export const ArchiveListItem = React.memo(({
       }}
     >
       <div className="flex justify-between items-center min-w-0">
-        <div style={{ width: 48, height: 48, marginRight: 10, flexShrink: 0, position: 'relative' }}>
+        <div style={{ width: 38, height: 38, marginRight: 10, flexShrink: 0, position: 'relative' }}>
           <div
             style={{
-              width: 48,
-              height: 48,
+              width: 38,
+              height: 38,
               borderRadius: '50%',
-              backgroundColor: isLightTheme ? '#6c7a89' : 'rgba(255, 255, 255, 0.12)',
+              backgroundColor: isLightTheme ? '#6c7a89' : 'rgba(255, 255, 255, 0.08)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: '#ffffff',
             }}
           >
-            <Archive size={22} color="#ffffff" strokeWidth={2.2} />
+            <Archive size={18} color="#ffffff" strokeWidth={2} />
           </div>
         </div>
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex items-center gap-1.5 mb-0.5 min-w-0">
             <span
-              className="text-[14px] font-bold truncate whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
+              className="text-[13px] font-semibold truncate whitespace-nowrap overflow-hidden text-ellipsis min-w-0 tracking-tight"
               style={{
-                color: isLightTheme ? '#111111' : 'rgba(255,255,255,0.85)',
+                color: isLightTheme ? '#111111' : 'rgba(255,255,255,0.9)',
                 fontFamily: 'inherit',
               }}
             >
@@ -419,13 +419,12 @@ export const ArchiveListItem = React.memo(({
             {totalUnread > 0 && (
               <div className="ml-auto flex items-center flex-shrink-0">
                 <span
-                  className="text-[12px] font-bold px-2 rounded-full text-white flex-shrink-0"
+                  className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-full text-white flex-shrink-0 tracking-tight"
                   style={{
-                    backgroundColor: 'var(--accent-color, #7C3AED)',
-                    paddingTop: '0.1rem',
-                    paddingBottom: '0.1rem',
-                    minWidth: '24px',
+                    backgroundColor: 'var(--accent-color, #6366f1)',
+                    minWidth: '18px',
                     textAlign: 'center',
+                    lineHeight: 1.2,
                   }}
                 >
                   {formatUnreadCount(totalUnread)}

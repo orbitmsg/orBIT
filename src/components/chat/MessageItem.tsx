@@ -143,10 +143,10 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
 
     const timeBadge = (
       <span
-        className="tabular-nums select-none message-time-badge"
+        className="tabular-nums font-mono select-none message-time-badge"
         style={{
           color: isOwn ? 'rgba(255, 255, 255, 0.9)' : 'var(--text-dim)',
-          fontSize: '11px',
+          fontSize: '10.5px',
           display: 'inline-flex',
           alignItems: 'center',
           lineHeight: 1,
@@ -288,11 +288,17 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                 boxSizing: 'border-box',
                 background: isSelected
                   ? (isOwn
-                      ? 'color-mix(in srgb, var(--chat-bubble-own-bg, #2c6bed) 76%, #000)'
-                      : 'color-mix(in srgb, var(--chat-bubble-incoming-bg, var(--surface-container)) 78%, var(--accent-color, #7C3AED))')
+                      ? 'color-mix(in srgb, var(--chat-bubble-own-bg, #6366f1) 76%, #000)'
+                      : 'color-mix(in srgb, var(--chat-bubble-incoming-bg, var(--surface-container)) 78%, var(--accent-color, #6366f1))')
                   : (isOwn
-                      ? 'var(--chat-bubble-own-bg, #2c6bed)'
+                      ? 'var(--chat-bubble-own-bg, #6366f1)'
                       : 'var(--chat-bubble-incoming-bg, var(--surface-container))'),
+                border: isOwn
+                  ? '1px solid rgba(255, 255, 255, 0.12)'
+                  : '1px solid var(--border-color, rgba(255, 255, 255, 0.07))',
+                boxShadow: isOwn
+                  ? '0 1px 3px rgba(0, 0, 0, 0.25)'
+                  : '0 1px 2px rgba(0, 0, 0, 0.15)',
                 filter: isSelected ? 'brightness(0.9) contrast(1.05)' : 'none',
                 transition: 'background-color 0.15s ease, filter 0.15s ease',
                 color: isOwn

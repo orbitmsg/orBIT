@@ -146,8 +146,10 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
       } as React.CSSProperties}
       onDoubleClick={handleDoubleClick}
     >
-      <div className="flex-1 px-3 text-xs text-[var(--text-dim,#9f96b3)] truncate pointer-events-none select-none">
-        {title || ''}
+      <div className="flex items-center gap-2 px-3 text-[11px] font-mono text-[var(--text-dim,#8b90a0)] truncate pointer-events-none select-none flex-1">
+        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_6px_rgba(99,102,241,0.6)]" />
+        <span className="font-semibold tracking-wider text-white/70">ORBITA</span>
+        {title && <span className="opacity-50">/ {title}</span>}
       </div>
       <style>{`
         .orbita-titlebar-btn {

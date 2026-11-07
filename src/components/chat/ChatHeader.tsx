@@ -82,7 +82,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       className="sticky top-0 z-20 w-full select-none"
       style={{
         backgroundColor: 'var(--bg-primary)',
-        borderBottom: 'none',
+        borderBottom: '1px solid var(--border-color)',
         userSelect: 'none',
         WebkitUserSelect: 'none',
       }}
@@ -90,7 +90,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       <header
         className="flex justify-center w-full select-none relative z-10"
         style={{
-          padding: '8px 16px',
+          padding: '6px 16px',
           userSelect: 'none',
           WebkitUserSelect: 'none',
         }}
@@ -218,19 +218,18 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                     </span>
                   ) : null
                 ) : !isServerConnected ? (
-                  <span className="text-[11px] font-semibold text-[var(--accent-color)] animate-pulse">
+                  <span className="text-[11px] font-mono font-medium text-[var(--accent-color)] animate-pulse">
                     {t('common.connecting') || 'соединение...'}
                   </span>
                 ) : (
                   <span
-                    className="text-[11.5px] font-normal"
+                    className="text-[11px] font-mono"
                     style={{
-                      color: isOnline ? 'var(--accent-color)' : 'var(--text-dim)',
-                      textShadow: isOnline ? '0 0 1.5px color-mix(in srgb, var(--accent-color) 30%, transparent)' : 'none',
+                      color: isOnline ? '#10b981' : 'var(--text-dim)',
                     }}
                   >
                     {otherUserTyping && activeChatId !== 'notes' ? (
-                      <span className="text-[11.5px] font-semibold inline-flex items-center gap-1.5" style={{ color: 'var(--accent-color)' }}>
+                      <span className="text-[11px] font-semibold inline-flex items-center gap-1.5" style={{ color: 'var(--accent-color)' }}>
                         <span>
                           {otherUserAction === 'sticker'
                             ? t('chatWindow.choosing_sticker')
@@ -240,25 +239,32 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                         </span>
                         <ActionIcon action={otherUserAction} />
                       </span>
+                    ) : isOnline ? (
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-emerald-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)]" />
+                        <span>{t('chatWindow.online')}</span>
+                      </span>
                     ) : (
-                      isOnline ? t('chatWindow.online') : (activeChat?.lastSeen ? formatLastSeen(activeChat.lastSeen, t) : t('chatWindow.offline'))
+                      <span className="text-[11px] font-mono text-[var(--text-dim)]">
+                        {activeChat?.lastSeen ? formatLastSeen(activeChat.lastSeen, t) : t('chatWindow.offline')}
+                      </span>
                     )}
                   </span>
                 )}
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             {activeChatId === 'system_support' && supportService.isAdmin && (
               <button
-                className="p-2 transition-colors duration-200 text-[var(--accent-color, #7C3AED)] hover:opacity-80 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center relative"
+                className="p-1.5 rounded-md transition-colors duration-150 text-[var(--accent-color, #6366f1)] hover:bg-white/5 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center relative"
                 onClick={(e) => {
                   e.stopPropagation();
                   onOpenSupportTickets();
                 }}
                 aria-label={t('support.open_tickets_modal', 'Тикеты поддержки')}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
                   <path d="M13 5v2"/>
                   <path d="M13 17v2"/>
@@ -268,27 +274,27 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             )}
             
             <button
-              className="p-2 transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
+              className="p-1.5 rounded-md transition-colors duration-150 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-white/5 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
               onClick={(e) => {
                 e.stopPropagation();
                 useChatStore.getState().openInChatSearch('this_chat');
               }}
               aria-label={t('common.search', 'Поиск')}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M21.71 20.29L18 16.61A9 9 0 1 0 16.61 18l3.68 3.68a1 1 0 0 0 1.42 0a1 1 0 0 0 0-1.39M11 18a7 7 0 1 1 7-7a7 7 0 0 1-7 7" />
               </svg>
             </button>
             {activeChatId !== 'notes' && activeChat?.type !== 'channel' && voiceCallsEnabled && (
               <button
-                className="p-2 transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
+                className="p-1.5 rounded-md transition-colors duration-150 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-white/5 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
                 onClick={(e) => {
                   e.stopPropagation();
                   onAudioCallPress();
                 }}
                 aria-label={t('call.call', 'Позвонить')}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
                   <path fill="currentColor" d="m19.23 15.26l-2.54-.29a1.99 1.99 0 0 0-1.64.57l-1.84 1.84a15.05 15.05 0 0 1-6.59-6.59l1.85-1.85c.43-.43.64-1.03.57-1.64l-.29-2.52a2 2 0 0 0-1.99-1.77H5.03c-1.13 0-2.07.94-2 2.07c.53 8.54 7.36 15.36 15.89 15.89c1.13.07 2.07-.87 2.07-2v-1.73c.01-1.01-.75-1.86-1.76-1.98" />
                 </svg>
               </button>

@@ -1,4 +1,3 @@
-// src/components/TypingIndicator.tsx
 import React from 'react';
 import { useTypingStatus } from '../hooks/useTypingStatus';
 
@@ -15,7 +14,7 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = ({ chatId, userId
   }
 
   return (
-    <span className="uppercase font-black tracking-wider select-none" style={{ color: 'var(--accent-color, #7C3AED)', fontSize: '9px' }}>
+    <span className="uppercase font-mono font-bold tracking-wider select-none" style={{ color: 'var(--accent-color, #6366f1)', fontSize: '9px' }}>
       Печатает<span className="animate-pulse">.</span><span className="animate-pulse" style={{ animationDelay: '0.2s' }}>.</span><span className="animate-pulse" style={{ animationDelay: '0.4s' }}>.</span>
     </span>
   );

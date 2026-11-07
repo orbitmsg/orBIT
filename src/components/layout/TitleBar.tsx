@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, flushStorageSet } from '../../store/useChatStore';
 
@@ -18,48 +18,11 @@ export interface TitleBarProps {
   className?: string;
 }
 
-export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, className }) => {
+export const TitleBar: React.FC<TitleBarProps> = ({ onClose, style, className }) => {
   const { t } = useTranslation();
   const isElectron = isElectronApp();
   const [isMaximized, setIsMaximized] = useState(false);
   const [isHoverSuppressed, setIsHoverSuppressed] = useState(false);
-
-  const activeChatId = useChatStore((s) => s.activeChatId);
-  const chats = useChatStore((s) => s.chats);
-  const activeChat = useMemo(() => {
-    if (!activeChatId) return null;
-    return chats.find((c) => c.id === activeChatId) || null;
-  }, [chats, activeChatId]);
-
-  const totalUnread = useMemo(() => {
-    return chats.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
-  }, [chats]);
-
-  const centerTitle = useMemo(() => {
-    if (title) return title;
-    if (activeChat) {
-      if (activeChat.id === 'notes') {
-        return t('connectModal.notes', 'Избранное');
-      }
-      if (activeChat.type === 'channel') {
-        return t('titleBar.channel_title', { name: activeChat.name, defaultValue: `Канал: ${activeChat.name}` });
-      }
-      if (activeChat.type === 'group') {
-        return t('titleBar.group_title', { name: activeChat.name, defaultValue: `Группа: ${activeChat.name}` });
-      }
-      return t('titleBar.chat_with', { name: activeChat.name, defaultValue: `Чат с ${activeChat.name}` });
-    }
-
-    if (totalUnread > 0) {
-      const unreadCountStr = t('titleBar.unread', {
-        count: totalUnread,
-        defaultValue: `${totalUnread} непрочитанных`,
-      });
-      return `${t('titleBar.home', 'Главная')} — ${unreadCountStr}`;
-    }
-
-    return t('titleBar.home', 'Главная');
-  }, [title, activeChat, totalUnread, t]);
 
   useEffect(() => {
     if (!isElectron) return;
@@ -185,15 +148,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
       } as React.CSSProperties}
       onDoubleClick={handleDoubleClick}
     >
-      <div className="flex items-center px-3 text-[11px] font-mono pointer-events-none select-none z-10 shrink-0">
-        <span className="font-semibold tracking-wider text-white/60">ORBITA</span>
-      </div>
-
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none px-24 z-0">
-        <span className="text-[11.5px] font-medium text-[var(--text-main,#f3f4f6)] opacity-85 truncate max-w-[60vw]">
-          {centerTitle}
-        </span>
-      </div>
+      <div className="flex-1 h-full pointer-events-none" />
 
       <style>{`
         .orbita-titlebar-btn {

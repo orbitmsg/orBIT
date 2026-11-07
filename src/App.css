@@ -13,7 +13,8 @@
 :root {
   --titlebar-height: 0px;
   --scrollbar-w: 8px;
-  --main-font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", Roboto, sans-serif;
+  --main-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono-font: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --text-scale: 1;
   /* Луковые кольца: фиксированная геометрия (не от --text-scale) */
   --orbit-ring-1: 4px;
@@ -97,17 +98,22 @@ button,
 textarea,
 select,
 label,
-code,
-pre,
 h1,
 h2,
 h3,
 h4,
 h5,
 h6 {
-  font-family: var(--main-font), 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+  font-family: var(--main-font), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+code,
+pre,
+kbd,
+.font-mono {
+  font-family: var(--mono-font) !important;
 }
 
 .emoji-font,

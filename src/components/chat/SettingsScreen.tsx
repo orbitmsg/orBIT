@@ -703,36 +703,14 @@ export const SettingsScreen = () => {
   ];
 
   const FONT_OPTIONS: { value: FontFamily; label: string; native?: string }[] = [
-    { value: 'system', label: t('settings.default'), native: 'Default System' },
+    { value: 'system', label: t('settings.default', 'По умолчанию'), native: 'System (Inter / Segoe UI)' },
+    { value: 'Inter', label: 'Inter', native: 'Inter Sans' },
     { value: 'Segoe UI', label: 'Segoe UI', native: 'Segoe UI' },
-    { value: 'Segoe UI Black', label: 'Segoe UI Black', native: 'Segoe UI Black' },
-    { value: 'Inter', label: 'Inter', native: 'Inter' },
-    { value: 'Roboto', label: 'Roboto', native: 'Roboto' },
-    { value: 'Open Sans', label: 'Open Sans', native: 'Open Sans' },
-    { value: 'Lato', label: 'Lato', native: 'Lato' },
-    { value: 'Montserrat', label: 'Montserrat', native: 'Montserrat' },
-    { value: 'Poppins', label: 'Poppins', native: 'Poppins' },
-    { value: 'Nunito', label: 'Nunito', native: 'Nunito' },
-    { value: 'Rubik', label: 'Rubik', native: 'Rubik' },
+    { value: 'Roboto', label: 'Roboto', native: 'Google Roboto' },
+    { value: 'Manrope', label: 'Manrope', native: 'Manrope Sans' },
     { value: 'Fira Sans', label: 'Fira Sans', native: 'Fira Sans' },
-    { value: 'Ubuntu', label: 'Ubuntu', native: 'Ubuntu' },
-    { value: 'Manrope', label: 'Manrope', native: 'Manrope' },
-    { value: 'Arial', label: 'Arial', native: 'Arial' },
-    { value: 'Arial Black', label: 'Arial Black', native: 'Arial Black' },
-    { value: 'Trebuchet MS', label: 'Trebuchet MS', native: 'Trebuchet MS' },
-    { value: 'Verdana', label: 'Verdana', native: 'Verdana' },
-    { value: 'Tahoma', label: 'Tahoma', native: 'Tahoma' },
-    { value: 'Georgia', label: 'Georgia', native: 'Georgia' },
-    { value: 'Times New Roman', label: 'Times New Roman', native: 'Times New Roman' },
-    { value: 'Merriweather', label: 'Merriweather', native: 'Merriweather' },
-    { value: 'Playfair Display', label: 'Playfair Display', native: 'Playfair Display' },
-    { value: 'Fira Code', label: 'Fira Code', native: 'Monospace' },
-    { value: 'JetBrains Mono', label: 'JetBrains Mono', native: 'Monospace' },
-    { value: 'Consolas', label: 'Consolas', native: 'Monospace' },
-    { value: 'Courier New', label: 'Courier New', native: 'Monospace' },
-    { value: 'Comic Sans MS', label: 'Comic Sans MS', native: 'Cursive' },
-    { value: 'Caveat', label: 'Caveat', native: 'Handwriting' },
-    { value: 'Pacifico', label: 'Pacifico', native: 'Handwriting' },
+    { value: 'JetBrains Mono', label: 'JetBrains Mono', native: 'JetBrains Monospace' },
+    { value: 'Fira Code', label: 'Fira Code', native: 'Fira Code Monospace' },
   ];
 
   const renderDataMemory = () => {
@@ -1026,7 +1004,7 @@ export const SettingsScreen = () => {
               }}
             >
               <div style={{ padding: '16px 16px 8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '11px', fontFamily: 'monospace', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text-dim, #8b90a0)', textTransform: 'uppercase' }}>
+                <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-dim, #8b90a0)', textTransform: 'uppercase' }}>
                   {t('settings.title', 'Настройки')}
                 </span>
               </div>
@@ -1090,7 +1068,7 @@ export const SettingsScreen = () => {
                     <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-main, #ffffff)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {nickname || 'User'}
                     </span>
-                    <span style={{ fontSize: '10px', fontFamily: 'monospace', color: 'var(--text-dim, #8b90a0)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: '10.5px', color: 'var(--text-dim, #8b90a0)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {username ? (username.startsWith('@') ? username : `@${username}`) : (myCode ? myCode.slice(0, 10) + '...' : '')}
                     </span>
                   </div>

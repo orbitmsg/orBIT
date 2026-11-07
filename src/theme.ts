@@ -59,7 +59,7 @@ export const AVAILABLE_FONTS = {
   segoeUi: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
 };
 
-export const DEFAULT_FONT = "var(--main-font), 'Apple Color Emoji', sans-serif";
+export const DEFAULT_FONT = "var(--main-font, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif)";
 
 export const themePalettes: Record<ThemeId, ThemeDefinition> = {
   system: {

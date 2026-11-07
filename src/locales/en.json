@@ -212,7 +212,13 @@
       "minimize": "Minimize",
       "maximize": "Maximize",
       "restore": "Restore",
-      "close": "Close"
+      "close": "Close",
+      "home": "Home",
+      "unread_one": "{{count}} unread",
+      "unread_other": "{{count}} unread",
+      "chat_with": "Chat with {{name}}",
+      "channel_title": "Channel: {{name}}",
+      "group_title": "Group: {{name}}"
     },
     "welcome": {
       "title": "Orbita Desktop",

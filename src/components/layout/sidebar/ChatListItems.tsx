@@ -100,7 +100,6 @@ export const ChatListItem = React.memo(({
         backgroundColor: isActive
           ? (isLightTheme ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.06)')
           : 'transparent',
-        boxShadow: isActive ? 'inset 2.5px 0 0 var(--accent-color)' : 'none',
         border: 'none',
         padding: '6px 8px 6px 10px',
         minHeight: 44,

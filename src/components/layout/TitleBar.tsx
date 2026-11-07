@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useChatStore, flushStorageSet } from '../../store/useChatStore';
 
 export const isElectronApp = (): boolean => {
@@ -18,9 +19,47 @@ export interface TitleBarProps {
 }
 
 export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, className }) => {
+  const { t } = useTranslation();
   const isElectron = isElectronApp();
   const [isMaximized, setIsMaximized] = useState(false);
   const [isHoverSuppressed, setIsHoverSuppressed] = useState(false);
+
+  const activeChatId = useChatStore((s) => s.activeChatId);
+  const chats = useChatStore((s) => s.chats);
+  const activeChat = useMemo(() => {
+    if (!activeChatId) return null;
+    return chats.find((c) => c.id === activeChatId) || null;
+  }, [chats, activeChatId]);
+
+  const totalUnread = useMemo(() => {
+    return chats.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+  }, [chats]);
+
+  const centerTitle = useMemo(() => {
+    if (title) return title;
+    if (activeChat) {
+      if (activeChat.id === 'notes') {
+        return t('connectModal.notes', 'Избранное');
+      }
+      if (activeChat.type === 'channel') {
+        return t('titleBar.channel_title', { name: activeChat.name, defaultValue: `Канал: ${activeChat.name}` });
+      }
+      if (activeChat.type === 'group') {
+        return t('titleBar.group_title', { name: activeChat.name, defaultValue: `Группа: ${activeChat.name}` });
+      }
+      return t('titleBar.chat_with', { name: activeChat.name, defaultValue: `Чат с ${activeChat.name}` });
+    }
+
+    if (totalUnread > 0) {
+      const unreadCountStr = t('titleBar.unread', {
+        count: totalUnread,
+        defaultValue: `${totalUnread} непрочитанных`,
+      });
+      return `${t('titleBar.home', 'Главная')} — ${unreadCountStr}`;
+    }
+
+    return t('titleBar.home', 'Главная');
+  }, [title, activeChat, totalUnread, t]);
 
   useEffect(() => {
     if (!isElectron) return;
@@ -133,7 +172,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
 
   return (
     <div
-      className={`flex items-center justify-between flex-shrink-0 select-none ${className || ''}`}
+      className={`relative flex items-center justify-between flex-shrink-0 select-none ${className || ''}`}
       style={{
         height: '30px',
         width: '100%',
@@ -146,11 +185,16 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
       } as React.CSSProperties}
       onDoubleClick={handleDoubleClick}
     >
-      <div className="flex items-center gap-2 px-3 text-[11px] font-mono text-[var(--text-dim,#8b90a0)] truncate pointer-events-none select-none flex-1">
-        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_6px_rgba(99,102,241,0.6)]" />
-        <span className="font-semibold tracking-wider text-white/70">ORBITA</span>
-        {title && <span className="opacity-50">/ {title}</span>}
+      <div className="flex items-center px-3 text-[11px] font-mono pointer-events-none select-none z-10 shrink-0">
+        <span className="font-semibold tracking-wider text-white/60">ORBITA</span>
       </div>
+
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none px-24 z-0">
+        <span className="text-[11.5px] font-medium text-[var(--text-main,#f3f4f6)] opacity-85 truncate max-w-[60vw]">
+          {centerTitle}
+        </span>
+      </div>
+
       <style>{`
         .orbita-titlebar-btn {
           width: 30px;
@@ -181,7 +225,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
         }
       `}</style>
       <div
-        className="flex items-center h-full"
+        className="flex items-center h-full z-10"
         style={{
           height: '100%',
           // @ts-ignore
@@ -191,7 +235,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
         <button
           onClick={handleMinimize}
           className={btnClass}
-          aria-label="Minimize"
+          aria-label={t('titleBar.minimize')}
         >
           <MinimizeIcon />
         </button>
@@ -199,7 +243,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
         <button
           onClick={handleMaximize}
           className={btnClass}
-          aria-label="Maximize"
+          aria-label={isMaximized ? t('titleBar.restore') : t('titleBar.maximize')}
         >
           {isMaximized ? <RestoreIcon /> : <MaximizeIcon />}
         </button>
@@ -207,7 +251,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
         <button
           onClick={handleClose}
           className={btnClass}
-          aria-label="Close"
+          aria-label={t('titleBar.close')}
         >
           <CloseIcon />
         </button>

@@ -222,11 +222,11 @@ export const Block = ({ children, style }: { children: ReactNode; style?: React.
       backgroundColor: MD3.surface,
       width: 'calc(100% - 20px)',
       margin: '0 10px',
-      borderRadius: '16px',
+      borderRadius: '14px',
       overflow: 'hidden',
       display: 'flex',
       flexDirection: 'column',
-      padding: '4px 0',
+      padding: '3px 0',
       boxSizing: 'border-box',
       ...style,
     }}
@@ -252,9 +252,9 @@ export const SettingsRow = ({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '12px 14px',
-      borderRadius: onClick ? '12px' : 0,
-      margin: onClick ? '2px 6px' : 0,
+      padding: '8px 12px',
+      borderRadius: onClick ? '10px' : 0,
+      margin: onClick ? '1px 6px' : 0,
       cursor: onClick ? 'pointer' : 'default',
       transition: 'background 150ms',
       backgroundColor: 'transparent',
@@ -264,11 +264,11 @@ export const SettingsRow = ({
     onMouseEnter={e => onClick && ((e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(202,196,208,0.08)')}
     onMouseLeave={e => onClick && ((e.currentTarget as HTMLElement).style.backgroundColor = 'transparent')}
   >
-    <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1, minWidth: 0 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
       {icon && (
         <div style={{
-          width: 20,
-          height: 20,
+          width: 18,
+          height: 18,
           borderRadius: 0,
           display: 'flex',
           alignItems: 'center',
@@ -280,7 +280,7 @@ export const SettingsRow = ({
           {icon}
         </div>
       )}
-      <p style={{ fontSize: 14, fontWeight: 500, color: MD3.onSurface, margin: 0, lineHeight: 1.4 }}>{label}</p>
+      <p style={{ fontSize: 13, fontWeight: 400, color: MD3.onSurface, margin: 0, lineHeight: 1.4 }}>{label}</p>
     </div>
     {right}
   </div>
@@ -343,10 +343,10 @@ export const MenuItem = ({
     style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 16,
-      padding: '12px 14px',
-      borderRadius: '12px',
-      margin: '2px 6px',
+      gap: 12,
+      padding: '7px 12px',
+      borderRadius: '10px',
+      margin: '1px 6px',
       cursor: 'pointer',
       transition: 'background 150ms',
       backgroundColor: 'transparent',
@@ -356,12 +356,12 @@ export const MenuItem = ({
     onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(202,196,208,0.08)')}
     onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
   >
-    <div style={{ width: 20, height: 20, borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: MD3.onSurface, flexShrink: 0, backgroundColor: 'transparent' }}>
+    <div style={{ width: 18, height: 18, borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: MD3.onSurface, flexShrink: 0, backgroundColor: 'transparent' }}>
       {icon}
     </div>
     <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <p style={{ fontSize: 14, fontWeight: 500, color: MD3.onSurface, margin: 0 }}>{label}</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <p style={{ fontSize: 13, fontWeight: 400, color: MD3.onSurface, margin: 0, lineHeight: '18px' }} className="truncate">{label}</p>
         {badge}
       </div>
     </div>

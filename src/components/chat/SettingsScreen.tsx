@@ -806,6 +806,7 @@ export const SettingsScreen = () => {
       nickname={nickname}
       userId={userId}
       myCode={myCode}
+      username={username}
       appVersion={appVersion}
       proxyEnabled={proxyEnabled}
       activeProxy={activeProxy}
@@ -815,6 +816,7 @@ export const SettingsScreen = () => {
       pushTab={pushTab}
       triggerDevToast={triggerDevToast}
       handleCopyCode={handleCopyCode}
+      handleCopyUsername={handleCopyUsername}
       setDeleteModalOpen={setDeleteModalOpen}
     />
   );

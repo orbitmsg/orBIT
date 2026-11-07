@@ -219,14 +219,15 @@ export const SectionHeader = ({ title, style }: { title: string; style?: React.C
 export const Block = ({ children, style }: { children: ReactNode; style?: React.CSSProperties }) => (
   <div
     style={{
-      backgroundColor: MD3.surface,
-      width: 'calc(100% - 20px)',
-      margin: '0 10px',
-      borderRadius: '14px',
+      backgroundColor: 'var(--surface-container, rgba(255, 255, 255, 0.04))',
+      width: 'calc(100% - 16px)',
+      margin: '0 8px',
+      borderRadius: '12px',
+      border: '1px solid rgba(255, 255, 255, 0.05)',
       overflow: 'hidden',
       display: 'flex',
       flexDirection: 'column',
-      padding: '3px 0',
+      padding: '3px',
       boxSizing: 'border-box',
       ...style,
     }}
@@ -252,35 +253,35 @@ export const SettingsRow = ({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '8px 12px',
-      borderRadius: onClick ? '10px' : 0,
-      margin: onClick ? '1px 6px' : 0,
+      padding: '7px 10px',
+      borderRadius: onClick ? '8px' : 0,
+      margin: onClick ? '1px 2px' : 0,
       cursor: onClick ? 'pointer' : 'default',
-      transition: 'background 150ms',
+      transition: 'background 120ms ease',
       backgroundColor: 'transparent',
       boxSizing: 'border-box',
       userSelect: 'none',
     }}
-    onMouseEnter={e => onClick && ((e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(202,196,208,0.08)')}
+    onMouseEnter={e => onClick && ((e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255, 255, 255, 0.06)')}
     onMouseLeave={e => onClick && ((e.currentTarget as HTMLElement).style.backgroundColor = 'transparent')}
   >
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
       {icon && (
         <div style={{
-          width: 23,
-          height: 23,
+          width: 20,
+          height: 20,
           borderRadius: 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: MD3.onSurface,
+          color: 'var(--text-dim, #9ca3af)',
           flexShrink: 0,
           backgroundColor: 'transparent',
         }}>
           {icon}
         </div>
       )}
-      <p style={{ fontSize: 18, fontWeight: 400, color: MD3.onSurface, margin: 0, lineHeight: 1.4 }}>{label}</p>
+      <p style={{ fontSize: 13.5, fontWeight: 450, color: MD3.onSurface, margin: 0, lineHeight: 1.35 }}>{label}</p>
     </div>
     {right}
   </div>
@@ -343,25 +344,25 @@ export const MenuItem = ({
     style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 12,
-      padding: '8px 12px',
-      borderRadius: '10px',
-      margin: '1px 6px',
+      gap: 10,
+      padding: '7px 10px',
+      borderRadius: '8px',
+      margin: '1px 2px',
       cursor: 'pointer',
-      transition: 'background 150ms',
+      transition: 'background 120ms ease',
       backgroundColor: 'transparent',
       boxSizing: 'border-box',
       userSelect: 'none',
     }}
-    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(202,196,208,0.08)')}
+    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)')}
     onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
   >
-    <div style={{ width: 23, height: 23, borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: MD3.onSurface, flexShrink: 0, backgroundColor: 'transparent' }}>
+    <div style={{ width: 20, height: 20, borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim, #9ca3af)', flexShrink: 0, backgroundColor: 'transparent' }}>
       {icon}
     </div>
     <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <p style={{ fontSize: 18, fontWeight: 400, color: MD3.onSurface, margin: 0, lineHeight: '22px' }} className="truncate">{label}</p>
+        <p style={{ fontSize: 13.5, fontWeight: 450, color: MD3.onSurface, margin: 0, lineHeight: '18px' }} className="truncate">{label}</p>
         {badge}
       </div>
     </div>

@@ -267,8 +267,8 @@ export const SettingsRow = ({
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
       {icon && (
         <div style={{
-          width: 18,
-          height: 18,
+          width: 23,
+          height: 23,
           borderRadius: 0,
           display: 'flex',
           alignItems: 'center',
@@ -280,7 +280,7 @@ export const SettingsRow = ({
           {icon}
         </div>
       )}
-      <p style={{ fontSize: 13, fontWeight: 400, color: MD3.onSurface, margin: 0, lineHeight: 1.4 }}>{label}</p>
+      <p style={{ fontSize: 18, fontWeight: 400, color: MD3.onSurface, margin: 0, lineHeight: 1.4 }}>{label}</p>
     </div>
     {right}
   </div>
@@ -344,7 +344,7 @@ export const MenuItem = ({
       display: 'flex',
       alignItems: 'center',
       gap: 12,
-      padding: '7px 12px',
+      padding: '8px 12px',
       borderRadius: '10px',
       margin: '1px 6px',
       cursor: 'pointer',
@@ -356,12 +356,12 @@ export const MenuItem = ({
     onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(202,196,208,0.08)')}
     onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
   >
-    <div style={{ width: 18, height: 18, borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: MD3.onSurface, flexShrink: 0, backgroundColor: 'transparent' }}>
+    <div style={{ width: 23, height: 23, borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: MD3.onSurface, flexShrink: 0, backgroundColor: 'transparent' }}>
       {icon}
     </div>
     <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <p style={{ fontSize: 13, fontWeight: 400, color: MD3.onSurface, margin: 0, lineHeight: '18px' }} className="truncate">{label}</p>
+        <p style={{ fontSize: 18, fontWeight: 400, color: MD3.onSurface, margin: 0, lineHeight: '22px' }} className="truncate">{label}</p>
         {badge}
       </div>
     </div>

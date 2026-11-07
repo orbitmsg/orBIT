@@ -987,7 +987,7 @@ export const SettingsScreen = () => {
           style={{
             position: 'relative',
             width: '100%',
-            maxWidth: isMobileWidth ? '100vw' : '400px',
+            maxWidth: isMobileWidth ? '100vw' : '380px',
             maxHeight: isMobileWidth ? 'calc(100vh - 30px)' : 'min(90vh, 900px)',
             display: 'flex',
             flexDirection: 'column',
@@ -1045,7 +1045,7 @@ export const SettingsScreen = () => {
               )}
               <h2
                 style={{
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: 700,
                   color: MD3.onSurface,
                   margin: 0,

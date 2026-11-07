@@ -133,7 +133,7 @@ export const ResizableSidebar: React.FC<ResizableSidebarProps> = ({
     position: 'relative',
     transition: 'none',
     backgroundColor: 'var(--chat-list-bg, #1e1e1e)',
-    borderRight: 'none',
+    borderRight: '1px solid var(--border-color)',
   };
 
   return (

@@ -31,7 +31,7 @@ export const SidebarFolderRail = ({
           style={{
             width: '66px',
             backgroundColor: 'var(--chat-list-bg, #1e1e1e)',
-            borderRight: 'none',
+            borderRight: '1px solid var(--border-color)',
           }}
         >
           <div

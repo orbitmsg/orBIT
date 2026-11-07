@@ -115,7 +115,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
   const RestoreIcon = () => (
     <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M2.5 0.5H9.5V7.5" stroke="currentColor" strokeWidth="1" strokeLinecap="square" />
-      <rect x="0.5" y="2.5" width="7" height="7" stroke="currentColor" strokeWidth="1" fill="var(--title-bar-bg, var(--md-surface, #2a253b))" />
+      <rect x="0.5" y="2.5" width="7" height="7" stroke="currentColor" strokeWidth="1" fill="var(--title-bar-bg, var(--bg-secondary, #13141a))" />
     </svg>
   );
 
@@ -137,7 +137,8 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
       style={{
         height: '30px',
         width: '100%',
-        backgroundColor: 'var(--title-bar-bg, var(--md-surface, #2a253b))',
+        backgroundColor: 'var(--title-bar-bg, var(--bg-secondary, #13141a))',
+        borderBottom: '1px solid var(--border-color, rgba(255, 255, 255, 0.06))',
         padding: 0,
         margin: 0,
         WebkitAppRegion: 'drag',

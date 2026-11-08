@@ -1453,18 +1453,41 @@ export const useChatStore = create<ChatState>()(
           autoLoadMedia: true,
         });
       },
-      exportChatState: () => ({
-        usersById: get().usersById,
-        chats: get().chats,
-        pinnedChatIds: get().pinnedChatIds,
-        deletedChatIds: get().deletedChatIds,
-        deletedChatSessions: get().deletedChatSessions,
-        messagesByChatId: get().messagesByChatId,
-        myCode: get().myCode,
-        codeRotationSpeed: get().codeRotationSpeed,
-        nextCodeRotationTime: get().nextCodeRotationTime,
-        incomingFriendRequests: get().incomingFriendRequests,
-      }),
+      exportChatState: () => {
+        const state = get();
+        const sanitizeMsgs = (list?: Message[]) => {
+          if (!list || !Array.isArray(list)) return [];
+          return list.slice(-50).map((m) => {
+            const copy = { ...m };
+            if (copy.preview && copy.preview.startsWith('data:') && copy.preview.length > 2048) {
+              copy.preview = copy.blurPreview || null;
+            }
+            if (copy.thumbnail && copy.thumbnail.startsWith('data:') && copy.thumbnail.length > 2048) {
+              copy.thumbnail = copy.blurPreview || undefined;
+            }
+            if (copy.mediaUrl && copy.mediaUrl.startsWith('data:') && copy.mediaUrl.length > 2048) {
+              copy.mediaUrl = '';
+            }
+            return copy;
+          });
+        };
+        const sanitizedMessagesByChatId: Record<string, Message[]> = {};
+        for (const [cId, msgs] of Object.entries(state.messagesByChatId || {})) {
+          sanitizedMessagesByChatId[cId] = sanitizeMsgs(msgs);
+        }
+        return {
+          usersById: state.usersById,
+          chats: state.chats,
+          pinnedChatIds: state.pinnedChatIds,
+          deletedChatIds: state.deletedChatIds,
+          deletedChatSessions: state.deletedChatSessions,
+          messagesByChatId: sanitizedMessagesByChatId,
+          myCode: state.myCode,
+          codeRotationSpeed: state.codeRotationSpeed,
+          nextCodeRotationTime: state.nextCodeRotationTime,
+          incomingFriendRequests: state.incomingFriendRequests,
+        };
+      },
       importChatState: (data: any) => {
         set({
           usersById: data?.usersById || {},

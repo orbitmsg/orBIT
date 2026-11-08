@@ -748,8 +748,8 @@ export const useChatAudioAndFiles = ({
         const messageId = `msg_${Date.now()}_${cIdx}_${Math.random().toString(36).substr(2, 9)}`;
 
         const initialMediaItems: MediaItem[] = chunkFiles.map((file) => ({
-          url: file.preview || file.filePath || '',
-          preview: file.preview,
+          url: file.filePath || (file.preview && file.preview.length < 4096 ? file.preview : ''),
+          preview: file.preview && file.preview.length < 4096 ? file.preview : (file.blurPreview || null),
           type: resolveItemType(file.fileType, file.name),
           name: file.name,
           mime: resolveMime(file.fileType, file.name),
@@ -759,7 +759,7 @@ export const useChatAudioAndFiles = ({
           height: file.height,
           duration: file.duration || file.audioMetadata?.duration,
           blurPreview: file.blurPreview,
-          thumbnail: file.preview || file.blurPreview,
+          thumbnail: file.blurPreview || (file.preview && file.preview.length < 4096 ? file.preview : undefined),
           uploading: true,
           uploadedMb: 0,
         }));
@@ -864,8 +864,8 @@ export const useChatAudioAndFiles = ({
           uploading: true,
           uploadedMb: 0,
           mediaType: itemType,
-          mediaUrl: file.preview || file.filePath || '',
-          preview: file.preview,
+          mediaUrl: file.filePath || (file.preview && file.preview.length < 4096 ? file.preview : ''),
+          preview: file.preview && file.preview.length < 4096 ? file.preview : (file.blurPreview || null),
           mediaName: file.name,
           mime: itemMime,
           fileSize: fileSizeBytes,
@@ -874,7 +874,7 @@ export const useChatAudioAndFiles = ({
           height: file.height,
           duration: file.duration || file.audioMetadata?.duration,
           blurPreview: file.blurPreview,
-          thumbnail: file.preview || file.blurPreview,
+          thumbnail: file.blurPreview || (file.preview && file.preview.length < 4096 ? file.preview : undefined),
         };
         addMessage(activeChatId, localMessage);
         updateChat(activeChatId, { lastMsg: postCaption || file.name || `[${itemType}]` });

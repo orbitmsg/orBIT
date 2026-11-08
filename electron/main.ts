@@ -4597,6 +4597,19 @@ function createMainWindow() {
     appendDebugLog(`[Renderer:${level}] ${message} (${sourceId}:${line})`);
   });
 
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    appendDebugLog(`[Renderer Crash] render-process-gone: ${JSON.stringify(details)}`);
+    console.error('[Renderer Crash] render-process-gone:', details);
+    if (details.reason !== 'clean-exit') {
+      mainWindow?.webContents.reload();
+    }
+  });
+
+  mainWindow.on('unresponsive', () => {
+    appendDebugLog('[Renderer Unresponsive]');
+    console.warn('[Renderer Unresponsive]');
+  });
+
   mainWindow.once('ready-to-show', () => {
     if (splashWindow && !splashWindow.isDestroyed()) {
       splashWindow.destroy();

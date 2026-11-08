@@ -48,6 +48,7 @@ class BrowserOrbitaAdapter {
     (window as any).orbita = {
       pickFile: this.pickFile.bind(this),
       uploadToCloudinary: this.uploadToCloudinary.bind(this),
+      prepareVideoForUpload: this.prepareVideoForUpload.bind(this),
       readFileAsDataURL: this.readFileAsDataURL.bind(this),
       readFileAsArrayBuffer: this.readFileAsArrayBuffer.bind(this),
       writeTempFile: this.writeTempFile.bind(this),
@@ -646,6 +647,115 @@ class BrowserOrbitaAdapter {
         };
       } catch {}
     }
+  }
+
+  public async prepareVideoForUpload(
+    filePath: string
+  ): Promise<{ preparedPath: string; transcoded: boolean; mime: string }> {
+    let fileBlob: Blob | undefined;
+    if (this.fileStore.has(filePath)) {
+      fileBlob = this.fileStore.get(filePath)!;
+    } else if (filePath.startsWith('blob:') || filePath.startsWith('data:')) {
+      const res = await fetch(filePath);
+      fileBlob = await res.blob();
+    }
+
+    if (!fileBlob || fileBlob.size <= 9.2 * 1024 * 1024) {
+      return { preparedPath: filePath, transcoded: false, mime: fileBlob?.type || 'video/mp4' };
+    }
+
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.muted = true;
+      video.playsInline = true;
+      const objectUrl = URL.createObjectURL(fileBlob);
+      video.src = objectUrl;
+
+      let settled = false;
+      const cleanup = () => {
+        URL.revokeObjectURL(objectUrl);
+        video.remove();
+      };
+
+      const fallback = () => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve({ preparedPath: filePath, transcoded: false, mime: 'video/mp4' });
+      };
+
+      video.onerror = fallback;
+      video.onloadedmetadata = () => {
+        try {
+          const duration = video.duration || 30;
+          const targetBits = 7.8 * 8 * 1024 * 1024;
+          const targetBps = Math.max(250000, Math.min(2200000, Math.floor(targetBits / duration)));
+
+          const canvas = document.createElement('canvas');
+          const maxDim = 720;
+          const scale = Math.min(1, maxDim / Math.max(video.videoWidth || 1280, video.videoHeight || 720));
+          canvas.width = Math.max(2, Math.floor(((video.videoWidth || 640) * scale) / 2) * 2);
+          canvas.height = Math.max(2, Math.floor(((video.videoHeight || 360) * scale) / 2) * 2);
+          const ctx = canvas.getContext('2d');
+          if (!ctx || typeof (canvas as any).captureStream !== 'function' || typeof MediaRecorder === 'undefined') {
+            fallback();
+            return;
+          }
+
+          const stream = (canvas as any).captureStream(30);
+          const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+            ? 'video/webm;codecs=vp9'
+            : MediaRecorder.isTypeSupported('video/webm;codecs=vp8')
+            ? 'video/webm;codecs=vp8'
+            : 'video/webm';
+
+          const recorder = new MediaRecorder(stream, {
+            mimeType,
+            videoBitsPerSecond: targetBps,
+          });
+
+          const chunks: Blob[] = [];
+          recorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) chunks.push(e.data);
+          };
+
+          recorder.onstop = () => {
+            if (settled) return;
+            settled = true;
+            cleanup();
+            const compressedBlob = new Blob(chunks, { type: mimeType });
+            if (compressedBlob.size > 0 && compressedBlob.size < fileBlob.size) {
+              const newPath = `browser_file_${Date.now()}_compressed.webm`;
+              this.setFile(newPath, compressedBlob);
+              resolve({ preparedPath: newPath, transcoded: true, mime: mimeType });
+            } else {
+              resolve({ preparedPath: filePath, transcoded: false, mime: 'video/mp4' });
+            }
+          };
+
+          let drawAnimId: number;
+          const drawFrame = () => {
+            if (video.paused || video.ended) return;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            drawAnimId = requestAnimationFrame(drawFrame);
+          };
+
+          video.onended = () => {
+            cancelAnimationFrame(drawAnimId);
+            setTimeout(() => {
+              if (recorder.state === 'recording') recorder.stop();
+            }, 100);
+          };
+
+          recorder.start(200);
+          video.play().then(() => {
+            drawFrame();
+          }).catch(fallback);
+        } catch {
+          fallback();
+        }
+      };
+    });
   }
 }
 

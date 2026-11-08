@@ -800,10 +800,11 @@ export const useChatAudioAndFiles = ({
                 messagesByChatId: {
                   ...state.messagesByChatId,
                   [activeChatId]: (state.messagesByChatId[activeChatId] || []).map((m) =>
-                    m.id === messageId ? { ...m, status: 'pending' as const, uploading: false } : m
+                    m.id === messageId ? { ...m, status: 'error' as const, uploading: false } : m
                   ),
                 },
               }));
+              showToast(t('chatWindow.upload_failed'));
               return;
             }
             useUploadProgressStore.getState().setProgress(`${messageId}_${fIdx}`, uploaded.size || 1, uploaded.size || 1);
@@ -887,10 +888,11 @@ export const useChatAudioAndFiles = ({
               messagesByChatId: {
                 ...state.messagesByChatId,
                 [activeChatId]: (state.messagesByChatId[activeChatId] || []).map((m) =>
-                  m.id === messageId ? { ...m, status: 'pending' as const, uploading: false } : m
+                  m.id === messageId ? { ...m, status: 'error' as const, uploading: false } : m
                 ),
               },
             }));
+            showToast(t('chatWindow.upload_failed'));
             return;
           }
 

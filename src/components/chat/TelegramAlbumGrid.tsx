@@ -94,7 +94,8 @@ const AlbumTile = memo(({
     (item.url && /\.(mp4|mov|avi|webm|mkv|m4v)(\?.*)?$/i.test(item.url))
   );
 
-  const isUploading = Boolean(item.uploading || (isOwn && (msg.uploading || msg.status === 'sending' || msg.status === 'pending')));
+  const isUploading = Boolean(item.uploading || (isOwn && msg.uploading && msg.status === 'sending'));
+  const isFailed = Boolean(isOwn && msg.status === 'error');
   const shouldAutoLoad = useChatStore((state) => state.shouldAutoLoadMedia(isVideo ? 'video' : 'photo', item.size, isOwn));
   const autoLoad = !isUploading && (isGif || shouldAutoLoad);
   const effectiveSecret = item.key || (msg as any).mediaKey || sharedSecret;
@@ -500,7 +501,7 @@ const AlbumTile = memo(({
         </div>
       )}
 
-      {(!blobUrl || isUploading || (isVideo && !isLoaded)) && (
+      {(!blobUrl || isUploading || isFailed || (isVideo && !isLoaded)) && (
         <div
           className={`absolute inset-0 flex flex-col items-center justify-center z-[2] select-none ${isUnavailable ? 'pointer-events-none' : 'cursor-pointer'}`}
           onClick={(e) => {
@@ -513,12 +514,12 @@ const AlbumTile = memo(({
               <AudioCoverWithPlay
                 cover={null}
                 size={44}
-                state={isUploading ? 'uploading' : (isDownloading ? 'downloading' : 'download')}
+                state={isFailed ? 'download' : (isUploading ? 'uploading' : (isDownloading ? 'downloading' : 'download'))}
                 progress={isUploading ? uploadProgress : progress}
                 onClick={() => { if (!isDownloading && !isUploading) load(); }}
                 ariaLabel={isDownloading ? 'Cancel download' : (!blobUrl ? 'Download' : 'Open')}
               />
-              {(isUploading || isDownloading) && (
+              {(isUploading || isDownloading) && !isFailed && (
                 <span
                   style={{
                     fontSize: '11px',

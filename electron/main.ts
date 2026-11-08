@@ -2244,27 +2244,20 @@ function uploadToCloudinaryWithProgress(
 
     let uploadedFileBytes = 0;
     req.write(headerBuffer, () => {
-      const highWaterMark = Math.min(16384, Math.max(1024, Math.floor(fileLength / 50)));
-      fileStream = fs.createReadStream(filePath, { highWaterMark });
+      fileStream = fs.createReadStream(filePath, { highWaterMark: 65536 });
 
       fileStream.on('data', (chunk: Buffer) => {
         if (isStreamDestroyed) return;
         uploadedFileBytes += chunk.length;
         const ratio = Math.min(0.95, uploadedFileBytes / fileLength);
         onProgress(Math.floor(ratio * fileLength), fileLength);
-        fileStream?.pause();
         const canContinue = req.write(chunk);
-        setTimeout(() => {
-          if (!isStreamDestroyed) {
-            if (canContinue) {
-              fileStream?.resume();
-            } else {
-              req.once('drain', () => {
-                if (!isStreamDestroyed) fileStream?.resume();
-              });
-            }
-          }
-        }, 16);
+        if (!canContinue) {
+          fileStream?.pause();
+          req.once('drain', () => {
+            if (!isStreamDestroyed) fileStream?.resume();
+          });
+        }
       });
 
       fileStream.on('end', () => {
@@ -3096,9 +3089,10 @@ ipcMain.handle('orbita:prepareVideoForUpload', async (_event, filePath: string) 
     let codecName = '';
     let pixFmt = '';
 
+    let durationSec = 30;
     const probe = await runProcessCapture('ffprobe', [
       '-v', 'error',
-      '-show_entries', 'stream=codec_type,codec_name,pix_fmt,profile,channels',
+      '-show_entries', 'stream=codec_type,codec_name,pix_fmt,profile,channels:format=duration',
       '-of', 'json',
       filePath,
     ], 8000);
@@ -3108,6 +3102,10 @@ ipcMain.handle('orbita:prepareVideoForUpload', async (_event, filePath: string) 
     if (probe.code === 0 && probe.stdout.length > 0) {
       try {
         const parsed = JSON.parse(probe.stdout.toString('utf8'));
+        if (parsed.format && parsed.format.duration) {
+          const d = parseFloat(parsed.format.duration);
+          if (d > 0 && isFinite(d)) durationSec = d;
+        }
         const streams: any[] = parsed.streams || [];
         const vStream = streams.find((s) => s.codec_type === 'video');
         if (vStream) {
@@ -3131,7 +3129,7 @@ ipcMain.handle('orbita:prepareVideoForUpload', async (_event, filePath: string) 
       (!codecName || ['h264', 'avc1', 'vp8', 'vp9', 'av01', 'av1'].includes(codecName)) &&
       (pixFmt === 'yuv420p' || !pixFmt) &&
       (!hasAudio || isAudioPlayable) &&
-      originalSize <= 50 * 1024 * 1024;
+      originalSize <= 9.2 * 1024 * 1024;
 
     if (isDirectPlayable) {
       return { preparedPath: filePath, transcoded: false, mime: ext === '.webm' ? 'video/webm' : 'video/mp4' };
@@ -3140,24 +3138,54 @@ ipcMain.handle('orbita:prepareVideoForUpload', async (_event, filePath: string) 
     const tempDir = app.getPath('temp');
     const outPath = path.join(tempDir, `orbita_upload_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.mp4`);
 
+    const targetBits = 7.8 * 8 * 1024 * 1024;
+    const targetVideoKbps = Math.max(250, Math.min(2200, Math.floor((targetBits / durationSec - 96000) / 1000)));
+
     const conv = await runProcessCapture('ffmpeg', [
       '-i', filePath,
       '-c:v', 'libx264',
       '-preset', 'ultrafast',
       '-threads', '0',
-      '-crf', '26',
+      '-b:v', `${targetVideoKbps}k`,
+      '-maxrate', `${Math.round(targetVideoKbps * 1.25)}k`,
+      '-bufsize', `${Math.round(targetVideoKbps * 2)}k`,
       '-vf', 'scale=min(1280\\,iw):min(720\\,ih):force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2',
       '-pix_fmt', 'yuv420p',
       '-c:a', 'aac',
-      '-b:a', '128k',
+      '-b:a', '96k',
       '-ar', '44100',
       '-movflags', '+faststart',
       '-y',
       outPath,
     ], 60000);
 
-    if (conv.code === 0 && fs.existsSync(outPath) && fs.statSync(outPath).size > 0) {
-      return { preparedPath: outPath, transcoded: true, mime: 'video/mp4' };
+    if (conv.code === 0 && fs.existsSync(outPath)) {
+      const outSize = fs.statSync(outPath).size;
+      if (outSize <= 9.3 * 1024 * 1024 && outSize > 0) {
+        return { preparedPath: outPath, transcoded: true, mime: 'video/mp4' };
+      }
+      const outPathSmall = path.join(tempDir, `orbita_upload_small_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.mp4`);
+      const conv2 = await runProcessCapture('ffmpeg', [
+        '-i', outPath,
+        '-c:v', 'libx264',
+        '-preset', 'ultrafast',
+        '-threads', '0',
+        '-b:v', '550k',
+        '-maxrate', '700k',
+        '-bufsize', '1000k',
+        '-vf', 'scale=min(854\\,iw):min(480\\,ih):force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2',
+        '-pix_fmt', 'yuv420p',
+        '-c:a', 'aac',
+        '-b:a', '64k',
+        '-ar', '44100',
+        '-movflags', '+faststart',
+        '-y',
+        outPathSmall,
+      ], 60000);
+      try { fs.unlinkSync(outPath); } catch {}
+      if (conv2.code === 0 && fs.existsSync(outPathSmall) && fs.statSync(outPathSmall).size > 0) {
+        return { preparedPath: outPathSmall, transcoded: true, mime: 'video/mp4' };
+      }
     }
   } catch {}
 

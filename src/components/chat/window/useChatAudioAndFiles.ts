@@ -230,6 +230,20 @@ export const useChatAudioAndFiles = ({
     fileType: AttachedFile['fileType']
   ): Promise<{ width?: number; height?: number; duration?: number; blurPreview?: string; preview?: string }> => {
     if (fileType === 'photo') {
+      if (window.orbita?.rustReadFileFast && window.orbita?.generateBlurPreview) {
+        try {
+          const raw = await window.orbita.rustReadFileFast(filePath);
+          if (raw) {
+            const blurPreview = await window.orbita.generateBlurPreview(raw, 32);
+            if (window.orbita.compressImageNative) {
+              const comp = await window.orbita.compressImageNative(raw, 2560, 2560, 85);
+              if (comp) {
+                return { width: comp.width, height: comp.height, blurPreview: blurPreview || undefined };
+              }
+            }
+          }
+        } catch {}
+      }
       const dataUrl = await window.orbita?.readFileAsDataURL(filePath);
       if (!dataUrl) return {};
       return new Promise((resolve) => {
@@ -587,12 +601,27 @@ export const useChatAudioAndFiles = ({
             const binary = await window.orbita.rustReadFileFast(effectiveFilePath);
             if (binary) {
               let processBinary = binary;
-              if (!asFile && file.fileType === 'photo' && window.orbita?.rustResizeImage) {
-                try {
-                  const resized = await window.orbita.rustResizeImage(binary, 1920, 1920, 85);
-                  if (resized) processBinary = resized;
-                } catch (e) {
-                  console.warn('[Rust] Image resize failed, falling back to original:', e);
+              if (!asFile && file.fileType === 'photo') {
+                if (window.orbita?.compressImageNative) {
+                  try {
+                    const comp = await window.orbita.compressImageNative(binary, 2048, 2048, 85);
+                    if (comp && comp.data) {
+                      processBinary = comp.data;
+                      if (comp.width && comp.height) {
+                        file.width = comp.width;
+                        file.height = comp.height;
+                      }
+                    }
+                  } catch (e) {
+                    console.warn('[Rust] Image compressImageNative failed, falling back:', e);
+                  }
+                } else if (window.orbita?.rustResizeImage) {
+                  try {
+                    const resized = await window.orbita.rustResizeImage(binary, 1920, 1920, 85);
+                    if (resized) processBinary = resized;
+                  } catch (e) {
+                    console.warn('[Rust] Image resize failed, falling back to original:', e);
+                  }
                 }
               }
               fileArrayBuffer = (processBinary.buffer as ArrayBuffer).slice(

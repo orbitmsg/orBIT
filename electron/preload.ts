@@ -392,6 +392,22 @@ contextBridge.exposeInMainWorld('orbita', {
     ipcRenderer.invoke('storage:delete-messages-by-ids', messageIds.map(getScopedMsgId)),
   storageMigrateChat: (fromChatId: string, toChatId: string) =>
     ipcRenderer.invoke('storage:migrate-chat', getScopedChatId(fromChatId), getScopedChatId(toChatId)),
+  storageSearchMessages: (query: string, limit?: number) =>
+    ipcRenderer.invoke('storage:search-messages', query, limit),
+  storageSearchMessagesInChat: (chatId: string, query: string, limit?: number) =>
+    ipcRenderer.invoke('storage:search-messages-in-chat', getScopedChatId(chatId), query, limit),
+  storageSyncFts: () =>
+    ipcRenderer.invoke('storage:sync-fts'),
+  rustSearchBm25InMemory: (docsJson: string, query: string, limit?: number) =>
+    ipcRenderer.invoke('storage:search-bm25-in-memory', docsJson, query, limit),
+  compressImageNative: (data: Uint8Array | ArrayBuffer, maxWidth: number, maxHeight: number, quality?: number, format?: string) =>
+    ipcRenderer.invoke('native:compress-image', data, maxWidth, maxHeight, quality, format),
+  generateBlurPreview: (data: Uint8Array | ArrayBuffer, thumbSize?: number) =>
+    ipcRenderer.invoke('native:generate-blur-preview', data, thumbSize),
+  encryptFileStream: (sourcePath: string, targetPath: string, keyHex: string) =>
+    ipcRenderer.invoke('native:encrypt-file-stream', sourcePath, targetPath, keyHex),
+  decryptFileStream: (sourcePath: string, targetPath: string, keyHex: string) =>
+    ipcRenderer.invoke('native:decrypt-file-stream', sourcePath, targetPath, keyHex),
 
   setProxy: (config: { host: string; port: number; username?: string; password?: string; type?: string; proxyCalls?: boolean }) =>
     ipcRenderer.invoke('orbita:setProxy', config),

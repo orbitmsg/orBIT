@@ -234,6 +234,14 @@ class BrowserOrbitaAdapter {
           }
         } catch {}
       },
+      storageSearchMessages: async () => [],
+      storageSearchMessagesInChat: async () => [],
+      storageSyncFts: async () => 0,
+      rustSearchBm25InMemory: async () => [],
+      compressImageNative: async () => null,
+      generateBlurPreview: async () => null,
+      encryptFileStream: async () => false,
+      decryptFileStream: async () => false,
     };
   }
 

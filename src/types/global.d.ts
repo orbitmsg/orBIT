@@ -162,6 +162,14 @@ declare global {
       rustResizeImage?: (data: Uint8Array | ArrayBuffer, maxWidth: number, maxHeight: number, quality?: number) => Promise<Uint8Array | null>;
       rustFastTextSearch?: (haystack: string[], query: string) => Promise<number[] | null>;
       rustReadFileFast?: (filePath: string) => Promise<Uint8Array | null>;
+      storageSearchMessages?: (query: string, limit?: number) => Promise<Array<{ id: string; message_id: string; chat_id: string; snippet?: string }>>;
+      storageSearchMessagesInChat?: (chatId: string, query: string, limit?: number) => Promise<Array<{ id: string; message_id: string; chat_id: string; snippet?: string }>>;
+      storageSyncFts?: () => Promise<number>;
+      rustSearchBm25InMemory?: (docsJson: string, query: string, limit?: number) => Promise<Array<{ id: string; message_id: string; chat_id: string; snippet?: string }>>;
+      compressImageNative?: (data: Uint8Array | ArrayBuffer, maxWidth: number, maxHeight: number, quality?: number, format?: string) => Promise<{ data: Uint8Array; width: number; height: number; mime: string; size: number } | null>;
+      generateBlurPreview?: (data: Uint8Array | ArrayBuffer, thumbSize?: number) => Promise<string | null>;
+      encryptFileStream?: (sourcePath: string, targetPath: string, keyHex: string) => Promise<boolean>;
+      decryptFileStream?: (sourcePath: string, targetPath: string, keyHex: string) => Promise<boolean>;
       checkForUpdates?: () => Promise<any>;
       downloadUpdate?: () => Promise<any>;
       quitAndInstallUpdate?: () => Promise<void>;

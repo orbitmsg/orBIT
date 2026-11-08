@@ -83,8 +83,22 @@ const normalizeMediaUrl = (raw: string): string => {
 class MediaManager {
   private memoryCache = new Map<string, DecryptedMedia>();
   private totalMemorySize = 0;
-  private maxMemorySize = 32 * 1024 * 1024;
-  private maxItemCount = 40;
+  private maxMemorySize = 16 * 1024 * 1024;
+  private maxItemCount = 20;
+  private singleItemMaxSize = 8 * 1024 * 1024;
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          this.trimToLimits(5, 4 * 1024 * 1024);
+        }
+      });
+      setInterval(() => {
+        this.evictOlderThan(120000);
+      }, 60000);
+    }
+  }
 
   private pendingRequests = new Map<string, Promise<DecryptedMedia>>();
   private downloadQueue: QueuedItem[] = [];
@@ -690,7 +704,20 @@ class MediaManager {
   }
 
   public addToMemoryCache(key: string, media: DecryptedMedia) {
-    while (this.totalMemorySize + media.size > this.maxMemorySize || this.memoryCache.size >= this.maxItemCount) {
+    const existing = this.memoryCache.get(key);
+    if (existing) {
+      if (existing.blobUrl && existing.blobUrl !== media.blobUrl && existing.blobUrl.startsWith('blob:')) {
+        try { URL.revokeObjectURL(existing.blobUrl); } catch {}
+      }
+      existing.imageBitmap?.close();
+      existing.blob = undefined;
+      this.totalMemorySize -= existing.size;
+      this.memoryCache.delete(key);
+    }
+    if (media.size > this.singleItemMaxSize) {
+      return;
+    }
+    while (this.memoryCache.size > 0 && (this.totalMemorySize + media.size > this.maxMemorySize || this.memoryCache.size >= this.maxItemCount)) {
       this.evictLRU();
     }
     this.memoryCache.set(key, media);
@@ -708,12 +735,48 @@ class MediaManager {
     }
     if (oldestKey) {
       const media = this.memoryCache.get(oldestKey)!;
-      try {
-        URL.revokeObjectURL(media.blobUrl);
-      } catch {}
-      media.imageBitmap?.close();
+      if (media.blobUrl && media.blobUrl.startsWith('blob:')) {
+        try {
+          URL.revokeObjectURL(media.blobUrl);
+        } catch {}
+      }
+      if (media.imageBitmap) {
+        try {
+          media.imageBitmap.close();
+        } catch {}
+        media.imageBitmap = null;
+      }
+      media.blob = undefined;
       this.totalMemorySize -= media.size;
       this.memoryCache.delete(oldestKey);
+    }
+  }
+
+  public evictOlderThan(maxAgeMs: number) {
+    const now = Date.now();
+    for (const [key, media] of this.memoryCache) {
+      if (now - media.lastAccessed > maxAgeMs) {
+        if (media.blobUrl && media.blobUrl.startsWith('blob:')) {
+          try {
+            URL.revokeObjectURL(media.blobUrl);
+          } catch {}
+        }
+        if (media.imageBitmap) {
+          try {
+            media.imageBitmap.close();
+          } catch {}
+          media.imageBitmap = null;
+        }
+        media.blob = undefined;
+        this.totalMemorySize -= media.size;
+        this.memoryCache.delete(key);
+      }
+    }
+  }
+
+  public trimToLimits(targetCount: number, targetSize: number) {
+    while (this.memoryCache.size > 0 && (this.memoryCache.size > targetCount || this.totalMemorySize > targetSize)) {
+      this.evictLRU();
     }
   }
 
@@ -740,10 +803,18 @@ class MediaManager {
 
   public clearMemoryCache() {
     for (const media of this.memoryCache.values()) {
-      try {
-        URL.revokeObjectURL(media.blobUrl);
-      } catch {}
-      media.imageBitmap?.close();
+      if (media.blobUrl && media.blobUrl.startsWith('blob:')) {
+        try {
+          URL.revokeObjectURL(media.blobUrl);
+        } catch {}
+      }
+      if (media.imageBitmap) {
+        try {
+          media.imageBitmap.close();
+        } catch {}
+        media.imageBitmap = null;
+      }
+      media.blob = undefined;
     }
     this.memoryCache.clear();
     this.totalMemorySize = 0;

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import lottie, { AnimationItem } from 'lottie-web';
 import { appVisibility } from '../../utils/appVisibility';
 
@@ -10,10 +10,11 @@ interface TgsPlayerProps {
   autoplay?: boolean;
   isPlaying?: boolean;
   playOnHover?: boolean;
+  renderer?: 'canvas' | 'svg';
   onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
-const MAX_CACHE_SIZE = 32;
+const MAX_CACHE_SIZE = 64;
 const tgsCache = new Map<string, any>();
 const pendingRequests = new Map<string, Promise<any>>();
 
@@ -22,10 +23,35 @@ export function clearTgsCache(): void {
   pendingRequests.clear();
 }
 
+let hiddenCacheClearTimer: ReturnType<typeof setTimeout> | null = null;
 if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      clearTgsCache();
+      if (!hiddenCacheClearTimer) {
+        hiddenCacheClearTimer = setTimeout(() => {
+          hiddenCacheClearTimer = null;
+          if (document.hidden) {
+            clearTgsCache();
+          }
+        }, 180000);
+      }
+    } else {
+      if (hiddenCacheClearTimer) {
+        clearTimeout(hiddenCacheClearTimer);
+        hiddenCacheClearTimer = null;
+      }
+    }
+  });
+
+  appVisibility.subscribe((visible) => {
+    if (!visible) {
+      try {
+        (lottie as any).freeze?.();
+      } catch {}
+    } else {
+      try {
+        (lottie as any).unfreeze?.();
+      } catch {}
     }
   });
 }
@@ -50,7 +76,7 @@ function addToCache(key: string, data: any): void {
   tgsCache.set(key, data);
 }
 
-const MAX_CONCURRENT_DECOMPRESSIONS = 8;
+const MAX_CONCURRENT_DECOMPRESSIONS = 6;
 let activeDecompressions = 0;
 const decompressionQueue: Array<() => void> = [];
 
@@ -92,7 +118,7 @@ function getSharedObserver(): IntersectionObserver | null {
           }
         }
       },
-      { rootMargin: '120px 0px 120px 0px', threshold: 0.01 }
+      { rootMargin: '0px', threshold: 0.01 }
     );
   }
   return sharedObserver;
@@ -139,6 +165,117 @@ function scheduleLottieInit(fn: () => void): () => void {
       lottieInitQueue.splice(idx, 1);
     }
   };
+}
+
+interface PlaybackSubscriber {
+  id: number;
+  priority: number;
+  onPlay: () => void;
+  onPause: () => void;
+}
+
+class PlaybackCoordinator {
+  private active = new Map<number, PlaybackSubscriber>();
+  private waiting = new Map<number, PlaybackSubscriber>();
+  private readonly maxConcurrent: number;
+
+  constructor(maxConcurrent = 4) {
+    this.maxConcurrent = maxConcurrent;
+  }
+
+  requestPlayback(subscriber: PlaybackSubscriber): void {
+    const { id, priority, onPlay, onPause } = subscriber;
+
+    if (this.active.has(id)) {
+      this.active.set(id, subscriber);
+      onPlay();
+      return;
+    }
+
+    this.waiting.delete(id);
+
+    if (this.active.size < this.maxConcurrent) {
+      this.active.set(id, subscriber);
+      onPlay();
+      return;
+    }
+
+    if (priority > 1) {
+      let lowestActive: PlaybackSubscriber | null = null;
+      for (const item of this.active.values()) {
+        if (!lowestActive || item.priority < lowestActive.priority) {
+          lowestActive = item;
+        }
+      }
+
+      if (lowestActive && lowestActive.priority < priority) {
+        this.active.delete(lowestActive.id);
+        lowestActive.onPause();
+        this.waiting.set(lowestActive.id, lowestActive);
+
+        this.active.set(id, subscriber);
+        onPlay();
+        return;
+      }
+    }
+
+    this.waiting.set(id, subscriber);
+    onPause();
+  }
+
+  releasePlayback(id: number): void {
+    const wasActive = this.active.delete(id);
+    this.waiting.delete(id);
+
+    if (wasActive && this.active.size < this.maxConcurrent && this.waiting.size > 0) {
+      let bestCandidate: PlaybackSubscriber | null = null;
+      for (const item of this.waiting.values()) {
+        if (!bestCandidate || item.priority > bestCandidate.priority) {
+          bestCandidate = item;
+        }
+      }
+
+      if (bestCandidate) {
+        this.waiting.delete(bestCandidate.id);
+        this.active.set(bestCandidate.id, bestCandidate);
+        bestCandidate.onPlay();
+      }
+    }
+  }
+
+  clear(): void {
+    this.active.forEach((s) => s.onPause());
+    this.active.clear();
+    this.waiting.clear();
+  }
+}
+
+const playbackCoordinator = new PlaybackCoordinator(4);
+
+function cleanupAnimation(
+  anim: AnimationItem | null,
+  container: HTMLDivElement | null
+): void {
+  if (anim) {
+    try {
+      anim.stop();
+      anim.destroy();
+    } catch {}
+  }
+  if (container) {
+    try {
+      const canvases = container.querySelectorAll('canvas');
+      canvases.forEach((c) => {
+        c.width = 0;
+        c.height = 0;
+        const ctx = c.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, 0, 0);
+        }
+      });
+      container.innerHTML = '';
+    } catch {}
+  }
 }
 
 export function prewarmTgsAnimations(urls: string[]): void {
@@ -190,7 +327,12 @@ export async function loadTgsAnimation(src: string): Promise<any> {
       } else if (src.startsWith('/')) {
         candidateUrls.push('.' + src);
         candidateUrls.push(src.slice(1));
-      } else if (!src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('data:') && !src.startsWith('blob:')) {
+      } else if (
+        !src.startsWith('http://') &&
+        !src.startsWith('https://') &&
+        !src.startsWith('data:') &&
+        !src.startsWith('blob:')
+      ) {
         candidateUrls.push('./' + src);
         candidateUrls.push('/' + src);
       }
@@ -219,7 +361,11 @@ export async function loadTgsAnimation(src: string): Promise<any> {
             xhr.open('GET', url, true);
             xhr.responseType = 'arraybuffer';
             xhr.onload = () => {
-              if ((xhr.status === 200 || xhr.status === 0) && xhr.response && (xhr.response as ArrayBuffer).byteLength > 0) {
+              if (
+                (xhr.status === 200 || xhr.status === 0) &&
+                xhr.response &&
+                (xhr.response as ArrayBuffer).byteLength > 0
+              ) {
                 resolve(xhr.response as ArrayBuffer);
               } else {
                 reject(new Error(`Status ${xhr.status}`));
@@ -284,6 +430,8 @@ export async function loadTgsAnimation(src: string): Promise<any> {
   return promise;
 }
 
+let nextPlayerId = 1;
+
 export const TgsPlayer: React.FC<TgsPlayerProps> = ({
   src,
   className = '',
@@ -292,256 +440,331 @@ export const TgsPlayer: React.FC<TgsPlayerProps> = ({
   autoplay = true,
   isPlaying,
   playOnHover = false,
+  renderer = 'canvas',
   onClick,
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<AnimationItem | null>(null);
+  const playerIdRef = useRef<number>(0);
+  if (!playerIdRef.current) {
+    playerIdRef.current = nextPlayerId++;
+  }
+
   const isPlayingPropRef = useRef(isPlaying);
   isPlayingPropRef.current = isPlaying;
-  const [shouldLoad, setShouldLoad] = useState<boolean>(() => !!getFromCache(src));
+
+  const autoplayRef = useRef(autoplay);
+  autoplayRef.current = autoplay;
+
+  const loopRef = useRef(loop);
+  loopRef.current = loop;
+
+  const playOnHoverRef = useRef(playOnHover);
+  playOnHoverRef.current = playOnHover;
+
+  const isHoveredRef = useRef(false);
+  const isIntersectingRef = useRef(false);
+  const isReadyRef = useRef(false);
+  const isPlaybackGrantedRef = useRef(false);
+  const hasFinishedNonLoopRef = useRef(false);
+  const unmountTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelInitRef = useRef<(() => void) | null>(null);
+
+  const [isInViewport, setIsInViewport] = useState(false);
   const [animData, setAnimData] = useState<any>(() => getFromCache(src));
   const [isReady, setIsReady] = useState(false);
-  const hasPlayedRef = useRef(false);
-  const isIntersectingRef = useRef(false);
-  const isPlayingRef = useRef(false);
 
-  useEffect(() => {
-    if (!shouldLoad) return;
-    let isMounted = true;
-    const cached = getFromCache(src);
-    if (!cached) {
-      loadTgsAnimation(src)
-        .then((data) => {
-          if (isMounted) {
-            setAnimData(data);
-          }
-        })
-        .catch((err) => {
-          console.error('[TgsPlayer] load error:', src, err);
-        });
-    } else {
-      setAnimData(cached);
+  const updatePlayback = useCallback(() => {
+    const anim = animRef.current;
+    if (!anim || !isReadyRef.current) return;
+
+    const isVisible =
+      isIntersectingRef.current &&
+      appVisibility.getIsVisible() &&
+      !document.hidden;
+
+    if (!isVisible) {
+      playbackCoordinator.releasePlayback(playerIdRef.current);
+      isPlaybackGrantedRef.current = false;
+      anim.goToAndStop(0, true);
+      return;
     }
-    return () => {
-      isMounted = false;
-    };
-  }, [src, shouldLoad]);
+
+    const explicitPlaying = isPlayingPropRef.current;
+    const isHovered = isHoveredRef.current && playOnHoverRef.current;
+    const wantsToPlay =
+      explicitPlaying !== undefined
+        ? explicitPlaying
+        : isHovered || (autoplayRef.current && !hasFinishedNonLoopRef.current);
+
+    if (!wantsToPlay) {
+      playbackCoordinator.releasePlayback(playerIdRef.current);
+      isPlaybackGrantedRef.current = false;
+      anim.goToAndStop(0, true);
+      return;
+    }
+
+    const priority = explicitPlaying === true || isHovered ? 2 : 1;
+
+    playbackCoordinator.requestPlayback({
+      id: playerIdRef.current,
+      priority,
+      onPlay: () => {
+        isPlaybackGrantedRef.current = true;
+        if (animRef.current) {
+          if (loopRef.current) {
+            animRef.current.play();
+          } else {
+            animRef.current.goToAndPlay(0, true);
+          }
+        }
+      },
+      onPause: () => {
+        isPlaybackGrantedRef.current = false;
+        if (animRef.current) {
+          animRef.current.goToAndStop(0, true);
+        }
+      },
+    });
+  }, []);
 
   useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) {
+      isIntersectingRef.current = true;
+      setIsInViewport(true);
+      return;
+    }
+
+    const unobserve = observeElement(el, (isIntersecting) => {
+      isIntersectingRef.current = isIntersecting;
+      setIsInViewport(isIntersecting);
+
+      if (isIntersecting) {
+        if (unmountTimerRef.current) {
+          clearTimeout(unmountTimerRef.current);
+          unmountTimerRef.current = null;
+        }
+      } else {
+        playbackCoordinator.releasePlayback(playerIdRef.current);
+        isPlaybackGrantedRef.current = false;
+        if (animRef.current) {
+          animRef.current.goToAndStop(0, true);
+        }
+
+        if (unmountTimerRef.current) {
+          clearTimeout(unmountTimerRef.current);
+        }
+        unmountTimerRef.current = setTimeout(() => {
+          unmountTimerRef.current = null;
+          if (!isIntersectingRef.current) {
+            cleanupAnimation(animRef.current, containerRef.current);
+            animRef.current = null;
+            isReadyRef.current = false;
+            setIsReady(false);
+          }
+        }, 1200);
+      }
+    });
+
+    return () => {
+      unobserve();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (animRef.current) {
+      playbackCoordinator.releasePlayback(playerIdRef.current);
+      cleanupAnimation(animRef.current, containerRef.current);
+      animRef.current = null;
+      isReadyRef.current = false;
+      setIsReady(false);
+    }
+  }, [src]);
+
+  useEffect(() => {
+    let isCurrent = true;
+    hasFinishedNonLoopRef.current = false;
+
+    const cached = getFromCache(src);
+    if (cached) {
+      setAnimData(cached);
+      return;
+    }
+
+    if (!isInViewport) return;
+
+    loadTgsAnimation(src)
+      .then((data) => {
+        if (isCurrent) {
+          setAnimData(data);
+        }
+      })
+      .catch((err) => {
+        console.error('[TgsPlayer] load error:', src, err);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [src, isInViewport]);
+
+  useEffect(() => {
+    if (!isInViewport || !animData) return;
+
     const container = containerRef.current;
-    if (!container || !animData) return;
+    if (!container) return;
+
+    if (unmountTimerRef.current) {
+      clearTimeout(unmountTimerRef.current);
+      unmountTimerRef.current = null;
+    }
 
     if (animRef.current) {
-      animRef.current.destroy();
-      animRef.current = null;
+      updatePlayback();
+      return;
     }
 
-    let anim: AnimationItem | null = null;
-    const cancelSchedule = scheduleLottieInit(() => {
-      if (!containerRef.current) return;
+    cancelInitRef.current = scheduleLottieInit(() => {
+      cancelInitRef.current = null;
+      if (!containerRef.current || !isIntersectingRef.current) return;
+
       try {
-        anim = lottie.loadAnimation({
+        cleanupAnimation(animRef.current, containerRef.current);
+
+        const anim = lottie.loadAnimation({
           container: containerRef.current,
-          renderer: 'svg',
+          renderer: renderer || 'canvas',
           loop,
           autoplay: false,
           animationData: animData,
           rendererSettings: {
             preserveAspectRatio: 'xMidYMid meet',
+            clearCanvas: true,
             progressiveLoad: true,
+            dpr:
+              typeof window !== 'undefined'
+                ? Math.min(window.devicePixelRatio || 1, 2)
+                : 1,
           },
         });
+
         anim.setSubframe(false);
+
         const handleReady = () => {
           setIsReady(true);
-          const canPlay = appVisibility.getIsVisible() && !document.hidden && isIntersectingRef.current;
-          if (!canPlay) {
-            isPlayingRef.current = false;
-            anim?.pause();
-          } else if (isPlayingPropRef.current !== undefined) {
-            if (isPlayingPropRef.current) {
-              isPlayingRef.current = true;
-              anim?.goToAndPlay(0, true);
-            } else {
-              isPlayingRef.current = false;
-              anim?.goToAndStop(0, true);
-            }
-          } else if (autoplay) {
-            isPlayingRef.current = true;
-            anim?.goToAndPlay(0, true);
-          }
+          isReadyRef.current = true;
+          updatePlayback();
         };
+
         anim.addEventListener('DOMLoaded', handleReady);
         anim.addEventListener('data_ready', handleReady);
         if ((anim as any).isLoaded) {
           handleReady();
         }
+
         setTimeout(() => {
-          if (animRef.current) {
-            setIsReady(true);
+          if (animRef.current && !isReadyRef.current) {
+            handleReady();
           }
         }, 60);
+
         anim.addEventListener('complete', () => {
-          if (!loop) {
-            isPlayingRef.current = false;
+          if (!loopRef.current) {
+            hasFinishedNonLoopRef.current = true;
+            updatePlayback();
           }
         });
-        animRef.current = anim;
 
-        const isAppVis = appVisibility.getIsVisible() && !document.hidden;
-        if (isIntersectingRef.current && isAppVis) {
-          if (isPlayingPropRef.current !== undefined) {
-            if (isPlayingPropRef.current) {
-              isPlayingRef.current = true;
-              anim.goToAndPlay(0, true);
-            } else {
-              isPlayingRef.current = false;
-              anim.goToAndStop(0, true);
-            }
-          } else if (loop && autoplay) {
-            isPlayingRef.current = true;
-            anim.play();
-          } else if (!hasPlayedRef.current && autoplay) {
-            hasPlayedRef.current = true;
-            isPlayingRef.current = true;
-            anim.goToAndPlay(0, true);
-          } else {
-            anim.goToAndStop(0, true);
-          }
-        } else {
-          anim.goToAndStop(0, true);
-        }
+        animRef.current = anim;
+        updatePlayback();
       } catch (e) {
         console.error('[TgsPlayer] render error:', e);
       }
     });
 
     return () => {
-      cancelSchedule();
-      if (anim) {
-        anim.destroy();
+      if (cancelInitRef.current) {
+        cancelInitRef.current();
+        cancelInitRef.current = null;
       }
-      if (containerRef.current) {
-        const canvases = containerRef.current.querySelectorAll('canvas');
-        canvases.forEach((c) => {
-          c.width = 0;
-          c.height = 0;
-        });
-        containerRef.current.innerHTML = '';
-      }
-      animRef.current = null;
-      isPlayingRef.current = false;
-      setIsReady(false);
     };
-  }, [animData, loop, autoplay]);
+  }, [animData, isInViewport, loop, renderer, updatePlayback]);
 
   useEffect(() => {
-    const el = wrapperRef.current;
-    if (!el) {
-      setShouldLoad(true);
-      isIntersectingRef.current = true;
-      return;
-    }
-
-    return observeElement(el, (isIntersecting) => {
-      isIntersectingRef.current = isIntersecting;
-      if (isIntersecting) {
-        setShouldLoad(true);
-        const isAppVis = appVisibility.getIsVisible() && !document.hidden;
-        if (isAppVis && animRef.current) {
-          if (isPlayingPropRef.current !== undefined) {
-            if (isPlayingPropRef.current) {
-              isPlayingRef.current = true;
-              animRef.current.goToAndPlay(0, true);
-            } else {
-              isPlayingRef.current = false;
-              animRef.current.goToAndStop(0, true);
-            }
-          } else if (loop && autoplay) {
-            isPlayingRef.current = true;
-            animRef.current.play();
-          } else if (!hasPlayedRef.current && autoplay) {
-            hasPlayedRef.current = true;
-            isPlayingRef.current = true;
-            animRef.current.goToAndPlay(0, true);
-          } else if (isPlayingRef.current) {
-            animRef.current.play();
-          } else {
-            animRef.current.goToAndStop(0, true);
-          }
-        }
-      } else {
-        isPlayingRef.current = false;
-        animRef.current?.pause();
-      }
-    });
-  }, [loop, autoplay]);
+    updatePlayback();
+  }, [isPlaying, autoplay, playOnHover, loop, updatePlayback]);
 
   useEffect(() => {
     const handleVisibility = (visible: boolean) => {
       if (!visible) {
-        isPlayingRef.current = false;
-        animRef.current?.pause();
-        try {
-          (lottie as any).freeze?.();
-        } catch {}
+        playbackCoordinator.releasePlayback(playerIdRef.current);
+        isPlaybackGrantedRef.current = false;
+        if (animRef.current) {
+          animRef.current.pause();
+        }
       } else {
-        try {
-          (lottie as any).unfreeze?.();
-        } catch {}
         if (isIntersectingRef.current && animRef.current) {
-          if (loop && autoplay) {
-            isPlayingRef.current = true;
-            animRef.current.play();
-          } else if (!hasPlayedRef.current && autoplay) {
-            hasPlayedRef.current = true;
-            isPlayingRef.current = true;
-            animRef.current.goToAndPlay(0, true);
-          } else if (isPlayingRef.current) {
-            animRef.current.play();
-          } else {
-            animRef.current.goToAndStop(0, true);
-          }
+          updatePlayback();
         }
       }
     };
 
     return appVisibility.subscribe(handleVisibility);
-  }, [loop, autoplay]);
+  }, [updatePlayback]);
 
   useEffect(() => {
-    if (isPlaying === undefined || !animRef.current) return;
-    if (isPlaying) {
-      isPlayingRef.current = true;
-      animRef.current.goToAndPlay(0, true);
-    } else {
-      isPlayingRef.current = false;
-      animRef.current.goToAndStop(0, true);
-    }
-  }, [isPlaying]);
+    return () => {
+      if (unmountTimerRef.current) {
+        clearTimeout(unmountTimerRef.current);
+        unmountTimerRef.current = null;
+      }
+      if (cancelInitRef.current) {
+        cancelInitRef.current();
+        cancelInitRef.current = null;
+      }
+      playbackCoordinator.releasePlayback(playerIdRef.current);
+      cleanupAnimation(animRef.current, containerRef.current);
+      animRef.current = null;
+      isReadyRef.current = false;
+      isPlaybackGrantedRef.current = false;
+    };
+  }, []);
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (onClick) {
       onClick(e);
     }
+    hasFinishedNonLoopRef.current = false;
     if (animRef.current) {
-      isPlayingRef.current = true;
-      animRef.current.goToAndPlay(0, true);
+      playbackCoordinator.requestPlayback({
+        id: playerIdRef.current,
+        priority: 2,
+        onPlay: () => {
+          isPlaybackGrantedRef.current = true;
+          animRef.current?.goToAndPlay(0, true);
+        },
+        onPause: () => {
+          isPlaybackGrantedRef.current = false;
+          animRef.current?.goToAndStop(0, true);
+        },
+      });
     }
   };
 
   const handleMouseEnter = () => {
-    if (playOnHover && animRef.current) {
-      isPlayingRef.current = true;
-      animRef.current.goToAndPlay(0, true);
+    if (playOnHover) {
+      isHoveredRef.current = true;
+      hasFinishedNonLoopRef.current = false;
+      updatePlayback();
     }
   };
 
   const handleMouseLeave = () => {
-    if (playOnHover && animRef.current) {
-      isPlayingRef.current = false;
-      animRef.current.goToAndStop(0, true);
+    if (playOnHover) {
+      isHoveredRef.current = false;
+      updatePlayback();
     }
   };
 
@@ -571,6 +794,7 @@ export const TgsPlayer: React.FC<TgsPlayerProps> = ({
           position: 'absolute',
           inset: 0,
           opacity: isReady ? 1 : 0,
+          transition: 'opacity 0.15s ease-out',
           pointerEvents: 'none',
         }}
       />

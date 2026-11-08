@@ -5,6 +5,9 @@ use aes_gcm::{
 };
 use rand::RngCore;
 use crate::types::{SensitiveKey, SensitiveBuffer};
+use std::fs::{File, OpenOptions};
+use std::path::Path;
+use aes_gcm::aead::Payload;
 
 #[napi(object)]
 pub struct RustMediaResult {
@@ -181,4 +184,336 @@ pub fn read_file_fast(path: String) -> Result<Buffer> {
     let bytes = std::fs::read(&path)
         .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to read file {}: {}", path, e)))?;
     Ok(bytes.into())
+}
+
+const STREAM_MAGIC: &[u8; 8] = b"ORBSTR01";
+const STREAM_HEADER_SIZE: usize = 32;
+const STREAM_CHUNK_SIZE: usize = 64 * 1024;
+const TAG_SIZE: usize = 16;
+
+#[inline]
+fn derive_chunk_nonce(base_nonce: &[u8; 12], chunk_index: u64) -> [u8; 12] {
+    let mut nonce = *base_nonce;
+    let mut carry = chunk_index;
+    for byte in nonce.iter_mut().rev() {
+        let sum = (*byte as u64) + (carry & 0xFF);
+        *byte = sum as u8;
+        carry = (carry >> 8) + (sum >> 8);
+        if carry == 0 {
+            break;
+        }
+    }
+    nonce
+}
+
+#[inline]
+fn build_chunk_aad(chunk_index: u64, is_last: bool) -> [u8; 17] {
+    let mut aad = [0u8; 17];
+    aad[0..8].copy_from_slice(&chunk_index.to_be_bytes());
+    aad[8] = if is_last { 1 } else { 0 };
+    aad[9..17].copy_from_slice(STREAM_MAGIC);
+    aad
+}
+
+fn resolve_cipher_for_encryption(key_hex: &str) -> Result<Aes256Gcm> {
+    let key_vec = hex::decode(key_hex)
+        .map_err(|e| Error::new(Status::InvalidArg, format!("Invalid key hex: {}", e)))?;
+    let sensitive_key = SensitiveBuffer(key_vec);
+
+    let key_bytes = if sensitive_key.0.len() == 32 {
+        let mut k = SensitiveKey([0u8; 32]);
+        k.0.copy_from_slice(&sensitive_key.0);
+        k
+    } else {
+        crate::crypto::derive_file_key(key_hex)?
+    };
+
+    Aes256Gcm::new_from_slice(&key_bytes.0)
+        .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to create AES-GCM cipher: {}", e)))
+}
+
+fn resolve_cipher_for_decryption(
+    key_hex: &str,
+    first_chunk: &[u8],
+    first_nonce_bytes: &[u8; 12],
+    first_aad: &[u8],
+) -> Result<Aes256Gcm> {
+    let first_nonce = Nonce::from_slice(first_nonce_bytes);
+    let key_vec = hex::decode(key_hex)
+        .map_err(|e| Error::new(Status::InvalidArg, format!("Invalid key hex: {}", e)))?;
+    let sensitive_key = SensitiveBuffer(key_vec);
+
+    if sensitive_key.0.len() == 32 {
+        let mut k = SensitiveKey([0u8; 32]);
+        k.0.copy_from_slice(&sensitive_key.0);
+        if let Ok(cipher) = Aes256Gcm::new_from_slice(&k.0) {
+            let payload = Payload {
+                msg: first_chunk,
+                aad: first_aad,
+            };
+            if cipher.decrypt(first_nonce, payload).is_ok() {
+                return Ok(cipher);
+            }
+        }
+
+        if let Ok(derived) = crate::crypto::derive_file_key(key_hex) {
+            if let Ok(cipher) = Aes256Gcm::new_from_slice(&derived.0) {
+                let payload = Payload {
+                    msg: first_chunk,
+                    aad: first_aad,
+                };
+                if cipher.decrypt(first_nonce, payload).is_ok() {
+                    return Ok(cipher);
+                }
+            }
+        }
+
+        return Err(Error::new(
+            Status::GenericFailure,
+            "AES-GCM decryption failed: invalid key or corrupted stream",
+        ));
+    }
+
+    let derived = crate::crypto::derive_file_key(key_hex)?;
+    Aes256Gcm::new_from_slice(&derived.0)
+        .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to create AES-GCM cipher: {}", e)))
+}
+
+#[napi]
+pub fn rust_encrypt_file_stream(source_path: String, target_path: String, key_hex: String) -> Result<bool> {
+    let src_path = Path::new(&source_path);
+    let tgt_path = Path::new(&target_path);
+
+    if src_path == tgt_path {
+        return Err(Error::new(Status::InvalidArg, "Source and target paths cannot be identical"));
+    }
+
+    if let Some(parent) = tgt_path.parent() {
+        if !parent.as_os_str().is_empty() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+    }
+
+    let cipher = resolve_cipher_for_encryption(&key_hex)?;
+
+    let source_file = File::open(src_path)
+        .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to open source file {}: {}", source_path, e)))?;
+
+    let source_len = source_file.metadata()
+        .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to get source file metadata: {}", e)))?
+        .len();
+
+    let num_chunks = if source_len == 0 {
+        0
+    } else {
+        (source_len + STREAM_CHUNK_SIZE as u64 - 1) / (STREAM_CHUNK_SIZE as u64)
+    };
+
+    let target_len = STREAM_HEADER_SIZE as u64 + source_len + (num_chunks * TAG_SIZE as u64);
+
+    let target_file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(tgt_path)
+        .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to open target file {}: {}", target_path, e)))?;
+
+    target_file.set_len(target_len)
+        .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to preallocate target file: {}", e)))?;
+
+    let mut base_nonce = [0u8; 12];
+    rand::thread_rng().fill_bytes(&mut base_nonce);
+
+    let mut mmap_out = unsafe {
+        memmap2::MmapMut::map_mut(&target_file)
+            .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to mmap target file: {}", e)))?
+    };
+
+    mmap_out[0..8].copy_from_slice(STREAM_MAGIC);
+    mmap_out[8..12].copy_from_slice(&(STREAM_CHUNK_SIZE as u32).to_be_bytes());
+    mmap_out[12..20].copy_from_slice(&source_len.to_be_bytes());
+    mmap_out[20..32].copy_from_slice(&base_nonce);
+
+    if source_len > 0 {
+        let mmap_in = unsafe {
+            memmap2::MmapOptions::new()
+                .map(&source_file)
+                .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to mmap source file: {}", e)))?
+        };
+
+        let mut src_offset: usize = 0;
+        let mut dst_offset: usize = STREAM_HEADER_SIZE;
+        let mut chunk_index: u64 = 0;
+
+        while src_offset < source_len as usize {
+            let remaining = (source_len as usize) - src_offset;
+            let current_chunk_len = std::cmp::min(remaining, STREAM_CHUNK_SIZE);
+            let is_last = (src_offset + current_chunk_len) == (source_len as usize);
+
+            let nonce_bytes = derive_chunk_nonce(&base_nonce, chunk_index);
+            let nonce = Nonce::from_slice(&nonce_bytes);
+            let aad = build_chunk_aad(chunk_index, is_last);
+
+            let payload = Payload {
+                msg: &mmap_in[src_offset..src_offset + current_chunk_len],
+                aad: &aad,
+            };
+
+            let encrypted = cipher
+                .encrypt(nonce, payload)
+                .map_err(|e| Error::new(Status::GenericFailure, format!("AES-GCM encryption failed at chunk {}: {}", chunk_index, e)))?;
+
+            mmap_out[dst_offset..dst_offset + encrypted.len()].copy_from_slice(&encrypted);
+
+            src_offset += current_chunk_len;
+            dst_offset += encrypted.len();
+            chunk_index += 1;
+        }
+
+        mmap_out.flush()
+            .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to flush encrypted target file: {}", e)))?;
+    } else {
+        mmap_out.flush()
+            .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to flush empty encrypted target file: {}", e)))?;
+    }
+
+    Ok(true)
+}
+
+#[napi]
+pub fn rust_decrypt_file_stream(source_path: String, target_path: String, key_hex: String) -> Result<bool> {
+    let src_path = Path::new(&source_path);
+    let tgt_path = Path::new(&target_path);
+
+    if src_path == tgt_path {
+        return Err(Error::new(Status::InvalidArg, "Source and target paths cannot be identical"));
+    }
+
+    if let Some(parent) = tgt_path.parent() {
+        if !parent.as_os_str().is_empty() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+    }
+
+    let source_file = File::open(src_path)
+        .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to open encrypted file {}: {}", source_path, e)))?;
+
+    let source_len = source_file.metadata()
+        .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to get encrypted file metadata: {}", e)))?
+        .len();
+
+    if source_len < STREAM_HEADER_SIZE as u64 {
+        return Err(Error::new(Status::InvalidArg, "File too small to be a valid encrypted stream"));
+    }
+
+    let mmap_in = unsafe {
+        memmap2::MmapOptions::new()
+            .map(&source_file)
+            .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to mmap encrypted file: {}", e)))?
+    };
+
+    if &mmap_in[0..8] != STREAM_MAGIC {
+        return Err(Error::new(Status::InvalidArg, "Invalid file format: bad magic header"));
+    }
+
+    let chunk_size = u32::from_be_bytes(mmap_in[8..12].try_into().unwrap()) as usize;
+    if chunk_size == 0 || chunk_size > 16 * 1024 * 1024 {
+        return Err(Error::new(Status::InvalidArg, format!("Invalid chunk size in stream header: {}", chunk_size)));
+    }
+
+    let plaintext_total_size = u64::from_be_bytes(mmap_in[12..20].try_into().unwrap());
+    let mut base_nonce = [0u8; 12];
+    base_nonce.copy_from_slice(&mmap_in[20..32]);
+
+    let num_chunks = if plaintext_total_size == 0 {
+        0
+    } else {
+        (plaintext_total_size + chunk_size as u64 - 1) / (chunk_size as u64)
+    };
+
+    let expected_ciphertext_len = STREAM_HEADER_SIZE as u64 + plaintext_total_size + (num_chunks * TAG_SIZE as u64);
+    if source_len != expected_ciphertext_len {
+        return Err(Error::new(
+            Status::InvalidArg,
+            format!("Encrypted file length mismatch: actual {} bytes, expected {} bytes", source_len, expected_ciphertext_len),
+        ));
+    }
+
+    if plaintext_total_size == 0 {
+        File::create(tgt_path)
+            .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to create target file: {}", e)))?;
+        return Ok(true);
+    }
+
+    let target_file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(tgt_path)
+        .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to open target file {}: {}", target_path, e)))?;
+
+    target_file.set_len(plaintext_total_size)
+        .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to preallocate target file: {}", e)))?;
+
+    let mut mmap_out = unsafe {
+        memmap2::MmapMut::map_mut(&target_file)
+            .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to mmap target file: {}", e)))?
+    };
+
+    let first_chunk_plain_len = std::cmp::min(plaintext_total_size as usize, chunk_size);
+    let first_chunk_cipher_len = first_chunk_plain_len + TAG_SIZE;
+    let first_nonce_bytes = derive_chunk_nonce(&base_nonce, 0);
+    let first_is_last = first_chunk_plain_len == (plaintext_total_size as usize);
+    let first_aad = build_chunk_aad(0, first_is_last);
+
+    let first_chunk_slice = &mmap_in[STREAM_HEADER_SIZE..STREAM_HEADER_SIZE + first_chunk_cipher_len];
+    let cipher = resolve_cipher_for_decryption(&key_hex, first_chunk_slice, &first_nonce_bytes, &first_aad)?;
+
+    let mut decrypt_loop = || -> Result<()> {
+        let mut src_offset: usize = STREAM_HEADER_SIZE;
+        let mut dst_offset: usize = 0;
+        let mut chunk_index: u64 = 0;
+
+        while dst_offset < plaintext_total_size as usize {
+            let remaining_plain = (plaintext_total_size as usize) - dst_offset;
+            let current_chunk_plain_len = std::cmp::min(remaining_plain, chunk_size);
+            let current_chunk_cipher_len = current_chunk_plain_len + TAG_SIZE;
+            let is_last = (dst_offset + current_chunk_plain_len) == (plaintext_total_size as usize);
+
+            let nonce_bytes = derive_chunk_nonce(&base_nonce, chunk_index);
+            let nonce = Nonce::from_slice(&nonce_bytes);
+            let aad = build_chunk_aad(chunk_index, is_last);
+
+            let payload = Payload {
+                msg: &mmap_in[src_offset..src_offset + current_chunk_cipher_len],
+                aad: &aad,
+            };
+
+            let decrypted = cipher
+                .decrypt(nonce, payload)
+                .map_err(|e| Error::new(Status::GenericFailure, format!("AES-GCM stream decryption failed at chunk {}: {}", chunk_index, e)))?;
+
+            mmap_out[dst_offset..dst_offset + decrypted.len()].copy_from_slice(&decrypted);
+
+            src_offset += current_chunk_cipher_len;
+            dst_offset += decrypted.len();
+            chunk_index += 1;
+        }
+
+        mmap_out.flush()
+            .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to flush decrypted target file: {}", e)))?;
+
+        Ok(())
+    };
+
+    if let Err(e) = decrypt_loop() {
+        drop(mmap_out);
+        drop(target_file);
+        let _ = std::fs::remove_file(tgt_path);
+        return Err(e);
+    }
+
+    Ok(true)
 }

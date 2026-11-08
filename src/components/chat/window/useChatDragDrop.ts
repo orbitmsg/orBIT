@@ -180,6 +180,12 @@ export const useChatDragDrop = ({
       let blurPreview: string | undefined;
 
       if (fileType === 'photo') {
+        if (window.orbita?.generateBlurPreview) {
+          try {
+            const bPreview = await window.orbita.generateBlurPreview(new Uint8Array(arrayBuffer), 32);
+            if (bPreview) blurPreview = bPreview;
+          } catch {}
+        }
         const safeBuffer = stripExifMetadata(arrayBuffer);
         const safeBase64 = await new Promise<string>((resolve) => {
           const reader = new FileReader();

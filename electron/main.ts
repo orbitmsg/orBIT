@@ -31,7 +31,12 @@ import { spawn } from 'child_process';
 import { getLocalKey, isPinLocked, isPinSet, unlockWithPin, setupPin, removePin, setNativeModule } from './localKey';
 
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
-app.commandLine.appendSwitch('js-flags', '--max-old-space-size=2048');
+app.commandLine.appendSwitch('js-flags', '--expose-gc --max-old-space-size=512');
+app.commandLine.appendSwitch('renderer-process-limit', '2');
+app.commandLine.appendSwitch('process-per-site');
+app.commandLine.appendSwitch('disable-breakpad');
+app.commandLine.appendSwitch('enable-low-end-device-mode');
+app.commandLine.appendSwitch('disable-dev-shm-usage');
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -69,19 +74,17 @@ if (process.platform === 'win32') {
   app.setAppUserModelId('com.saizzi.orbita');
 }
 
-app.commandLine.appendSwitch('disk-cache-size', '536870912');
-app.commandLine.appendSwitch('media-cache-size', '268435456');
+app.commandLine.appendSwitch('disk-cache-size', '67108864');
+app.commandLine.appendSwitch('media-cache-size', '33554432');
 app.commandLine.appendSwitch('disable-gpu-process-crash-limit');
 app.commandLine.appendSwitch('enable-gpu-rasterization');
 app.commandLine.appendSwitch('enable-zero-copy');
 app.commandLine.appendSwitch('enable-native-gpu-memory-buffers');
-app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
-app.commandLine.appendSwitch('force_high_performance_gpu');
 app.commandLine.appendSwitch('enable-smooth-scrolling');
 app.commandLine.appendSwitch('ignore-gpu-blocklist');
 app.commandLine.appendSwitch('enable-accelerated-video-decode');
 app.commandLine.appendSwitch('enable-accelerated-video-encode');
-app.commandLine.appendSwitch('enable-features', 'CanvasOopRasterization,WebRtcD3D11VideoDecoder,WebRtcHardwareVideoEncoding,WebRtcD3d11DesktopCapturer,PlatformHEVCDecoderSupport');
+app.commandLine.appendSwitch('enable-features', 'PurgeAndSuspend,CanvasOopRasterization,WebRtcD3D11VideoDecoder,WebRtcHardwareVideoEncoding,WebRtcD3d11DesktopCapturer,PlatformHEVCDecoderSupport');
 
 // Load optional native module
 let nativeModule: any = null;
@@ -119,13 +122,21 @@ for (const candidate of candidatePaths) {
   }
 }
 
-function trimAppMemory(deep = false) {
+function trimAppMemory(deep = true) {
   if (global.gc) {
     try { global.gc(); } catch {}
   }
-  if (deep && process.platform === 'win32' && nativeModule && typeof nativeModule.trimMemory === 'function') {
+  if (deep && process.platform === 'win32' && nativeModule) {
     try {
-      nativeModule.trimMemory();
+      const pids = app.getAppMetrics().map((m) => m.pid);
+      if (typeof nativeModule.rustOptimizeMemoryAll === 'function') {
+        nativeModule.rustOptimizeMemoryAll(pids);
+      } else if (typeof nativeModule.trimMemory === 'function') {
+        nativeModule.trimMemory();
+        for (const pid of pids) {
+          try { nativeModule.trimMemory(pid); } catch {}
+        }
+      }
     } catch {}
   }
 }
@@ -292,7 +303,9 @@ function initNotifManager(win: BrowserWindow) {
 
   ipcMain.on('orbita:clear-notifications', () => {
     if (notifWindow && !notifWindow.isDestroyed()) {
-      notifWindow.webContents.send('notif:clear-all');
+      notifWindow.destroy();
+      notifWindow = null;
+      trimAppMemory(true);
     }
   });
 
@@ -2061,6 +2074,48 @@ function registerStorageIpcHandlers() {
   ipcMain.handle('storage:delete-message', async (_event, messageId: string) => {
     await deleteMessageById(messageId);
   });
+  ipcMain.handle('storage:search-messages', async (_event, query: string, limit?: number) => {
+    if (nativeModule && typeof nativeModule.rustSearchMessages === 'function') {
+      try {
+        const res = nativeModule.rustSearchMessages(STORAGE_DB_PATH, query, limit);
+        return JSON.parse(res);
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
+  ipcMain.handle('storage:search-messages-in-chat', async (_event, chatId: string, query: string, limit?: number) => {
+    if (nativeModule && typeof nativeModule.rustSearchMessagesInChat === 'function') {
+      try {
+        const res = nativeModule.rustSearchMessagesInChat(STORAGE_DB_PATH, chatId, query, limit);
+        return JSON.parse(res);
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
+  ipcMain.handle('storage:sync-fts', async () => {
+    const masterKey = getMasterKey();
+    if (!masterKey || !nativeModule || typeof nativeModule.rustSearchSyncFts !== 'function') return 0;
+    try {
+      return nativeModule.rustSearchSyncFts(STORAGE_DB_PATH, masterKey.toString('hex'));
+    } catch (e) {
+      return 0;
+    }
+  });
+  ipcMain.handle('storage:search-bm25-in-memory', async (_event, docsJson: string, query: string, limit?: number) => {
+    if (nativeModule && typeof nativeModule.rustSearchBm25InMemory === 'function') {
+      try {
+        const res = nativeModule.rustSearchBm25InMemory(docsJson, query, limit);
+        return JSON.parse(res);
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
 }
 
 const activeUploadRequests = new Map<string, http.ClientRequest>();
@@ -2700,6 +2755,49 @@ ipcMain.handle('orbita:rustFastTextSearch', async (_event, haystack: string[], q
     }
   }
   return null;
+});
+
+ipcMain.handle('native:compress-image', async (_event, dataBuffer: Uint8Array | ArrayBuffer, maxWidth: number, maxHeight: number, quality?: number, format?: string) => {
+  if (nativeModule && typeof nativeModule.compressImageNative === 'function') {
+    try {
+      const buf = Buffer.isBuffer(dataBuffer) ? dataBuffer : Buffer.from(dataBuffer as any);
+      return nativeModule.compressImageNative(buf, maxWidth, maxHeight, quality, format);
+    } catch (e) {
+      return null;
+    }
+  }
+  return null;
+});
+ipcMain.handle('native:generate-blur-preview', async (_event, dataBuffer: Uint8Array | ArrayBuffer, thumbSize?: number) => {
+  if (nativeModule && typeof nativeModule.generateBlurPreview === 'function') {
+    try {
+      const buf = Buffer.isBuffer(dataBuffer) ? dataBuffer : Buffer.from(dataBuffer as any);
+      return nativeModule.generateBlurPreview(buf, thumbSize);
+    } catch (e) {
+      return null;
+    }
+  }
+  return null;
+});
+ipcMain.handle('native:encrypt-file-stream', async (_event, sourcePath: string, targetPath: string, keyHex: string) => {
+  if (nativeModule && typeof nativeModule.rustEncryptFileStream === 'function') {
+    try {
+      return nativeModule.rustEncryptFileStream(sourcePath, targetPath, keyHex);
+    } catch (e) {
+      return false;
+    }
+  }
+  return false;
+});
+ipcMain.handle('native:decrypt-file-stream', async (_event, sourcePath: string, targetPath: string, keyHex: string) => {
+  if (nativeModule && typeof nativeModule.rustDecryptFileStream === 'function') {
+    try {
+      return nativeModule.rustDecryptFileStream(sourcePath, targetPath, keyHex);
+    } catch (e) {
+      return false;
+    }
+  }
+  return false;
 });
 
 ipcMain.handle('orbita:rustReadFileFast', async (_event, filePath: string) => {
@@ -4474,10 +4572,13 @@ function createMainWindow() {
   });
 
   mainWindow.once('ready-to-show', () => {
-    if (!splashWindow || splashWindow.isDestroyed()) {
-      mainWindow?.show();
-      mainWindow?.webContents.send('window:state-changed', mainWindow.isMaximized());
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      splashWindow.destroy();
+      splashWindow = null;
     }
+    mainWindow?.show();
+    mainWindow?.webContents.send('window:state-changed', mainWindow.isMaximized());
+    trimAppMemory(true);
   });
 
   mainWindow.webContents.on('before-input-event', (event, input) => {
@@ -4522,6 +4623,11 @@ function createMainWindow() {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('orbita:app-focus-changed', false);
     }
+    setTimeout(() => {
+      if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isFocused()) {
+        trimAppMemory(true);
+      }
+    }, 2500);
   });
 
   initNotifManager(mainWindow);
@@ -4580,7 +4686,10 @@ function createMainWindow() {
     try {
       mainWindow.webContents.setBackgroundThrottling(true);
     } catch { }
-    trimAppMemory();
+    try {
+      session.defaultSession.clearCache().catch(() => {});
+    } catch { }
+    trimAppMemory(true);
   });
 
   mainWindow.on('restore', () => {
@@ -4593,7 +4702,10 @@ function createMainWindow() {
     try {
       mainWindow.webContents.setBackgroundThrottling(true);
     } catch { }
-    trimAppMemory();
+    try {
+      session.defaultSession.clearCache().catch(() => {});
+    } catch { }
+    trimAppMemory(true);
   });
 
   mainWindow.on('show', () => {
@@ -4980,8 +5092,8 @@ app.whenReady().then(async () => {
   }
 
   setInterval(() => {
-    trimAppMemory(false);
-  }, 300000);
+    trimAppMemory(true);
+  }, 60000);
 
   if (process.defaultApp) {
     if (process.argv.length >= 2) {

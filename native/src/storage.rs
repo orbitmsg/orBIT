@@ -34,7 +34,13 @@ pub fn rust_storage_init_db(db_path: String) -> Result<bool> {
          );
          CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id);
          CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
-         CREATE INDEX IF NOT EXISTS idx_messages_chat_created ON messages(chat_id, created_at DESC);"
+         CREATE INDEX IF NOT EXISTS idx_messages_chat_created ON messages(chat_id, created_at DESC);
+         CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(
+             message_id UNINDEXED,
+             chat_id UNINDEXED,
+             content,
+             tokenize = 'unicode61'
+         );"
     ).map_err(|e| Error::new(Status::GenericFailure, format!("Failed to init tables: {}", e)))?;
     Ok(true)
 }

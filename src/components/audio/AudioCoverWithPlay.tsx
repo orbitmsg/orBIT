@@ -41,15 +41,14 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
   const isDeterminate = clampedProgress > 0.001;
 
   const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (state === 'uploading' || state === 'downloading') {
       if (onCancel) {
-        e.stopPropagation();
         onCancel();
         return;
       }
     }
     if (onClick) {
-      e.stopPropagation();
       onClick();
     }
   };
@@ -133,7 +132,6 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               pointerEvents: 'none',
               transform: isDeterminate ? 'rotate(-90deg)' : undefined,
               animation: isDeterminate ? 'none' : 'spin-ring 1.1s linear infinite',
-
             }}
           >
             <circle
@@ -169,8 +167,8 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               justifyContent: 'center',
             }}
           >
-            <svg viewBox="0 0 24 24" width={Math.round(size * 0.42)} height={Math.round(size * 0.42)}>
-              <rect x="7" y="7" width="10" height="10" rx="2" fill={iconFill} />
+            <svg viewBox="0 0 24 24" width={Math.round(size * 0.42)} height={Math.round(size * 0.42)} fill="none" stroke={strokeColor} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 8L8 16M8 8l8 8" />
             </svg>
           </div>
         </>

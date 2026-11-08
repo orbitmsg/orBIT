@@ -49,7 +49,7 @@ export const FileMessage = memo(({
     return null;
   });
   const autoLoad = useChatStore((state) => state.shouldAutoLoadMedia('file', fileSizeBytes, isOwn));
-  const { blobUrl, blob, load, isLoading: mediaLoading, progress } = useDecryptedMedia(url, sharedSecret, fileName, undefined, chatId, messageId, autoLoad);
+  const { blobUrl, blob, load, cancel, isLoading: mediaLoading, progress } = useDecryptedMedia(url, sharedSecret, fileName, undefined, chatId, messageId, autoLoad);
   const [isLoading, setIsLoading] = useState(false);
   const displayName = fileName || t('chatWindow.file');
   const ext = fileName?.split('.').pop()?.toUpperCase() || 'FILE';
@@ -226,6 +226,16 @@ export const FileMessage = memo(({
           isPlayingTrack={false}
           size={48}
           onClick={handleOpenFile}
+          onCancel={() => {
+            if (isCurrentlyUploading) {
+              (window as any).orbita?.cancelUpload?.(messageId);
+              if (chatId && messageId) {
+                useChatStore.getState().deleteMessage(chatId, messageId);
+              }
+            } else if (isDownloading) {
+              cancel();
+            }
+          }}
           state={activeState}
           progress={activeProgress}
           isOwn={isOwn}

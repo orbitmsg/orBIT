@@ -98,8 +98,8 @@ const AlbumTile = memo(({
   const isFailed = Boolean(isOwn && msg.status === 'error');
   const shouldAutoLoad = useChatStore((state) => state.shouldAutoLoadMedia(isVideo ? 'video' : 'photo', item.size, isOwn));
   const autoLoad = !isUploading && (isGif || shouldAutoLoad);
-  const effectiveSecret = item.key || (msg as any).mediaKey || sharedSecret;
-  const { blobUrl, load, isLoading, progress, isUnavailable } = useDecryptedMedia(
+  const effectiveSecret = item.key || (item as any).mediaKey || (msg as any).mediaKey || (msg as any).key || (msg as any).mediaItems?.[itemIdx]?.key || sharedSecret;
+  const { blobUrl, load, cancel, isLoading, progress } = useDecryptedMedia(
     item.url,
     effectiveSecret,
     item.name,
@@ -108,6 +108,18 @@ const AlbumTile = memo(({
     msg.id,
     autoLoad
   );
+
+  const handleCancelUpload = useCallback(() => {
+    (window as any).orbita?.cancelUpload?.(msg.id);
+    const cid = (msg as any).chatId || (msg as any).chat_id;
+    if (cid && msg.id) {
+      useChatStore.getState().deleteMessage(cid, msg.id);
+    }
+  }, [msg.id, (msg as any).chatId, (msg as any).chat_id]);
+
+  const handleCancelDownload = useCallback(() => {
+    cancel();
+  }, [cancel]);
 
   const isDownloading = isLoading;
   const isLocalMedia = Boolean((item as any).preview || (item.url?.startsWith('data:') && item.url.length > 2048) || item.url?.startsWith('blob:'));
@@ -503,22 +515,32 @@ const AlbumTile = memo(({
 
       {(!blobUrl || isUploading || isFailed || (isVideo && !isLoaded)) && (
         <div
-          className={`absolute inset-0 flex flex-col items-center justify-center z-[2] select-none ${isUnavailable ? 'pointer-events-none' : 'cursor-pointer'}`}
+          className="absolute inset-0 flex flex-col items-center justify-center z-[2] select-none cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
-            if (!isDownloading && !isUploading && !isUnavailable) load();
+            if (isUploading) {
+              handleCancelUpload();
+            } else if (isDownloading) {
+              handleCancelDownload();
+            } else {
+              load();
+            }
           }}
         >
-          {!isUnavailable && (
-            <div className="relative z-10 flex flex-col items-center gap-1">
-              <AudioCoverWithPlay
-                cover={null}
-                size={44}
-                state={isFailed ? 'download' : (isUploading ? 'uploading' : (isDownloading ? 'downloading' : 'download'))}
-                progress={isUploading ? uploadProgress : progress}
-                onClick={() => { if (!isDownloading && !isUploading) load(); }}
-                ariaLabel={isDownloading ? 'Cancel download' : (!blobUrl ? 'Download' : 'Open')}
-              />
+          <div className="relative z-10 flex flex-col items-center gap-1">
+            <AudioCoverWithPlay
+              cover={null}
+              size={44}
+              state={isFailed ? 'download' : (isUploading ? 'uploading' : (isDownloading ? 'downloading' : 'download'))}
+              progress={isUploading ? uploadProgress : progress}
+              onClick={() => {
+                if (isUploading) handleCancelUpload();
+                else if (isDownloading) handleCancelDownload();
+                else load();
+              }}
+              onCancel={isUploading ? handleCancelUpload : handleCancelDownload}
+              ariaLabel={isDownloading ? 'Cancel download' : (isUploading ? 'Cancel upload' : (!blobUrl ? 'Download' : 'Open'))}
+            />
               {(isUploading || isDownloading) && !isFailed && (
                 <span
                   style={{
@@ -550,8 +572,7 @@ const AlbumTile = memo(({
                   {(item.size / (1024 * 1024)).toFixed(1)} MB
                 </span>
               )}
-            </div>
-          )}
+          </div>
         </div>
       )}
 

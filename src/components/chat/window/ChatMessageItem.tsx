@@ -309,7 +309,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           Boolean(item.url && (item.url.includes('tenor.com') || item.url.includes('giphy.com'))) ||
           (m.text && /^\[GIF\]/i.test(m.text.trim()))
         );
-        const effectiveSecret = item.key || m.mediaKey || sharedSecret || undefined;
+        const effectiveSecret = item.key || (item as any).mediaKey || m.mediaKey || (m as any).key || sharedSecret || undefined;
         const directUrl = getOrbitaMediaUrl(item.url, effectiveSecret, activeChatId || undefined, m.id, item.name, item.mime) || undefined;
         return {
           id: `${m.id || 'msg'}_${vIdx}_${item.url}`,
@@ -318,7 +318,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           type: isVGif ? 'gif' : ((item.type === 'video' || item.mime?.startsWith('video/') || /\.(mp4|mov|avi|webm|mkv|m4v)$/i.test(item.name || '')) ? 'video' : 'photo'),
           name: item.name,
           mime: item.mime,
-          key: item.key || m.mediaKey,
+          key: item.key || (item as any).mediaKey || m.mediaKey || (m as any).key,
           sharedSecret: effectiveSecret,
           duration: item.duration,
           width: item.width || m.width,
@@ -715,7 +715,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           url: media.url || msg.mediaUrl || '',
           name: media.fileName || msg.mediaName || '',
           mime: msg.mime,
-          key: msg.mediaKey,
+          key: msg.mediaKey || (msg as any).key || (msg as any).media_key,
           duration: msg.duration,
           width: msg.width,
           height: msg.height,

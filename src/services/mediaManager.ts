@@ -287,6 +287,34 @@ class MediaManager {
     if (clean) this.unavailableMediaUrls.add(clean);
   }
 
+  public clearMediaUnavailable(url: string): void {
+    const clean = normalizeMediaUrl(url);
+    if (clean) this.unavailableMediaUrls.delete(clean);
+  }
+
+  public abortDownload(url: string, _sharedSecret?: string): void {
+    const cleanUrl = normalizeMediaUrl(url);
+    if (!cleanUrl) return;
+    for (const [key, controller] of this.fetchAbortControllers.entries()) {
+      if (key.startsWith(cleanUrl) || key.includes(cleanUrl)) {
+        try { controller.abort(); } catch {}
+        this.fetchAbortControllers.delete(key);
+      }
+    }
+    this.downloadQueue = this.downloadQueue.filter((item) => {
+      if (item.url === cleanUrl) {
+        try { item.reject(new Error('Download cancelled by user')); } catch {}
+        return false;
+      }
+      return true;
+    });
+    for (const [key] of this.pendingRequests.entries()) {
+      if (key.startsWith(cleanUrl) || key.includes(cleanUrl)) {
+        this.pendingRequests.delete(key);
+      }
+    }
+  }
+
   public async isMediaSavedLocally(url: string): Promise<boolean> {
     if (!url || typeof url !== 'string') return false;
     if (url.startsWith('blob:') || url.startsWith('data:')) return true;
@@ -418,21 +446,36 @@ class MediaManager {
     } else {
       console.log('[MediaManager] Disk cache MISS. Fetching from network:', url);
       let response = await fetch(url, { signal: this.getAbortSignal(cacheKey) });
-      if (!response.ok && response.status === 404 && url.includes('/image/upload/')) {
-        const altUrl = url.replace('/image/upload/', '/raw/upload/');
-        try {
-          const altRes = await fetch(altUrl, { signal: this.getAbortSignal(cacheKey) });
-          if (altRes.ok) response = altRes;
-        } catch {}
-      } else if (!response.ok && response.status === 404 && url.includes('/raw/upload/')) {
-        const altUrl = url.replace('/raw/upload/', '/image/upload/');
-        try {
-          const altRes = await fetch(altUrl, { signal: this.getAbortSignal(cacheKey) });
-          if (altRes.ok) response = altRes;
-        } catch {}
+      if (!response.ok && response.status === 404) {
+        const candidates = [];
+        const strippedExt = url.replace(/\.[a-zA-Z0-9]+$/, '');
+        if (url.includes('/image/upload/')) {
+          candidates.push(url.replace('/image/upload/', '/raw/upload/'));
+          candidates.push(strippedExt.replace('/image/upload/', '/raw/upload/'));
+          candidates.push(strippedExt);
+          candidates.push(url.replace('/image/upload/', '/video/upload/'));
+        } else if (url.includes('/raw/upload/')) {
+          candidates.push(url.replace('/raw/upload/', '/image/upload/'));
+          candidates.push(strippedExt.replace('/raw/upload/', '/image/upload/'));
+          candidates.push(strippedExt);
+          candidates.push(`${url}.jpg`);
+          candidates.push(`${url}.png`);
+        } else if (url.includes('/video/upload/')) {
+          candidates.push(url.replace('/video/upload/', '/raw/upload/'));
+          candidates.push(strippedExt.replace('/video/upload/', '/raw/upload/'));
+        }
+        for (const altUrl of candidates) {
+          if (altUrl === url) continue;
+          try {
+            const altRes = await fetch(altUrl, { signal: this.getAbortSignal(cacheKey) });
+            if (altRes.ok) {
+              response = altRes;
+              break;
+            }
+          } catch {}
+        }
       }
       if (!response.ok) {
-        this.markMediaUnavailable(url);
         console.error('[MediaManager] Network fetch failed with status:', response.status, url);
         throw new Error(`Media fetch failed with status ${response.status}`);
       }
@@ -468,13 +511,11 @@ class MediaManager {
       const isAlreadyPlaintext = this.isPlaintextMedia(new Uint8Array(encryptedBuffer.slice(0, 16)));
       if (!isAlreadyPlaintext) {
         if (!sharedSecret || !sharedSecret.trim()) {
-          this.markMediaUnavailable(url);
           throw new Error('Media key missing for encrypted file');
         }
         try {
           decryptedData = await this.decryptFile(encryptedBuffer, sharedSecret);
         } catch (err) {
-          this.markMediaUnavailable(url);
           throw new Error('Media decryption failed');
         }
       } else {

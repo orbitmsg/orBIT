@@ -108,7 +108,7 @@ export function useDecryptedMedia(
   chatId?: string,
   messageId?: string,
   autoLoad: boolean = true
-): { blobUrl: string | null; blob: Blob | null; load: () => Promise<void>; isLoading: boolean; progress: number; isUnavailable: boolean } {
+): { blobUrl: string | null; blob: Blob | null; load: () => Promise<void>; cancel: () => void; isLoading: boolean; progress: number; isUnavailable: boolean } {
   const cleanUrl = useMemo(() => {
     if (!url || typeof url !== 'string') return null;
     const trimmed = url.replace(/^\[(?:Photo|GIF|Sticker|Video|Audio|File)\]\s*/i, '').trim();
@@ -205,6 +205,10 @@ export function useDecryptedMedia(
     }
 
     if (isExecutingRef.current) return;
+    if (cleanUrl) {
+      mediaManager.clearMediaUnavailable(cleanUrl);
+    }
+    setIsUnavailable(false);
     isExecutingRef.current = true;
     setIsLoading(true);
     setProgress(0);
@@ -276,10 +280,20 @@ export function useDecryptedMedia(
     };
   }, [cleanUrl, cachedUrl, autoLoad, loadMedia]);
 
+  const cancel = useCallback(() => {
+    if (cleanUrl) {
+      mediaManager.abortDownload(cleanUrl, sharedSecret);
+    }
+    isExecutingRef.current = false;
+    setIsLoading(false);
+    setProgress(0);
+  }, [cleanUrl, sharedSecret]);
+
   return {
     blobUrl,
     blob,
     load: loadMedia,
+    cancel,
     isLoading,
     progress,
     isUnavailable: isUnavailable || (cleanUrl ? mediaManager.isMediaUnavailable(cleanUrl) : false),

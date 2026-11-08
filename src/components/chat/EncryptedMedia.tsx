@@ -48,7 +48,7 @@ export const EncryptedMedia = memo(({
   thumbnail,
 }: EncryptedMediaProps) => {
   const autoLoad = useChatStore((state) => state.shouldAutoLoadMedia(type === 'image' ? 'photo' : 'video', fileSize, isOwn));
-  const { blobUrl, load, isLoading, progress, isUnavailable } = useDecryptedMedia(url, sharedSecret, undefined, undefined, chatId, messageId, autoLoad);
+  const { blobUrl, load, cancel, isLoading, progress } = useDecryptedMedia(url, sharedSecret, undefined, undefined, chatId, messageId, autoLoad);
   const bubbleRadius = useChatStore.getState().bubbleRadius;
   const { t } = useTranslation();
   const timeColor = isOwn ? 'rgba(255, 255, 255, 0.9)' : 'var(--text-dim)';
@@ -361,10 +361,11 @@ export const EncryptedMedia = memo(({
     >
       {(!blobUrl && !activeImageSrc) && (
         <div
-          className={`absolute inset-0 flex flex-col items-center justify-center z-10 select-none ${isUnavailable ? 'pointer-events-none' : 'cursor-pointer'}`}
+          className="absolute inset-0 flex flex-col items-center justify-center z-10 select-none cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
-            if (!isLoading && !isUnavailable) load();
+            if (isLoading) cancel();
+            else load();
           }}
         >
           {isFullRes ? (
@@ -398,33 +399,32 @@ export const EncryptedMedia = memo(({
               }}
             />
           )}
-          {!isUnavailable && (
-            <div className="relative z-10 flex flex-col items-center gap-1.5 pointer-events-auto">
-              <AudioCoverWithPlay
-                cover={null}
-                size={48}
-                state={isLoading ? 'downloading' : 'download'}
-                progress={isLoading ? progress : undefined}
-                onClick={() => { if (!isLoading) load(); }}
-                ariaLabel={isLoading ? 'Cancel download' : 'Download media'}
-              />
-              {fileSize && fileSize > 0 && !isLoading && (
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    color: '#ffffff',
-                    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-                    padding: '1px 7px',
-                    borderRadius: '10px',
-                    backdropFilter: 'blur(4px)',
-                  }}
-                >
-                  {(fileSize / (1024 * 1024)).toFixed(1)} MB
-                </span>
-              )}
-            </div>
-          )}
+          <div className="relative z-10 flex flex-col items-center gap-1.5 pointer-events-auto">
+            <AudioCoverWithPlay
+              cover={null}
+              size={48}
+              state={isLoading ? 'downloading' : 'download'}
+              progress={isLoading ? progress : undefined}
+              onClick={() => { if (isLoading) cancel(); else load(); }}
+              onCancel={cancel}
+              ariaLabel={isLoading ? 'Cancel download' : 'Download media'}
+            />
+            {fileSize && fileSize > 0 && !isLoading && (
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: '#ffffff',
+                  backgroundColor: 'rgba(0, 0, 0, 0.55)',
+                  padding: '1px 7px',
+                  borderRadius: '10px',
+                  backdropFilter: 'blur(4px)',
+                }}
+              >
+                {(fileSize / (1024 * 1024)).toFixed(1)} MB
+              </span>
+            )}
+          </div>
         </div>
       )}
 

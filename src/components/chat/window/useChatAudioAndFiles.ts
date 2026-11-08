@@ -579,6 +579,7 @@ export const useChatAudioAndFiles = ({
           duration: file.duration || file.audioMetadata?.duration,
           blurPreview: file.blurPreview,
           thumbnail: file.preview || file.blurPreview,
+          chatId: activeChatId,
         };
       }
 
@@ -774,6 +775,7 @@ export const useChatAudioAndFiles = ({
           status: 'sending',
           uploading: true,
           mediaItems: initialMediaItems,
+          chatId: activeChatId,
         };
         addMessage(activeChatId, localMessage);
         updateChat(activeChatId, { lastMsg: chunkCaption || '[MediaGroup]' });
@@ -796,6 +798,8 @@ export const useChatAudioAndFiles = ({
               useUploadProgressStore.getState().clearProgress(`${messageId}_${fIdx}`);
               useUploadProgressStore.getState().clearProgress(messageId);
               useChatStore.getState().setIsUploadingMedia(false);
+              const isStillPresent = useChatStore.getState().messagesByChatId[activeChatId]?.some((m) => m.id === messageId);
+              if (!isStillPresent) return;
               useChatStore.setState((state) => ({
                 messagesByChatId: {
                   ...state.messagesByChatId,
@@ -884,6 +888,8 @@ export const useChatAudioAndFiles = ({
           if (!uploaded) {
             useUploadProgressStore.getState().clearProgress(messageId);
             useChatStore.getState().setIsUploadingMedia(false);
+            const isStillPresent = useChatStore.getState().messagesByChatId[activeChatId]?.some((m) => m.id === messageId);
+            if (!isStillPresent) return;
             useChatStore.setState((state) => ({
               messagesByChatId: {
                 ...state.messagesByChatId,

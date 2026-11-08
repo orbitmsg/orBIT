@@ -333,6 +333,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
 
       return (
         <TelegramAlbumGrid
+          chatId={activeChatId || undefined}
           items={itemsToRender}
           sharedSecret={sharedSecret || undefined}
           msg={m}

@@ -2349,7 +2349,7 @@ async function cloudinaryUploadWithProgress(event: Electron.IpcMainInvokeEvent, 
 }
 
 ipcMain.handle('orbita:cancel-upload', async (_event, publicId?: string) => {
-  if (publicId) {
+  if (publicId && activeUploadRequests.has(publicId)) {
     const req = activeUploadRequests.get(publicId);
     if (req) {
       req.destroy();

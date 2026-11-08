@@ -42,6 +42,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     if (state === 'uploading' || state === 'downloading') {
       if (onCancel) {
         onCancel();
@@ -80,7 +81,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke={customBg ? 'rgba(255, 255, 255, 0.25)' : (isOwn ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.08)')}
+              stroke={customBg ? 'rgba(255, 255, 255, 0.25)' : (isOwn ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.12)')}
               strokeWidth={strokeW}
             />
             <circle
@@ -106,10 +107,11 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              pointerEvents: 'none',
             }}
           >
-            <svg viewBox="0 0 24 24" width={Math.round(size * 0.42)} height={Math.round(size * 0.42)} fill="none" stroke={strokeColor} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M16 8L8 16M8 8l8 8" />
+            <svg viewBox="0 0 24 24" width={Math.round(size * 0.52)} height={Math.round(size * 0.52)} fill="none" stroke="#ffffff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </div>
         </>
@@ -139,7 +141,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke={customBg ? 'rgba(255, 255, 255, 0.25)' : (isOwn ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.08)')}
+              stroke={customBg ? 'rgba(255, 255, 255, 0.25)' : (isOwn ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.12)')}
               strokeWidth={strokeW}
             />
             <circle
@@ -165,10 +167,11 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              pointerEvents: 'none',
             }}
           >
-            <svg viewBox="0 0 24 24" width={Math.round(size * 0.42)} height={Math.round(size * 0.42)} fill="none" stroke={strokeColor} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M16 8L8 16M8 8l8 8" />
+            <svg viewBox="0 0 24 24" width={Math.round(size * 0.52)} height={Math.round(size * 0.52)} fill="none" stroke="#ffffff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </div>
         </>
@@ -244,6 +247,12 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
       role="button"
       aria-label={ariaLabel}
       onClick={handleClick}
+      onMouseDown={(e) => {
+        e.stopPropagation();
+      }}
+      onTouchStart={(e) => {
+        e.stopPropagation();
+      }}
       style={{
         width: size,
         height: size,

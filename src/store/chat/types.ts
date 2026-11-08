@@ -141,6 +141,7 @@ export interface ChatFolder {
 
 export interface Message {
   id?: string;
+  chatId?: string;
   senderId?: string;
   sender: string;
   isOutgoing?: boolean;

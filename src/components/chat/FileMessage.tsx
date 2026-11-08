@@ -228,10 +228,24 @@ export const FileMessage = memo(({
           onClick={handleOpenFile}
           onCancel={() => {
             if (isCurrentlyUploading) {
-              (window as any).orbita?.cancelUpload?.(messageId);
-              if (chatId && messageId) {
-                useChatStore.getState().deleteMessage(chatId, messageId);
+              (window as any).orbita?.cancelUpload?.();
+              const state = useChatStore.getState();
+              let targetChatId = chatId || state.activeChatId;
+              if (!targetChatId || !state.messagesByChatId[targetChatId]?.some((m) => m.id === messageId)) {
+                for (const [cId, msgs] of Object.entries(state.messagesByChatId)) {
+                  if (msgs.some((m) => m.id === messageId)) {
+                    targetChatId = cId;
+                    break;
+                  }
+                }
               }
+              if (targetChatId && messageId) {
+                state.deleteMessage(targetChatId, messageId);
+              }
+              if (messageId) {
+                useUploadProgressStore.getState().clearProgress(messageId);
+              }
+              state.setIsUploadingMedia(false);
             } else if (isDownloading) {
               cancel();
             }

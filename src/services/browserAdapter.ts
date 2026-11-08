@@ -15,6 +15,7 @@ type UploadProgressCallback = (data: { publicId: string; uploadedBytes: number; 
 
 class BrowserOrbitaAdapter {
   private fileStore = new Map<string, Blob | File>();
+  private activeUploadXhrs = new Map<string, XMLHttpRequest>();
   private progressListeners = new Set<UploadProgressCallback>();
 
   private setFile(key: string, file: Blob | File) {
@@ -79,7 +80,19 @@ class BrowserOrbitaAdapter {
       minimizeWindow: async () => {},
       maximizeWindow: async () => {},
       closeWindow: async () => {},
-      cancelUpload: async () => ({ success: true }),
+      cancelUpload: async (publicId?: string) => {
+        if (publicId && this.activeUploadXhrs.has(publicId)) {
+          const xhr = this.activeUploadXhrs.get(publicId);
+          try { xhr?.abort(); } catch {}
+          this.activeUploadXhrs.delete(publicId);
+        } else {
+          for (const [, xhr] of this.activeUploadXhrs.entries()) {
+            try { xhr.abort(); } catch {}
+          }
+          this.activeUploadXhrs.clear();
+        }
+        return { success: true };
+      },
       isWindowMaximized: async () => false,
       toggleFullScreen: async () => {},
       onWindowStateChange: () => () => {},
@@ -497,6 +510,7 @@ class BrowserOrbitaAdapter {
 
       const result = await new Promise<{ success: boolean; secure_url: string; bytes?: number; error?: string }>((resolve) => {
         const xhr = new XMLHttpRequest();
+        this.activeUploadXhrs.set(publicId, xhr);
         xhr.open('POST', uploadUrl);
 
         xhr.upload.onprogress = (e) => {
@@ -506,6 +520,7 @@ class BrowserOrbitaAdapter {
         };
 
         xhr.onload = () => {
+          this.activeUploadXhrs.delete(publicId);
           try {
             const data = JSON.parse(xhr.responseText);
             if (xhr.status === 200 && data.secure_url) {
@@ -522,7 +537,13 @@ class BrowserOrbitaAdapter {
         };
 
         xhr.onerror = () => {
+          this.activeUploadXhrs.delete(publicId);
           resolve({ success: false, secure_url: '', error: 'Network error during upload' });
+        };
+
+        xhr.onabort = () => {
+          this.activeUploadXhrs.delete(publicId);
+          resolve({ success: false, secure_url: '', error: 'Upload cancelled by user' });
         };
 
         xhr.send(formData);

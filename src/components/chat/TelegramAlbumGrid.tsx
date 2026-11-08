@@ -17,6 +17,7 @@ interface TelegramAlbumGridProps {
   onMediaClick: (index: number) => void;
   maxWidth?: number;
   customRadius?: string;
+  chatId?: string;
 }
 
 const AlbumTile = memo(({
@@ -28,6 +29,7 @@ const AlbumTile = memo(({
   isOwn = false,
   msg,
   isSingle = false,
+  chatId,
   onDimensionsLoaded,
 }: {
   item: MediaItem;
@@ -38,6 +40,7 @@ const AlbumTile = memo(({
   isOwn?: boolean;
   msg: Message;
   isSingle?: boolean;
+  chatId?: string;
   onDimensionsLoaded?: (width: number, height: number, itemIdx: number) => void;
 }) => {
   const { t } = useTranslation();
@@ -110,12 +113,26 @@ const AlbumTile = memo(({
   );
 
   const handleCancelUpload = useCallback(() => {
-    (window as any).orbita?.cancelUpload?.(msg.id);
-    const cid = (msg as any).chatId || (msg as any).chat_id;
-    if (cid && msg.id) {
-      useChatStore.getState().deleteMessage(cid, msg.id);
+    (window as any).orbita?.cancelUpload?.();
+    const state = useChatStore.getState();
+    let targetChatId = chatId || (msg as any).chatId || (msg as any).chat_id || state.activeChatId;
+    if (!targetChatId || !state.messagesByChatId[targetChatId]?.some((m) => m.id === msg.id)) {
+      for (const [cId, msgs] of Object.entries(state.messagesByChatId)) {
+        if (msgs.some((m) => m.id === msg.id)) {
+          targetChatId = cId;
+          break;
+        }
+      }
     }
-  }, [msg.id, (msg as any).chatId, (msg as any).chat_id]);
+    if (targetChatId && msg.id) {
+      state.deleteMessage(targetChatId, msg.id);
+    }
+    if (msg.id) {
+      useUploadProgressStore.getState().clearProgress(msg.id);
+      useUploadProgressStore.getState().clearProgress(`${msg.id}_${itemIdx}`);
+    }
+    state.setIsUploadingMedia(false);
+  }, [msg.id, chatId, (msg as any).chatId, (msg as any).chat_id, itemIdx]);
 
   const handleCancelDownload = useCallback(() => {
     cancel();
@@ -515,9 +532,11 @@ const AlbumTile = memo(({
 
       {(!blobUrl || isUploading || isFailed || (isVideo && !isLoaded)) && (
         <div
-          className="absolute inset-0 flex flex-col items-center justify-center z-[2] select-none cursor-pointer"
+          className="absolute inset-0 flex flex-col items-center justify-center z-[10] select-none cursor-pointer"
+          onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
+            e.preventDefault();
             if (isUploading) {
               handleCancelUpload();
             } else if (isDownloading) {
@@ -527,12 +546,14 @@ const AlbumTile = memo(({
             }
           }}
         >
-          <div className="relative z-10 flex flex-col items-center gap-1">
+          <div className="relative z-10 flex flex-col items-center gap-1.5 pointer-events-auto">
             <AudioCoverWithPlay
               cover={null}
-              size={44}
+              size={48}
               state={isFailed ? 'download' : (isUploading ? 'uploading' : (isDownloading ? 'downloading' : 'download'))}
               progress={isUploading ? uploadProgress : progress}
+              isOwn={isOwn}
+              customBg="rgba(15, 15, 20, 0.65)"
               onClick={() => {
                 if (isUploading) handleCancelUpload();
                 else if (isDownloading) handleCancelDownload();
@@ -541,37 +562,37 @@ const AlbumTile = memo(({
               onCancel={isUploading ? handleCancelUpload : handleCancelDownload}
               ariaLabel={isDownloading ? 'Cancel download' : (isUploading ? 'Cancel upload' : (!blobUrl ? 'Download' : 'Open'))}
             />
-              {(isUploading || isDownloading) && !isFailed && (
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    color: '#ffffff',
-                    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-                    padding: '1px 6px',
-                    borderRadius: '10px',
-                    backdropFilter: 'blur(4px)',
-                    fontVariantNumeric: 'tabular-nums',
-                  }}
-                >
-                  {Math.round((isUploading ? uploadProgress : progress) * 100)}%
-                </span>
-              )}
-              {item.size && item.size > 0 && !isDownloading && !isUploading && (
-                <span
-                  style={{
-                    fontSize: '10px',
-                    fontWeight: 600,
-                    color: '#ffffff',
-                    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-                    padding: '1px 6px',
-                    borderRadius: '10px',
-                    backdropFilter: 'blur(4px)',
-                  }}
-                >
-                  {(item.size / (1024 * 1024)).toFixed(1)} MB
-                </span>
-              )}
+            {(isUploading || isDownloading) && !isFailed && (
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                  padding: '2px 8px',
+                  borderRadius: '10px',
+                  backdropFilter: 'blur(4px)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {Math.round((isUploading ? uploadProgress : progress) * 100)}%
+              </span>
+            )}
+            {item.size && item.size > 0 && !isDownloading && !isUploading && (
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  color: '#ffffff',
+                  backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                  padding: '2px 8px',
+                  borderRadius: '10px',
+                  backdropFilter: 'blur(4px)',
+                }}
+              >
+                {(item.size / (1024 * 1024)).toFixed(1)} MB
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -714,6 +735,7 @@ export const TelegramAlbumGrid = memo(({
   maxWidth = 440,
   customRadius,
   isOwn,
+  chatId,
 }: TelegramAlbumGridProps) => {
   const [loadedDimensions, setLoadedDimensions] = useState<Record<number, { width: number; height: number }>>({});
   const rows = useMemo(() => partitionAlbum(items), [items]);
@@ -877,6 +899,7 @@ export const TelegramAlbumGrid = memo(({
                       style={{ width: '100%', height: '100%', borderRadius: tileRadius }}
                       isOwn={isOwn}
                       msg={msg}
+                      chatId={chatId}
                       isSingle={items.length === 1}
                       onDimensionsLoaded={handleDimensionsLoaded}
                     />

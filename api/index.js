@@ -1263,7 +1263,7 @@ module.exports = async function handler(req, res) {
       return sendJson(res, { status: 'ok' });
     }
 
-    if (pathname === '/relay/purge-server-message' && req.method === 'POST') {
+    if ((pathname === '/relay/purge-server-message' || pathname === '/relay/delete-messages') && req.method === 'POST') {
       const supabase = getSupabaseClient();
       const { chatId, messageIds, messageId } = body;
       const ids = Array.isArray(messageIds) ? messageIds : (messageId ? [messageId] : []);

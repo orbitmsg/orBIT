@@ -417,7 +417,20 @@ class MediaManager {
       }
     } else {
       console.log('[MediaManager] Disk cache MISS. Fetching from network:', url);
-      const response = await fetch(url, { signal: this.getAbortSignal(cacheKey) });
+      let response = await fetch(url, { signal: this.getAbortSignal(cacheKey) });
+      if (!response.ok && response.status === 404 && url.includes('/image/upload/')) {
+        const altUrl = url.replace('/image/upload/', '/raw/upload/');
+        try {
+          const altRes = await fetch(altUrl, { signal: this.getAbortSignal(cacheKey) });
+          if (altRes.ok) response = altRes;
+        } catch {}
+      } else if (!response.ok && response.status === 404 && url.includes('/raw/upload/')) {
+        const altUrl = url.replace('/raw/upload/', '/image/upload/');
+        try {
+          const altRes = await fetch(altUrl, { signal: this.getAbortSignal(cacheKey) });
+          if (altRes.ok) response = altRes;
+        } catch {}
+      }
       if (!response.ok) {
         this.markMediaUnavailable(url);
         console.error('[MediaManager] Network fetch failed with status:', response.status, url);
@@ -426,7 +439,7 @@ class MediaManager {
       let encryptedBuffer: ArrayBuffer;
       const contentLengthHeader = response.headers.get('content-length');
       const totalBytes = contentLengthHeader ? parseInt(contentLengthHeader, 10) : 0;
-      if (response.body && totalBytes > 0) {
+      if (response.body) {
         const reader = response.body.getReader();
         const chunks: Uint8Array[] = [];
         let receivedBytes = 0;
@@ -436,7 +449,7 @@ class MediaManager {
           if (value) {
             chunks.push(value);
             receivedBytes += value.length;
-            this.notifyProgress(cacheKey, receivedBytes, totalBytes);
+            this.notifyProgress(cacheKey, receivedBytes, totalBytes > 0 ? totalBytes : receivedBytes);
           }
         }
         const combined = new Uint8Array(receivedBytes);

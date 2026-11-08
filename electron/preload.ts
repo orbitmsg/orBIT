@@ -315,6 +315,9 @@ contextBridge.exposeInMainWorld('orbita', {
   saveBackupFile: (folderPath: string, fileName: string, data: Uint8Array | ArrayBuffer) =>
     ipcRenderer.invoke('orbita:saveBackupFile', folderPath, fileName, data),
 
+  trimMemory: () =>
+    ipcRenderer.invoke('app:trim-memory'),
+
   copyImage: (dataBase64: string) =>
     ipcRenderer.invoke('orbita:copy-image', dataBase64),
 

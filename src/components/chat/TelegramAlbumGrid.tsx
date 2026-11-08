@@ -336,9 +336,14 @@ const AlbumTile = memo(({
     if (!msg.id) return undefined;
     return s.progressByKey[progressKey] ?? ((!msg.mediaItems || msg.mediaItems.length <= 1) ? s.progressByKey[msg.id] : undefined);
   });
-  const uploadProgress = liveProgress
+  const highestProgressRef = useRef(0);
+  const currentFraction = liveProgress ? liveProgress.fraction : 0;
+  if (currentFraction > highestProgressRef.current) {
+    highestProgressRef.current = currentFraction;
+  }
+  const uploadProgress = Math.min(1, Math.max(highestProgressRef.current, liveProgress
     ? Math.max(0.04, liveProgress.fraction)
-    : (itemTotalSize > 0 ? Math.min(1, Math.max(0.04, ((item.uploadedMb || msg.uploadedMb || 0) * 1024 * 1024) / itemTotalSize)) : 0.08);
+    : (itemTotalSize > 0 ? Math.min(1, Math.max(0.04, ((item.uploadedMb || msg.uploadedMb || 0) * 1024 * 1024) / itemTotalSize)) : 0)));
 
   return (
     <div
@@ -502,6 +507,22 @@ const AlbumTile = memo(({
                 onClick={() => { if (!isDownloading && !isUploading) load(); }}
                 ariaLabel={isDownloading ? 'Cancel download' : (!blobUrl ? 'Download' : 'Open')}
               />
+              {(isUploading || isDownloading) && (
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+                    padding: '1px 6px',
+                    borderRadius: '10px',
+                    backdropFilter: 'blur(4px)',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {Math.round((isUploading ? uploadProgress : progress) * 100)}%
+                </span>
+              )}
               {item.size && item.size > 0 && !isDownloading && !isUploading && (
                 <span
                   style={{

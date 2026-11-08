@@ -1385,7 +1385,7 @@ export const useMainLayoutSync = ({
 
     const handleFocus = () => {
       const now = Date.now();
-      if (now - lastSyncTimeRef.current >= 30000) {
+      if (now - lastSyncTimeRef.current >= 4000) {
         syncAll(true);
       }
     };
@@ -1454,6 +1454,13 @@ export const useMainLayoutSync = ({
           mediaType: item.mediaPayload?.type || item.sanitizedMediaItems?.[0]?.type || null,
           mediaUrl: item.mediaPayload?.url || item.sanitizedMediaItems?.[0]?.url || null,
           mediaName: item.mediaPayload?.name || item.sanitizedMediaItems?.[0]?.name || null,
+          mediaKey: item.mediaPayload?.key || item.sanitizedMediaItems?.[0]?.key || null,
+          width: item.mediaPayload?.width || item.sanitizedMediaItems?.[0]?.width || null,
+          height: item.mediaPayload?.height || item.sanitizedMediaItems?.[0]?.height || null,
+          duration: item.mediaPayload?.duration || item.sanitizedMediaItems?.[0]?.duration || null,
+          waveform: item.mediaPayload?.waveform || null,
+          thumbnail: item.mediaPayload?.thumbnail || item.sanitizedMediaItems?.[0]?.thumbnail || null,
+          blurPreview: item.mediaPayload?.blurPreview || item.sanitizedMediaItems?.[0]?.blurPreview || null,
           mime: item.mediaPayload?.mime || item.sanitizedMediaItems?.[0]?.mime || null,
           mediaItems: item.sanitizedMediaItems,
           linkPreview: item.linkPreview,
@@ -1468,6 +1475,13 @@ export const useMainLayoutSync = ({
           mediaType: item.mediaPayload?.type || item.sanitizedMediaItems?.[0]?.type || null,
           mediaUrl: item.mediaPayload?.url || item.sanitizedMediaItems?.[0]?.url || null,
           mediaName: item.mediaPayload?.name || item.sanitizedMediaItems?.[0]?.name || null,
+          mediaKey: item.mediaPayload?.key || item.sanitizedMediaItems?.[0]?.key || null,
+          width: item.mediaPayload?.width || item.sanitizedMediaItems?.[0]?.width || null,
+          height: item.mediaPayload?.height || item.sanitizedMediaItems?.[0]?.height || null,
+          duration: item.mediaPayload?.duration || item.sanitizedMediaItems?.[0]?.duration || null,
+          waveform: item.mediaPayload?.waveform || null,
+          thumbnail: item.mediaPayload?.thumbnail || item.sanitizedMediaItems?.[0]?.thumbnail || null,
+          blurPreview: item.mediaPayload?.blurPreview || item.sanitizedMediaItems?.[0]?.blurPreview || null,
           mime: item.mediaPayload?.mime || item.sanitizedMediaItems?.[0]?.mime || null,
         });
         if (res) {

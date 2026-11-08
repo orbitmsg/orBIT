@@ -31,8 +31,9 @@ import { spawn } from 'child_process';
 import { getLocalKey, isPinLocked, isPinSet, unlockWithPin, setupPin, removePin, setNativeModule } from './localKey';
 
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
-app.commandLine.appendSwitch('js-flags', '--expose-gc --max-old-space-size=512');
-app.commandLine.appendSwitch('renderer-process-limit', '2');
+app.commandLine.appendSwitch('js-flags', '--expose-gc --max-old-space-size=128 --optimize-for-size');
+app.commandLine.appendSwitch('disable-site-isolation-trials');
+app.commandLine.appendSwitch('renderer-process-limit', '1');
 app.commandLine.appendSwitch('process-per-site');
 app.commandLine.appendSwitch('disable-breakpad');
 app.commandLine.appendSwitch('enable-low-end-device-mode');
@@ -74,8 +75,8 @@ if (process.platform === 'win32') {
   app.setAppUserModelId('com.saizzi.orbita');
 }
 
-app.commandLine.appendSwitch('disk-cache-size', '67108864');
-app.commandLine.appendSwitch('media-cache-size', '33554432');
+app.commandLine.appendSwitch('disk-cache-size', '33554432');
+app.commandLine.appendSwitch('media-cache-size', '16777216');
 app.commandLine.appendSwitch('disable-gpu-process-crash-limit');
 app.commandLine.appendSwitch('enable-gpu-rasterization');
 app.commandLine.appendSwitch('enable-zero-copy');
@@ -99,6 +100,8 @@ function loadNativeAddon(filePath: string): any {
 }
 
 const candidatePaths = [
+  path.join(__dirname, '..', 'index.node'),
+  path.join(__dirname, '..', 'native', 'index.node'),
   path.join(__dirname, '..', 'native', 'target', 'release', 'orbita_native.dll'),
   path.join(__dirname, '..', 'native', 'target', 'release', 'orbita_native.node'),
   path.join(process.resourcesPath, 'index.node'),
@@ -123,6 +126,11 @@ for (const candidate of candidatePaths) {
 }
 
 function trimAppMemory(deep = true) {
+  if (typeof mainWindow !== 'undefined' && mainWindow && !mainWindow.isDestroyed()) {
+    try {
+      mainWindow.webContents.executeJavaScript('if (typeof window !== "undefined" && window.gc) { try { window.gc(); } catch {} }', true).catch(() => {});
+    } catch {}
+  }
   if (global.gc) {
     try { global.gc(); } catch {}
   }
@@ -1435,6 +1443,11 @@ function registerDownloadsIpcHandlers() {
     }
   });
 
+  ipcMain.handle('app:trim-memory', async () => {
+    trimAppMemory(true);
+    return true;
+  });
+
   ipcMain.handle('orbita:copy-image', async (_event, base64Data: string) => {
     try {
       const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, '');
@@ -2119,6 +2132,7 @@ function registerStorageIpcHandlers() {
 }
 
 const activeUploadRequests = new Map<string, http.ClientRequest>();
+const cloudinaryHttpsAgent = new https.Agent({ keepAlive: true, keepAliveMsecs: 60000, maxSockets: 16 });
 
 function uploadToCloudinaryWithProgress(
   filePath: string,
@@ -2187,8 +2201,9 @@ function uploadToCloudinaryWithProgress(
       hostname: parsedUrl.hostname,
       port: parsedUrl.port || (isHttps ? 443 : 80),
       path: parsedUrl.pathname + parsedUrl.search,
+      agent: isHttps ? cloudinaryHttpsAgent : undefined,
       method: 'POST',
-      headers: {
+            headers: {
         'Content-Type': `multipart/form-data; boundary=${boundary}`,
         'Content-Length': totalLength,
       },
@@ -2229,19 +2244,23 @@ function uploadToCloudinaryWithProgress(
 
     let uploadedFileBytes = 0;
     req.write(headerBuffer, () => {
-      const highWaterMark = Math.max(1024, Math.min(32 * 1024, Math.floor(fileLength / 64)));
+      const highWaterMark = 128 * 1024;
       fileStream = fs.createReadStream(filePath, { highWaterMark });
 
       fileStream.on('data', (chunk: Buffer) => {
         if (isStreamDestroyed) return;
-        fileStream?.pause();
-        req.write(chunk, () => {
-          uploadedFileBytes += chunk.length;
-          onProgress(uploadedFileBytes, fileLength);
-          if (!isStreamDestroyed) {
-            fileStream?.resume();
-          }
-        });
+        uploadedFileBytes += chunk.length;
+        const ratio = Math.min(0.92, uploadedFileBytes / fileLength);
+        onProgress(Math.floor(ratio * fileLength), fileLength);
+        const canContinue = req.write(chunk);
+        if (!canContinue) {
+          fileStream?.pause();
+          req.once('drain', () => {
+            if (!isStreamDestroyed) {
+              fileStream?.resume();
+            }
+          });
+        }
       });
 
       fileStream.on('end', () => {
@@ -2280,7 +2299,7 @@ async function cloudinaryUploadWithProgress(event: Electron.IpcMainInvokeEvent, 
     try {
       const resp = await fetch(`${VERCEL_URL}/cloudinary/sign`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ publicId }),
       });
 
@@ -2883,14 +2902,14 @@ ipcMain.handle('orbita:destroyCloudinaryMedia', async (_event, publicId: string,
       for (const rt of rTypes) {
         fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${rt}/destroy`, {
           method: 'POST',
-          body: formData,
+                body: formData,
         }).catch(() => {});
       }
       return { success: true };
     } else {
       fetch(`${VERCEL_URL}/cloudinary/destroy`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ public_id: publicId, resourceType }),
       }).catch(() => {});
       return { success: true };
@@ -5093,7 +5112,7 @@ app.whenReady().then(async () => {
 
   setInterval(() => {
     trimAppMemory(true);
-  }, 60000);
+  }, 20000);
 
   if (process.defaultApp) {
     if (process.argv.length >= 2) {

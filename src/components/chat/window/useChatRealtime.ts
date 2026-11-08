@@ -5,7 +5,7 @@ import { useAuthStore } from '../../../store/useAuthStore';
 import { groupService } from '../../../services/groupService';
 import { ablyService } from '../../../services/ablyService';
 import { supabaseService } from '../../../services/supabaseService';
-import { mediaManager } from '../../../services/mediaManager';
+
 import { getPusher, getGroupPusher, CLIENT_SESSION_ID } from '../../../utils/pusher';
 import { isValidGroupCode, deriveGroupKey } from '../../../lib/groupCrypto';
 import { deriveChannelKey, decryptMessage } from '../../../lib/crypto';
@@ -400,7 +400,7 @@ export const useChatRealtime = ({
           supabaseService.purgeServerMessages(activeChatId, readIds);
         }
         if (readMediaUrls.length > 0) {
-          mediaManager.purgeServerMedia(readMediaUrls);
+
         }
         if (typeof window !== 'undefined' && (window as any).orbita?.storageAddMessage) {
           for (const rm of readMsgObjects) {
@@ -611,7 +611,7 @@ export const useChatRealtime = ({
           supabaseService.purgeServerMessages(activeChatId, readIds);
         }
         if (readMediaUrls.length > 0) {
-          mediaManager.purgeServerMedia(readMediaUrls);
+
         }
         if (typeof window !== 'undefined' && (window as any).orbita?.storageAddMessage) {
           for (const rm of readMsgObjects) {

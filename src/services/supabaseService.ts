@@ -419,7 +419,7 @@ class SupabaseService {
 
     for (const relay of activeRelays) {
       const lastFail = this.failedRelays.get(relay.url) || 0;
-      if (Date.now() - lastFail < 60000) continue;
+      if (Date.now() - lastFail < 10000) continue;
 
       try {
         const res = await networkManager.safeFetch(`${relay.url}/relay/messages?recipientId=${encodeURIComponent(recipientId)}`, undefined, 8000, 1);
@@ -575,7 +575,7 @@ class SupabaseService {
 
     for (const relay of nodes) {
       const lastFail = this.failedRelays.get(relay.url) || 0;
-      if (Date.now() - lastFail < 60000) continue;
+      if (Date.now() - lastFail < 10000) continue;
 
       try {
         const res = await networkManager.safeFetch(`${relay.url}/relay/handshakes?recipientCode=${encodeURIComponent(recipientCode)}`, undefined, 8000, 1);

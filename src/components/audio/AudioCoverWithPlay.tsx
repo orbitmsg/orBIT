@@ -38,6 +38,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
   const circumference = 2 * Math.PI * radius;
   const clampedProgress = Math.max(0, Math.min(1, typeof progress === 'number' && isFinite(progress) ? progress : 0));
   const dashOffset = circumference * (1 - clampedProgress);
+  const isDeterminate = clampedProgress > 0.001;
 
   const handleClick = (e: React.MouseEvent) => {
     if (state === 'uploading' || state === 'downloading') {
@@ -71,7 +72,8 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               width: '100%',
               height: '100%',
               pointerEvents: 'none',
-              transform: 'rotate(-90deg)',
+              transform: isDeterminate ? 'rotate(-90deg)' : undefined,
+              animation: isDeterminate ? 'none' : 'spin-ring 1.1s linear infinite',
             }}
           >
             <circle
@@ -90,11 +92,11 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               stroke={customBg ? '#ffffff' : (isOwn ? '#ffffff' : 'var(--accent-color, #6c5ce7)')}
               strokeWidth={strokeW}
               strokeLinecap="round"
-              strokeDasharray={circumference}
-              strokeDashoffset={dashOffset}
+              strokeDasharray={isDeterminate ? circumference : `${circumference * 0.28} ${circumference * 0.72}`}
+              strokeDashoffset={isDeterminate ? dashOffset : 0}
               style={{
                 willChange: 'stroke-dashoffset',
-                transition: 'stroke-dashoffset 0.14s cubic-bezier(0.4, 0, 0.2, 1)',
+                transition: isDeterminate ? 'stroke-dashoffset 0.22s cubic-bezier(0.2, 0, 0, 1)' : 'none',
               }}
             />
           </svg>
@@ -129,8 +131,9 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               width: '100%',
               height: '100%',
               pointerEvents: 'none',
-              transform: 'rotate(-90deg)',
-              animation: 'spin-ring 1.4s linear infinite',
+              transform: isDeterminate ? 'rotate(-90deg)' : undefined,
+              animation: isDeterminate ? 'none' : 'spin-ring 1.1s linear infinite',
+
             }}
           >
             <circle
@@ -149,11 +152,11 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               stroke={customBg ? '#ffffff' : (isOwn ? '#ffffff' : 'var(--accent-color, #6c5ce7)')}
               strokeWidth={strokeW}
               strokeLinecap="round"
-              strokeDasharray={circumference}
-              strokeDashoffset={dashOffset}
+              strokeDasharray={isDeterminate ? circumference : `${circumference * 0.28} ${circumference * 0.72}`}
+              strokeDashoffset={isDeterminate ? dashOffset : 0}
               style={{
                 willChange: 'stroke-dashoffset',
-                transition: 'stroke-dashoffset 0.14s cubic-bezier(0.4, 0, 0.2, 1)',
+                transition: isDeterminate ? 'stroke-dashoffset 0.22s cubic-bezier(0.2, 0, 0, 1)' : 'none',
               }}
             />
           </svg>

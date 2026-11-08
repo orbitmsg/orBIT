@@ -808,19 +808,25 @@ export const useChatAudioAndFiles = ({
             });
           }
 
-          useUploadProgressStore.getState().clearProgress(messageId);
-          useChatStore.getState().setIsUploadingMedia(false);
-
           const isPresent = useChatStore.getState().messagesByChatId[activeChatId]?.some((m) => m.id === messageId);
-          if (!isPresent) return;
+          if (!isPresent) {
+            useUploadProgressStore.getState().clearProgress(messageId);
+            useChatStore.getState().setIsUploadingMedia(false);
+            return;
+          }
 
-          await triggerMessage(
-            chunkCaption,
-            undefined,
-            undefined,
-            messageId,
-            uploadedItems
-          );
+          try {
+            await triggerMessage(
+              chunkCaption,
+              undefined,
+              undefined,
+              messageId,
+              uploadedItems
+            );
+          } finally {
+            useUploadProgressStore.getState().clearProgress(messageId);
+            useChatStore.getState().setIsUploadingMedia(false);
+          }
         })();
       }
     } else {
@@ -889,19 +895,21 @@ export const useChatAudioAndFiles = ({
             return;
           }
 
-          useUploadProgressStore.getState().clearProgress(messageId);
-          useChatStore.getState().setIsUploadingMedia(false);
-
-          await triggerMessage(
-            postCaption,
-            {
-              ...uploaded,
-              preview: file.preview,
-              thumbnail: file.preview || uploaded.thumbnail,
-            },
-            undefined,
-            messageId
-          );
+          try {
+            await triggerMessage(
+              postCaption,
+              {
+                ...uploaded,
+                preview: file.preview,
+                thumbnail: file.preview || uploaded.thumbnail,
+              },
+              undefined,
+              messageId
+            );
+          } finally {
+            useUploadProgressStore.getState().clearProgress(messageId);
+            useChatStore.getState().setIsUploadingMedia(false);
+          }
         })();
       }
     }

@@ -750,7 +750,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
         const dataUrl = canvas.toDataURL('image/png');
         if (window.orbita?.copyImage) {
           const base64 = dataUrl.replace(/^data:image\/png;base64,/, '');
-          window.orbita.copyImage(base64);
+          await window.orbita.copyImage(base64);
         }
         canvas.toBlob(async (blob) => {
           if (blob && navigator.clipboard && (window as any).ClipboardItem) {

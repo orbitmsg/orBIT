@@ -5,7 +5,7 @@ import { getPusher, getGroupPusher } from '../../../utils/pusher';
 import { ablyService } from '../../../services/ablyService';
 import { groupService } from '../../../services/groupService';
 import { supabaseService } from '../../../services/supabaseService';
-import { mediaManager } from '../../../services/mediaManager';
+
 import { sendEncryptedReadReceipt } from '../../../services/receiptService';
 import { parseReplyChain, formatTimeOfDay } from '../../../utils/messageUtils';
 import { saveChatScroll } from './chatWindowHelpers';
@@ -434,7 +434,7 @@ export const useChatScroll = ({
             }
           }
           if (readMediaUrls.length > 0) {
-            mediaManager.purgeServerMedia(readMediaUrls);
+
           }
         }
       }
@@ -519,7 +519,7 @@ export const useChatScroll = ({
               }
             }
             if (readMediaUrls.length > 0) {
-              mediaManager.purgeServerMedia(readMediaUrls);
+  
             }
           }
         }

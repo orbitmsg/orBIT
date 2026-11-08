@@ -178,7 +178,7 @@ export function useDecryptedMedia(
     if (isExecutingRef.current) return;
     isExecutingRef.current = true;
     setIsLoading(true);
-    setProgress(0.06);
+    setProgress(0);
 
     console.log('[useDecryptedMedia] loadMedia starting for:', { cleanUrl, hintFileName, forcedMime, chatId, messageId });
 

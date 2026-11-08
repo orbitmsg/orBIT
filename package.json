@@ -8,7 +8,7 @@
     "dev": "vite",
     "dev:server": "vite",
     "build": "npx -p typescript tsc --noEmit && vite build",
-    "build:native": "cd native && npx napi build --release && copy index.node ..\\index.node",
+    "build:native": "cd native && npx napi build --release && copy index.node ..\\index.node && copy index.node index.win32-x64-msvc.node",
     "electron:dev": "npm run dev",
     "electron:build": "npm run build && npm run build:native && npx electron-builder --win",
     "backup": "backup.bat",

@@ -896,18 +896,6 @@ export const useChatStore = create<ChatState>()(
         }
         if (status === 'read') {
           supabaseService.purgeServerMessages(chatId, [messageId]);
-          if (updatedMsg) {
-            const urls: string[] = [];
-            if (updatedMsg.mediaUrl) urls.push(updatedMsg.mediaUrl);
-            if (updatedMsg.mediaItems && Array.isArray(updatedMsg.mediaItems)) {
-              for (const item of updatedMsg.mediaItems) {
-                if (item?.url) urls.push(item.url);
-              }
-            }
-            if (urls.length > 0) {
-              mediaManager.purgeServerMedia(urls);
-            }
-          }
         }
       },
       updateMessageMediaDimensions: (chatId, messageId, width, height, itemIdx = 0) => {

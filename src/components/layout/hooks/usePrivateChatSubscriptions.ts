@@ -12,7 +12,7 @@ import { supabaseService } from '../../../services/supabaseService';
 import { DoubleRatchet } from '../../../lib/double-ratchet';
 import { decryptMessage } from '../../../lib/crypto';
 import { deriveGroupKey, isValidGroupCode } from '../../../lib/groupCrypto';
-import { mediaManager } from '../../../services/mediaManager';
+
 import { messageQueue } from '../../../lib/message-queue';
 import { showNotification } from '../../../utils/notification';
 import { isAppInFocusAndVisible } from './layoutSyncUtils';
@@ -154,7 +154,7 @@ export const usePrivateChatSubscriptions = ({
           supabaseService.purgeServerMessages(targetChatId, readIds);
         }
         if (readMediaUrls.length > 0) {
-          mediaManager.purgeServerMedia(readMediaUrls);
+
         }
         if (typeof window !== 'undefined' && (window as any).orbita?.storageAddMessage) {
           for (const rm of readMsgObjects) {

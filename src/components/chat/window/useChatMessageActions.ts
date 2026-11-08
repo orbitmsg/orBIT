@@ -771,53 +771,30 @@ export const useChatMessageActions = ({
   const handleCopyImage = async (blobUrlOrUrl: string) => {
     setContextMenu((prev) => ({ ...prev, visible: false }));
     try {
-      if (blobUrlOrUrl.startsWith('data:image/png;base64,')) {
-        const response = await fetch(blobUrlOrUrl);
-        const blob = await response.blob();
-        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-        useToastStore.getState().showToast(t('chatWindow.image_copied', 'Изображение скопировано'));
-        return;
-      }
       if (blobUrlOrUrl.startsWith('data:image/')) {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.src = blobUrlOrUrl;
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-        });
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth || img.width;
-        canvas.height = img.naturalHeight || img.height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) throw new Error('Canvas 2d context unavailable');
-        ctx.drawImage(img, 0, 0);
-        const pngBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
-        if (!pngBlob) throw new Error('Canvas conversion to PNG blob returned null');
-        await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })]);
-        useToastStore.getState().showToast(t('chatWindow.image_copied', 'Изображение скопировано'));
-        return;
+        const base64 = blobUrlOrUrl.replace(/^data:image\/\w+;base64,/, '');
+        if (window.orbita?.copyImage) {
+          await window.orbita.copyImage(base64);
+          useToastStore.getState().showToast(t('chatWindow.image_copied', 'Изображение скопировано'));
+          return;
+        }
       }
       const response = await fetch(blobUrlOrUrl);
       const blob = await response.blob();
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      const objUrl = URL.createObjectURL(blob);
-      img.src = objUrl;
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-      });
-      URL.revokeObjectURL(objUrl);
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth || img.width;
-      canvas.height = img.naturalHeight || img.height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Canvas 2d context unavailable');
-      ctx.drawImage(img, 0, 0);
-      const pngBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
-      if (!pngBlob) throw new Error('Canvas conversion to PNG blob returned null');
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })]);
+      const arrayBuffer = await blob.arrayBuffer();
+      if (window.orbita?.copyImage) {
+        let binary = '';
+        const bytes = new Uint8Array(arrayBuffer);
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        const base64 = btoa(binary);
+        await window.orbita.copyImage(base64);
+        useToastStore.getState().showToast(t('chatWindow.image_copied', 'Изображение скопировано'));
+        return;
+      }
+      await navigator.clipboard.write([new ClipboardItem({ [blob.type || 'image/png']: blob })]);
       useToastStore.getState().showToast(t('chatWindow.image_copied', 'Изображение скопировано'));
     } catch (err) {
       console.error('Failed to copy image to clipboard:', err);

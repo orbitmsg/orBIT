@@ -2046,6 +2046,45 @@ function appendDebugLog(msg: string) {
   console.log(msg);
 }
 
+function autoSanitizeKvPayload(key: string, val: string | null): string | null {
+  if (!val || val.length < 1024 * 1024 || !key.includes('orbita-chat-storage')) {
+    return val;
+  }
+  try {
+    const data = JSON.parse(val);
+    const target = data.state || data;
+    if (target && target.messagesByChatId) {
+      let modified = false;
+      for (const cId of Object.keys(target.messagesByChatId)) {
+        const msgs = target.messagesByChatId[cId];
+        if (Array.isArray(msgs)) {
+          for (const m of msgs) {
+            if (m.preview && m.preview.startsWith('data:') && m.preview.length > 2048) {
+              m.preview = m.blurPreview || null;
+              modified = true;
+            }
+            if (m.thumbnail && m.thumbnail.startsWith('data:') && m.thumbnail.length > 2048) {
+              m.thumbnail = m.blurPreview || undefined;
+              modified = true;
+            }
+            if (m.mediaUrl && m.mediaUrl.startsWith('data:') && m.mediaUrl.length > 2048) {
+              m.mediaUrl = '';
+              modified = true;
+            }
+          }
+        }
+      }
+      if (modified) {
+        const cleaned = JSON.stringify(data);
+        appendDebugLog(`[Storage AutoSanitize] Cleaned key "${key}" from ${val.length} to ${cleaned.length}`);
+        setKvValue(key, cleaned).catch(() => {});
+        return cleaned;
+      }
+    }
+  } catch {}
+  return val;
+}
+
 function registerStorageIpcHandlers() {
   ipcMain.handle('storage:is-locked', async () => isPinLocked());
   ipcMain.handle('storage:is-pin-set', async () => isPinSet());
@@ -2053,13 +2092,15 @@ function registerStorageIpcHandlers() {
   ipcMain.handle('storage:set-pin', async (_event, pin: string) => setupPin(pin));
   ipcMain.handle('storage:remove-pin', async () => removePin());
   ipcMain.handle('storage:get', async (_event, key: string) => {
-    const val = await getKvValue(key);
+    let val = await getKvValue(key);
+    val = autoSanitizeKvPayload(key, val);
     appendDebugLog(`[Storage IPC] GET "${key}" -> ${val ? `len ${val.length}` : 'null'}`);
     return val;
   });
   ipcMain.handle('storage:set', async (_event, key: string, value: string) => {
-    appendDebugLog(`[Storage IPC] SET "${key}" -> len ${value ? value.length : 0} preview: ${value ? value.slice(0, 120) : ''}`);
-    await setKvValue(key, value);
+    const safeValue = autoSanitizeKvPayload(key, value) || value;
+    appendDebugLog(`[Storage IPC] SET "${key}" -> len ${safeValue ? safeValue.length : 0} preview: ${safeValue ? safeValue.slice(0, 120) : ''}`);
+    await setKvValue(key, safeValue);
   });
   ipcMain.handle('storage:remove', async (_event, key: string) => {
     appendDebugLog(`[Storage IPC] REMOVE "${key}"`);

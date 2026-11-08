@@ -2252,15 +2252,19 @@ function uploadToCloudinaryWithProgress(
         uploadedFileBytes += chunk.length;
         const ratio = Math.min(0.95, uploadedFileBytes / fileLength);
         onProgress(Math.floor(ratio * fileLength), fileLength);
+        fileStream?.pause();
         const canContinue = req.write(chunk);
-        if (!canContinue) {
-          fileStream?.pause();
-          req.once('drain', () => {
-            if (!isStreamDestroyed) {
+        setTimeout(() => {
+          if (!isStreamDestroyed) {
+            if (canContinue) {
               fileStream?.resume();
+            } else {
+              req.once('drain', () => {
+                if (!isStreamDestroyed) fileStream?.resume();
+              });
             }
-          });
-        }
+          }
+        }, 16);
       });
 
       fileStream.on('end', () => {
@@ -2327,9 +2331,6 @@ async function cloudinaryUploadWithProgress(event: Electron.IpcMainInvokeEvent, 
       fields,
       'file',
       (uploadedBytes, totalBytes) => {
-        const now = Date.now();
-        if (uploadedBytes < totalBytes && now - lastProgressSent < 16) return;
-        lastProgressSent = now;
         if (event.sender && !event.sender.isDestroyed()) {
           try {
             event.sender.send('orbita:uploadProgress', {

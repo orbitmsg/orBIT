@@ -1407,7 +1407,7 @@ export const useMainLayoutSync = ({
     const syncAll = async (force = false) => {
       if (isDestroyed || isSyncingRef.current) return;
       const now = Date.now();
-      const minInterval = force ? 2000 : 60000;
+      const minInterval = force ? 1000 : 5000;
       if (now - lastSyncTimeRef.current < minInterval) return;
       lastSyncTimeRef.current = now;
       isSyncingRef.current = true;
@@ -1499,12 +1499,19 @@ export const useMainLayoutSync = ({
       syncAll(true);
     });
 
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        syncAll(true);
+      }
+    };
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     window.addEventListener('focus', handleFocus);
+    window.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('orbita:sync-now', handleSyncNow);
 
-    const interval = setInterval(() => syncAll(false), 60000);
+    const interval = setInterval(() => syncAll(false), 5000);
     const checkTimer = setInterval(() => {
       const navOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
       if (!navOnline) {
@@ -1524,6 +1531,7 @@ export const useMainLayoutSync = ({
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('orbita:sync-now', handleSyncNow);
       clearInterval(interval);
       clearInterval(checkTimer);

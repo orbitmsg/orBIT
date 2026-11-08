@@ -48,6 +48,7 @@ class BrowserOrbitaAdapter {
       pickFile: this.pickFile.bind(this),
       uploadToCloudinary: this.uploadToCloudinary.bind(this),
       readFileAsDataURL: this.readFileAsDataURL.bind(this),
+      readFileAsArrayBuffer: this.readFileAsArrayBuffer.bind(this),
       writeTempFile: this.writeTempFile.bind(this),
       deleteTempFile: this.deleteTempFile.bind(this),
       readClipboardImage: this.readClipboardImage.bind(this),
@@ -297,22 +298,48 @@ class BrowserOrbitaAdapter {
     });
   }
 
+  public async readFileAsArrayBuffer(filePath: string): Promise<ArrayBuffer | null> {
+    if (!filePath) return null;
+    let blob: Blob | undefined;
+    if (this.fileStore.has(filePath)) {
+      blob = this.fileStore.get(filePath);
+    } else if (filePath.startsWith('blob:') || filePath.startsWith('data:')) {
+      try {
+        const res = await fetch(filePath);
+        blob = await res.blob();
+      } catch {
+        return null;
+      }
+    }
+    if (!blob) return null;
+    return await blob.arrayBuffer();
+  }
+
   public async readFileAsDataURL(filePath: string): Promise<string | null> {
     if (!filePath) return null;
-    if (filePath.startsWith('data:') || filePath.startsWith('blob:')) {
+    if (filePath.startsWith('data:')) {
       return filePath;
     }
 
-    const item = this.fileStore.get(filePath);
-    if (!item) {
-      return null;
+    let blob: Blob | undefined;
+    if (this.fileStore.has(filePath)) {
+      blob = this.fileStore.get(filePath);
+    } else if (filePath.startsWith('blob:')) {
+      try {
+        const res = await fetch(filePath);
+        blob = await res.blob();
+      } catch {
+        return null;
+      }
     }
+
+    if (!blob) return null;
 
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = () => reject(new Error('Failed to read file as data URL'));
-      reader.readAsDataURL(item);
+      reader.readAsDataURL(blob);
     });
   }
 
@@ -326,12 +353,22 @@ class BrowserOrbitaAdapter {
     return 0;
   }
 
-  public async writeTempFile(base64Data: string, extension?: string): Promise<string | null> {
+  public async writeTempFile(data: any, extension?: string): Promise<string | null> {
     try {
-      const binaryString = atob(base64Data);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
+      let bytes: Uint8Array;
+      if (data instanceof Uint8Array) {
+        bytes = data;
+      } else if (data instanceof ArrayBuffer) {
+        bytes = new Uint8Array(data);
+      } else if (typeof data === 'string') {
+        const clean = data.includes(',') ? data.split(',')[1] : data;
+        const binaryString = atob(clean);
+        bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+      } else {
+        return null;
       }
 
       let mime = 'application/octet-stream';
@@ -346,7 +383,7 @@ class BrowserOrbitaAdapter {
       
       this.setFile(virtualPath, blob);
       return virtualPath;
-    } catch (err) {
+    } catch {
       return null;
     }
   }

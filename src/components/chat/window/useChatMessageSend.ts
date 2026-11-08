@@ -833,8 +833,8 @@ export const useChatMessageSend = ({
             freshChat?.numericId,
             activeChat?.username,
             freshChat?.username,
-            activeChat?.name && activeChat.name.length === 36 ? activeChat.name : undefined,
-            freshChat?.name && freshChat.name.length === 36 ? freshChat.name : undefined,
+            activeChat?.name && activeChat.name !== 'Unknown' && activeChat.name !== myNickname ? activeChat.name : undefined,
+            freshChat?.name && freshChat.name !== 'Unknown' && freshChat.name !== myNickname ? freshChat.name : undefined,
           ].filter((t): t is string => Boolean(t && t !== myCode && t !== myUserId))));
           if (activeChat?.type === 'private' || freshChat?.type === 'private') {
             const currentMsgs = useChatStore.getState().messagesByChatId[activeChatId] || [];
@@ -860,6 +860,7 @@ export const useChatMessageSend = ({
               mediaType: mediaPayload?.type || firstPreItem?.type || null,
               mediaUrl: mediaPayload?.url || firstPreItem?.url || null,
               mediaName: mediaPayload?.name || firstPreItem?.name || null,
+              mediaKey: mediaPayload?.key || firstPreItem?.key || (mediaPayload as any)?.mediaKey || null,
               mime: mediaPayload?.mime || firstPreItem?.mime || null,
               width: mediaPayload?.width || firstPreItem?.width || null,
               height: mediaPayload?.height || firstPreItem?.height || null,
@@ -969,6 +970,7 @@ export const useChatMessageSend = ({
           mediaType: mediaPayload?.type || firstRatchetItem?.type || null,
           mediaUrl: mediaPayload?.url || firstRatchetItem?.url || null,
           mediaName: mediaPayload?.name || firstRatchetItem?.name || null,
+          mediaKey: mediaPayload?.key || firstRatchetItem?.key || (mediaPayload as any)?.mediaKey || null,
           mime: mediaPayload?.mime || firstRatchetItem?.mime || null,
           width: mediaPayload?.width || firstRatchetItem?.width || null,
           height: mediaPayload?.height || firstRatchetItem?.height || null,
@@ -998,7 +1000,8 @@ export const useChatMessageSend = ({
           activeChat?.numericId,
           freshChat?.username,
           activeChat?.username,
-          (freshChat?.name || activeChat?.name) && (freshChat?.name || activeChat?.name)!.length === 36 ? (freshChat?.name || activeChat?.name) : undefined,
+          freshChat?.name && freshChat.name !== 'Unknown' && freshChat.name !== myNickname ? freshChat.name : undefined,
+          activeChat?.name && activeChat.name !== 'Unknown' && activeChat.name !== myNickname ? activeChat.name : undefined,
         ].filter((t): t is string => Boolean(t && t !== myCode && t !== myUserId))));
 
         (async () => {

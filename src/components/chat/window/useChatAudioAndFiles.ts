@@ -418,7 +418,8 @@ export const useChatAudioAndFiles = ({
             const dataUrl = await window.orbita?.readFileAsDataURL(filePath);
             if (dataUrl) {
               preview = dataUrl;
-              const binary = atob(dataUrl.split(',')[1] || '');
+              const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+              const binary = atob(base64);
               const fileArrayBuffer = new ArrayBuffer(binary.length);
               const view = new Uint8Array(fileArrayBuffer);
               for (let i = 0; i < binary.length; i++) view[i] = binary.charCodeAt(i);
@@ -431,7 +432,8 @@ export const useChatAudioAndFiles = ({
             } else {
               const dataUrl = await window.orbita?.readFileAsDataURL(filePath);
               if (dataUrl) {
-                const binary = atob(dataUrl.split(',')[1] || '');
+                const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+                const binary = atob(base64);
                 sizeMb = binary.length / (1024 * 1024);
               }
             }
@@ -634,11 +636,18 @@ export const useChatAudioAndFiles = ({
           }
         }
 
+        if (!fileArrayBuffer && (window.orbita as any)?.readFileAsArrayBuffer) {
+          try {
+            fileArrayBuffer = await (window.orbita as any).readFileAsArrayBuffer(effectiveFilePath);
+          } catch {}
+        }
+
         if (!fileArrayBuffer && window.orbita?.readFileAsDataURL) {
           try {
             const dataUrl = await window.orbita.readFileAsDataURL(effectiveFilePath);
             if (dataUrl) {
-              const binaryStr = atob(dataUrl.split(',')[1] || '');
+              const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+              const binaryStr = atob(base64);
               fileArrayBuffer = new ArrayBuffer(binaryStr.length);
               const view = new Uint8Array(fileArrayBuffer);
               for (let j = 0; j < binaryStr.length; j++) view[j] = binaryStr.charCodeAt(j);

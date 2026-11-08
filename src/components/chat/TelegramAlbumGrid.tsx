@@ -466,6 +466,7 @@ const AlbumTile = memo(({
             alt={item.name || ''}
             className={`w-full h-full pointer-events-none relative z-[1] transition-opacity duration-200 ${isSingle ? 'object-contain' : 'object-cover'}`}
             style={{ opacity: isLoaded ? 1 : 0 }}
+            onError={() => setIsLoaded(false)}
             onLoad={(e) => {
               setIsLoaded(true);
               const nw = e.currentTarget.naturalWidth;

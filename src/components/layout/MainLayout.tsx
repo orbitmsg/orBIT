@@ -1041,15 +1041,17 @@ export const MainLayout = () => {
     }
     const directChatId = (myC && user.user_code) ? getDirectChatId(myC, user.user_code) : null;
     const currentChats = useChatStore.getState().chats;
+    const cleanNickname = user.nickname ? user.nickname.trim().toLowerCase() : null;
     const existingChat = currentChats.find(
       (c) =>
         c.type === 'private' &&
-        c.id !== user.user_code &&
         ((directChatId && c.id === directChatId) ||
+          c.id === user.user_code ||
           c.peerCode === user.user_code ||
           c.originalPeerCode === user.user_code ||
           (user.numeric_id && c.numericId === user.numeric_id) ||
-          (user.username && c.username && c.username.toLowerCase() === user.username.toLowerCase()))
+          (user.username && c.username && c.username.toLowerCase() === user.username.toLowerCase()) ||
+          (cleanNickname && c.name && c.name !== 'Unknown' && c.name.trim().toLowerCase() === cleanNickname))
     );
     if (existingChat) {
       handleSelectChat(existingChat.id);

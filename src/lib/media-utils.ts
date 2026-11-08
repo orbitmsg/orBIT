@@ -144,14 +144,43 @@ export function useDecryptedMedia(
     return mediaManager.getCachedMedia(cleanUrl, sharedSecret || '')?.blob || null;
   });
 
+  const targetProgressRef = useRef(0);
+  const currentProgressRef = useRef(0);
+  const progressAnimRef = useRef<number | null>(null);
+
   useEffect(() => {
     if (!cleanUrl) return;
     const unsubscribe = mediaManager.subscribeProgress(cleanUrl, sharedSecret || '', (loaded, total) => {
       if (total > 0) {
-        setProgress(total > 0 ? Math.min(1, Math.max(0, loaded / total)) : 0);
+        const target = Math.min(1, Math.max(0, loaded / total));
+        targetProgressRef.current = target;
+        if (!progressAnimRef.current) {
+          const tick = () => {
+            const cur = currentProgressRef.current;
+            const tgt = targetProgressRef.current;
+            if (cur < tgt) {
+              const step = Math.max(0.02, (tgt - cur) * 0.25);
+              const next = Math.min(tgt, cur + step);
+              currentProgressRef.current = next;
+              setProgress(next);
+              if (next < tgt) {
+                progressAnimRef.current = requestAnimationFrame(tick);
+                return;
+              }
+            }
+            progressAnimRef.current = null;
+          };
+          progressAnimRef.current = requestAnimationFrame(tick);
+        }
       }
     });
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      if (progressAnimRef.current) {
+        cancelAnimationFrame(progressAnimRef.current);
+        progressAnimRef.current = null;
+      }
+    };
   }, [cleanUrl, sharedSecret]);
 
   const isExecutingRef = useRef(false);

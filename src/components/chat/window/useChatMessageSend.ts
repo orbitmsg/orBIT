@@ -1004,7 +1004,7 @@ export const useChatMessageSend = ({
           activeChat?.name && activeChat.name !== 'Unknown' && activeChat.name !== myNickname ? activeChat.name : undefined,
         ].filter((t): t is string => Boolean(t && t !== myCode && t !== myUserId))));
 
-        (async () => {
+        await (async () => {
           let ablySuccess = false;
           try {
             await ablyService.sendMessage(activeChatId, payload);

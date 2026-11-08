@@ -118,7 +118,7 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
       return state;
     }
     if (version < 34) {
-      persistedState.autoLoadMedia = false;
+      persistedState.autoLoadMedia = true;
       return persistedState;
     }
     if (version < 35) {
@@ -182,9 +182,12 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
         let foundGroup = groups.find((group) =>
           group.some((c) => {
             if (c.id === chat.id) return true;
-            if (chat.peerCode && c.peerCode && (c.peerCode === chat.peerCode || c.originalPeerCode === chat.peerCode)) return true;
+            if (chat.peerCode && c.peerCode && (c.peerCode === chat.peerCode || c.originalPeerCode === chat.peerCode || c.peerCode === chat.originalPeerCode)) return true;
             if (chat.originalPeerCode && c.originalPeerCode && c.originalPeerCode === chat.originalPeerCode) return true;
             if (chat.peerPublicKey && c.peerPublicKey && c.peerPublicKey === chat.peerPublicKey) return true;
+            if (chat.numericId && c.numericId && chat.numericId === c.numericId) return true;
+            if (chat.username && c.username && chat.username.replace(/^@+/, '').trim().toLowerCase() === c.username.replace(/^@+/, '').trim().toLowerCase()) return true;
+            if (chat.name && c.name && chat.name !== 'Unknown' && c.name !== 'Unknown' && chat.name.trim().toLowerCase() === c.name.trim().toLowerCase()) return true;
             return false;
           })
         );

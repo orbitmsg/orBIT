@@ -50,7 +50,7 @@ class IndexedDBMediaStorage {
   }
 }
 
-const idbMediaStorage = new IndexedDBMediaStorage();
+export const idbMediaStorage = new IndexedDBMediaStorage();
 
 export interface DecryptedMedia {
   id: string;
@@ -466,13 +466,15 @@ class MediaManager {
       console.log('[MediaManager] Network fetch completed, total bytes:', encryptedBuffer.byteLength);
 
       const isAlreadyPlaintext = this.isPlaintextMedia(new Uint8Array(encryptedBuffer.slice(0, 16)));
-      if (!isAlreadyPlaintext && sharedSecret && sharedSecret.trim()) {
+      if (!isAlreadyPlaintext) {
+        if (!sharedSecret || !sharedSecret.trim()) {
+          this.markMediaUnavailable(url);
+          throw new Error('Media key missing for encrypted file');
+        }
         try {
           decryptedData = await this.decryptFile(encryptedBuffer, sharedSecret);
-          console.log('[MediaManager] Network file decrypted, length:', decryptedData.byteLength);
         } catch (err) {
           this.markMediaUnavailable(url);
-          console.error('[MediaManager] Decryption of network file failed:', err);
           throw new Error('Media decryption failed');
         }
       } else {
@@ -572,7 +574,7 @@ class MediaManager {
       );
       return await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, derivedKey, data);
     } catch {
-      return encryptedData;
+      throw new Error('Media decryption failed');
     }
   }
 

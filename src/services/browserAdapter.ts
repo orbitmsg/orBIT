@@ -1,4 +1,5 @@
 import { getVercelBaseUrl } from './gatewayManager';
+import { idbMediaStorage } from './mediaManager';
 
 const WORKER_URL = getVercelBaseUrl();
 
@@ -102,8 +103,30 @@ class BrowserOrbitaAdapter {
       writeUsbKey: async () => ({ success: false }),
       readKeyFile: async () => null,
       selectDirectory: async () => null,
-      mediaGet: async () => null,
-      mediaSave: async () => {},
+      mediaGet: async (url: string) => {
+        try {
+          return await idbMediaStorage.get(url);
+        } catch {
+          return null;
+        }
+      },
+      mediaSave: async (url: string, data: any, mime: string, chatId?: string, messageId?: string) => {
+        try {
+          let b64 = '';
+          if (typeof data === 'string') {
+            b64 = data;
+          } else if (data instanceof Uint8Array || data instanceof ArrayBuffer) {
+            const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+            let binary = '';
+            const chunkSize = 8192;
+            for (let i = 0; i < bytes.length; i += chunkSize) {
+              binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunkSize)));
+            }
+            b64 = btoa(binary);
+          }
+          await idbMediaStorage.save(url, b64, mime, chatId, messageId);
+        } catch {}
+      },
       mediaClear: async () => ({ deleted: 0 }),
       mediaStats: async () => ({ count: 0, totalSize: 0 }),
       mediaDetailedStats: async () => ({ totalCount: 0, totalSize: 0, byType: {} }),

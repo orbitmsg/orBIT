@@ -91,7 +91,7 @@ export const useChatAudioAndFiles = ({
   const handleStartRecording = useCallback(async () => {
     const isBotChat = activeChatId === 'system_support';
     const isChannel = activeChat?.type === 'channel';
-    if (!isBotChat && !isChannel && (!sharedSecret || !isRatchetReady)) return;
+    if (!isBotChat && !isChannel && (!sharedSecret || !isRatchetReady) && !activeChat?.isDraft && !activeChat?.peerCode) return;
     if (isChannel && !isChannelOwner) return;
     try {
       await startAudioRecording();
@@ -509,7 +509,7 @@ export const useChatAudioAndFiles = ({
       if (!isChannelOwner) return;
     } else if (isBotChat || isGroup) {
     } else {
-      if (!sharedSecret) return;
+      if (!sharedSecret && !activeChat?.isDraft && !activeChat?.peerCode) return;
     }
 
     const filesToSend = [...attachedFiles];

@@ -80,8 +80,13 @@ export const useMainLayoutSync = ({
         processedIds.add(hs.id);
 
         const currentChats = useChatStore.getState().chats;
+        const hsSenderClean = hs.sender_nickname ? hs.sender_nickname.trim().toLowerCase() : null;
         const existingHsChat = currentChats.find(
-          c => c.id === hs.chat_id || (c.type === 'private' && (c.peerCode === hs.sender_code || c.originalPeerCode === hs.sender_code || c.peerCode === hs.recipient_code))
+          c => c.id === hs.chat_id || (c.type === 'private' && (
+            (hs.sender_code && (c.peerCode === hs.sender_code || c.originalPeerCode === hs.sender_code || c.numericId === hs.sender_code)) ||
+            (hs.recipient_code && c.peerCode === hs.recipient_code) ||
+            (hsSenderClean && c.name && c.name !== 'Unknown' && c.name.trim().toLowerCase() === hsSenderClean)
+          ))
         );
         if (useChatStore.getState().deletedChatIds?.includes(hs.chat_id)) {
           await supabaseService.markHandshakeConsumed(hs.id);
@@ -179,8 +184,12 @@ export const useMainLayoutSync = ({
 
       for (const conf of confirmations) {
         const currentChats = useChatStore.getState().chats;
+        const confSenderClean = conf.sender_nickname ? conf.sender_nickname.trim().toLowerCase() : null;
         const existing = currentChats.find(
-          c => c.id === conf.chat_id || (c.type === 'private' && conf.sender_code && (c.peerCode === conf.sender_code || c.originalPeerCode === conf.sender_code))
+          c => c.id === conf.chat_id || (c.type === 'private' && (
+            (conf.sender_code && (c.peerCode === conf.sender_code || c.originalPeerCode === conf.sender_code || c.numericId === conf.sender_code)) ||
+            (confSenderClean && c.name && c.name !== 'Unknown' && c.name.trim().toLowerCase() === confSenderClean)
+          ))
         );
 
         if (!existing) {
@@ -230,6 +239,7 @@ export const useMainLayoutSync = ({
     }
   }, [nickname, myCode, addIncomingFriendRequest, updateChat]);
 
+  const seenPayloadSignaturesRef = useRef<Set<string>>(new Set());
   const lastGroupSyncTimeRef = useRef<number>(0);
 
   const loadPendingGroups = useCallback(async () => {
@@ -292,12 +302,15 @@ export const useMainLayoutSync = ({
       const currentNumericId = useAuthStore.getState().numericId;
       const currentUsername = useAuthStore.getState().username;
       const cleanUsername = currentUsername ? currentUsername.replace(/^@+/, '').trim().toLowerCase() : null;
+      const cleanNick = nickname ? nickname.trim().toLowerCase() : null;
       const keysToCheck = Array.from(new Set([
         myCode,
         useAuthStore.getState().userId,
         currentNumericId,
         cleanUsername,
         cleanUsername ? `@${cleanUsername}` : null,
+        nickname,
+        cleanNick,
       ].filter(Boolean))) as string[];
 
       const processBatch = async (batch: OfflineMessageRecord[]) => {
@@ -309,7 +322,7 @@ export const useMainLayoutSync = ({
         const receiptUpdates = new Map<string, { targetIds: Set<string>; targetTime?: number; readAt: number }>();
         const deleteActions: Array<{ chatId: string; messageId: string }> = [];
         const profileCache = new Map<string, any>();
-        const seenPayloadSignatures = new Set<string>();
+        const seenPayloadSignatures = seenPayloadSignaturesRef.current;
 
         for (const record of batch) {
           if (processedMessageIds.current.has(record.id)) {
@@ -448,7 +461,14 @@ export const useMainLayoutSync = ({
             addChat(newChatObj);
             subscribeToChat(record.chat_id, record.chat_id);
             subscribeToDeliveryUpdates(record.chat_id);
-            chat = useChatStore.getState().chats.find(c => c.id === record.chat_id) || (newChatObj as Chat);
+            const chatsAfterAdd = useChatStore.getState().chats;
+            const senderNickClean = senderNick ? senderNick.trim().toLowerCase() : null;
+            chat = chatsAfterAdd.find(c => c.id === record.chat_id || (c.type === 'private' && (
+              c.peerCode === record.sender_id ||
+              c.originalPeerCode === record.sender_id ||
+              c.numericId === record.sender_id ||
+              (senderNickClean && c.name && c.name !== 'Unknown' && c.name.trim().toLowerCase() === senderNickClean)
+            ))) || (newChatObj as Chat);
           }
 
           const targetChatId = chat?.id || record.chat_id;
@@ -611,6 +631,8 @@ export const useMainLayoutSync = ({
             chatId: targetChatId,
             message: {
               id: msgId,
+              chatId: targetChatId,
+              index: record.message_index ?? messageData?.index,
               senderId: record.sender_id,
               sender: messageData?.sender || chat.name || record.sender_id,
               isOutgoing: false,
@@ -625,8 +647,8 @@ export const useMainLayoutSync = ({
               mediaItems: messageData.mediaItems || undefined,
               width: messageData.width || undefined,
               height: messageData.height || undefined,
-              blurPreview: messageData.blurPreview || undefined,
-              thumbnail: messageData.thumbnail || undefined,
+              blurPreview: messageData.blurPreview || messageData.thumbnail || undefined,
+              thumbnail: messageData.thumbnail || messageData.blurPreview || undefined,
               audioMetadata: messageData.audioMetadata || undefined,
               fileSize: messageData.fileSize || messageData.size || undefined,
               duration: messageData.duration || undefined,
@@ -991,13 +1013,24 @@ export const useMainLayoutSync = ({
             }
 
             const msgId = messageData?.id || record.id;
-            const isNonActiveChat = useChatStore.getState().activeChatId === record.chat_id && typeof document !== 'undefined' && document.visibilityState === 'visible';
+            const currentChatsNon = useChatStore.getState().chats;
+            const nonSenderClean = (record.sender_id || '').trim().toLowerCase();
+            const matchingChat = currentChatsNon.find(c =>
+              c.id === record.chat_id || (c.type === 'private' && (
+                c.peerCode === record.sender_id ||
+                c.originalPeerCode === record.sender_id ||
+                c.numericId === record.sender_id ||
+                (c.name && c.name !== 'Unknown' && c.name.trim().toLowerCase() === nonSenderClean)
+              ))
+            );
+            const nonTargetChatId = matchingChat ? matchingChat.id : record.chat_id;
+            const isNonActiveChat = useChatStore.getState().activeChatId === nonTargetChatId && typeof document !== 'undefined' && document.visibilityState === 'visible';
             nonBatchMessages.push({
-              chatId: record.chat_id,
+              chatId: nonTargetChatId,
               message: {
                 id: msgId,
                 senderId: record.sender_id,
-                sender: messageData?.sender || chat.name || record.sender_id,
+                sender: messageData?.sender || matchingChat?.name || record.sender_id,
                 isOutgoing: false,
                 text: messageData.text || '',
                 time: new Date(record.created_at).getTime(),
@@ -1008,6 +1041,8 @@ export const useMainLayoutSync = ({
                 mediaKey: messageData.mediaKey || null,
                 mime: messageData.mime || null,
                 mediaItems: messageData.mediaItems || undefined,
+                blurPreview: messageData.blurPreview || undefined,
+                thumbnail: messageData.thumbnail || undefined,
                 audioMetadata: messageData.audioMetadata || undefined,
                 fileSize: messageData.fileSize || messageData.size || undefined,
                 duration: messageData.duration || undefined,
@@ -1608,8 +1643,16 @@ export const useMainLayoutSync = ({
         mediaType: item.mediaPayload?.type || item.sanitizedMediaItems?.[0]?.type || null,
         mediaUrl: item.mediaPayload?.url || item.sanitizedMediaItems?.[0]?.url || null,
         mediaName: item.mediaPayload?.name || item.sanitizedMediaItems?.[0]?.name || null,
+        mediaKey: item.mediaPayload?.key || item.sanitizedMediaItems?.[0]?.key || null,
         mime: item.mediaPayload?.mime || item.sanitizedMediaItems?.[0]?.mime || null,
         mediaItems: item.sanitizedMediaItems,
+        blurPreview: item.mediaPayload?.blurPreview || undefined,
+        thumbnail: item.mediaPayload?.thumbnail || undefined,
+        width: item.mediaPayload?.width || undefined,
+        height: item.mediaPayload?.height || undefined,
+        fileSize: item.mediaPayload?.size || undefined,
+        duration: item.mediaPayload?.duration || undefined,
+        waveform: item.mediaPayload?.waveform || undefined,
         linkPreview: item.linkPreview,
       });
 

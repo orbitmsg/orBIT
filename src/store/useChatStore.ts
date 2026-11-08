@@ -449,10 +449,11 @@ export const useChatStore = create<ChatState>()(
                 if (alternateId && c.id === alternateId) return false;
                 if (c.id !== canonicalId && c.type === 'private') {
                   const cMsgs = state.messagesByChatId[c.id] || [];
-                  if (cMsgs.length === 0 && !c.sharedSecret) {
-                    if (c.peerCode && merged.peerCode && c.peerCode === merged.peerCode) return false;
+                  if (cMsgs.length === 0) {
+                    if (c.peerCode && merged.peerCode && (c.peerCode === merged.peerCode || c.originalPeerCode === merged.peerCode)) return false;
                     if (c.numericId && merged.numericId && c.numericId === merged.numericId) return false;
-                    if (c.name && merged.name && c.name.trim().toLowerCase() === merged.name.trim().toLowerCase()) return false;
+                    if (c.username && merged.username && c.username.replace(/^@+/, '').trim().toLowerCase() === merged.username.replace(/^@+/, '').trim().toLowerCase()) return false;
+                    if (c.name && merged.name && c.name !== 'Unknown' && c.name.trim().toLowerCase() === merged.name.trim().toLowerCase()) return false;
                   }
                 }
                 return true;
@@ -636,6 +637,12 @@ export const useChatStore = create<ChatState>()(
           height: message.height,
           duration: message.duration,
           reactions: message.reactions,
+          mediaKey: message.mediaKey || (message as any).key,
+          blurPreview: message.blurPreview || message.thumbnail,
+          thumbnail: message.thumbnail || message.blurPreview,
+          fileSize: message.fileSize || (message as any).size,
+          waveform: message.waveform,
+          linkPreview: message.linkPreview,
         };
 
         const currentMessages = state.messagesByChatId[chatId] || [];
@@ -719,7 +726,13 @@ export const useChatStore = create<ChatState>()(
             width: message.width,
             height: message.height,
             duration: message.duration,
-            reactions: message.reactions,
+                    reactions: message.reactions,
+                    mediaKey: message.mediaKey || (message as any).key,
+                    blurPreview: message.blurPreview || message.thumbnail,
+                    thumbnail: message.thumbnail || message.blurPreview,
+                    fileSize: message.fileSize || (message as any).size,
+                    waveform: message.waveform,
+                    linkPreview: message.linkPreview,
           };
 
           const updatedList = [...currentList, enrichedMessage].sort(
@@ -1437,7 +1450,7 @@ export const useChatStore = create<ChatState>()(
           cacheSizeLimit: 5 * 1024 * 1024 * 1024,
           mediaCacheLimit: 2.5 * 1024 * 1024 * 1024,
           cacheCleanupAge: 7 * 24 * 60 * 60 * 1000,
-          autoLoadMedia: false,
+          autoLoadMedia: true,
         });
       },
       exportChatState: () => ({
@@ -1623,7 +1636,7 @@ export const useChatStore = create<ChatState>()(
       shouldAutoLoadMedia: (type, sizeBytes, isOwn) => {
         if (isOwn) return true;
         const state = get();
-        if (!state.autoLoadMedia) return false;
+        if (state.autoLoadMedia === false) return false;
 
         const t = (type || '').toLowerCase();
         const sizeMb = (typeof sizeBytes === 'number' && sizeBytes > 0) ? sizeBytes / (1024 * 1024) : 0;

@@ -134,7 +134,7 @@ export const parseMedia = (msg: Message): ParsedMediaResult => {
   }
 
   if (msg.mediaType && (msg.mediaUrl || msg.uploading)) {
-    if (msg.mediaType === 'photo') return { type: 'image', url: msg.mediaUrl || null, fileName: msg.mediaName, mime: msg.mime || 'image/jpeg' };
+    if (msg.mediaType === 'photo' || (msg.mediaType as any) === 'image') return { type: 'image', url: msg.mediaUrl || null, fileName: msg.mediaName, mime: msg.mime || 'image/jpeg' };
     if (msg.mediaType === 'video') return { type: 'video', url: msg.mediaUrl || null, fileName: msg.mediaName, mime: msg.mime || 'video/mp4' };
     if (msg.mediaType === 'audio') return { type: 'music', url: msg.mediaUrl || null, fileName: msg.mediaName, mime: msg.mime || 'audio/mpeg' };
     if (msg.mediaType === 'file') return { type: 'file', url: msg.mediaUrl || null, fileName: msg.mediaName, mime: msg.mime || 'application/octet-stream', size: msg.fileSize || (msg as any).size || (msg as any).file_size };

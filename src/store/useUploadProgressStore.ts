@@ -35,7 +35,7 @@ const startAnimator = (set: any, get: any) => {
       const curFraction = current ? current.fraction : 0;
       if (curFraction < t.targetFraction) {
         hasChanges = true;
-        const step = Math.max(0.015, (t.targetFraction - curFraction) * 0.22);
+        const step = Math.min(0.045, Math.max(0.015, (t.targetFraction - curFraction) * 0.18));
         const nextFraction = Math.min(t.targetFraction, curFraction + step);
         const curBytes = Math.floor(nextFraction * t.total);
         nextProgress[key] = {

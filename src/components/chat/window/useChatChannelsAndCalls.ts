@@ -134,9 +134,9 @@ export const useChatChannelsAndCalls = ({
           useChatStore.getState().deleteChat(user.user_code);
         }
 
-        const currentUid = useAuthStore.getState().userId;
-        const newChatId = (currentUid && user.user_code && user.user_code.length === 36)
-          ? getDirectChatId(currentUid, user.user_code)
+        const myC = useChatStore.getState().myCode;
+        const newChatId = (myC && user.user_code && user.user_code.length === 36)
+          ? getDirectChatId(myC, user.user_code)
           : generateChatId();
         const draftChat = {
           id: newChatId,

@@ -3,7 +3,7 @@ import { app, ipcMain, shell } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const DOWNLOADS_FOLDER = 'Orbita Desktop';
+const DOWNLOADS_FOLDER = 'Orbita';
 
 function getDownloadsDir(): string {
   return path.join(app.getPath('downloads'), DOWNLOADS_FOLDER);

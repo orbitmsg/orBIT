@@ -31,7 +31,7 @@ import { spawn } from 'child_process';
 import { getLocalKey, isPinLocked, isPinSet, unlockWithPin, setupPin, removePin, setNativeModule } from './localKey';
 
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
-app.commandLine.appendSwitch('js-flags', '--max-old-space-size=384 --expose-gc');
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=2048');
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -69,15 +69,19 @@ if (process.platform === 'win32') {
   app.setAppUserModelId('com.saizzi.orbita');
 }
 
-app.commandLine.appendSwitch('disk-cache-size', '67108864');
-app.commandLine.appendSwitch('media-cache-size', '33554432');
+app.commandLine.appendSwitch('disk-cache-size', '536870912');
+app.commandLine.appendSwitch('media-cache-size', '268435456');
 app.commandLine.appendSwitch('disable-gpu-process-crash-limit');
 app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('enable-zero-copy');
+app.commandLine.appendSwitch('enable-native-gpu-memory-buffers');
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+app.commandLine.appendSwitch('force_high_performance_gpu');
 app.commandLine.appendSwitch('enable-smooth-scrolling');
 app.commandLine.appendSwitch('ignore-gpu-blocklist');
 app.commandLine.appendSwitch('enable-accelerated-video-decode');
 app.commandLine.appendSwitch('enable-accelerated-video-encode');
-app.commandLine.appendSwitch('enable-features', 'WebRtcD3D11VideoDecoder,WebRtcHardwareVideoEncoding,WebRtcD3d11DesktopCapturer,PlatformHEVCDecoderSupport');
+app.commandLine.appendSwitch('enable-features', 'CanvasOopRasterization,WebRtcD3D11VideoDecoder,WebRtcHardwareVideoEncoding,WebRtcD3d11DesktopCapturer,PlatformHEVCDecoderSupport');
 
 // Load optional native module
 let nativeModule: any = null;
@@ -115,24 +119,13 @@ for (const candidate of candidatePaths) {
   }
 }
 
-function trimAppMemory() {
+function trimAppMemory(deep = false) {
   if (global.gc) {
     try { global.gc(); } catch {}
   }
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    try {
-      mainWindow.webContents.executeJavaScript('if (typeof window !== "undefined" && window.gc) window.gc();', true).catch(() => {});
-    } catch {}
-  }
-  if (process.platform === 'win32' && nativeModule && typeof nativeModule.trimMemory === 'function') {
+  if (deep && process.platform === 'win32' && nativeModule && typeof nativeModule.trimMemory === 'function') {
     try {
       nativeModule.trimMemory();
-      const metrics = app.getAppMetrics();
-      for (const m of metrics) {
-        if (m.pid && m.pid !== process.pid) {
-          nativeModule.trimMemory(m.pid);
-        }
-      }
     } catch {}
   }
 }
@@ -384,84 +377,12 @@ function getMediaDbPath(): string {
 }
 
 function getMediaDir(): string {
-  const baseDownloads = app.getPath('downloads');
   if (nativeModule && typeof nativeModule.rustCacheResolveFolder === 'function') {
     try {
-      return nativeModule.rustCacheResolveFolder(configuredMediaDir, baseDownloads);
+      return nativeModule.rustCacheResolveFolder(configuredMediaDir);
     } catch {}
   }
-  return configuredMediaDir || path.join(baseDownloads, 'Orbita Desktop');
-}
-
-function isStickerKeyOrName(key: string, mime?: string, name?: string): boolean {
-  const k = (key || '').toLowerCase();
-  const m = (mime || '').toLowerCase();
-  const n = (name || '').toLowerCase();
-  return (
-    k.includes('sticker') ||
-    k.endsWith('.tgs') ||
-    k.includes('spotty') ||
-    k.includes('utyaduck') ||
-    k.startsWith('./stickers/') ||
-    k.startsWith('/stickers/') ||
-    m.includes('tgsticker') ||
-    n.includes('spotty') ||
-    n.includes('sticker') ||
-    n.endsWith('.tgs')
-  );
-}
-
-function detectMediaExtension(data: Buffer, mime: string): string {
-  if (data.length >= 3 && data[0] === 0xFF && data[1] === 0xD8 && data[2] === 0xFF) return '.jpg';
-  if (data.length >= 8 && data[0] === 0x89 && data[1] === 0x50 && data[2] === 0x4E && data[3] === 0x47) return '.png';
-  if (data.length >= 6 && (data.subarray(0, 6).toString('ascii') === 'GIF87a' || data.subarray(0, 6).toString('ascii') === 'GIF89a')) return '.gif';
-  if (data.length >= 12 && data.subarray(0, 4).toString('ascii') === 'RIFF' && data.subarray(8, 12).toString('ascii') === 'WEBP') return '.webp';
-  if (data.length >= 8 && (data.subarray(4, 8).toString('ascii') === 'ftyp' || data.subarray(4, 8).toString('ascii') === 'moov')) {
-    const lower = (mime || '').toLowerCase();
-    if (lower.includes('audio') || lower.includes('m4a')) return '.m4a';
-    return '.mp4';
-  }
-  if (data.length >= 4 && data.subarray(0, 4).toString('ascii') === 'OggS') return '.ogg';
-  if (data.length >= 3 && data.subarray(0, 3).toString('ascii') === 'ID3') return '.mp3';
-  if (data.length >= 2 && data[0] === 0xFF && (data[1] & 0xE0) === 0xE0) return '.mp3';
-  if (data.length >= 4 && data.subarray(0, 4).toString('ascii') === '%PDF') return '.pdf';
-  if (data.length >= 4 && data[0] === 0x50 && data[1] === 0x4B && data[2] === 0x03 && data[3] === 0x04) {
-    const lower = (mime || '').toLowerCase();
-    if (lower.includes('wordprocessing') || lower.includes('docx')) return '.docx';
-    if (lower.includes('presentation') || lower.includes('pptx')) return '.pptx';
-    if (lower.includes('spreadsheet') || lower.includes('xlsx')) return '.xlsx';
-    return '.zip';
-  }
-
-  const lower = (mime || '').toLowerCase();
-  if (lower.includes('jpeg') || lower.includes('jpg')) return '.jpg';
-  if (lower.includes('png')) return '.png';
-  if (lower.includes('webp')) return '.webp';
-  if (lower.includes('gif')) return '.gif';
-  if (lower.includes('mp4')) return lower.includes('audio') ? '.m4a' : '.mp4';
-  if (lower.includes('webm')) return '.webm';
-  if (lower.includes('ogg') || lower.includes('opus')) return '.ogg';
-  if (lower.includes('mp3') || lower.includes('mpeg')) return '.mp3';
-  if (lower.includes('pdf')) return '.pdf';
-  return '.bin';
-}
-
-function ensureMediaDir(): string {
-  const baseDownloads = app.getPath('downloads');
-  if (nativeModule && typeof nativeModule.rustCacheEnsureFolder === 'function') {
-    try {
-      return nativeModule.rustCacheEnsureFolder(configuredMediaDir, baseDownloads);
-    } catch {}
-  }
-  const dir = getMediaDir();
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  const oldMarker = path.join(dir, '.orbita_cache');
-  if (fs.existsSync(oldMarker)) {
-    try { fs.unlinkSync(oldMarker); } catch {}
-  }
-  return dir;
+  return configuredMediaDir || path.join(app.getPath('downloads'), 'Orbita Desktop');
 }
 
 async function initMediaDb(): Promise<sqlite3.Database> {
@@ -566,23 +487,21 @@ async function evictOldMediaIfNeeded(neededBytes: number): Promise<void> {
   }
 }
 
+function generateRandomDataFilename(): string {
+  return crypto.randomBytes(8).toString('hex') + '.dat';
+}
+
 async function saveMediaToCache(
   cacheKey: string,
   data: Buffer,
   mimeType: string,
   chatId?: string,
-  messageId?: string,
-  fileName?: string
+  messageId?: string
 ): Promise<string> {
-  if (isStickerKeyOrName(cacheKey, mimeType, fileName)) {
-    return '';
-  }
-
   const dbPath = getMediaDbPath();
   const masterKey = getMasterKey();
-  const baseDownloads = app.getPath('downloads');
 
-  if (nativeModule && nativeModule.rustCacheSaveMedia) {
+  if (nativeModule && nativeModule.rustCacheSaveMedia && masterKey) {
     try {
       const res = nativeModule.rustCacheSaveMedia(
         dbPath,
@@ -592,9 +511,7 @@ async function saveMediaToCache(
         mimeType,
         chatId || null,
         messageId || null,
-        fileName || null,
-        masterKey ? masterKey.toString('hex') : null,
-        baseDownloads
+        masterKey.toString('hex')
       );
       if (res && res.localPath) {
         if (res.resolvedDir && configuredMediaDir && path.resolve(res.resolvedDir) !== path.resolve(configuredMediaDir)) {
@@ -602,25 +519,30 @@ async function saveMediaToCache(
         }
         return res.localPath;
       }
-    } catch {}
+    } catch { }
+  } else if (nativeModule && nativeModule.rustMediaSave && masterKey) {
+    try {
+      const dir = getMediaDir();
+      const savedPath = nativeModule.rustMediaSave(
+        dbPath,
+        dir,
+        cacheKey,
+        data,
+        mimeType,
+        chatId || null,
+        messageId || null,
+        masterKey.toString('hex')
+      );
+      if (savedPath) return savedPath;
+    } catch { }
   }
 
-  const dir = ensureMediaDir();
-  let sanitized = (fileName || 'file').replace(/[<>:"/\\|?*]/g, '_');
-  if (!sanitized.includes('.')) {
-    sanitized = sanitized + detectMediaExtension(data, mimeType);
-  }
+  const filename = generateRandomDataFilename();
+  const localPath = path.join(dir, filename);
+  const encrypted = encryptData(data);
 
-  let target = path.join(dir, sanitized);
-  let counter = 1;
-  while (fs.existsSync(target)) {
-    const ext = path.extname(sanitized);
-    const base = path.basename(sanitized, ext);
-    target = path.join(dir, `${base} (${counter})${ext}`);
-    counter++;
-  }
-  await fs.promises.writeFile(target, data);
-  const fileSize = data.length;
+  await fs.promises.writeFile(localPath, encrypted);
+  const fileSize = encrypted.length;
   const db = await initMediaDb();
 
   await new Promise<void>((resolve, reject) => {
@@ -628,7 +550,7 @@ async function saveMediaToCache(
       `INSERT OR REPLACE INTO media_cache
       (cache_key, local_path, original_url, mime_type, file_size, created_at, last_accessed, download_status, chat_id, message_id)
       VALUES (?, ?, ?, ?, ?, ?, ?, 'downloaded', ?, ?)`,
-      [cacheKey, path.basename(target), cacheKey, mimeType, fileSize, Date.now(), Date.now(), chatId, messageId],
+      [cacheKey, localPath, cacheKey, mimeType, fileSize, Date.now(), Date.now(), chatId, messageId],
       (err) => {
         if (err) reject(err);
         else resolve();
@@ -637,27 +559,27 @@ async function saveMediaToCache(
   });
 
   await evictOldMediaIfNeeded(fileSize);
-  return target;
+  return localPath;
 }
 
 async function getMediaFromCache(cacheKey: string): Promise<{ data: Buffer | null; mime: string | null }> {
   const dbPath = getMediaDbPath();
   const masterKey = getMasterKey();
-  const baseDownloads = app.getPath('downloads');
 
-  if (nativeModule && nativeModule.rustCacheGetMedia) {
+  if (nativeModule && nativeModule.rustCacheGetMedia && masterKey) {
     try {
-      const res = nativeModule.rustCacheGetMedia(
-        dbPath,
-        configuredMediaDir,
-        cacheKey,
-        masterKey ? masterKey.toString('hex') : null,
-        baseDownloads
-      );
+      const res = nativeModule.rustCacheGetMedia(dbPath, configuredMediaDir, cacheKey, masterKey.toString('hex'));
       if (res && res.data) {
         return { data: Buffer.from(res.data), mime: res.mime };
       }
-    } catch {}
+    } catch { }
+  } else if (nativeModule && nativeModule.rustMediaGet && masterKey) {
+    try {
+      const res = nativeModule.rustMediaGet(dbPath, cacheKey, masterKey.toString('hex'));
+      if (res && res.data) {
+        return { data: Buffer.from(res.data), mime: res.mime };
+      }
+    } catch { }
   }
 
   const db = await initMediaDb();
@@ -689,8 +611,8 @@ async function getMediaFromCache(cacheKey: string): Promise<{ data: Buffer | nul
   }
 
   const raw = fs.readFileSync(localPath);
-  const decrypted = masterKey ? decryptData(raw) : null;
-  const resultData = decrypted || raw;
+  const decrypted = decryptData(raw);
+  if (!decrypted) return { data: null, mime: null };
 
   const now = Date.now();
   const lastUpdate = lastAccessedCache.get(cacheKey);
@@ -699,14 +621,14 @@ async function getMediaFromCache(cacheKey: string): Promise<{ data: Buffer | nul
     db.run('UPDATE media_cache SET last_accessed = ? WHERE cache_key = ?', [now, cacheKey]);
   }
 
-  return { data: resultData, mime: record.mime_type };
+  return { data: decrypted, mime: record.mime_type };
 }
 
 async function deleteMediaByChat(chatId: string): Promise<number> {
   const dbPath = getMediaDbPath();
   if (nativeModule && nativeModule.rustCacheDeleteByChat) {
     try {
-      return nativeModule.rustCacheDeleteByChat(dbPath, configuredMediaDir, chatId, app.getPath('downloads'));
+      return nativeModule.rustCacheDeleteByChat(dbPath, configuredMediaDir, chatId);
     } catch { }
   }
   const db = await initMediaDb();
@@ -735,7 +657,7 @@ async function clearAllMediaCache(categories?: string[]): Promise<number> {
   const dbPath = getMediaDbPath();
   if (nativeModule && nativeModule.rustCacheClear) {
     try {
-      return nativeModule.rustCacheClear(dbPath, configuredMediaDir, categories && categories.length > 0 ? categories : null, app.getPath('downloads'));
+      return nativeModule.rustCacheClear(dbPath, configuredMediaDir, categories && categories.length > 0 ? categories : null);
     } catch { }
   }
   const db = await initMediaDb();
@@ -806,7 +728,7 @@ async function evictMediaByAge(maxAgeMs: number): Promise<number> {
   const dbPath = getMediaDbPath();
   if (nativeModule && nativeModule.rustCacheEvictByAge) {
     try {
-      return nativeModule.rustCacheEvictByAge(dbPath, configuredMediaDir, maxAgeMs, app.getPath('downloads'));
+      return nativeModule.rustCacheEvictByAge(dbPath, configuredMediaDir, maxAgeMs);
     } catch { }
   }
   const db = await initMediaDb();
@@ -838,7 +760,7 @@ async function evictMediaToSizeLimit(limitBytes: number): Promise<number> {
   const dbPath = getMediaDbPath();
   if (nativeModule && nativeModule.rustCacheEvictToLimit) {
     try {
-      return nativeModule.rustCacheEvictToLimit(dbPath, configuredMediaDir, limitBytes, app.getPath('downloads'));
+      return nativeModule.rustCacheEvictToLimit(dbPath, configuredMediaDir, limitBytes);
     } catch { }
   }
   const db = await initMediaDb();
@@ -915,8 +837,7 @@ function registerMediaIpcHandlers() {
     return result;
   });
 
-  ipcMain.handle('media:save', async (_event, cacheKey: string, dataInput: any, mimeType: string, chatId?: string, messageId?: string, fileName?: string) => {
-    if (isStickerKeyOrName(cacheKey, mimeType, fileName)) return false;
+  ipcMain.handle('media:save', async (_event, cacheKey: string, dataInput: any, mimeType: string, chatId?: string, messageId?: string) => {
     let buf: Buffer;
     if (Buffer.isBuffer(dataInput)) {
       buf = dataInput;
@@ -927,7 +848,8 @@ function registerMediaIpcHandlers() {
     } else {
       return false;
     }
-    const pathSaved = await saveMediaToCache(cacheKey, buf, mimeType, chatId, messageId, fileName);
+    console.log('[Main] media:save called:', { cacheKey, mimeType, chatId, messageId, bytes: buf.length });
+    const pathSaved = await saveMediaToCache(cacheKey, buf, mimeType, chatId, messageId);
     return !!pathSaved;
   });
 
@@ -1428,37 +1350,45 @@ function registerOrbitaMediaProtocol() {
 // -----------------------------------------------------------------------------
 // 4. Downloads Helpers
 // -----------------------------------------------------------------------------
+const DOWNLOADS_SUBDIR = 'Orbita';
+
+function getDownloadsDir(): string {
+  return path.join(app.getPath('downloads'), DOWNLOADS_SUBDIR);
+}
+
+function ensureDownloadsDir(): void {
+  const dir = getDownloadsDir();
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+}
+
+function saveDownloadedFile(buffer: Buffer, fileName: string): string {
+  const dir = getDownloadsDir();
+  ensureDownloadsDir();
+  let target = path.join(dir, fileName);
+  let counter = 1;
+
+  while (fs.existsSync(target)) {
+    const ext = path.extname(fileName);
+    const base = path.basename(fileName, ext);
+    target = path.join(dir, `${base} (${counter})${ext}`);
+    counter++;
+  }
+
+  fs.writeFileSync(target, buffer);
+  return target;
+}
+
 function registerDownloadsIpcHandlers() {
+  ensureDownloadsDir();
   ipcMain.handle('downloads:save', async (_event, base64Data: string, fileName: string) => {
-    const dir = ensureMediaDir();
     const buf = Buffer.from(base64Data, 'base64');
-    const safeName = (fileName || 'file').replace(/[<>:"/\\|?*]/g, '_');
-    let target = path.join(dir, safeName);
-    let counter = 1;
-    while (fs.existsSync(target)) {
-      const ext = path.extname(safeName);
-      const base = path.basename(safeName, ext);
-      target = path.join(dir, `${base} (${counter})${ext}`);
-      counter++;
-    }
-    fs.writeFileSync(target, buf);
-    try {
-      const db = await initMediaDb();
-      db.run(
-        `INSERT OR REPLACE INTO media_cache
-        (cache_key, local_path, original_url, mime_type, file_size, created_at, last_accessed, download_status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'downloaded')`,
-        [target, path.basename(target), target, 'application/octet-stream', buf.length, Date.now(), Date.now()]
-      );
-    } catch {}
-    return { path: target };
+    const savedPath = saveDownloadedFile(buf, fileName);
+    return { path: savedPath };
   });
 
   ipcMain.handle('downloads:save-as', async (_event, dataOrUrl: string | Uint8Array | ArrayBuffer, fileName: string, filters?: Array<{ name: string; extensions: string[] }>) => {
     try {
-      const mediaDir = ensureMediaDir();
-      const sanitizedFileName = (fileName || 'file').replace(/[<>:"/\\|?*]/g, '_');
-      const defaultPath = path.join(mediaDir, sanitizedFileName);
+      const defaultPath = path.join(app.getPath('downloads'), fileName || 'file');
       const targetWindow = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
       const res = targetWindow
         ? await dialog.showSaveDialog(targetWindow, { defaultPath, filters })
@@ -1485,28 +1415,6 @@ function registerDownloadsIpcHandlers() {
         buf = Buffer.from(dataOrUrl.buffer, dataOrUrl.byteOffset, dataOrUrl.byteLength);
       }
       await fs.promises.writeFile(res.filePath, buf);
-
-      try {
-        const ext = path.extname(res.filePath).toLowerCase();
-        let mime = 'application/octet-stream';
-        if (['.jpg', '.jpeg'].includes(ext)) mime = 'image/jpeg';
-        else if (ext === '.png') mime = 'image/png';
-        else if (ext === '.webp') mime = 'image/webp';
-        else if (ext === '.gif') mime = 'image/gif';
-        else if (ext === '.mp4') mime = 'video/mp4';
-        else if (['.ogg', '.opus'].includes(ext)) mime = 'audio/ogg';
-        else if (ext === '.mp3') mime = 'audio/mp3';
-        else if (ext === '.pdf') mime = 'application/pdf';
-
-        const db = await initMediaDb();
-        db.run(
-          `INSERT OR REPLACE INTO media_cache
-          (cache_key, local_path, original_url, mime_type, file_size, created_at, last_accessed, download_status)
-          VALUES (?, ?, ?, ?, ?, ?, ?, 'downloaded')`,
-          [res.filePath, path.basename(res.filePath), res.filePath, mime, buf.length, Date.now(), Date.now()]
-        );
-      } catch {}
-
       return { success: true, path: res.filePath };
     } catch (err) {
       console.error('downloads:save-as error:', err);
@@ -1533,13 +1441,11 @@ function registerDownloadsIpcHandlers() {
   ipcMain.handle('orbita:open-file', async (_event, data: string | Uint8Array | ArrayBuffer, fileName: string) => {
     try {
       const sanitizedName = (fileName || 'file.dat').replace(/[<>:"/\\|?*]/g, '_');
-      const mediaDir = ensureMediaDir();
-      const directPath = path.join(mediaDir, sanitizedName);
-      if (fs.existsSync(directPath)) {
-        const err = await shell.openPath(directPath);
-        if (!err) return { success: true, path: directPath };
+      const tempDir = path.join(app.getPath('temp'), 'Orbita_Files');
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
       }
-
+      const filePath = path.join(tempDir, sanitizedName);
       let buf: Buffer;
       if (typeof data === 'string') {
         const cleanBase64 = data.replace(/^data:[^;]+;base64,/, '');
@@ -1551,13 +1457,12 @@ function registerDownloadsIpcHandlers() {
       } else {
         buf = Buffer.from(data.buffer, data.byteOffset, data.byteLength);
       }
-
-      fs.writeFileSync(directPath, buf);
-      const err = await shell.openPath(directPath);
+      fs.writeFileSync(filePath, buf);
+      const err = await shell.openPath(filePath);
       if (err) {
         return { success: false, error: err };
       }
-      return { success: true, path: directPath };
+      return { success: true, path: filePath };
     } catch (err) {
       console.error('orbita:open-file error:', err);
       return { success: false, error: String(err) };
@@ -1565,18 +1470,14 @@ function registerDownloadsIpcHandlers() {
   });
 
   ipcMain.handle('downloads:open', async (_event, fileName?: string) => {
-    const dir = getMediaDir();
+    const dir = getDownloadsDir();
     if (fileName) {
       const full = path.join(dir, fileName);
       if (fs.existsSync(full)) {
         await shell.openPath(full);
-        return;
       }
-    }
-    if (fs.existsSync(dir)) {
-      await shell.openPath(dir);
     } else {
-      await shell.openPath(app.getPath('downloads'));
+      await shell.openPath(dir);
     }
   });
 }
@@ -3331,36 +3232,36 @@ ipcMain.on('orbita:set-current-theme', (_event, { themeId, themeVars }) => {
 let currentFontFamily = 'system';
 
 const FONT_MAP: Record<string, string> = {
-  'system': "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-  'Segoe UI': "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif",
-  'Segoe UI Black': "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  'Inter': "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  'Roboto': "'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-  'Open Sans': "'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif",
-  'Lato': "'Lato', -apple-system, BlinkMacSystemFont, sans-serif",
-  'Montserrat': "'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif",
-  'Poppins': "'Poppins', -apple-system, BlinkMacSystemFont, sans-serif",
-  'Nunito': "'Nunito', -apple-system, BlinkMacSystemFont, sans-serif",
-  'Rubik': "'Rubik', -apple-system, BlinkMacSystemFont, sans-serif",
-  'Fira Sans': "'Fira Sans', -apple-system, BlinkMacSystemFont, sans-serif",
-  'Ubuntu': "'Ubuntu', -apple-system, BlinkMacSystemFont, sans-serif",
-  'Manrope': "'Manrope', -apple-system, BlinkMacSystemFont, sans-serif",
+  'system': "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', Roboto, sans-serif",
+  'Segoe UI': "'Segoe UI', 'Segoe', system-ui, sans-serif",
+  'Segoe UI Black': "'Segoe UI Black', 'Segoe UI', system-ui, sans-serif",
+  'Inter': "'Inter', system-ui, sans-serif",
+  'Roboto': "'Roboto', sans-serif",
+  'Open Sans': "'Open Sans', sans-serif",
+  'Lato': "'Lato', sans-serif",
+  'Montserrat': "'Montserrat', sans-serif",
+  'Poppins': "'Poppins', sans-serif",
+  'Nunito': "'Nunito', sans-serif",
+  'Rubik': "'Rubik', sans-serif",
+  'Fira Sans': "'Fira Sans', sans-serif",
+  'Ubuntu': "'Ubuntu', sans-serif",
+  'Manrope': "'Manrope', sans-serif",
   'Arial': "Arial, Helvetica, sans-serif",
-  'Arial Black': "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  'Trebuchet MS': "'Trebuchet MS', -apple-system, BlinkMacSystemFont, sans-serif",
+  'Arial Black': "'Arial Black', 'Arial Bold', sans-serif",
+  'Trebuchet MS': "'Trebuchet MS', sans-serif",
   'Verdana': "Verdana, Geneva, sans-serif",
   'Tahoma': "Tahoma, Geneva, sans-serif",
   'Georgia': "Georgia, serif",
   'Times New Roman': "'Times New Roman', Times, serif",
   'Merriweather': "'Merriweather', Georgia, serif",
   'Playfair Display': "'Playfair Display', Georgia, serif",
-  'Fira Code': "'Fira Code', 'JetBrains Mono', Consolas, monospace",
-  'JetBrains Mono': "'JetBrains Mono', 'Fira Code', Consolas, monospace",
-  'Consolas': "Consolas, 'JetBrains Mono', monospace",
+  'Fira Code': "'Fira Code', monospace",
+  'JetBrains Mono': "'JetBrains Mono', monospace",
+  'Consolas': "Consolas, 'Courier New', monospace",
   'Courier New': "'Courier New', Courier, monospace",
-  'Comic Sans MS': "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  'Caveat': "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  'Pacifico': "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  'Comic Sans MS': "'Comic Sans MS', 'Comic Sans', cursive",
+  'Caveat': "'Caveat', cursive",
+  'Pacifico': "'Pacifico', cursive",
 };
 
 ipcMain.on('orbita:set-current-font', (_event, font: string) => {
@@ -3860,7 +3761,7 @@ function initOrGetCallWindow(initialPayload?: any): BrowserWindow {
       contextIsolation: true,
       sandbox: false,
       preload: path.join(__dirname, 'preload.cjs'),
-      backgroundThrottling: true,
+      backgroundThrottling: false,
       devTools: !app.isPackaged,
     },
     title: 'Orbita Call',
@@ -5079,8 +4980,8 @@ app.whenReady().then(async () => {
   }
 
   setInterval(() => {
-    trimAppMemory();
-  }, 180000);
+    trimAppMemory(false);
+  }, 300000);
 
   if (process.defaultApp) {
     if (process.argv.length >= 2) {

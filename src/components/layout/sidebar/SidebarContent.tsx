@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, ArrowLeft, RotateCw, WifiOff, ChevronUp, Search } from 'lucide-react';
+import { X, ArrowLeft, RotateCw, WifiOff, ChevronUp } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
 import { VerifiedBadge } from '../../common/VerifiedBadge';
 import { ArchiveListItem } from './ChatListItems';
@@ -110,7 +110,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingTop: '9px',
+          paddingTop: '12px',
         }}
       >
         <div className="flex items-center min-w-0" style={{ width: '100%' }}>
@@ -151,7 +151,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   className="flex items-center justify-center cursor-pointer transition-all active:scale-95 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-container)] rounded-full shrink-0"
                   style={{
                     width: '36px',
-                    height: '32px',
+                    height: '36px',
                     border: 'none',
                     background: 'transparent',
                     outline: 'none',
@@ -165,7 +165,6 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                 </button>
               )}
               <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <Search size={13} style={{ position: 'absolute', left: '9px', color: 'var(--text-dim, #8b90a0)', pointerEvents: 'none' }} />
                 <input
                   type="text"
                   value={searchQuery}
@@ -173,33 +172,19 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   placeholder={t('common.search', 'Поиск')}
                   style={{
                     width: '100%',
-                    height: '30px',
-                    borderRadius: '7px',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    height: '36px',
+                    borderRadius: '999px',
+                    border: 'none',
                     outline: 'none',
                     boxShadow: 'none',
-                    backgroundColor: 'rgba(255, 255, 255, 0.035)',
-                    color: 'var(--text-main, #f3f4f6)',
-                    fontSize: '12.5px',
-                    paddingLeft: '28px',
-                    paddingRight: searchQuery ? '28px' : '48px',
+                    backgroundColor: 'var(--md-surface, var(--surface-container, rgba(255,255,255,0.05)))',
+                    color: 'var(--text-main, #e0e0e0)',
+                    fontSize: '13px',
+                    paddingLeft: '14px',
+                    paddingRight: searchQuery ? '32px' : '14px',
                     boxSizing: 'border-box',
-                    transition: 'border-color 0.15s ease, background-color 0.15s ease',
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--accent-color, #6366f1)';
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.035)';
                   }}
                 />
-                {!searchQuery && (
-                  <span style={{ position: 'absolute', right: '7px', pointerEvents: 'none', fontSize: '10px', fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-dim, #8b90a0)', opacity: 0.7, padding: '1px 5px', borderRadius: '4px', backgroundColor: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                    Ctrl K
-                  </span>
-                )}
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
@@ -220,7 +205,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                       zIndex: 1,
                     }}
                   >
-                    <X size={15} />
+                    <X size={18} />
                   </button>
                 )}
               </div>
@@ -355,7 +340,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                     <div className="flex flex-col min-w-0 flex-1 justify-center overflow-hidden">
                       <span
                         style={{
-                          fontSize: '12.5px',
+                          fontSize: '13px',
                           fontWeight: 700,
                           color: '#ffffff',
                           fontFamily: 'inherit',
@@ -463,7 +448,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                     <div className="flex flex-col min-w-0 flex-1 justify-center overflow-hidden">
                       <span
                         style={{
-                          fontSize: '12.5px',
+                          fontSize: '13px',
                           fontWeight: 700,
                           color: '#000000',
                           fontFamily: 'inherit',

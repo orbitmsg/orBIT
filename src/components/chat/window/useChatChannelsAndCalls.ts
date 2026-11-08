@@ -509,6 +509,30 @@ export const useChatChannelsAndCalls = ({
                   }),
                 },
               }));
+            } else {
+              useChatStore.setState((state) => {
+                const now = state.messagesByChatId[activeChatId] || [];
+                const postsMap = new Map(cachedPosts.map((p) => [p.id, p]));
+                let changed = false;
+                const updated = now.map((m) => {
+                  if (!m.id) return m;
+                  const cp = postsMap.get(m.id);
+                  if (cp && cp.reactions && JSON.stringify(cp.reactions) !== JSON.stringify(m.reactions)) {
+                    changed = true;
+                    return { ...m, reactions: cp.reactions };
+                  }
+                  return m;
+                });
+                if (changed) {
+                  return {
+                    messagesByChatId: {
+                      ...state.messagesByChatId,
+                      [activeChatId]: updated,
+                    },
+                  };
+                }
+                return state;
+              });
             }
           }
         }

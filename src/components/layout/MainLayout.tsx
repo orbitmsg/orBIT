@@ -1091,13 +1091,11 @@ export const MainLayout = () => {
 
 
   const renderChat = useCallback((chat: Chat) => {
-    const isActive = activeChatId === chat.id;
     const isPinned = pinnedChatsSet.has(chat.id);
     return (
       <ChatListItem
         key={chat.id}
         chat={chat}
-        isActive={isActive}
         isPinned={isPinned}
         onSelect={handleSelectChat}
         onContextMenu={handleChatContextMenu}
@@ -1107,7 +1105,7 @@ export const MainLayout = () => {
         isLightTheme={isLightTheme}
       />
     );
-  }, [activeChatId, pinnedChatsSet, handleSelectChat, nickname, myCode, t, isLightTheme]);
+  }, [pinnedChatsSet, handleSelectChat, handleChatContextMenu, nickname, myCode, t, isLightTheme]);
 
   return (
     <div className="flex flex-1 h-full overflow-hidden">

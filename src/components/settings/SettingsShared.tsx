@@ -10,24 +10,24 @@ export const QrCodeMiniIcon: React.FC<{ size?: number; color?: string }> = ({ si
 );
 
 export const MD3 = {
-  bg:            'var(--bg-secondary,     #161619)',
-  surface:       'var(--surface-container, rgba(255, 255, 255, 0.035))',
-  surfaceVar:    'var(--surface-container-strong, rgba(255, 255, 255, 0.06))',
-  outline:       'var(--border-color,     rgba(255, 255, 255, 0.06))',
-  outlineMed:    'rgba(255, 255, 255, 0.10)',
-  onSurface:     'var(--text-main,        #ffffff)',
-  onSurfaceVar:  'var(--text-dim,         #9ca3af)',
-  primary:       'var(--accent-color,     #9b7dd4)',
-  onPrimary:     '#ffffff',
-  primaryCont:   'rgba(155, 125, 212, 0.15)',
+  bg:            'var(--md-bg,            #211d2f)',
+  surface:       'var(--md-surface,       #2a253b)',
+  surfaceVar:    'var(--md-surface-var,   #342e47)',
+  outline:       'var(--md-outline,       rgba(255,255,255,0.12))',
+  outlineMed:    'var(--md-outline-med,   rgba(255,255,255,0.20))',
+  onSurface:     'var(--md-on-surface,    #ffffff)',
+  onSurfaceVar:  'var(--md-on-surface-var,#9f96b3)',
+  primary:       'var(--md-primary,       #9b7dd4)',
+  onPrimary:     'var(--md-on-primary,    #ffffff)',
+  primaryCont:   'var(--md-primary-cont,  #42345e)',
   error:         'var(--md-error,         #ff595a)',
-  errorCont:     'rgba(255, 89, 90, 0.12)',
+  errorCont:    'var(--md-error-cont,    rgba(255,89,90,0.12))',
 };
 
 export const GLOBAL_CSS = `
   .m3-switch-root {
     position: relative; display: inline-flex;
-    align-items: center; width: 38px; height: 22px;
+    align-items: center; width: 52px; height: 32px;
     cursor: pointer; user-select: none;
     -webkit-tap-highlight-color: transparent !important;
     outline: none; flex-shrink: 0;
@@ -38,43 +38,44 @@ export const GLOBAL_CSS = `
   .m3-switch-root input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
 
   .m3-track {
-    position: absolute; inset: 0; border-radius: 11px;
+    position: absolute; inset: 0; border-radius: 16px;
     background: var(--switch-bg, rgba(255, 255, 255, 0.12));
-    border: 1px solid var(--switch-border, rgba(255, 255, 255, 0.18));
-    transition: background 180ms cubic-bezier(0.2, 0, 0, 1), border-color 180ms cubic-bezier(0.2, 0, 0, 1);
+    border: 2px solid var(--switch-border, rgba(255, 255, 255, 0.25));
+    transition: background 200ms cubic-bezier(0.2, 0, 0, 1), border-color 200ms cubic-bezier(0.2, 0, 0, 1);
     box-sizing: border-box; will-change: background, border-color;
   }
   .m3-switch-root input:checked ~ .m3-track {
-    background: var(--accent-color, var(--md-primary, #a78bfa));
-    border-color: var(--accent-color, var(--md-primary, #a78bfa));
+    background: var(--accent-color, var(--md-primary, #c5b4e3));
+    border-color: var(--accent-color, var(--md-primary, #c5b4e3));
   }
 
   .m3-thumb-wrap {
-    position: absolute; left: 0; top: 3px;
-    width: 16px; height: 16px;
-    transform: translateX(3px);
-    transition: transform 180ms cubic-bezier(0.2, 0, 0, 1);
+    position: absolute; left: 0; top: 4px;
+    width: 24px; height: 24px;
+    transform: translateX(4px);
+    transition: transform 200ms cubic-bezier(0.2, 0, 0, 1);
     display: flex; align-items: center; justify-content: center; z-index: 1;
     will-change: transform;
   }
-  .m3-switch-root input:checked ~ .m3-track ~ .m3-thumb-wrap { transform: translateX(19px); }
+  .m3-switch-root input:checked ~ .m3-track ~ .m3-thumb-wrap { transform: translateX(24px); }
 
   .m3-thumb {
-    width: 16px; height: 16px; border-radius: 50%;
-    background: #ffffff;
-    transition: transform 180ms cubic-bezier(0.2, 0, 0, 1), background 180ms cubic-bezier(0.2, 0, 0, 1);
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--md-on-surface-var, #cac4d0);
+    transform: scale(0.6666);
+    transition: transform 200ms cubic-bezier(0.2, 0, 0, 1), background 200ms cubic-bezier(0.2, 0, 0, 1);
     display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.4); will-change: transform, background;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.35); will-change: transform, background;
   }
   .m3-switch-root input:checked ~ .m3-track ~ .m3-thumb-wrap .m3-thumb {
-    background: #ffffff;
+    transform: scale(1); background: var(--bg-primary, #1c1b1f);
   }
-  .m3-switch-root:active .m3-thumb { transform: scale(1.1); }
+  .m3-switch-root:active .m3-thumb { transform: scale(1.1666); }
 
-  .m3-thumb svg { opacity: 0; transform: scale(0.5); transition: opacity 150ms ease, transform 150ms ease; width: 10px; height: 10px; stroke: var(--accent-color, var(--md-primary, #a78bfa)); will-change: opacity, transform; }
+  .m3-thumb svg { opacity: 0; transform: scale(0.5); transition: opacity 150ms ease, transform 150ms ease; width: 14px; height: 14px; stroke: var(--accent-color, var(--md-primary, #c5b4e3)); will-change: opacity, transform; }
   .m3-switch-root input:checked ~ .m3-track ~ .m3-thumb-wrap .m3-thumb svg { opacity: 1; transform: scale(1); }
 
-  .m3-switch-root input:focus-visible ~ .m3-track { outline: 2px solid var(--accent-color, #a78bfa); outline-offset: 2px; }
+  .m3-switch-root input:focus-visible ~ .m3-track { outline: 2px solid var(--accent-color, #c5b4e3); outline-offset: 2px; }
   .m3-switch-root input:disabled ~ * { opacity: .38; }
 
   input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; }
@@ -218,15 +219,14 @@ export const SectionHeader = ({ title, style }: { title: string; style?: React.C
 export const Block = ({ children, style }: { children: ReactNode; style?: React.CSSProperties }) => (
   <div
     style={{
-      backgroundColor: 'var(--surface-container, rgba(255, 255, 255, 0.035))',
-      width: 'calc(100% - 16px)',
-      margin: '0 8px',
-      borderRadius: '12px',
-      border: '1px solid rgba(255, 255, 255, 0.055)',
+      backgroundColor: MD3.surface,
+      width: 'calc(100% - 20px)',
+      margin: '0 10px',
+      borderRadius: '16px',
       overflow: 'hidden',
       display: 'flex',
       flexDirection: 'column',
-      padding: '2px',
+      padding: '4px 0',
       boxSizing: 'border-box',
       ...style,
     }}
@@ -252,19 +252,19 @@ export const SettingsRow = ({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '6.5px 10px',
-      borderRadius: onClick ? '8px' : 0,
-      margin: onClick ? '1px 2px' : 0,
+      padding: '12px 14px',
+      borderRadius: onClick ? '12px' : 0,
+      margin: onClick ? '2px 6px' : 0,
       cursor: onClick ? 'pointer' : 'default',
-      transition: 'background 120ms ease',
+      transition: 'background 150ms',
       backgroundColor: 'transparent',
       boxSizing: 'border-box',
       userSelect: 'none',
     }}
-    onMouseEnter={e => onClick && ((e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255, 255, 255, 0.06)')}
+    onMouseEnter={e => onClick && ((e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(202,196,208,0.08)')}
     onMouseLeave={e => onClick && ((e.currentTarget as HTMLElement).style.backgroundColor = 'transparent')}
   >
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1, minWidth: 0 }}>
       {icon && (
         <div style={{
           width: 20,
@@ -273,14 +273,14 @@ export const SettingsRow = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: 'var(--text-dim, #9ca3af)',
+          color: MD3.onSurface,
           flexShrink: 0,
           backgroundColor: 'transparent',
         }}>
           {icon}
         </div>
       )}
-      <p style={{ fontSize: 13, fontWeight: 450, color: MD3.onSurface, margin: 0, lineHeight: '17px' }}>{label}</p>
+      <p style={{ fontSize: 14, fontWeight: 500, color: MD3.onSurface, margin: 0, lineHeight: 1.4 }}>{label}</p>
     </div>
     {right}
   </div>
@@ -343,25 +343,25 @@ export const MenuItem = ({
     style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 10,
-      padding: '6.5px 10px',
-      borderRadius: '8px',
-      margin: '1px 2px',
+      gap: 16,
+      padding: '12px 14px',
+      borderRadius: '12px',
+      margin: '2px 6px',
       cursor: 'pointer',
-      transition: 'background 120ms ease',
+      transition: 'background 150ms',
       backgroundColor: 'transparent',
       boxSizing: 'border-box',
       userSelect: 'none',
     }}
-    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)')}
+    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(202,196,208,0.08)')}
     onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
   >
-    <div style={{ width: 20, height: 20, borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim, #9ca3af)', flexShrink: 0, backgroundColor: 'transparent' }}>
+    <div style={{ width: 20, height: 20, borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: MD3.onSurface, flexShrink: 0, backgroundColor: 'transparent' }}>
       {icon}
     </div>
     <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <p style={{ fontSize: 13, fontWeight: 450, color: MD3.onSurface, margin: 0, lineHeight: '17px' }} className="truncate">{label}</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <p style={{ fontSize: 14, fontWeight: 500, color: MD3.onSurface, margin: 0 }}>{label}</p>
         {badge}
       </div>
     </div>
@@ -380,19 +380,17 @@ export const PreferencesGroup = ({
   title: string;
   children: ReactNode;
 }) => (
-  <div style={{ marginBottom: 14, width: '100%' }}>
+  <div style={{ marginBottom: 24, width: '100%' }}>
     <div style={{
-      fontSize: 11,
+      fontSize: 12,
       fontWeight: 600,
-      textTransform: 'uppercase',
-      letterSpacing: '0.04em',
       color: MD3.onSurfaceVar,
-      padding: '0 16px',
-      marginBottom: 5,
+      padding: '0 20px',
+      marginBottom: 8,
     }}>
       {title}
     </div>
-    <Block style={{ padding: '2px 10px' }}>
+    <Block style={{ padding: '0 16px' }}>
       {children}
     </Block>
   </div>
@@ -413,12 +411,12 @@ export const PreferenceSwitch = ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '8px 0',
+    padding: '16px 0',
     gap: 12,
   }}>
     <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ fontSize: 13, fontWeight: 500, color: MD3.onSurface }}>{label}</div>
-      {description && <div style={{ fontSize: 11.5, color: MD3.onSurfaceVar, marginTop: 1.5 }}>{description}</div>}
+      <div style={{ fontSize: 14, fontWeight: 600, color: MD3.onSurface }}>{label}</div>
+      {description && <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>{description}</div>}
     </div>
     <M3Switch checked={checked} onChange={onChange} />
   </div>

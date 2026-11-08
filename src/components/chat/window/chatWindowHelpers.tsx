@@ -48,8 +48,7 @@ export const MessageRowWrapper = memo(
     prev.msg.mediaType === next.msg.mediaType &&
     prev.msg.uploading === next.msg.uploading &&
     prev.isSelected === next.isSelected &&
-    prev.isSelectionMode === next.isSelectionMode &&
-    prev.renderFn === next.renderFn
+    prev.isSelectionMode === next.isSelectionMode
 );
 MessageRowWrapper.displayName = 'MessageRowWrapper';
 
@@ -95,8 +94,7 @@ export const MessageList = memo(
     prev.messages === next.messages &&
     prev.startIndex === next.startIndex &&
     prev.selectedIds === next.selectedIds &&
-    prev.isSelectionMode === next.isSelectionMode &&
-    prev.renderFn === next.renderFn
+    prev.isSelectionMode === next.isSelectionMode
 );
 MessageList.displayName = 'MessageList';
 

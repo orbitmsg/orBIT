@@ -13,14 +13,14 @@ use napi_derive::napi;
 use crate::media::RustMediaResult;
 
 #[napi]
-pub fn rust_cache_resolve_folder(configured_dir: Option<String>, base_downloads: Option<String>) -> String {
-    let resolved = folder::resolve_media_folder(configured_dir.as_deref(), base_downloads.as_deref());
+pub fn rust_cache_resolve_folder(configured_dir: Option<String>) -> String {
+    let resolved = folder::resolve_media_folder(configured_dir.as_deref());
     resolved.to_string_lossy().to_string()
 }
 
 #[napi]
-pub fn rust_cache_ensure_folder(configured_dir: Option<String>, base_downloads: Option<String>) -> Result<String> {
-    let resolved = folder::resolve_media_folder(configured_dir.as_deref(), base_downloads.as_deref());
+pub fn rust_cache_ensure_folder(configured_dir: Option<String>) -> Result<String> {
+    let resolved = folder::resolve_media_folder(configured_dir.as_deref());
     folder::create_media_folder_if_needed(&resolved)
         .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to create folder: {}", e)))?;
     Ok(resolved.to_string_lossy().to_string())
@@ -50,9 +50,7 @@ pub fn rust_cache_save_media(
     mime_type: String,
     chat_id: Option<String>,
     message_id: Option<String>,
-    file_name: Option<String>,
-    local_key_hex: Option<String>,
-    base_downloads: Option<String>,
+    local_key_hex: String,
 ) -> Result<RustCacheSaveResult> {
     manager::save_media_internal(
         &db_path,
@@ -62,9 +60,7 @@ pub fn rust_cache_save_media(
         &mime_type,
         chat_id.as_deref(),
         message_id.as_deref(),
-        file_name.as_deref(),
-        local_key_hex.as_deref(),
-        base_downloads.as_deref(),
+        &local_key_hex,
     )
 }
 
@@ -73,15 +69,13 @@ pub fn rust_cache_get_media(
     db_path: String,
     configured_dir: Option<String>,
     cache_key: String,
-    local_key_hex: Option<String>,
-    base_downloads: Option<String>,
+    local_key_hex: String,
 ) -> Result<Option<RustMediaResult>> {
     manager::get_media_internal(
         &db_path,
         configured_dir.as_deref(),
         &cache_key,
-        local_key_hex.as_deref(),
-        base_downloads.as_deref(),
+        &local_key_hex,
     )
 }
 
@@ -90,14 +84,8 @@ pub fn rust_cache_exists_media(
     db_path: String,
     configured_dir: Option<String>,
     cache_key: String,
-    base_downloads: Option<String>,
 ) -> bool {
-    manager::exists_media_internal(
-        &db_path,
-        configured_dir.as_deref(),
-        &cache_key,
-        base_downloads.as_deref(),
-    )
+    manager::exists_media_internal(&db_path, configured_dir.as_deref(), &cache_key)
 }
 
 #[napi]
@@ -105,9 +93,8 @@ pub fn rust_cache_clear(
     db_path: String,
     configured_dir: Option<String>,
     categories: Option<Vec<String>>,
-    base_downloads: Option<String>,
 ) -> Result<u32> {
-    let resolved_dir = folder::resolve_media_folder(configured_dir.as_deref(), base_downloads.as_deref());
+    let resolved_dir = folder::resolve_media_folder(configured_dir.as_deref());
     let conn = manager::open_media_db(&db_path)?;
     cleaner::clear_categories_internal(&conn, &resolved_dir, categories)
 }
@@ -117,9 +104,8 @@ pub fn rust_cache_delete_by_chat(
     db_path: String,
     configured_dir: Option<String>,
     chat_id: String,
-    base_downloads: Option<String>,
 ) -> Result<u32> {
-    let resolved_dir = folder::resolve_media_folder(configured_dir.as_deref(), base_downloads.as_deref());
+    let resolved_dir = folder::resolve_media_folder(configured_dir.as_deref());
     let conn = manager::open_media_db(&db_path)?;
     cleaner::delete_chat_media_internal(&conn, &resolved_dir, &chat_id)
 }
@@ -129,9 +115,8 @@ pub fn rust_cache_evict_by_age(
     db_path: String,
     configured_dir: Option<String>,
     max_age_ms: i64,
-    base_downloads: Option<String>,
 ) -> Result<u32> {
-    let resolved_dir = folder::resolve_media_folder(configured_dir.as_deref(), base_downloads.as_deref());
+    let resolved_dir = folder::resolve_media_folder(configured_dir.as_deref());
     let conn = manager::open_media_db(&db_path)?;
     cleaner::evict_by_age_internal(&conn, &resolved_dir, max_age_ms)
 }
@@ -141,9 +126,8 @@ pub fn rust_cache_evict_to_limit(
     db_path: String,
     configured_dir: Option<String>,
     limit_bytes: i64,
-    base_downloads: Option<String>,
 ) -> Result<u32> {
-    let resolved_dir = folder::resolve_media_folder(configured_dir.as_deref(), base_downloads.as_deref());
+    let resolved_dir = folder::resolve_media_folder(configured_dir.as_deref());
     let conn = manager::open_media_db(&db_path)?;
     cleaner::evict_to_limit_internal(&conn, &resolved_dir, limit_bytes)
 }

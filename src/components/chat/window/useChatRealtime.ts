@@ -1,3 +1,4 @@
+import { sqliteStorage } from '../../../services/sqliteStorage';
 import { useEffect } from 'react';
 import { useChatStore, type Message, isMessageOutgoing } from '../../../store/useChatStore';
 import { useAuthStore } from '../../../store/useAuthStore';
@@ -34,7 +35,7 @@ export const useChatRealtime = ({
   useEffect(() => {
     if (!activeChatId) return;
 
-    if (activeChatId !== 'notes') {
+    if (activeChatId !== 'notes' && activeChat?.type !== 'channel') {
       useChatStore.getState().syncReactionsFromSupabase(activeChatId);
     }
 
@@ -85,8 +86,15 @@ export const useChatRealtime = ({
                 map.set(m.id, prev ? { ...m, reactions: mergeReactions(m.reactions, prev.reactions) } : m);
               }
             });
-            if (map.size > nowMsgs.length) {
-              const merged = Array.from(map.values()).sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0));
+            const merged = Array.from(map.values()).sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0));
+            const hasDifference = merged.length !== nowMsgs.length || merged.some((m, idx) => {
+              const cur = nowMsgs[idx];
+              if (!cur || cur.id !== m.id) return true;
+              if (JSON.stringify(cur.reactions) !== JSON.stringify(m.reactions)) return true;
+              if (cur.status !== m.status || cur.text !== m.text) return true;
+              return false;
+            });
+            if (hasDifference) {
               return {
                 messagesByChatId: {
                   ...state.messagesByChatId,
@@ -317,6 +325,16 @@ export const useChatRealtime = ({
             },
           };
         });
+        sqliteStorage.get(`orbita_channel_posts_${activeChatId}`).then((cachedStr) => {
+          if (!cachedStr) return;
+          try {
+            const cached = JSON.parse(cachedStr);
+            if (Array.isArray(cached)) {
+              const updatedCached = cached.map((p: any) => p.id === data.postId ? { ...p, reactions: data.reactions } : p);
+              sqliteStorage.set(`orbita_channel_posts_${activeChatId}`, JSON.stringify(updatedCached)).catch(() => {});
+            }
+          } catch {}
+        }).catch(() => {});
       } else if (data?.type === 'reaction' && data?.emoji && data?.sender) {
         const isSelf = Boolean(
           (myUserId && (data.senderUserId === myUserId || data.userId === myUserId || data.senderId === myUserId)) ||
@@ -775,6 +793,16 @@ export const useChatRealtime = ({
             },
           };
         });
+        sqliteStorage.get(`orbita_channel_posts_${activeChatId}`).then((cachedStr) => {
+          if (!cachedStr) return;
+          try {
+            const cached = JSON.parse(cachedStr);
+            if (Array.isArray(cached)) {
+              const updatedCached = cached.map((p: any) => p.id === data.postId ? { ...p, reactions: data.reactions } : p);
+              sqliteStorage.set(`orbita_channel_posts_${activeChatId}`, JSON.stringify(updatedCached)).catch(() => {});
+            }
+          } catch {}
+        }).catch(() => {});
       }
     };
 

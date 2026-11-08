@@ -229,7 +229,7 @@ export const useChatStore = create<ChatState>()(
       autoLoadPhotos: true,
       autoLoadVideos: true,
       autoLoadAudio: true,
-      autoLoadFiles: true,
+      autoLoadFiles: false,
       autoLoadMaxPhotoSizeMb: 5,
       autoLoadMaxVideoSizeMb: 15,
       autoLoadMaxAudioSizeMb: 10,
@@ -1157,14 +1157,19 @@ export const useChatStore = create<ChatState>()(
                   if (current.length === 0) {
                     updated[chatId] = msgs;
                   } else {
+                    const msgsById = new Map<string, any>((msgs as any[]).map((m: any) => [m.id || `${m.time}_${m.text}`, m]));
+                    const updatedCurrent = current.map((m: any) => {
+                      const id = m.id || `${m.time}_${m.text}`;
+                      const cached = msgsById.get(id);
+                      if (cached && cached.reactions && (!m.reactions || JSON.stringify(m.reactions) !== JSON.stringify(cached.reactions))) {
+                        return { ...m, reactions: cached.reactions };
+                      }
+                      return m;
+                    });
                     const existingIds = new Set(current.map((m: any) => m.id || `${m.time}_${m.text}`));
                     const toAdd = (msgs as any[]).filter((m: any) => !existingIds.has(m.id || `${m.time}_${m.text}`));
-                    if (toAdd.length > 0) {
-                      mergedMsgs = [...toAdd, ...current].sort((a: any, b: any) => (a.time || 0) - (b.time || 0));
-                      updated[chatId] = mergedMsgs;
-                    } else {
-                      mergedMsgs = current;
-                    }
+                    mergedMsgs = [...toAdd, ...updatedCurrent].sort((a: any, b: any) => (a.time || 0) - (b.time || 0));
+                    updated[chatId] = mergedMsgs;
                   }
                   const lastMessage = mergedMsgs[mergedMsgs.length - 1];
                   if (lastMessage) {

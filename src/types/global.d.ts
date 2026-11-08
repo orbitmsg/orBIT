@@ -119,7 +119,7 @@ declare global {
       copyImage: (dataBase64: string) => Promise<{ success: boolean; error?: string }>;
       openFile: (data: string | Uint8Array | ArrayBuffer, fileName: string) => Promise<{ success: boolean; path?: string; error?: string }>;
       mediaGet: (originalUrl: string) => Promise<{ data: string | Uint8Array | ArrayBuffer; mime: string } | null>;
-      mediaSave: (originalUrl: string, data: string | Uint8Array | ArrayBuffer, mimeType: string, chatId?: string, messageId?: string, fileName?: string) => Promise<void>;
+      mediaSave: (originalUrl: string, data: string | Uint8Array | ArrayBuffer, mimeType: string, chatId?: string, messageId?: string) => Promise<void>;
       mediaClear: (categories?: string[]) => Promise<{ deleted: number }>;
       mediaStats: () => Promise<{ count: number; totalSize: number }>;
       mediaDetailedStats: () => Promise<{

@@ -949,17 +949,16 @@ export const MessageInput = memo<MessageInputProps>(({
           <div
             style={{
               flex: 1,
-              backgroundColor: 'var(--surface-container, #181920)',
-              borderRadius: '8px',
-              border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
-              padding: '6px 12px',
-              minHeight: '36px',
-              maxHeight: '130px',
+              backgroundColor: 'var(--surface-container, #33363f)',
+              borderRadius: '20px',
+              padding: '0 14px',
+              minHeight: '34px',
+              maxHeight: '120px',
               display: 'flex',
               alignItems: 'center',
               boxSizing: 'border-box',
               position: 'relative',
-              transition: 'all 0.15s ease',
+              transition: 'background-color 0.15s ease',
             }}
           >
             <div

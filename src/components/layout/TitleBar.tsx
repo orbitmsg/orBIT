@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useChatStore, flushStorageSet } from '../../store/useChatStore';
 
 export const isElectronApp = (): boolean => {
@@ -18,8 +17,7 @@ export interface TitleBarProps {
   className?: string;
 }
 
-export const TitleBar: React.FC<TitleBarProps> = ({ onClose, style, className }) => {
-  const { t } = useTranslation();
+export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, className }) => {
   const isElectron = isElectronApp();
   const [isMaximized, setIsMaximized] = useState(false);
   const [isHoverSuppressed, setIsHoverSuppressed] = useState(false);
@@ -117,7 +115,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ onClose, style, className })
   const RestoreIcon = () => (
     <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M2.5 0.5H9.5V7.5" stroke="currentColor" strokeWidth="1" strokeLinecap="square" />
-      <rect x="0.5" y="2.5" width="7" height="7" stroke="currentColor" strokeWidth="1" fill="var(--title-bar-bg, var(--bg-secondary, #13141a))" />
+      <rect x="0.5" y="2.5" width="7" height="7" stroke="currentColor" strokeWidth="1" fill="var(--title-bar-bg, var(--md-surface, #2a253b))" />
     </svg>
   );
 
@@ -135,12 +133,11 @@ export const TitleBar: React.FC<TitleBarProps> = ({ onClose, style, className })
 
   return (
     <div
-      className={`relative flex items-center justify-between flex-shrink-0 select-none ${className || ''}`}
+      className={`flex items-center justify-between flex-shrink-0 select-none ${className || ''}`}
       style={{
         height: '30px',
         width: '100%',
-        backgroundColor: 'var(--title-bar-bg, var(--bg-secondary, #13141a))',
-        borderBottom: '1px solid var(--border-color, rgba(255, 255, 255, 0.06))',
+        backgroundColor: 'var(--title-bar-bg, var(--md-surface, #2a253b))',
         padding: 0,
         margin: 0,
         WebkitAppRegion: 'drag',
@@ -148,8 +145,9 @@ export const TitleBar: React.FC<TitleBarProps> = ({ onClose, style, className })
       } as React.CSSProperties}
       onDoubleClick={handleDoubleClick}
     >
-      <div className="flex-1 h-full pointer-events-none" />
-
+      <div className="flex-1 px-3 text-xs text-[var(--text-dim,#9f96b3)] truncate pointer-events-none select-none">
+        {title || ''}
+      </div>
       <style>{`
         .orbita-titlebar-btn {
           width: 30px;
@@ -180,7 +178,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ onClose, style, className })
         }
       `}</style>
       <div
-        className="flex items-center h-full z-10"
+        className="flex items-center h-full"
         style={{
           height: '100%',
           // @ts-ignore
@@ -190,7 +188,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ onClose, style, className })
         <button
           onClick={handleMinimize}
           className={btnClass}
-          aria-label={t('titleBar.minimize')}
+          aria-label="Minimize"
         >
           <MinimizeIcon />
         </button>
@@ -198,7 +196,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ onClose, style, className })
         <button
           onClick={handleMaximize}
           className={btnClass}
-          aria-label={isMaximized ? t('titleBar.restore') : t('titleBar.maximize')}
+          aria-label="Maximize"
         >
           {isMaximized ? <RestoreIcon /> : <MaximizeIcon />}
         </button>
@@ -206,7 +204,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ onClose, style, className })
         <button
           onClick={handleClose}
           className={btnClass}
-          aria-label={t('titleBar.close')}
+          aria-label="Close"
         >
           <CloseIcon />
         </button>

@@ -212,14 +212,14 @@ export function htmlToMarkdown(node: Node): string {
   }
   if (tag === 'a') {
     const href = el.getAttribute('href') || '';
-    if (href === inner) return inner;
+    if (href === inner) return inner; // raw link
     return inner ? `[${inner}](${href})` : '';
   }
 
   return inner;
 }
 
-export function markdownToHtml(md: string, themeColor: string = '#6366f1', disableLinks: boolean = false): string {
+export function markdownToHtml(md: string, themeColor: string = '#7C3AED', disableLinks: boolean = false): string {
   if (!md) return '';
   let html = md
     .replace(/&/g, '&amp;')

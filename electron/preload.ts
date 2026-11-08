@@ -327,8 +327,8 @@ contextBridge.exposeInMainWorld('orbita', {
   mediaGetBatch: (requests: Array<{ url: string; sharedSecret: string; fileName?: string }>) =>
     ipcRenderer.invoke('media:get-batch', requests),
 
-  mediaSave: (originalUrl: string, data: any, mimeType: string, chatId?: string, messageId?: string, fileName?: string) =>
-    ipcRenderer.invoke('media:save', originalUrl, data, mimeType, chatId, messageId, fileName),
+  mediaSave: (originalUrl: string, data: any, mimeType: string, chatId?: string, messageId?: string) =>
+    ipcRenderer.invoke('media:save', originalUrl, data, mimeType, chatId, messageId),
 
   mediaClear: (categories?: string[]) =>
     ipcRenderer.invoke('media:clear', categories),

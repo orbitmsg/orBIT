@@ -1055,7 +1055,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
             color: 'var(--text-main, #fff)',
             overflow: 'hidden',
             userSelect: 'none',
-            border: isMobileView ? 'none' : '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
+            border: 'none',
             outline: 'none',
           }}
         >

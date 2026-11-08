@@ -394,7 +394,7 @@ export const EncryptedMedia = memo(({
               className="absolute inset-0 pointer-events-none"
               style={{
                 background: 'radial-gradient(circle at 30% 30%, rgba(139, 92, 246, 0.22), transparent 70%), radial-gradient(circle at 70% 70%, rgba(59, 130, 246, 0.18), transparent 70%), rgba(255, 255, 255, 0.05)',
-                backdropFilter: 'blur(20px)',
+                backdropFilter: 'none',
               }}
             />
           )}

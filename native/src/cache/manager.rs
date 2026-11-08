@@ -1,9 +1,15 @@
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
+use aes_gcm::{
+    aead::{Aead, KeyInit},
+    Aes256Gcm, Nonce,
+};
+use rand::RngCore;
 use rusqlite::{params, Connection};
 use std::path::{Path, PathBuf};
 use crate::cache::folder::{create_media_folder_if_needed, resolve_media_folder};
 use crate::media::RustMediaResult;
+use crate::types::{SensitiveBuffer, SensitiveKey};
 
 #[napi(object)]
 pub struct RustCacheSaveResult {
@@ -46,187 +52,18 @@ pub fn open_media_db(db_path: &str) -> Result<Connection> {
     Ok(conn)
 }
 
-fn sanitize_filename(raw_name: &str) -> String {
-    let mut clean = String::with_capacity(raw_name.len());
-    for c in raw_name.chars() {
-        if matches!(c, '<' | '>' | ':' | '"' | '/' | '\\' | '|' | '?' | '*' | '\0'..='\x1f') {
-            clean.push('_');
-        } else {
-            clean.push(c);
-        }
+fn derive_cipher(local_key_hex: &str) -> Result<Aes256Gcm> {
+    let key_vec = hex::decode(local_key_hex)
+        .map_err(|e| Error::new(Status::InvalidArg, format!("Invalid key hex: {}", e)))?;
+    if key_vec.len() != 32 {
+        return Err(Error::new(Status::InvalidArg, "Key must be 32 bytes"));
     }
-    let trimmed = clean.trim_matches(&[' ', '.'][..]).to_string();
-    if trimmed.is_empty() {
-        "file".to_string()
-    } else {
-        trimmed
-    }
-}
+    let sensitive_key_vec = SensitiveBuffer(key_vec);
+    let mut key_bytes = SensitiveKey([0u8; 32]);
+    key_bytes.0.copy_from_slice(&sensitive_key_vec.0);
 
-fn is_sticker(cache_key: &str, mime_type: &str, file_name: Option<&str>) -> bool {
-    let lower_key = cache_key.to_lowercase();
-    let lower_mime = mime_type.to_lowercase();
-    let lower_name = file_name.map(|n| n.to_lowercase()).unwrap_or_default();
-
-    lower_key.contains("sticker")
-        || lower_key.ends_with(".tgs")
-        || lower_key.contains("spotty")
-        || lower_key.contains("utyaduck")
-        || lower_mime.contains("tgsticker")
-        || lower_name.contains("spotty")
-        || lower_name.contains("sticker")
-        || lower_name.ends_with(".tgs")
-}
-
-fn detect_extension(data: &[u8], mime: &str) -> &'static str {
-    if data.len() >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF {
-        return "jpg";
-    }
-    if data.len() >= 8 && &data[0..8] == b"\x89PNG\r\n\x1a\n" {
-        return "png";
-    }
-    if data.len() >= 6 && (&data[0..6] == b"GIF87a" || &data[0..6] == b"GIF89a") {
-        return "gif";
-    }
-    if data.len() >= 12 && &data[0..4] == b"RIFF" && &data[8..12] == b"WEBP" {
-        return "webp";
-    }
-    if data.len() >= 8 && (&data[4..8] == b"ftyp" || (data.len() >= 12 && &data[4..8] == b"moov")) {
-        let lower = mime.to_lowercase();
-        if lower.contains("audio") || lower.contains("m4a") {
-            return "m4a";
-        }
-        return "mp4";
-    }
-    if data.len() >= 4 && &data[0..4] == b"OggS" {
-        return "ogg";
-    }
-    if data.len() >= 3 && &data[0..3] == b"ID3" {
-        return "mp3";
-    }
-    if data.len() >= 2 && data[0] == 0xFF && (data[1] & 0xE0) == 0xE0 {
-        return "mp3";
-    }
-    if data.len() >= 4 && &data[0..4] == b"%PDF" {
-        return "pdf";
-    }
-    if data.len() >= 4 && &data[0..4] == b"PK\x03\x04" {
-        let lower = mime.to_lowercase();
-        if lower.contains("wordprocessing") || lower.contains("docx") {
-            return "docx";
-        }
-        if lower.contains("presentation") || lower.contains("pptx") {
-            return "pptx";
-        }
-        if lower.contains("spreadsheet") || lower.contains("xlsx") {
-            return "xlsx";
-        }
-        return "zip";
-    }
-
-    let lower = mime.to_lowercase();
-    if lower.contains("jpeg") || lower.contains("jpg") {
-        "jpg"
-    } else if lower.contains("png") {
-        "png"
-    } else if lower.contains("webp") {
-        "webp"
-    } else if lower.contains("gif") {
-        "gif"
-    } else if lower.contains("mp4") {
-        if lower.contains("audio") {
-            "m4a"
-        } else {
-            "mp4"
-        }
-    } else if lower.contains("webm") {
-        "webm"
-    } else if lower.contains("ogg") || lower.contains("opus") {
-        "ogg"
-    } else if lower.contains("mp3") || lower.contains("mpeg") {
-        "mp3"
-    } else if lower.contains("pdf") {
-        "pdf"
-    } else {
-        "bin"
-    }
-}
-
-fn generate_media_filename(mime_type: &str, file_name: Option<&str>, data: &[u8]) -> String {
-    let ext = detect_extension(data, mime_type);
-
-    if let Some(name) = file_name {
-        let trimmed = name.trim();
-        if !trimmed.is_empty() {
-            let clean = sanitize_filename(trimmed);
-            if clean.contains('.') {
-                return clean;
-            }
-            return format!("{}.{}", clean, ext);
-        }
-    }
-
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-
-    let lower = mime_type.to_lowercase();
-    let prefix = if lower.starts_with("image/") {
-        "photo"
-    } else if lower.starts_with("video/") {
-        "video"
-    } else if lower.starts_with("audio/") || lower.contains("opus") || lower.contains("ogg") || lower.contains("m4a") {
-        "audio"
-    } else {
-        "file"
-    };
-
-    format!("{}_{}.{}", prefix, now, ext)
-}
-
-fn get_unique_filepath(dir: &Path, desired_name: &str, data: &[u8]) -> (PathBuf, String) {
-    let candidate = dir.join(desired_name);
-    if !candidate.exists() {
-        return (candidate, desired_name.to_string());
-    }
-
-    if let Ok(meta) = std::fs::metadata(&candidate) {
-        if meta.len() == data.len() as u64 {
-            if let Ok(existing_bytes) = std::fs::read(&candidate) {
-                if existing_bytes == data {
-                    return (candidate, desired_name.to_string());
-                }
-            }
-        }
-    }
-
-    let path_obj = Path::new(desired_name);
-    let stem = path_obj.file_stem().and_then(|s| s.to_str()).unwrap_or("file");
-    let ext = path_obj.extension().and_then(|s| s.to_str()).unwrap_or("");
-
-    let mut counter = 1;
-    loop {
-        let name_with_counter = if ext.is_empty() {
-            format!("{} ({})", stem, counter)
-        } else {
-            format!("{} ({}).{}", stem, counter, ext)
-        };
-        let next_candidate = dir.join(&name_with_counter);
-        if !next_candidate.exists() {
-            return (next_candidate, name_with_counter);
-        }
-        if let Ok(meta) = std::fs::metadata(&next_candidate) {
-            if meta.len() == data.len() as u64 {
-                if let Ok(existing_bytes) = std::fs::read(&next_candidate) {
-                    if existing_bytes == data {
-                        return (next_candidate, name_with_counter);
-                    }
-                }
-            }
-        }
-        counter += 1;
-    }
+    Aes256Gcm::new_from_slice(&key_bytes.0)
+        .map_err(|e| Error::new(Status::GenericFailure, format!("Invalid AES key: {}", e)))
 }
 
 pub fn save_media_internal(
@@ -237,30 +74,34 @@ pub fn save_media_internal(
     mime_type: &str,
     chat_id: Option<&str>,
     message_id: Option<&str>,
-    file_name: Option<&str>,
-    _local_key_hex: Option<&str>,
-    base_downloads: Option<&str>,
+    local_key_hex: &str,
 ) -> Result<RustCacheSaveResult> {
-    let resolved_dir = resolve_media_folder(configured_dir, base_downloads);
-
-    if is_sticker(cache_key, mime_type, file_name) {
-        return Ok(RustCacheSaveResult {
-            local_path: String::new(),
-            file_size: data.len() as i64,
-            resolved_dir: resolved_dir.to_string_lossy().to_string(),
-        });
-    }
-
+    let resolved_dir = resolve_media_folder(configured_dir);
     create_media_folder_if_needed(&resolved_dir)
         .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to create folder {}: {}", resolved_dir.display(), e)))?;
 
-    let desired_filename = generate_media_filename(mime_type, file_name, data);
-    let (full_file_path, actual_filename) = get_unique_filepath(&resolved_dir, &desired_filename, data);
+    let cipher = derive_cipher(local_key_hex)?;
 
-    std::fs::write(&full_file_path, data)
+    let mut nonce_bytes = [0u8; 12];
+    rand::thread_rng().fill_bytes(&mut nonce_bytes);
+    let nonce = Nonce::from_slice(&nonce_bytes);
+
+    let ciphertext = cipher
+        .encrypt(nonce, data)
+        .map_err(|e| Error::new(Status::GenericFailure, format!("Encryption failed: {}", e)))?;
+
+    let mut encrypted = Vec::with_capacity(12 + ciphertext.len());
+    encrypted.extend_from_slice(&nonce_bytes);
+    encrypted.extend_from_slice(&ciphertext);
+
+    let random_id: String = (0..16).map(|_| format!("{:x}", rand::random::<u8>() % 16)).collect();
+    let filename = format!("{}.dat", random_id);
+    let full_file_path = resolved_dir.join(&filename);
+
+    std::fs::write(&full_file_path, &encrypted)
         .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to write media file: {}", e)))?;
 
-    let file_size = data.len() as i64;
+    let file_size = encrypted.len() as i64;
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
@@ -273,7 +114,7 @@ pub fn save_media_internal(
          VALUES (?1, ?2, ?1, ?3, ?4, ?5, ?5, 'downloaded', ?6, ?7)",
         params![
             cache_key,
-            actual_filename,
+            filename,
             mime_type,
             file_size,
             now,
@@ -293,8 +134,7 @@ pub fn get_media_internal(
     db_path: &str,
     configured_dir: Option<&str>,
     cache_key: &str,
-    _local_key_hex: Option<&str>,
-    base_downloads: Option<&str>,
+    local_key_hex: &str,
 ) -> Result<Option<RustMediaResult>> {
     let conn = open_media_db(db_path)?;
 
@@ -305,11 +145,7 @@ pub fn get_media_internal(
     ).ok();
 
     if let Some((row_id, local_path_str, mime_type)) = row {
-        if local_path_str.is_empty() {
-            return Ok(None);
-        }
-
-        let resolved_dir = resolve_media_folder(configured_dir, base_downloads);
+        let resolved_dir = resolve_media_folder(configured_dir);
         let path_obj = Path::new(&local_path_str);
         let candidate_in_resolved = path_obj.file_name().map(|f| resolved_dir.join(f));
 
@@ -335,15 +171,28 @@ pub fn get_media_internal(
             }
         };
 
-        let bytes = match std::fs::read(&file_path) {
-            Ok(b) => b,
+        let encrypted = match std::fs::read(&file_path) {
+            Ok(bytes) => bytes,
+            Err(_) => return Ok(None),
+        };
+
+        if encrypted.len() < 28 {
+            return Ok(None);
+        }
+
+        let cipher = derive_cipher(local_key_hex)?;
+        let (nonce_slice, ciphertext) = encrypted.split_at(12);
+        let nonce = Nonce::from_slice(nonce_slice);
+
+        let plaintext = match cipher.decrypt(nonce, ciphertext) {
+            Ok(p) => p,
             Err(_) => return Ok(None),
         };
 
         let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis() as i64;
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as i64;
 
         let _ = conn.execute(
             "UPDATE media_cache SET last_accessed = ?1 WHERE id = ?2",
@@ -351,7 +200,7 @@ pub fn get_media_internal(
         );
 
         Ok(Some(RustMediaResult {
-            data: bytes.into(),
+            data: plaintext.into(),
             mime: mime_type,
         }))
     } else {
@@ -363,7 +212,6 @@ pub fn exists_media_internal(
     db_path: &str,
     configured_dir: Option<&str>,
     cache_key: &str,
-    base_downloads: Option<&str>,
 ) -> bool {
     let conn = match open_media_db(db_path) {
         Ok(c) => c,
@@ -377,10 +225,7 @@ pub fn exists_media_internal(
     ).ok();
 
     if let Some(local_path_str) = row {
-        if local_path_str.is_empty() {
-            return false;
-        }
-        let resolved_dir = resolve_media_folder(configured_dir, base_downloads);
+        let resolved_dir = resolve_media_folder(configured_dir);
         let path_obj = Path::new(&local_path_str);
         if let Some(file_name) = path_obj.file_name() {
             if resolved_dir.join(file_name).exists() {

@@ -399,11 +399,11 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
           transition={{ duration: 0.15, ease: 'easeOut' }}
           className="w-full max-w-[360px] rounded-[8px] p-5 shadow-2xl overflow-hidden relative"
           style={{
-            backgroundColor: 'var(--settings-bg, var(--bg-secondary, #13141a))',
+            backgroundColor: 'var(--settings-bg, var(--bg-secondary, #1e1b2e))',
             color: 'var(--text-main)',
-            borderRadius: '10px',
-            border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
-            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6)',
+            borderRadius: '8px',
+            border: 'none',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.35)',
             minHeight: '175px',
           }}
           onClick={(e) => e.stopPropagation()}

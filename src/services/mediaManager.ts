@@ -80,23 +80,6 @@ const normalizeMediaUrl = (raw: string): string => {
   return raw.replace(/^\[(?:Photo|GIF|Sticker|Video|Audio|File)\]\s*/i, '').trim();
 };
 
-function isStickerMedia(url: string, fileName?: string): boolean {
-  if (!url) return false;
-  const u = url.toLowerCase();
-  const f = (fileName || '').toLowerCase();
-  return (
-    u.includes('sticker') ||
-    u.endsWith('.tgs') ||
-    u.includes('spotty') ||
-    u.includes('utyaduck') ||
-    u.startsWith('./stickers/') ||
-    u.startsWith('/stickers/') ||
-    f.includes('spotty') ||
-    f.includes('sticker') ||
-    f.endsWith('.tgs')
-  );
-}
-
 class MediaManager {
   private memoryCache = new Map<string, DecryptedMedia>();
   private totalMemorySize = 0;
@@ -148,8 +131,7 @@ class MediaManager {
     blob: Blob,
     mimeType: string,
     chatId?: string,
-    messageId?: string,
-    fileName?: string
+    messageId?: string
   ): DecryptedMedia {
     const cleanUrl = normalizeMediaUrl(url);
     const cacheKey = `${cleanUrl}::${sharedSecret || 'public'}`;
@@ -167,9 +149,9 @@ class MediaManager {
     };
     this.addToMemoryCache(cacheKey, media);
 
-    if (!isStickerMedia(cleanUrl, fileName) && typeof window !== 'undefined' && (window as any).orbita?.mediaSave) {
+    if (typeof window !== 'undefined' && (window as any).orbita?.mediaSave) {
       blob.arrayBuffer().then((ab) => {
-        (window as any).orbita.mediaSave(cleanUrl, new Uint8Array(ab), mimeType || blob.type || 'application/octet-stream', chatId, messageId, fileName).catch(() => {});
+        (window as any).orbita.mediaSave(cleanUrl, new Uint8Array(ab), mimeType || blob.type || 'application/octet-stream', chatId, messageId).catch(() => {});
       }).catch(() => {});
     }
 
@@ -404,8 +386,8 @@ class MediaManager {
         try {
           decryptedData = await this.decryptFile(rawBytes, sharedSecret);
           mime = this.detectMime(new Uint8Array(decryptedData.slice(0, 16)), fileName);
-          if (!isStickerMedia(url, fileName) && window.orbita?.mediaSave) {
-            window.orbita.mediaSave(url, new Uint8Array(decryptedData), mime, chatId || '', messageId || '', fileName).catch(() => {});
+          if (window.orbita?.mediaSave) {
+            window.orbita.mediaSave(url, new Uint8Array(decryptedData), mime, chatId || '', messageId || '').catch(() => {});
           } else {
             const b64 = this.arrayBufferToBase64(decryptedData);
             idbMediaStorage.save(url, b64, mime, chatId, messageId).catch(() => {});
@@ -472,9 +454,9 @@ class MediaManager {
 
       mime = this.detectMime(new Uint8Array(decryptedData.slice(0, 16)), fileName);
 
-      if (!isStickerMedia(url, fileName) && window.orbita?.mediaSave) {
+      if (window.orbita?.mediaSave) {
         try {
-          await window.orbita.mediaSave(url, new Uint8Array(decryptedData), mime, chatId || '', messageId || '', fileName);
+          await window.orbita.mediaSave(url, new Uint8Array(decryptedData), mime, chatId || '', messageId || '');
         } catch (_) {}
       } else {
         const b64 = this.arrayBufferToBase64(decryptedData);

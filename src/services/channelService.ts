@@ -600,6 +600,16 @@ class ChannelService {
 
     if (updatedReactions) {
       try {
+        const cachedStr = await getChannelPostsStorage(cleanChanId);
+        if (cachedStr) {
+          const cached = JSON.parse(cachedStr);
+          if (Array.isArray(cached)) {
+            const updated = cached.map((p: any) => p.id === cleanPostId ? { ...p, reactions: updatedReactions! } : p);
+            await setChannelPostsStorage(cleanChanId, JSON.stringify(updated));
+          }
+        }
+      } catch {}
+      try {
         ablyService.sendMessage(`public-channel-${cleanChanId}`, {
           type: 'reaction-updated',
           postId: cleanPostId,

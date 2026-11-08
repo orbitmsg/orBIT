@@ -33,10 +33,10 @@ export const GroupEmptyCard: React.FC<GroupEmptyCardProps> = ({ chat }) => {
           initial={{ opacity: 0, scale: 0.96, y: 8 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="pointer-events-auto flex flex-col items-center justify-center text-center max-w-[360px] w-full px-6 py-6 rounded-xl shadow-lg"
+          className="pointer-events-auto flex flex-col items-center justify-center text-center max-w-[360px] w-full px-6 py-6 rounded-2xl shadow-lg"
           style={{
-            backgroundColor: 'var(--surface-container, rgba(255, 255, 255, 0.04))',
-            border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
+            backgroundColor: 'var(--surface-container, rgba(255, 255, 255, 0.05))',
+            border: '1px solid var(--surface-border, rgba(255, 255, 255, 0.06))',
           }}
         >
           <div className="w-[72px] h-[72px] mb-3 flex items-center justify-center flex-shrink-0 relative">

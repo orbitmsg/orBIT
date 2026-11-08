@@ -34,10 +34,10 @@ export const EmptyChatGreeting: React.FC<EmptyChatGreetingProps> = ({
         transition={{ duration: 0.2, ease: 'easeOut' }}
         className="pointer-events-auto flex flex-col items-center justify-center text-center max-w-[340px] px-6 py-5"
         style={{
-          borderRadius: '10px',
-          backgroundColor: 'var(--surface-container, rgba(255, 255, 255, 0.04))',
-          border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
+          borderRadius: '15px',
+          backgroundColor: 'var(--surface-container, rgba(255, 255, 255, 0.05))',
+          border: 'none',
+          boxShadow: 'none',
         }}
       >
         <h3

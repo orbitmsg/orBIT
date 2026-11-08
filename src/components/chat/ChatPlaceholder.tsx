@@ -39,26 +39,11 @@ export const ChatPlaceholder = () => {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          maxWidth: '380px',
-          width: '100%',
         }}
       >
-        <div style={{ width: '72px', height: '72px', flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div
-            style={{
-              position: 'absolute',
-              inset: '-8px',
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, var(--accent-glow) 0%, transparent 70%)',
-              pointerEvents: 'none',
-            }}
-          />
+        <div style={{ width: '110px', height: '110px', flexShrink: 0 }}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="100%" height="100%">
             <defs>
-              <linearGradient id="orbita-glow-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="var(--accent-light, #818cf8)" />
-                <stop offset="100%" stopColor="var(--accent-color, #6366f1)" />
-              </linearGradient>
               <clipPath id="orbita-front-clip">
                 <rect x="-600" y="0" width="1200" height="600" />
               </clipPath>
@@ -79,13 +64,13 @@ export const ChatPlaceholder = () => {
             </defs>
             <g mask="url(#orbita-back-ring-mask)">
               <g transform="translate(400, 400) rotate(-26)">
-                <ellipse cx="0" cy="0" rx="360" ry="105" fill="url(#orbita-glow-grad)" mask="url(#orbita-ring-hole)" />
+                <ellipse cx="0" cy="0" rx="360" ry="105" fill="#BCC0C3" mask="url(#orbita-ring-hole)" />
               </g>
             </g>
-            <circle cx="400" cy="400" r="175" fill="url(#orbita-glow-grad)" mask="url(#orbita-planet-mask)" />
+            <circle cx="400" cy="400" r="175" fill="#BCC0C3" mask="url(#orbita-planet-mask)" />
             <g transform="translate(400, 400) rotate(-26)">
               <g clipPath="url(#orbita-front-clip)">
-                <ellipse cx="0" cy="0" rx="360" ry="105" fill="url(#orbita-glow-grad)" mask="url(#orbita-ring-hole)" />
+                <ellipse cx="0" cy="0" rx="360" ry="105" fill="#BCC0C3" mask="url(#orbita-ring-hole)" />
               </g>
             </g>
           </svg>
@@ -93,87 +78,45 @@ export const ChatPlaceholder = () => {
 
         <div
           style={{
-            fontSize: '15px',
+            fontSize: '18px',
             fontWeight: 600,
             color: 'var(--text-main, #ffffff)',
             textAlign: 'center',
-            letterSpacing: '0.04em',
-            marginTop: '14px',
-            textTransform: 'uppercase',
+            letterSpacing: '0.2px',
+            marginTop: '16px',
           }}
         >
-          Orbita Messenger
+          {t('chatPlaceholder.welcome', 'Добро пожаловать в Orbita')}
         </div>
 
         <div
           style={{
-            fontSize: '11px',
-            fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
-            color: 'var(--accent-color, #818cf8)',
-            backgroundColor: 'rgba(99, 102, 241, 0.12)',
-            border: '1px solid rgba(99, 102, 241, 0.25)',
-            padding: '2px 8px',
-            borderRadius: '999px',
+            fontSize: '14px',
+            color: 'var(--text-dim, #8a96a3)',
+            textAlign: 'center',
             marginTop: '6px',
-            letterSpacing: '0.02em',
           }}
         >
-          E2EE · ZERO-KNOWLEDGE MESH
-        </div>
-
-        <div
-          style={{
-            marginTop: '20px',
-            width: '100%',
-            backgroundColor: 'var(--surface-container, rgba(255, 255, 255, 0.035))',
-            border: '1px solid var(--border-color, rgba(255, 255, 255, 0.06))',
-            borderRadius: '12px',
-            padding: '12px 14px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-            boxSizing: 'border-box',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-dim, #8b90a0)' }}>
-            <span>Поиск по чатам и сообщениям</span>
-            <kbd style={{ fontSize: '10.5px', fontFamily: 'monospace', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#ffffff' }}>Ctrl K</kbd>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-dim, #8b90a0)' }}>
-            <span>Скрыть / открыть меню</span>
-            <kbd style={{ fontSize: '10.5px', fontFamily: 'monospace', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#ffffff' }}>Esc</kbd>
-          </div>
-        </div>
-
-        <div style={{ marginTop: '14px' }}>
+          <span>{t('chatPlaceholder.seeWhatsNewPrefix', 'Посмотрите, ')}</span>
           <button
             type="button"
             onClick={() => setIsWhatsNewOpen(true)}
             aria-label={t('chatPlaceholder.whatsNew', 'что нового')}
             style={{
-              background: 'transparent',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              padding: '5px 12px',
-              borderRadius: '999px',
-              fontSize: '12px',
-              fontWeight: 500,
-              color: 'var(--text-dim, #8b90a0)',
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              font: 'inherit',
+              color: 'var(--accent-color, #7C3AED)',
               cursor: 'pointer',
-              transition: 'all 0.15s ease',
+              textDecoration: 'none',
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#ffffff';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-dim, #8b90a0)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
+            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
           >
-            {t('chatPlaceholder.whatsNew', 'Что нового в обновлении')}
+            {t('chatPlaceholder.whatsNew', 'что нового')}
           </button>
+          <span>{t('chatPlaceholder.seeWhatsNewSuffix', ' в этом обновлении')}</span>
         </div>
       </div>
 

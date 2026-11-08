@@ -129,7 +129,9 @@ const AlbumTile = memo(({
     }
     if (msg.id) {
       useUploadProgressStore.getState().clearProgress(msg.id);
-      useUploadProgressStore.getState().clearProgress(`${msg.id}_${itemIdx}`);
+      for (let i = 0; i < 15; i++) {
+        useUploadProgressStore.getState().clearProgress(`${msg.id}_${i}`);
+      }
     }
     state.setIsUploadingMedia(false);
   }, [msg.id, chatId, (msg as any).chatId, (msg as any).chat_id, itemIdx]);

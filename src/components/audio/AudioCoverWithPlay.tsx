@@ -110,8 +110,8 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               pointerEvents: 'none',
             }}
           >
-            <svg viewBox="0 0 24 24" width={Math.round(size * 0.52)} height={Math.round(size * 0.52)} fill="none" stroke="#ffffff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 6L6 18M6 6l12 12" />
+            <svg viewBox="0 0 24 24" width={Math.round(size * 0.52)} height={Math.round(size * 0.52)} fill="none" stroke="#ffffff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 5L5 19M5 5l14 14" />
             </svg>
           </div>
         </>
@@ -170,8 +170,8 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               pointerEvents: 'none',
             }}
           >
-            <svg viewBox="0 0 24 24" width={Math.round(size * 0.52)} height={Math.round(size * 0.52)} fill="none" stroke="#ffffff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 6L6 18M6 6l12 12" />
+            <svg viewBox="0 0 24 24" width={Math.round(size * 0.52)} height={Math.round(size * 0.52)} fill="none" stroke="#ffffff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 5L5 19M5 5l14 14" />
             </svg>
           </div>
         </>

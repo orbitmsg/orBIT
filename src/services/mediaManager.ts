@@ -83,9 +83,9 @@ const normalizeMediaUrl = (raw: string): string => {
 class MediaManager {
   private memoryCache = new Map<string, DecryptedMedia>();
   private totalMemorySize = 0;
-  private maxMemorySize = 16 * 1024 * 1024;
-  private maxItemCount = 20;
-  private singleItemMaxSize = 8 * 1024 * 1024;
+  private maxMemorySize = 128 * 1024 * 1024;
+  private maxItemCount = 60;
+  private singleItemMaxSize = 50 * 1024 * 1024;
 
   constructor() {
     if (typeof window !== 'undefined') {

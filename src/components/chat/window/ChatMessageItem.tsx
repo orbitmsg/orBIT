@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { File, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, type Message, type MediaItem, isMessageOutgoing } from '../../../store/useChatStore';
+import { useUploadProgressStore } from '../../../store/useUploadProgressStore';
 import { mediaManager } from '../../../services/mediaManager';
 import { getOrbitaMediaUrl, calculateMediaDisplaySize } from '../../../lib/media-utils';
 import { GroupedAudioBubble } from '../GroupedAudioBubble';
@@ -1090,6 +1091,15 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   fileSize={msg.fileSize || (msg as any).size}
                   preview={(msg as any).preview || (media.url?.startsWith('data:') || media.url?.startsWith('blob:') ? media.url : undefined)}
                   blurPreview={msg.blurPreview || msg.thumbnail}
+                  isUploading={Boolean(msg.uploading)}
+                  onCancelUpload={() => {
+                    (window as any).orbita?.cancelUpload?.();
+                    if (activeChatId && msg.id) {
+                      useChatStore.getState().deleteMessage(activeChatId, msg.id);
+                      useUploadProgressStore.getState().clearProgress(msg.id);
+                    }
+                    useChatStore.getState().setIsUploadingMedia(false);
+                  }}
                   timeNode={!(msg.text?.trim() && msg.text.trim().replace(/^\[(?:Photo|GIF|Sticker|Video)\]\s*https?:\/\/[^\s]+$/i, '').trim()) ? timeBadge(msg, isMessagePinned(msg)) : undefined}
                   onClick={() => openMediaViewer(media.url!, msg.id)}
                   onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, msg, isOwn)}
@@ -1124,6 +1134,15 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   preview={(msg as any).preview || (media.url?.startsWith('data:') || media.url?.startsWith('blob:') ? media.url : undefined)}
                   thumbnail={(msg as any).preview || msg.thumbnail}
                   blurPreview={msg.blurPreview || msg.thumbnail}
+                  isUploading={Boolean(msg.uploading)}
+                  onCancelUpload={() => {
+                    (window as any).orbita?.cancelUpload?.();
+                    if (activeChatId && msg.id) {
+                      useChatStore.getState().deleteMessage(activeChatId, msg.id);
+                      useUploadProgressStore.getState().clearProgress(msg.id);
+                    }
+                    useChatStore.getState().setIsUploadingMedia(false);
+                  }}
                   timeNode={!(msg.text?.trim() && msg.text.trim().replace(/^\[(?:Photo|GIF|Sticker|Video)\]\s*https?:\/\/[^\s]+$/i, '').trim()) ? timeBadge(msg, isMessagePinned(msg)) : undefined}
                   onClick={() => openMediaViewer(media.url!, msg.id)}
                   onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, msg, isOwn)}

@@ -31,13 +31,10 @@ import { spawn } from 'child_process';
 import { getLocalKey, isPinLocked, isPinSet, unlockWithPin, setupPin, removePin, setNativeModule } from './localKey';
 
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
-app.commandLine.appendSwitch('js-flags', '--expose-gc --max-old-space-size=128 --optimize-for-size');
+app.commandLine.appendSwitch('js-flags', '--expose-gc --max-old-space-size=2048');
 app.commandLine.appendSwitch('disable-site-isolation-trials');
-app.commandLine.appendSwitch('renderer-process-limit', '1');
-app.commandLine.appendSwitch('process-per-site');
 app.commandLine.appendSwitch('disable-breakpad');
-app.commandLine.appendSwitch('enable-low-end-device-mode');
-app.commandLine.appendSwitch('disable-dev-shm-usage');
+app.commandLine.appendSwitch('disable-features', 'MediaRouter');
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -3170,7 +3167,7 @@ ipcMain.handle('orbita:prepareVideoForUpload', async (_event, filePath: string) 
       (!codecName || ['h264', 'avc1', 'vp8', 'vp9', 'av01', 'av1'].includes(codecName)) &&
       (pixFmt === 'yuv420p' || !pixFmt) &&
       (!hasAudio || isAudioPlayable) &&
-      originalSize <= 9.2 * 1024 * 1024;
+      originalSize <= 50 * 1024 * 1024;
 
     if (isDirectPlayable) {
       return { preparedPath: filePath, transcoded: false, mime: ext === '.webm' ? 'video/webm' : 'video/mp4' };

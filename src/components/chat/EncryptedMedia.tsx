@@ -1,6 +1,7 @@
 import React, { useMemo, memo, useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../../store/useChatStore';
+import { useUploadProgressStore } from '../../store/useUploadProgressStore';
 import { useDecryptedMedia, calculateMediaDisplaySize } from '../../lib/media-utils';
 import { AudioCoverWithPlay } from '../audio/AudioCoverWithPlay';
 import { SmartGifPlayer } from './SmartGifPlayer';
@@ -26,6 +27,8 @@ interface EncryptedMediaProps {
   preview?: string;
   blurPreview?: string;
   thumbnail?: string;
+  isUploading?: boolean;
+  onCancelUpload?: () => void;
 }
 
 export const EncryptedMedia = memo(({
@@ -46,7 +49,11 @@ export const EncryptedMedia = memo(({
   preview,
   blurPreview,
   thumbnail,
+  isUploading,
+  onCancelUpload,
 }: EncryptedMediaProps) => {
+  const liveUploadProgress = useUploadProgressStore((s) => (messageId ? s.progressByKey[messageId]?.fraction ?? 0 : 0));
+  const effectiveIsUploading = Boolean(isUploading);
   const autoLoad = useChatStore((state) => state.shouldAutoLoadMedia(type === 'image' ? 'photo' : 'video', fileSize, isOwn));
   const { blobUrl, load, cancel, isLoading, progress } = useDecryptedMedia(url, sharedSecret, undefined, undefined, chatId, messageId, autoLoad);
   const bubbleRadius = useChatStore.getState().bubbleRadius;
@@ -359,12 +366,13 @@ export const EncryptedMedia = memo(({
         overflowAnchor: 'none',
       }}
     >
-      {(!blobUrl && !activeImageSrc) && (
+      {((!blobUrl && !activeImageSrc) || effectiveIsUploading) && (
         <div
           className="absolute inset-0 flex flex-col items-center justify-center z-10 select-none cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
-            if (isLoading) cancel();
+            if (effectiveIsUploading) onCancelUpload?.();
+            else if (isLoading) cancel();
             else load();
           }}
         >
@@ -403,13 +411,33 @@ export const EncryptedMedia = memo(({
             <AudioCoverWithPlay
               cover={null}
               size={48}
-              state={isLoading ? 'downloading' : 'download'}
-              progress={isLoading ? progress : undefined}
-              onClick={() => { if (isLoading) cancel(); else load(); }}
-              onCancel={cancel}
-              ariaLabel={isLoading ? 'Cancel download' : 'Download media'}
+              state={effectiveIsUploading ? 'uploading' : (isLoading ? 'downloading' : 'download')}
+              progress={effectiveIsUploading ? liveUploadProgress : (isLoading ? progress : undefined)}
+              onClick={() => {
+                if (effectiveIsUploading) onCancelUpload?.();
+                else if (isLoading) cancel();
+                else load();
+              }}
+              onCancel={effectiveIsUploading ? onCancelUpload : cancel}
+              ariaLabel={effectiveIsUploading ? 'Cancel upload' : (isLoading ? 'Cancel download' : 'Download media')}
             />
-            {fileSize && fileSize > 0 && !isLoading && (
+            {effectiveIsUploading && (
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                  padding: '2px 8px',
+                  borderRadius: '10px',
+                  backdropFilter: 'blur(4px)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {Math.round(liveUploadProgress * 100)}%
+              </span>
+            )}
+            {!effectiveIsUploading && fileSize && fileSize > 0 && !isLoading && (
               <span
                 style={{
                   fontSize: '11px',

@@ -52,6 +52,50 @@ pub fn rust_storage_close_db(db_path: String) -> Result<bool> {
     Ok(true)
 }
 
+fn sanitize_message_value(val: &mut serde_json::Value) {
+    match val {
+        serde_json::Value::Object(map) => {
+            for (k, v) in map.iter_mut() {
+                if k == "preview" || k == "thumbnail" {
+                    if let serde_json::Value::String(s) = v {
+                        if s.len() > 2048 {
+                            *v = serde_json::Value::Null;
+                        }
+                    }
+                } else if k == "blurPreview" {
+                    if let serde_json::Value::String(s) = v {
+                        if s.len() > 4096 {
+                            *v = serde_json::Value::Null;
+                        }
+                    }
+                } else if let serde_json::Value::String(s) = v {
+                    if s.starts_with("data:") && s.len() > 2048 {
+                        *v = serde_json::Value::Null;
+                    }
+                } else {
+                    sanitize_message_value(v);
+                }
+            }
+        }
+        serde_json::Value::Array(arr) => {
+            for item in arr.iter_mut() {
+                sanitize_message_value(item);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn sanitize_message_str(raw_json: &str) -> String {
+    if let Ok(mut val) = serde_json::from_str::<serde_json::Value>(raw_json) {
+        sanitize_message_value(&mut val);
+        if let Ok(s) = serde_json::to_string(&val) {
+            return s;
+        }
+    }
+    raw_json.to_string()
+}
+
 fn get_vault_file_path(vault_dir: &str, key: &str) -> std::path::PathBuf {
     let safe_key: String = key
         .chars()
@@ -119,8 +163,13 @@ pub fn rust_storage_kv_set(
     master_key_hex: String,
     vault_dir: Option<String>,
 ) -> Result<bool> {
+    let clean_value = if key.contains("chat") {
+        sanitize_message_str(&value)
+    } else {
+        value
+    };
     let cipher = internal_get_cipher(&master_key_hex)?;
-    let enc_bytes = internal_encrypt_data(value.as_bytes(), &cipher)?;
+    let enc_bytes = internal_encrypt_data(clean_value.as_bytes(), &cipher)?;
     let enc_b64 = BASE64_STANDARD.encode(&enc_bytes);
 
     let is_critical = key.contains("auth")
@@ -178,8 +227,9 @@ pub fn rust_storage_add_message(
     master_key_hex: String,
     created_at_opt: Option<i64>,
 ) -> Result<bool> {
+    let clean_json = sanitize_message_str(&message_json);
     let cipher = internal_get_cipher(&master_key_hex)?;
-    let enc_bytes = internal_encrypt_data(message_json.as_bytes(), &cipher)?;
+    let enc_bytes = internal_encrypt_data(clean_json.as_bytes(), &cipher)?;
     let enc_b64 = BASE64_STANDARD.encode(&enc_bytes);
 
     let created_at = created_at_opt.unwrap_or_else(|| {
@@ -236,7 +286,9 @@ pub fn rust_storage_add_messages_batch(
             .as_millis() as i64;
 
         for item in items {
-            let json_str = match serde_json::to_string(&item.message_data) {
+            let mut clean_data = item.message_data;
+            sanitize_message_value(&mut clean_data);
+            let json_str = match serde_json::to_string(&clean_data) {
                 Ok(s) => s,
                 Err(_) => continue,
             };
@@ -246,8 +298,7 @@ pub fn rust_storage_add_messages_batch(
             };
             let enc_b64 = BASE64_STANDARD.encode(&enc_bytes);
 
-            let created_at = item
-                .message_data
+            let created_at = clean_data
                 .get("time")
                 .and_then(|t| t.as_i64())
                 .unwrap_or(now);
@@ -333,7 +384,8 @@ pub fn rust_storage_get_messages(
         if let Ok(enc_bytes) = BASE64_STANDARD.decode(enc_b64.trim()) {
             if let Ok(dec_bytes) = internal_decrypt_data(&enc_bytes, &cipher) {
                 if let Ok(json_str) = String::from_utf8(dec_bytes) {
-                    results.push(json_str);
+                    let clean_str = sanitize_message_str(&json_str);
+                    results.push(clean_str);
                 }
             }
         }
@@ -383,7 +435,8 @@ pub fn rust_storage_get_all_recent_messages(
             }
             if let Ok(enc_bytes) = BASE64_STANDARD.decode(enc_b64.trim()) {
                 if let Ok(dec_bytes) = internal_decrypt_data(&enc_bytes, &cipher) {
-                    if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&dec_bytes) {
+                    if let Ok(mut val) = serde_json::from_slice::<serde_json::Value>(&dec_bytes) {
+                        sanitize_message_value(&mut val);
                         let mut raw_chat_id = chat_id;
                         if raw_chat_id.starts_with("account_1:::") {
                             raw_chat_id = raw_chat_id.replacen("account_1:::", "", 1);

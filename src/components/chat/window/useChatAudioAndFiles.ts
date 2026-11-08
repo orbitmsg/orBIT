@@ -816,8 +816,8 @@ export const useChatAudioAndFiles = ({
             useUploadProgressStore.getState().clearProgress(`${messageId}_${fIdx}`);
             uploadedItems.push({
               ...uploaded,
-              preview: currentFile.preview,
-              thumbnail: currentFile.preview || uploaded.thumbnail,
+              preview: currentFile.preview && currentFile.preview.length < 2048 ? currentFile.preview : (currentFile.blurPreview || null),
+              thumbnail: currentFile.preview && currentFile.preview.length < 2048 ? currentFile.preview : (currentFile.blurPreview || uploaded.thumbnail || undefined),
               uploading: false,
             });
           }
@@ -917,8 +917,8 @@ export const useChatAudioAndFiles = ({
               postCaption,
               {
                 ...uploaded,
-                preview: file.preview,
-                thumbnail: file.preview || uploaded.thumbnail,
+                preview: file.preview && file.preview.length < 2048 ? file.preview : (file.blurPreview || null),
+                thumbnail: file.preview && file.preview.length < 2048 ? file.preview : (file.blurPreview || uploaded.thumbnail || undefined),
               },
               undefined,
               messageId

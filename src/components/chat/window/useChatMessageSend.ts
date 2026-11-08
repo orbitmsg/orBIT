@@ -541,7 +541,7 @@ export const useChatMessageSend = ({
         const isVisual = mediaPayload ? (mediaPayload.type === 'photo' || mediaPayload.type === 'video') : false;
         const sanitizePreview = (val?: string | null) => {
           if (!val) return null;
-          if (val.startsWith('data:')) return null;
+          if (val.startsWith('data:') && val.length > 4096) return null;
           return val;
         };
 
@@ -583,7 +583,7 @@ export const useChatMessageSend = ({
           mediaType: mediaPayload?.type || (sanitizedMediaItems && sanitizedMediaItems.length > 0 ? sanitizedMediaItems[0]?.type : null),
           mediaUrl: mediaPayload?.url || (sanitizedMediaItems && sanitizedMediaItems.length > 0 ? sanitizedMediaItems[0]?.url : null),
           mediaName: mediaPayload?.name || (sanitizedMediaItems && sanitizedMediaItems.length > 0 ? sanitizedMediaItems[0]?.name : null),
-          mediaKey: mediaPayload?.key || (sanitizedMediaItems && sanitizedMediaItems.length > 0 ? sanitizedMediaItems[0]?.key : null),
+          mediaKey: mediaPayload?.key || (mediaPayload as any)?.mediaKey || (sanitizedMediaItems && sanitizedMediaItems.length > 0 ? (sanitizedMediaItems[0]?.key || (sanitizedMediaItems[0] as any)?.mediaKey) : null),
           mime: mediaPayload?.mime || (sanitizedMediaItems && sanitizedMediaItems.length > 0 ? sanitizedMediaItems[0]?.mime : null),
           audioMetadata: networkAudioMetadata,
           duration: mediaPayload?.duration || (sanitizedMediaItems && sanitizedMediaItems.length > 0 ? sanitizedMediaItems[0]?.duration : null),
@@ -599,6 +599,7 @@ export const useChatMessageSend = ({
         };
 
         let freshChat = useChatStore.getState().chats.find(c => c.id === activeChatId);
+        const wasDraft = Boolean(freshChat?.isDraft || activeChat?.isDraft);
 
         if (freshChat?.type === 'group') {
           let groupSecret = freshChat.sharedSecret;
@@ -823,7 +824,7 @@ export const useChatMessageSend = ({
           }
         }
 
-        if (!freshChat?.ratchetState) {
+        if (!freshChat?.ratchetState || wasDraft) {
           const recipientTargets = Array.from(new Set([
             activeChat?.peerCode,
             freshChat?.peerCode,

@@ -3127,14 +3127,14 @@ ipcMain.handle('orbita:prepareVideoForUpload', async (_event, filePath: string) 
     }
 
     const isDirectPlayable =
-      ext === '.mp4' &&
-      codecName === 'h264' &&
+      (ext === '.mp4' || ext === '.webm') &&
+      (!codecName || ['h264', 'avc1', 'vp8', 'vp9', 'av01', 'av1'].includes(codecName)) &&
       (pixFmt === 'yuv420p' || !pixFmt) &&
       (!hasAudio || isAudioPlayable) &&
-      originalSize <= 9.5 * 1024 * 1024;
+      originalSize <= 50 * 1024 * 1024;
 
     if (isDirectPlayable) {
-      return { preparedPath: filePath, transcoded: false, mime: 'video/mp4' };
+      return { preparedPath: filePath, transcoded: false, mime: ext === '.webm' ? 'video/webm' : 'video/mp4' };
     }
 
     const tempDir = app.getPath('temp');
@@ -3143,7 +3143,8 @@ ipcMain.handle('orbita:prepareVideoForUpload', async (_event, filePath: string) 
     const conv = await runProcessCapture('ffmpeg', [
       '-i', filePath,
       '-c:v', 'libx264',
-      '-preset', 'veryfast',
+      '-preset', 'ultrafast',
+      '-threads', '0',
       '-crf', '26',
       '-vf', 'scale=min(1280\\,iw):min(720\\,ih):force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2',
       '-pix_fmt', 'yuv420p',
@@ -3153,33 +3154,10 @@ ipcMain.handle('orbita:prepareVideoForUpload', async (_event, filePath: string) 
       '-movflags', '+faststart',
       '-y',
       outPath,
-    ], 120000);
+    ], 60000);
 
-    if (conv.code === 0 && fs.existsSync(outPath)) {
-      const outSize = fs.statSync(outPath).size;
-      if (outSize > 9.5 * 1024 * 1024) {
-        const outPathSmall = path.join(tempDir, `orbita_upload_small_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.mp4`);
-        const conv2 = await runProcessCapture('ffmpeg', [
-          '-i', outPath,
-          '-c:v', 'libx264',
-          '-preset', 'veryfast',
-          '-crf', '32',
-          '-vf', 'scale=min(854\\,iw):min(480\\,ih):force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2',
-          '-pix_fmt', 'yuv420p',
-          '-c:a', 'aac',
-          '-b:a', '96k',
-          '-ar', '44100',
-          '-movflags', '+faststart',
-          '-y',
-          outPathSmall,
-        ], 120000);
-        try { fs.unlinkSync(outPath); } catch {}
-        if (conv2.code === 0 && fs.existsSync(outPathSmall) && fs.statSync(outPathSmall).size > 0) {
-          return { preparedPath: outPathSmall, transcoded: true, mime: 'video/mp4' };
-        }
-      } else if (outSize > 0) {
-        return { preparedPath: outPath, transcoded: true, mime: 'video/mp4' };
-      }
+    if (conv.code === 0 && fs.existsSync(outPath) && fs.statSync(outPath).size > 0) {
+      return { preparedPath: outPath, transcoded: true, mime: 'video/mp4' };
     }
   } catch {}
 

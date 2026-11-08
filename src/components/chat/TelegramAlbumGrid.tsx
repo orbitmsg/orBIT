@@ -110,8 +110,8 @@ const AlbumTile = memo(({
 
   const isDownloading = isLoading;
   const isLocalMedia = Boolean((item as any).preview || (item.url?.startsWith('data:') && item.url.length > 2048) || item.url?.startsWith('blob:'));
-  const posterSrc = (item as any).preview || (isLocalMedia ? item.url : undefined) || (item.thumbnail && (!item.thumbnail.startsWith('data:') || item.thumbnail.length > 2048) ? item.thumbnail : undefined);
-  const blurSrc = item.blurPreview || (item.thumbnail?.startsWith('data:') ? item.thumbnail : null) || (!posterSrc && item.url?.startsWith('data:') ? item.url : null);
+  const posterSrc = (item as any).preview || (isLocalMedia ? item.url : undefined) || (item.thumbnail && (!item.thumbnail.startsWith('data:') || item.thumbnail.length > 2048) ? item.thumbnail : undefined) || (isSingle ? ((msg as any).preview || ((msg as any).thumbnail && (!(msg as any).thumbnail.startsWith('data:') || (msg as any).thumbnail.length > 2048) ? (msg as any).thumbnail : undefined)) : undefined);
+  const blurSrc = item.blurPreview || (item.thumbnail?.startsWith('data:') ? item.thumbnail : null) || (isSingle ? ((msg as any).blurPreview || ((msg as any).thumbnail?.startsWith('data:') ? (msg as any).thumbnail : null)) : null) || (!posterSrc && item.url?.startsWith('data:') ? item.url : null);
   const mediaSrc = blobUrl || (isLocalMedia ? ((item as any).preview || item.url) : undefined);
 
   const shouldPlay = inView && isAppVisible && !isMediaViewerOpen && chatAutoPlayVideos;
@@ -417,6 +417,7 @@ const AlbumTile = memo(({
                 className={`w-full h-full pointer-events-none relative z-[1] transition-opacity duration-200 ${isSingle ? 'object-contain' : 'object-cover'}`}
                 style={{ opacity: isLoaded ? 1 : 0 }}
                 onLoadedMetadata={(e) => {
+                  setIsLoaded(true);
                   const vw = e.currentTarget.videoWidth;
                   const vh = e.currentTarget.videoHeight;
                   if (vw > 0 && vh > 0) {
@@ -426,7 +427,11 @@ const AlbumTile = memo(({
                     setVideoDuration(e.currentTarget.duration);
                   }
                 }}
+                onCanPlay={() => setIsLoaded(true)}
                 onLoadedData={() => setIsLoaded(true)}
+                disableRemotePlayback
+                disablePictureInPicture
+                controlsList="nodownload nofullscreen noremoteplayback"
                 autoPlay
                 loop
                 muted={isMuted}
@@ -443,6 +448,7 @@ const AlbumTile = memo(({
               style={{ opacity: isLoaded ? 1 : 0 }}
               onSeeked={handleSeeked}
               onLoadedMetadata={(e) => {
+                setIsLoaded(true);
                 const vw = e.currentTarget.videoWidth;
                 const vh = e.currentTarget.videoHeight;
                 if (vw > 0 && vh > 0) {
@@ -452,7 +458,11 @@ const AlbumTile = memo(({
                   setVideoDuration(e.currentTarget.duration);
                 }
               }}
+              onCanPlay={() => setIsLoaded(true)}
               onLoadedData={() => setIsLoaded(true)}
+              disableRemotePlayback
+              disablePictureInPicture
+              controlsList="nodownload nofullscreen noremoteplayback"
               autoPlay
               loop
               muted={isMuted}
@@ -490,7 +500,7 @@ const AlbumTile = memo(({
         </div>
       )}
 
-      {(!blobUrl || isUploading) && (
+      {(!blobUrl || isUploading || (isVideo && !isLoaded)) && (
         <div
           className={`absolute inset-0 flex flex-col items-center justify-center z-[2] select-none ${isUnavailable ? 'pointer-events-none' : 'cursor-pointer'}`}
           onClick={(e) => {

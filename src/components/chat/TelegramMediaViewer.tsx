@@ -292,7 +292,8 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
   );
   const isPhoto = !isVideo && !isGif;
 
-  const displaySrc = fallbackBlobUrl || cachedDecrypted?.blobUrl || (blobUrl && !blobUrl.startsWith('orbita-media:') ? blobUrl : null) || (isVideo ? null : (currentItem?.directUrl || (currentItem?.url ? currentItem.url : null)));
+  const isPlaintextUrl = Boolean(currentItem?.url && (currentItem.url.startsWith('blob:') || currentItem.url.startsWith('data:') || currentItem.url.includes('tenor.com') || currentItem.url.includes('giphy.com')));
+  const displaySrc = fallbackBlobUrl || cachedDecrypted?.blobUrl || (blobUrl && !blobUrl.startsWith('orbita-media:') ? blobUrl : null) || (isVideo ? null : (currentItem?.directUrl || (isPlaintextUrl ? currentItem.url : null)));
 
   useEffect(() => {
     if (!isOpen || !isVideo || !displaySrc) return;
@@ -1148,6 +1149,9 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 poster={currentItem?.thumbnail && (!currentItem.thumbnail.startsWith('data:') || currentItem.thumbnail.length > 2048) ? currentItem.thumbnail : undefined}
                 playsInline
                 preload="auto"
+                disableRemotePlayback
+                disablePictureInPicture
+                controlsList="nodownload nofullscreen noremoteplayback"
                 onClick={handleTogglePlay}
                 onLoadedMetadata={() => {
                   if (videoRef.current) {
@@ -1298,6 +1302,9 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 loop
                 muted
                 playsInline
+                disableRemotePlayback
+                disablePictureInPicture
+                controlsList="nodownload nofullscreen noremoteplayback"
                 onClick={(e) => e.stopPropagation()}
                 onLoadedMetadata={(e) => {
                   const v = e.currentTarget;

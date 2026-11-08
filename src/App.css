@@ -1120,3 +1120,13 @@ html.app-paused *::after {
   will-change: transform, opacity;
   transform-origin: center center;
 }
+
+
+video::-internal-media-controls-remote-playback-button,
+video::-webkit-media-controls-remote-playback-button,
+video::-internal-media-controls-cast-button,
+video::-webkit-media-controls-cast-button {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

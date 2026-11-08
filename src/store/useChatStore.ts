@@ -379,6 +379,9 @@ export const useChatStore = create<ChatState>()(
               if (chatEntry.peerCode && c.peerCode && (c.peerCode === chatEntry.peerCode || c.originalPeerCode === chatEntry.peerCode)) return true;
               if (chatEntry.originalPeerCode && c.originalPeerCode && (c.peerCode === chatEntry.originalPeerCode || c.originalPeerCode === chatEntry.originalPeerCode)) return true;
               if (chatEntry.peerPublicKey && c.peerPublicKey && c.peerPublicKey === chatEntry.peerPublicKey) return true;
+              if (chatEntry.numericId && c.numericId && c.numericId === chatEntry.numericId) return true;
+              if (chatEntry.username && c.username && c.username.replace(/^@+/, '').trim().toLowerCase() === chatEntry.username.replace(/^@+/, '').trim().toLowerCase()) return true;
+              if (chatEntry.name && chatEntry.name !== 'Unknown' && c.name && c.name.trim().toLowerCase() === chatEntry.name.trim().toLowerCase()) return true;
               return false;
             });
           } else {
@@ -442,7 +445,18 @@ export const useChatStore = create<ChatState>()(
 
             const nextChats = state.chats
               .map((c, idx) => idx === existsIndex ? merged : c)
-              .filter(c => !alternateId || c.id !== alternateId);
+              .filter(c => {
+                if (alternateId && c.id === alternateId) return false;
+                if (c.id !== canonicalId && c.type === 'private') {
+                  const cMsgs = state.messagesByChatId[c.id] || [];
+                  if (cMsgs.length === 0 && !c.sharedSecret) {
+                    if (c.peerCode && merged.peerCode && c.peerCode === merged.peerCode) return false;
+                    if (c.numericId && merged.numericId && c.numericId === merged.numericId) return false;
+                    if (c.name && merged.name && c.name.trim().toLowerCase() === merged.name.trim().toLowerCase()) return false;
+                  }
+                }
+                return true;
+              });
 
             return {
               chats: nextChats,

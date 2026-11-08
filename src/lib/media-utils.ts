@@ -148,7 +148,7 @@ export function useDecryptedMedia(
     if (!cleanUrl) return;
     const unsubscribe = mediaManager.subscribeProgress(cleanUrl, sharedSecret || '', (loaded, total) => {
       if (total > 0) {
-        setProgress(Math.min(1, Math.max(0.04, loaded / total)));
+        setProgress(total > 0 ? Math.min(1, Math.max(0, loaded / total)) : 0);
       }
     });
     return unsubscribe;

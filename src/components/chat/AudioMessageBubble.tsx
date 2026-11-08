@@ -188,8 +188,8 @@ export const AudioMessageBubble = memo(({
   const itemTotalSize = msg.audioMetadata?.size || (msg as any).size || msg.fileSize || 0;
   const liveProgress = useUploadProgressStore((s) => msg.id ? s.progressByKey[msg.id] : undefined);
   const uploadProgress = liveProgress
-    ? Math.max(0.04, liveProgress.fraction)
-    : (itemTotalSize > 0 ? Math.min(1, Math.max(0.04, ((msg.uploadedMb || 0) * 1024 * 1024) / itemTotalSize)) : 0.08);
+    ? Math.max(0, liveProgress.fraction)
+    : (itemTotalSize > 0 ? Math.min(1, Math.max(0, ((msg.uploadedMb || 0) * 1024 * 1024) / itemTotalSize)) : 0);
   const uploadedMbStr = liveProgress ? liveProgress.uploadedMb.toFixed(1) : (msg.uploadedMb || 0).toFixed(1);
   const sizeMbStr = liveProgress && liveProgress.totalMb > 0
     ? liveProgress.totalMb.toFixed(1)

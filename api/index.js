@@ -760,7 +760,8 @@ module.exports = async function handler(req, res) {
         dh_public_key: dhPublicKey,
         prev_chain_count: body.prevChainCount ?? null,
       };
-      const explicitUuid = toUuid(id || clientMsgId);
+      const baseMsgId = id || clientMsgId;
+      const explicitUuid = baseMsgId ? toUuid(`${baseMsgId}:${recipientId}`) : null;
       if (explicitUuid) {
         msgRow.id = explicitUuid;
       }

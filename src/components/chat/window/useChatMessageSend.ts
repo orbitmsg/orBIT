@@ -845,7 +845,7 @@ export const useChatMessageSend = ({
               recipientTargets.map((recipientId) =>
                 supabaseService.sendOfflineMessage(
                   activeChatId,
-                  myUserId || myCode || myNickname,
+                  myCode || myUserId || myNickname,
                   recipientId,
                   plaintext,
                   preHandshakeIndex,
@@ -1057,7 +1057,7 @@ export const useChatMessageSend = ({
               recipientTargets.map((recipientId) =>
                 supabaseService.sendOfflineMessage(
                   activeChatId,
-                  myUserId || myCode || myNickname,
+                  myCode || myUserId || myNickname,
                   recipientId,
                   ciphertext,
                   index,

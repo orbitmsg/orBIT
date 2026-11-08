@@ -2244,13 +2244,13 @@ function uploadToCloudinaryWithProgress(
 
     let uploadedFileBytes = 0;
     req.write(headerBuffer, () => {
-      const highWaterMark = 128 * 1024;
+      const highWaterMark = Math.min(16384, Math.max(1024, Math.floor(fileLength / 50)));
       fileStream = fs.createReadStream(filePath, { highWaterMark });
 
       fileStream.on('data', (chunk: Buffer) => {
         if (isStreamDestroyed) return;
         uploadedFileBytes += chunk.length;
-        const ratio = Math.min(0.92, uploadedFileBytes / fileLength);
+        const ratio = Math.min(0.95, uploadedFileBytes / fileLength);
         onProgress(Math.floor(ratio * fileLength), fileLength);
         const canContinue = req.write(chunk);
         if (!canContinue) {

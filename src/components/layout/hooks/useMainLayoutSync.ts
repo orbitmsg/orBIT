@@ -9,7 +9,7 @@ import { supabaseService, type OfflineMessageRecord } from '../../../services/su
 import { gatewayManager } from '../../../services/gatewayManager';
 import { groupService } from '../../../services/groupService';
 import { channelService } from '../../../services/channelService';
-import { generateKeyPair, deriveSharedSecret, deriveRootKey, derivePublicKey, encryptMessage } from '../../../lib/crypto';
+import { generateKeyPair, deriveSharedSecret, deriveRootKey, derivePublicKey, encryptMessage, getDirectChatId } from '../../../lib/crypto';
 import { networkManager, type OutboxItem } from '../../../services/networkManager';
 import { isValidGroupCode, deriveGroupKey } from '../../../lib/groupCrypto';
 import { DoubleRatchet } from '../../../lib/double-ratchet';
@@ -83,7 +83,38 @@ export const useMainLayoutSync = ({
         const existingHsChat = currentChats.find(
           c => c.id === hs.chat_id || (c.type === 'private' && (c.peerCode === hs.sender_code || c.originalPeerCode === hs.sender_code || c.peerCode === hs.recipient_code))
         );
-        if (existingHsChat || useChatStore.getState().deletedChatIds?.includes(hs.chat_id)) {
+        if (useChatStore.getState().deletedChatIds?.includes(hs.chat_id)) {
+          await supabaseService.markHandshakeConsumed(hs.id);
+          continue;
+        }
+
+        if (existingHsChat) {
+          if (!existingHsChat.sharedSecret || !existingHsChat.ratchetState) {
+            const myKeys = generateKeyPair();
+            const sharedSecret = deriveSharedSecret(myKeys.privateKey, hs.sender_public_key);
+            const rootKey = deriveRootKey(sharedSecret);
+            const ratchet = DoubleRatchet.initSymmetric(rootKey, myKeys.privateKey, myKeys.publicKey, hs.sender_public_key);
+            const peerCodeForOffline = hs.sender_code || hs.recipient_code || existingHsChat.peerCode;
+            updateChat(existingHsChat.id, {
+              sharedSecret,
+              ratchetState: ratchet.getState(),
+              isChatInitiator: false,
+              peerCode: peerCodeForOffline,
+              avatarUrl: hs.sender_avatar_url || existingHsChat.avatarUrl,
+            });
+            subscribeToChat(existingHsChat.id, sharedSecret);
+            subscribeToDeliveryUpdates(existingHsChat.id);
+            if (peerCodeForOffline) {
+              supabaseService.sendOfflineHandshake(
+                existingHsChat.id,
+                `CONFIRM:${peerCodeForOffline}`,
+                nickname || '',
+                myKeys.publicKey,
+                useAuthStore.getState().avatarUrl || null,
+                myCode || ''
+              ).catch(() => {});
+            }
+          }
           await supabaseService.markHandshakeConsumed(hs.id);
           continue;
         }
@@ -278,6 +309,7 @@ export const useMainLayoutSync = ({
         const receiptUpdates = new Map<string, { targetIds: Set<string>; targetTime?: number; readAt: number }>();
         const deleteActions: Array<{ chatId: string; messageId: string }> = [];
         const profileCache = new Map<string, any>();
+        const seenPayloadSignatures = new Set<string>();
 
         for (const record of batch) {
           if (processedMessageIds.current.has(record.id)) {
@@ -290,10 +322,65 @@ export const useMainLayoutSync = ({
             continue;
           }
 
+          const payloadSig = `${record.dh_public_key || ''}_${record.message_index ?? ''}_${record.ciphertext?.slice(0, 64) || ''}`;
+          if (seenPayloadSignatures.has(payloadSig)) {
+            processedMessageIds.current.add(record.id);
+            deliveredIds.push(record.id);
+            continue;
+          }
+          seenPayloadSignatures.add(payloadSig);
+
           const currentChats = useChatStore.getState().chats;
-          let chat = currentChats.find(
-            c => c.id === record.chat_id || (c.type === 'private' && record.sender_id && (c.peerCode === record.sender_id || c.originalPeerCode === record.sender_id))
-          );
+          const senderIdClean = (record.sender_id || '').trim();
+          const senderLower = senderIdClean.toLowerCase();
+
+          let chat = currentChats.find((c) => {
+            if (c.id === record.chat_id) return true;
+            if (c.type === 'private' && senderIdClean) {
+              if (c.peerCode && c.peerCode === senderIdClean) return true;
+              if (c.originalPeerCode && c.originalPeerCode === senderIdClean) return true;
+              if (c.numericId && c.numericId === senderIdClean) return true;
+              if (c.username && c.username.replace(/^@+/, '').trim().toLowerCase() === senderLower.replace(/^@+/, '')) return true;
+              if (c.name && c.name.trim().toLowerCase() === senderLower) return true;
+              if (myCode && c.peerCode && getDirectChatId(myCode, c.peerCode) === record.chat_id) return true;
+              if (myCode && getDirectChatId(myCode, senderIdClean) === c.id) return true;
+            }
+            return false;
+          });
+
+          if (!chat && senderIdClean) {
+            let pub = profileCache.get(senderIdClean);
+            if (pub === undefined) {
+              pub = await supabaseService.lookupPublicProfile(senderIdClean).catch(() => null);
+              profileCache.set(senderIdClean, pub || null);
+            }
+            if (pub) {
+              const pubUser = pub.username ? pub.username.replace(/^@+/, '').trim().toLowerCase() : null;
+              chat = currentChats.find((c) => {
+                if (c.type !== 'private') return false;
+                if (pub.user_code && (c.peerCode === pub.user_code || c.originalPeerCode === pub.user_code)) return true;
+                if (pub.numeric_id && c.numericId === pub.numeric_id) return true;
+                if (pubUser && c.username && c.username.replace(/^@+/, '').trim().toLowerCase() === pubUser) return true;
+                if (pub.nickname && c.name && c.name.trim().toLowerCase() === pub.nickname.trim().toLowerCase()) return true;
+                return false;
+              });
+            }
+          }
+
+          if (chat && (!chat.sharedSecret || !chat.ratchetState)) {
+            const establishedChat = currentChats.find((c) => {
+              if (c.id === chat!.id || c.type !== 'private') return false;
+              if (!c.sharedSecret || !c.ratchetState) return false;
+              if (c.peerCode && chat!.peerCode && c.peerCode === chat!.peerCode) return true;
+              if (c.numericId && chat!.numericId && c.numericId === chat!.numericId) return true;
+              if (c.username && chat!.username && c.username.trim().toLowerCase() === chat!.username.trim().toLowerCase()) return true;
+              if (c.name && chat!.name && c.name.trim().toLowerCase() === chat!.name.trim().toLowerCase()) return true;
+              return false;
+            });
+            if (establishedChat) {
+              chat = establishedChat;
+            }
+          }
           if (!chat) {
             const restored = useChatStore.getState().restoreDeletedChat(record.chat_id);
             if (restored) {
@@ -589,6 +676,15 @@ export const useMainLayoutSync = ({
             return (a.message.index ?? 0) - (b.message.index ?? 0);
           });
           addMessagesBatch(batchMessages);
+          for (const item of batchMessages) {
+            try {
+              ablyService.markMessageDelivered(item.chatId, item.message.id);
+              const pusher = getPusher();
+              const ch = pusher.channel(`private-chat-${item.chatId}`) || pusher.subscribe(`private-chat-${item.chatId}`);
+              const sendDelivered = () => ch.trigger('client-message', { type: 'delivered', messageId: item.message.id, time: Date.now(), sender: nickname });
+              if (ch.subscribed) sendDelivered(); else ch.bind('pusher:subscription_succeeded', sendDelivered);
+            } catch {}
+          }
         }
 
         for (const item of readReceiptsToSend) {

@@ -40,7 +40,7 @@ export async function sendEncryptedReadReceipt(chatId: string, messageIds: strin
     for (const recipientId of recipientTargets) {
       await supabaseService.sendOfflineMessage(
         chatId,
-        myUserId || myCode || myNickname,
+        myCode || myUserId || myNickname,
         recipientId,
         ciphertext,
         index,

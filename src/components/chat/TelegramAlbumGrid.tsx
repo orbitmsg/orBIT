@@ -342,8 +342,8 @@ const AlbumTile = memo(({
     highestProgressRef.current = currentFraction;
   }
   const uploadProgress = Math.min(1, Math.max(highestProgressRef.current, liveProgress
-    ? Math.max(0.04, liveProgress.fraction)
-    : (itemTotalSize > 0 ? Math.min(1, Math.max(0.04, ((item.uploadedMb || msg.uploadedMb || 0) * 1024 * 1024) / itemTotalSize)) : 0)));
+    ? Math.max(0, liveProgress.fraction)
+    : (itemTotalSize > 0 ? Math.min(1, Math.max(0, ((item.uploadedMb || msg.uploadedMb || 0) * 1024 * 1024) / itemTotalSize)) : 0)));
 
   return (
     <div

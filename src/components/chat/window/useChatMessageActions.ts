@@ -187,7 +187,7 @@ export const useChatMessageActions = ({
         for (const rId of recipientTargets) {
           supabaseService.sendOfflineMessage(
             activeChatId,
-            myUserId || myCode || myNickname,
+            myCode || myUserId || myNickname,
             rId,
             ciphertext,
             newIndex,
@@ -215,7 +215,7 @@ export const useChatMessageActions = ({
         for (const rId of recipientTargets) {
           supabaseService.sendOfflineMessage(
             activeChatId,
-            myUserId || myCode || myNickname,
+            myCode || myUserId || myNickname,
             rId,
             editPlaintext,
             0,

@@ -384,6 +384,14 @@ export const useChatStore = create<ChatState>()(
               if (chatEntry.name && chatEntry.name !== 'Unknown' && c.name && c.name.trim().toLowerCase() === chatEntry.name.trim().toLowerCase()) return true;
               return false;
             });
+          } else if (chatEntry.type === 'group') {
+            existsIndex = state.chats.findIndex((c) => {
+              if (c.type !== 'group') return false;
+              if (c.id === chatEntry.id) return true;
+              if (chatEntry.inviteCode && c.inviteCode && c.inviteCode === chatEntry.inviteCode) return true;
+              if (chatEntry.name && c.name && chatEntry.name.trim().toLowerCase() === c.name.trim().toLowerCase()) return true;
+              return false;
+            });
           } else {
             existsIndex = state.chats.findIndex(c => c.id === chatEntry.id);
           }
@@ -447,13 +455,18 @@ export const useChatStore = create<ChatState>()(
               .map((c, idx) => idx === existsIndex ? merged : c)
               .filter(c => {
                 if (alternateId && c.id === alternateId) return false;
-                if (c.id !== canonicalId && c.type === 'private') {
-                  const cMsgs = state.messagesByChatId[c.id] || [];
-                  if (cMsgs.length === 0) {
-                    if (c.peerCode && merged.peerCode && (c.peerCode === merged.peerCode || c.originalPeerCode === merged.peerCode)) return false;
-                    if (c.numericId && merged.numericId && c.numericId === merged.numericId) return false;
-                    if (c.username && merged.username && c.username.replace(/^@+/, '').trim().toLowerCase() === merged.username.replace(/^@+/, '').trim().toLowerCase()) return false;
-                    if (c.name && merged.name && c.name !== 'Unknown' && c.name.trim().toLowerCase() === merged.name.trim().toLowerCase()) return false;
+                if (c.id !== canonicalId) {
+                  if (c.type === 'private' && merged.type === 'private') {
+                    const cMsgs = state.messagesByChatId[c.id] || [];
+                    if (cMsgs.length === 0) {
+                      if (c.peerCode && merged.peerCode && (c.peerCode === merged.peerCode || c.originalPeerCode === merged.peerCode)) return false;
+                      if (c.numericId && merged.numericId && c.numericId === merged.numericId) return false;
+                      if (c.username && merged.username && c.username.replace(/^@+/, '').trim().toLowerCase() === merged.username.replace(/^@+/, '').trim().toLowerCase()) return false;
+                      if (c.name && merged.name && c.name !== 'Unknown' && c.name.trim().toLowerCase() === merged.name.trim().toLowerCase()) return false;
+                    }
+                  } else if (c.type === 'group' && merged.type === 'group') {
+                    if (c.inviteCode && merged.inviteCode && c.inviteCode === merged.inviteCode) return false;
+                    if (c.name && merged.name && c.name.trim().toLowerCase() === merged.name.trim().toLowerCase()) return false;
                   }
                 }
                 return true;
@@ -646,9 +659,21 @@ export const useChatStore = create<ChatState>()(
         };
 
         const currentMessages = state.messagesByChatId[chatId] || [];
-        const updatedMessages = [...currentMessages, enrichedMessage].sort(
-          (a, b) => (Number(a.time) || 0) - (Number(b.time) || 0)
-        );
+        const seenMsgKeys = new Set<string>();
+        const updatedMessages: Message[] = [];
+        for (const m of currentMessages) {
+          const key = m.id || `${m.time}_${m.text}`;
+          if (!seenMsgKeys.has(key)) {
+            seenMsgKeys.add(key);
+            updatedMessages.push(m);
+          }
+        }
+        const newKey = enrichedMessage.id || `${enrichedMessage.time}_${enrichedMessage.text}`;
+        if (!seenMsgKeys.has(newKey)) {
+          seenMsgKeys.add(newKey);
+          updatedMessages.push(enrichedMessage);
+        }
+        updatedMessages.sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0));
 
         let trimmedMessages = updatedMessages;
         if (updatedMessages.length > MAX_MESSAGES_PER_CHAT) {
@@ -1170,7 +1195,17 @@ export const useChatStore = create<ChatState>()(
                   const current = updated[chatId] || [];
                   let mergedMsgs = msgs;
                   if (current.length === 0) {
-                    updated[chatId] = msgs;
+                    const seen = new Set<string>();
+                    const deduplicatedMsgs: any[] = [];
+                    for (const m of (msgs as any[])) {
+                      const key = m.id || `${m.time}_${m.text}`;
+                      if (!seen.has(key)) {
+                        seen.add(key);
+                        deduplicatedMsgs.push(m);
+                      }
+                    }
+                    mergedMsgs = deduplicatedMsgs;
+                    updated[chatId] = deduplicatedMsgs;
                   } else {
                     const msgsById = new Map<string, any>((msgs as any[]).map((m: any) => [m.id || `${m.time}_${m.text}`, m]));
                     const updatedCurrent = current.map((m: any) => {

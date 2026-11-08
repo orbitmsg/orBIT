@@ -81,7 +81,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke={customBg ? 'rgba(255, 255, 255, 0.25)' : (isOwn ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.12)')}
+              stroke={customBg ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.2)'}
               strokeWidth={strokeW}
             />
             <circle
@@ -89,7 +89,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke={customBg ? '#ffffff' : (isOwn ? '#ffffff' : 'var(--accent-color, #6c5ce7)')}
+              stroke={customBg ? '#ffffff' : '#ffffff'}
               strokeWidth={strokeW}
               strokeLinecap="round"
               strokeDasharray={isDeterminate ? circumference : `${circumference * 0.28} ${circumference * 0.72}`}
@@ -110,8 +110,8 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               pointerEvents: 'none',
             }}
           >
-            <svg viewBox="0 0 24 24" width={Math.round(size * 0.52)} height={Math.round(size * 0.52)} fill="none" stroke="#ffffff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 5L5 19M5 5l14 14" />
+            <svg viewBox="0 0 24 24" width={Math.round(size * 0.56)} height={Math.round(size * 0.56)} fill="none" stroke="#ffffff" strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </div>
         </>
@@ -141,7 +141,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke={customBg ? 'rgba(255, 255, 255, 0.25)' : (isOwn ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.12)')}
+              stroke={customBg ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.2)'}
               strokeWidth={strokeW}
             />
             <circle
@@ -149,7 +149,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke={customBg ? '#ffffff' : (isOwn ? '#ffffff' : 'var(--accent-color, #6c5ce7)')}
+              stroke={customBg ? '#ffffff' : '#ffffff'}
               strokeWidth={strokeW}
               strokeLinecap="round"
               strokeDasharray={isDeterminate ? circumference : `${circumference * 0.28} ${circumference * 0.72}`}
@@ -170,8 +170,8 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               pointerEvents: 'none',
             }}
           >
-            <svg viewBox="0 0 24 24" width={Math.round(size * 0.52)} height={Math.round(size * 0.52)} fill="none" stroke="#ffffff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 5L5 19M5 5l14 14" />
+            <svg viewBox="0 0 24 24" width={Math.round(size * 0.56)} height={Math.round(size * 0.56)} fill="none" stroke="#ffffff" strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </div>
         </>
@@ -260,7 +260,8 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
         overflow: 'hidden',
         position: 'relative',
         flexShrink: 0,
-        backgroundColor: cover ? 'transparent' : (customBg || (state === 'done' ? 'rgba(0, 184, 148, 0.15)' : (isOwn ? 'rgba(255, 255, 255, 0.2)' : 'rgba(45, 48, 62, 0.9)'))),
+        backgroundColor: cover ? 'transparent' : (customBg || (state === 'done' ? 'rgba(0, 184, 148, 0.15)' : ((state === 'uploading' || state === 'downloading') ? 'rgba(15, 17, 26, 0.78)' : (isOwn ? 'rgba(255, 255, 255, 0.2)' : 'rgba(45, 48, 62, 0.9)')))),
+        backdropFilter: (state === 'uploading' || state === 'downloading') ? 'blur(8px)' : undefined,
         border: 'none',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
         cursor: 'pointer',

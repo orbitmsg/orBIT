@@ -552,20 +552,21 @@ export const useChatRealtime = ({
               actorNickname: parsed?.actorNickname || data.actorNickname || undefined,
               targetNickname: parsed?.targetNickname || data.targetNickname || undefined,
             };
-            useChatStore.getState().addMessage(activeChatId, item);
+            const targetChatId = data.chatId || data.groupId || activeChatId;
+            useChatStore.getState().addMessage(targetChatId, item);
             if (item.systemType === 'call_ended') {
-              useChatStore.getState().updateChat(activeChatId, { activeCallRoom: null });
+              useChatStore.getState().updateChat(targetChatId, { activeCallRoom: null });
             } else if (item.systemType === 'call') {
-              const fallbackRoom = (parsed as any)?.roomName || (data as any)?.roomName || (item as any)?.roomName || `group-call-${activeChatId}`;
-              useChatStore.getState().updateChat(activeChatId, { activeCallRoom: fallbackRoom });
-              groupService.getActiveCall(activeChatId).then((call) => {
+              const fallbackRoom = (parsed as any)?.roomName || (data as any)?.roomName || (item as any)?.roomName || `group-call-${targetChatId}`;
+              useChatStore.getState().updateChat(targetChatId, { activeCallRoom: fallbackRoom });
+              groupService.getActiveCall(targetChatId).then((call) => {
                 if (call && call.status === 'active') {
-                  useChatStore.getState().updateChat(activeChatId, { activeCallRoom: call.roomName });
+                  useChatStore.getState().updateChat(targetChatId, { activeCallRoom: call.roomName });
                 }
               }).catch(() => {});
             }
             try {
-              (window as any).orbita?.storageAddMessage?.(activeChatId, mid, item);
+              (window as any).orbita?.storageAddMessage?.(targetChatId, mid, item);
             } catch {}
             if (isVisible) {
               notifyPeerReadBatch(mid, data.time || Date.now(), [mid]);

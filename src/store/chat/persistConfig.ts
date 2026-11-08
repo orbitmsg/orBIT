@@ -147,8 +147,9 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
     }
     if (state && Array.isArray(state.chats)) {
       const privateChats = state.chats.filter((c) => c.type === 'private' && c.id !== 'notes');
+      const groupChats = state.chats.filter((c) => c.type === 'group');
       const otherChats = state.chats
-        .filter((c) => c.type !== 'private' || c.id === 'notes')
+        .filter((c) => c.type !== 'private' && c.type !== 'group' || c.id === 'notes')
         .filter((c) => !(c.type === 'channel' && !c.isOwner && c.isSubscribed === false))
         .map((c) => ({
           ...c,
@@ -176,6 +177,76 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
         }
         return score;
       };
+
+      const groupClusters: typeof groupChats[] = [];
+      for (const chat of groupChats) {
+        let foundCluster = groupClusters.find((cluster) =>
+          cluster.some((c) => {
+            if (c.id === chat.id) return true;
+            if (chat.inviteCode && c.inviteCode && c.inviteCode === chat.inviteCode) return true;
+            if (chat.name && c.name && chat.name.trim().toLowerCase() === c.name.trim().toLowerCase()) return true;
+            return false;
+          })
+        );
+        if (foundCluster) {
+          foundCluster.push(chat);
+        } else {
+          groupClusters.push([chat]);
+        }
+      }
+
+      const deduplicatedGroups: typeof groupChats = [];
+      for (const cluster of groupClusters) {
+        if (cluster.length === 1) {
+          deduplicatedGroups.push({ ...cluster[0], online: false });
+          continue;
+        }
+
+        cluster.sort((a, b) => getChatScore(b) - getChatScore(a));
+        let canonical = cluster[0];
+        let mergedMessages: Message[] = messagesMap[canonical.id] ? [...messagesMap[canonical.id]] : [];
+        const seenMsgKeys = new Set(mergedMessages.map((m) => m.id || `${m.time}_${m.text}`));
+
+        for (let i = 1; i < cluster.length; i++) {
+          const dup = cluster[i];
+          const dupMsgs = messagesMap[dup.id] || [];
+          for (const m of dupMsgs) {
+            const key = m.id || `${m.time}_${m.text}`;
+            if (!seenMsgKeys.has(key)) {
+              seenMsgKeys.add(key);
+              mergedMessages.push(m);
+            }
+          }
+          delete messagesMap[dup.id];
+
+          if (typeof window !== 'undefined' && (window as any).orbita?.storageMigrateChat) {
+            (window as any).orbita.storageMigrateChat(dup.id, canonical.id).catch(() => {});
+          }
+
+          if (state.activeChatId === dup.id) {
+            state.activeChatId = canonical.id;
+          }
+          if (state.activeProfileChatId === dup.id) {
+            state.activeProfileChatId = canonical.id;
+          }
+
+          canonical = {
+            ...dup,
+            ...canonical,
+            id: canonical.id,
+            online: false,
+            sharedSecret: canonical.sharedSecret || dup.sharedSecret,
+            avatarUrl: canonical.avatarUrl || dup.avatarUrl,
+            description: canonical.description || dup.description,
+            inviteCode: canonical.inviteCode || dup.inviteCode,
+            name: (canonical.name && canonical.name !== 'Unknown') ? canonical.name : dup.name,
+          };
+        }
+
+        mergedMessages.sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0));
+        messagesMap[canonical.id] = mergedMessages;
+        deduplicatedGroups.push(canonical);
+      }
 
       const groups: typeof privateChats[] = [];
       for (const chat of privateChats) {
@@ -258,7 +329,7 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
         deduplicatedPrivate.push(canonical);
       }
 
-      state.chats = [...otherChats, ...deduplicatedPrivate];
+      state.chats = [...otherChats, ...deduplicatedGroups, ...deduplicatedPrivate];
       state.messagesByChatId = messagesMap;
       if (state.activeChatId && !state.chats.some((c) => c.id === state.activeChatId)) {
         state.activeChatId = null;

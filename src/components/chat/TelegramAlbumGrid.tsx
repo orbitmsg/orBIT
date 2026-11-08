@@ -4,6 +4,7 @@ import { MediaItem, Message, useChatStore } from '../../store/useChatStore';
 import { useUploadProgressStore } from '../../store/useUploadProgressStore';
 import { useDecryptedMedia, calculateMediaDisplaySize } from '../../lib/media-utils';
 import { AudioCoverWithPlay } from '../audio/AudioCoverWithPlay';
+import { cancelActiveMediaUpload } from './window/useChatAudioAndFiles';
 import { orbitFs } from './chatUtils';
 import { AnimatedVideoVolumeIcon } from './ChatIcons';
 import { useAppVisibility } from '../../utils/appVisibility';
@@ -97,7 +98,7 @@ const AlbumTile = memo(({
     (item.url && /\.(mp4|mov|avi|webm|mkv|m4v)(\?.*)?$/i.test(item.url))
   );
 
-  const isUploading = Boolean(item.uploading || (isOwn && msg.uploading && msg.status === 'sending'));
+  const isUploading = Boolean(item.uploading || (isOwn && (msg.uploading || msg.status === 'sending')));
   const isFailed = Boolean(isOwn && msg.status === 'error');
   const shouldAutoLoad = useChatStore((state) => state.shouldAutoLoadMedia(isVideo ? 'video' : 'photo', item.size, isOwn));
   const autoLoad = !isUploading && (isGif || shouldAutoLoad);
@@ -113,28 +114,8 @@ const AlbumTile = memo(({
   );
 
   const handleCancelUpload = useCallback(() => {
-    (window as any).orbita?.cancelUpload?.();
-    const state = useChatStore.getState();
-    let targetChatId = chatId || (msg as any).chatId || (msg as any).chat_id || state.activeChatId;
-    if (!targetChatId || !state.messagesByChatId[targetChatId]?.some((m) => m.id === msg.id)) {
-      for (const [cId, msgs] of Object.entries(state.messagesByChatId)) {
-        if (msgs.some((m) => m.id === msg.id)) {
-          targetChatId = cId;
-          break;
-        }
-      }
-    }
-    if (targetChatId && msg.id) {
-      state.deleteMessage(targetChatId, msg.id);
-    }
-    if (msg.id) {
-      useUploadProgressStore.getState().clearProgress(msg.id);
-      for (let i = 0; i < 15; i++) {
-        useUploadProgressStore.getState().clearProgress(`${msg.id}_${i}`);
-      }
-    }
-    state.setIsUploadingMedia(false);
-  }, [msg.id, chatId, (msg as any).chatId, (msg as any).chat_id, itemIdx]);
+    cancelActiveMediaUpload(chatId || (msg as any).chatId || (msg as any).chat_id, msg.id);
+  }, [msg.id, chatId, (msg as any).chatId, (msg as any).chat_id]);
 
   const handleCancelDownload = useCallback(() => {
     cancel();
@@ -551,11 +532,11 @@ const AlbumTile = memo(({
           <div className="relative z-10 flex flex-col items-center gap-1.5 pointer-events-auto">
             <AudioCoverWithPlay
               cover={null}
-              size={48}
+              size={52}
               state={isFailed ? 'download' : (isUploading ? 'uploading' : (isDownloading ? 'downloading' : 'download'))}
               progress={isUploading ? uploadProgress : progress}
               isOwn={isOwn}
-              customBg="rgba(15, 15, 20, 0.65)"
+              customBg="rgba(15, 17, 26, 0.75)"
               onClick={() => {
                 if (isUploading) handleCancelUpload();
                 else if (isDownloading) handleCancelDownload();

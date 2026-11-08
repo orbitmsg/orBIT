@@ -378,7 +378,8 @@ pub fn rust_storage_get_messages(
     let mut results = Vec::new();
 
     for (id, enc_b64) in raw_rows {
-        if !seen_ids.insert(id) {
+        let clean_id = id.trim_start_matches("account_1:::").trim_start_matches("account_2:::").to_string();
+        if !seen_ids.insert(clean_id) {
             continue;
         }
         if let Ok(enc_bytes) = BASE64_STANDARD.decode(enc_b64.trim()) {
@@ -430,7 +431,8 @@ pub fn rust_storage_get_all_recent_messages(
 
     for row in rows {
         if let Ok((id, chat_id, enc_b64)) = row {
-            if !seen_ids.insert(id) {
+            let clean_id = id.trim_start_matches("account_1:::").trim_start_matches("account_2:::").to_string();
+            if !seen_ids.insert(clean_id) {
                 continue;
             }
             if let Ok(enc_bytes) = BASE64_STANDARD.decode(enc_b64.trim()) {

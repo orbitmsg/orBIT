@@ -410,9 +410,11 @@ export const EncryptedMedia = memo(({
           <div className="relative z-10 flex flex-col items-center gap-1.5 pointer-events-auto">
             <AudioCoverWithPlay
               cover={null}
-              size={48}
+              size={52}
               state={effectiveIsUploading ? 'uploading' : (isLoading ? 'downloading' : 'download')}
               progress={effectiveIsUploading ? liveUploadProgress : (isLoading ? progress : undefined)}
+              isOwn={isOwn}
+              customBg="rgba(15, 17, 26, 0.75)"
               onClick={() => {
                 if (effectiveIsUploading) onCancelUpload?.();
                 else if (isLoading) cancel();

@@ -7,6 +7,7 @@ import { mediaManager } from '../../services/mediaManager';
 import { AudioCoverWithPlay, type AudioCoverState } from '../audio/AudioCoverWithPlay';
 import { arrayBufferToBase64 } from '../../utils/messageUtils';
 import { orbitFs } from './chatUtils';
+import { cancelActiveMediaUpload } from './window/useChatAudioAndFiles';
 
 function formatBytes(bytes: number): string {
   if (!bytes || isNaN(bytes) || bytes <= 0) return '0 B';
@@ -228,24 +229,9 @@ export const FileMessage = memo(({
           onClick={handleOpenFile}
           onCancel={() => {
             if (isCurrentlyUploading) {
-              (window as any).orbita?.cancelUpload?.();
-              const state = useChatStore.getState();
-              let targetChatId = chatId || state.activeChatId;
-              if (!targetChatId || !state.messagesByChatId[targetChatId]?.some((m) => m.id === messageId)) {
-                for (const [cId, msgs] of Object.entries(state.messagesByChatId)) {
-                  if (msgs.some((m) => m.id === messageId)) {
-                    targetChatId = cId;
-                    break;
-                  }
-                }
-              }
-              if (targetChatId && messageId) {
-                state.deleteMessage(targetChatId, messageId);
-              }
               if (messageId) {
-                useUploadProgressStore.getState().clearProgress(messageId);
+                cancelActiveMediaUpload(chatId || useChatStore.getState().activeChatId, messageId);
               }
-              state.setIsUploadingMedia(false);
             } else if (isDownloading) {
               cancel();
             }

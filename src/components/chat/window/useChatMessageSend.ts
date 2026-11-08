@@ -61,7 +61,8 @@ export interface UseChatMessageSendReturn {
     linkPreviewPayload?: LinkPreviewData,
     existingMessageId?: string,
     mediaItemsPayload?: MediaItem[],
-    forwardedFromPayload?: Message['forwardedFrom']
+    forwardedFromPayload?: Message['forwardedFrom'],
+    targetChatIdParam?: string
   ) => Promise<void>;
   handleSendMessage: (overrideText?: string, linkPreview?: LinkPreviewData) => void;
   handleSendAsTxt: (caption: string) => Promise<void>;
@@ -113,18 +114,21 @@ export const useChatMessageSend = ({
     linkPreviewPayload?: LinkPreviewData,
     existingMessageId?: string,
     mediaItemsPayload?: MediaItem[],
-    forwardedFromPayload?: Message['forwardedFrom']
+    forwardedFromPayload?: Message['forwardedFrom'],
+    targetChatIdParam?: string
   ) => {
-    if (!activeChatId) return;
+    const targetChatId = targetChatIdParam || activeChatId;
+    if (!targetChatId) return;
+    const targetChat = useChatStore.getState().chats.find((c) => c.id === targetChatId) || activeChat;
 
-    if (activeChatId === 'notes') {
+    if (targetChatId === 'notes') {
       if (existingMessageId) {
         useChatStore.setState((state) => {
-          const currentMsgs = state.messagesByChatId[activeChatId] || [];
+          const currentMsgs = state.messagesByChatId[targetChatId] || [];
           return {
             messagesByChatId: {
               ...state.messagesByChatId,
-              [activeChatId]: currentMsgs.map((m) =>
+              [targetChatId]: currentMsgs.map((m) =>
                 m.id === existingMessageId
                   ? {
                       ...m,
@@ -151,10 +155,10 @@ export const useChatMessageSend = ({
             },
           };
         });
-        const currentMsgs = useChatStore.getState().messagesByChatId[activeChatId] || [];
+        const currentMsgs = useChatStore.getState().messagesByChatId[targetChatId] || [];
         const target = currentMsgs.find((m) => m.id === existingMessageId);
         if (target) {
-          (window as any).orbita?.storageAddMessage?.(activeChatId, existingMessageId, target).catch(() => {});
+          (window as any).orbita?.storageAddMessage?.(targetChatId, existingMessageId, target).catch(() => {});
         }
       } else {
         const localMessage: Message = {
@@ -183,7 +187,7 @@ export const useChatMessageSend = ({
           linkPreview: linkPreviewPayload,
           forwardedFrom: forwardedFromPayload,
         };
-        addMessage(activeChatId, localMessage);
+        addMessage(targetChatId, localMessage);
       }
       setInputText('');
       setReplyingTo(null);
@@ -191,14 +195,14 @@ export const useChatMessageSend = ({
       return;
     }
 
-    if (activeChatId === 'system_support') {
+    if (targetChatId === 'system_support') {
       if (existingMessageId) {
         useChatStore.setState((state) => {
-          const currentMsgs = state.messagesByChatId[activeChatId] || [];
+          const currentMsgs = state.messagesByChatId[targetChatId] || [];
           return {
             messagesByChatId: {
               ...state.messagesByChatId,
-              [activeChatId]: currentMsgs.map((m) =>
+              [targetChatId]: currentMsgs.map((m) =>
                 m.id === existingMessageId
                   ? {
                       ...m,
@@ -225,10 +229,10 @@ export const useChatMessageSend = ({
             },
           };
         });
-        const currentMsgs = useChatStore.getState().messagesByChatId[activeChatId] || [];
+        const currentMsgs = useChatStore.getState().messagesByChatId[targetChatId] || [];
         const target = currentMsgs.find((m) => m.id === existingMessageId);
         if (target) {
-          (window as any).orbita?.storageAddMessage?.(activeChatId, existingMessageId, target).catch(() => {});
+          (window as any).orbita?.storageAddMessage?.(targetChatId, existingMessageId, target).catch(() => {});
         }
       } else {
         const localMessage: Message = {
@@ -256,9 +260,9 @@ export const useChatMessageSend = ({
           mediaItems: mediaItemsPayload,
           forwardedFrom: forwardedFromPayload,
         };
-        addMessage(activeChatId, localMessage);
+        addMessage(targetChatId, localMessage);
       }
-      updateChat(activeChatId, { lastMsg: mediaPayload?.name || (mediaItemsPayload && mediaItemsPayload.length > 0 ? '[MediaGroup]' : text) || '📎' });
+      updateChat(targetChatId, { lastMsg: mediaPayload?.name || (mediaItemsPayload && mediaItemsPayload.length > 0 ? '[MediaGroup]' : text) || '📎' });
       setInputText('');
       setReplyingTo(null);
       requestAnimationFrame(() => scrollToBottom(false));
@@ -270,7 +274,7 @@ export const useChatMessageSend = ({
       return;
     }
 
-    const chat = useChatStore.getState().chats.find((c) => c.id === activeChatId);
+    const chat = useChatStore.getState().chats.find((c) => c.id === targetChatId);
 
     if (chat?.type === 'channel') {
       if (!isChannelOwner) return;
@@ -286,11 +290,11 @@ export const useChatMessageSend = ({
       const optimisticId = existingMessageId || `post_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       if (existingMessageId) {
         useChatStore.setState((state) => {
-          const currentMsgs = state.messagesByChatId[activeChatId] || [];
+          const currentMsgs = state.messagesByChatId[targetChatId] || [];
           return {
             messagesByChatId: {
               ...state.messagesByChatId,
-              [activeChatId]: currentMsgs.map((m) =>
+              [targetChatId]: currentMsgs.map((m) =>
                 m.id === existingMessageId
                   ? {
                       ...m,
@@ -316,10 +320,10 @@ export const useChatMessageSend = ({
             },
           };
         });
-        const currentMsgs = useChatStore.getState().messagesByChatId[activeChatId] || [];
+        const currentMsgs = useChatStore.getState().messagesByChatId[targetChatId] || [];
         const target = currentMsgs.find((m) => m.id === existingMessageId);
         if (target) {
-          (window as any).orbita?.storageAddMessage?.(activeChatId, existingMessageId, target).catch(() => {});
+          (window as any).orbita?.storageAddMessage?.(targetChatId, existingMessageId, target).catch(() => {});
         }
       } else {
         const optimisticMessage: Message = {
@@ -348,11 +352,11 @@ export const useChatMessageSend = ({
           linkPreview: sentPreview || undefined,
           forwardedFrom: forwardedFromPayload,
         };
-        addMessage(activeChatId, optimisticMessage);
+        addMessage(targetChatId, optimisticMessage);
       }
-      updateChat(activeChatId, { lastMsg: sentText || sentMedia?.name || (mediaItemsPayload && mediaItemsPayload.length > 0 ? '[MediaGroup]' : 'Новый пост') });
+      updateChat(targetChatId, { lastMsg: sentText || sentMedia?.name || (mediaItemsPayload && mediaItemsPayload.length > 0 ? '[MediaGroup]' : 'Новый пост') });
 
-      const targetChannelId = activeChatId;
+      const targetChannelId = targetChatId;
 
       if (mediaItemsPayload && mediaItemsPayload.length > 0) {
         for (let fIdx = 0; fIdx < mediaItemsPayload.length; fIdx++) {
@@ -475,7 +479,7 @@ export const useChatMessageSend = ({
       text: text,
       time: Date.now(),
       read: false,
-      status: activeChatId === 'notes' ? 'sent' : 'sending',
+      status: targetChatId === 'notes' ? 'sent' : 'sending',
       mediaType: (mediaPayload?.type as any) || (mediaItemsPayload && mediaItemsPayload.length > 0 ? (mediaItemsPayload[0]?.type as any) : undefined),
       mediaUrl: mediaPayload?.url || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.url : undefined),
       mediaName: mediaPayload?.name || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.name : undefined),
@@ -496,13 +500,13 @@ export const useChatMessageSend = ({
 
     if (existingMessageId) {
       useChatStore.setState((state) => {
-        const currentMsgs = state.messagesByChatId[activeChatId] || [];
+        const currentMsgs = state.messagesByChatId[targetChatId] || [];
         const updated = currentMsgs.map((m) =>
           m.id === messageId
             ? {
                 ...m,
                 text,
-                status: (activeChatId === 'notes' ? 'sent' : 'sending') as Message['status'],
+                status: (targetChatId === 'notes' ? 'sent' : 'sending') as Message['status'],
                 uploading: false,
                 mediaType: (mediaPayload?.type as any) || (mediaItemsPayload && mediaItemsPayload.length > 0 ? (mediaItemsPayload[0]?.type as any) : m.mediaType),
                 mediaUrl: mediaPayload?.url || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.url : m.mediaUrl),
@@ -523,17 +527,17 @@ export const useChatMessageSend = ({
         );
         const target = updated.find((m) => m.id === messageId);
         if (target) {
-          (window as any).orbita?.storageAddMessage?.(activeChatId, messageId, target).catch(() => {});
+          (window as any).orbita?.storageAddMessage?.(targetChatId, messageId, target).catch(() => {});
         }
         return {
           messagesByChatId: {
             ...state.messagesByChatId,
-            [activeChatId]: updated,
+            [targetChatId]: updated,
           },
         };
       });
     } else {
-      addMessage(activeChatId, localMessage);
+      addMessage(targetChatId, localMessage);
     }
 
     sendQueueRef.current = sendQueueRef.current.then(async () => {
@@ -598,8 +602,8 @@ export const useChatMessageSend = ({
           forwardedFrom: forwardedFromPayload || null,
         };
 
-        let freshChat = useChatStore.getState().chats.find(c => c.id === activeChatId);
-        const wasDraft = Boolean(freshChat?.isDraft || activeChat?.isDraft);
+        let freshChat = useChatStore.getState().chats.find(c => c.id === targetChatId);
+        const wasDraft = Boolean(freshChat?.isDraft || targetChat?.isDraft);
 
         if (freshChat?.type === 'group') {
           let groupSecret = freshChat.sharedSecret;
@@ -613,14 +617,14 @@ export const useChatMessageSend = ({
             groupSecret = deriveGroupKey(freshChat.code);
           }
           if (!groupSecret) {
-            const fetched = await groupService.getGroup(activeChatId);
-            groupSecret = fetched?.sharedSecret || deriveGroupKey(activeChatId);
+            const fetched = await groupService.getGroup(targetChatId);
+            groupSecret = fetched?.sharedSecret || deriveGroupKey(targetChatId);
           }
 
           if (groupSecret) {
             const ciphertext = await encryptMessage(JSON.stringify(messageData), groupSecret);
             const groupPusher = getGroupPusher();
-            const channel = groupPusher.subscribe(`presence-group-${activeChatId}`);
+            const channel = groupPusher.subscribe(`presence-group-${targetChatId}`);
             const firstGroupItem = mediaItemsPayload?.[0];
             const payload = {
               mediaType: mediaPayload?.type || firstGroupItem?.type || null,
@@ -638,7 +642,7 @@ export const useChatMessageSend = ({
               ciphertext,
               type: 'message',
               messageId,
-              chatId: activeChatId,
+              chatId: targetChatId,
               time: Date.now(),
             };
             const doSendPusher = () => {
@@ -656,7 +660,7 @@ export const useChatMessageSend = ({
 
             groupService.sendGroupMessage({
               id: messageId,
-              groupId: activeChatId,
+              groupId: targetChatId,
               senderCode: myCode,
               senderId: myUserId || myCode,
               senderNickname: myNickname,
@@ -674,13 +678,13 @@ export const useChatMessageSend = ({
               linkPreview: linkPreviewPayload || null,
             }).then((res) => {
               if (res) {
-                useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sent');
+                useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sent');
                 networkManager.removeOutboxItem(messageId).catch(() => {});
               } else {
                 if (typeof navigator !== 'undefined' && !navigator.onLine) {
                   networkManager.enqueueOutbox({
                     id: messageId,
-                    chatId: activeChatId,
+                    chatId: targetChatId,
                     text,
                     sender: myNickname,
                     time: localMessage.time || Date.now(),
@@ -689,16 +693,16 @@ export const useChatMessageSend = ({
                     mediaPayload,
                     sanitizedMediaItems: sanitizedMediaItems || undefined,
                   }).catch(() => {});
-                  useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sending');
+                  useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sending');
                 } else {
-                  useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');
+                  useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'failed');
                 }
               }
             }).catch(() => {
               if (typeof navigator !== 'undefined' && !navigator.onLine) {
                 networkManager.enqueueOutbox({
                   id: messageId,
-                  chatId: activeChatId,
+                  chatId: targetChatId,
                   text,
                   sender: myNickname,
                   time: localMessage.time || Date.now(),
@@ -707,9 +711,9 @@ export const useChatMessageSend = ({
                   mediaPayload,
                   sanitizedMediaItems: sanitizedMediaItems || undefined,
                 }).catch(() => {});
-                useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sending');
+                useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sending');
               } else {
-                useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');
+                useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'failed');
               }
             });
           }
@@ -717,7 +721,7 @@ export const useChatMessageSend = ({
         }
 
         if (freshChat?.isDraft) {
-          const friendCode = freshChat.peerCode || activeChat?.peerCode;
+          const friendCode = freshChat.peerCode || targetChat?.peerCode;
           let myKeys = generateKeyPair();
           let sharedSecret = myKeys.privateKey;
           let ratchetState = undefined;
@@ -767,7 +771,7 @@ export const useChatMessageSend = ({
             publicKey: myKeys.publicKey,
             avatarUrl: myAvatarUrl,
             bannerUrl: myBannerUrl,
-            chatId: activeChatId,
+            chatId: targetChatId,
             numericId: myNumericId,
             username: myUsername,
             bio: myBio,
@@ -775,7 +779,7 @@ export const useChatMessageSend = ({
             ...x3dhData,
           };
 
-          updateChat(activeChatId, {
+          updateChat(targetChatId, {
             isDraft: false,
             sharedSecret: sharedSecret,
             ratchetState: ratchetState,
@@ -813,7 +817,7 @@ export const useChatMessageSend = ({
               } catch {}
               ablyService.sendHandshakeRequest(target, reqPayload).catch(() => {});
               supabaseService.sendOfflineHandshake(
-                activeChatId,
+                targetChatId,
                 target,
                 myNickname,
                 myKeys.publicKey,
@@ -826,26 +830,26 @@ export const useChatMessageSend = ({
 
         if (!freshChat?.ratchetState || wasDraft) {
           const recipientTargets = Array.from(new Set([
-            activeChat?.peerCode,
+            targetChat?.peerCode,
             freshChat?.peerCode,
-            activeChat?.originalPeerCode,
+            targetChat?.originalPeerCode,
             freshChat?.originalPeerCode,
-            activeChat?.numericId,
+            targetChat?.numericId,
             freshChat?.numericId,
-            activeChat?.username,
+            targetChat?.username,
             freshChat?.username,
-            activeChat?.name && activeChat.name !== 'Unknown' && activeChat.name !== myNickname ? activeChat.name : undefined,
+            targetChat?.name && targetChat.name !== 'Unknown' && targetChat.name !== myNickname ? targetChat.name : undefined,
             freshChat?.name && freshChat.name !== 'Unknown' && freshChat.name !== myNickname ? freshChat.name : undefined,
           ].filter((t): t is string => Boolean(t && t !== myCode && t !== myUserId))));
-          if (activeChat?.type === 'private' || freshChat?.type === 'private') {
-            const currentMsgs = useChatStore.getState().messagesByChatId[activeChatId] || [];
+          if (targetChat?.type === 'private' || freshChat?.type === 'private') {
+            const currentMsgs = useChatStore.getState().messagesByChatId[targetChatId] || [];
             const targetIdx = currentMsgs.findIndex((m) => m.id === messageId);
             const preHandshakeIndex = targetIdx >= 0 ? targetIdx : currentMsgs.length;
             const plaintext = JSON.stringify(messageData);
             const offlinePromise = Promise.allSettled(
               recipientTargets.map((recipientId) =>
                 supabaseService.sendOfflineMessage(
-                  activeChatId,
+                  targetChatId,
                   myCode || myUserId || myNickname,
                   recipientId,
                   plaintext,
@@ -878,15 +882,15 @@ export const useChatMessageSend = ({
               index: preHandshakeIndex,
               dhPublicKey: 'PRE_HANDSHAKE',
               messageId,
-              chatId: activeChatId,
+              chatId: targetChatId,
             };
             let ablyDirectSent = false;
             try {
-              await ablyService.sendMessage(activeChatId, preHandshakePayload);
+              await ablyService.sendMessage(targetChatId, preHandshakePayload);
               ablyDirectSent = true;
             } catch {}
             try {
-              const channel = pusher.subscribe(`private-chat-${activeChatId}`);
+              const channel = pusher.subscribe(`private-chat-${targetChatId}`);
               const doSendPusher = () => {
                 try {
                   const jsonStr = JSON.stringify(preHandshakePayload);
@@ -931,13 +935,13 @@ export const useChatMessageSend = ({
             const offlineResults = await offlinePromise;
             const hadOfflineSuccess = offlineResults.some((r) => r.status === 'fulfilled');
             if (ablyDirectSent || hadOfflineSuccess) {
-              useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sent');
+              useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sent');
               networkManager.removeOutboxItem(messageId).catch(() => {});
             } else {
               if (typeof navigator !== 'undefined' && !navigator.onLine) {
                 networkManager.enqueueOutbox({
                   id: messageId,
-                  chatId: activeChatId,
+                  chatId: targetChatId,
                   text,
                   sender: myNickname,
                   time: localMessage.time || Date.now(),
@@ -946,9 +950,9 @@ export const useChatMessageSend = ({
                   mediaPayload,
                   sanitizedMediaItems: sanitizedMediaItems || undefined,
                 }).catch(() => {});
-                useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sending');
+                useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sending');
               } else {
-                useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');
+                useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'failed');
               }
             }
           }
@@ -964,7 +968,7 @@ export const useChatMessageSend = ({
         const plaintext = JSON.stringify(messageData);
         const { ciphertext, index, dhPublicKey, prevChainCount } = await ratchet.encrypt(plaintext);
 
-        updateChat(activeChatId, { ratchetState: ratchet.getState() });
+        updateChat(targetChatId, { ratchetState: ratchet.getState() });
 
         const firstRatchetItem = sanitizedMediaItems?.[0];
         const payload = {
@@ -989,31 +993,31 @@ export const useChatMessageSend = ({
           dhPublicKey,
           prevChainCount,
           messageId,
-          chatId: activeChatId,
+          chatId: targetChatId,
         };
 
         const recipientTargets = Array.from(new Set([
           freshChat?.peerCode,
-          activeChat?.peerCode,
+          targetChat?.peerCode,
           freshChat?.originalPeerCode,
-          activeChat?.originalPeerCode,
+          targetChat?.originalPeerCode,
           freshChat?.numericId,
-          activeChat?.numericId,
+          targetChat?.numericId,
           freshChat?.username,
-          activeChat?.username,
+          targetChat?.username,
           freshChat?.name && freshChat.name !== 'Unknown' && freshChat.name !== myNickname ? freshChat.name : undefined,
-          activeChat?.name && activeChat.name !== 'Unknown' && activeChat.name !== myNickname ? activeChat.name : undefined,
+          targetChat?.name && targetChat.name !== 'Unknown' && targetChat.name !== myNickname ? targetChat.name : undefined,
         ].filter((t): t is string => Boolean(t && t !== myCode && t !== myUserId))));
 
         await (async () => {
           let ablySuccess = false;
           try {
-            await ablyService.sendMessage(activeChatId, payload);
+            await ablyService.sendMessage(targetChatId, payload);
             ablySuccess = true;
           } catch {}
 
           try {
-            const channel = pusher.subscribe(`private-chat-${activeChatId}`);
+            const channel = pusher.subscribe(`private-chat-${targetChatId}`);
             const doSendPusher = () => {
               try {
                 const jsonStr = JSON.stringify(payload);
@@ -1056,11 +1060,11 @@ export const useChatMessageSend = ({
           }
 
           let offlineSuccess = false;
-          if (freshChat?.type === 'private' || activeChat?.type === 'private') {
+          if (freshChat?.type === 'private' || targetChat?.type === 'private') {
             const offlineResults = await Promise.allSettled(
               recipientTargets.map((recipientId) =>
                 supabaseService.sendOfflineMessage(
-                  activeChatId,
+                  targetChatId,
                   myCode || myUserId || myNickname,
                   recipientId,
                   ciphertext,
@@ -1075,13 +1079,13 @@ export const useChatMessageSend = ({
           }
 
           if (ablySuccess || offlineSuccess) {
-            useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sent');
+            useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sent');
             networkManager.removeOutboxItem(messageId).catch(() => {});
           } else {
             if (typeof navigator !== 'undefined' && !navigator.onLine) {
               networkManager.enqueueOutbox({
                 id: messageId,
-                chatId: activeChatId,
+                chatId: targetChatId,
                 text,
                 sender: myNickname,
                 time: localMessage.time || Date.now(),
@@ -1090,16 +1094,16 @@ export const useChatMessageSend = ({
                 mediaPayload,
                 sanitizedMediaItems: sanitizedMediaItems || undefined,
               }).catch(() => {});
-              useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sending');
+              useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sending');
             } else {
-              useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');
+              useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'failed');
             }
           }
         })().catch(() => {
           if (typeof navigator !== 'undefined' && !navigator.onLine) {
             networkManager.enqueueOutbox({
               id: messageId,
-              chatId: activeChatId,
+              chatId: targetChatId,
               text,
               sender: myNickname,
               time: localMessage.time || Date.now(),
@@ -1108,13 +1112,13 @@ export const useChatMessageSend = ({
               mediaPayload,
               sanitizedMediaItems: sanitizedMediaItems || undefined,
             }).catch(() => {});
-            useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'sending');
+            useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sending');
           } else {
-            useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');
+            useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'failed');
           }
         });
       } catch (err) {
-        useChatStore.getState().updateMessageStatus(activeChatId, messageId, 'failed');
+        useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'failed');
       }
     }).catch(() => {});
   };

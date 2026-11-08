@@ -2,7 +2,6 @@ import React, { useCallback } from 'react';
 import { File, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, type Message, type MediaItem, isMessageOutgoing } from '../../../store/useChatStore';
-import { useUploadProgressStore } from '../../../store/useUploadProgressStore';
 import { mediaManager } from '../../../services/mediaManager';
 import { getOrbitaMediaUrl, calculateMediaDisplaySize } from '../../../lib/media-utils';
 import { GroupedAudioBubble } from '../GroupedAudioBubble';
@@ -26,6 +25,7 @@ import { parseReplyChain, countEmojis, formatTimeOfDay, arrayBufferToBase64 } fr
 import { isEmojiOnly } from '../../../lib/emoji-data';
 import { parseMedia, formatTime, isSameDay } from './chatWindowHelpers';
 import { type MediaViewerItem } from '../TelegramMediaViewer';
+import { cancelActiveMediaUpload } from './useChatAudioAndFiles';
 
 export interface ChatMessageItemProps {
   index: number;
@@ -1093,12 +1093,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   blurPreview={msg.blurPreview || msg.thumbnail}
                   isUploading={Boolean(msg.uploading)}
                   onCancelUpload={() => {
-                    (window as any).orbita?.cancelUpload?.();
-                    if (activeChatId && msg.id) {
-                      useChatStore.getState().deleteMessage(activeChatId, msg.id);
-                      useUploadProgressStore.getState().clearProgress(msg.id);
-                    }
-                    useChatStore.getState().setIsUploadingMedia(false);
+                    cancelActiveMediaUpload((msg as any).chatId || (msg as any).chat_id || activeChatId, msg.id);
                   }}
                   timeNode={!(msg.text?.trim() && msg.text.trim().replace(/^\[(?:Photo|GIF|Sticker|Video)\]\s*https?:\/\/[^\s]+$/i, '').trim()) ? timeBadge(msg, isMessagePinned(msg)) : undefined}
                   onClick={() => openMediaViewer(media.url!, msg.id)}
@@ -1136,12 +1131,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   blurPreview={msg.blurPreview || msg.thumbnail}
                   isUploading={Boolean(msg.uploading)}
                   onCancelUpload={() => {
-                    (window as any).orbita?.cancelUpload?.();
-                    if (activeChatId && msg.id) {
-                      useChatStore.getState().deleteMessage(activeChatId, msg.id);
-                      useUploadProgressStore.getState().clearProgress(msg.id);
-                    }
-                    useChatStore.getState().setIsUploadingMedia(false);
+                    cancelActiveMediaUpload((msg as any).chatId || (msg as any).chat_id || activeChatId, msg.id);
                   }}
                   timeNode={!(msg.text?.trim() && msg.text.trim().replace(/^\[(?:Photo|GIF|Sticker|Video)\]\s*https?:\/\/[^\s]+$/i, '').trim()) ? timeBadge(msg, isMessagePinned(msg)) : undefined}
                   onClick={() => openMediaViewer(media.url!, msg.id)}
@@ -1227,9 +1217,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 timeNode={timeBadge(msg, isMessagePinned(msg))}
                 isOwn={isOwn}
                 onCancelUpload={msg.uploading ? () => {
-                  if (activeChatId && msg.id) {
-                    useChatStore.getState().deleteMessage(activeChatId, msg.id);
-                  }
+                  cancelActiveMediaUpload(activeChatId, msg.id);
                 } : undefined}
               />
               </div>
@@ -1249,9 +1237,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   isOwn={isOwn}
                   customRadius={customRadius}
                   onCancelUpload={msg.uploading ? () => {
-                    if (activeChatId && msg.id) {
-                      useChatStore.getState().deleteMessage(activeChatId, msg.id);
-                    }
+                    cancelActiveMediaUpload(activeChatId, msg.id);
                   } : undefined}
                 />
               </div>

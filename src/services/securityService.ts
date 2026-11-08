@@ -139,26 +139,7 @@ export const securityService = {
 
   cleanUnencryptedLocalStorage(): void {
     if (!this.isPasswordSet()) return;
-    const allowedPrefixes = [
-      'orbita_lock_',
-      'orbita_usb_key_',
-      'orbita_font_family',
-      'orbita_theme',
-      'orbita_language',
-      'orbita_custom_accent_color',
-      'orbita_perm_',
-      'orbita_call_',
-    ];
-    try {
-      const keysToRemove: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && !allowedPrefixes.some(prefix => k.startsWith(prefix))) {
-          keysToRemove.push(k);
-        }
-      }
-      keysToRemove.forEach(k => localStorage.removeItem(k));
-    } catch {}
+    
   },
 
   async verifyPassword(password: string): Promise<boolean> {

@@ -1,5 +1,5 @@
-import { getVercelBaseUrl } from './gatewayManager';
-import { idbMediaStorage } from './mediaManager';
+import { getVercelBaseUrl } from '../services/gatewayManager';
+import { idbMediaStorage } from '../services/mediaManager';
 
 const WORKER_URL = getVercelBaseUrl();
 

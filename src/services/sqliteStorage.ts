@@ -6,18 +6,6 @@ export const sqliteStorage = {
         if (val !== null && val !== undefined) return val;
       } catch {}
     }
-    if (typeof localStorage !== 'undefined') {
-      try {
-        const legacyVal = localStorage.getItem(key);
-        if (legacyVal !== null) {
-          if (typeof window !== 'undefined' && (window as any).orbita?.storageSet) {
-            await (window as any).orbita.storageSet(key, legacyVal);
-          }
-          localStorage.removeItem(key);
-          return legacyVal;
-        }
-      } catch {}
-    }
     return null;
   },
 
@@ -25,14 +13,7 @@ export const sqliteStorage = {
     if (typeof window !== 'undefined' && (window as any).orbita?.storageSet) {
       try {
         await (window as any).orbita.storageSet(key, value);
-        if (typeof localStorage !== 'undefined') {
-          try { localStorage.removeItem(key); } catch {}
-        }
-        return;
       } catch {}
-    }
-    if (typeof localStorage !== 'undefined') {
-      try { localStorage.setItem(key, value); } catch {}
     }
   },
 
@@ -41,9 +22,6 @@ export const sqliteStorage = {
       try {
         await (window as any).orbita.storageRemove(key);
       } catch {}
-    }
-    if (typeof localStorage !== 'undefined') {
-      try { localStorage.removeItem(key); } catch {}
     }
   },
 
@@ -58,6 +36,8 @@ export const sqliteStorage = {
   },
 
   async setJson<T>(key: string, data: T): Promise<void> {
-    await this.set(key, JSON.stringify(data));
+    try {
+      await this.set(key, JSON.stringify(data));
+    } catch {}
   },
 };

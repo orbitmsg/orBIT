@@ -122,14 +122,6 @@ const ipcStorage: StateStorage = {
         return null;
       }
     }
-    const localVal = typeof localStorage !== 'undefined' ? localStorage.getItem(name) : null;
-    if (!val || (!hasExistingAccount(val) && hasExistingAccount(localVal))) {
-      val = localVal;
-      if (val && (window as any).orbita?.storageSet) {
-        (window as any).orbita.storageSet(name, val).catch(() => {});
-      }
-      try { localStorage.removeItem(name); } catch {}
-    }
     if (val !== null) lastSavedAuthValues[name] = val;
     return val;
   },
@@ -152,20 +144,14 @@ const ipcStorage: StateStorage = {
     if ((window as any).orbita?.storageSet) {
       try {
         await (window as any).orbita.storageSet(name, value);
-        if (typeof localStorage !== 'undefined') {
-          try {
-            localStorage.removeItem(name);
-          } catch {}
-        }
+        
       } catch {}
     }
   },
   removeItem: async (name: string): Promise<void> => {
     if (typeof window === 'undefined') return;
     delete lastSavedAuthValues[name];
-    try {
-      localStorage.removeItem(name);
-    } catch {}
+    
     if ((window as any).orbita?.storageRemove) {
       try {
         await (window as any).orbita.storageRemove(name);
@@ -300,8 +286,10 @@ export const useAuthStore = create<AuthState>()(
             m.useAccountStore.getState().deleteCurrentAccount();
           }).catch(() => {
             document.documentElement.removeAttribute('data-theme');
-            localStorage.removeItem('orbita-auth-storage');
-            localStorage.removeItem('orbita-chat-storage');
+            if ((window as any).orbita?.storageRemove) {
+              (window as any).orbita.storageRemove('orbita-auth-storage').catch(() => {});
+              (window as any).orbita.storageRemove('orbita-chat-storage').catch(() => {});
+            }
             useChatStore.getState().resetChats();
             const newUid = getInitialUserId();
             set({

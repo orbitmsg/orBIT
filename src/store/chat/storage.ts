@@ -1,5 +1,4 @@
 import { StateStorage } from 'zustand/middleware';
-import { securityService } from '../../services/securityService';
 
 export const lastSavedValues: Record<string, string> = {};
 
@@ -43,11 +42,6 @@ export const flushStorageSet = () => {
   if (typeof window === 'undefined') return;
   const current = lastSavedValues['orbita-chat-storage'];
   if (current) {
-    if (!securityService.isPasswordSet() && typeof localStorage !== 'undefined') {
-      try {
-        localStorage.setItem('orbita-chat-storage', current);
-      } catch {}
-    }
     if ((window as any).orbita?.storageSet) {
       (window as any).orbita.storageSet('orbita-chat-storage', current).catch(() => {});
     }
@@ -68,34 +62,13 @@ export const ipcStorage: StateStorage = {
         val = await (window as any).orbita.storageGet(name);
       } catch {}
     }
-    const localVal = (!securityService.isPasswordSet() && typeof localStorage !== 'undefined')
-      ? localStorage.getItem(name)
-      : null;
-
-    if ((!val || countRealChats(val) === 0) && localVal && countRealChats(localVal) > 0) {
-      val = localVal;
-      if ((window as any).orbita?.storageSet) {
-        (window as any).orbita.storageSet(name, val).catch(() => {});
-      }
-    } else if (val && countRealChats(val) > 0 && !securityService.isPasswordSet() && typeof localStorage !== 'undefined') {
-      try {
-        localStorage.setItem(name, val);
-      } catch {}
-    }
-
     if (val !== null) lastSavedValues[name] = val;
     return val;
   },
   setItem: async (name: string, value: string): Promise<void> => {
     if (typeof window === 'undefined') return;
-
-    if (!checkHydrated()) {
-      return;
-    }
-
-    if (lastSavedValues[name] === value) {
-      return;
-    }
+    if (!checkHydrated()) return;
+    if (lastSavedValues[name] === value) return;
 
     const previousSaved = lastSavedValues[name];
     if (previousSaved && countRealChats(previousSaved) > 0 && countRealChats(value) === 0) {
@@ -103,13 +76,6 @@ export const ipcStorage: StateStorage = {
     }
 
     lastSavedValues[name] = value;
-
-    if (!securityService.isPasswordSet() && typeof localStorage !== 'undefined') {
-      try {
-        localStorage.setItem(name, value);
-      } catch {}
-    }
-
     if ((window as any).orbita?.storageSet) {
       try {
         await (window as any).orbita.storageSet(name, value);
@@ -122,16 +88,5 @@ export const ipcStorage: StateStorage = {
     if ((window as any).orbita?.storageRemove) {
       await (window as any).orbita.storageRemove(name);
     }
-    if (typeof localStorage !== 'undefined') {
-      try {
-        localStorage.removeItem(name);
-      } catch {}
-    }
   },
 };
-
-if (typeof window !== 'undefined' && (window as any).orbita?.storageMigrate) {
-  (window as any).orbita.storageMigrate().catch((err: any) => {
-    console.error('[Migration] Failed to migrate from localStorage:', err);
-  });
-}

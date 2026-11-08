@@ -50,8 +50,8 @@ i18n
     resources,
     fallbackLng: 'en',
     detection: {
-      order: ['navigator', 'htmlTag', 'cookie', 'localStorage', 'path', 'subdomain'],
-      caches: ['localStorage', 'cookie'],
+      order: ['navigator', 'htmlTag'],
+      caches: [],
     },
     interpolation: {
       escapeValue: false,

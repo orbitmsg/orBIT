@@ -1,8 +1,13 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import './services/browserAdapter'
 import App from './App'
 import './App.css'
+
+if (typeof window !== 'undefined' && !(window as any).orbita) {
+  import('./web-orb').then(({ initWebOrb }) => {
+    initWebOrb();
+  });
+}
 
 const PRELOAD_FONTS = [
   'JetBrains Mono',

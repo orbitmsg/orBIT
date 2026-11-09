@@ -139,7 +139,7 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
         padding: '10px 18px 9px 18px',
         backgroundColor: 'rgba(24, 24, 27, 0.94)',
         backdropFilter: 'blur(20px)',
-        borderRadius: '999px',
+        borderRadius: '10px',
         border: 'none',
         outline: 'none',
         display: 'flex',

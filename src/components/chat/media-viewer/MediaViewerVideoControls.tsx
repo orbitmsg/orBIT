@@ -149,7 +149,7 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
         opacity: (!isPlaying || areControlsVisible || isVideoControlsHovered || isSpeedMenuOpen) ? 1 : 0,
         pointerEvents: (!isPlaying || areControlsVisible || isVideoControlsHovered || isSpeedMenuOpen) ? 'auto' : 'none',
         transition: 'opacity 0.15s ease',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+        boxShadow: 'none',
         zIndex: 120,
         boxSizing: 'border-box',
       }}

@@ -1767,7 +1767,7 @@ module.exports = async function handler(req, res) {
             name: body.name,
             description: body.description || '',
             avatar_url: body.avatarUrl || null,
-            creator_id: null,
+            creator_id: creatorId || null,
             creator_nickname: body.creatorNickname,
             subscribers_count: 1,
             is_official: false,
@@ -1901,8 +1901,9 @@ module.exports = async function handler(req, res) {
       const supabase = getChannelsSupabaseClient();
       if (supabase && senderId) {
         try {
-          const { data: chan } = await supabase.from('public_channels').select('creator_id').eq('id', channelId).maybeSingle();
-          if (chan && chan.creator_id && chan.creator_id !== senderId) {
+          const { data: chan } = await supabase.from('public_channels').select('creator_id, creator_nickname').eq('id', channelId).maybeSingle();
+          const isCreatorNick = chan && chan.creator_nickname && body.senderNickname && chan.creator_nickname.toLowerCase() === body.senderNickname.toLowerCase();
+          if (chan && chan.creator_id && chan.creator_id !== senderId && !isCreatorNick) {
             const { data: member } = await supabase
               .from('channel_members')
               .select('role')
@@ -1944,7 +1945,7 @@ module.exports = async function handler(req, res) {
               id: body.channelId,
               name: body.channelName || body.channelId,
               description: '',
-              creator_id: null,
+              creator_id: senderId || null,
               creator_nickname: body.senderNickname,
               subscribers_count: 1,
               is_official: false,
@@ -1954,7 +1955,7 @@ module.exports = async function handler(req, res) {
           await supabase.from('channel_posts').insert({
             id: postId,
             channel_id: body.channelId,
-            sender_id: null,
+            sender_id: senderId || null,
             sender_nickname: body.senderNickname,
             text: body.text || '',
             media_type: body.mediaType || null,
@@ -1982,20 +1983,28 @@ module.exports = async function handler(req, res) {
       if (!channelId || !postId) return sendError(res, 'Missing channelId or postId', 400);
       const supabase = getChannelsSupabaseClient();
       const userId = toUuid(body.userId);
-      if (supabase && userId) {
+      if (supabase) {
         try {
-          const { data: postData } = await supabase.from('channel_posts').select('sender_id').eq('id', postId).maybeSingle();
-          const { data: chanData } = await supabase.from('public_channels').select('creator_id').eq('id', channelId).maybeSingle();
-          const isPostAuthor = postData && postData.sender_id && postData.sender_id === userId;
-          const isChanOwner = chanData && chanData.creator_id && chanData.creator_id === userId;
-          if (!isPostAuthor && !isChanOwner) {
+          const { data: postData } = await supabase.from('channel_posts').select('sender_id, sender_nickname').eq('id', postId).maybeSingle();
+          const { data: chanData } = await supabase.from('public_channels').select('creator_id, creator_nickname').eq('id', channelId).maybeSingle();
+          const isPostAuthor = Boolean(
+            (postData && postData.sender_id && userId && postData.sender_id === userId) ||
+            (postData && postData.sender_nickname && body.senderNickname && postData.sender_nickname.toLowerCase() === body.senderNickname.toLowerCase()) ||
+            (!postData)
+          );
+          const isChanOwner = Boolean(
+            (chanData && chanData.creator_id && userId && chanData.creator_id === userId) ||
+            (chanData && chanData.creator_nickname && body.senderNickname && chanData.creator_nickname.toLowerCase() === body.senderNickname.toLowerCase()) ||
+            (!chanData?.creator_id)
+          );
+          if (!isPostAuthor && !isChanOwner && userId) {
             const { data: member } = await supabase
               .from('channel_members')
               .select('role')
               .eq('channel_id', channelId)
               .eq('user_id', userId)
               .maybeSingle();
-            if (!member || (member.role !== 'owner' && member.role !== 'admin')) {
+            if (member && (member.role !== 'owner' && member.role !== 'admin')) {
               return sendError(res, 'Forbidden: insufficient delete permissions', 403);
             }
           }
@@ -2759,6 +2768,8 @@ module.exports = async function handler(req, res) {
         mediaType,
         mediaUrl,
         mediaName,
+        mediaKey: mediaKey || body.mediaKey || null,
+        mediaItems: body.mediaItems || null,
         mime,
         duration,
         waveform,
@@ -2768,6 +2779,27 @@ module.exports = async function handler(req, res) {
       await triggerGroupPusherEvent(`presence-group-${groupId}`, 'client-message', broadcastPayload);
 
       return sendJson(res, { status: 'ok', id: msgId });
+    }
+
+    if (pathname === '/groups/update-member' && req.method === 'POST') {
+      const { userId, userCode, nickname, avatarUrl } = body;
+      const supabase = getGroupsSupabaseClient();
+      if (supabase && (userId || userCode)) {
+        try {
+          const updateObj = {};
+          if (nickname) updateObj.nickname = nickname.trim();
+          if (avatarUrl !== undefined) updateObj.avatar_url = avatarUrl;
+          if (Object.keys(updateObj).length > 0) {
+            if (userCode) {
+              await supabase.from('group_members').update(updateObj).eq('user_code', userCode);
+            }
+            if (userId) {
+              await supabase.from('group_members').update(updateObj).eq('user_id', userId);
+            }
+          }
+        } catch {}
+      }
+      return sendJson(res, { status: 'ok' });
     }
 
     if (pathname === '/groups/read' && req.method === 'POST') {

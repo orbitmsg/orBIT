@@ -776,14 +776,15 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
   });
   const isChannelOwner = useMemo(() => {
     if (activeChat?.type !== 'channel') return false;
+    if (activeChat.isOwner) return true;
+    if (activeChat.role === 'owner' || activeChat.role === 'admin') return true;
+    if (myNickname && activeChat.creatorNickname && activeChat.creatorNickname.toLowerCase() === myNickname.toLowerCase()) return true;
     if (myUserId) {
       if (activeChat.creatorId && activeChat.creatorId === myUserId) return true;
       if (activeChat.members?.some((m) => m.userId === myUserId && (m.role === 'owner' || m.role === 'admin'))) return true;
     }
-    if (activeChat.isOwner && (!activeChat.creatorId || (myUserId && activeChat.creatorId === myUserId))) return true;
-    if ((activeChat.role === 'owner' || activeChat.role === 'admin') && (!activeChat.creatorId || (myUserId && activeChat.creatorId === myUserId))) return true;
     return false;
-  }, [activeChat, myUserId]);
+  }, [activeChat, myUserId, myNickname]);
 
   const {
     isDragOver,

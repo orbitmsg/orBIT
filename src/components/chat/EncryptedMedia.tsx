@@ -395,7 +395,7 @@ export const EncryptedMedia = memo(({
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',
                 filter: 'blur(20px)',
-                transform: 'scale(1.15)',
+                transform: 'none',
               }}
             />
           ) : (

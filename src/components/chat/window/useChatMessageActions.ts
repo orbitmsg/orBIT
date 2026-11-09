@@ -495,6 +495,11 @@ export const useChatMessageActions = ({
         const ids = confirmModal.selectedIds.slice(0, 200);
         if (activeChatId) {
           useChatStore.getState().deleteMessages(activeChatId, ids);
+          if (activeChat?.type === 'channel') {
+            for (const id of ids) {
+              channelService.deletePost(activeChatId, id, myUserId);
+            }
+          }
           const payload = {
             sender: myNickname,
             senderUserId: myUserId,

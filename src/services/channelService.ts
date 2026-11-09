@@ -1,3 +1,4 @@
+import { useAuthStore } from '../store/useAuthStore';
 import { getPusher } from '../utils/pusher';
 import { type LinkPreviewData } from '../store/useChatStore';
 import { ablyService } from './ablyService';
@@ -483,6 +484,18 @@ class ChannelService {
   async deletePost(channelId: string, postId: string, userId?: string): Promise<boolean> {
     const cleanChanId = channelId.trim();
     const cleanPostId = postId.trim();
+    const senderNickname = useAuthStore.getState().nickname;
+
+    try {
+      const delKey = `orbita_deleted_channel_posts_${cleanChanId}`;
+      const rawDel = localStorage.getItem(delKey);
+      const list: string[] = rawDel ? JSON.parse(rawDel) : [];
+      if (!list.includes(cleanPostId)) {
+        list.push(cleanPostId);
+        localStorage.setItem(delKey, JSON.stringify(list));
+      }
+    } catch {}
+
     try {
       const cached = await getChannelPostsStorage(cleanChanId);
       if (cached) {
@@ -495,15 +508,25 @@ class ChannelService {
 
     try {
       await fetch(`${W}/channels/delete-post`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channelId: cleanChanId, postId: cleanPostId, userId }),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channelId: cleanChanId, postId: cleanPostId, userId, senderNickname }),
+      });
+    } catch {}
+
+    try {
+      await fetch(`${CHANNELS_SUPABASE_URL}/rest/v1/channel_posts?id=eq.${encodeURIComponent(cleanPostId)}`, {
+        method: "DELETE",
+        headers: {
+          apikey: CHANNELS_SUPABASE_KEY,
+          Authorization: `Bearer ${CHANNELS_SUPABASE_KEY}`,
+        },
       });
     } catch {}
 
     try {
       ablyService.sendMessage(`public-channel-${cleanChanId}`, {
-        type: 'delete-post',
+        type: "delete-post",
         channelId: cleanChanId,
         postId: cleanPostId,
         targetMessageId: cleanPostId,
@@ -512,7 +535,6 @@ class ChannelService {
 
     return true;
   }
-
   async joinChannel(channelId: string, nickname?: string): Promise<number | null> {
     const cleanId = channelId.trim();
     try {

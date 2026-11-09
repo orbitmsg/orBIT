@@ -296,7 +296,8 @@ export const useChatMessageSend = ({
     const chat = useChatStore.getState().chats.find((c) => c.id === targetChatId);
 
     if (chat?.type === 'channel') {
-      if (!isChannelOwner) return;
+      const canPostInChannel = isChannelOwner || Boolean(chat.isOwner) || chat.role === 'owner' || Boolean(myNickname && chat.creatorNickname && chat.creatorNickname.toLowerCase() === myNickname.toLowerCase());
+      if (!canPostInChannel) return;
 
       const sentText = text;
       const sentMedia = mediaPayload;
@@ -655,6 +656,7 @@ export const useChatMessageSend = ({
             const payload = {
               mediaType: mediaPayload?.type || firstGroupItem?.type || null,
               mediaUrl: mediaPayload?.url || firstGroupItem?.url || null,
+              mediaKey: mediaPayload?.key || firstGroupItem?.key || null,
               mediaName: mediaPayload?.name || firstGroupItem?.name || null,
               mime: mediaPayload?.mime || firstGroupItem?.mime || null,
               width: mediaPayload?.width || firstGroupItem?.width || null,
@@ -696,6 +698,7 @@ export const useChatMessageSend = ({
               mediaUrl: mediaPayload?.url || (mediaItemsPayload?.[0]?.url) || null,
               mediaName: mediaPayload?.name || (mediaItemsPayload?.[0]?.name) || null,
               mediaKey: mediaPayload?.key || (mediaItemsPayload?.[0]?.key) || null,
+              mediaItems: sanitizedMediaItems || undefined,
               mime: mediaPayload?.mime || (mediaItemsPayload?.[0]?.mime) || null,
               duration: mediaPayload?.duration || (mediaItemsPayload?.[0]?.duration) || null,
               width: mediaPayload?.width || (mediaItemsPayload?.[0]?.width) || null,

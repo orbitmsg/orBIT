@@ -127,8 +127,9 @@ export const useChatAudioAndFiles = ({
   const handleStartRecording = useCallback(async () => {
     const isBotChat = activeChatId === 'system_support';
     const isChannel = activeChat?.type === 'channel';
+    const canPostInChannel = isChannelOwner || Boolean(activeChat?.isOwner) || activeChat?.role === 'owner' || Boolean(myNickname && activeChat?.creatorNickname && activeChat.creatorNickname.toLowerCase() === myNickname.toLowerCase());
     if (!isBotChat && !isChannel && (!sharedSecret || !isRatchetReady) && !activeChat?.isDraft && !activeChat?.peerCode) return;
-    if (isChannel && !isChannelOwner) return;
+    if (isChannel && !canPostInChannel) return;
     try {
       await startAudioRecording();
     } catch (err) {
@@ -146,8 +147,9 @@ export const useChatAudioAndFiles = ({
 
     const isBotChat = targetChatId === 'system_support';
     const isChannel = activeChat?.type === 'channel';
+    const canPostInChannel = isChannelOwner || Boolean(activeChat?.isOwner) || activeChat?.role === 'owner' || Boolean(myNickname && activeChat?.creatorNickname && activeChat.creatorNickname.toLowerCase() === myNickname.toLowerCase());
     if (!isBotChat && !isChannel && !sharedSecret) return;
-    if (isChannel && !isChannelOwner) return;
+    if (isChannel && !canPostInChannel) return;
 
     const voiceFileName = `voice_${Date.now()}.ogg`;
     const localBlobUrl = URL.createObjectURL(blob);
@@ -547,8 +549,9 @@ export const useChatAudioAndFiles = ({
     const isChannel = chat.type === 'channel';
     const isBotChat = targetChatId === 'system_support';
     const isGroup = chat.type === 'group';
+    const canPostInChannel = isChannelOwner || Boolean(chat.isOwner) || chat.role === 'owner' || Boolean(myNickname && chat.creatorNickname && chat.creatorNickname.toLowerCase() === myNickname.toLowerCase());
     if (isChannel) {
-      if (!isChannelOwner) return;
+      if (!canPostInChannel) return;
     } else if (isBotChat || isGroup) {
     } else {
       if (!sharedSecret && !activeChat?.isDraft && !activeChat?.peerCode) return;

@@ -1378,9 +1378,8 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 }
               }}
               style={{
-                aspectRatio: (zoomScale <= 1 && mediaDimensions) ? `${mediaDimensions.width} / ${mediaDimensions.height}` : undefined,
-                maxWidth: zoomScale > 1 ? 'none' : (mediaDimensions ? `${mediaDimensions.width}px` : '100%'),
-                maxHeight: zoomScale > 1 ? 'none' : (mediaDimensions ? `${mediaDimensions.height}px` : '100%'),
+                maxWidth: zoomScale > 1 ? 'none' : '100%',
+                maxHeight: zoomScale > 1 ? 'none' : '100%',
                 width: zoomScale > 1 ? 'auto' : '100%',
                 height: zoomScale > 1 ? 'auto' : '100%',
                 objectFit: 'contain',
@@ -1435,7 +1434,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                     height: '100%',
                     objectFit: 'contain',
                     filter: 'blur(20px)',
-                    transform: 'scale(1.15)',
+                    transform: 'none',
                     pointerEvents: 'none',
                     userSelect: 'none',
                   }}

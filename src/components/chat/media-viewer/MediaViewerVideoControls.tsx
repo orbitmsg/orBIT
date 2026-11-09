@@ -3,8 +3,6 @@ import { useTranslation } from 'react-i18next';
 import {
   Volume2,
   VolumeX,
-  Maximize2,
-  Minimize2,
   Settings,
   Check,
 } from 'lucide-react';
@@ -21,7 +19,6 @@ interface MediaViewerVideoControlsProps {
   playbackRate: number;
   currentTime: number;
   duration: number;
-  isWindowMaximized?: boolean;
   videoProgressRef: RefObject<HTMLDivElement | null>;
   videoProgressFillRef: RefObject<HTMLDivElement | null>;
   videoTimeDisplayRef: RefObject<HTMLSpanElement | null>;
@@ -29,7 +26,6 @@ interface MediaViewerVideoControlsProps {
   onToggleMute: () => void;
   onVolumeChange?: (newVolume: number) => void;
   onSelectSpeed?: (speed: number) => void;
-  onToggleFullscreen?: () => void;
   onProgressMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void;
   onProgressTouchStart: (e: React.TouchEvent<HTMLDivElement>) => void;
   setIsVideoControlsHovered: (hovered: boolean) => void;
@@ -47,7 +43,6 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
   playbackRate,
   currentTime,
   duration,
-  isWindowMaximized = false,
   videoProgressRef,
   videoProgressFillRef,
   videoTimeDisplayRef,
@@ -55,7 +50,6 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
   onToggleMute,
   onVolumeChange,
   onSelectSpeed,
-  onToggleFullscreen,
   onProgressMouseDown,
   onProgressTouchStart,
   setIsVideoControlsHovered,
@@ -309,33 +303,6 @@ export const MediaViewerVideoControls: React.FC<MediaViewerVideoControlsProps> =
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 64, justifyContent: 'flex-end', position: 'relative' }}>
-          {onToggleFullscreen && (
-            <button
-              type="button"
-              onClick={onToggleFullscreen}
-              aria-label={isWindowMaximized ? t('mediaViewer.exitFullscreen', 'Выйти из полноэкранного режима') : t('mediaViewer.fullscreen', 'Во весь экран')}
-              style={{
-                background: 'none',
-                border: 'none',
-                outline: 'none',
-                color: '#ffffff',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '26px',
-                height: '26px',
-                borderRadius: '999px',
-                opacity: 0.85,
-                transition: 'opacity 0.15s',
-                padding: 0,
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.85'; }}
-            >
-              {isWindowMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-            </button>
-          )}
 
           <button
             type="button"

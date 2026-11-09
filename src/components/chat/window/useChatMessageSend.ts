@@ -58,6 +58,7 @@ export interface UseChatMessageSendReturn {
       height?: number;
       blurPreview?: string;
       thumbnail?: string;
+      preview?: string;
     },
     linkPreviewPayload?: LinkPreviewData,
     existingMessageId?: string,
@@ -111,6 +112,7 @@ export const useChatMessageSend = ({
       height?: number;
       blurPreview?: string;
       thumbnail?: string;
+      preview?: string;
     },
     linkPreviewPayload?: LinkPreviewData,
     existingMessageId?: string,
@@ -147,8 +149,9 @@ export const useChatMessageSend = ({
                       width: mediaPayload?.width || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.width : m.width),
                       height: mediaPayload?.height || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.height : m.height),
                       fileSize: mediaPayload?.size || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.size : m.fileSize),
-                      blurPreview: mediaPayload?.blurPreview || m.blurPreview,
-                      thumbnail: mediaPayload?.thumbnail || mediaPayload?.blurPreview || m.thumbnail,
+                      blurPreview: mediaPayload?.blurPreview || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.blurPreview : m.blurPreview),
+                      thumbnail: ((mediaPayload?.thumbnail || mediaPayload?.preview || mediaPayload?.blurPreview || (mediaItemsPayload && (mediaItemsPayload[0]?.thumbnail || mediaItemsPayload[0]?.preview)) || m.thumbnail) || undefined) as string | undefined,
+                      preview: mediaPayload?.preview || (mediaItemsPayload && mediaItemsPayload.length > 0 ? (mediaItemsPayload[0]?.preview as any) : m.preview),
                       mediaItems: mediaItemsPayload || m.mediaItems,
                     }
                   : m
@@ -182,8 +185,9 @@ export const useChatMessageSend = ({
           width: mediaPayload?.width || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.width : undefined),
           height: mediaPayload?.height || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.height : undefined),
           fileSize: mediaPayload?.size || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.size : undefined),
-          blurPreview: mediaPayload?.blurPreview,
-          thumbnail: mediaPayload?.thumbnail || mediaPayload?.blurPreview,
+          blurPreview: mediaPayload?.blurPreview || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.blurPreview : undefined),
+          thumbnail: ((mediaPayload?.thumbnail || mediaPayload?.preview || mediaPayload?.blurPreview || (mediaItemsPayload && (mediaItemsPayload[0]?.thumbnail || mediaItemsPayload[0]?.preview))) || undefined) as string | undefined,
+          preview: mediaPayload?.preview || (mediaItemsPayload && mediaItemsPayload.length > 0 ? (mediaItemsPayload[0]?.preview as any) : undefined),
           mediaItems: mediaItemsPayload,
           linkPreview: linkPreviewPayload,
           forwardedFrom: forwardedFromPayload,
@@ -221,8 +225,9 @@ export const useChatMessageSend = ({
                       width: mediaPayload?.width || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.width : m.width),
                       height: mediaPayload?.height || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.height : m.height),
                       fileSize: mediaPayload?.size || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.size : m.fileSize),
-                      blurPreview: mediaPayload?.blurPreview || m.blurPreview,
-                      thumbnail: mediaPayload?.thumbnail || mediaPayload?.blurPreview || m.thumbnail,
+                      blurPreview: mediaPayload?.blurPreview || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.blurPreview : m.blurPreview),
+                      thumbnail: ((mediaPayload?.thumbnail || mediaPayload?.preview || mediaPayload?.blurPreview || (mediaItemsPayload && (mediaItemsPayload[0]?.thumbnail || mediaItemsPayload[0]?.preview)) || m.thumbnail) || undefined) as string | undefined,
+                      preview: mediaPayload?.preview || (mediaItemsPayload && mediaItemsPayload.length > 0 ? (mediaItemsPayload[0]?.preview as any) : m.preview),
                       mediaItems: mediaItemsPayload || m.mediaItems,
                     }
                   : m
@@ -256,8 +261,9 @@ export const useChatMessageSend = ({
           width: mediaPayload?.width || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.width : undefined),
           height: mediaPayload?.height || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.height : undefined),
           fileSize: mediaPayload?.size || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.size : undefined),
-          blurPreview: mediaPayload?.blurPreview,
-          thumbnail: mediaPayload?.thumbnail || mediaPayload?.blurPreview,
+          blurPreview: mediaPayload?.blurPreview || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.blurPreview : undefined),
+          thumbnail: ((mediaPayload?.thumbnail || mediaPayload?.preview || mediaPayload?.blurPreview || (mediaItemsPayload && (mediaItemsPayload[0]?.thumbnail || mediaItemsPayload[0]?.preview))) || undefined) as string | undefined,
+          preview: mediaPayload?.preview || (mediaItemsPayload && mediaItemsPayload.length > 0 ? (mediaItemsPayload[0]?.preview as any) : undefined),
           mediaItems: mediaItemsPayload,
           forwardedFrom: forwardedFromPayload,
         };
@@ -311,8 +317,9 @@ export const useChatMessageSend = ({
                       width: sentMedia?.width || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.width : m.width),
                       height: sentMedia?.height || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.height : m.height),
                       fileSize: sentMedia?.size || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.size : m.fileSize),
-                      blurPreview: sentMedia?.blurPreview || m.blurPreview,
-                      thumbnail: sentMedia?.thumbnail || sentMedia?.blurPreview || m.thumbnail,
+                      blurPreview: sentMedia?.blurPreview || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.blurPreview : m.blurPreview),
+                      thumbnail: ((sentMedia?.thumbnail || sentMedia?.preview || sentMedia?.blurPreview || (mediaItemsPayload && (mediaItemsPayload[0]?.thumbnail || mediaItemsPayload[0]?.preview)) || m.thumbnail) || undefined) as string | undefined,
+                      preview: sentMedia?.preview || (mediaItemsPayload && mediaItemsPayload.length > 0 ? (mediaItemsPayload[0]?.preview as any) : m.preview),
                       mediaItems: mediaItemsPayload || m.mediaItems,
                       uploading: false,
                     }
@@ -347,8 +354,9 @@ export const useChatMessageSend = ({
           width: sentMedia?.width || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.width : undefined),
           height: sentMedia?.height || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.height : undefined),
           fileSize: sentMedia?.size || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.size : undefined),
-          blurPreview: sentMedia?.blurPreview,
-          thumbnail: sentMedia?.thumbnail || sentMedia?.blurPreview,
+          blurPreview: sentMedia?.blurPreview || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.blurPreview : undefined),
+          thumbnail: ((sentMedia?.thumbnail || sentMedia?.preview || sentMedia?.blurPreview || (mediaItemsPayload && (mediaItemsPayload[0]?.thumbnail || mediaItemsPayload[0]?.preview))) || undefined) as string | undefined,
+          preview: sentMedia?.preview || (mediaItemsPayload && mediaItemsPayload.length > 0 ? (mediaItemsPayload[0]?.preview as any) : undefined),
           mediaItems: mediaItemsPayload,
           linkPreview: sentPreview || undefined,
           forwardedFrom: forwardedFromPayload,
@@ -492,8 +500,9 @@ export const useChatMessageSend = ({
       width: mediaPayload?.width || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.width : undefined),
       height: mediaPayload?.height || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.height : undefined),
       fileSize: mediaPayload?.size || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.size : undefined),
-      blurPreview: isVisualMedia ? (mediaPayload?.blurPreview || undefined) : undefined,
-      thumbnail: isVisualMedia ? (mediaPayload?.thumbnail || mediaPayload?.blurPreview || undefined) : undefined,
+      blurPreview: isVisualMedia ? (mediaPayload?.blurPreview || (mediaItemsPayload && mediaItemsPayload[0]?.blurPreview) || undefined) : undefined,
+      thumbnail: isVisualMedia ? (((mediaPayload?.thumbnail || mediaPayload?.preview || mediaPayload?.blurPreview || (mediaItemsPayload && (mediaItemsPayload[0]?.thumbnail || mediaItemsPayload[0]?.preview))) || undefined) as string | undefined) : undefined,
+      preview: isVisualMedia ? (mediaPayload?.preview || (mediaItemsPayload && mediaItemsPayload[0]?.preview) || undefined) : undefined,
       mediaItems: mediaItemsPayload,
       linkPreview: linkPreviewPayload,
       forwardedFrom: forwardedFromPayload,
@@ -520,8 +529,9 @@ export const useChatMessageSend = ({
                 width: mediaPayload?.width || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.width : m.width),
                 height: mediaPayload?.height || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.height : m.height),
                 fileSize: mediaPayload?.size || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.size : m.fileSize),
-                blurPreview: isVisualMedia ? (mediaPayload?.blurPreview || m.blurPreview) : m.blurPreview,
-                thumbnail: isVisualMedia ? (mediaPayload?.thumbnail || mediaPayload?.blurPreview || m.thumbnail) : m.thumbnail,
+                blurPreview: isVisualMedia ? (mediaPayload?.blurPreview || (mediaItemsPayload && mediaItemsPayload[0]?.blurPreview) || m.blurPreview) : m.blurPreview,
+                thumbnail: isVisualMedia ? (((mediaPayload?.thumbnail || mediaPayload?.preview || mediaPayload?.blurPreview || (mediaItemsPayload && (mediaItemsPayload[0]?.thumbnail || mediaItemsPayload[0]?.preview)) || m.thumbnail) || undefined) as string | undefined) : m.thumbnail,
+                preview: isVisualMedia ? (mediaPayload?.preview || (mediaItemsPayload && mediaItemsPayload[0]?.preview) || m.preview) : m.preview,
                 mediaItems: mediaItemsPayload || m.mediaItems,
               }
             : m

@@ -4,6 +4,7 @@ import { useChatStore, type Message } from '../../store/useChatStore';
 import { useAudioStore } from '../../store/useAudioStore';
 import { useUploadProgressStore } from '../../store/useUploadProgressStore';
 import { useDecryptedMedia } from '../../lib/media-utils';
+import { mediaManager } from '../../services/mediaManager';
 import { AudioCoverWithPlay, AudioCoverState } from '../audio/AudioCoverWithPlay';
 import { appVisibility } from '../../utils/appVisibility';
 
@@ -29,20 +30,23 @@ const drawCircularWaveLayer = (
   cy: number,
   baseR: number,
   amplitude: number,
-  k1: number,
-  k2: number,
-  wavePhase: number,
+  phase: number,
+  seed: number,
   colorRgb: [number, number, number],
   alpha: number
 ) => {
-  const steps = 48;
+  const steps = 72;
   ctx.beginPath();
   for (let i = 0; i <= steps; i++) {
     const theta = (i / steps) * Math.PI * 2;
-    const s1 = Math.sin(k1 * theta + wavePhase);
-    const s2 = Math.sin(k2 * theta - wavePhase * 0.75 + 1.3);
-    const norm = (s1 * 0.68 + s2 * 0.32 + 1) * 0.5;
-    const elevation = Math.min(12, norm * amplitude);
+    const h1 = Math.sin(theta + phase * 0.7 + seed) * 0.20;
+    const h2 = Math.cos(2 * theta - phase * 0.55 + seed * 1.3) * 0.22;
+    const h3 = Math.sin(3 * theta + phase * 0.38 + seed * 2.1) * 0.14;
+    const h4 = Math.cos(4 * theta - phase * 0.29 + seed * 0.7) * 0.10;
+    const h5 = Math.sin(5 * theta + phase * 0.21 + seed * 3.4) * 0.06;
+    const sum = h1 + h2 + h3 + h4 + h5;
+    const norm = Math.max(0, Math.min(1, (sum + 0.72) / 1.44));
+    const elevation = amplitude * (0.60 + 0.40 * norm);
     const r = baseR + elevation;
     const x = cx + r * Math.cos(theta);
     const y = cy + r * Math.sin(theta);
@@ -52,11 +56,11 @@ const drawCircularWaveLayer = (
   ctx.closePath();
 
   const [r, g, b] = colorRgb;
-  const maxR = baseR + amplitude + 1;
-  const grad = ctx.createRadialGradient(cx, cy, baseR * 0.65, cx, cy, maxR);
+  const maxR = baseR + amplitude + 2;
+  const grad = ctx.createRadialGradient(cx, cy, Math.max(0, baseR * 0.7), cx, cy, maxR);
   grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha})`);
-  grad.addColorStop(0.55, `rgba(${r}, ${g}, ${b}, ${alpha * 0.70})`);
-  grad.addColorStop(0.9, `rgba(${r}, ${g}, ${b}, ${alpha * 0.25})`);
+  grad.addColorStop(0.55, `rgba(${r}, ${g}, ${b}, ${alpha * 0.72})`);
+  grad.addColorStop(0.88, `rgba(${r}, ${g}, ${b}, ${alpha * 0.25})`);
   grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
   ctx.fillStyle = grad;
   ctx.fill();
@@ -92,13 +96,14 @@ const renderCircularWaves = (
   const cx = 38;
   const cy = 38;
   const baseR = 24;
-  const baseAmp = 3.5 + vol * 8.5;
+  const pulse = Math.sin(phase * 0.6) * 0.6;
+  const baseAmp = 3.5 + pulse + vol * 7.2;
 
   if (isOwn) {
     const white: [number, number, number] = [255, 255, 255];
-    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.45, 3, 4, phase * 0.55, white, 0.22 + vol * 0.15);
-    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.75, 4, 5, -phase * 0.75 + 1.4, white, 0.35 + vol * 0.22);
-    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp, 3, 5, phase, white, 0.55 + vol * 0.30);
+    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp, phase * 0.65, 0, white, 0.18 + vol * 0.12);
+    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.75, -phase * 0.50 + 1.7, 2.1, white, 0.28 + vol * 0.18);
+    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.45, phase * 0.85 + 3.2, 4.3, white, 0.45 + vol * 0.22);
   } else {
     let rgb: [number, number, number] = [124, 58, 237];
     if (typeof document !== 'undefined') {
@@ -107,9 +112,9 @@ const renderCircularWaves = (
       if (parsed) rgb = parsed;
     }
     const [r, g, b] = rgb;
-    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.45, 3, 4, phase * 0.55, [r, g, b], 0.25 + vol * 0.15);
-    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.75, 4, 5, -phase * 0.75 + 1.4, [Math.min(255, r + 20), Math.min(255, g + 20), Math.min(255, b + 20)], 0.40 + vol * 0.22);
-    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp, 3, 5, phase, [Math.min(255, r + 40), Math.min(255, g + 40), Math.min(255, b + 40)], 0.65 + vol * 0.30);
+    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp, phase * 0.65, 0, [r, g, b], 0.20 + vol * 0.14);
+    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.75, -phase * 0.50 + 1.7, 2.1, [Math.min(255, r + 15), Math.min(255, g + 15), Math.min(255, b + 15)], 0.32 + vol * 0.20);
+    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.45, phase * 0.85 + 3.2, 4.3, [Math.min(255, r + 30), Math.min(255, g + 30), Math.min(255, b + 30)], 0.52 + vol * 0.25);
   }
 };
 
@@ -267,6 +272,7 @@ export const VoiceMessagePlayer = memo(({
     ? liveProgress.fraction
     : (itemTotalSize > 0 && msg?.uploadedMb ? Math.min(1, ((msg.uploadedMb * 1024 * 1024) / itemTotalSize)) : 0.08);
 
+  const autoLoadAudio = useChatStore((state) => state.autoLoadAudio !== false);
   const effectiveSecret = msg?.mediaKey || sharedSecret;
   const { blobUrl, load, isLoading: mediaLoading, progress: downloadProgress } = useDecryptedMedia(
     url,
@@ -275,12 +281,29 @@ export const VoiceMessagePlayer = memo(({
     mime,
     chatId,
     messageId,
-    false
+    autoLoadAudio
   );
+
+  const [isLocallySaved, setIsLocallySaved] = useState<boolean>(() => {
+    return mediaManager.isMediaSavedLocallySync(url);
+  });
+
+  useEffect(() => {
+    if (isLocallySaved) return;
+    let active = true;
+    mediaManager.isMediaSavedLocally(url).then((saved) => {
+      if (active && saved) {
+        setIsLocallySaved(true);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [url, isLocallySaved]);
 
   const effectiveDuration = isCurrentTrack && globalDuration > 0 ? globalDuration : (localDuration || msg?.duration || 0);
   const isPlaying = isCurrentTrack && isGlobalPlaying;
-  const isLoaded = Boolean(blobUrl);
+  const isLoaded = Boolean(blobUrl || isLocallySaved);
   const isUnplayed = !msg?.isListened && !hasPlayedLocally;
 
   useEffect(() => {
@@ -343,27 +366,7 @@ export const VoiceMessagePlayer = memo(({
     drawWaveformCanvas(canvas, bars, ratio, isLoaded, isOwn);
   }, [bars, isLoaded, isOwn, isPlaying, savedPosition, effectiveDuration]);
 
-  const handleAction = async () => {
-    if (isUploading) return;
-    if (!blobUrl) {
-      setIsDownloading(true);
-      try {
-        await load();
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsDownloading(false);
-      }
-      return;
-    }
-    handlePlayToggle();
-  };
-
-  const handlePlayToggle = () => {
-    if (!blobUrl) {
-      handleAction();
-      return;
-    }
+  const handlePlayToggle = useCallback(() => {
     if (isCurrentTrack) {
       if (isPlaying) {
         pauseTrack();
@@ -394,6 +397,23 @@ export const VoiceMessagePlayer = memo(({
       }
       setHasPlayedLocally(true);
     }
+  }, [isCurrentTrack, isPlaying, pauseTrack, playTrack, chatId, trackId, markVoiceListened, t, msg, effectiveDuration, url, effectiveSecret]);
+
+  const handleAction = async () => {
+    if (isUploading) return;
+    if (!blobUrl) {
+      setIsDownloading(true);
+      try {
+        await load();
+        handlePlayToggle();
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsDownloading(false);
+      }
+      return;
+    }
+    handlePlayToggle();
   };
 
   const [dragProgressRatio, setDragProgressRatio] = useState<number | null>(null);
@@ -526,10 +546,10 @@ export const VoiceMessagePlayer = memo(({
         if (isPlaying && chatElementAnimations !== false) {
           const barIndex = Math.min(bars.length - 1, Math.floor(ratio * bars.length));
           const rawVol = (bars[barIndex] || 25) / 100;
-          smoothedVolRef.current += (rawVol - smoothedVolRef.current) * 0.18;
+          smoothedVolRef.current += (rawVol - smoothedVolRef.current) * 0.12;
           const vol = smoothedVolRef.current;
 
-          wavePhaseRef.current += 0.025 + vol * 0.035;
+          wavePhaseRef.current += 0.012 + vol * 0.016;
           renderCircularWaves(waveCanvasRef.current, vol, wavePhaseRef.current, isOwn);
         } else {
           clearCircularWaves(waveCanvasRef.current);

@@ -123,9 +123,9 @@ const AlbumTile = memo(({
 
   const isDownloading = isLoading;
   const isLocalMedia = Boolean((item as any).preview || (item.url?.startsWith('data:') && item.url.length > 2048) || item.url?.startsWith('blob:'));
-  const posterSrc = (item as any).preview || (isLocalMedia ? item.url : undefined) || (item.thumbnail && (!item.thumbnail.startsWith('data:') || item.thumbnail.length > 2048) ? item.thumbnail : undefined) || (isSingle ? ((msg as any).preview || ((msg as any).thumbnail && (!(msg as any).thumbnail.startsWith('data:') || (msg as any).thumbnail.length > 2048) ? (msg as any).thumbnail : undefined)) : undefined);
+  const posterSrc = (item as any).preview || (!isVideo && isLocalMedia ? item.url : undefined) || (item.thumbnail && (!item.thumbnail.startsWith('data:') || item.thumbnail.length > 2048) ? item.thumbnail : undefined) || (isSingle ? ((msg as any).preview || ((msg as any).thumbnail && (!(msg as any).thumbnail.startsWith('data:') || (msg as any).thumbnail.length > 2048) ? (msg as any).thumbnail : undefined)) : undefined);
   const blurSrc = item.blurPreview || (item.thumbnail?.startsWith('data:') ? item.thumbnail : null) || (isSingle ? ((msg as any).blurPreview || ((msg as any).thumbnail?.startsWith('data:') ? (msg as any).thumbnail : null)) : null) || (!posterSrc && item.url?.startsWith('data:') ? item.url : null);
-  const mediaSrc = blobUrl || (isLocalMedia ? ((item as any).preview || item.url) : undefined);
+  const mediaSrc = blobUrl || (isLocalMedia ? (!isVideo ? ((item as any).preview || item.url) : (item.url?.startsWith('blob:') || (item.url?.startsWith('data:') && !item.url.startsWith('data:image/')) ? item.url : undefined)) : undefined);
 
   const shouldPlay = inView && isAppVisible && !isMediaViewerOpen && chatAutoPlayVideos;
 

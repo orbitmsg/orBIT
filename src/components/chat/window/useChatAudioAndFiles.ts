@@ -616,7 +616,8 @@ export const useChatAudioAndFiles = ({
           height: file.height,
           duration: file.duration || file.audioMetadata?.duration,
           blurPreview: file.blurPreview,
-          thumbnail: file.preview || file.blurPreview,
+          thumbnail: file.preview || (file as any).thumbnail || file.blurPreview,
+          preview: file.preview || (file as any).thumbnail || null,
           chatId: activeChatId,
         };
       }
@@ -783,7 +784,8 @@ export const useChatAudioAndFiles = ({
           height: file.height,
           duration: file.duration || file.audioMetadata?.duration,
           blurPreview: file.blurPreview,
-          thumbnail: file.preview || file.blurPreview,
+          thumbnail: file.preview || (file as any).thumbnail || file.blurPreview,
+          preview: file.preview || (file as any).thumbnail || null,
         };
       } catch (err) {
         console.error('Upload error for file', file.name, err);
@@ -805,23 +807,26 @@ export const useChatAudioAndFiles = ({
         const chunkCaption = cIdx === 0 ? (caption || '') : '';
         const messageId = `msg_${Date.now()}_${cIdx}_${Math.random().toString(36).substr(2, 9)}`;
 
-        const initialMediaItems: MediaItem[] = chunkFiles.map((file) => ({
-          url: file.preview || file.filePath || '',
-          preview: file.preview && file.preview.length < 4096 ? file.preview : (file.blurPreview || null),
-          localFilePath: file.filePath,
-          type: resolveItemType(file.fileType, file.name),
-          name: file.name,
-          mime: resolveMime(file.fileType, file.name),
-          audioMetadata: file.audioMetadata,
-          size: file.sizeMb ? file.sizeMb * 1024 * 1024 : file.audioMetadata?.size,
-          width: file.width,
-          height: file.height,
-          duration: file.duration || file.audioMetadata?.duration,
-          blurPreview: file.blurPreview,
-          thumbnail: file.blurPreview || (file.preview && file.preview.length < 4096 ? file.preview : undefined),
-          uploading: true,
-          uploadedMb: 0,
-        }));
+        const initialMediaItems: MediaItem[] = chunkFiles.map((file) => {
+          const itemType = resolveItemType(file.fileType, file.name);
+          return {
+            url: itemType === 'video' ? (file.uploadedUrl || file.filePath || '') : (file.preview || file.filePath || ''),
+            preview: file.preview || (file as any).thumbnail || file.blurPreview || null,
+            localFilePath: file.filePath,
+            type: itemType,
+            name: file.name,
+            mime: resolveMime(file.fileType, file.name),
+            audioMetadata: file.audioMetadata,
+            size: file.sizeMb ? file.sizeMb * 1024 * 1024 : file.audioMetadata?.size,
+            width: file.width,
+            height: file.height,
+            duration: file.duration || file.audioMetadata?.duration,
+            blurPreview: file.blurPreview,
+            thumbnail: file.preview || (file as any).thumbnail || file.blurPreview,
+            uploading: true,
+            uploadedMb: 0,
+          };
+        });
 
         const localMessage: Message = {
           id: messageId,
@@ -880,8 +885,8 @@ export const useChatAudioAndFiles = ({
             useUploadProgressStore.getState().clearProgress(`${messageId}_${fIdx}`);
             uploadedItems.push({
               ...uploaded,
-              preview: currentFile.preview && currentFile.preview.length < 2048 ? currentFile.preview : (currentFile.blurPreview || null),
-              thumbnail: currentFile.preview && currentFile.preview.length < 2048 ? currentFile.preview : (currentFile.blurPreview || uploaded.thumbnail || undefined),
+              preview: currentFile.preview || (currentFile as any).thumbnail || uploaded.preview || currentFile.blurPreview || null,
+              thumbnail: currentFile.preview || (currentFile as any).thumbnail || uploaded.thumbnail || currentFile.blurPreview,
               uploading: false,
             });
           }
@@ -930,8 +935,8 @@ export const useChatAudioAndFiles = ({
           uploading: true,
           uploadedMb: 0,
           mediaType: itemType,
-          mediaUrl: file.preview || file.filePath || '',
-          preview: file.preview && file.preview.length < 4096 ? file.preview : (file.blurPreview || null),
+          mediaUrl: itemType === 'video' ? (file.uploadedUrl || file.filePath || '') : (file.preview || file.filePath || ''),
+          preview: file.preview || (file as any).thumbnail || file.blurPreview || null,
           localFilePath: file.filePath,
           mediaName: file.name,
           mime: itemMime,
@@ -941,7 +946,7 @@ export const useChatAudioAndFiles = ({
           height: file.height,
           duration: file.duration || file.audioMetadata?.duration,
           blurPreview: file.blurPreview,
-          thumbnail: file.blurPreview || (file.preview && file.preview.length < 4096 ? file.preview : undefined),
+          thumbnail: file.preview || (file as any).thumbnail || file.blurPreview,
         };
         addMessage(targetChatId, localMessage);
         updateChat(targetChatId, { lastMsg: postCaption || file.name || `[${itemType}]` });
@@ -989,8 +994,8 @@ export const useChatAudioAndFiles = ({
               postCaption,
               {
                 ...uploaded,
-                preview: file.preview && file.preview.length < 2048 ? file.preview : (file.blurPreview || null),
-                thumbnail: file.preview && file.preview.length < 2048 ? file.preview : (file.blurPreview || uploaded.thumbnail || undefined),
+                preview: file.preview || (file as any).thumbnail || uploaded.preview || file.blurPreview || null,
+                thumbnail: file.preview || (file as any).thumbnail || uploaded.thumbnail || file.blurPreview,
               },
               undefined,
               messageId,

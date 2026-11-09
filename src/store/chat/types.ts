@@ -99,7 +99,7 @@ export interface MediaItem {
   height?: number;
   duration?: number;
   audioMetadata?: AudioMetadata;
-  thumbnail?: string;
+  thumbnail?: string | null;
   blurPreview?: string;
   preview?: string | null;
   localFilePath?: string;

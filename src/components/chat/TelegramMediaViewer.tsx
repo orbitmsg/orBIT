@@ -9,6 +9,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useDecryptedMedia } from '../../lib/media-utils';
+import { AudioCoverWithPlay } from '../audio/AudioCoverWithPlay';
 import { mediaManager } from '../../services/mediaManager';
 import { arrayBufferToBase64 } from '../../utils/messageUtils';
 import { useToastStore } from '../../store/useToastStore';
@@ -269,7 +270,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
     return mediaManager.getCachedMedia(currentItem.url, effectiveSecret || '');
   }, [currentItem?.url, effectiveSecret]);
 
-  const { blobUrl, blob } = useDecryptedMedia(
+  const { blobUrl, blob, progress, cancel } = useDecryptedMedia(
     currentItem?.url || null,
     effectiveSecret,
     currentItem?.name,
@@ -297,6 +298,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
   const validCachedUrl = (cachedDecrypted?.blobUrl && !cachedDecrypted.blobUrl.startsWith('orbita-media:')) ? cachedDecrypted.blobUrl : null;
   const validDirectUrl = (currentItem?.directUrl && !currentItem.directUrl.startsWith('orbita-media:')) ? currentItem.directUrl : null;
   const displaySrc = fallbackBlobUrl || validCachedUrl || validBlobUrl || (isPlaintextUrl ? currentItem?.url : null) || (!isVideo ? validDirectUrl : null);
+  const previewSrc = currentItem?.thumbnail || currentItem?.blurPreview || videoFirstFrame;
 
   useEffect(() => {
     if (!isOpen || !isVideo || !displaySrc) return;
@@ -725,20 +727,6 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
     }
   }, []);
 
-  const handleToggleFullscreen = useCallback(() => {
-    const orbita = (window as any).orbita;
-    if (orbita?.maximizeWindow) {
-      if (isWindowMaximized) {
-        orbita.unmaximizeWindow?.();
-      } else {
-        orbita.maximizeWindow();
-      }
-    } else if (document.fullscreenElement) {
-      document.exitFullscreen?.().catch(() => {});
-    } else {
-      document.documentElement.requestFullscreen?.().catch(() => {});
-    }
-  }, [isWindowMaximized]);
 
   const handleCopyFrame = useCallback(async () => {
     if (!videoRef.current) return;
@@ -998,6 +986,10 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
         }
         @keyframes tgSpinner {
           to { transform: rotate(360deg); }
+        }
+        @keyframes spin-ring {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
         body[data-media-viewer-open="true"] #root * {
           animation-play-state: paused !important;
@@ -1275,7 +1267,6 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 playbackRate={playbackRate}
                 currentTime={currentTime}
                 duration={duration}
-                isWindowMaximized={isWindowMaximized}
                 videoProgressRef={videoProgressRef}
                 videoProgressFillRef={videoProgressFillRef}
                 videoTimeDisplayRef={videoTimeDisplayRef}
@@ -1283,7 +1274,6 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 onToggleMute={handleToggleMute}
                 onVolumeChange={handleVolumeChange}
                 onSelectSpeed={handleSelectSpeed}
-                onToggleFullscreen={handleToggleFullscreen}
                 onProgressMouseDown={handleProgressMouseDown}
                 onProgressTouchStart={handleProgressTouchStart}
                 setIsVideoControlsHovered={setIsVideoControlsHovered}
@@ -1388,17 +1378,71 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
             />
           )
         ) : currentItem ? (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+          <div
+            style={{
+              position: 'relative',
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              pointerEvents: 'auto',
+            }}
+          >
+            {previewSrc && (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  pointerEvents: 'none',
+                }}
+              >
+                <img
+                  src={previewSrc}
+                  alt=""
+                  style={{
+                    aspectRatio: mediaDimensions ? `${mediaDimensions.width} / ${mediaDimensions.height}` : undefined,
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    filter: 'blur(20px)',
+                    transform: 'scale(1.15)',
+                    pointerEvents: 'none',
+                    userSelect: 'none',
+                  }}
+                  draggable={false}
+                />
+              </div>
+            )}
             <div
               style={{
-                width: 38,
-                height: 38,
-                borderRadius: '50%',
-                border: '3px solid rgba(255, 255, 255, 0.2)',
-                borderTopColor: '#ffffff',
-                animation: 'tgSpinner 0.8s linear infinite',
+                position: 'relative',
+                zIndex: 10,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                pointerEvents: 'auto',
               }}
-            />
+            >
+              <AudioCoverWithPlay
+                cover={null}
+                size={54}
+                state="downloading"
+                progress={progress}
+                customBg="rgba(15, 17, 26, 0.75)"
+                onClick={() => {
+                  if (cancel) cancel();
+                }}
+                onCancel={cancel}
+                ariaLabel={t('common.loading', 'Загрузка...')}
+              />
+            </div>
           </div>
         ) : null}
       </div>

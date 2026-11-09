@@ -721,8 +721,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           duration: msg.duration,
           width: msg.width,
           height: msg.height,
+          preview: msg.preview || msg.thumbnail || null,
           blurPreview: msg.blurPreview,
-          thumbnail: msg.thumbnail || msg.blurPreview,
+          thumbnail: msg.thumbnail || msg.preview || msg.blurPreview,
           uploading: msg.uploading,
           uploadedMb: msg.uploadedMb,
           size: msg.fileSize,
@@ -1089,8 +1090,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   isGif={isGif}
                   isOwn={isOwn}
                   fileSize={msg.fileSize || (msg as any).size}
-                  preview={(msg as any).preview || (media.url?.startsWith('data:') || media.url?.startsWith('blob:') ? media.url : undefined)}
-                  blurPreview={msg.blurPreview || msg.thumbnail}
+                  preview={(msg.preview || (msg as any).thumbnail || (media.url?.startsWith('data:') || media.url?.startsWith('blob:') ? media.url : undefined)) || undefined}
+                  thumbnail={(msg.thumbnail || msg.preview) || undefined}
+                  blurPreview={(msg.blurPreview || msg.thumbnail) || undefined}
                   isUploading={Boolean(msg.uploading)}
                   onCancelUpload={() => {
                     cancelActiveMediaUpload((msg as any).chatId || (msg as any).chat_id || activeChatId, msg.id);
@@ -1126,9 +1128,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   isGif={isGif}
                   isOwn={isOwn}
                   fileSize={msg.fileSize || (msg as any).size}
-                  preview={(msg as any).preview || (media.url?.startsWith('data:') || media.url?.startsWith('blob:') ? media.url : undefined)}
-                  thumbnail={(msg as any).preview || msg.thumbnail}
-                  blurPreview={msg.blurPreview || msg.thumbnail}
+                  preview={(msg.preview || (msg as any).thumbnail || (media.url?.startsWith('data:') && !media.url.startsWith('data:video') ? media.url : undefined)) || undefined}
+                  thumbnail={(msg.thumbnail || msg.preview) || undefined}
+                  blurPreview={(msg.blurPreview || msg.thumbnail) || undefined}
                   isUploading={Boolean(msg.uploading)}
                   onCancelUpload={() => {
                     cancelActiveMediaUpload((msg as any).chatId || (msg as any).chat_id || activeChatId, msg.id);

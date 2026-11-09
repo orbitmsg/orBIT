@@ -1,5 +1,10 @@
 import { getVercelBaseUrl } from './gatewayManager';
 
+const normalizeMediaUrl = (raw: string): string => {
+  if (!raw) return '';
+  return raw.replace(/^\[(?:Photo|GIF|Sticker|Video|Audio|File)\]\s*/i, '').trim();
+};
+
 class IndexedDBMediaStorage {
   private dbPromise: Promise<IDBDatabase> | null = null;
   private static readonly DB_VERSION = 3;
@@ -28,11 +33,22 @@ class IndexedDBMediaStorage {
   async get(url: string): Promise<{ data: string; mime: string } | null> {
     try {
       const db = await this.getDB();
+      const cleanUrl = normalizeMediaUrl(url);
       return new Promise((resolve) => {
         const tx = db.transaction('media', 'readonly');
         const store = tx.objectStore('media');
         const req = store.get(url);
-        req.onsuccess = () => resolve(req.result ? { data: req.result.data, mime: req.result.mime } : null);
+        req.onsuccess = () => {
+          if (req.result) {
+            resolve({ data: req.result.data, mime: req.result.mime });
+          } else if (cleanUrl && cleanUrl !== url) {
+            const reqClean = store.get(cleanUrl);
+            reqClean.onsuccess = () => resolve(reqClean.result ? { data: reqClean.result.data, mime: reqClean.result.mime } : null);
+            reqClean.onerror = () => resolve(null);
+          } else {
+            resolve(null);
+          }
+        };
         req.onerror = () => resolve(null);
       });
     } catch {
@@ -45,7 +61,12 @@ class IndexedDBMediaStorage {
       const db = await this.getDB();
       const tx = db.transaction('media', 'readwrite');
       const store = tx.objectStore('media');
-      store.put({ url, data, mime, chatId, messageId, savedAt: Date.now() });
+      const now = Date.now();
+      store.put({ url, data, mime, chatId, messageId, savedAt: now });
+      const cleanUrl = normalizeMediaUrl(url);
+      if (cleanUrl && cleanUrl !== url) {
+        store.put({ url: cleanUrl, data, mime, chatId, messageId, savedAt: now });
+      }
     } catch {}
   }
 }
@@ -66,6 +87,7 @@ export interface DecryptedMedia {
 
 interface QueuedItem {
   url: string;
+  originalUrl?: string;
   sharedSecret: string;
   fileName?: string;
   chatId: string;
@@ -75,13 +97,9 @@ interface QueuedItem {
   reject: (err: any) => void;
 }
 
-const normalizeMediaUrl = (raw: string): string => {
-  if (!raw) return '';
-  return raw.replace(/^\[(?:Photo|GIF|Sticker|Video|Audio|File)\]\s*/i, '').trim();
-};
-
 class MediaManager {
   private memoryCache = new Map<string, DecryptedMedia>();
+  public locallySavedUrls = new Set<string>();
   private totalMemorySize = 0;
   private maxMemorySize = 128 * 1024 * 1024;
   private maxItemCount = 60;
@@ -163,14 +181,38 @@ class MediaManager {
       messageId,
     };
     this.addToMemoryCache(cacheKey, media);
-
-    if (typeof window !== 'undefined' && (window as any).orbita?.mediaSave) {
-      blob.arrayBuffer().then((ab) => {
-        (window as any).orbita.mediaSave(cleanUrl, new Uint8Array(ab), mimeType || blob.type || 'application/octet-stream', chatId, messageId).catch(() => {});
-      }).catch(() => {});
+    if (url && url !== cleanUrl) {
+      this.addToMemoryCache(`${url}::${normSecret || 'public'}`, media);
     }
 
+    const saveTargets = new Set<string>();
+    if (cleanUrl) saveTargets.add(cleanUrl);
+    if (url) saveTargets.add(url);
+
+    for (const target of saveTargets) {
+      this.locallySavedUrls.add(target);
+    }
+
+    blob.arrayBuffer().then((ab) => {
+      const u8 = new Uint8Array(ab);
+      const b64 = this.arrayBufferToBase64(ab);
+      const mime = mimeType || blob.type || 'application/octet-stream';
+      for (const target of saveTargets) {
+        if (typeof window !== 'undefined' && (window as any).orbita?.mediaSave) {
+          (window as any).orbita.mediaSave(target, u8, mime, chatId, messageId).catch(() => {});
+        } else {
+          idbMediaStorage.save(target, b64, mime, chatId, messageId).catch(() => {});
+        }
+      }
+    }).catch(() => {});
+
     return media;
+  }
+
+  getCachedUrl(url: string | null | undefined, sharedSecret?: string): string | null {
+    if (!url || typeof url !== 'string') return null;
+    const cached = this.getCachedMedia(url, sharedSecret || '');
+    return cached?.blobUrl || null;
   }
 
   getCachedMedia(url: string | null | undefined, sharedSecret: string): DecryptedMedia | undefined {
@@ -179,7 +221,18 @@ class MediaManager {
     if (!cleanUrl) return undefined;
     const normSecret = (sharedSecret || '').trim().toLowerCase();
     const cacheKey = `${cleanUrl}::${normSecret || 'public'}`;
-    const cached = this.memoryCache.get(cacheKey);
+    let cached = this.memoryCache.get(cacheKey);
+    if (!cached && url !== cleanUrl) {
+      cached = this.memoryCache.get(`${url}::${normSecret || 'public'}`);
+    }
+    if (!cached) {
+      for (const [key, val] of this.memoryCache) {
+        if (key.startsWith(`${cleanUrl}::`) || key.startsWith(`${url}::`)) {
+          cached = val;
+          break;
+        }
+      }
+    }
     if (cached) {
       cached.lastAccessed = Date.now();
       return cached;
@@ -205,23 +258,19 @@ class MediaManager {
     const normSecret = (sharedSecret || '').trim().toLowerCase();
     const cacheKey = `${cleanUrl}::${normSecret || 'public'}`;
 
-    console.log('[MediaManager] getMedia called:', { cleanUrl, hasSecret: Boolean(sharedSecret), fileName, chatId, messageId, forcedMime });
-
-    const cached = this.memoryCache.get(cacheKey);
+    const cached = this.memoryCache.get(cacheKey) || (url !== cleanUrl ? this.memoryCache.get(`${url}::${normSecret || 'public'}`) : undefined);
     if (cached) {
       cached.lastAccessed = Date.now();
       this.cacheHits++;
-      console.log('[MediaManager] Memory cache HIT for:', cleanUrl, { mime: cached.mimeType, size: cached.size, hasBlob: Boolean(cached.blob), blobUrl: cached.blobUrl });
       return cached;
     }
 
     const pending = this.pendingRequests.get(cacheKey);
     if (pending) {
-      console.log('[MediaManager] Pending request exists for:', cleanUrl);
       return pending;
     }
 
-    const promise: Promise<DecryptedMedia> = this.createLoadPromise(cacheKey, cleanUrl, sharedSecret, fileName, chatId, messageId, forcedMime);
+    const promise: Promise<DecryptedMedia> = this.createLoadPromise(cacheKey, cleanUrl, sharedSecret, fileName, chatId, messageId, forcedMime, url);
     this.pendingRequests.set(cacheKey, promise);
     return promise;
   }
@@ -233,11 +282,13 @@ class MediaManager {
     fileName?: string,
     chatId?: string,
     messageId?: string,
-    forcedMime?: string
+    forcedMime?: string,
+    originalUrl?: string
   ): Promise<DecryptedMedia> {
     return new Promise<DecryptedMedia>((resolve, reject) => {
       const item: QueuedItem = {
         url,
+        originalUrl,
         sharedSecret,
         fileName,
         chatId: chatId || '',
@@ -272,8 +323,11 @@ class MediaManager {
   private async processItem(item: QueuedItem) {
     const cacheKey = `${item.url}::${item.sharedSecret || 'public'}`;
     try {
-      const media = await this.fetchAndDecrypt(item.url, item.sharedSecret, item.fileName, item.chatId, item.messageId, item.forcedMime);
+      const media = await this.fetchAndDecrypt(item.url, item.sharedSecret, item.fileName, item.chatId, item.messageId, item.forcedMime, item.originalUrl);
       this.addToMemoryCache(cacheKey, media);
+      if (item.originalUrl && item.originalUrl !== item.url) {
+        this.addToMemoryCache(`${item.originalUrl}::${item.sharedSecret || 'public'}`, media);
+      }
       item.resolve(media);
     } catch (err) {
       item.reject(err);
@@ -318,23 +372,55 @@ class MediaManager {
     }
   }
 
+  public isMediaSavedLocallySync(url: string): boolean {
+    if (!url || typeof url !== 'string') return false;
+    if (url.startsWith('blob:') || url.startsWith('data:')) return true;
+    const cleanUrl = normalizeMediaUrl(url);
+    if (!cleanUrl) return false;
+    if (cleanUrl.startsWith('blob:') || cleanUrl.startsWith('data:')) return true;
+    if (this.locallySavedUrls.has(cleanUrl) || this.locallySavedUrls.has(url)) return true;
+    for (const [key] of this.memoryCache) {
+      if (key.startsWith(cleanUrl) || key.startsWith(url)) return true;
+    }
+    return false;
+  }
+
   public async isMediaSavedLocally(url: string): Promise<boolean> {
     if (!url || typeof url !== 'string') return false;
     if (url.startsWith('blob:') || url.startsWith('data:')) return true;
     const cleanUrl = normalizeMediaUrl(url);
     if (!cleanUrl) return false;
     if (cleanUrl.startsWith('blob:') || cleanUrl.startsWith('data:')) return true;
+    if (this.locallySavedUrls.has(cleanUrl) || this.locallySavedUrls.has(url)) return true;
     for (const [key] of this.memoryCache) {
-      if (key.startsWith(cleanUrl)) return true;
+      if (key.startsWith(cleanUrl) || key.startsWith(url)) {
+        this.locallySavedUrls.add(cleanUrl);
+        this.locallySavedUrls.add(url);
+        return true;
+      }
     }
     try {
-      if (typeof window !== 'undefined' && window.orbita?.mediaGet) {
-        const diskCache = await window.orbita.mediaGet(cleanUrl);
-        return Boolean(diskCache && diskCache.data);
-      } else {
-        const idb = await idbMediaStorage.get(cleanUrl);
-        return Boolean(idb && idb.data);
+      const checkTargets = [cleanUrl];
+      if (url && url !== cleanUrl) checkTargets.push(url);
+
+      for (const target of checkTargets) {
+        if (typeof window !== 'undefined' && window.orbita?.mediaGet) {
+          const diskCache = await window.orbita.mediaGet(target);
+          if (diskCache && diskCache.data) {
+            this.locallySavedUrls.add(cleanUrl);
+            this.locallySavedUrls.add(url);
+            return true;
+          }
+        } else {
+          const idb = await idbMediaStorage.get(target);
+          if (idb && idb.data) {
+            this.locallySavedUrls.add(cleanUrl);
+            this.locallySavedUrls.add(url);
+            return true;
+          }
+        }
       }
+      return false;
     } catch {
       return false;
     }
@@ -383,26 +469,40 @@ class MediaManager {
     fileName?: string,
     chatId?: string,
     messageId?: string,
-    forcedMime?: string
+    forcedMime?: string,
+    originalUrl?: string
   ): Promise<DecryptedMedia> {
     const normSecret = (sharedSecret || '').trim().toLowerCase();
     const cacheKey = `${url}::${normSecret || 'public'}`;
-    console.log('[MediaManager] fetchAndDecrypt starting for:', { url, hasSecret: Boolean(sharedSecret), fileName, forcedMime });
+    const cleanUrl = normalizeMediaUrl(url);
+    const lookupUrls = [cleanUrl];
+    if (url && url !== cleanUrl) lookupUrls.push(url);
+    if (originalUrl && !lookupUrls.includes(originalUrl)) lookupUrls.push(originalUrl);
 
     let diskCache: { data: string | Uint8Array | ArrayBuffer | null; mime: string | null } | null = null;
-    if (window.orbita?.mediaGet) {
-      console.log('[MediaManager] Checking disk cache via window.orbita.mediaGet...');
-      diskCache = await window.orbita.mediaGet(url);
-    } else {
-      console.log('[MediaManager] Checking idbMediaStorage...');
-      diskCache = await idbMediaStorage.get(url);
+    for (const lookupKey of lookupUrls) {
+      if (window.orbita?.mediaGet) {
+        diskCache = await window.orbita.mediaGet(lookupKey);
+      } else {
+        diskCache = await idbMediaStorage.get(lookupKey);
+      }
+      if (diskCache && diskCache.data) {
+        break;
+      }
     }
 
     let decryptedData: ArrayBuffer;
     let mime: string;
 
+    const saveTargets = new Set<string>();
+    if (cleanUrl) saveTargets.add(cleanUrl);
+    if (url) saveTargets.add(url);
+    if (originalUrl) saveTargets.add(originalUrl);
+
     if (diskCache && diskCache.data) {
-      console.log('[MediaManager] Disk cache HIT for:', url, 'mime:', diskCache.mime);
+      for (const target of saveTargets) {
+        this.locallySavedUrls.add(target);
+      }
       let rawBytes: ArrayBuffer;
       if (diskCache.data instanceof Uint8Array) {
         rawBytes = diskCache.data.buffer.slice(diskCache.data.byteOffset, diskCache.data.byteOffset + diskCache.data.byteLength) as ArrayBuffer;
@@ -432,11 +532,14 @@ class MediaManager {
         try {
           decryptedData = await this.decryptFile(rawBytes, sharedSecret);
           mime = this.detectMime(new Uint8Array(decryptedData.slice(0, 16)), fileName);
-          if (window.orbita?.mediaSave) {
-            window.orbita.mediaSave(url, new Uint8Array(decryptedData), mime, chatId || '', messageId || '').catch(() => {});
-          } else {
-            const b64 = this.arrayBufferToBase64(decryptedData);
-            idbMediaStorage.save(url, b64, mime, chatId, messageId).catch(() => {});
+          for (const target of saveTargets) {
+            this.locallySavedUrls.add(target);
+            if (window.orbita?.mediaSave) {
+              window.orbita.mediaSave(target, new Uint8Array(decryptedData), mime, chatId || '', messageId || '').catch(() => {});
+            } else {
+              const b64 = this.arrayBufferToBase64(decryptedData);
+              idbMediaStorage.save(target, b64, mime, chatId, messageId).catch(() => {});
+            }
           }
         } catch (decErr) {
           console.warn('[MediaManager] Decrypting disk cached file failed, falling back:', decErr);
@@ -572,13 +675,16 @@ class MediaManager {
 
       mime = this.detectMime(new Uint8Array(decryptedData.slice(0, 16)), fileName);
 
-      if (window.orbita?.mediaSave) {
-        try {
-          await window.orbita.mediaSave(url, new Uint8Array(decryptedData), mime, chatId || '', messageId || '');
-        } catch (_) {}
-      } else {
-        const b64 = this.arrayBufferToBase64(decryptedData);
-        await idbMediaStorage.save(url, b64, mime, chatId, messageId);
+      for (const target of saveTargets) {
+        this.locallySavedUrls.add(target);
+        if (window.orbita?.mediaSave) {
+          try {
+            await window.orbita.mediaSave(target, new Uint8Array(decryptedData), mime, chatId || '', messageId || '');
+          } catch (_) {}
+        } else {
+          const b64 = this.arrayBufferToBase64(decryptedData);
+          await idbMediaStorage.save(target, b64, mime, chatId, messageId);
+        }
       }
 
       const cleanUrl = normalizeMediaUrl(url);

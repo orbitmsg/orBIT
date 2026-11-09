@@ -320,7 +320,7 @@ export const EncryptedMedia = memo(({
 
   const isFullRes = Boolean(preview || (thumbnail && !thumbnail.startsWith('data:')) || (thumbnail && thumbnail.startsWith('data:') && thumbnail.length > 2048));
   const fullResSrc = preview || thumbnail;
-  const activeImageSrc = blobUrl || (url.startsWith('data:') || url.startsWith('blob:') ? url : (preview?.startsWith('data:') || preview?.startsWith('blob:') ? preview : null));
+  const activeImageSrc = blobUrl || (url.startsWith('data:') || url.startsWith('blob:') ? url : (type === 'image' && (preview?.startsWith('data:') || preview?.startsWith('blob:')) ? preview : null));
 
   const isGif = useMemo(() => {
     if (isGifProp !== undefined) return isGifProp;
@@ -366,7 +366,7 @@ export const EncryptedMedia = memo(({
         overflowAnchor: 'none',
       }}
     >
-      {((!blobUrl && !activeImageSrc) || effectiveIsUploading) && (
+      {((type === 'video' ? !blobUrl : (!blobUrl && !activeImageSrc)) || effectiveIsUploading) && (
         <div
           className="absolute inset-0 flex flex-col items-center justify-center z-10 select-none cursor-pointer"
           onClick={(e) => {
@@ -485,7 +485,7 @@ export const EncryptedMedia = memo(({
           <video
             ref={videoRef}
             src={blobUrl || undefined}
-            poster={preview || (thumbnail && (!thumbnail.startsWith('data:') || thumbnail.length > 2048) ? thumbnail : undefined)}
+            poster={isFullRes ? fullResSrc : undefined}
             className="w-full h-full object-contain pointer-events-none"
             preload="auto"
             autoPlay

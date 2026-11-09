@@ -121,8 +121,9 @@ export function useDecryptedMedia(
   const cachedUrl = useMemo(() => {
     if (!cleanUrl) return null;
     if (cleanUrl.startsWith('blob:') || cleanUrl.startsWith('data:')) return cleanUrl;
-    return mediaManager.getCachedMedia(cleanUrl, sharedSecret || '')?.blobUrl || null;
-  }, [cleanUrl, sharedSecret]);
+    return mediaManager.getCachedMedia(cleanUrl, sharedSecret || '')?.blobUrl ||
+      (url ? mediaManager.getCachedMedia(url, sharedSecret || '')?.blobUrl : null) || null;
+  }, [cleanUrl, url, sharedSecret]);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
@@ -141,7 +142,8 @@ export function useDecryptedMedia(
   const [blobUrl, setBlobUrl] = useState<string | null>(initialBlobUrl);
   const [blob, setBlob] = useState<Blob | null>(() => {
     if (!cleanUrl) return null;
-    return mediaManager.getCachedMedia(cleanUrl, sharedSecret || '')?.blob || null;
+    return mediaManager.getCachedMedia(cleanUrl, sharedSecret || '')?.blob ||
+      (url ? mediaManager.getCachedMedia(url, sharedSecret || '')?.blob : null) || null;
   });
 
   const targetProgressRef = useRef(0);
@@ -197,7 +199,8 @@ export function useDecryptedMedia(
     if (cachedUrl) {
       setIsUnavailable(false);
       setBlobUrl(cachedUrl);
-      const cached = mediaManager.getCachedMedia(cleanUrl, sharedSecret || '');
+      const cached = mediaManager.getCachedMedia(cleanUrl, sharedSecret || '') ||
+        (url ? mediaManager.getCachedMedia(url, sharedSecret || '') : undefined);
       if (cached?.blob) setBlob(cached.blob);
       setIsLoading(false);
       setProgress(1);
@@ -234,7 +237,7 @@ export function useDecryptedMedia(
       isExecutingRef.current = false;
       setIsLoading(false);
     }
-  }, [cleanUrl, cachedUrl, sharedSecret, hintFileName, forcedMime, chatId, messageId]);
+  }, [cleanUrl, cachedUrl, sharedSecret, hintFileName, forcedMime, chatId, messageId, url]);
 
   useEffect(() => {
     if (!cleanUrl) {
@@ -247,7 +250,8 @@ export function useDecryptedMedia(
 
     if (cachedUrl) {
       setBlobUrl(cachedUrl);
-      const cached = mediaManager.getCachedMedia(cleanUrl, sharedSecret || '');
+      const cached = mediaManager.getCachedMedia(cleanUrl, sharedSecret || '') ||
+        (url ? mediaManager.getCachedMedia(url, sharedSecret || '') : undefined);
       if (cached?.blob) setBlob(cached.blob);
       setIsLoading(false);
       setProgress(1);
@@ -261,12 +265,16 @@ export function useDecryptedMedia(
       return;
     }
 
+    if (autoLoad) {
+      loadMedia();
+      return;
+    }
+
     let isMounted = true;
-    mediaManager.isMediaSavedLocally(cleanUrl).then((isSaved) => {
+    const checkTarget = url && url !== cleanUrl ? url : cleanUrl;
+    mediaManager.isMediaSavedLocally(checkTarget).then((isSaved) => {
       if (!isMounted) return;
       if (isSaved) {
-        loadMedia();
-      } else if (autoLoad) {
         loadMedia();
       } else {
         setBlobUrl(null);
@@ -278,7 +286,7 @@ export function useDecryptedMedia(
     return () => {
       isMounted = false;
     };
-  }, [cleanUrl, cachedUrl, autoLoad, loadMedia]);
+  }, [cleanUrl, cachedUrl, autoLoad, loadMedia, url]);
 
   const cancel = useCallback(() => {
     if (cleanUrl) {

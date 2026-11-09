@@ -426,6 +426,23 @@ export const useChatChannelsAndCalls = ({
       bc.onmessage = (e) => handleAction(e.data);
     } catch {}
 
+    let mediaBc: BroadcastChannel | null = null;
+    try {
+      mediaBc = new BroadcastChannel('orbita-media-channel');
+      mediaBc.onmessage = (e) => {
+        if (e.data?.type === 'REQUEST_MEDIA_PAYLOAD') {
+          try {
+            mediaBc?.postMessage({
+              type: 'SYNC_USERS',
+              usersById: useChatStore.getState().usersById,
+              myUserId: useAuthStore.getState().userId,
+              myNickname: useAuthStore.getState().nickname,
+            });
+          } catch {}
+        }
+      };
+    } catch {}
+
     const orbita = (window as any).orbita;
     const unsub = orbita?.onMediaAction?.((action: any) => handleAction(action));
 

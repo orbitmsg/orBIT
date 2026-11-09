@@ -113,6 +113,14 @@ for (const candidate of candidatePaths) {
   if (fs.existsSync(candidate)) {
     try {
       nativeModule = loadNativeAddon(candidate);
+      if (nativeModule) {
+        if (typeof nativeModule.readFileFast === 'function' && typeof nativeModule.rustReadFileFast !== 'function') {
+          nativeModule.rustReadFileFast = nativeModule.readFileFast;
+        }
+        if (typeof nativeModule.rustReadFileFast === 'function' && typeof nativeModule.readFileFast !== 'function') {
+          nativeModule.readFileFast = nativeModule.rustReadFileFast;
+        }
+      }
       setNativeModule(nativeModule);
       console.log('Native module loaded successfully from:', candidate);
       break;
@@ -120,6 +128,24 @@ for (const candidate of candidatePaths) {
       console.error('Native module failed to load from ' + candidate + ':', e);
     }
   }
+}
+
+function fastReadFile(filePath: string): Buffer {
+  if (nativeModule) {
+    if (typeof nativeModule.rustReadFileFast === 'function') {
+      try {
+        const res = nativeModule.rustReadFileFast(filePath);
+        if (res) return Buffer.isBuffer(res) ? res : Buffer.from(res);
+      } catch {}
+    }
+    if (typeof nativeModule.readFileFast === 'function') {
+      try {
+        const res = nativeModule.readFileFast(filePath);
+        if (res) return Buffer.isBuffer(res) ? res : Buffer.from(res);
+      } catch {}
+    }
+  }
+  return fs.readFileSync(filePath);
 }
 
 function trimAppMemory(deep = true) {
@@ -629,7 +655,7 @@ async function getMediaFromCache(cacheKey: string): Promise<{ data: Buffer | nul
     return { data: null, mime: null };
   }
 
-  const raw = fs.readFileSync(localPath);
+  const raw = fastReadFile(localPath);
   const decrypted = decryptData(raw);
   if (!decrypted) return { data: null, mime: null };
 
@@ -831,6 +857,12 @@ function registerMediaIpcHandlers() {
   try { ipcMain.removeHandler('system:disk-space'); } catch { }
 
   ipcMain.handle('media:exists', async (_event, cacheKey: string) => {
+    const dbPath = getMediaDbPath();
+    if (nativeModule && typeof nativeModule.rustCacheExistsMedia === 'function') {
+      try {
+        return Boolean(nativeModule.rustCacheExistsMedia(dbPath, configuredMediaDir, cacheKey));
+      } catch {}
+    }
     const db = await initMediaDb();
     return new Promise((resolve, reject) => {
       db.get('SELECT 1 FROM media_cache WHERE cache_key = ? AND download_status = "downloaded"', cacheKey, (err, row) => {
@@ -848,12 +880,16 @@ function registerMediaIpcHandlers() {
   });
 
   ipcMain.handle('media:get-batch', async (_event, items: Array<{ url: string }>) => {
-    const result: Array<{ url: string; data: Uint8Array | null; mime: string | null }> = [];
-    for (const item of items) {
-      const res = await getMediaFromCache(item.url);
-      result.push({ url: item.url, data: res.data ? new Uint8Array(res.data) : null, mime: res.mime });
-    }
-    return result;
+    return Promise.all(
+      items.map(async (item) => {
+        const res = await getMediaFromCache(item.url);
+        return {
+          url: item.url,
+          data: res.data ? new Uint8Array(res.data) : null,
+          mime: res.mime,
+        };
+      })
+    );
   });
 
   ipcMain.handle('media:save', async (_event, cacheKey: string, dataInput: any, mimeType: string, chatId?: string, messageId?: string) => {
@@ -1239,7 +1275,7 @@ function registerOrbitaMediaProtocol() {
         } else {
           const localPath = mediaUrl.startsWith('file://') ? fileURLToPath(mediaUrl) : mediaUrl;
           if (fs.existsSync(localPath)) {
-            rawBuf = fs.readFileSync(localPath);
+            rawBuf = fastReadFile(localPath);
           } else {
             return new Response('Not found', { status: 404 });
           }
@@ -2865,20 +2901,12 @@ ipcMain.handle('native:decrypt-file-stream', async (_event, sourcePath: string, 
 });
 
 ipcMain.handle('orbita:rustReadFileFast', async (_event, filePath: string) => {
-  if (nativeModule && nativeModule.readFileFast) {
-    try {
-      const res = nativeModule.readFileFast(filePath);
-      if (res) return res;
-    } catch (e) {
-      console.error('[RustEngine] readFileFast failed, falling back to fs:', e);
-    }
-  }
   try {
     if (filePath && fs.existsSync(filePath)) {
-      return fs.readFileSync(filePath);
+      return fastReadFile(filePath);
     }
   } catch (err) {
-    console.error('[Electron] Fallback fs.readFileSync failed:', err);
+    console.error('[Electron] fastReadFile failed:', err);
   }
   return null;
 });
@@ -4178,7 +4206,7 @@ function initOrGetMediaWindow(initialPayload?: any): BrowserWindow {
       contextIsolation: true,
       sandbox: false,
       preload: path.join(__dirname, 'preload.cjs'),
-      backgroundThrottling: true,
+      backgroundThrottling: false,
       devTools: !app.isPackaged,
     },
     title: 'Orbita',
@@ -4206,11 +4234,23 @@ function initOrGetMediaWindow(initialPayload?: any): BrowserWindow {
     }
   });
 
-  mediaWindow.on('close', () => {
-    if (mediaWindow && !mediaWindow.isDestroyed()) {
+  mediaWindow.on('close', (e) => {
+    if (!isQuitting) {
+      e.preventDefault();
       saveMediaWindowState(mediaWindow, true);
+      currentMediaPayloadCache = null;
+      try {
+        mediaWindow?.webContents.send('orbita:media-payload', null);
+      } catch {}
+      mediaWindow?.webContents.setBackgroundThrottling(true);
+      mediaWindow?.hide();
+      trimAppMemory();
+    } else {
+      if (mediaWindow && !mediaWindow.isDestroyed()) {
+        saveMediaWindowState(mediaWindow, true);
+      }
+      currentMediaPayloadCache = null;
     }
-    currentMediaPayloadCache = null;
   });
 
   mediaWindow.on('resize', () => {
@@ -4260,13 +4300,21 @@ function createOrShowMediaWindow(initialPayload?: any): BrowserWindow {
     currentMediaPayloadCache = initialPayload;
   }
 
-  const isAlreadyCreated = Boolean(mediaWindow && !mediaWindow.isDestroyed());
   const win = initOrGetMediaWindow(initialPayload);
+  const state = getSavedMediaWindowState();
 
-  if (!isAlreadyCreated) {
-    const state = getSavedMediaWindowState();
-    if (state.isMaximized) {
+  if (state.isMaximized) {
+    if (!win.isMaximized()) {
       win.maximize();
+    }
+  } else {
+    if (win.isMaximized()) {
+      win.unmaximize();
+    }
+    if (lastMediaNormalBounds && typeof lastMediaNormalBounds.width === 'number' && typeof lastMediaNormalBounds.height === 'number') {
+      try {
+        win.setBounds(lastMediaNormalBounds);
+      } catch {}
     }
   }
 
@@ -4274,14 +4322,14 @@ function createOrShowMediaWindow(initialPayload?: any): BrowserWindow {
     win.webContents.setBackgroundThrottling(false);
   }
 
+  if (currentMediaPayloadCache && !win.isDestroyed()) {
+    win.webContents.send('orbita:media-payload', currentMediaPayloadCache);
+  }
+
   if (win.isMinimized()) win.restore();
   win.setOpacity(1);
   win.show();
   win.focus();
-
-  if (currentMediaPayloadCache && !win.isDestroyed()) {
-    win.webContents.send('orbita:media-payload', currentMediaPayloadCache);
-  }
 
   if (currentMediaPayloadCache && !win.isDestroyed() && win.webContents.isLoading()) {
     win.webContents.once('did-finish-load', () => {
@@ -4310,8 +4358,11 @@ ipcMain.handle('orbita:close-media-window', () => {
   if (mediaWindow && !mediaWindow.isDestroyed()) {
     saveMediaWindowState(mediaWindow, true);
     currentMediaPayloadCache = null;
-    mediaWindow.destroy();
-    mediaWindow = null;
+    try {
+      mediaWindow.webContents.send('orbita:media-payload', null);
+    } catch {}
+    mediaWindow.webContents.setBackgroundThrottling(true);
+    mediaWindow.hide();
   }
   trimAppMemory();
   return { success: true };
@@ -4379,8 +4430,11 @@ ipcMain.handle('window:close', (event) => {
     } else if (mediaWindow && win === mediaWindow) {
       saveMediaWindowState(mediaWindow, true);
       currentMediaPayloadCache = null;
-      mediaWindow.destroy();
-      mediaWindow = null;
+      try {
+        mediaWindow.webContents.send('orbita:media-payload', null);
+      } catch {}
+      mediaWindow.webContents.setBackgroundThrottling(true);
+      mediaWindow.hide();
       trimAppMemory();
     } else if (win === mainWindow) {
       if (showInTraySetting) {
@@ -4838,8 +4892,11 @@ function createMainWindow() {
         callWindow = null;
       }
       if (mediaWindow && !mediaWindow.isDestroyed()) {
-        mediaWindow.destroy();
-        mediaWindow = null;
+        try {
+          mediaWindow.webContents.send('orbita:media-payload', null);
+        } catch {}
+        mediaWindow.webContents.setBackgroundThrottling(true);
+        mediaWindow.hide();
       }
       trimAppMemory();
     }
@@ -5342,6 +5399,9 @@ app.whenReady().then(async () => {
   updateSplashStatus(statusPreparing);
 
   createMainWindow();
+  try {
+    initOrGetMediaWindow();
+  } catch {}
   setupTray();
   setupAutoUpdater();
   powerMonitor.on('resume', () => {
@@ -5369,6 +5429,9 @@ app.whenReady().then(async () => {
       splashWindow.destroy();
       splashWindow = null;
     }
+    try {
+      initOrGetMediaWindow();
+    } catch {}
   };
 
   ipcMain.once('orbita:app-ready', finishStartup);

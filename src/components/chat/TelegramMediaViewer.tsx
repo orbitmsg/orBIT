@@ -14,6 +14,7 @@ import { mediaManager } from '../../services/mediaManager';
 import { arrayBufferToBase64 } from '../../utils/messageUtils';
 import { useToastStore } from '../../store/useToastStore';
 import { useChatStore, FONT_MAP, FontFamily } from '../../store/useChatStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import {
   MediaViewerItem,
   TelegramMediaViewerProps,
@@ -458,7 +459,29 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
     setVideoFirstFrame(null);
   }, [currentIndex]);
 
-  const senderNick = currentItem?.sender || (currentItem?.chatId ? useChatStore.getState().chats.find((c) => c.id === currentItem.chatId)?.name : null) || 'Orbita';
+  const usersById = useChatStore((s) => s.usersById);
+  const myUserId = useAuthStore((s) => s.userId);
+  const myNickname = useAuthStore((s) => s.nickname);
+
+  const dynamicSender = useMemo(() => {
+    if (!currentItem) return '';
+    const sid = currentItem.senderId;
+    if (sid) {
+      if (myUserId && sid === myUserId) {
+        return myNickname || currentItem.sender || '';
+      }
+      const user = (usersById || {})[sid];
+      if (user?.nickname) {
+        return user.nickname;
+      }
+    }
+    if (currentItem.isOwn && myNickname) {
+      return myNickname;
+    }
+    return currentItem.sender || '';
+  }, [currentItem, usersById, myUserId, myNickname]);
+
+  const senderNick = dynamicSender || (currentItem?.chatId ? useChatStore.getState().chats.find((c) => c.id === currentItem.chatId)?.name : null) || 'Orbita';
 
   const itemsRef = useRef(items);
   itemsRef.current = items;
@@ -949,7 +972,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
 
   const typeLabel = isVideo ? t('mediaViewer.video', 'Видео') : isGif ? t('mediaViewer.gif', 'GIF') : t('mediaViewer.photo', 'Фотография');
   const dateStr = currentItem?.time ? formatTelegramDate(currentItem.time, i18n.language) : '';
-  const senderStr = currentItem?.sender || '';
+  const senderStr = dynamicSender;
 
   const userFontFamily = useChatStore((s) => s.fontFamily);
   const activeFont = (userFontFamily && userFontFamily !== 'system' && FONT_MAP[userFontFamily as FontFamily]) 

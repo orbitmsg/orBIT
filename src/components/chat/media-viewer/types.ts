@@ -7,6 +7,7 @@ export interface MediaViewerItem {
   name?: string;
   mime?: string;
   sender?: string;
+  senderId?: string;
   time?: number;
   messageId?: string;
   messageIndex?: number;

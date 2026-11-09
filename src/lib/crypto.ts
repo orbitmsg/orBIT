@@ -41,6 +41,31 @@ export const generateUuidV4 = (): string => {
 
 export const generateChatId = (): string => generateUuidV4();
 
+export const isValidUuid = (val?: string | null): boolean => {
+  if (!val || typeof val !== 'string') return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val.trim());
+};
+
+export const ensureValidUuid = (val?: string | null, seed?: string | null): string => {
+  if (val && isValidUuid(val)) {
+    return val.trim().toLowerCase();
+  }
+  if (seed && isValidUuid(seed)) {
+    return seed.trim().toLowerCase();
+  }
+  const source = (val || seed || '').trim();
+  if (source.length > 0) {
+    const h = new SHA256();
+    h.update(new TextEncoder().encode(`orbita:uuid:${source}`));
+    const digest = h.digest();
+    digest[6] = (digest[6] & 0x0f) | 0x40;
+    digest[8] = (digest[8] & 0x3f) | 0x80;
+    const hex = hexEncode(digest.slice(0, 16));
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`.toLowerCase();
+  }
+  return generateUuidV4();
+};
+
 export const getDirectChatId = (userAUuid: string, userBUuid: string): string => {
   if (!userAUuid || !userBUuid) {
     return generateUuidV4();

@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { TelegramMediaViewer, MediaViewerItem } from './components/chat/TelegramMediaViewer';
 import { TitleBar } from './components/layout/TitleBar';
-import { FONT_MAP, FontFamily } from './store/useChatStore';
+import { useChatStore, FONT_MAP, FontFamily } from './store/useChatStore';
+import { useAuthStore } from './store/useAuthStore';
 import { sqliteStorage } from './services/sqliteStorage';
 import './App.css';
 import './i18n';
@@ -14,6 +15,9 @@ export const MediaWindowView: React.FC = () => {
     initialIndex?: number;
     sharedSecret?: string;
     chatId?: string;
+    usersById?: Record<string, any>;
+    myUserId?: string;
+    myNickname?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -61,7 +65,25 @@ export const MediaWindowView: React.FC = () => {
       }
     });
 
-    console.log('[MediaWindow] Component mounted, requesting payload...');
+    const syncUsers = (users?: Record<string, any>, myUid?: string, myNick?: string) => {
+      if (users && Object.keys(users).length > 0) {
+        useChatStore.setState((state) => ({
+          usersById: {
+            ...state.usersById,
+            ...users,
+          },
+        }));
+      }
+      if (myUid || myNick) {
+        useAuthStore.setState((state) => ({
+          userId: myUid || state.userId,
+          nickname: myNick || state.nickname,
+        }));
+      }
+    };
+
+    useChatStore.persist?.rehydrate?.();
+    useAuthStore.persist?.rehydrate?.();
 
     if (orbita?.getMediaPayload) {
       orbita.getMediaPayload().then((p: any) => {
@@ -73,7 +95,10 @@ export const MediaWindowView: React.FC = () => {
           sharedSecret: Boolean(p?.sharedSecret),
           items: p?.items?.map((it: any) => ({ id: it.id, type: it.type, url: it.url, directUrl: it.directUrl })),
         });
-        if (p) setPayload(p);
+        if (p) {
+          syncUsers(p.usersById, p.myUserId, p.myNickname);
+          setPayload(p);
+        }
       });
     }
 
@@ -87,6 +112,7 @@ export const MediaWindowView: React.FC = () => {
           items: newPayload?.items?.map((it: any) => ({ id: it.id, type: it.type, url: it.url })),
         });
         if (newPayload) {
+          syncUsers(newPayload.usersById, newPayload.myUserId, newPayload.myNickname);
           const root = document.getElementById('root');
           if (root) root.style.display = '';
           const viewerEl = document.getElementById('telegram-media-viewer-root');
@@ -102,12 +128,15 @@ export const MediaWindowView: React.FC = () => {
       bc.onmessage = (event) => {
         if (event.data?.type === 'SET_MEDIA_PAYLOAD') {
           if (event.data.payload) {
+            syncUsers(event.data.payload.usersById, event.data.payload.myUserId, event.data.payload.myNickname);
             const root = document.getElementById('root');
             if (root) root.style.display = '';
             const viewerEl = document.getElementById('telegram-media-viewer-root');
             if (viewerEl) viewerEl.style.display = 'flex';
           }
           setPayload(event.data.payload || null);
+        } else if (event.data?.type === 'SYNC_USERS') {
+          syncUsers(event.data.usersById, event.data.myUserId, event.data.myNickname);
         }
       };
       bc.postMessage({ type: 'REQUEST_MEDIA_PAYLOAD' });

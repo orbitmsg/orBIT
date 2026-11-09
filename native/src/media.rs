@@ -186,6 +186,11 @@ pub fn read_file_fast(path: String) -> Result<Buffer> {
     Ok(bytes.into())
 }
 
+#[napi(js_name = "rustReadFileFast")]
+pub fn rust_read_file_fast(path: String) -> Result<Buffer> {
+    read_file_fast(path)
+}
+
 const STREAM_MAGIC: &[u8; 8] = b"ORBSTR01";
 const STREAM_HEADER_SIZE: usize = 32;
 const STREAM_CHUNK_SIZE: usize = 64 * 1024;

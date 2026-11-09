@@ -689,9 +689,14 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
     if (!subTab) return;
     const allItems = mediaGroups[subTab]?.gridItems || [];
     const itemsList = filteredGridItems(allItems);
+    const usersById = useChatStore.getState().usersById || {};
     const viewerItems: MediaViewerItem[] = itemsList.map((it, idx) => {
       const effectiveSecret = it.key || chat?.sharedSecret;
       const directUrl = getOrbitaMediaUrl(it.url, effectiveSecret, chat?.id, it.messageId, it.name) || undefined;
+      const targetMsg = messages?.find((m) => m.id === it.messageId);
+      const isOut = targetMsg ? Boolean(targetMsg.isOutgoing || (targetMsg as any).isOwn || (targetMsg as any).outgoing) : false;
+      const senderId = it.senderId || targetMsg?.senderId || (isOut ? myUserId : undefined);
+      const actualSender = (senderId ? (senderId === myUserId ? myNickname : usersById[senderId]?.nickname) : undefined) || it.sender;
       return {
         id: it.id || String(idx),
         url: it.url,
@@ -699,7 +704,9 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         chatId: chat?.id,
         type: it.type,
         name: it.name,
-        sender: it.sender,
+        sender: actualSender,
+        senderId,
+        isOwn: isOut,
         time: it.time,
         messageId: it.messageId,
         duration: it.duration,
@@ -717,6 +724,9 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         initialIndex,
         sharedSecret: chat?.sharedSecret,
         chatId: chat?.id,
+        usersById: useChatStore.getState().usersById,
+        myUserId: useAuthStore.getState().userId,
+        myNickname: useAuthStore.getState().nickname,
       });
       return;
     }
@@ -725,7 +735,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
       items: viewerItems,
       initialIndex,
     });
-  }, [subTab, mediaGroups, searchQuery, chat]);
+  }, [subTab, mediaGroups, searchQuery, chat, messages, myUserId, myNickname]);
 
   if (!chat) {
     return null;
@@ -844,13 +854,18 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
             }}
             onClick={() => {
               if (chat.avatarUrl) {
+                const isNotes = chatId === 'notes';
+                const avatarSenderId = isNotes ? myUserId : (chat.peerCode || (chat.id && chat.id.length === 36 ? chat.id : undefined));
+                const usersById = useChatStore.getState().usersById || {};
+                const actualSender = (avatarSenderId ? (avatarSenderId === myUserId ? myNickname : usersById[avatarSenderId]?.nickname) : undefined) || chat.name;
                 const avatarItems = [{
                   id: 'avatar',
                   url: chat.avatarUrl,
                   directUrl: chat.avatarUrl,
                   type: 'photo' as const,
                   name: `${chat.name || 'Avatar'}.jpg`,
-                  sender: chat.name,
+                  sender: actualSender,
+                  senderId: avatarSenderId,
                   time: Date.now(),
                 }];
                 const orbita = (window as any).orbita;
@@ -860,6 +875,9 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                     initialIndex: 0,
                     sharedSecret: chat.sharedSecret,
                     chatId: chat.id,
+                    usersById: useChatStore.getState().usersById,
+                    myUserId: useAuthStore.getState().userId,
+                    myNickname: useAuthStore.getState().nickname,
                   });
                   return;
                 }

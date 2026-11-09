@@ -8,7 +8,7 @@ import { supabaseService } from '../../../services/supabaseService';
 
 import { getPusher, getGroupPusher, CLIENT_SESSION_ID } from '../../../utils/pusher';
 import { isValidGroupCode, deriveGroupKey } from '../../../lib/groupCrypto';
-import { deriveChannelKey, decryptMessage } from '../../../lib/crypto';
+import { deriveChannelKey, decryptMessage, ensureValidUuid } from '../../../lib/crypto';
 import { saveChatScroll, restoreChatScroll, chatScrollRegistry, mergeReactions } from './chatWindowHelpers';
 
 export interface UseChatRealtimeProps {
@@ -47,7 +47,23 @@ export const useChatRealtime = ({
           const sanitizedCached = cached.map((m) => {
             if (!m) return m;
             const validTime = (typeof m.time === 'number' && !isNaN(m.time) && m.time > 0) ? m.time : Date.now();
-            const timeFixed = validTime !== m.time ? { ...m, time: validTime } : m;
+            let timeFixed = validTime !== m.time ? { ...m, time: validTime } : m;
+            const hasMedia = Boolean(timeFixed.mediaType || (timeFixed.mediaItems && timeFixed.mediaItems.length > 0) || timeFixed.mediaUrl);
+            if (hasMedia && !timeFixed.senderId) {
+              const fallbackSender = timeFixed.isOutgoing
+                ? ensureValidUuid(myUserId || useAuthStore.getState().userId, myCode)
+                : ensureValidUuid(timeFixed.sender || activeChat?.peerCode);
+              timeFixed = { ...timeFixed, senderId: fallbackSender };
+            }
+            if (hasMedia && timeFixed.mediaItems && Array.isArray(timeFixed.mediaItems)) {
+              timeFixed = {
+                ...timeFixed,
+                mediaItems: timeFixed.mediaItems.map((it: any) => ({
+                  ...it,
+                  senderId: it.senderId ? ensureValidUuid(it.senderId, timeFixed.senderId) : timeFixed.senderId,
+                })),
+              };
+            }
             if (timeFixed.uploading || timeFixed.status === 'sending' || timeFixed.status === 'pending') {
               const hasRemoteUrl = Boolean(timeFixed.mediaUrl && !timeFixed.mediaUrl.startsWith('blob:') && (timeFixed.mediaUrl.startsWith('http') || timeFixed.mediaUrl.startsWith('orbita-media:')));
               const hasRemoteItems = Boolean(timeFixed.mediaItems && timeFixed.mediaItems.length > 0 && timeFixed.mediaItems.every((it: any) => it.url && !it.url.startsWith('blob:') && (it.url.startsWith('http') || it.url.startsWith('orbita-media:'))));
@@ -170,10 +186,14 @@ export const useChatRealtime = ({
               (myUserId && (row.sender_id === myUserId || row.sender_code === myUserId)) ||
               (myCode && (row.sender_code === myCode || row.sender_id === myCode))
             );
+            const msgSenderUuid = ensureValidUuid(
+              isOutgoing ? (myUserId || row.sender_id) : (row.sender_id || parsedData?.senderUserId || parsedData?.senderId),
+              isOutgoing ? myCode : (row.sender_code || row.sender_nickname)
+            );
 
             const msgItem: Message = {
               id: row.id,
-              senderId: row.sender_code || row.sender_id,
+              senderId: msgSenderUuid,
               sender: row.sender_nickname,
               isOutgoing,
               text,
@@ -188,6 +208,7 @@ export const useChatRealtime = ({
               mediaItems: (parsedData?.mediaItems || (row as any).media_items)
                 ? (parsedData?.mediaItems || (row as any).media_items).map((it: any, idx: number) => ({
                     ...it,
+                    senderId: it.senderId ? ensureValidUuid(it.senderId, msgSenderUuid) : msgSenderUuid,
                     width: it.width || (idx === 0 ? (parsedData?.width || (row as any).width) : undefined),
                     height: it.height || (idx === 0 ? (parsedData?.height || (row as any).height) : undefined),
                   }))
@@ -521,10 +542,14 @@ export const useChatRealtime = ({
           const existing = (useChatStore.getState().messagesByChatId[activeChatId] || []).some(m => m.id === mid);
           if (existing) return;
           const isVisible = typeof document !== 'undefined' && document.visibilityState === 'visible';
+          const groupIncomingSenderId = ensureValidUuid(
+            data.senderUserId || data.senderId || parsed?.senderUserId || parsed?.senderId,
+            data.senderCode || data.sender || data.senderNickname
+          );
           const item: Message = {
             id: mid,
             sender: data.sender || data.senderNickname,
-            senderId: data.senderCode || data.senderId,
+            senderId: groupIncomingSenderId,
             text: parsed?.text !== undefined ? parsed.text : (dec || rawCipher),
               time: data.time || Date.now(),
               read: isVisible,
@@ -538,6 +563,7 @@ export const useChatRealtime = ({
               mediaItems: (parsed?.mediaItems || data.mediaItems)
                 ? (parsed?.mediaItems || data.mediaItems).map((it: any, idx: number) => ({
                     ...it,
+                    senderId: it.senderId ? ensureValidUuid(it.senderId, groupIncomingSenderId) : groupIncomingSenderId,
                     width: it.width || (idx === 0 ? (parsed?.width || data.width) : undefined),
                     height: it.height || (idx === 0 ? (parsed?.height || data.height) : undefined),
                   }))
@@ -733,7 +759,15 @@ export const useChatRealtime = ({
           const list = state.messagesByChatId[activeChatId] || [];
           const updated = list.map((m) =>
             m.id === optimisticMatch.id
-              ? { ...m, id: post.id, time: validPostTime, text: postText, status: 'read' as const }
+              ? {
+                  ...m,
+                  id: post.id,
+                  time: validPostTime,
+                  text: postText,
+                  status: 'read' as const,
+                  senderId: m.senderId || ensureValidUuid(post.senderId || myUserId, myCode),
+                  mediaItems: m.mediaItems ? m.mediaItems.map((it) => ({ ...it, senderId: it.senderId || m.senderId || ensureValidUuid(post.senderId || myUserId, myCode) })) : undefined,
+                }
               : m
           );
           const saved = updated.find((m) => m.id === post.id);

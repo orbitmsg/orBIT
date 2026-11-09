@@ -448,6 +448,7 @@ export const useChatChannelsAndCalls = ({
 
     return () => {
       bc?.close();
+      mediaBc?.close();
       unsub?.();
     };
   }, [activeChatId, handleMediaGoToMessage, handleMediaForwardMessage, handleMediaDeleteMessage]);

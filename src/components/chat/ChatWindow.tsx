@@ -366,8 +366,8 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
   }, [activeChat?.id, activeChat?.type, activeChat?.sharedSecret]);
 
   const chatMediaViewerItems = useMemo(() => {
-    return buildChatMediaViewerItems(messages, sharedSecret, activeChatId);
-  }, [messages, sharedSecret, activeChatId]);
+    return buildChatMediaViewerItems(messages, sharedSecret, activeChatId, myUserId);
+  }, [messages, sharedSecret, activeChatId, myUserId]);
 
   const openMediaViewer = useCallback((url: string, messageId?: string, customItems?: MediaViewerItem[], explicitIndex?: number) => {
     const items = customItems || chatMediaViewerItems;
@@ -386,7 +386,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     let finalItems = items;
     let initialIndex = index;
     if (!customItems && index === -1) {
-      const fallback = resolveMediaViewerFallback(url, messageId, messages, sharedSecret, activeChatId);
+      const fallback = resolveMediaViewerFallback(url, messageId, messages, sharedSecret, activeChatId, myUserId);
       if (items.length === 0) {
         finalItems = fallback;
         initialIndex = 0;
@@ -408,6 +408,9 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         initialIndex,
         sharedSecret,
         chatId: activeChatId,
+        usersById: useChatStore.getState().usersById,
+        myUserId: useAuthStore.getState().userId,
+        myNickname: useAuthStore.getState().nickname,
       });
       return;
     }
@@ -417,7 +420,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
       initialIndex,
       customItems: finalItems,
     });
-  }, [chatMediaViewerItems, messages, sharedSecret, activeChatId]);
+  }, [chatMediaViewerItems, messages, sharedSecret, activeChatId, myUserId]);
   const atBottomRef = useRef(true);
   const [showScrollDown, setShowScrollDown] = useState(false);
   const lastChatSwitchTimeRef = useRef(0);
@@ -959,6 +962,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     isRatchetReady,
     myCode,
     myNickname,
+    myUserId,
     addMessage,
     updateChat,
     triggerMessage,

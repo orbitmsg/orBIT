@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { runTelegramDisintegration } from '../utils/telegramDisintegration';
 import { persist } from 'zustand/middleware';
 import { ThemeId, DEFAULT_CHAT_COLOR, applyThemeToRoot } from '../theme';
-import { generateChatId as genChatId } from '../lib/crypto';
+import { generateChatId as genChatId, ensureValidUuid } from '../lib/crypto';
 import { mediaManager } from '../services/mediaManager';
 import { supabaseService } from '../services/supabaseService';
 import { sqliteStorage } from '../services/sqliteStorage';
@@ -82,15 +82,24 @@ export const useChatStore = create<ChatState>()(
         set((state) => {
           if (!userId) return state;
           const current = state.usersById[userId] || { id: userId, nickname: '' };
+          const updatedUser = {
+            ...current,
+            ...profile,
+            nickname: profile.nickname ?? current.nickname,
+            updatedAt: Date.now(),
+          };
+          try {
+            const bc = new BroadcastChannel('orbita-media-channel');
+            bc.postMessage({
+              type: 'SYNC_USERS',
+              usersById: { [userId]: updatedUser },
+            });
+            setTimeout(() => bc.close(), 100);
+          } catch {}
           return {
             usersById: {
               ...state.usersById,
-              [userId]: {
-                ...current,
-                ...profile,
-                nickname: profile.nickname ?? current.nickname,
-                updatedAt: Date.now(),
-              },
+              [userId]: updatedUser,
             },
           };
         }),
@@ -632,8 +641,19 @@ export const useChatStore = create<ChatState>()(
         }
 
         const ttl = state.messageTTLSeconds || undefined;
+        const isOut = Boolean(message.isOutgoing);
+        const authUserId = typeof window !== 'undefined' ? (window as any).__ORBITA_AUTH_STORE__?.getState?.()?.userId : undefined;
+        const ensuredSenderId = ensureValidUuid(
+          message.senderId || (isOut ? (authUserId || state.myCode) : undefined),
+          isOut ? (authUserId || state.myCode) : (chat.peerCode || message.sender)
+        );
+        const enrichedMediaItems = message.mediaItems ? message.mediaItems.map((item) => ({
+          ...item,
+          senderId: item.senderId ? ensureValidUuid(item.senderId, ensuredSenderId) : ensuredSenderId,
+        })) : undefined;
         const enrichedMessage: Message = {
           ...message,
+          senderId: ensuredSenderId,
           ttlSeconds: ttl,
           expiresAt: ttl ? Date.now() + ttl * 1000 : undefined,
           status: message.status || 'sent',
@@ -644,7 +664,7 @@ export const useChatStore = create<ChatState>()(
           mediaUrl: message.mediaUrl,
           mediaName: message.mediaName,
           mime: message.mime,
-          mediaItems: message.mediaItems,
+          mediaItems: enrichedMediaItems,
           audioMetadata: message.audioMetadata,
           width: message.width,
           height: message.height,
@@ -663,7 +683,14 @@ export const useChatStore = create<ChatState>()(
         const updatedMessages: Message[] = [];
         for (const m of currentMessages) {
           const key = m.id || `${m.time}_${m.text}`;
-          if (!seenMsgKeys.has(key)) {
+          if (m.id && m.id === enrichedMessage.id) {
+            seenMsgKeys.add(key);
+            updatedMessages.push({
+              ...m,
+              ...enrichedMessage,
+              senderId: enrichedMessage.senderId || m.senderId || ensuredSenderId,
+            });
+          } else if (!seenMsgKeys.has(key)) {
             seenMsgKeys.add(key);
             updatedMessages.push(m);
           }
@@ -681,7 +708,6 @@ export const useChatStore = create<ChatState>()(
         }
 
         const isActive = state.activeChatId === chatId;
-        const isOut = Boolean(message.isOutgoing);
         const newUnreadCount = (isActive || isOut) ? (isActive ? 0 : (chat.unreadCount ?? 0)) : (chat.unreadCount ?? 0) + 1;
         const nextLastReadTimestamp = isActive ? Date.now() : chat.lastReadTimestamp;
         const nextLastReadMessageId = isActive ? enrichedMessage.id : chat.lastReadMessageId;
@@ -734,8 +760,19 @@ export const useChatStore = create<ChatState>()(
             continue;
           }
 
+          const isItemOut = Boolean(message.isOutgoing);
+          const itemAuthUserId = typeof window !== 'undefined' ? (window as any).__ORBITA_AUTH_STORE__?.getState?.()?.userId : undefined;
+          const ensuredItemSenderId = ensureValidUuid(
+            message.senderId || (isItemOut ? (itemAuthUserId || state.myCode) : undefined),
+            isItemOut ? (itemAuthUserId || state.myCode) : (chat.peerCode || message.sender)
+          );
+          const enrichedItemMediaItems = message.mediaItems ? message.mediaItems.map((mItem) => ({
+            ...mItem,
+            senderId: mItem.senderId ? ensureValidUuid(mItem.senderId, ensuredItemSenderId) : ensuredItemSenderId,
+          })) : undefined;
           const enrichedMessage: Message = {
             ...message,
+            senderId: ensuredItemSenderId,
             ttlSeconds: ttl,
             expiresAt: ttl ? Date.now() + ttl * 1000 : undefined,
             status: message.status || 'sent',
@@ -746,7 +783,7 @@ export const useChatStore = create<ChatState>()(
             mediaUrl: message.mediaUrl,
             mediaName: message.mediaName,
             mime: message.mime,
-            mediaItems: message.mediaItems,
+            mediaItems: enrichedItemMediaItems,
             audioMetadata: message.audioMetadata,
             width: message.width,
             height: message.height,
@@ -964,12 +1001,13 @@ export const useChatStore = create<ChatState>()(
           updatedAny = true;
           const newItems = m.mediaItems ? m.mediaItems.map((it, idx) => {
             if (idx === itemIdx) {
-              return { ...it, width, height };
+              return { ...it, width, height, senderId: it.senderId || m.senderId };
             }
-            return it;
+            return { ...it, senderId: it.senderId || m.senderId };
           }) : undefined;
           return {
             ...m,
+            senderId: m.senderId,
             width: itemIdx === 0 ? width : (m.width || width),
             height: itemIdx === 0 ? height : (m.height || height),
             mediaItems: newItems,

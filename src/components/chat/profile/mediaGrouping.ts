@@ -1,4 +1,5 @@
-import type { Chat, Message } from '../../../store/useChatStore';
+import { useChatStore, type Chat, type Message } from '../../../store/useChatStore';
+import { useAuthStore } from '../../../store/useAuthStore';
 import {
   type MediaGroup,
   type MediaType,
@@ -28,7 +29,14 @@ export const computeMediaGroups = (
     gif: { messages: [], gridItems: [], count: 0 },
   };
 
+  const myUserId = useAuthStore.getState().userId;
+  const myNickname = useAuthStore.getState().nickname;
+  const usersById = useChatStore.getState().usersById || {};
+
   for (const msg of messages) {
+    const isOut = Boolean((msg as any).isOwn || (msg as any).outgoing || msg.isOutgoing);
+    const senderId = msg.senderId || (isOut ? myUserId : undefined);
+    const actualSender = (senderId ? (senderId === myUserId ? myNickname : usersById[senderId]?.nickname) : undefined) || msg.sender;
     if (isStickerMessage(msg)) {
       continue;
     }
@@ -47,7 +55,8 @@ export const computeMediaGroups = (
         type: 'gif',
         duration: msg.duration,
         text: msg.text,
-        sender: msg.sender,
+        sender: actualSender,
+        senderId,
         key: msg.mediaKey,
       });
       groups.gif.count++;
@@ -139,7 +148,8 @@ export const computeMediaGroups = (
             type: 'gif',
             duration: item.duration,
             text: msg.text,
-            sender: msg.sender,
+            sender: actualSender,
+        senderId,
             key: item.key || msg.mediaKey,
           });
           groups.gif.count++;
@@ -155,7 +165,8 @@ export const computeMediaGroups = (
             type: 'videos',
             duration: item.duration,
             text: msg.text,
-            sender: msg.sender,
+            sender: actualSender,
+        senderId,
             key: item.key || msg.mediaKey,
           });
           groups.videos.count++;
@@ -171,7 +182,8 @@ export const computeMediaGroups = (
             type: 'photos',
             duration: item.duration,
             text: msg.text,
-            sender: msg.sender,
+            sender: actualSender,
+        senderId,
             key: item.key || msg.mediaKey,
           });
           groups.photos.count++;
@@ -201,7 +213,8 @@ export const computeMediaGroups = (
         type: 'photos',
         duration: msg.duration,
         text: msg.text,
-        sender: msg.sender,
+        sender: actualSender,
+        senderId,
         key: msg.mediaKey,
       });
       groups.photos.count++;
@@ -217,7 +230,8 @@ export const computeMediaGroups = (
         type: 'videos',
         duration: msg.duration,
         text: msg.text,
-        sender: msg.sender,
+        sender: actualSender,
+        senderId,
         key: msg.mediaKey,
       });
       groups.videos.count++;

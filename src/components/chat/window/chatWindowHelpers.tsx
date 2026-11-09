@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
-import type { Message, ChatTypingUser } from '../../../store/useChatStore';
+import { useChatStore, type Message, type ChatTypingUser } from '../../../store/useChatStore';
+import { useAuthStore } from '../../../store/useAuthStore';
 import { resolveStickerUrl } from '../../../lib/stickers-and-gifs';
 import { getOrbitaMediaUrl } from '../../../lib/media-utils';
 import type { MediaViewerItem } from '../TelegramMediaViewer';
@@ -349,10 +350,17 @@ export const getChatDateLabel = (timestamp: number, lang = 'ru'): string => {
 export const buildChatMediaViewerItems = (
   messages: Message[],
   sharedSecret?: string | null,
-  activeChatId?: string | null
+  activeChatId?: string | null,
+  currentUserId?: string
 ): MediaViewerItem[] => {
   const list: MediaViewerItem[] = [];
+  const myUserId = currentUserId || useAuthStore.getState().userId;
+  const myNickname = useAuthStore.getState().nickname;
+  const usersById = useChatStore.getState().usersById || {};
   messages.forEach((msg, msgIdx) => {
+    const isOut = Boolean((msg as any).isOwn || (msg as any).outgoing || msg.isOutgoing);
+    const senderId = msg.senderId || (isOut ? myUserId : undefined);
+    const actualSender = (senderId ? (senderId === myUserId ? myNickname : usersById[senderId]?.nickname) : undefined) || msg.sender;
     const media = parseMedia(msg);
     if (msg.mediaItems && msg.mediaItems.length > 0) {
       const isAlbum = msg.mediaItems.length > 1;
@@ -369,7 +377,8 @@ export const buildChatMediaViewerItems = (
             chatId: activeChatId || undefined,
             type: isMiGif ? 'gif' : (mi.type === 'video' ? 'video' : 'photo'),
             name: mi.name || msg.mediaName,
-            sender: msg.sender,
+            sender: actualSender,
+            senderId,
             time: msg.time,
             messageId: msg.id,
             messageIndex: msgIdx,
@@ -383,7 +392,7 @@ export const buildChatMediaViewerItems = (
             sharedSecret: effectiveSecret,
             thumbnail: mi.thumbnail || (mi as any).preview || mi.blurPreview || msg.thumbnail || msg.blurPreview,
             blurPreview: mi.blurPreview || msg.blurPreview,
-            isOwn: Boolean((msg as any).isOwn || (msg as any).outgoing),
+            isOwn: isOut,
           });
         }
       });
@@ -412,7 +421,8 @@ export const buildChatMediaViewerItems = (
         chatId: activeChatId || undefined,
         type: isGif ? 'gif' : (media.type === 'video' ? 'video' : 'photo'),
         name: media.fileName || msg.mediaName,
-        sender: msg.sender,
+        sender: actualSender,
+        senderId,
         time: msg.time,
         messageId: msg.id,
         messageIndex: msgIdx,
@@ -425,7 +435,7 @@ export const buildChatMediaViewerItems = (
         sharedSecret: effectiveSecret,
         thumbnail: (msg as any).preview || msg.thumbnail || msg.blurPreview,
         blurPreview: msg.blurPreview,
-        isOwn: Boolean((msg as any).isOwn || (msg as any).outgoing),
+        isOwn: isOut,
       });
     }
   });
@@ -437,9 +447,16 @@ export const resolveMediaViewerFallback = (
   messageId: string | undefined,
   messages: Message[],
   sharedSecret?: string | null,
-  activeChatId?: string | null
+  activeChatId?: string | null,
+  currentUserId?: string
 ): MediaViewerItem[] => {
   const targetMsg = messages.find((m) => m.id === messageId);
+  const myUserId = currentUserId || useAuthStore.getState().userId;
+  const myNickname = useAuthStore.getState().nickname;
+  const usersById = useChatStore.getState().usersById || {};
+  const isOut = Boolean((targetMsg as any)?.isOwn || (targetMsg as any)?.outgoing || targetMsg?.isOutgoing);
+  const senderId = targetMsg?.senderId || (isOut ? myUserId : undefined);
+  const actualSender = (senderId ? (senderId === myUserId ? myNickname : usersById[senderId]?.nickname) : undefined) || targetMsg?.sender;
   const targetMedia = targetMsg ? parseMedia(targetMsg) : null;
   const isTargetGif = targetMedia?.type === 'gif' || /\.gif(\?.*)?$/i.test(url) || Boolean(url && (url.includes('tenor.com') || url.includes('giphy.com')));
   const isTargetVideo = !isTargetGif && (targetMedia?.type === 'video' || /\.(mp4|mov|avi|webm|mkv|m4v)(\?.*)?$/i.test(url) || Boolean(targetMsg?.mime?.startsWith('video/')));
@@ -451,8 +468,9 @@ export const resolveMediaViewerFallback = (
     directUrl: getOrbitaMediaUrl(url, effectiveSecret, activeChatId || undefined, messageId, targetMedia?.fileName || targetMsg?.mediaName, targetMsg?.mime) || undefined,
     chatId: activeChatId || undefined,
     type: fallbackType,
-    sender: targetMsg?.sender,
-    isOwn: Boolean((targetMsg as any)?.isOwn || (targetMsg as any)?.outgoing),
+    sender: actualSender,
+    senderId,
+    isOwn: isOut,
     time: Date.now(),
     width: targetMsg?.width,
     height: targetMsg?.height,

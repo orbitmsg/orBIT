@@ -312,6 +312,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         );
         const effectiveSecret = item.key || (item as any).mediaKey || m.mediaKey || (m as any).key || sharedSecret || undefined;
         const directUrl = getOrbitaMediaUrl(item.url, effectiveSecret, activeChatId || undefined, m.id, item.name, item.mime) || undefined;
+        const senderId = m.senderId || (mIsOwn ? myUserId : undefined);
+        const actualSender = (senderId ? (senderId === myUserId ? myNickname : useChatStore.getState().usersById[senderId]?.nickname) : undefined) || m.sender;
         return {
           id: `${m.id || 'msg'}_${vIdx}_${item.url}`,
           url: item.url,
@@ -324,7 +326,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           duration: item.duration,
           width: item.width || m.width,
           height: item.height || m.height,
-          sender: m.sender,
+          sender: actualSender,
+          senderId,
+          isOwn: mIsOwn,
           time: m.time,
           messageId: m.id,
           thumbnail: (item as any).preview || item.thumbnail || (m as any).preview || item.blurPreview || m.blurPreview,

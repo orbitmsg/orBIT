@@ -12,6 +12,7 @@ export interface MediaGridItem {
   duration?: number;
   text?: string;
   sender?: string;
+  senderId?: string;
   key?: string;
 }
 

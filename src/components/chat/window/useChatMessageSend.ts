@@ -9,7 +9,7 @@ import { groupService } from '../../../services/groupService';
 import { supportService } from '../../../services/supportService';
 import { networkManager } from '../../../services/networkManager';
 import { deriveGroupKey, isValidGroupCode } from '../../../lib/groupCrypto';
-import { encryptMessage, generateKeyPair } from '../../../lib/crypto';
+import { encryptMessage, generateKeyPair, ensureValidUuid } from '../../../lib/crypto';
 import { DoubleRatchet } from '../../../lib/double-ratchet';
 import { truncateText, formatTime, generateEphemeralKey, encryptFile } from './chatWindowHelpers';
 import { mediaManager } from '../../../services/mediaManager';
@@ -59,6 +59,7 @@ export interface UseChatMessageSendReturn {
       blurPreview?: string;
       thumbnail?: string;
       preview?: string;
+      senderId?: string;
     },
     linkPreviewPayload?: LinkPreviewData,
     existingMessageId?: string,
@@ -113,6 +114,7 @@ export const useChatMessageSend = ({
       blurPreview?: string;
       thumbnail?: string;
       preview?: string;
+      senderId?: string;
     },
     linkPreviewPayload?: LinkPreviewData,
     existingMessageId?: string,
@@ -123,6 +125,14 @@ export const useChatMessageSend = ({
     const targetChatId = targetChatIdParam || activeChatId;
     if (!targetChatId) return;
     const targetChat = useChatStore.getState().chats.find((c) => c.id === targetChatId) || activeChat;
+    const effectiveSenderUuid = ensureValidUuid(myUserId || useAuthStore.getState().userId, myCode);
+    if (mediaPayload) {
+      mediaPayload.senderId = mediaPayload.senderId || effectiveSenderUuid;
+    }
+    const resolvedMediaItems = mediaItemsPayload ? mediaItemsPayload.map((item) => ({
+      ...item,
+      senderId: item.senderId || effectiveSenderUuid,
+    })) : undefined;
 
     if (targetChatId === 'notes') {
       if (existingMessageId) {
@@ -152,7 +162,8 @@ export const useChatMessageSend = ({
                       blurPreview: mediaPayload?.blurPreview || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.blurPreview : m.blurPreview),
                       thumbnail: ((mediaPayload?.thumbnail || mediaPayload?.preview || mediaPayload?.blurPreview || (mediaItemsPayload && (mediaItemsPayload[0]?.thumbnail || mediaItemsPayload[0]?.preview)) || m.thumbnail) || undefined) as string | undefined,
                       preview: mediaPayload?.preview || (mediaItemsPayload && mediaItemsPayload.length > 0 ? (mediaItemsPayload[0]?.preview as any) : m.preview),
-                      mediaItems: mediaItemsPayload || m.mediaItems,
+                      mediaItems: resolvedMediaItems || m.mediaItems,
+                      senderId: m.senderId || effectiveSenderUuid,
                     }
                   : m
               ),
@@ -167,7 +178,7 @@ export const useChatMessageSend = ({
       } else {
         const localMessage: Message = {
           id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          senderId: myCode,
+          senderId: effectiveSenderUuid,
           sender: myNickname,
           isOutgoing: true,
           text: text,
@@ -228,7 +239,8 @@ export const useChatMessageSend = ({
                       blurPreview: mediaPayload?.blurPreview || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.blurPreview : m.blurPreview),
                       thumbnail: ((mediaPayload?.thumbnail || mediaPayload?.preview || mediaPayload?.blurPreview || (mediaItemsPayload && (mediaItemsPayload[0]?.thumbnail || mediaItemsPayload[0]?.preview)) || m.thumbnail) || undefined) as string | undefined,
                       preview: mediaPayload?.preview || (mediaItemsPayload && mediaItemsPayload.length > 0 ? (mediaItemsPayload[0]?.preview as any) : m.preview),
-                      mediaItems: mediaItemsPayload || m.mediaItems,
+                      mediaItems: resolvedMediaItems || m.mediaItems,
+                      senderId: m.senderId || effectiveSenderUuid,
                     }
                   : m
               ),
@@ -243,7 +255,7 @@ export const useChatMessageSend = ({
       } else {
         const localMessage: Message = {
           id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          senderId: myCode,
+          senderId: effectiveSenderUuid,
           sender: myNickname,
           isOutgoing: true,
           text: text,
@@ -320,7 +332,8 @@ export const useChatMessageSend = ({
                       blurPreview: sentMedia?.blurPreview || (mediaItemsPayload && mediaItemsPayload.length > 0 ? mediaItemsPayload[0]?.blurPreview : m.blurPreview),
                       thumbnail: ((sentMedia?.thumbnail || sentMedia?.preview || sentMedia?.blurPreview || (mediaItemsPayload && (mediaItemsPayload[0]?.thumbnail || mediaItemsPayload[0]?.preview)) || m.thumbnail) || undefined) as string | undefined,
                       preview: sentMedia?.preview || (mediaItemsPayload && mediaItemsPayload.length > 0 ? (mediaItemsPayload[0]?.preview as any) : m.preview),
-                      mediaItems: mediaItemsPayload || m.mediaItems,
+                      mediaItems: resolvedMediaItems || m.mediaItems,
+                      senderId: m.senderId || effectiveSenderUuid,
                       uploading: false,
                     }
                   : m
@@ -337,7 +350,7 @@ export const useChatMessageSend = ({
         const optimisticMessage: Message = {
           id: optimisticId,
           sender: myNickname,
-          senderId: myUserId,
+          senderId: effectiveSenderUuid,
           text: sentText || '',
           time: Date.now(),
           read: true,
@@ -397,7 +410,7 @@ export const useChatMessageSend = ({
                 const currentMsgs = state.messagesByChatId[targetChannelId] || [];
                 const updated = currentMsgs.map((m) =>
                   m.id === optimisticId || m.id === post.id
-                    ? { ...m, id: post.id, time: validPostTime, status: 'read' as const }
+                    ? { ...m, id: post.id, time: validPostTime, status: 'read' as const, senderId: m.senderId || effectiveSenderUuid }
                     : m
                 );
                 const saved = updated.find((m) => m.id === post.id);
@@ -447,7 +460,7 @@ export const useChatMessageSend = ({
             const currentMsgs = state.messagesByChatId[targetChannelId] || [];
             const updated = currentMsgs.map((m) =>
               m.id === optimisticId || m.id === post.id
-                ? { ...m, id: post.id, time: validPostTime, status: 'read' as const }
+                ? { ...m, id: post.id, time: validPostTime, status: 'read' as const, senderId: m.senderId || effectiveSenderUuid }
                 : m
             );
             const saved = updated.find((m) => m.id === post.id);
@@ -482,7 +495,7 @@ export const useChatMessageSend = ({
     const isVisualMedia = mediaPayload ? (mediaPayload.type === 'photo' || mediaPayload.type === 'video') : false;
     const localMessage: Message = {
       id: messageId,
-      senderId: myCode,
+      senderId: effectiveSenderUuid,
       sender: myNickname,
       isOutgoing: true,
       text: text,
@@ -532,7 +545,8 @@ export const useChatMessageSend = ({
                 blurPreview: isVisualMedia ? (mediaPayload?.blurPreview || (mediaItemsPayload && mediaItemsPayload[0]?.blurPreview) || m.blurPreview) : m.blurPreview,
                 thumbnail: isVisualMedia ? (((mediaPayload?.thumbnail || mediaPayload?.preview || mediaPayload?.blurPreview || (mediaItemsPayload && (mediaItemsPayload[0]?.thumbnail || mediaItemsPayload[0]?.preview)) || m.thumbnail) || undefined) as string | undefined) : m.thumbnail,
                 preview: isVisualMedia ? (mediaPayload?.preview || (mediaItemsPayload && mediaItemsPayload[0]?.preview) || m.preview) : m.preview,
-                mediaItems: mediaItemsPayload || m.mediaItems,
+                mediaItems: resolvedMediaItems || m.mediaItems,
+                senderId: m.senderId || effectiveSenderUuid,
               }
             : m
         );
@@ -579,6 +593,7 @@ export const useChatMessageSend = ({
             duration: f.duration,
             blurPreview: fBlur || undefined,
             thumbnail: fThumb || undefined,
+            senderId: f.senderId || effectiveSenderUuid,
             audioMetadata: f.audioMetadata ? {
               title: f.audioMetadata.title,
               artist: f.audioMetadata.artist,
@@ -590,7 +605,7 @@ export const useChatMessageSend = ({
 
         const messageData = {
           id: messageId,
-          senderId: myCode,
+          senderId: effectiveSenderUuid,
           sender: myNickname,
           avatarUrl: myAvatarUrl || null,
           text,
@@ -648,8 +663,8 @@ export const useChatMessageSend = ({
               ...(sanitizedMediaItems && sanitizedMediaItems.length > 0 ? { mediaItems: sanitizedMediaItems } : {}),
               sender: myNickname,
               senderCode: myCode,
-              senderId: myUserId || myCode,
-              senderUserId: myUserId,
+              senderId: effectiveSenderUuid,
+              senderUserId: effectiveSenderUuid,
               ciphertext,
               type: 'message',
               messageId,
@@ -673,7 +688,8 @@ export const useChatMessageSend = ({
               id: messageId,
               groupId: targetChatId,
               senderCode: myCode,
-              senderId: myUserId || myCode,
+              senderId: effectiveSenderUuid,
+              senderUserId: effectiveSenderUuid,
               senderNickname: myNickname,
               ciphertext,
               mediaType: mediaPayload?.type || (mediaItemsPayload?.[0]?.type) || null,
@@ -886,8 +902,8 @@ export const useChatMessageSend = ({
               sender: myNickname,
               avatarUrl: myAvatarUrl || null,
               senderCode: myCode,
-              senderId: myUserId || myCode,
-              senderUserId: myUserId,
+              senderId: effectiveSenderUuid,
+              senderUserId: effectiveSenderUuid,
               ciphertext: plaintext,
               type: 'message',
               index: preHandshakeIndex,
@@ -996,8 +1012,8 @@ export const useChatMessageSend = ({
           sender: myNickname,
           avatarUrl: myAvatarUrl || null,
           senderCode: myCode,
-          senderId: myUserId || myCode,
-          senderUserId: myUserId,
+          senderId: effectiveSenderUuid,
+          senderUserId: effectiveSenderUuid,
           ciphertext,
           type: 'message',
           index,

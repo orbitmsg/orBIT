@@ -105,6 +105,7 @@ export interface MediaItem {
   localFilePath?: string;
   uploading?: boolean;
   uploadedMb?: number;
+  senderId?: string;
 }
 
 export interface AudioMetadata {

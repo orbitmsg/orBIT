@@ -202,6 +202,15 @@ export const useAuthStore = create<AuthState>()(
         }
       },
       setNickname: (nickname) => {
+        try {
+          const bc = new BroadcastChannel('orbita-media-channel');
+          bc.postMessage({
+            type: 'SYNC_USERS',
+            myUserId: get().userId,
+            myNickname: nickname,
+          });
+          setTimeout(() => bc.close(), 100);
+        } catch {}
         set({ nickname });
         const uid = get().userId;
         if (uid) {

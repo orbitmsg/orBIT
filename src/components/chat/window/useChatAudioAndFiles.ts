@@ -1,6 +1,8 @@
 import React, { useCallback } from 'react';
 import { useChatStore, type Message, type MediaItem } from '../../../store/useChatStore';
 import { useUploadProgressStore } from '../../../store/useUploadProgressStore';
+import { useAuthStore } from '../../../store/useAuthStore';
+import { ensureValidUuid } from '../../../lib/crypto';
 import { mediaManager } from '../../../services/mediaManager';
 import { stripExifMetadata } from '../../../lib/exifStripper';
 import { generateEphemeralKey, encryptFile, MAX_FILE_MB, type AudioMetadata } from './chatWindowHelpers';
@@ -15,6 +17,7 @@ export interface UseChatAudioAndFilesProps {
   isRatchetReady: boolean;
   myCode: string;
   myNickname: string;
+  myUserId?: string;
   addMessage: (chatId: string, message: Message) => void;
   updateChat: (chatId: string, partial: any) => void;
   triggerMessage: (
@@ -93,6 +96,7 @@ export const useChatAudioAndFiles = ({
   isRatchetReady,
   myCode,
   myNickname,
+  myUserId,
   addMessage,
   updateChat,
   triggerMessage,
@@ -107,6 +111,7 @@ export const useChatAudioAndFiles = ({
   showToast,
   t,
 }: UseChatAudioAndFilesProps): UseChatAudioAndFilesReturn => {
+  const senderUuid = ensureValidUuid(myUserId || useAuthStore.getState().userId, myCode);
   const {
     isRecording,
     isPaused: isRecordingPaused,
@@ -155,7 +160,7 @@ export const useChatAudioAndFiles = ({
 
     const optimisticMessage: Message = {
       id: optimisticMessageId,
-      senderId: myCode,
+      senderId: senderUuid,
       sender: myNickname,
       isOutgoing: true,
       text: `[Audio] ${voiceFileName}`,
@@ -239,6 +244,7 @@ export const useChatAudioAndFiles = ({
               duration,
               waveform,
               size: blob.size,
+              senderId: senderUuid,
             },
             undefined,
             optimisticMessageId,
@@ -618,6 +624,7 @@ export const useChatAudioAndFiles = ({
           blurPreview: file.blurPreview,
           thumbnail: file.preview || (file as any).thumbnail || file.blurPreview,
           preview: file.preview || (file as any).thumbnail || null,
+          senderId: senderUuid,
           chatId: activeChatId,
         };
       }
@@ -825,12 +832,13 @@ export const useChatAudioAndFiles = ({
             thumbnail: file.preview || (file as any).thumbnail || file.blurPreview,
             uploading: true,
             uploadedMb: 0,
+            senderId: senderUuid,
           };
         });
 
         const localMessage: Message = {
           id: messageId,
-          senderId: myCode,
+          senderId: senderUuid,
           sender: myNickname,
           isOutgoing: true,
           text: chunkCaption,
@@ -888,6 +896,7 @@ export const useChatAudioAndFiles = ({
               preview: currentFile.preview || (currentFile as any).thumbnail || uploaded.preview || currentFile.blurPreview || null,
               thumbnail: currentFile.preview || (currentFile as any).thumbnail || uploaded.thumbnail || currentFile.blurPreview,
               uploading: false,
+              senderId: senderUuid,
             });
           }
 
@@ -925,7 +934,7 @@ export const useChatAudioAndFiles = ({
         const fileSizeBytes = file.sizeMb ? Math.round(file.sizeMb * 1024 * 1024) : undefined;
         const localMessage: Message = {
           id: messageId,
-          senderId: myCode,
+          senderId: senderUuid,
           sender: myNickname,
           isOutgoing: true,
           text: postCaption,
@@ -996,6 +1005,7 @@ export const useChatAudioAndFiles = ({
                 ...uploaded,
                 preview: file.preview || (file as any).thumbnail || uploaded.preview || file.blurPreview || null,
                 thumbnail: file.preview || (file as any).thumbnail || uploaded.thumbnail || file.blurPreview,
+                senderId: senderUuid,
               },
               undefined,
               messageId,

@@ -755,6 +755,8 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                             onClick={() => {
                               if (avatarUrl) {
                                 const orbita = (window as any).orbita;
+                                const myUid = useAuthStore.getState().userId;
+                                const myNick = useAuthStore.getState().nickname || nickname;
                                 if (orbita?.openMediaWindow) {
                                   orbita.openMediaWindow({
                                     items: [{
@@ -762,11 +764,16 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                                       url: avatarUrl,
                                       directUrl: avatarUrl,
                                       type: 'photo',
-                                      name: `${nickname || 'Avatar'}.png`,
-                                      sender: nickname || 'Я',
+                                      name: `${myNick || 'Avatar'}.png`,
+                                      sender: myNick || 'Я',
+                                      senderId: myUid,
+                                      isOwn: true,
                                       time: Date.now(),
                                     }],
                                     initialIndex: 0,
+                                    usersById: useChatStore.getState().usersById,
+                                    myUserId: myUid,
+                                    myNickname: myNick,
                                   });
                                 } else {
                                   setIsAvatarViewerOpen(true);
@@ -1242,6 +1249,8 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                   type: 'photo',
                   name: `${nickname || 'Avatar'}.png`,
                   sender: nickname || 'Я',
+                  senderId: useAuthStore.getState().userId,
+                  isOwn: true,
                   time: Date.now(),
                 }]}
                 initialIndex={0}

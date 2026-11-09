@@ -977,7 +977,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
         width: '100%',
         height: '100%',
         zIndex: isWindowMode ? 1 : 999999,
-        backgroundColor: isWindowMode ? 'transparent' : 'rgba(0, 0, 0, 0.88)',
+        backgroundColor: isWindowMode ? 'transparent' : 'rgba(33, 37, 41, 0.85)',
         backdropFilter: 'none',
         WebkitBackdropFilter: 'none',
         display: 'flex',

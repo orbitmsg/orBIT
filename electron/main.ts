@@ -4087,40 +4087,56 @@ ipcMain.on('orbita:send-call-action', (event, action: any) => {
 
 let currentMediaPayloadCache: any = null;
 const MEDIA_BOUNDS_FILE = path.join(app.getPath('userData'), 'media_window_bounds.json');
+let lastMediaNormalBounds: { width: number; height: number; x?: number; y?: number } | null = null;
 
-function getSavedMediaWindowBounds(): { width: number; height: number; x?: number; y?: number } {
+function getSavedMediaWindowState(): { width: number; height: number; x?: number; y?: number; isMaximized: boolean } {
   try {
     if (fs.existsSync(MEDIA_BOUNDS_FILE)) {
       const data = JSON.parse(fs.readFileSync(MEDIA_BOUNDS_FILE, 'utf8'));
-      if (data && typeof data.width === 'number' && typeof data.height === 'number') {
-        const display = screen.getPrimaryDisplay();
+      if (data && typeof data === 'object') {
+        const isMaximized = data.isMaximized === undefined ? false : Boolean(data.isMaximized);
+        const display = mainWindow && !mainWindow.isDestroyed()
+          ? screen.getDisplayMatching(mainWindow.getBounds())
+          : screen.getPrimaryDisplay();
         const { width: screenW, height: screenH } = display.workAreaSize;
-        if (data.width < screenW - 40 && data.height < screenH - 40) {
-          const width = Math.max(480, Math.min(data.width, screenW));
-          const height = Math.max(360, Math.min(data.height, screenH));
-          const x = typeof data.x === 'number' ? data.x : undefined;
-          const y = typeof data.y === 'number' ? data.y : undefined;
-          return { width, height, x, y };
-        }
+        const width = typeof data.width === 'number' ? Math.max(480, Math.min(data.width, screenW)) : Math.round(screenW * 0.85);
+        const height = typeof data.height === 'number' ? Math.max(360, Math.min(data.height, screenH)) : Math.round(screenH * 0.85);
+        const x = typeof data.x === 'number' && data.x > -1000 && data.x < display.bounds.x + display.bounds.width - 50 ? data.x : undefined;
+        const y = typeof data.y === 'number' && data.y > -1000 && data.y < display.bounds.y + display.bounds.height - 50 ? data.y : undefined;
+        return { width, height, x, y, isMaximized };
       }
     }
   } catch { }
-  return { width: 960, height: 720 };
+  return { width: 1200, height: 800, isMaximized: true };
 }
 
 let mediaBoundsSaveTimeout: NodeJS.Timeout | null = null;
-function saveMediaWindowBounds(win: BrowserWindow) {
-  if (mediaBoundsSaveTimeout) clearTimeout(mediaBoundsSaveTimeout);
-  mediaBoundsSaveTimeout = setTimeout(() => {
-    try {
-      if (!win || win.isDestroyed() || win.isMaximized() || win.isMinimized() || win.isFullScreen()) return;
-      const bounds = win.getBounds();
-      if (bounds.x <= -10000 || bounds.y <= -10000) return;
-      const display = screen.getDisplayMatching(bounds);
-      if (bounds.width >= display.bounds.width && bounds.height >= display.bounds.height) return;
-      fs.promises.writeFile(MEDIA_BOUNDS_FILE, JSON.stringify(bounds), 'utf8').catch(() => {});
-    } catch { }
-  }, 400);
+function saveMediaWindowState(win: BrowserWindow, sync = false) {
+  if (!win || win.isDestroyed()) return;
+  try {
+    const isMax = win.isMaximized();
+    if (!isMax && !win.isMinimized() && !win.isFullScreen()) {
+      const b = win.getBounds();
+      if (b.width > 200 && b.height > 200 && b.x > -10000 && b.y > -10000) {
+        lastMediaNormalBounds = { width: b.width, height: b.height, x: b.x, y: b.y };
+      }
+    }
+    const stateToSave = {
+      ...(lastMediaNormalBounds || {}),
+      isMaximized: isMax,
+    };
+    if (sync) {
+      if (mediaBoundsSaveTimeout) clearTimeout(mediaBoundsSaveTimeout);
+      fs.writeFileSync(MEDIA_BOUNDS_FILE, JSON.stringify(stateToSave), 'utf8');
+    } else {
+      if (mediaBoundsSaveTimeout) clearTimeout(mediaBoundsSaveTimeout);
+      mediaBoundsSaveTimeout = setTimeout(() => {
+        try {
+          fs.promises.writeFile(MEDIA_BOUNDS_FILE, JSON.stringify(stateToSave), 'utf8').catch(() => {});
+        } catch { }
+      }, 200);
+    }
+  } catch { }
 }
 
 function initOrGetMediaWindow(initialPayload?: any): BrowserWindow {
@@ -4133,24 +4149,29 @@ function initOrGetMediaWindow(initialPayload?: any): BrowserWindow {
   }
 
   const icon = loadNativeAppIcon();
-  const bounds = getSavedMediaWindowBounds();
+  const state = getSavedMediaWindowState();
+  if (state.width && state.height) {
+    lastMediaNormalBounds = { width: state.width, height: state.height, x: state.x, y: state.y };
+  }
   const display = mainWindow && !mainWindow.isDestroyed()
     ? screen.getDisplayMatching(mainWindow.getBounds())
     : screen.getPrimaryDisplay();
-  const x = bounds.x ?? Math.round(display.workArea.x + (display.workArea.width - bounds.width) / 2);
-  const y = bounds.y ?? Math.round(display.workArea.y + (display.workArea.height - bounds.height) / 2);
+  const x = state.x ?? Math.round(display.workArea.x + (display.workArea.width - state.width) / 2);
+  const y = state.y ?? Math.round(display.workArea.y + (display.workArea.height - state.height) / 2);
 
   mediaWindow = new BrowserWindow({
     x,
     y,
-    width: bounds.width,
-    height: bounds.height,
+    width: state.width,
+    height: state.height,
     minWidth: 480,
     minHeight: 360,
     resizable: true,
     frame: false,
+    transparent: true,
+    backgroundColor: '#00000000',
+    hasShadow: true,
     titleBarStyle: 'hidden',
-    backgroundColor: '#000000',
     alwaysOnTop: false,
     webPreferences: {
       nodeIntegration: false,
@@ -4186,30 +4207,35 @@ function initOrGetMediaWindow(initialPayload?: any): BrowserWindow {
   });
 
   mediaWindow.on('close', () => {
+    if (mediaWindow && !mediaWindow.isDestroyed()) {
+      saveMediaWindowState(mediaWindow, true);
+    }
     currentMediaPayloadCache = null;
   });
 
   mediaWindow.on('resize', () => {
     if (mediaWindow && !mediaWindow.isDestroyed()) {
-      saveMediaWindowBounds(mediaWindow);
+      saveMediaWindowState(mediaWindow);
       mediaWindow.webContents.send('window:state-changed', mediaWindow.isMaximized());
     }
   });
 
   mediaWindow.on('move', () => {
     if (mediaWindow && !mediaWindow.isDestroyed()) {
-      saveMediaWindowBounds(mediaWindow);
+      saveMediaWindowState(mediaWindow);
     }
   });
 
   mediaWindow.on('maximize', () => {
     if (mediaWindow && !mediaWindow.isDestroyed()) {
+      saveMediaWindowState(mediaWindow);
       mediaWindow.webContents.send('window:state-changed', true);
     }
   });
 
   mediaWindow.on('unmaximize', () => {
     if (mediaWindow && !mediaWindow.isDestroyed()) {
+      saveMediaWindowState(mediaWindow);
       mediaWindow.webContents.send('window:state-changed', false);
     }
   });
@@ -4234,18 +4260,14 @@ function createOrShowMediaWindow(initialPayload?: any): BrowserWindow {
     currentMediaPayloadCache = initialPayload;
   }
 
+  const isAlreadyCreated = Boolean(mediaWindow && !mediaWindow.isDestroyed());
   const win = initOrGetMediaWindow(initialPayload);
 
-  const display = mainWindow && !mainWindow.isDestroyed()
-    ? screen.getDisplayMatching(mainWindow.getBounds())
-    : screen.getPrimaryDisplay();
-
-  const curBounds = win.getBounds();
-  if (curBounds.width >= display.bounds.width && curBounds.height >= display.bounds.height) {
-    const saved = getSavedMediaWindowBounds();
-    const x = saved.x ?? Math.round(display.workArea.x + (display.workArea.width - saved.width) / 2);
-    const y = saved.y ?? Math.round(display.workArea.y + (display.workArea.height - saved.height) / 2);
-    win.setBounds({ x, y, width: saved.width, height: saved.height });
+  if (!isAlreadyCreated) {
+    const state = getSavedMediaWindowState();
+    if (state.isMaximized) {
+      win.maximize();
+    }
   }
 
   if (!win.isDestroyed()) {
@@ -4286,6 +4308,7 @@ ipcMain.handle('orbita:open-media-window', (_event, payload?: any) => {
 
 ipcMain.handle('orbita:close-media-window', () => {
   if (mediaWindow && !mediaWindow.isDestroyed()) {
+    saveMediaWindowState(mediaWindow, true);
     currentMediaPayloadCache = null;
     mediaWindow.destroy();
     mediaWindow = null;
@@ -4354,6 +4377,7 @@ ipcMain.handle('window:close', (event) => {
         trimAppMemory();
       }
     } else if (mediaWindow && win === mediaWindow) {
+      saveMediaWindowState(mediaWindow, true);
       currentMediaPayloadCache = null;
       mediaWindow.destroy();
       mediaWindow = null;

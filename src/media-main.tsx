@@ -8,6 +8,7 @@ import './App.css';
 import './i18n';
 
 export const MediaWindowView: React.FC = () => {
+  const [isMaximized, setIsMaximized] = useState(false);
   const [payload, setPayload] = useState<{
     items: MediaViewerItem[];
     initialIndex?: number;
@@ -112,10 +113,18 @@ export const MediaWindowView: React.FC = () => {
       bc.postMessage({ type: 'REQUEST_MEDIA_PAYLOAD' });
     } catch {}
 
+    if (orbita?.isWindowMaximized) {
+      orbita.isWindowMaximized().then((max: boolean) => setIsMaximized(Boolean(max))).catch(() => {});
+    }
+    const unsubMax = orbita?.onWindowStateChange?.((max: boolean) => {
+      setIsMaximized(Boolean(max));
+    });
+
     return () => {
       unsubTheme?.();
       unsubFont?.();
       unsubPayload?.();
+      unsubMax?.();
       bc?.close();
     };
   }, []);
@@ -163,11 +172,20 @@ export const MediaWindowView: React.FC = () => {
 
   return (
     <div
-      className="w-full h-full min-h-screen relative overflow-hidden select-none"
-      style={{ backgroundColor: '#000000' }}
+      className="w-full h-full min-h-screen relative overflow-hidden select-none flex flex-col box-border"
+      style={{
+        backgroundColor: 'rgba(33, 37, 41, 0.85)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderRadius: isMaximized ? '0px' : '10px',
+        border: isMaximized ? 'none' : '1px solid rgba(255, 255, 255, 0.16)',
+        boxShadow: isMaximized ? 'none' : '0 16px 40px rgba(0, 0, 0, 0.65), 0 2px 8px rgba(0, 0, 0, 0.4)',
+        transition: 'border-radius 0.15s ease, border 0.15s ease',
+      }}
     >
       <div className="absolute top-0 left-0 right-0 z-50 pointer-events-auto">
         <TitleBar
+          title="Orbita"
           onClose={handleClose}
           style={{
             backgroundColor: 'transparent',

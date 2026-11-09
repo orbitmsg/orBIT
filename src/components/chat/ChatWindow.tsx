@@ -383,8 +383,23 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         index = items.findIndex((it) => it.messageId === messageId);
       }
     }
-    const finalItems = customItems || (index === -1 && items.length === 0 ? resolveMediaViewerFallback(url, messageId, messages, sharedSecret, activeChatId) : items);
-    const initialIndex = index !== -1 ? index : 0;
+    let finalItems = items;
+    let initialIndex = index;
+    if (!customItems && index === -1) {
+      const fallback = resolveMediaViewerFallback(url, messageId, messages, sharedSecret, activeChatId);
+      if (items.length === 0) {
+        finalItems = fallback;
+        initialIndex = 0;
+      } else {
+        finalItems = [...items, ...fallback];
+        initialIndex = items.length;
+      }
+    } else if (customItems) {
+      finalItems = customItems;
+      initialIndex = index !== -1 ? index : 0;
+    } else {
+      initialIndex = index !== -1 ? index : 0;
+    }
     const orbita = (window as any).orbita;
 
     if (orbita?.openMediaWindow) {
@@ -400,7 +415,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     setMediaViewerState({
       isOpen: true,
       initialIndex,
-      customItems: customItems || (index === -1 ? finalItems : undefined),
+      customItems: finalItems,
     });
   }, [chatMediaViewerItems, messages, sharedSecret, activeChatId]);
   const atBottomRef = useRef(true);

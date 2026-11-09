@@ -518,6 +518,7 @@ async function saveMediaToCache(
 ): Promise<string> {
   const dbPath = getMediaDbPath();
   const masterKey = getMasterKey();
+  const dir = getMediaDir();
 
   if (nativeModule && nativeModule.rustCacheSaveMedia && masterKey) {
     try {
@@ -1137,6 +1138,7 @@ function detectMimeFromBuffer(buf: Buffer, fallbackUrl: string, hintFileName?: s
 
 function decryptMediaBuffer(rawBuf: Buffer, secretHex: string): Buffer {
   if (!secretHex || !secretHex.trim()) return rawBuf;
+  const cleanHex = secretHex.trim().toLowerCase();
 
   if (nativeModule && nativeModule.decryptFile) {
     try {
@@ -1151,7 +1153,7 @@ function decryptMediaBuffer(rawBuf: Buffer, secretHex: string): Buffer {
   const ciphertext = rawBuf.subarray(12, rawBuf.length - 16);
 
   try {
-    const rawKey = Buffer.from(secretHex, 'hex');
+    const rawKey = Buffer.from(cleanHex, 'hex');
     if (rawKey.length === 32) {
       const decipher = crypto.createDecipheriv('aes-256-gcm', rawKey, iv);
       decipher.setAuthTag(authTag);
@@ -1160,7 +1162,7 @@ function decryptMediaBuffer(rawBuf: Buffer, secretHex: string): Buffer {
   } catch { }
 
   try {
-    const rawKey = Buffer.from(secretHex, 'hex');
+    const rawKey = Buffer.from(cleanHex, 'hex');
     const derivedKey = Buffer.from(
       crypto.hkdfSync(
         'sha256',
@@ -2170,7 +2172,7 @@ function registerStorageIpcHandlers() {
 }
 
 const activeUploadRequests = new Map<string, http.ClientRequest>();
-const cloudinaryHttpsAgent = new https.Agent({ keepAlive: true, keepAliveMsecs: 60000, maxSockets: 16 });
+const cloudinaryHttpsAgent = new https.Agent({ keepAlive: false });
 
 function uploadToCloudinaryWithProgress(
   filePath: string,
@@ -2354,36 +2356,47 @@ async function cloudinaryUploadWithProgress(event: Electron.IpcMainInvokeEvent, 
     }
   }
 
-  try {
-    let lastProgressSent = 0;
-    const { statusCode, body } = await uploadToCloudinaryWithProgress(
-      filePath,
-      uploadUrl,
-      fields,
-      'file',
-      (uploadedBytes, totalBytes) => {
-        if (event.sender && !event.sender.isDestroyed()) {
-          try {
-            event.sender.send('orbita:uploadProgress', {
-              publicId,
-              uploadedBytes,
-              totalBytes,
-            });
-          } catch {}
-        }
-      },
-      publicId
-    );
+  let lastErr: any = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const { statusCode, body } = await uploadToCloudinaryWithProgress(
+        filePath,
+        uploadUrl,
+        fields,
+        'file',
+        (uploadedBytes, totalBytes) => {
+          if (event.sender && !event.sender.isDestroyed()) {
+            try {
+              event.sender.send('orbita:uploadProgress', {
+                publicId,
+                uploadedBytes,
+                totalBytes,
+              });
+            } catch {}
+          }
+        },
+        publicId
+      );
 
-    const parsed = JSON.parse(body);
-    if (statusCode === 200 && parsed.secure_url) {
-      return { success: true, secure_url: parsed.secure_url, bytes: parsed.bytes };
-    } else {
-      return { success: false, error: parsed.error?.message || `HTTP ${statusCode}` };
+      let parsed: any;
+      try {
+        parsed = JSON.parse(body);
+      } catch {
+        parsed = { error: { message: body || `HTTP ${statusCode}` } };
+      }
+
+      if (statusCode === 200 && parsed.secure_url) {
+        return { success: true, secure_url: parsed.secure_url, bytes: parsed.bytes };
+      }
+      lastErr = parsed.error?.message || `HTTP ${statusCode}`;
+    } catch (err: any) {
+      lastErr = err?.message || String(err);
     }
-  } catch (err) {
-    return { success: false, error: String(err) };
+    if (attempt === 0) {
+      await new Promise((r) => setTimeout(r, 600));
+    }
   }
+  return { success: false, error: String(lastErr) };
 }
 
 ipcMain.handle('orbita:cancel-upload', async (_event, publicId?: string) => {

@@ -743,7 +743,13 @@ export const useChatAudioAndFiles = ({
           }
         });
 
-        const result = await window.orbita?.uploadToCloudinary(tempPath, publicId);
+        let result = await window.orbita?.uploadToCloudinary(tempPath, publicId);
+        if (!result || !result.success || !result.secure_url) {
+          await new Promise((r) => setTimeout(r, 600));
+          if (!uploadMsgId || !cancelledUploadMessageIds.has(uploadMsgId)) {
+            result = await window.orbita?.uploadToCloudinary(tempPath, publicId);
+          }
+        }
         unsub?.();
         window.orbita?.deleteTempFile?.(tempPath);
 
@@ -760,6 +766,10 @@ export const useChatAudioAndFiles = ({
         const itemMime = isTranscodedTemp ? 'video/mp4' : resolveMime(file.fileType, file.name);
         const localBlob = new Blob([cleanedBuffer], { type: itemMime });
         mediaManager.setDirectDecryptedMedia(result.secure_url, fileKey || '', localBlob, itemMime, activeChatId);
+        if (file.filePath) {
+          mediaManager.setDirectDecryptedMedia(file.filePath, fileKey || '', localBlob, itemMime, activeChatId);
+          mediaManager.setDirectDecryptedMedia(file.filePath, '', localBlob, itemMime, activeChatId);
+        }
 
         return {
           url: result.secure_url,
@@ -796,8 +806,9 @@ export const useChatAudioAndFiles = ({
         const messageId = `msg_${Date.now()}_${cIdx}_${Math.random().toString(36).substr(2, 9)}`;
 
         const initialMediaItems: MediaItem[] = chunkFiles.map((file) => ({
-          url: file.filePath || (file.preview && file.preview.length < 4096 ? file.preview : ''),
+          url: file.preview || file.filePath || '',
           preview: file.preview && file.preview.length < 4096 ? file.preview : (file.blurPreview || null),
+          localFilePath: file.filePath,
           type: resolveItemType(file.fileType, file.name),
           name: file.name,
           mime: resolveMime(file.fileType, file.name),
@@ -919,8 +930,9 @@ export const useChatAudioAndFiles = ({
           uploading: true,
           uploadedMb: 0,
           mediaType: itemType,
-          mediaUrl: file.filePath || (file.preview && file.preview.length < 4096 ? file.preview : ''),
+          mediaUrl: file.preview || file.filePath || '',
           preview: file.preview && file.preview.length < 4096 ? file.preview : (file.blurPreview || null),
+          localFilePath: file.filePath,
           mediaName: file.name,
           mime: itemMime,
           fileSize: fileSizeBytes,

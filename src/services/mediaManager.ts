@@ -148,7 +148,8 @@ class MediaManager {
     messageId?: string
   ): DecryptedMedia {
     const cleanUrl = normalizeMediaUrl(url);
-    const cacheKey = `${cleanUrl}::${sharedSecret || 'public'}`;
+    const normSecret = (sharedSecret || '').trim().toLowerCase();
+    const cacheKey = `${cleanUrl}::${normSecret || 'public'}`;
     const blobUrl = URL.createObjectURL(blob);
     const media: DecryptedMedia = {
       id: cacheKey,
@@ -176,7 +177,8 @@ class MediaManager {
     if (!url || typeof url !== 'string' || !url.trim()) return undefined;
     const cleanUrl = normalizeMediaUrl(url);
     if (!cleanUrl) return undefined;
-    const cacheKey = `${cleanUrl}::${sharedSecret || 'public'}`;
+    const normSecret = (sharedSecret || '').trim().toLowerCase();
+    const cacheKey = `${cleanUrl}::${normSecret || 'public'}`;
     const cached = this.memoryCache.get(cacheKey);
     if (cached) {
       cached.lastAccessed = Date.now();
@@ -200,7 +202,8 @@ class MediaManager {
     if (!cleanUrl) {
       throw new Error('Invalid media URL after normalization');
     }
-    const cacheKey = `${cleanUrl}::${sharedSecret || 'public'}`;
+    const normSecret = (sharedSecret || '').trim().toLowerCase();
+    const cacheKey = `${cleanUrl}::${normSecret || 'public'}`;
 
     console.log('[MediaManager] getMedia called:', { cleanUrl, hasSecret: Boolean(sharedSecret), fileName, chatId, messageId, forcedMime });
 
@@ -382,7 +385,8 @@ class MediaManager {
     messageId?: string,
     forcedMime?: string
   ): Promise<DecryptedMedia> {
-    const cacheKey = `${url}::${sharedSecret || 'public'}`;
+    const normSecret = (sharedSecret || '').trim().toLowerCase();
+    const cacheKey = `${url}::${normSecret || 'public'}`;
     console.log('[MediaManager] fetchAndDecrypt starting for:', { url, hasSecret: Boolean(sharedSecret), fileName, forcedMime });
 
     let diskCache: { data: string | Uint8Array | ArrayBuffer | null; mime: string | null } | null = null;
@@ -444,6 +448,50 @@ class MediaManager {
         mime = cachedMime || this.detectMime(new Uint8Array(rawBytes.slice(0, 16)), fileName);
       }
     } else {
+      const isLocalPath = /^[a-zA-Z]:[\\/]|^file:\/\/|^\//i.test(url);
+      if (isLocalPath) {
+        let filePath = url.startsWith('file://') ? decodeURI(url.replace(/^file:\/\/\/?/, '')) : url;
+        if (/^[a-zA-Z]:/.test(filePath) === false && /^\/[a-zA-Z]:/.test(filePath)) {
+          filePath = filePath.substring(1);
+        }
+        let localBytes: ArrayBuffer | null = null;
+        if (typeof window !== 'undefined' && window.orbita?.rustReadFileFast) {
+          try {
+            const u8 = await window.orbita.rustReadFileFast(filePath);
+            if (u8) localBytes = (u8.buffer as ArrayBuffer).slice(u8.byteOffset, u8.byteOffset + u8.byteLength);
+          } catch {}
+        }
+        if (!localBytes && typeof window !== 'undefined' && (window.orbita as any)?.readFileAsArrayBuffer) {
+          try {
+            localBytes = await (window.orbita as any).readFileAsArrayBuffer(filePath);
+          } catch {}
+        }
+        if (!localBytes && typeof window !== 'undefined' && window.orbita?.readFileAsDataURL) {
+          try {
+            const durl = await window.orbita.readFileAsDataURL(filePath);
+            if (durl) {
+              const b64 = durl.includes(',') ? durl.split(',')[1] : durl;
+              const bin = atob(b64);
+              const u8 = new Uint8Array(bin.length);
+              for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+              localBytes = u8.buffer as ArrayBuffer;
+            }
+          } catch {}
+        }
+        if (localBytes) {
+          let dec = localBytes;
+          const isPlain = this.isPlaintextMedia(new Uint8Array(localBytes.slice(0, 16)));
+          if (!isPlain && sharedSecret && sharedSecret.trim()) {
+            try {
+              dec = await this.decryptFile(localBytes, sharedSecret);
+            } catch {}
+          }
+          const detectedMime = forcedMime || this.detectMime(new Uint8Array(dec.slice(0, 16)), fileName);
+          const blob = new Blob([dec], { type: detectedMime });
+          return this.setDirectDecryptedMedia(url, sharedSecret, blob, detectedMime, chatId, messageId);
+        }
+      }
+
       console.log('[MediaManager] Disk cache MISS. Fetching from network:', url);
       let response = await fetch(url, { signal: this.getAbortSignal(cacheKey) });
       if (!response.ok && response.status === 404) {
@@ -622,6 +670,7 @@ class MediaManager {
   private isPlaintextMedia(bytes: Uint8Array): boolean {
     if (!bytes || bytes.length < 2) return false;
     if (bytes[0] === 0xff && bytes[1] === 0xd8) return true;
+    if (bytes[0] === 0x1f && bytes[1] === 0x8b) return true;
     if (bytes.length >= 4 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return true;
     if (bytes.length >= 3 && bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) return true;
     if (bytes.length >= 4 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46) return true;

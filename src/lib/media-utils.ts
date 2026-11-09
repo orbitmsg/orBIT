@@ -80,6 +80,11 @@ export function getOrbitaMediaUrl(
     return clean;
   }
 
+  const cached = mediaManager.getCachedMedia(clean, sharedSecret || '');
+  if (cached?.blobUrl) {
+    return cached.blobUrl;
+  }
+
   const isElectron = typeof window !== 'undefined' && (Boolean((window as any).__ELECTRON_RENDERER__) || Boolean((window as any).orbita?.getDesktopSources));
   if (isElectron) {
     const params = new URLSearchParams();
@@ -90,11 +95,6 @@ export function getOrbitaMediaUrl(
     if (fileName) params.set('filename', fileName);
     if (mime) params.set('mime', mime);
     return `orbita-media://media?${params.toString()}`;
-  }
-
-  const cached = mediaManager.getCachedMedia(clean, sharedSecret || '');
-  if (cached?.blobUrl) {
-    return cached.blobUrl;
   }
 
   return null;

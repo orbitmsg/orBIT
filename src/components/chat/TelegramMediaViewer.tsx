@@ -293,7 +293,10 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
   const isPhoto = !isVideo && !isGif;
 
   const isPlaintextUrl = Boolean(currentItem?.url && (currentItem.url.startsWith('blob:') || currentItem.url.startsWith('data:') || currentItem.url.includes('tenor.com') || currentItem.url.includes('giphy.com')));
-  const displaySrc = fallbackBlobUrl || cachedDecrypted?.blobUrl || (blobUrl && !blobUrl.startsWith('orbita-media:') ? blobUrl : null) || (isVideo ? null : (currentItem?.directUrl || (isPlaintextUrl ? currentItem.url : null)));
+  const validBlobUrl = (blobUrl && !blobUrl.startsWith('orbita-media:')) ? blobUrl : null;
+  const validCachedUrl = (cachedDecrypted?.blobUrl && !cachedDecrypted.blobUrl.startsWith('orbita-media:')) ? cachedDecrypted.blobUrl : null;
+  const validDirectUrl = (currentItem?.directUrl && !currentItem.directUrl.startsWith('orbita-media:')) ? currentItem.directUrl : null;
+  const displaySrc = fallbackBlobUrl || validCachedUrl || validBlobUrl || (isPlaintextUrl ? currentItem?.url : null) || (!isVideo ? validDirectUrl : null);
 
   useEffect(() => {
     if (!isOpen || !isVideo || !displaySrc) return;

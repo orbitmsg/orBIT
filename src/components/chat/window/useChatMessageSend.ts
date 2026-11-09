@@ -11,7 +11,8 @@ import { networkManager } from '../../../services/networkManager';
 import { deriveGroupKey, isValidGroupCode } from '../../../lib/groupCrypto';
 import { encryptMessage, generateKeyPair } from '../../../lib/crypto';
 import { DoubleRatchet } from '../../../lib/double-ratchet';
-import { truncateText, formatTime } from './chatWindowHelpers';
+import { truncateText, formatTime, generateEphemeralKey, encryptFile } from './chatWindowHelpers';
+import { mediaManager } from '../../../services/mediaManager';
 import { type AttachedFile } from '../FileAttachmentModal';
 
 export interface UseChatMessageSendProps {
@@ -1258,10 +1259,50 @@ export const useChatMessageSend = ({
 
     useChatStore.getState().updateMessageStatus(activeChatId, targetMsg.id, 'sending');
 
-    const mediaPayload = targetMsg.mediaUrl ? {
+    let finalMediaUrl = targetMsg.mediaUrl;
+    let finalMediaKey = targetMsg.mediaKey;
+    const isLocalMedia = Boolean(targetMsg.mediaUrl && !targetMsg.mediaUrl.startsWith('http://') && !targetMsg.mediaUrl.startsWith('https://'));
+    const localPath = (targetMsg as any).localFilePath || (isLocalMedia ? targetMsg.mediaUrl : null);
+
+    if (isLocalMedia && localPath && typeof window !== 'undefined' && window.orbita?.uploadToCloudinary) {
+      try {
+        let fileBytes: ArrayBuffer | null = null;
+        if (window.orbita?.rustReadFileFast) {
+          const bin = await window.orbita.rustReadFileFast(localPath);
+          if (bin) fileBytes = (bin.buffer as ArrayBuffer).slice(bin.byteOffset, bin.byteOffset + bin.byteLength);
+        }
+        if (!fileBytes && (window.orbita as any)?.readFileAsArrayBuffer) {
+          fileBytes = await (window.orbita as any).readFileAsArrayBuffer(localPath);
+        }
+        if (fileBytes) {
+          finalMediaKey = generateEphemeralKey();
+          const encryptedBlob = await encryptFile(fileBytes, finalMediaKey || '');
+          const encryptedAb = await encryptedBlob.arrayBuffer();
+          const tempPath = await window.orbita?.writeTempFile(new Uint8Array(encryptedAb), undefined);
+          if (tempPath) {
+            const publicId = `orbita_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+            const result = await window.orbita?.uploadToCloudinary(tempPath, publicId);
+            window.orbita?.deleteTempFile?.(tempPath);
+            if (result && result.success && result.secure_url) {
+              finalMediaUrl = result.secure_url;
+              const localBlob = new Blob([fileBytes], { type: targetMsg.mime || 'application/octet-stream' });
+              mediaManager.setDirectDecryptedMedia(result.secure_url, finalMediaKey, localBlob, targetMsg.mime || 'application/octet-stream', activeChatId);
+            } else {
+              useChatStore.getState().updateMessageStatus(activeChatId, targetMsg.id, 'error');
+              return;
+            }
+          }
+        }
+      } catch {
+        useChatStore.getState().updateMessageStatus(activeChatId, targetMsg.id, 'error');
+        return;
+      }
+    }
+
+    const mediaPayload = finalMediaUrl ? {
       type: targetMsg.mediaType || 'photo',
-      url: targetMsg.mediaUrl,
-      key: targetMsg.mediaKey,
+      url: finalMediaUrl,
+      key: finalMediaKey,
       name: targetMsg.mediaName,
       mime: targetMsg.mime,
       audioMetadata: targetMsg.audioMetadata,

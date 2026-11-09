@@ -102,6 +102,7 @@ export interface MediaItem {
   thumbnail?: string;
   blurPreview?: string;
   preview?: string | null;
+  localFilePath?: string;
   uploading?: boolean;
   uploadedMb?: number;
 }
@@ -170,6 +171,7 @@ export interface Message {
   thumbnail?: string;
   blurPreview?: string;
   preview?: string | null;
+  localFilePath?: string;
   width?: number;
   height?: number;
   duration?: number;

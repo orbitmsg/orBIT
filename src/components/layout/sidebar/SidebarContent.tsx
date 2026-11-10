@@ -54,19 +54,26 @@ const GearIcon = () => (
       .gear-icon {
         cursor: pointer;
         overflow: visible;
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
       }
       .gear-body {
         transform-origin: 16px 16px;
         transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), fill 0.2s ease;
       }
+      .gear-icon:hover {
+        transform: scale(1.14);
+      }
       .gear-icon:hover .gear-body {
-        animation: spinHover 2.5s linear infinite;
-        fill: #7c75f2;
+        animation: spinHover 2.4s linear infinite;
+        fill: #ffffff;
+      }
+      .gear-icon:active {
+        transform: scale(0.86);
       }
       .gear-icon:active .gear-body {
         animation: none;
         transform: rotate(180deg) scale(0.92);
-        fill: #5C54E5;
+        fill: #7c75f2;
       }
       @keyframes spinHover {
         from { transform: rotate(0deg); }
@@ -86,38 +93,44 @@ const MicToggleIcon = ({ muted }: { muted: boolean }) => (
       .mic-icon {
         cursor: pointer;
         overflow: visible;
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .mic-icon:hover {
+        transform: scale(1.14);
+      }
+      .mic-icon:active {
+        transform: scale(0.86);
       }
       .mic-body {
         transform-origin: 12px 12px;
-        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), fill 0.25s ease, opacity 0.25s ease;
+        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), fill 0.2s ease;
       }
       .mic-icon:not(.muted):hover .mic-body {
-        animation: micPulse 0.9s ease-in-out infinite alternate;
-        fill: #7c75f2;
+        animation: micPulse 0.8s ease-in-out infinite alternate;
       }
       @keyframes micPulse {
         0% { transform: translateY(0) scale(1); }
-        100% { transform: translateY(-1.5px) scale(1.04); }
+        100% { transform: translateY(-1.2px) scale(1.05); }
       }
       .mic-slash {
-        stroke: #ff4d4d;
+        stroke: #f23f43;
         stroke-width: 2.2;
         stroke-linecap: round;
-        stroke-dasharray: 26;
-        stroke-dashoffset: 26;
-        transition: stroke-dashoffset 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        stroke-dasharray: 28;
+        stroke-dashoffset: 28;
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+        transition: stroke-dashoffset 0.24s cubic-bezier(0.4, 0, 0.2, 1);
       }
       .mic-icon.muted .mic-slash {
         stroke-dashoffset: 0;
       }
       .mic-icon.muted .mic-body {
-        fill: #66666e;
-        opacity: 0.45;
-        transform: scale(0.94);
+        fill: #ffffff;
+        opacity: 1;
       }
     `}</style>
     <path className="mic-body" fill="#ffffff" d="M19 9a1 1 0 0 1 1 1a8 8 0 0 1-6.999 7.938L13 20h3a1 1 0 0 1 0 2H8a1 1 0 0 1 0-2h3v-2.062A8 8 0 0 1 4 10a1 1 0 1 1 2 0a6 6 0 0 0 12 0a1 1 0 0 1 1-1m-7-8a4 4 0 0 1 4 4v5a4 4 0 1 1-8 0V5a4 4 0 0 1 4-4" />
-    <line className="mic-slash" x1="4" y1="20" x2="20" y2="4" />
+    <line className="mic-slash" x1="4" y1="4" x2="20" y2="20" />
   </svg>
 );
 
@@ -127,38 +140,44 @@ const HeadphonesToggleIcon = ({ muted }: { muted: boolean }) => (
       .phone-icon {
         cursor: pointer;
         overflow: visible;
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .phone-icon:hover {
+        transform: scale(1.14);
+      }
+      .phone-icon:active {
+        transform: scale(0.86);
       }
       .phone-body {
         transform-origin: 256px 256px;
-        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), fill 0.25s ease, opacity 0.25s ease;
+        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), fill 0.2s ease;
       }
       .phone-icon:not(.muted):hover .phone-body {
         animation: bassPump 0.6s ease-in-out infinite alternate;
-        fill: #7c75f2;
       }
       @keyframes bassPump {
         0% { transform: scale(1); }
-        100% { transform: scale(1.06); }
+        100% { transform: scale(1.08); }
       }
       .phone-slash {
-        stroke: #ff4d4d;
+        stroke: #f23f43;
         stroke-width: 44;
         stroke-linecap: round;
         stroke-dasharray: 550;
         stroke-dashoffset: 550;
-        transition: stroke-dashoffset 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        filter: drop-shadow(0 16px 24px rgba(0, 0, 0, 0.5));
+        transition: stroke-dashoffset 0.24s cubic-bezier(0.4, 0, 0.2, 1);
       }
       .phone-icon.muted .phone-slash {
         stroke-dashoffset: 0;
       }
       .phone-icon.muted .phone-body {
-        fill: #66666e;
-        opacity: 0.45;
-        transform: scale(0.94);
+        fill: #ffffff;
+        opacity: 1;
       }
     `}</style>
     <path className="phone-body" fill="#ffffff" d="M256 80C149.9 80 62.4 159.4 49.6 262c9.4-3.8 19.6-6 30.4-6c26.5 0 48 21.5 48 48v128c0 26.5-21.5 48-48 48c-44.2 0-80-35.8-80-80V288C0 146.6 114.6 32 256 32s256 114.6 256 256v112c0 44.2-35.8 80-80 80c-26.5 0-48-21.5-48-48V304c0-26.5 21.5-48 48-48c10.8 0 21 2.1 30.4 6C449.6 159.4 362.1 80 256 80" />
-    <line className="phone-slash" x1="72" y1="440" x2="440" y2="72" />
+    <line className="phone-slash" x1="72" y1="72" x2="440" y2="440" />
   </svg>
 );
 
@@ -878,7 +897,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                 callSoundService.play(next ? 'mute' : 'unmute');
               }}
               aria-label={isMicMuted ? t('discord.unmuteMicrophone', 'Включить микрофон') : t('discord.muteMicrophone', 'Отключить микрофон')}
-              className="w-8 h-8 rounded-full flex items-center justify-center p-0 m-0 bg-transparent border-none outline-none select-none cursor-pointer"
+              className="w-8 h-8 rounded-full flex items-center justify-center p-0 m-0 bg-transparent hover:bg-white/10 active:bg-white/15 transition-colors duration-150 border-none outline-none select-none cursor-pointer"
               style={{
                 WebkitTapHighlightColor: 'transparent',
                 outline: 'none',
@@ -898,7 +917,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                 callSoundService.play(next ? 'mute' : 'unmute');
               }}
               aria-label={isDeafened ? t('discord.undeafenAudio', 'Включить звук') : t('discord.deafenAudio', 'Заглушить звук')}
-              className="w-8 h-8 rounded-full flex items-center justify-center p-0 m-0 bg-transparent border-none outline-none select-none cursor-pointer"
+              className="w-8 h-8 rounded-full flex items-center justify-center p-0 m-0 bg-transparent hover:bg-white/10 active:bg-white/15 transition-colors duration-150 border-none outline-none select-none cursor-pointer"
               style={{
                 WebkitTapHighlightColor: 'transparent',
                 outline: 'none',
@@ -916,7 +935,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                 useChatStore.getState().openSettings('main');
               }}
               aria-label={t('discord.userSettings', 'Настройки пользователя')}
-              className="w-8 h-8 rounded-full flex items-center justify-center p-0 m-0 bg-transparent border-none outline-none select-none cursor-pointer"
+              className="w-8 h-8 rounded-full flex items-center justify-center p-0 m-0 bg-transparent hover:bg-white/10 active:bg-white/15 transition-colors duration-150 border-none outline-none select-none cursor-pointer"
               style={{
                 WebkitTapHighlightColor: 'transparent',
                 outline: 'none',

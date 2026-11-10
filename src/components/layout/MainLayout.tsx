@@ -976,7 +976,7 @@ export const MainLayout = () => {
   }, [searchedChats.length, showChatScrollbar]);
 
   const CHAT_MIN_WIDTH = 300;
-  const SIDEBAR_MIN_WIDTH = 260;
+  const SIDEBAR_MIN_WIDTH = 220;
 
   const isCallMinimized = useCallStore((state) => state.isMinimized && !!state.activeCall);
   const showCallModalsInWindow = !((window as any).orbita?.openCallWindow);
@@ -1126,7 +1126,7 @@ export const MainLayout = () => {
 
       {(!isMobileView || !activeChatId) && (
         <ResizableSidebar
-          defaultWidth={320}
+          defaultWidth={240}
           minWidth={SIDEBAR_MIN_WIDTH}
           maxWidth={maxSidebarWidth}
           className="md:flex-none"

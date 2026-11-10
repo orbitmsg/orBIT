@@ -1,213 +1,267 @@
-import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Users, PhoneCall, Inbox, HelpCircle, MessageSquare } from 'lucide-react';
+import { useChatStore } from '../../store/useChatStore';
+import { Avatar } from '../common/Avatar';
 
-export const ChatPlaceholder = () => {
+type FriendsTab = 'online' | 'all' | 'pending' | 'blocked' | 'add';
+
+export const ChatPlaceholder: React.FC = () => {
   const { t } = useTranslation();
-  const [isWhatsNewOpen, setIsWhatsNewOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<FriendsTab>('online');
+  const chats = useChatStore((s) => s.chats);
+  const setActiveChat = useChatStore((s) => s.setActiveChat);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isWhatsNewOpen) return;
-      if (e.key === 'Escape' || e.key === 'Enter') {
-        setIsWhatsNewOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isWhatsNewOpen]);
+  const privateChats = chats.filter((c) => c.type !== 'channel');
+  const onlineFriends = privateChats.filter((c) => c.online);
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '100%',
-        height: '100%',
-        userSelect: 'none',
-        padding: '24px',
-        boxSizing: 'border-box',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <div style={{ width: '110px', height: '110px', flexShrink: 0 }}>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="100%" height="100%">
-            <defs>
-              <clipPath id="orbita-front-clip">
-                <rect x="-600" y="0" width="1200" height="600" />
-              </clipPath>
-              <mask id="orbita-back-ring-mask">
-                <rect x="0" y="0" width="800" height="800" fill="white" />
-                <circle cx="400" cy="400" r="192" fill="black" />
-              </mask>
-              <mask id="orbita-planet-mask">
-                <rect x="0" y="0" width="800" height="800" fill="white" />
-                <g transform="translate(400, 400) rotate(-26)">
-                  <path d="M 224 0 A 224 59 0 0 1 -224 0 L -376 0 A 376 121 0 0 0 376 0 Z" fill="black" />
-                </g>
-              </mask>
-              <mask id="orbita-ring-hole">
-                <rect x="-600" y="-600" width="1200" height="1200" fill="white" />
-                <ellipse cx="0" cy="0" rx="240" ry="75" fill="black" />
-              </mask>
-            </defs>
-            <g mask="url(#orbita-back-ring-mask)">
-              <g transform="translate(400, 400) rotate(-26)">
-                <ellipse cx="0" cy="0" rx="360" ry="105" fill="#BCC0C3" mask="url(#orbita-ring-hole)" />
-              </g>
-            </g>
-            <circle cx="400" cy="400" r="175" fill="#BCC0C3" mask="url(#orbita-planet-mask)" />
-            <g transform="translate(400, 400) rotate(-26)">
-              <g clipPath="url(#orbita-front-clip)">
-                <ellipse cx="0" cy="0" rx="360" ry="105" fill="#BCC0C3" mask="url(#orbita-ring-hole)" />
-              </g>
-            </g>
-          </svg>
+    <div className="flex flex-col w-full h-full select-none bg-[#313338] overflow-hidden">
+      <div className="h-12 bg-[#313338] border-b border-[#1f2023] px-4 flex items-center justify-between shrink-0">
+        <div className="flex items-center min-w-0">
+          <div className="flex items-center text-[#80848e] mr-2 shrink-0">
+            <Users size={22} />
+          </div>
+          <span className="font-bold text-white text-[15px] mr-4 whitespace-nowrap">
+            {t('discord.friends', 'Друзья')}
+          </span>
+          <div className="w-[1px] h-4 bg-[#3f4147] mr-4 shrink-0" />
+
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <button
+              type="button"
+              onClick={() => setActiveTab('online')}
+              className={`px-2 py-1 rounded text-[14px] font-medium transition-colors cursor-pointer border-none outline-none whitespace-nowrap ${
+                activeTab === 'online'
+                  ? 'bg-[#404249] text-white'
+                  : 'text-[#949ba4] hover:bg-[#35373c] hover:text-[#dbdee1] bg-transparent'
+              }`}
+            >
+              {t('discord.online', 'В сети')}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('all')}
+              className={`px-2 py-1 rounded text-[14px] font-medium transition-colors cursor-pointer border-none outline-none whitespace-nowrap ${
+                activeTab === 'all'
+                  ? 'bg-[#404249] text-white'
+                  : 'text-[#949ba4] hover:bg-[#35373c] hover:text-[#dbdee1] bg-transparent'
+              }`}
+            >
+              {t('discord.all', 'Все')}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('pending')}
+              className={`px-2 py-1 rounded text-[14px] font-medium transition-colors cursor-pointer border-none outline-none whitespace-nowrap ${
+                activeTab === 'pending'
+                  ? 'bg-[#404249] text-white'
+                  : 'text-[#949ba4] hover:bg-[#35373c] hover:text-[#dbdee1] bg-transparent'
+              }`}
+            >
+              {t('discord.pending', 'В ожидании')}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('blocked')}
+              className={`px-2 py-1 rounded text-[14px] font-medium transition-colors cursor-pointer border-none outline-none whitespace-nowrap ${
+                activeTab === 'blocked'
+                  ? 'bg-[#404249] text-white'
+                  : 'text-[#949ba4] hover:bg-[#35373c] hover:text-[#dbdee1] bg-transparent'
+              }`}
+            >
+              {t('discord.blocked', 'Заблокированные')}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('add')}
+              className="bg-[#5865F2] hover:bg-[#4752c4] text-white text-[13px] font-medium px-2.5 py-1 rounded transition-colors cursor-pointer border-none outline-none ml-2 whitespace-nowrap"
+            >
+              {t('discord.addFriend', 'Добавить в друзья')}
+            </button>
+          </div>
         </div>
 
-        <div
-          style={{
-            fontSize: '18px',
-            fontWeight: 600,
-            color: 'var(--text-main, #ffffff)',
-            textAlign: 'center',
-            letterSpacing: '0.2px',
-            marginTop: '16px',
-          }}
-        >
-          {t('chatPlaceholder.welcome', 'Добро пожаловать в Orbita')}
-        </div>
-
-        <div
-          style={{
-            fontSize: '14px',
-            color: 'var(--text-dim, #8a96a3)',
-            textAlign: 'center',
-            marginTop: '6px',
-          }}
-        >
-          <span>{t('chatPlaceholder.seeWhatsNewPrefix', 'Посмотрите, ')}</span>
+        <div className="flex items-center gap-2 text-[#b5bac1] shrink-0 ml-4">
           <button
             type="button"
-            onClick={() => setIsWhatsNewOpen(true)}
-            aria-label={t('chatPlaceholder.whatsNew', 'что нового')}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              font: 'inherit',
-              color: 'var(--accent-color, #7C3AED)',
-              cursor: 'pointer',
-              textDecoration: 'none',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
-            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+            aria-label={t('discord.startGroupCall', 'Начать голосовой звонок')}
+            className="p-1.5 rounded hover:bg-[#35373c] hover:text-white transition-colors bg-transparent border-none outline-none cursor-pointer"
           >
-            {t('chatPlaceholder.whatsNew', 'что нового')}
+            <PhoneCall size={20} />
           </button>
-          <span>{t('chatPlaceholder.seeWhatsNewSuffix', ' в этом обновлении')}</span>
+          <button
+            type="button"
+            aria-label={t('discord.inbox', 'Почта')}
+            className="p-1.5 rounded hover:bg-[#35373c] hover:text-white transition-colors bg-transparent border-none outline-none cursor-pointer"
+          >
+            <Inbox size={20} />
+          </button>
+          <button
+            type="button"
+            aria-label={t('discord.help', 'Справка')}
+            className="p-1.5 rounded hover:bg-[#35373c] hover:text-white transition-colors bg-transparent border-none outline-none cursor-pointer"
+          >
+            <HelpCircle size={20} />
+          </button>
         </div>
       </div>
 
-
-      {typeof document !== 'undefined' && createPortal(
-        <AnimatePresence>
-          {isWhatsNewOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="fixed inset-0 z-[500] flex items-center justify-center p-4 select-none"
-              style={{
-                backgroundColor: 'rgba(0, 0, 0, 0.55)',
-                backdropFilter: 'none',
-                WebkitBackdropFilter: 'none',
-                border: 'none',
-              }}
-              onClick={() => setIsWhatsNewOpen(false)}
-            >
-              <motion.div
-                initial={{ scale: 0.94, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.94, opacity: 0 }}
-                transition={{ duration: 0.15, ease: 'easeOut' }}
-                className="w-full max-w-[340px] rounded-[8px] p-5 shadow-2xl overflow-hidden"
-                style={{
-                  backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 96%, #000)',
-                  borderRadius: '8px',
-                  border: 'none',
-                  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
-                }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="text-left">
-                  <h3
-                    className="text-[15px] font-semibold leading-snug"
-                    style={{ color: 'var(--text-main, #ffffff)' }}
-                  >
-                    {t('chatPlaceholder.whatsNewTitle', 'Что нового')}
-                  </h3>
-
+      <div className="flex-1 flex min-h-0 overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+          {activeTab === 'online' && (
+            onlineFriends.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center p-6 text-center">
+                <span className="text-[#949ba4] text-[15px]">
+                  {t('discord.noFriendsOnline', 'Сейчас никого из ваших друзей нет в сети. Зайдите позже!')}
+                </span>
+              </div>
+            ) : (
+              <div className="p-4 flex flex-col space-y-1">
+                <div className="text-[12px] font-bold text-[#949ba4] uppercase tracking-wider px-2 py-1 mb-1">
+                  {t('discord.online', 'В сети')} — {onlineFriends.length}
+                </div>
+                {onlineFriends.map((friend) => (
                   <div
-                    className="mt-3 text-[13px] leading-relaxed flex flex-col gap-2"
-                    style={{ color: 'var(--text-dim, #9ca3af)' }}
+                    key={friend.id}
+                    onClick={() => setActiveChat(friend.id)}
+                    className="flex items-center justify-between p-2 rounded hover:bg-[#35373c] cursor-pointer group transition-colors"
                   >
-                    <div className="flex items-start gap-2">
-                      <span style={{ color: 'var(--accent-color, #7C3AED)', lineHeight: '18px' }}>•</span>
-                      <span>{t('chatPlaceholder.whatsNewChange1', 'Единый запуск видео- и аудиозвонков в отдельном окне')}</span>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="relative shrink-0">
+                        <Avatar src={friend.avatarUrl} alt={friend.name} className="w-10 h-10 rounded-full" />
+                        <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#23a55a] border-2 border-[#313338]" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-semibold text-white text-[15px] truncate">
+                          {friend.name}
+                        </span>
+                        <span className="text-xs text-[#949ba4] truncate">
+                          {t('discord.online', 'В сети')}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <span style={{ color: 'var(--accent-color, #7C3AED)', lineHeight: '18px' }}>•</span>
-                      <span>{t('chatPlaceholder.whatsNewChange2', 'Камера запрашивается и включается только во время видеозвонка')}</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span style={{ color: 'var(--accent-color, #7C3AED)', lineHeight: '18px' }}>•</span>
-                      <span>{t('chatPlaceholder.whatsNewChange3', 'Микрофон включен по умолчанию при совершении звонка')}</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span style={{ color: 'var(--accent-color, #7C3AED)', lineHeight: '18px' }}>•</span>
-                      <span>{t('chatPlaceholder.whatsNewChange4', 'Обновленный экран приветствия в минималистичном стиле')}</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveChat(friend.id);
+                        }}
+                        aria-label={friend.name}
+                        className="w-9 h-9 rounded-full bg-[#2b2d31] hover:bg-[#1e1f22] text-[#b5bac1] hover:text-white flex items-center justify-center transition-colors border-none outline-none cursor-pointer"
+                      >
+                        <MessageSquare size={18} />
+                      </button>
                     </div>
                   </div>
-                </div>
-
-                <div className="flex justify-end items-center gap-2 mt-6">
-                  <button
-                    type="button"
-                    onClick={() => setIsWhatsNewOpen(false)}
-                    aria-label={t('chatPlaceholder.understand', 'Я понимаю')}
-                    className="px-3.5 py-1.5 rounded-lg text-[14px] font-medium transition-colors cursor-pointer border-0 outline-none"
-                    style={{
-                      backgroundColor: 'transparent',
-                      color: 'var(--accent-color, #7C3AED)',
-                    }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor =
-                        'color-mix(in srgb, var(--accent-color, #7C3AED) 12%, transparent)')
-                    }
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                  >
-                    {t('chatPlaceholder.understand', 'Я понимаю')}
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
+                ))}
+              </div>
+            )
           )}
-        </AnimatePresence>,
-        document.body
-      )}
+
+          {activeTab === 'all' && (
+            <div className="p-4 flex flex-col space-y-1">
+              <div className="text-[12px] font-bold text-[#949ba4] uppercase tracking-wider px-2 py-1 mb-1">
+                {t('discord.all', 'Все')} — {privateChats.length}
+              </div>
+              {privateChats.map((friend) => (
+                <div
+                  key={friend.id}
+                  onClick={() => setActiveChat(friend.id)}
+                  className="flex items-center justify-between p-2 rounded hover:bg-[#35373c] cursor-pointer group transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="relative shrink-0">
+                      <Avatar src={friend.avatarUrl} alt={friend.name} className="w-10 h-10 rounded-full" />
+                      <div
+                        className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[#313338] ${
+                          friend.online ? 'bg-[#23a55a]' : 'bg-[#80848e]'
+                        }`}
+                      />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-semibold text-white text-[15px] truncate">
+                        {friend.name}
+                      </span>
+                      <span className="text-xs text-[#949ba4] truncate">
+                        {friend.online ? t('discord.online', 'В сети') : t('common.offline', 'Не в сети')}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveChat(friend.id);
+                      }}
+                      aria-label={friend.name}
+                      className="w-9 h-9 rounded-full bg-[#2b2d31] hover:bg-[#1e1f22] text-[#b5bac1] hover:text-white flex items-center justify-center transition-colors border-none outline-none cursor-pointer"
+                    >
+                      <MessageSquare size={18} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {activeTab === 'pending' && (
+            <div className="flex-1 flex items-center justify-center p-6 text-center text-[#949ba4] text-[15px]">
+              {t('discord.quietForNow', 'Пока что тут тихо...')}
+            </div>
+          )}
+
+          {activeTab === 'blocked' && (
+            <div className="flex-1 flex items-center justify-center p-6 text-center text-[#949ba4] text-[15px]">
+              {t('discord.quietForNow', 'Пока что тут тихо...')}
+            </div>
+          )}
+
+          {activeTab === 'add' && (
+            <div className="p-6 flex flex-col max-w-[500px]">
+              <h2 className="text-white text-base font-bold uppercase tracking-wide mb-2">
+                {t('discord.addFriend', 'Добавить в друзья')}
+              </h2>
+              <p className="text-[#949ba4] text-xs mb-4">
+                {t('connectModal.searchPlaceholder', 'Введите имя пользователя или код')}
+              </p>
+              <div className="flex items-center bg-[#1e1f22] rounded-lg p-3 border border-[#1f2023] focus-within:border-[#5865F2]">
+                <input
+                  type="text"
+                  placeholder={t('connectModal.usernameOrCode', 'Username или UUID')}
+                  className="bg-transparent border-none outline-none text-white text-sm flex-1 placeholder-[#949ba4]"
+                />
+                <button
+                  type="button"
+                  className="bg-[#5865F2] hover:bg-[#4752c4] text-white text-xs font-semibold px-4 py-2 rounded transition-colors border-none cursor-pointer"
+                >
+                  {t('connectModal.connect', 'Отправить запрос')}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="w-[360px] border-l border-[rgba(255,255,255,0.04)] bg-[#313338] p-4 flex flex-col shrink-0 select-none hidden lg:flex">
+          <h2 className="text-[20px] font-bold text-white mb-4">
+            {t('discord.activeContacts', 'Активные контакты')}
+          </h2>
+          <div className="bg-[#2b2d31] rounded-lg p-4 text-center border border-[rgba(255,255,255,0.03)] shadow-sm">
+            <h3 className="font-bold text-white text-[15px] mb-2">
+              {t('discord.quietForNow', 'Пока что тут тихо...')}
+            </h3>
+            <p className="text-xs text-[#949ba4] leading-relaxed m-0">
+              {t('discord.quietForNowDesc', 'Если ваш друг начнет чем-то заниматься — например, запустит игру или войдет в голосовой чат, — вы увидите это здесь!')}
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
-};
+};

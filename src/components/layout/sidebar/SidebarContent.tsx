@@ -89,6 +89,10 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   const isServerConnected = useConnectionStore((s) => s.isServerConnected);
   const isCallMinimized = useCallStore((s) => s.isMinimized);
   const isCallActive = useCallStore((s) => Boolean(s.activeCall));
+  const nickname = useAuthStore((s) => s.nickname);
+  const avatarUrl = useAuthStore((s) => s.avatarUrl);
+  const [isMicMuted, setIsMicMuted] = React.useState(false);
+  const [isDeafened, setIsDeafened] = React.useState(false);
 
   if (inChatSearch?.isOpen) {
     return (
@@ -709,6 +713,85 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
         >
           <ChevronUp size={24} strokeWidth={2.4} style={{ color: 'var(--text-main)' }} />
         </button>
+      </div>
+      <div className="shrink-0 select-none bg-[#232428] border-t border-[#1f2023] p-1.5">
+        <div
+          className="flex items-center justify-between p-1.5 rounded-[8px]"
+          style={{
+            background: 'linear-gradient(135deg, rgba(88, 101, 242, 0.45) 0%, rgba(235, 69, 158, 0.45) 100%)',
+            border: '1px solid rgba(235, 69, 158, 0.35)',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => useChatStore.getState().openSettings('profile')}
+            className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-90 transition-opacity bg-transparent border-none outline-none cursor-pointer text-left p-1"
+          >
+            <div className="relative shrink-0">
+              <Avatar
+                src={avatarUrl}
+                alt={nickname || 'Saizzi'}
+                className="w-8 h-8 rounded-full"
+              />
+              <div
+                className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#23a55a] border-2 border-[#232428]"
+              />
+            </div>
+            <div className="flex flex-col min-w-0 flex-1 leading-none">
+              <span className="text-[13.5px] font-bold text-white truncate leading-tight">
+                {nickname || 'Saizzi'}
+              </span>
+              <span className="text-[11px] text-[#dbdee1]/80 truncate mt-0.5">
+                {t('discord.online', 'В сети')}
+              </span>
+            </div>
+          </button>
+
+          <div className="flex items-center gap-0.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsMicMuted(!isMicMuted)}
+              aria-label={isMicMuted ? t('discord.unmuteMicrophone', 'Включить микрофон') : t('discord.muteMicrophone', 'Отключить микрофон')}
+              className="w-8 h-8 rounded flex items-center justify-center text-[#dbdee1] hover:text-white hover:bg-[#35373c] transition-colors bg-transparent border-none outline-none cursor-pointer relative"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" x2="12" y1="19" y2="22" />
+              </svg>
+              {isMicMuted && (
+                <div className="absolute w-[22px] h-[2px] bg-[#f23f43] rotate-45 rounded-full" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsDeafened(!isDeafened)}
+              aria-label={isDeafened ? t('discord.undeafenAudio', 'Включить звук') : t('discord.deafenAudio', 'Заглушить звук')}
+              className="w-8 h-8 rounded flex items-center justify-center text-[#dbdee1] hover:text-white hover:bg-[#35373c] transition-colors bg-transparent border-none outline-none cursor-pointer relative"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+              </svg>
+              {isDeafened && (
+                <div className="absolute w-[22px] h-[2px] bg-[#f23f43] rotate-45 rounded-full" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => useChatStore.getState().openSettings('main')}
+              aria-label={t('discord.userSettings', 'Настройки пользователя')}
+              className="w-8 h-8 rounded flex items-center justify-center text-[#dbdee1] hover:text-white hover:bg-[#35373c] transition-colors bg-transparent border-none outline-none cursor-pointer"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

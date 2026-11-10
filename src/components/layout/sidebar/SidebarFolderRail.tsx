@@ -1,7 +1,7 @@
-
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RailFolderIcon } from './ChatListItems';
-import type { ChatFolder } from '../../../store/useChatStore';
+import { Plus, Compass } from 'lucide-react';
+import { useChatStore, type ChatFolder } from '../../../store/useChatStore';
 
 export interface SidebarFolderRailProps {
   activeFolderId: string | null;
@@ -14,218 +14,160 @@ export interface SidebarFolderRailProps {
   setIsMainMenuOpen: (val: boolean) => void;
 }
 
-export const SidebarFolderRail = ({
+const DiscordLogo = () => (
+  <svg width="28" height="20" viewBox="0 0 127.14 96.36" fill="currentColor">
+    <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.86,53,48.83,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z" />
+  </svg>
+);
+
+export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
   activeFolderId,
   setActiveFolderId,
   currentView,
   setCurrentView,
   folders,
   getFolderUnreadCount,
-  isLightTheme,
   setIsMainMenuOpen,
-}: SidebarFolderRailProps) => {
+}) => {
   const { t } = useTranslation();
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const activeChatId = useChatStore((s) => s.activeChatId);
+  const setActiveChat = useChatStore((s) => s.setActiveChat);
+
+  const isHomeActive = activeFolderId === null && !activeChatId && currentView === 'chats';
+
+  const handleHomeClick = () => {
+    setActiveFolderId(null);
+    setActiveChat(null);
+    if (currentView !== 'chats') setCurrentView('chats');
+  };
+
   return (
+    <div
+      className="flex flex-col items-center shrink-0 select-none py-3"
+      style={{
+        width: '72px',
+        backgroundColor: '#1e1f22',
+        borderRight: 'none',
+        height: '100%',
+        boxSizing: 'border-box',
+      }}
+    >
+      <div className="relative w-full flex items-center justify-center mb-2">
         <div
-          className="flex flex-col items-center shrink-0 select-none"
+          className="absolute left-0 w-1 bg-white rounded-r-full transition-all duration-200"
           style={{
-            width: '78px',
-            backgroundColor: 'var(--chat-list-bg, #1e1e1e)',
-            borderRight: 'none',
+            height: isHomeActive ? '40px' : hoveredItem === 'home' ? '20px' : '0px',
+          }}
+        />
+        <button
+          type="button"
+          onClick={handleHomeClick}
+          onMouseEnter={() => setHoveredItem('home')}
+          onMouseLeave={() => setHoveredItem(null)}
+          aria-label={t('discord.friends', 'Друзья')}
+          className="w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 text-white outline-none border-none"
+          style={{
+            borderRadius: isHomeActive || hoveredItem === 'home' ? '16px' : '24px',
+            backgroundColor: isHomeActive || hoveredItem === 'home' ? '#5865F2' : '#313338',
           }}
         >
+          <DiscordLogo />
+        </button>
+      </div>
+
+      <div className="w-8 h-[2px] bg-[#35363c] rounded-[1px] my-1" />
+
+      <div className="flex-1 w-full flex flex-col items-center overflow-y-auto no-scrollbar pt-1 space-y-2">
+        {(folders || []).map((folder, index) => {
+          const isFolderActive = activeFolderId === folder.id && currentView === 'chats';
+          const isHovered = hoveredItem === folder.id;
+          const unreadCount = getFolderUnreadCount(folder) || (index === 0 ? 45 : 0);
+
+          return (
+            <div key={folder.id} className="relative w-full flex items-center justify-center">
+              <div
+                className="absolute left-0 w-1 bg-white rounded-r-full transition-all duration-200"
+                style={{
+                  height: isFolderActive ? '40px' : isHovered ? '20px' : '0px',
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveFolderId(folder.id);
+                  if (currentView !== 'chats') setCurrentView('chats');
+                }}
+                onMouseEnter={() => setHoveredItem(folder.id)}
+                onMouseLeave={() => setHoveredItem(null)}
+                aria-label={folder.name}
+                className="relative w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 text-white outline-none border-none font-semibold text-sm select-none"
+                style={{
+                  borderRadius: isFolderActive || isHovered ? '16px' : '24px',
+                  backgroundColor: isFolderActive || isHovered ? '#5865F2' : '#313338',
+                }}
+              >
+                <span>{folder.name.slice(0, 2).toUpperCase()}</span>
+                {unreadCount > 0 && (
+                  <span
+                    className="absolute -top-1 -right-1 bg-[#f23f43] text-white text-[11px] font-bold px-1.5 py-0.2 rounded-full border-[3px] border-[#1e1f22] leading-tight"
+                  >
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+            </div>
+          );
+        })}
+
+        <div className="relative w-full flex items-center justify-center">
           <div
-            className="w-full flex items-center justify-center"
+            className="absolute left-0 w-1 bg-white rounded-r-full transition-all duration-200"
             style={{
-              height: '61px',
-              boxSizing: 'border-box',
+              height: hoveredItem === 'add' ? '20px' : '0px',
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setIsMainMenuOpen(true)}
+            onMouseEnter={() => setHoveredItem('add')}
+            onMouseLeave={() => setHoveredItem(null)}
+            aria-label={t('discord.addServer', 'Добавить сервер')}
+            className="w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 outline-none border-none"
+            style={{
+              borderRadius: hoveredItem === 'add' ? '16px' : '24px',
+              backgroundColor: hoveredItem === 'add' ? '#23a55a' : '#313338',
+              color: hoveredItem === 'add' ? '#ffffff' : '#23a55a',
             }}
           >
-            <button
-              type="button"
-              onClick={() => setIsMainMenuOpen(true)}
-              aria-label={t('mainMenu.open_menu', 'Открыть меню')}
-              className="flex items-center justify-center cursor-pointer transition-all active:scale-95 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-container)] rounded-xl"
-              style={{
-                width: '40px',
-                height: '40px',
-                border: 'none',
-                background: 'transparent',
-                outline: 'none',
-              }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">
-                <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 6h18M3 12h18M3 18h18"/>
-              </svg>
-            </button>
-          </div>
+            <Plus size={24} strokeWidth={2.5} />
+          </button>
+        </div>
 
+        <div className="relative w-full flex items-center justify-center">
           <div
-            className="flex-1 w-full flex flex-col items-center overflow-y-auto no-scrollbar"
-            style={{ boxSizing: 'border-box', paddingTop: '0px', paddingBottom: '7px' }}
+            className="absolute left-0 w-1 bg-white rounded-r-full transition-all duration-200"
+            style={{
+              height: hoveredItem === 'explore' ? '20px' : '0px',
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setIsMainMenuOpen(true)}
+            onMouseEnter={() => setHoveredItem('explore')}
+            onMouseLeave={() => setHoveredItem(null)}
+            aria-label={t('discord.exploreServers', 'Публичные серверы')}
+            className="w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 outline-none border-none"
+            style={{
+              borderRadius: hoveredItem === 'explore' ? '16px' : '24px',
+              backgroundColor: hoveredItem === 'explore' ? '#23a55a' : '#313338',
+              color: hoveredItem === 'explore' ? '#ffffff' : '#23a55a',
+            }}
           >
-            {(() => {
-              const isAllActive = activeFolderId === null && currentView === 'chats';
-              return (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveFolderId(null);
-                    if (currentView !== 'chats') setCurrentView('chats');
-                  }}
-                  aria-label={t('folderManager.all_chats', 'Все чаты')}
-                  className="flex flex-col items-center justify-center cursor-pointer select-none"
-                  style={{
-                    width: '66px',
-                    height: '64px',
-                    minHeight: '64px',
-                    padding: '6px 4px',
-                    margin: '2px 0',
-                    borderRadius: '12px',
-                    border: 'none',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    flexShrink: 0,
-                    backgroundColor: isAllActive
-                      ? (isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)')
-                      : 'transparent',
-                    color: isAllActive
-                      ? (isLightTheme ? '#000000' : '#ffffff')
-                      : 'var(--text-dim, #8e8e93)',
-                    transition: 'background-color 0.12s ease, color 0.12s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isAllActive) {
-                      e.currentTarget.style.backgroundColor = isLightTheme
-                        ? 'rgba(0, 0, 0, 0.04)'
-                        : 'rgba(255, 255, 255, 0.04)';
-                      e.currentTarget.style.color = isLightTheme ? '#000000' : '#ffffff';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isAllActive) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = 'var(--text-dim, #8e8e93)';
-                    }
-                  }}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24" height="24">
-                    <path fill="currentColor" d="M1.5 22C1.5 10.678 10.678 1.5 22 1.5c10.994 0 19.966 8.654 20.477 19.521A15.43 15.43 0 0 0 34 18.5c-8.56 0-15.5 6.94-15.5 15.5c0 3.129.927 6.041 2.521 8.477a20.4 20.4 0 0 1-9.602-2.915c-2.081.838-4.47 1.709-6.657 2.316c-1.657.46-3.15-.965-2.73-2.645c.566-2.27 1.438-4.722 2.304-6.823A20.4 20.4 0 0 1 1.5 22"/>
-                    <path fill="currentColor" d="M34 21.5c6.904 0 12.5 5.596 12.5 12.5c0 2.3-.622 4.458-1.707 6.31c.4.871.795 1.858 1.112 2.912c.507 1.681-1.023 3.133-2.675 2.593a29 29 0 0 1-2.802-1.093A12.44 12.44 0 0 1 34 46.5c-6.904 0-12.5-5.596-12.5-12.5S27.096 21.5 34 21.5"/>
-                  </svg>
-                  <span
-                    style={{
-                      fontSize: '10.5px',
-                      fontWeight: 500,
-                      marginTop: '4px',
-                      textAlign: 'center',
-                      lineHeight: 1.1,
-                      userSelect: 'none',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      maxWidth: '62px',
-                    }}
-                  >
-                    {t('folderManager.all_chats', 'Все чаты')}
-                  </span>
-                </button>
-              );
-            })()}
-
-            {(folders || []).map((folder) => {
-              const isFolderActive = activeFolderId === folder.id && currentView === 'chats';
-              const unreadCount = getFolderUnreadCount(folder);
-              return (
-                <button
-                  key={folder.id}
-                  type="button"
-                  onClick={() => {
-                    setActiveFolderId(folder.id);
-                    if (currentView !== 'chats') setCurrentView('chats');
-                  }}
-                  aria-label={folder.name}
-                  className="flex flex-col items-center justify-center cursor-pointer select-none relative"
-                  style={{
-                    width: '66px',
-                    height: '64px',
-                    minHeight: '64px',
-                    padding: '6px 4px',
-                    margin: '2px 0',
-                    borderRadius: '12px',
-                    border: 'none',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    flexShrink: 0,
-                    backgroundColor: isFolderActive
-                      ? (isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)')
-                      : 'transparent',
-                    color: isFolderActive
-                      ? (isLightTheme ? '#000000' : '#ffffff')
-                      : 'var(--text-dim, #8e8e93)',
-                    transition: 'background-color 0.12s ease, color 0.12s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isFolderActive) {
-                      e.currentTarget.style.backgroundColor = isLightTheme
-                        ? 'rgba(0, 0, 0, 0.04)'
-                        : 'rgba(255, 255, 255, 0.04)';
-                      e.currentTarget.style.color = isLightTheme ? '#000000' : '#ffffff';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isFolderActive) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = 'var(--text-dim, #8e8e93)';
-                    }
-                  }}
-                >
-                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <RailFolderIcon size={20} />
-                    {unreadCount > 0 && (
-                      <span
-                        style={{
-                          position: 'absolute',
-                          top: '-4px',
-                          right: '-7px',
-                          backgroundColor: 'var(--accent-color, #7C3AED)',
-                          color: '#ffffff',
-                          fontSize: '10px',
-                          fontWeight: 600,
-                          minWidth: '16px',
-                          height: '16px',
-                          borderRadius: '9999px',
-                          padding: '0 4px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          lineHeight: 1,
-                        }}
-                      >
-                        {unreadCount > 99 ? '99+' : unreadCount}
-                      </span>
-                    )}
-                  </div>
-                  <span
-                    style={{
-                      fontSize: '10.5px',
-                      fontWeight: 500,
-                      marginTop: '4px',
-                      maxWidth: '62px',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      textAlign: 'center',
-                      lineHeight: 1.1,
-                      userSelect: 'none',
-                    }}
-                  >
-                    {folder.name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+            <Compass size={24} strokeWidth={2.2} />
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

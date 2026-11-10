@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useChatStore, flushStorageSet } from '../../store/useChatStore';
 
 export const isElectronApp = (): boolean => {
@@ -18,6 +19,7 @@ export interface TitleBarProps {
 }
 
 export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, className }) => {
+  const { t } = useTranslation();
   const isElectron = isElectronApp();
   const [isMaximized, setIsMaximized] = useState(false);
   const [isHoverSuppressed, setIsHoverSuppressed] = useState(false);
@@ -145,8 +147,14 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
       } as React.CSSProperties}
       onDoubleClick={handleDoubleClick}
     >
-      <div className="flex-1 px-3 text-xs text-[var(--text-dim,#9f96b3)] truncate pointer-events-none select-none">
-        {title || ''}
+      <div className="flex-1 px-3 text-xs text-[var(--text-dim,#949ba4)] truncate pointer-events-none select-none flex items-center justify-center gap-1.5 font-medium">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#949ba4] shrink-0">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+        <span>{title || t('discord.friends', 'Друзья')}</span>
       </div>
       <style>{`
         .orbita-titlebar-btn {

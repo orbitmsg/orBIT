@@ -54,26 +54,17 @@ const GearIcon = () => (
       .gear-icon {
         cursor: pointer;
         overflow: visible;
-        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
       }
       .gear-body {
         transform-origin: 16px 16px;
-        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), fill 0.2s ease;
-      }
-      .gear-icon:hover {
-        transform: scale(1.14);
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
       }
       .gear-icon:hover .gear-body {
-        animation: spinHover 2.4s linear infinite;
-        fill: #ffffff;
-      }
-      .gear-icon:active {
-        transform: scale(0.86);
+        animation: spinHover 2.5s linear infinite;
       }
       .gear-icon:active .gear-body {
         animation: none;
-        transform: rotate(180deg) scale(0.92);
-        fill: #7c75f2;
+        transform: rotate(180deg);
       }
       @keyframes spinHover {
         from { transform: rotate(0deg); }
@@ -93,24 +84,20 @@ const MicToggleIcon = ({ muted }: { muted: boolean }) => (
       .mic-icon {
         cursor: pointer;
         overflow: visible;
-        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-      }
-      .mic-icon:hover {
-        transform: scale(1.14);
-      }
-      .mic-icon:active {
-        transform: scale(0.86);
       }
       .mic-body {
-        transform-origin: 12px 12px;
-        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), fill 0.2s ease;
+        transform-origin: 12px 21px;
       }
-      .mic-icon:not(.muted):hover .mic-body {
-        animation: micPulse 0.8s ease-in-out infinite alternate;
+      .mic-icon:hover .mic-body {
+        animation: micWindSway 1.6s ease-in-out infinite;
       }
-      @keyframes micPulse {
-        0% { transform: translateY(0) scale(1); }
-        100% { transform: translateY(-1.2px) scale(1.05); }
+      @keyframes micWindSway {
+        0% { transform: rotate(0deg); }
+        20% { transform: rotate(8deg); }
+        45% { transform: rotate(-6deg); }
+        68% { transform: rotate(4deg); }
+        86% { transform: rotate(-2deg); }
+        100% { transform: rotate(0deg); }
       }
       .mic-slash {
         stroke: #f23f43;
@@ -135,49 +122,92 @@ const MicToggleIcon = ({ muted }: { muted: boolean }) => (
 );
 
 const HeadphonesToggleIcon = ({ muted }: { muted: boolean }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="20" height="20" className={`toggle-svg phone-icon ${muted ? 'muted' : ''}`}>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" className={`toggle-svg phone-icon ${muted ? 'muted' : ''}`}>
     <style>{`
       .phone-icon {
         cursor: pointer;
         overflow: visible;
-        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
       }
-      .phone-icon:hover {
-        transform: scale(1.14);
+      .phone-earcup-left {
+        transform-origin: 4.25px 15.25px;
       }
-      .phone-icon:active {
-        transform: scale(0.86);
+      .phone-earcup-right {
+        transform-origin: 19.75px 15.25px;
       }
-      .phone-body {
-        transform-origin: 256px 256px;
-        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), fill 0.2s ease;
+      .phone-icon:hover .phone-earcup-left {
+        animation: earcupCompressLeft 1.2s ease-in-out infinite;
       }
-      .phone-icon:not(.muted):hover .phone-body {
-        animation: bassPump 0.6s ease-in-out infinite alternate;
+      .phone-icon:hover .phone-earcup-right {
+        animation: earcupCompressRight 1.2s ease-in-out infinite;
       }
-      @keyframes bassPump {
-        0% { transform: scale(1); }
-        100% { transform: scale(1.08); }
+      @keyframes earcupCompressLeft {
+        0% {
+          transform: translateX(0) scale(1, 1);
+        }
+        26% {
+          transform: translateX(-1.5px) scale(0.55, 1.1);
+        }
+        48% {
+          transform: translateX(0.6px) scale(1.15, 0.95);
+        }
+        68% {
+          transform: translateX(-0.3px) scale(0.92, 1.02);
+        }
+        85% {
+          transform: translateX(0) scale(1.02, 0.99);
+        }
+        100% {
+          transform: translateX(0) scale(1, 1);
+        }
+      }
+      @keyframes earcupCompressRight {
+        0% {
+          transform: translateX(0) scale(1, 1);
+        }
+        26% {
+          transform: translateX(1.5px) scale(0.55, 1.1);
+        }
+        48% {
+          transform: translateX(-0.6px) scale(1.15, 0.95);
+        }
+        68% {
+          transform: translateX(0.3px) scale(0.92, 1.02);
+        }
+        85% {
+          transform: translateX(0) scale(1.02, 0.99);
+        }
+        100% {
+          transform: translateX(0) scale(1, 1);
+        }
       }
       .phone-slash {
         stroke: #f23f43;
-        stroke-width: 44;
+        stroke-width: 2.2;
         stroke-linecap: round;
-        stroke-dasharray: 550;
-        stroke-dashoffset: 550;
-        filter: drop-shadow(0 16px 24px rgba(0, 0, 0, 0.5));
+        stroke-dasharray: 28;
+        stroke-dashoffset: 28;
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
         transition: stroke-dashoffset 0.24s cubic-bezier(0.4, 0, 0.2, 1);
       }
       .phone-icon.muted .phone-slash {
         stroke-dashoffset: 0;
       }
-      .phone-icon.muted .phone-body {
+      .phone-icon.muted .phone-arch {
+        stroke: #ffffff;
+        opacity: 1;
+      }
+      .phone-icon.muted .phone-earcup-left,
+      .phone-icon.muted .phone-earcup-right {
         fill: #ffffff;
         opacity: 1;
       }
     `}</style>
-    <path className="phone-body" fill="#ffffff" d="M256 80C149.9 80 62.4 159.4 49.6 262c9.4-3.8 19.6-6 30.4-6c26.5 0 48 21.5 48 48v128c0 26.5-21.5 48-48 48c-44.2 0-80-35.8-80-80V288C0 146.6 114.6 32 256 32s256 114.6 256 256v112c0 44.2-35.8 80-80 80c-26.5 0-48-21.5-48-48V304c0-26.5 21.5-48 48-48c10.8 0 21 2.1 30.4 6C449.6 159.4 362.1 80 256 80" />
-    <line className="phone-slash" x1="72" y1="72" x2="440" y2="440" />
+    <g className="phone-body">
+      <path className="phone-arch" d="M 4.25 13 A 7.75 7.75 0 0 1 19.75 13" fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" />
+      <rect className="phone-earcup-left" x="2" y="11" width="4.5" height="8.5" rx="2.25" fill="#ffffff" />
+      <rect className="phone-earcup-right" x="17.5" y="11" width="4.5" height="8.5" rx="2.25" fill="#ffffff" />
+    </g>
+    <line className="phone-slash" x1="4" y1="4" x2="20" y2="20" />
   </svg>
 );
 

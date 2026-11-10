@@ -96,15 +96,15 @@ export const ChatListItem = React.memo(({
       onContextMenu={(e) => onContextMenu(e, chat.id)}
       className="group relative cursor-pointer"
       style={{
-        borderRadius: '4px',
-        margin: '1px 8px',
+        borderRadius: '15px',
+        margin: '2px 8px',
         width: 'calc(100% - 16px)',
         backgroundColor: isActive
           ? (isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)')
           : 'transparent',
         border: 'none',
-        padding: '6px 8px',
-        minHeight: 42,
+        padding: '8px 10px',
+        minHeight: 52,
         boxSizing: 'border-box',
         contentVisibility: 'auto',
         containIntrinsicSize: '64px',
@@ -125,15 +125,15 @@ export const ChatListItem = React.memo(({
       }}
     >
       <div className="flex justify-between items-center min-w-0">
-        <div style={{ width: 34, height: 34, marginRight: 10, flexShrink: 0, position: 'relative' }}>
+        <div style={{ width: 40, height: 40, marginRight: 10, flexShrink: 0, position: 'relative' }}>
           {chat.id === 'notes' ? (
-            <NotesAvatar className="w-[34px] h-[34px]" />
+            <NotesAvatar className="w-10 h-10" />
           ) : (chat.avatarUrl || chat.id === 'system_support') ? (
-            <Avatar src={chat.avatarUrl || SUPPORT_AVATAR_URL} alt={chat.name} className="w-[34px] h-[34px]" style={{ borderRadius: '50%' }} />
+            <Avatar src={chat.avatarUrl || SUPPORT_AVATAR_URL} alt={chat.name} className="w-10 h-10" style={{ borderRadius: '50%' }} />
           ) : chat.type === 'bot' ? (
-            <BotAvatar className="w-[34px] h-[34px]" />
+            <BotAvatar className="w-10 h-10" />
           ) : (
-            <Avatar src={chat.avatarUrl} alt={chat.name} className="w-[34px] h-[34px]" style={{ borderRadius: '50%' }} />
+            <Avatar src={chat.avatarUrl} alt={chat.name} className="w-10 h-10" style={{ borderRadius: '50%' }} />
           )}
           {chat.type === 'private' && chat.id !== 'notes' && chat.online && (
             <span

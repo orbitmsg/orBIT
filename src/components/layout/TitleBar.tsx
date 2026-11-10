@@ -135,7 +135,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
 
   return (
     <div
-      className={`flex items-center justify-between flex-shrink-0 select-none ${className || ''}`}
+      className={`relative flex items-center justify-between flex-shrink-0 select-none ${className || ''}`}
       style={{
         height: '30px',
         width: '100%',
@@ -147,7 +147,14 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
       } as React.CSSProperties}
       onDoubleClick={handleDoubleClick}
     >
-      <div className="flex-1 px-3 text-xs text-[var(--text-dim,#949ba4)] truncate pointer-events-none select-none flex items-center justify-center gap-1.5 font-medium">
+      <div
+        className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center gap-1.5 text-xs text-[var(--text-dim,#949ba4)] font-medium pointer-events-none select-none"
+        style={{
+          top: 0,
+          bottom: 0,
+          ['WebkitAppRegion' as any]: 'no-drag',
+        }}
+      >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#949ba4] shrink-0">
           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
           <circle cx="9" cy="7" r="4" />
@@ -156,6 +163,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
         </svg>
         <span>{title || t('discord.friends', 'Друзья')}</span>
       </div>
+      <div className="flex-1" />
       <style>{`
         .orbita-titlebar-btn {
           width: 30px;

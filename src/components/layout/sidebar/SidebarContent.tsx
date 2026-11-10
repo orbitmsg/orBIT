@@ -13,6 +13,7 @@ import { useChatStore, type Chat, type IncomingFriendRequest } from '../../../st
 import { useAuthStore } from '../../../store/useAuthStore';
 import { useConnectionStore } from '../../../store/useConnectionStore';
 import { useCallStore } from '../../../store/useCallStore';
+import { callSoundService } from '../../../services/callSoundService';
 import { supportService, SUPPORT_AVATAR_URL } from '../../../services/supportService';
 import type { ChannelInfo } from '../../../services/channelService';
 import type { UserDirectoryRecord } from '../../../services/supabaseService';
@@ -46,6 +47,120 @@ export interface SidebarContentProps {
   isLightTheme: boolean;
   setIsMainMenuOpen: (val: boolean) => void;
 }
+
+const GearIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="20" height="20" className="gear-icon">
+    <style>{`
+      .gear-icon {
+        cursor: pointer;
+        overflow: visible;
+      }
+      .gear-body {
+        transform-origin: 16px 16px;
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), fill 0.2s ease;
+      }
+      .gear-icon:hover .gear-body {
+        animation: spinHover 2.5s linear infinite;
+        fill: #7c75f2;
+      }
+      .gear-icon:active .gear-body {
+        animation: none;
+        transform: rotate(180deg) scale(0.92);
+        fill: #5C54E5;
+      }
+      @keyframes spinHover {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+    `}</style>
+    <g className="gear-body">
+      <path fill="#ffffff" d="M27 16.76v-1.53l1.92-1.68A2 2 0 0 0 29.3 11l-2.36-4a2 2 0 0 0-1.73-1a2 2 0 0 0-.64.1l-2.43.82a11 11 0 0 0-1.31-.75l-.51-2.52a2 2 0 0 0-2-1.61h-4.68a2 2 0 0 0-2 1.61l-.51 2.52a11.5 11.5 0 0 0-1.32.75l-2.38-.86A2 2 0 0 0 6.79 6a2 2 0 0 0-1.73 1L2.7 11a2 2 0 0 0 .41 2.51L5 15.24v1.53l-1.89 1.68A2 2 0 0 0 2.7 21l2.36 4a2 2 0 0 0 1.73 1a2 2 0 0 0 .64-.1l2.43-.82a11 11 0 0 0 1.31.75l.51 2.52a2 2 0 0 0 2 1.61h4.72a2 2 0 0 0 2-1.61l.51-2.52a11.5 11.5 0 0 0 1.32-.75l2.42.82a2 2 0 0 0 .64.1a2 2 0 0 0 1.73-1l2.28-4a2 2 0 0 0-.41-2.51ZM25.21 24l-3.43-1.16a8.9 8.9 0 0 1-2.71 1.57L18.36 28h-4.72l-.71-3.55a9.4 9.4 0 0 1-2.7-1.57L6.79 24l-2.36-4l2.72-2.4a8.9 8.9 0 0 1 0-3.13L4.43 12l2.36-4l3.43 1.16a8.9 8.9 0 0 1 2.71-1.57L13.64 4h4.72l.71 3.55a9.4 9.4 0 0 1 2.7 1.57L25.21 8l2.36 4l-2.72 2.4a8.9 8.9 0 0 1 0 3.13L27.57 20Z" />
+      <path fill="#ffffff" d="M16 22a6 6 0 1 1 6-6a5.94 5.94 0 0 1-6 6m0-10a3.91 3.91 0 0 0-4 4a3.91 3.91 0 0 0 4 4a3.91 3.91 0 0 0 4-4a3.91 3.91 0 0 0-4-4" />
+    </g>
+  </svg>
+);
+
+const MicToggleIcon = ({ muted }: { muted: boolean }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" className={`toggle-svg mic-icon ${muted ? 'muted' : ''}`}>
+    <style>{`
+      .mic-icon {
+        cursor: pointer;
+        overflow: visible;
+      }
+      .mic-body {
+        transform-origin: 12px 12px;
+        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), fill 0.25s ease, opacity 0.25s ease;
+      }
+      .mic-icon:not(.muted):hover .mic-body {
+        animation: micPulse 0.9s ease-in-out infinite alternate;
+        fill: #7c75f2;
+      }
+      @keyframes micPulse {
+        0% { transform: translateY(0) scale(1); }
+        100% { transform: translateY(-1.5px) scale(1.04); }
+      }
+      .mic-slash {
+        stroke: #ff4d4d;
+        stroke-width: 2.2;
+        stroke-linecap: round;
+        stroke-dasharray: 26;
+        stroke-dashoffset: 26;
+        transition: stroke-dashoffset 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .mic-icon.muted .mic-slash {
+        stroke-dashoffset: 0;
+      }
+      .mic-icon.muted .mic-body {
+        fill: #66666e;
+        opacity: 0.45;
+        transform: scale(0.94);
+      }
+    `}</style>
+    <path className="mic-body" fill="#ffffff" d="M19 9a1 1 0 0 1 1 1a8 8 0 0 1-6.999 7.938L13 20h3a1 1 0 0 1 0 2H8a1 1 0 0 1 0-2h3v-2.062A8 8 0 0 1 4 10a1 1 0 1 1 2 0a6 6 0 0 0 12 0a1 1 0 0 1 1-1m-7-8a4 4 0 0 1 4 4v5a4 4 0 1 1-8 0V5a4 4 0 0 1 4-4" />
+    <line className="mic-slash" x1="4" y1="20" x2="20" y2="4" />
+  </svg>
+);
+
+const HeadphonesToggleIcon = ({ muted }: { muted: boolean }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="20" height="20" className={`toggle-svg phone-icon ${muted ? 'muted' : ''}`}>
+    <style>{`
+      .phone-icon {
+        cursor: pointer;
+        overflow: visible;
+      }
+      .phone-body {
+        transform-origin: 256px 256px;
+        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), fill 0.25s ease, opacity 0.25s ease;
+      }
+      .phone-icon:not(.muted):hover .phone-body {
+        animation: bassPump 0.6s ease-in-out infinite alternate;
+        fill: #7c75f2;
+      }
+      @keyframes bassPump {
+        0% { transform: scale(1); }
+        100% { transform: scale(1.06); }
+      }
+      .phone-slash {
+        stroke: #ff4d4d;
+        stroke-width: 44;
+        stroke-linecap: round;
+        stroke-dasharray: 550;
+        stroke-dashoffset: 550;
+        transition: stroke-dashoffset 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .phone-icon.muted .phone-slash {
+        stroke-dashoffset: 0;
+      }
+      .phone-icon.muted .phone-body {
+        fill: #66666e;
+        opacity: 0.45;
+        transform: scale(0.94);
+      }
+    `}</style>
+    <path className="phone-body" fill="#ffffff" d="M256 80C149.9 80 62.4 159.4 49.6 262c9.4-3.8 19.6-6 30.4-6c26.5 0 48 21.5 48 48v128c0 26.5-21.5 48-48 48c-44.2 0-80-35.8-80-80V288C0 146.6 114.6 32 256 32s256 114.6 256 256v112c0 44.2-35.8 80-80 80c-26.5 0-48-21.5-48-48V304c0-26.5 21.5-48 48-48c10.8 0 21 2.1 30.4 6C449.6 159.4 362.1 80 256 80" />
+    <line className="phone-slash" x1="72" y1="440" x2="440" y2="72" />
+  </svg>
+);
 
 export const SidebarContent: React.FC<SidebarContentProps> = ({
   isMobileView,
@@ -719,13 +834,19 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           className="flex items-center justify-between p-1.5 rounded-[8px]"
           style={{
             background: 'linear-gradient(135deg, rgba(88, 101, 242, 0.45) 0%, rgba(235, 69, 158, 0.45) 100%)',
-            border: '1px solid rgba(235, 69, 158, 0.35)',
+            border: 'none',
           }}
         >
           <button
             type="button"
             onClick={() => useChatStore.getState().openSettings('profile')}
             className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-90 transition-opacity bg-transparent border-none outline-none cursor-pointer text-left p-1"
+            style={{
+              WebkitTapHighlightColor: 'transparent',
+              outline: 'none',
+              boxShadow: 'none',
+              border: 'none',
+            }}
           >
             <div className="relative shrink-0">
               <Avatar
@@ -747,48 +868,63 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
             </div>
           </button>
 
-          <div className="flex items-center gap-0.5 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"
-              onClick={() => setIsMicMuted(!isMicMuted)}
+              onClick={(e) => {
+                e.currentTarget.blur();
+                const next = !isMicMuted;
+                setIsMicMuted(next);
+                callSoundService.play(next ? 'mute' : 'unmute');
+              }}
               aria-label={isMicMuted ? t('discord.unmuteMicrophone', 'Включить микрофон') : t('discord.muteMicrophone', 'Отключить микрофон')}
-              className="w-8 h-8 rounded flex items-center justify-center text-[#dbdee1] hover:text-white hover:bg-[#35373c] transition-colors bg-transparent border-none outline-none cursor-pointer relative"
+              className="w-8 h-8 rounded-full flex items-center justify-center p-0 m-0 bg-transparent border-none outline-none select-none cursor-pointer"
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                outline: 'none',
+                boxShadow: 'none',
+                border: 'none',
+              }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                <line x1="12" x2="12" y1="19" y2="22" />
-              </svg>
-              {isMicMuted && (
-                <div className="absolute w-[22px] h-[2px] bg-[#f23f43] rotate-45 rounded-full" />
-              )}
+              <MicToggleIcon muted={isMicMuted} />
             </button>
 
             <button
               type="button"
-              onClick={() => setIsDeafened(!isDeafened)}
+              onClick={(e) => {
+                e.currentTarget.blur();
+                const next = !isDeafened;
+                setIsDeafened(next);
+                callSoundService.play(next ? 'mute' : 'unmute');
+              }}
               aria-label={isDeafened ? t('discord.undeafenAudio', 'Включить звук') : t('discord.deafenAudio', 'Заглушить звук')}
-              className="w-8 h-8 rounded flex items-center justify-center text-[#dbdee1] hover:text-white hover:bg-[#35373c] transition-colors bg-transparent border-none outline-none cursor-pointer relative"
+              className="w-8 h-8 rounded-full flex items-center justify-center p-0 m-0 bg-transparent border-none outline-none select-none cursor-pointer"
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                outline: 'none',
+                boxShadow: 'none',
+                border: 'none',
+              }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
-                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
-              </svg>
-              {isDeafened && (
-                <div className="absolute w-[22px] h-[2px] bg-[#f23f43] rotate-45 rounded-full" />
-              )}
+              <HeadphonesToggleIcon muted={isDeafened} />
             </button>
 
             <button
               type="button"
-              onClick={() => useChatStore.getState().openSettings('main')}
+              onClick={(e) => {
+                e.currentTarget.blur();
+                useChatStore.getState().openSettings('main');
+              }}
               aria-label={t('discord.userSettings', 'Настройки пользователя')}
-              className="w-8 h-8 rounded flex items-center justify-center text-[#dbdee1] hover:text-white hover:bg-[#35373c] transition-colors bg-transparent border-none outline-none cursor-pointer"
+              className="w-8 h-8 rounded-full flex items-center justify-center p-0 m-0 bg-transparent border-none outline-none select-none cursor-pointer"
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                outline: 'none',
+                boxShadow: 'none',
+                border: 'none',
+              }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-              </svg>
+              <GearIcon />
             </button>
           </div>
         </div>

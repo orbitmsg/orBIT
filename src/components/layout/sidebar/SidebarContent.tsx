@@ -52,52 +52,52 @@ const GearIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="20" height="20" className="gear-icon">
     <style>{`
       .gear-icon {
-        cursor: pointer;
         overflow: visible;
       }
       .gear-body {
         transform-origin: 16px 16px;
-        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        fill: #b5bac1;
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), fill 0.15s ease;
       }
-      .gear-icon:hover .gear-body {
-        animation: spinHover 2.5s linear infinite;
+      .dock-btn:hover .gear-body {
+        transform: rotate(90deg);
+        fill: #ffffff;
       }
-      .gear-icon:active .gear-body {
-        animation: none;
+      .dock-btn:active .gear-body {
         transform: rotate(180deg);
-      }
-      @keyframes spinHover {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
+        fill: #ffffff;
       }
     `}</style>
     <g className="gear-body">
-      <path fill="#ffffff" d="M27 16.76v-1.53l1.92-1.68A2 2 0 0 0 29.3 11l-2.36-4a2 2 0 0 0-1.73-1a2 2 0 0 0-.64.1l-2.43.82a11 11 0 0 0-1.31-.75l-.51-2.52a2 2 0 0 0-2-1.61h-4.68a2 2 0 0 0-2 1.61l-.51 2.52a11.5 11.5 0 0 0-1.32.75l-2.38-.86A2 2 0 0 0 6.79 6a2 2 0 0 0-1.73 1L2.7 11a2 2 0 0 0 .41 2.51L5 15.24v1.53l-1.89 1.68A2 2 0 0 0 2.7 21l2.36 4a2 2 0 0 0 1.73 1a2 2 0 0 0 .64-.1l2.43-.82a11 11 0 0 0 1.31.75l.51 2.52a2 2 0 0 0 2 1.61h4.72a2 2 0 0 0 2-1.61l.51-2.52a11.5 11.5 0 0 0 1.32-.75l2.42.82a2 2 0 0 0 .64.1a2 2 0 0 0 1.73-1l2.28-4a2 2 0 0 0-.41-2.51ZM25.21 24l-3.43-1.16a8.9 8.9 0 0 1-2.71 1.57L18.36 28h-4.72l-.71-3.55a9.4 9.4 0 0 1-2.7-1.57L6.79 24l-2.36-4l2.72-2.4a8.9 8.9 0 0 1 0-3.13L4.43 12l2.36-4l3.43 1.16a8.9 8.9 0 0 1 2.71-1.57L13.64 4h4.72l.71 3.55a9.4 9.4 0 0 1 2.7 1.57L25.21 8l2.36 4l-2.72 2.4a8.9 8.9 0 0 1 0 3.13L27.57 20Z" />
-      <path fill="#ffffff" d="M16 22a6 6 0 1 1 6-6a5.94 5.94 0 0 1-6 6m0-10a3.91 3.91 0 0 0-4 4a3.91 3.91 0 0 0 4 4a3.91 3.91 0 0 0 4-4a3.91 3.91 0 0 0-4-4" />
+      <path d="M27 16.76v-1.53l1.92-1.68A2 2 0 0 0 29.3 11l-2.36-4a2 2 0 0 0-1.73-1a2 2 0 0 0-.64.1l-2.43.82a11 11 0 0 0-1.31-.75l-.51-2.52a2 2 0 0 0-2-1.61h-4.68a2 2 0 0 0-2 1.61l-.51 2.52a11.5 11.5 0 0 0-1.32.75l-2.38-.86A2 2 0 0 0 6.79 6a2 2 0 0 0-1.73 1L2.7 11a2 2 0 0 0 .41 2.51L5 15.24v1.53l-1.89 1.68A2 2 0 0 0 2.7 21l2.36 4a2 2 0 0 0 1.73 1a2 2 0 0 0 .64-.1l2.43-.82a11 11 0 0 0 1.31.75l.51 2.52a2 2 0 0 0 2 1.61h4.72a2 2 0 0 0 2-1.61l.51-2.52a11.5 11.5 0 0 0 1.32-.75l2.42.82a2 2 0 0 0 .64.1a2 2 0 0 0 1.73-1l2.28-4a2 2 0 0 0-.41-2.51ZM25.21 24l-3.43-1.16a8.9 8.9 0 0 1-2.71 1.57L18.36 28h-4.72l-.71-3.55a9.4 9.4 0 0 1-2.7-1.57L6.79 24l-2.36-4l2.72-2.4a8.9 8.9 0 0 1 0-3.13L4.43 12l2.36-4l3.43 1.16a8.9 8.9 0 0 1 2.71-1.57L13.64 4h4.72l.71 3.55a9.4 9.4 0 0 1 2.7 1.57L25.21 8l2.36 4l-2.72 2.4a8.9 8.9 0 0 1 0 3.13L27.57 20Z" />
+      <path d="M16 22a6 6 0 1 1 6-6a5.94 5.94 0 0 1-6 6m0-10a3.91 3.91 0 0 0-4 4a3.91 3.91 0 0 0 4 4a3.91 3.91 0 0 0 4-4a3.91 3.91 0 0 0-4-4" />
     </g>
   </svg>
 );
 
 const MicToggleIcon = ({ muted }: { muted: boolean }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" className={`toggle-svg mic-icon ${muted ? 'muted' : ''}`}>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" className={`mic-icon ${muted ? 'muted' : ''}`}>
     <style>{`
       .mic-icon {
-        cursor: pointer;
         overflow: visible;
       }
-      .mic-body {
-        transform-origin: 12px 21px;
+      .mic-parts {
+        fill: #b5bac1;
+        transition: fill 0.15s ease;
       }
-      .mic-icon:hover .mic-body {
-        animation: micWindSway 1.6s ease-in-out infinite;
+      .dock-btn:hover .mic-icon:not(.muted) .mic-parts {
+        fill: #ffffff;
       }
-      @keyframes micWindSway {
-        0% { transform: rotate(0deg); }
-        20% { transform: rotate(8deg); }
-        45% { transform: rotate(-6deg); }
-        68% { transform: rotate(4deg); }
-        86% { transform: rotate(-2deg); }
-        100% { transform: rotate(0deg); }
+      .mic-icon.muted .mic-parts {
+        fill: #f23f43;
+      }
+      .mic-slash-bg {
+        stroke: rgba(28, 29, 33, 0.95);
+        stroke-width: 4.2;
+        stroke-linecap: round;
+        stroke-dasharray: 28;
+        stroke-dashoffset: 28;
+        transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       }
       .mic-slash {
         stroke: #f23f43;
@@ -105,80 +105,45 @@ const MicToggleIcon = ({ muted }: { muted: boolean }) => (
         stroke-linecap: round;
         stroke-dasharray: 28;
         stroke-dashoffset: 28;
-        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
-        transition: stroke-dashoffset 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       }
+      .mic-icon.muted .mic-slash-bg,
       .mic-icon.muted .mic-slash {
         stroke-dashoffset: 0;
       }
-      .mic-icon.muted .mic-body {
-        fill: #ffffff;
-        opacity: 1;
-      }
     `}</style>
-    <path className="mic-body" fill="#ffffff" d="M19 9a1 1 0 0 1 1 1a8 8 0 0 1-6.999 7.938L13 20h3a1 1 0 0 1 0 2H8a1 1 0 0 1 0-2h3v-2.062A8 8 0 0 1 4 10a1 1 0 1 1 2 0a6 6 0 0 0 12 0a1 1 0 0 1 1-1m-7-8a4 4 0 0 1 4 4v5a4 4 0 1 1-8 0V5a4 4 0 0 1 4-4" />
-    <line className="mic-slash" x1="4" y1="4" x2="20" y2="20" />
+    <g className="mic-parts">
+      <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+      <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+    </g>
+    <line className="mic-slash-bg" x1="3.5" y1="3.5" x2="20.5" y2="20.5" />
+    <line className="mic-slash" x1="3.5" y1="3.5" x2="20.5" y2="20.5" />
   </svg>
 );
 
 const HeadphonesToggleIcon = ({ muted }: { muted: boolean }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" className={`toggle-svg phone-icon ${muted ? 'muted' : ''}`}>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" className={`phone-icon ${muted ? 'muted' : ''}`}>
     <style>{`
       .phone-icon {
-        cursor: pointer;
         overflow: visible;
       }
-      .phone-earcup-left {
-        transform-origin: 4.25px 15.25px;
+      .phone-parts {
+        fill: #b5bac1;
+        transition: fill 0.15s ease;
       }
-      .phone-earcup-right {
-        transform-origin: 19.75px 15.25px;
+      .dock-btn:hover .phone-icon:not(.muted) .phone-parts {
+        fill: #ffffff;
       }
-      .phone-icon:hover .phone-earcup-left {
-        animation: earcupCompressLeft 1.2s ease-in-out infinite;
+      .phone-icon.muted .phone-parts {
+        fill: #f23f43;
       }
-      .phone-icon:hover .phone-earcup-right {
-        animation: earcupCompressRight 1.2s ease-in-out infinite;
-      }
-      @keyframes earcupCompressLeft {
-        0% {
-          transform: translateX(0) scale(1, 1);
-        }
-        26% {
-          transform: translateX(-1.5px) scale(0.55, 1.1);
-        }
-        48% {
-          transform: translateX(0.6px) scale(1.15, 0.95);
-        }
-        68% {
-          transform: translateX(-0.3px) scale(0.92, 1.02);
-        }
-        85% {
-          transform: translateX(0) scale(1.02, 0.99);
-        }
-        100% {
-          transform: translateX(0) scale(1, 1);
-        }
-      }
-      @keyframes earcupCompressRight {
-        0% {
-          transform: translateX(0) scale(1, 1);
-        }
-        26% {
-          transform: translateX(1.5px) scale(0.55, 1.1);
-        }
-        48% {
-          transform: translateX(-0.6px) scale(1.15, 0.95);
-        }
-        68% {
-          transform: translateX(0.3px) scale(0.92, 1.02);
-        }
-        85% {
-          transform: translateX(0) scale(1.02, 0.99);
-        }
-        100% {
-          transform: translateX(0) scale(1, 1);
-        }
+      .phone-slash-bg {
+        stroke: rgba(28, 29, 33, 0.95);
+        stroke-width: 4.2;
+        stroke-linecap: round;
+        stroke-dasharray: 28;
+        stroke-dashoffset: 28;
+        transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       }
       .phone-slash {
         stroke: #f23f43;
@@ -186,28 +151,18 @@ const HeadphonesToggleIcon = ({ muted }: { muted: boolean }) => (
         stroke-linecap: round;
         stroke-dasharray: 28;
         stroke-dashoffset: 28;
-        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
-        transition: stroke-dashoffset 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       }
+      .phone-icon.muted .phone-slash-bg,
       .phone-icon.muted .phone-slash {
         stroke-dashoffset: 0;
       }
-      .phone-icon.muted .phone-arch {
-        stroke: #ffffff;
-        opacity: 1;
-      }
-      .phone-icon.muted .phone-earcup-left,
-      .phone-icon.muted .phone-earcup-right {
-        fill: #ffffff;
-        opacity: 1;
-      }
     `}</style>
-    <g className="phone-body">
-      <path className="phone-arch" d="M 4.25 13 A 7.75 7.75 0 0 1 19.75 13" fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" />
-      <rect className="phone-earcup-left" x="2" y="11" width="4.5" height="8.5" rx="2.25" fill="#ffffff" />
-      <rect className="phone-earcup-right" x="17.5" y="11" width="4.5" height="8.5" rx="2.25" fill="#ffffff" />
+    <g className="phone-parts">
+      <path d="M12 3a9 9 0 0 0-9 9v7c0 1.1.9 2 2 2h4v-8H5v-1c0-3.87 3.13-7 7-7s7 3.13 7 7v1h-2v8h4c1.1 0 2-.9 2-2v-7a9 9 0 0 0-9-9z" />
     </g>
-    <line className="phone-slash" x1="4" y1="4" x2="20" y2="20" />
+    <line className="phone-slash-bg" x1="3.5" y1="3.5" x2="20.5" y2="20.5" />
+    <line className="phone-slash" x1="3.5" y1="3.5" x2="20.5" y2="20.5" />
   </svg>
 );
 
@@ -929,16 +884,18 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   e.currentTarget.blur();
                   const next = !isMicMuted;
                   setIsMicMuted(next);
+                  if (!next && isDeafened) {
+                    setIsDeafened(false);
+                  }
                   callSoundService.play(next ? 'mute' : 'unmute');
                 }}
                 aria-label={isMicMuted ? t('discord.unmuteMicrophone', 'Включить микрофон') : t('discord.muteMicrophone', 'Отключить микрофон')}
-                className="flex items-center justify-center p-1.5 m-0 bg-transparent hover:opacity-80 active:opacity-60 transition-opacity border-none outline-none select-none cursor-pointer"
+                className="dock-btn w-8 h-8 rounded-[4px] flex items-center justify-center p-0 m-0 bg-transparent hover:bg-white/[0.08] active:bg-white/[0.14] transition-colors duration-150 border-none outline-none select-none cursor-pointer"
                 style={{
                   WebkitTapHighlightColor: 'transparent',
                   outline: 'none',
                   boxShadow: 'none',
                   border: 'none',
-                  background: 'transparent',
                 }}
               >
                 <MicToggleIcon muted={isMicMuted} />
@@ -950,16 +907,20 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   e.currentTarget.blur();
                   const next = !isDeafened;
                   setIsDeafened(next);
+                  if (next) {
+                    setIsMicMuted(true);
+                  } else {
+                    setIsMicMuted(false);
+                  }
                   callSoundService.play(next ? 'mute' : 'unmute');
                 }}
                 aria-label={isDeafened ? t('discord.undeafenAudio', 'Включить звук') : t('discord.deafenAudio', 'Заглушить звук')}
-                className="flex items-center justify-center p-1.5 m-0 bg-transparent hover:opacity-80 active:opacity-60 transition-opacity border-none outline-none select-none cursor-pointer"
+                className="dock-btn w-8 h-8 rounded-[4px] flex items-center justify-center p-0 m-0 bg-transparent hover:bg-white/[0.08] active:bg-white/[0.14] transition-colors duration-150 border-none outline-none select-none cursor-pointer"
                 style={{
                   WebkitTapHighlightColor: 'transparent',
                   outline: 'none',
                   boxShadow: 'none',
                   border: 'none',
-                  background: 'transparent',
                 }}
               >
                 <HeadphonesToggleIcon muted={isDeafened} />
@@ -972,13 +933,12 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   useChatStore.getState().openSettings('main');
                 }}
                 aria-label={t('discord.userSettings', 'Настройки пользователя')}
-                className="flex items-center justify-center p-1.5 m-0 bg-transparent hover:opacity-80 active:opacity-60 transition-opacity border-none outline-none select-none cursor-pointer"
+                className="dock-btn w-8 h-8 rounded-[4px] flex items-center justify-center p-0 m-0 bg-transparent hover:bg-white/[0.08] active:bg-white/[0.14] transition-colors duration-150 border-none outline-none select-none cursor-pointer"
                 style={{
                   WebkitTapHighlightColor: 'transparent',
                   outline: 'none',
                   boxShadow: 'none',
                   border: 'none',
-                  background: 'transparent',
                 }}
               >
                 <GearIcon />

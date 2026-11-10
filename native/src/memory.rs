@@ -1,4 +1,6 @@
+use napi::bindgen_prelude::Buffer;
 use napi_derive::napi;
+#[link(name = "dwmapi")]
 
 #[cfg(target_os = "windows")]
 extern "system" {
@@ -6,6 +8,12 @@ extern "system" {
     fn OpenProcess(dw_desired_access: u32, b_inherit_handle: i32, dw_process_id: u32) -> isize;
     fn SetProcessWorkingSetSize(h_process: isize, dw_minimum_working_set_size: usize, dw_maximum_working_set_size: usize) -> i32;
     fn CloseHandle(h_object: isize) -> i32;
+    fn DwmSetWindowAttribute(
+        hwnd: isize,
+        dw_attribute: u32,
+        pv_attribute: *const std::ffi::c_void,
+        cb_attribute: u32,
+    ) -> i32;
 }
 
 #[cfg(target_os = "windows")]
@@ -112,4 +120,36 @@ pub fn rust_get_process_memory_info() -> MemoryUsageInfo {
         peak_working_set_bytes: 0,
         pagefile_bytes: 0,
     }
+}
+
+
+#[napi]
+pub fn rust_disable_window_transitions(hwnd_buffer: Buffer) -> bool {
+    #[cfg(target_os = "windows")]
+    unsafe {
+        let slice = hwnd_buffer.as_ref();
+        if slice.len() >= 8 {
+            let hwnd = i64::from_ne_bytes(slice[..8].try_into().unwrap()) as isize;
+            let disable: u32 = 1;
+            let hr = DwmSetWindowAttribute(
+                hwnd,
+                3,
+                &disable as *const _ as *const std::ffi::c_void,
+                std::mem::size_of::<u32>() as u32,
+            );
+            return hr == 0;
+        } else if slice.len() >= 4 {
+            let hwnd = i32::from_ne_bytes(slice[..4].try_into().unwrap()) as isize;
+            let disable: u32 = 1;
+            let hr = DwmSetWindowAttribute(
+                hwnd,
+                3,
+                &disable as *const _ as *const std::ffi::c_void,
+                std::mem::size_of::<u32>() as u32,
+            );
+            return hr == 0;
+        }
+    }
+    let _ = hwnd_buffer;
+    false
 }

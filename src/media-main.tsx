@@ -9,7 +9,10 @@ import './App.css';
 import './i18n';
 
 export const MediaWindowView: React.FC = () => {
-  const [isMaximized, setIsMaximized] = useState(false);
+  const initialMaximized = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('maximized') === '1'
+    : false;
+  const [isMaximized, setIsMaximized] = useState(initialMaximized);
   const [payload, setPayload] = useState<{
     items: MediaViewerItem[];
     initialIndex?: number;
@@ -113,10 +116,7 @@ export const MediaWindowView: React.FC = () => {
         });
         if (newPayload) {
           syncUsers(newPayload.usersById, newPayload.myUserId, newPayload.myNickname);
-          const root = document.getElementById('root');
-          if (root) root.style.display = '';
-          const viewerEl = document.getElementById('telegram-media-viewer-root');
-          if (viewerEl) viewerEl.style.display = 'flex';
+
         }
         setPayload(newPayload || null);
       });
@@ -159,8 +159,6 @@ export const MediaWindowView: React.FC = () => {
   }, []);
 
   const handleClose = () => {
-    const root = document.getElementById('root');
-    if (root) root.style.display = 'none';
     const orbita = (window as any).orbita;
     if (orbita?.closeMediaWindow) {
       orbita.closeMediaWindow();
@@ -209,7 +207,7 @@ export const MediaWindowView: React.FC = () => {
         borderRadius: isMaximized ? '0px' : '10px',
         border: isMaximized ? 'none' : '1px solid rgba(255, 255, 255, 0.16)',
         boxShadow: isMaximized ? 'none' : '0 16px 40px rgba(0, 0, 0, 0.65), 0 2px 8px rgba(0, 0, 0, 0.4)',
-        transition: 'border-radius 0.15s ease, border 0.15s ease',
+        transition: 'none',
       }}
     >
       <div className="absolute top-0 left-0 right-0 z-50 pointer-events-auto">

@@ -35,6 +35,7 @@ app.commandLine.appendSwitch('js-flags', '--expose-gc --max-old-space-size=2048'
 app.commandLine.appendSwitch('disable-site-isolation-trials');
 app.commandLine.appendSwitch('disable-breakpad');
 app.commandLine.appendSwitch('disable-features', 'MediaRouter');
+app.commandLine.appendSwitch('wm-window-animations-disabled');
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -4214,6 +4215,12 @@ function initOrGetMediaWindow(initialPayload?: any): BrowserWindow {
     icon: icon && !icon.isEmpty() ? icon : undefined,
   });
 
+  if (nativeModule?.rustDisableWindowTransitions) {
+    try {
+      nativeModule.rustDisableWindowTransitions(mediaWindow.getNativeWindowHandle());
+    } catch {}
+  }
+
   Menu.setApplicationMenu(null);
   if (screenProtectionSetting) {
     mediaWindow.setContentProtection(true);
@@ -4286,10 +4293,11 @@ function initOrGetMediaWindow(initialPayload?: any): BrowserWindow {
     trimAppMemory();
   });
 
+  const isMaxParam = state.isMaximized ? '1' : '0';
   if (isPackaged) {
-    mediaWindow.loadFile(path.join(__dirname, '../dist/media.html'));
+    mediaWindow.loadFile(path.join(__dirname, '../dist/media.html'), { query: { maximized: isMaxParam } });
   } else {
-    mediaWindow.loadURL('http://127.0.0.1:5173/media.html');
+    mediaWindow.loadURL(`http://127.0.0.1:5173/media.html?maximized=${isMaxParam}`);
   }
 
   return mediaWindow;
@@ -4302,6 +4310,12 @@ function createOrShowMediaWindow(initialPayload?: any): BrowserWindow {
 
   const win = initOrGetMediaWindow(initialPayload);
   const state = getSavedMediaWindowState();
+
+  if (nativeModule?.rustDisableWindowTransitions) {
+    try {
+      nativeModule.rustDisableWindowTransitions(win.getNativeWindowHandle());
+    } catch {}
+  }
 
   if (state.isMaximized) {
     if (!win.isMaximized()) {
@@ -4328,7 +4342,9 @@ function createOrShowMediaWindow(initialPayload?: any): BrowserWindow {
 
   if (win.isMinimized()) win.restore();
   win.setOpacity(1);
-  win.show();
+  if (!win.isVisible()) {
+    win.show();
+  }
   win.focus();
 
   if (currentMediaPayloadCache && !win.isDestroyed() && win.webContents.isLoading()) {

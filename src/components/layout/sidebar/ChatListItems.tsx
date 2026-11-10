@@ -96,7 +96,7 @@ export const ChatListItem = React.memo(({
       onContextMenu={(e) => onContextMenu(e, chat.id)}
       className="group relative cursor-pointer"
       style={{
-        borderRadius: '15px',
+        borderRadius: '10px',
         margin: '2px 8px',
         width: 'calc(100% - 16px)',
         backgroundColor: isActive
@@ -371,7 +371,7 @@ export const ArchiveListItem = React.memo(({
       onClick={onOpenArchive}
       className="group relative cursor-pointer"
       style={{
-        borderRadius: '12px',
+        borderRadius: '10px',
         margin: '2px 8px',
         width: 'calc(100% - 16px)',
         backgroundColor: 'transparent',

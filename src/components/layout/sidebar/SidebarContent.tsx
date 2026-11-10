@@ -448,6 +448,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           style={{
             marginTop: (isMobileView && isCallActive) ? '0px' : '9px',
             paddingTop: '0px',
+            paddingBottom: '68px',
             overflowY: 'scroll',
             overflowX: 'hidden',
           }}
@@ -655,7 +656,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                     onClick={() => handleSelectFoundChannel(searchChannelResult)}
                     className="flex items-center gap-3 cursor-pointer transition-colors"
                     style={{
-                      borderRadius: '12px',
+                      borderRadius: '10px',
                       margin: '2px 8px',
                       width: 'calc(100% - 16px)',
                       padding: '8px 10px',
@@ -729,7 +730,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                         onClick={() => handleSelectFoundUser(user)}
                         className="flex items-center gap-3 cursor-pointer transition-colors"
                         style={{
-                          borderRadius: '12px',
+                          borderRadius: '10px',
                           margin: '2px 8px',
                           width: 'calc(100% - 16px)',
                           padding: '8px 10px',
@@ -827,7 +828,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           onMouseDown={(e) => handleScrollbarTrackMouseDown(e, chatListScrollRef.current)}
           style={{
             top: '15px',
-            bottom: '6px',
+            bottom: '64px',
             opacity: 0,
             transition: 'opacity 0.2s ease',
             pointerEvents: 'auto',
@@ -859,9 +860,9 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           style={{
             position: 'absolute',
             right: '16px',
-            bottom: '16px',
-            width: '48px',
-            height: '48px',
+            bottom: '72px',
+            width: '44px',
+            height: '44px',
             borderRadius: '50%',
             backgroundColor: 'var(--surface-container, #33363f)',
             color: 'var(--text-main)',
@@ -877,104 +878,112 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
         >
           <ChevronUp size={24} strokeWidth={2.4} style={{ color: 'var(--text-main)' }} />
         </button>
-      </div>
-      <div className="shrink-0 select-none bg-[#232428] border-t border-[#1f2023] p-1.5">
-        <div
-          className="flex items-center justify-between p-1.5 rounded-[8px]"
-          style={{
-            background: 'linear-gradient(135deg, rgba(88, 101, 242, 0.45) 0%, rgba(235, 69, 158, 0.45) 100%)',
-            border: 'none',
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => useChatStore.getState().openSettings('profile')}
-            className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-90 transition-opacity bg-transparent border-none outline-none cursor-pointer text-left p-1"
+
+        <div className="absolute bottom-2 left-2 right-2 z-20 select-none pointer-events-auto">
+          <div
+            className="flex items-center justify-between p-1.5"
             style={{
-              WebkitTapHighlightColor: 'transparent',
-              outline: 'none',
-              boxShadow: 'none',
+              background: 'linear-gradient(135deg, rgba(88, 101, 242, 0.45) 0%, rgba(235, 69, 158, 0.45) 100%)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              boxShadow: '0 4px 18px rgba(0, 0, 0, 0.35)',
+              borderRadius: '10px',
               border: 'none',
             }}
           >
-            <div className="relative shrink-0">
-              <Avatar
-                src={avatarUrl}
-                alt={nickname || 'Saizzi'}
-                className="w-8 h-8 rounded-full"
-              />
-              <div
-                className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#23a55a] border-2 border-[#232428]"
-              />
+            <button
+              type="button"
+              onClick={() => useChatStore.getState().openSettings('profile')}
+              className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-90 transition-opacity bg-transparent border-none outline-none cursor-pointer text-left p-1"
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                outline: 'none',
+                boxShadow: 'none',
+                border: 'none',
+              }}
+            >
+              <div className="relative shrink-0">
+                <Avatar
+                  src={avatarUrl}
+                  alt={nickname || 'Saizzi'}
+                  className="w-8 h-8 rounded-full"
+                />
+                <div
+                  className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#23a55a] border-2 border-[#232428]"
+                />
+              </div>
+              <div className="flex flex-col min-w-0 flex-1 leading-none">
+                <span className="text-[13.5px] font-bold text-white truncate leading-tight">
+                  {nickname || 'Saizzi'}
+                </span>
+                <span className="text-[11px] text-[#dbdee1]/80 truncate mt-0.5">
+                  {t('discord.online', 'В сети')}
+                </span>
+              </div>
+            </button>
+
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.currentTarget.blur();
+                  const next = !isMicMuted;
+                  setIsMicMuted(next);
+                  callSoundService.play(next ? 'mute' : 'unmute');
+                }}
+                aria-label={isMicMuted ? t('discord.unmuteMicrophone', 'Включить микрофон') : t('discord.muteMicrophone', 'Отключить микрофон')}
+                className="flex items-center justify-center p-1.5 m-0 bg-transparent hover:opacity-80 active:opacity-60 transition-opacity border-none outline-none select-none cursor-pointer"
+                style={{
+                  WebkitTapHighlightColor: 'transparent',
+                  outline: 'none',
+                  boxShadow: 'none',
+                  border: 'none',
+                  background: 'transparent',
+                }}
+              >
+                <MicToggleIcon muted={isMicMuted} />
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.currentTarget.blur();
+                  const next = !isDeafened;
+                  setIsDeafened(next);
+                  callSoundService.play(next ? 'mute' : 'unmute');
+                }}
+                aria-label={isDeafened ? t('discord.undeafenAudio', 'Включить звук') : t('discord.deafenAudio', 'Заглушить звук')}
+                className="flex items-center justify-center p-1.5 m-0 bg-transparent hover:opacity-80 active:opacity-60 transition-opacity border-none outline-none select-none cursor-pointer"
+                style={{
+                  WebkitTapHighlightColor: 'transparent',
+                  outline: 'none',
+                  boxShadow: 'none',
+                  border: 'none',
+                  background: 'transparent',
+                }}
+              >
+                <HeadphonesToggleIcon muted={isDeafened} />
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.currentTarget.blur();
+                  useChatStore.getState().openSettings('main');
+                }}
+                aria-label={t('discord.userSettings', 'Настройки пользователя')}
+                className="flex items-center justify-center p-1.5 m-0 bg-transparent hover:opacity-80 active:opacity-60 transition-opacity border-none outline-none select-none cursor-pointer"
+                style={{
+                  WebkitTapHighlightColor: 'transparent',
+                  outline: 'none',
+                  boxShadow: 'none',
+                  border: 'none',
+                  background: 'transparent',
+                }}
+              >
+                <GearIcon />
+              </button>
             </div>
-            <div className="flex flex-col min-w-0 flex-1 leading-none">
-              <span className="text-[13.5px] font-bold text-white truncate leading-tight">
-                {nickname || 'Saizzi'}
-              </span>
-              <span className="text-[11px] text-[#dbdee1]/80 truncate mt-0.5">
-                {t('discord.online', 'В сети')}
-              </span>
-            </div>
-          </button>
-
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.currentTarget.blur();
-                const next = !isMicMuted;
-                setIsMicMuted(next);
-                callSoundService.play(next ? 'mute' : 'unmute');
-              }}
-              aria-label={isMicMuted ? t('discord.unmuteMicrophone', 'Включить микрофон') : t('discord.muteMicrophone', 'Отключить микрофон')}
-              className="w-8 h-8 rounded-full flex items-center justify-center p-0 m-0 bg-transparent hover:bg-white/10 active:bg-white/15 transition-colors duration-150 border-none outline-none select-none cursor-pointer"
-              style={{
-                WebkitTapHighlightColor: 'transparent',
-                outline: 'none',
-                boxShadow: 'none',
-                border: 'none',
-              }}
-            >
-              <MicToggleIcon muted={isMicMuted} />
-            </button>
-
-            <button
-              type="button"
-              onClick={(e) => {
-                e.currentTarget.blur();
-                const next = !isDeafened;
-                setIsDeafened(next);
-                callSoundService.play(next ? 'mute' : 'unmute');
-              }}
-              aria-label={isDeafened ? t('discord.undeafenAudio', 'Включить звук') : t('discord.deafenAudio', 'Заглушить звук')}
-              className="w-8 h-8 rounded-full flex items-center justify-center p-0 m-0 bg-transparent hover:bg-white/10 active:bg-white/15 transition-colors duration-150 border-none outline-none select-none cursor-pointer"
-              style={{
-                WebkitTapHighlightColor: 'transparent',
-                outline: 'none',
-                boxShadow: 'none',
-                border: 'none',
-              }}
-            >
-              <HeadphonesToggleIcon muted={isDeafened} />
-            </button>
-
-            <button
-              type="button"
-              onClick={(e) => {
-                e.currentTarget.blur();
-                useChatStore.getState().openSettings('main');
-              }}
-              aria-label={t('discord.userSettings', 'Настройки пользователя')}
-              className="w-8 h-8 rounded-full flex items-center justify-center p-0 m-0 bg-transparent hover:bg-white/10 active:bg-white/15 transition-colors duration-150 border-none outline-none select-none cursor-pointer"
-              style={{
-                WebkitTapHighlightColor: 'transparent',
-                outline: 'none',
-                boxShadow: 'none',
-                border: 'none',
-              }}
-            >
-              <GearIcon />
-            </button>
           </div>
         </div>
       </div>

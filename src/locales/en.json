@@ -1,5 +1,13 @@
 {
   "translation": {
+    "discord": {
+      "online": "Online",
+      "unmuteMicrophone": "Unmute",
+      "muteMicrophone": "Mute",
+      "undeafenAudio": "Undeafen",
+      "deafenAudio": "Deafen",
+      "userSettings": "User Settings"
+    },
     "confirmModal": {
       "clear_history_title": "Are you sure you want to delete all messages saved in {{name}}?",
       "delete_chat_title": "Are you sure you want to delete this chat and all messages saved in it?",

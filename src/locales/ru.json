@@ -1,5 +1,13 @@
 {
   "translation": {
+    "discord": {
+      "online": "В сети",
+      "unmuteMicrophone": "Включить микрофон",
+      "muteMicrophone": "Отключить микрофон",
+      "undeafenAudio": "Включить звук",
+      "deafenAudio": "Заглушить звук",
+      "userSettings": "Настройки пользователя"
+    },
     "confirmModal": {
       "clear_history_title": "Вы точно хотите удалить все сообщения, сохраненные в {{name}}?",
       "delete_chat_title": "Вы точно хотите удалить чат, а также все сообщения, сохраненные в нем?",

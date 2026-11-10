@@ -48,122 +48,162 @@ export interface SidebarContentProps {
   setIsMainMenuOpen: (val: boolean) => void;
 }
 
+const DiscordMicrophoneIcon: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    fill="none"
+    viewBox="0 0 24 24"
+    className={className}
+    aria-hidden="true"
+  >
+    <path fill="currentColor" d="M12 2a4 4 0 0 0-4 4v4a4 4 0 0 0 8 0V6a4 4 0 0 0-4-4Z" />
+    <path fill="currentColor" d="M6 10a1 1 0 0 0-2 0 8 8 0 0 0 7 7.94V20H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.06A8 8 0 0 0 20 10a1 1 0 1 0-2 0 6 6 0 0 1-12 0Z" />
+  </svg>
+);
+
+const DiscordMicrophoneSlashIcon: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    fill="none"
+    viewBox="0 0 24 24"
+    className={className}
+    aria-hidden="true"
+  >
+    <path
+      fill="currentColor"
+      d="m2.7 22.7 20-20a1 1 0 0 0-1.4-1.4l-20 20a1 1 0 1 0 1.4 1.4ZM10.8 17.32c-.21.21-.1.58.2.62V20H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.06A8 8 0 0 0 20 10a1 1 0 0 0-2 0c0 1.45-.52 2.79-1.38 3.83l-.02.02A5.99 5.99 0 0 1 12.32 16a.52.52 0 0 0-.34.15l-1.18 1.18ZM15.36 4.52c.15-.15.19-.38.08-.56A4 4 0 0 0 8 6v4c0 .3.03.58.1.86.07.34.49.43.74.18l6.52-6.52ZM5.06 13.98c.16.28.53.31.75.09l.75-.75c.16-.16.19-.4.08-.61A5.97 5.97 0 0 1 6 10a1 1 0 0 0-2 0c0 1.45.39 2.81 1.06 3.98Z"
+    />
+  </svg>
+);
+
+const DiscordHeadphonesIcon: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    fill="none"
+    viewBox="0 0 24 24"
+    className={className}
+    aria-hidden="true"
+  >
+    <path
+      fill="currentColor"
+      d="M12 3a9 9 0 0 0-8.95 10h1.87a5 5 0 0 1 4.1 2.13l1.37 1.97a3.1 3.1 0 0 1-.17 3.78 2.85 2.85 0 0 1-3.55.74 11 11 0 1 1 10.66 0c-1.27.71-2.73.23-3.55-.74a3.1 3.1 0 0 1-.17-3.78l1.38-1.97a5 5 0 0 1 4.1-2.13h1.86A9 9 0 0 0 12 3Z"
+    />
+  </svg>
+);
+
+const DiscordHeadphonesSlashIcon: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    fill="none"
+    viewBox="0 0 24 24"
+    className={className}
+    aria-hidden="true"
+  >
+    <path
+      fill="currentColor"
+      d="M22.7 2.7a1 1 0 0 0-1.4-1.4l-20 20a1 1 0 1 0 1.4 1.4l20-20ZM17.06 2.94a.48.48 0 0 0-.11-.77A11 11 0 0 0 2.18 16.94c.14.3.53.35.76.12l3.2-3.2c.25-.25.15-.68-.2-.76a5 5 0 0 0-1.02-.1H3.05a9 9 0 0 1 12.66-9.2c.2.09.44.05.59-.1l.76-.76ZM20.2 8.28a.52.52 0 0 1 .1-.58l.76-.76a.48.48 0 0 1 .77.11 11 11 0 0 1-4.5 14.57c-1.27.71-2.73.23-3.55-.74a3.1 3.1 0 0 1-.17-3.78l1.38-1.97a5 5 0 0 1 4.1-2.13h1.86a9.1 9.1 0 0 0-.75-4.72ZM10.1 17.9c.25-.25.65-.18.74.14a3.1 3.1 0 0 1-.62 2.84 2.85 2.85 0 0 1-3.55.74.16.16 0 0 1-.04-.25l3.48-3.48Z"
+    />
+  </svg>
+);
+
+const DiscordSettingsIcon: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    fill="none"
+    viewBox="0 0 24 24"
+    className={className}
+    aria-hidden="true"
+  >
+    <path
+      fill="currentColor"
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M10.56 1.1c-.46.05-.7.53-.64.98.18 1.16-.19 2.2-.98 2.53-.8.33-1.79-.15-2.49-1.1-.27-.36-.78-.52-1.14-.24-.77.59-1.45 1.27-2.04 2.04-.28.36-.12.87.24 1.14.96.7 1.43 1.7 1.1 2.49-.33.8-1.37 1.16-2.53.98-.45-.07-.93.18-.99.64a11.1 11.1 0 0 0 0 2.88c.06.46.54.7.99.64 1.16-.18 2.2.19 2.53.98.33.8-.14 1.79-1.1 2.49-.36.27-.52.78-.24 1.14.59.77 1.27 1.45 2.04 2.04.36.28.87.12 1.14-.24.7-.95 1.7-1.43 2.49-1.1.8.33 1.16 1.37.98 2.53-.07.45.18.93.64.99a11.1 11.1 0 0 0 2.88 0c.46-.06.7-.54.64-.99-.18-1.16.19-2.2.98-2.53.8-.33 1.79.14 2.49 1.1.27.36.78.52 1.14.24.77-.59 1.45-1.27 2.04-2.04.28-.36.12-.87-.24-1.14-.96-.7-1.43-1.7-1.1-2.49.33-.8 1.37-1.16 2.53-.98.45.07.93-.18.99-.64a11.1 11.1 0 0 0 0-2.88c-.06-.46-.54-.7-.99-.64-1.16.18-2.2-.19-2.53-.98-.33-.8.14-1.79 1.1-2.49.36-.27.52-.78.24-1.14a11.07 11.07 0 0 0-2.04-2.04c-.36-.28-.87-.12-1.14.24-.7.96-1.7 1.43-2.49 1.1-.8-.33-1.16-1.37-.98-2.53.07-.45-.18-.93-.64-.99a11.1 11.1 0 0 0-2.88 0ZM16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"
+    />
+  </svg>
+);
+
 const GearIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="20" height="20" className="gear-icon">
+  <div className="flex items-center justify-center w-5 h-5">
     <style>{`
-      .gear-icon {
-        overflow: visible;
-      }
-      .gear-body {
-        transform-origin: 16px 16px;
+      .discord-gear-body {
+        transform-origin: 12px 12px;
         fill: #b5bac1;
-        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), fill 0.15s ease;
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), fill 0.15s ease;
       }
-      .dock-btn:hover .gear-body {
+      .dock-btn:hover .discord-gear-body {
         transform: rotate(90deg);
         fill: #ffffff;
       }
-      .dock-btn:active .gear-body {
+      .dock-btn:active .discord-gear-body {
         transform: rotate(180deg);
         fill: #ffffff;
       }
     `}</style>
-    <g className="gear-body">
-      <path d="M27 16.76v-1.53l1.92-1.68A2 2 0 0 0 29.3 11l-2.36-4a2 2 0 0 0-1.73-1a2 2 0 0 0-.64.1l-2.43.82a11 11 0 0 0-1.31-.75l-.51-2.52a2 2 0 0 0-2-1.61h-4.68a2 2 0 0 0-2 1.61l-.51 2.52a11.5 11.5 0 0 0-1.32.75l-2.38-.86A2 2 0 0 0 6.79 6a2 2 0 0 0-1.73 1L2.7 11a2 2 0 0 0 .41 2.51L5 15.24v1.53l-1.89 1.68A2 2 0 0 0 2.7 21l2.36 4a2 2 0 0 0 1.73 1a2 2 0 0 0 .64-.1l2.43-.82a11 11 0 0 0 1.31.75l.51 2.52a2 2 0 0 0 2 1.61h4.72a2 2 0 0 0 2-1.61l.51-2.52a11.5 11.5 0 0 0 1.32-.75l2.42.82a2 2 0 0 0 .64.1a2 2 0 0 0 1.73-1l2.28-4a2 2 0 0 0-.41-2.51ZM25.21 24l-3.43-1.16a8.9 8.9 0 0 1-2.71 1.57L18.36 28h-4.72l-.71-3.55a9.4 9.4 0 0 1-2.7-1.57L6.79 24l-2.36-4l2.72-2.4a8.9 8.9 0 0 1 0-3.13L4.43 12l2.36-4l3.43 1.16a8.9 8.9 0 0 1 2.71-1.57L13.64 4h4.72l.71 3.55a9.4 9.4 0 0 1 2.7 1.57L25.21 8l2.36 4l-2.72 2.4a8.9 8.9 0 0 1 0 3.13L27.57 20Z" />
-      <path d="M16 22a6 6 0 1 1 6-6a5.94 5.94 0 0 1-6 6m0-10a3.91 3.91 0 0 0-4 4a3.91 3.91 0 0 0 4 4a3.91 3.91 0 0 0 4-4a3.91 3.91 0 0 0-4-4" />
-    </g>
-  </svg>
+    <DiscordSettingsIcon className="discord-gear-body" />
+  </div>
 );
 
 const MicToggleIcon = ({ muted }: { muted: boolean }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" className={`mic-icon ${muted ? 'muted' : ''}`}>
+  <div className="flex items-center justify-center w-5 h-5">
     <style>{`
-      .mic-icon {
-        overflow: visible;
-      }
-      .mic-parts {
+      .discord-mic-unmuted {
         fill: #b5bac1;
         transition: fill 0.15s ease;
       }
-      .dock-btn:hover .mic-icon:not(.muted) .mic-parts {
+      .dock-btn:hover .discord-mic-unmuted {
         fill: #ffffff;
       }
-      .mic-icon.muted .mic-parts {
+      .discord-mic-muted {
         fill: #f23f43;
+        transition: fill 0.15s ease;
       }
-      .mic-slash-bg {
-        stroke: rgba(28, 29, 33, 0.95);
-        stroke-width: 4.2;
-        stroke-linecap: round;
-        stroke-dasharray: 28;
-        stroke-dashoffset: 28;
-        transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      .mic-slash {
-        stroke: #f23f43;
-        stroke-width: 2.2;
-        stroke-linecap: round;
-        stroke-dasharray: 28;
-        stroke-dashoffset: 28;
-        transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      .mic-icon.muted .mic-slash-bg,
-      .mic-icon.muted .mic-slash {
-        stroke-dashoffset: 0;
+      .dock-btn:hover .discord-mic-muted {
+        fill: #fa777c;
       }
     `}</style>
-    <g className="mic-parts">
-      <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
-      <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
-    </g>
-    <line className="mic-slash-bg" x1="3.5" y1="3.5" x2="20.5" y2="20.5" />
-    <line className="mic-slash" x1="3.5" y1="3.5" x2="20.5" y2="20.5" />
-  </svg>
+    {muted ? (
+      <DiscordMicrophoneSlashIcon className="discord-mic-muted" />
+    ) : (
+      <DiscordMicrophoneIcon className="discord-mic-unmuted" />
+    )}
+  </div>
 );
 
 const HeadphonesToggleIcon = ({ muted }: { muted: boolean }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" className={`phone-icon ${muted ? 'muted' : ''}`}>
+  <div className="flex items-center justify-center w-5 h-5">
     <style>{`
-      .phone-icon {
-        overflow: visible;
-      }
-      .phone-parts {
+      .discord-headphones-unmuted {
         fill: #b5bac1;
         transition: fill 0.15s ease;
       }
-      .dock-btn:hover .phone-icon:not(.muted) .phone-parts {
+      .dock-btn:hover .discord-headphones-unmuted {
         fill: #ffffff;
       }
-      .phone-icon.muted .phone-parts {
+      .discord-headphones-muted {
         fill: #f23f43;
+        transition: fill 0.15s ease;
       }
-      .phone-slash-bg {
-        stroke: rgba(28, 29, 33, 0.95);
-        stroke-width: 4.2;
-        stroke-linecap: round;
-        stroke-dasharray: 28;
-        stroke-dashoffset: 28;
-        transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      .phone-slash {
-        stroke: #f23f43;
-        stroke-width: 2.2;
-        stroke-linecap: round;
-        stroke-dasharray: 28;
-        stroke-dashoffset: 28;
-        transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      .phone-icon.muted .phone-slash-bg,
-      .phone-icon.muted .phone-slash {
-        stroke-dashoffset: 0;
+      .dock-btn:hover .discord-headphones-muted {
+        fill: #fa777c;
       }
     `}</style>
-    <g className="phone-parts">
-      <path d="M12 3a9 9 0 0 0-9 9v7c0 1.1.9 2 2 2h4v-8H5v-1c0-3.87 3.13-7 7-7s7 3.13 7 7v1h-2v8h4c1.1 0 2-.9 2-2v-7a9 9 0 0 0-9-9z" />
-    </g>
-    <line className="phone-slash-bg" x1="3.5" y1="3.5" x2="20.5" y2="20.5" />
-    <line className="phone-slash" x1="3.5" y1="3.5" x2="20.5" y2="20.5" />
-  </svg>
+    {muted ? (
+      <DiscordHeadphonesSlashIcon className="discord-headphones-muted" />
+    ) : (
+      <DiscordHeadphonesIcon className="discord-headphones-unmuted" />
+    )}
+  </div>
 );
 
 export const SidebarContent: React.FC<SidebarContentProps> = ({

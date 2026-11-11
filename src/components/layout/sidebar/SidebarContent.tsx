@@ -9,9 +9,6 @@ import {
   Users,
   Megaphone,
   UserPlus,
-  Home,
-  Bookmark,
-  Phone,
   ChevronRight,
 } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
@@ -63,9 +60,6 @@ export interface SidebarContentProps {
   onOpenCreateGroup?: () => void;
   onOpenCreateChannel?: () => void;
   onOpenAddFriend?: () => void;
-  onOpenFriends?: () => void;
-  onOpenSavedMessages?: () => void;
-  onOpenCalls?: () => void;
   onOpenSettings?: () => void;
   onOpenProfile?: () => void;
 }
@@ -258,9 +252,6 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   onOpenCreateGroup,
   onOpenCreateChannel,
   onOpenAddFriend,
-  onOpenFriends,
-  onOpenSavedMessages,
-  onOpenCalls,
   onOpenSettings,
   onOpenProfile,
 }) => {
@@ -282,30 +273,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   const [isMicMuted, setIsMicMuted] = React.useState(false);
   const [isDeafened, setIsDeafened] = React.useState(false);
 
-  const handleFriendsClick = () => {
-    if (onOpenFriends) {
-      onOpenFriends();
-      return;
-    }
-    const store = useChatStore.getState();
-    store.setActiveFolderId(null);
-    store.setActiveChat(null);
-    store.setCurrentView('chats');
-  };
-
-  const handleSavedClick = () => {
-    if (onOpenSavedMessages) {
-      onOpenSavedMessages();
-      return;
-    }
-    useChatStore.getState().setActiveChat('notes');
-  };
-
   const surfaceTint = isLightTheme ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.045)';
   const surfaceHoverTint = isLightTheme ? 'rgba(0, 0, 0, 0.075)' : 'rgba(255, 255, 255, 0.085)';
-  const activePillTint = isLightTheme ? 'rgba(0, 0, 0, 0.09)' : 'rgba(255, 255, 255, 0.1)';
-  const isFriendsActive = !activeChatId && activeFolderId === null;
-  const isSavedActive = activeChatId === 'notes';
 
   if (inChatSearch?.isOpen) {
     return (
@@ -471,7 +440,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           style={{
             marginTop: (isMobileView && isCallActive) ? '0px' : '9px',
             paddingTop: '0px',
-            paddingBottom: '68px',
+            paddingBottom: '8px',
             overflowY: 'scroll',
             overflowX: 'hidden',
           }}
@@ -483,76 +452,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           ) : (
             <div className="flex flex-col w-full">
               {!isViewingArchive && !searchQuery.trim() && (
-                <div className="px-2 pb-2 flex flex-col gap-1.5 select-none">
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <button
-                      type="button"
-                      onClick={handleFriendsClick}
-                      aria-label={t('discord.friends', 'Друзья')}
-                      className="h-8 px-2 rounded-xl flex items-center justify-center gap-1.5 text-[12px] font-medium border-none outline-none cursor-pointer transition-colors min-w-0"
-                      style={{
-                        borderRadius: '12px',
-                        border: 'none',
-                        backgroundColor: isFriendsActive ? activePillTint : surfaceTint,
-                        color: isFriendsActive ? 'var(--text-main, #ffffff)' : 'var(--text-dim, #b5bac1)',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isFriendsActive) e.currentTarget.style.backgroundColor = surfaceHoverTint;
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isFriendsActive) e.currentTarget.style.backgroundColor = surfaceTint;
-                      }}
-                    >
-                      <Home size={14} className="shrink-0" />
-                      <span className="truncate">{t('discord.friends', 'Друзья')}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleSavedClick}
-                      aria-label={t('mainMenu.saved_messages', 'Избранное')}
-                      className="h-8 px-2 rounded-xl flex items-center justify-center gap-1.5 text-[12px] font-medium border-none outline-none cursor-pointer transition-colors min-w-0"
-                      style={{
-                        borderRadius: '12px',
-                        border: 'none',
-                        backgroundColor: isSavedActive ? activePillTint : surfaceTint,
-                        color: isSavedActive ? 'var(--text-main, #ffffff)' : 'var(--text-dim, #b5bac1)',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isSavedActive) e.currentTarget.style.backgroundColor = surfaceHoverTint;
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isSavedActive) e.currentTarget.style.backgroundColor = surfaceTint;
-                      }}
-                    >
-                      <Bookmark size={14} className="shrink-0" />
-                      <span className="truncate">{t('mainMenu.saved_messages', 'Избранное')}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => onOpenCalls?.()}
-                      aria-label={t('mainMenu.calls', 'Звонки')}
-                      className="h-8 px-2 rounded-xl flex items-center justify-center gap-1.5 text-[12px] font-medium border-none outline-none cursor-pointer transition-colors min-w-0"
-                      style={{
-                        borderRadius: '12px',
-                        border: 'none',
-                        backgroundColor: surfaceTint,
-                        color: 'var(--text-dim, #b5bac1)',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = surfaceHoverTint;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = surfaceTint;
-                      }}
-                    >
-                      <Phone size={14} className="shrink-0" />
-                      <span className="truncate">{t('mainMenu.calls', 'Звонки')}</span>
-                    </button>
-                  </div>
-
-                  <div className="flex flex-col gap-1">
+                <div className="px-2 pb-2 flex flex-col gap-1 select-none">
                     <button
                       type="button"
                       onClick={() => onOpenCreateGroup?.()}
@@ -651,7 +551,6 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                       </span>
                       <ChevronRight size={14} className="shrink-0 text-[var(--text-dim)] opacity-60" />
                     </button>
-                  </div>
                 </div>
               )}
 
@@ -1030,7 +929,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           onMouseDown={(e) => handleScrollbarTrackMouseDown(e, chatListScrollRef.current)}
           style={{
             top: '15px',
-            bottom: '64px',
+            bottom: '8px',
             opacity: 0,
             transition: 'opacity 0.2s ease',
             pointerEvents: 'auto',
@@ -1063,7 +962,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           style={{
             position: 'absolute',
             right: '16px',
-            bottom: '72px',
+            bottom: '16px',
             width: '44px',
             height: '44px',
             borderRadius: '50%',
@@ -1081,19 +980,17 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
         >
           <ChevronUp size={24} strokeWidth={2.4} style={{ color: 'var(--text-main)' }} />
         </button>
+      </div>
 
-        <div className="absolute bottom-2 left-2 right-2 z-20 select-none pointer-events-auto">
-          <div
-            className="flex items-center justify-between p-1.5 rounded-2xl"
-            style={{
-              background: 'linear-gradient(135deg, rgba(88, 101, 242, 0.45) 0%, rgba(235, 69, 158, 0.45) 100%)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              boxShadow: '0 4px 18px rgba(0, 0, 0, 0.35)',
-              borderRadius: '16px',
-              border: 'none',
-            }}
-          >
+      <div className="shrink-0 w-full z-20 select-none pointer-events-auto">
+        <div
+          className="flex items-center justify-between px-2.5 py-2"
+          style={{
+            background: 'linear-gradient(135deg, #4349a8 0%, #8f3978 100%)',
+            borderRadius: 0,
+            border: 'none',
+          }}
+        >
             <button
               type="button"
               onClick={() => {
@@ -1104,7 +1001,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                 }
               }}
               aria-label={t('mainMenu.my_profile', 'Мой профиль')}
-              className="flex items-center gap-2.5 min-w-0 flex-1 hover:bg-white/[0.08] rounded-xl transition-colors bg-transparent border-none outline-none cursor-pointer text-left p-1"
+              className="flex items-center gap-2.5 min-w-0 flex-1 hover:bg-white/[0.1] rounded-xl transition-colors bg-transparent border-none outline-none cursor-pointer text-left p-1"
               style={{
                 WebkitTapHighlightColor: 'transparent',
                 borderRadius: '12px',
@@ -1123,7 +1020,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   online={isServerConnected}
                   showOffline={true}
                   size="xs"
-                  ringColor="#3b3663"
+                  ringColor="#4349a8"
                   ariaLabel={isServerConnected ? t('discord.online', 'В сети') : t('common.network_connecting_title', 'Соединение...')}
                 />
               </div>
@@ -1131,7 +1028,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                 <span className="text-[13.5px] font-bold text-white truncate leading-tight">
                   {nickname || 'Saizzi'}
                 </span>
-                <span className="text-[11px] text-[#dbdee1]/80 truncate mt-0.5">
+                <span className="text-[11px] text-white/80 truncate mt-0.5">
                   {isServerConnected ? t('discord.online', 'В сети') : t('common.network_connecting_title', 'Соединение...')}
                 </span>
               </div>
@@ -1150,7 +1047,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   callSoundService.play(next ? 'mute' : 'unmute');
                 }}
                 aria-label={isMicMuted ? t('discord.unmuteMicrophone', 'Включить микрофон') : t('discord.muteMicrophone', 'Отключить микрофон')}
-                className="dock-btn w-8 h-8 rounded-xl flex items-center justify-center p-0 m-0 bg-transparent hover:bg-white/[0.08] active:bg-white/[0.14] transition-colors duration-150 border-none outline-none select-none cursor-pointer"
+                className="dock-btn w-8 h-8 rounded-xl flex items-center justify-center p-0 m-0 bg-transparent hover:bg-white/[0.12] active:bg-white/[0.18] transition-colors duration-150 border-none outline-none select-none cursor-pointer"
                 style={{
                   WebkitTapHighlightColor: 'transparent',
                   borderRadius: '12px',
@@ -1176,7 +1073,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   callSoundService.play(next ? 'mute' : 'unmute');
                 }}
                 aria-label={isDeafened ? t('discord.undeafenAudio', 'Включить звук') : t('discord.deafenAudio', 'Заглушить звук')}
-                className="dock-btn w-8 h-8 rounded-xl flex items-center justify-center p-0 m-0 bg-transparent hover:bg-white/[0.08] active:bg-white/[0.14] transition-colors duration-150 border-none outline-none select-none cursor-pointer"
+                className="dock-btn w-8 h-8 rounded-xl flex items-center justify-center p-0 m-0 bg-transparent hover:bg-white/[0.12] active:bg-white/[0.18] transition-colors duration-150 border-none outline-none select-none cursor-pointer"
                 style={{
                   WebkitTapHighlightColor: 'transparent',
                   borderRadius: '12px',
@@ -1199,7 +1096,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   }
                 }}
                 aria-label={t('discord.userSettings', 'Настройки пользователя')}
-                className="dock-btn w-8 h-8 rounded-xl flex items-center justify-center p-0 m-0 bg-transparent hover:bg-white/[0.08] active:bg-white/[0.14] transition-colors duration-150 border-none outline-none select-none cursor-pointer"
+                className="dock-btn w-8 h-8 rounded-xl flex items-center justify-center p-0 m-0 bg-transparent hover:bg-white/[0.12] active:bg-white/[0.18] transition-colors duration-150 border-none outline-none select-none cursor-pointer"
                 style={{
                   WebkitTapHighlightColor: 'transparent',
                   borderRadius: '12px',
@@ -1211,7 +1108,6 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                 <GearIcon />
               </button>
             </div>
-          </div>
         </div>
       </div>
     </div>

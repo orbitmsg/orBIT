@@ -1111,7 +1111,7 @@ export const MainLayout = () => {
   return (
     <div
       className="flex flex-1 h-full overflow-hidden"
-      style={{ backgroundColor: 'var(--chat-list-bg, #1e1e1e)' }}
+      style={{ backgroundColor: 'var(--title-bar-bg, #1e1f22)' }}
     >
       {!isMobileView && (
         <SidebarFolderRail
@@ -1162,13 +1162,6 @@ export const MainLayout = () => {
             onOpenCreateGroup={() => setConnectModalConfig({ isOpen: true, type: 'group' })}
             onOpenCreateChannel={() => setConnectModalConfig({ isOpen: true, type: 'channel' })}
             onOpenAddFriend={() => setConnectModalConfig({ isOpen: true, type: 'friend' })}
-            onOpenFriends={() => {
-              setActiveFolderId(null);
-              setActiveChat(null);
-              setCurrentView('chats');
-            }}
-            onOpenSavedMessages={() => setActiveChat('notes')}
-            onOpenCalls={() => setShowCallsModal(true)}
             onOpenSettings={handleOpenSettings}
             onOpenProfile={() => setIsMyProfileOpen(true)}
           />

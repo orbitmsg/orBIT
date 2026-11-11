@@ -48,7 +48,6 @@ export const GlobalAudioPlayer = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
 
-  // Popups & Menus
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
 
@@ -59,8 +58,8 @@ export const GlobalAudioPlayer = () => {
   const volumeBtnRef = useRef<HTMLButtonElement>(null);
   const orderBtnRef = useRef<HTMLButtonElement>(null);
   const speedBtnRef = useRef<HTMLButtonElement>(null);
-  const volumeOpenTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const volumeCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const volumeOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const volumeCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const playerRef = useRef<HTMLDivElement>(null);
 
@@ -74,8 +73,9 @@ export const GlobalAudioPlayer = () => {
     dragStateRef.current.percent = clampedPercent;
     dragStateRef.current.targetTime = newTime;
 
-    if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+    if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
     rafIdRef.current = requestAnimationFrame(() => {
+      rafIdRef.current = null;
       if (progressFillRef.current) {
         progressFillRef.current.style.width = `${clampedPercent * 100}%`;
       }
@@ -86,6 +86,7 @@ export const GlobalAudioPlayer = () => {
   }, [duration]);
 
   const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
     if (!progressRef.current || !duration || duration <= 0) return;
     const rect = progressRef.current.getBoundingClientRect();
     const percent = Math.max(0, Math.min((e.clientX - rect.left) / rect.width, 1));
@@ -160,7 +161,7 @@ export const GlobalAudioPlayer = () => {
   }, [isDragging, handleProgressMouseMove, handleProgressMouseUp, handleProgressTouchMove, handleProgressTouchEnd]);
 
   useEffect(() => {
-    let animId: number;
+    let animId: number | null = null;
     let lastAudioTime = 0;
     let lastSyncTime = performance.now();
 
@@ -215,7 +216,10 @@ export const GlobalAudioPlayer = () => {
     }
 
     const unsubVisibility = appVisibility.subscribe((visible) => {
-      cancelAnimationFrame(animId);
+      if (animId !== null) {
+        cancelAnimationFrame(animId);
+        animId = null;
+      }
       if (visible) {
         lastSyncTime = performance.now();
         tick();
@@ -223,17 +227,21 @@ export const GlobalAudioPlayer = () => {
     });
 
     return () => {
-      cancelAnimationFrame(animId);
+      if (animId !== null) {
+        cancelAnimationFrame(animId);
+        animId = null;
+      }
       unsubVisibility();
     };
   }, [isPlaying, duration, playbackRate, currentTime]);
 
   useEffect(() => {
+    if (!isMenuOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const isInsidePlayer = playerRef.current && playerRef.current.contains(target);
       const isInsideMenu = target.closest('.audio-queue-menu');
-      if (isMenuOpen && !isInsidePlayer && !isInsideMenu) {
+      if (!isInsidePlayer && !isInsideMenu) {
         setIsMenuOpen(false);
         setMenuPosition(null);
       }
@@ -286,6 +294,10 @@ export const GlobalAudioPlayer = () => {
   useEffect(() => {
     return () => {
       clearVolumeTimers();
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
     };
   }, [clearVolumeTimers]);
 
@@ -367,9 +379,10 @@ export const GlobalAudioPlayer = () => {
       onClick={handleOpenMenu}
       onContextMenu={handleContextMenu}
       style={{
-        height: '34px',
-        backgroundColor: 'var(--surface-container-soft, rgba(255,255,255,0.02))',
-        borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.05))',
+        height: '38px',
+        backgroundColor: 'var(--player-bg)',
+        borderRadius: '18px',
+        borderBottom: 'none',
         overflow: 'hidden',
         position: 'relative',
         zIndex: 10,
@@ -381,12 +394,14 @@ export const GlobalAudioPlayer = () => {
     >
       <style>{`
         .global-audio-player {
+          --player-bg: var(--chat-list-bg, #2b2d31);
           --player-accent: var(--accent-light);
           --player-progress: var(--accent-color);
           --player-track-bg: var(--surface-muted);
         }
         [data-theme="light"] .global-audio-player,
         [data-theme-light="true"] .global-audio-player {
+          --player-bg: #f5f5f5;
           --player-accent: var(--accent-color);
           --player-progress: var(--accent-color);
           --player-track-bg: rgba(0, 0, 0, 0.12);
@@ -400,8 +415,10 @@ export const GlobalAudioPlayer = () => {
           -webkit-user-drag: none !important;
         }
       `}</style>
-      <div className="flex items-center px-2 py-1 gap-1.5" style={{ height: '32px' }}>
+      <div className="flex items-center gap-1.5" style={{ height: '34px', padding: '0 14px' }}>
         <button
+          type="button"
+          aria-label={t('audioPlayer.previous_track', 'Предыдущий трек')}
           onClick={(e) => {
             e.stopPropagation();
             previous();
@@ -425,6 +442,8 @@ export const GlobalAudioPlayer = () => {
         </button>
 
         <button
+          type="button"
+          aria-label={isPlaying ? t('audioPlayer.pause', 'Пауза') : t('audioPlayer.play', 'Воспроизведение')}
           onClick={(e) => {
             e.stopPropagation();
             if (isPlaying) pause();
@@ -447,6 +466,8 @@ export const GlobalAudioPlayer = () => {
         </button>
 
         <button
+          type="button"
+          aria-label={t('audioPlayer.next_track', 'Следующий трек')}
           onClick={(e) => {
             e.stopPropagation();
             next();
@@ -469,7 +490,6 @@ export const GlobalAudioPlayer = () => {
           </svg>
         </button>
 
-        {/* Track Title & Artist */}
         <div
           className="flex flex-col min-w-0 flex-1 px-1 overflow-hidden select-none player-text cursor-pointer"
           style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
@@ -485,7 +505,6 @@ export const GlobalAudioPlayer = () => {
           </div>
         </div>
 
-        {/* Time Display */}
         <div
           className="flex items-center px-1 text-[11px] tabular-nums select-none player-time"
           style={{ color: 'var(--text-dim)', userSelect: 'none' }}
@@ -493,9 +512,10 @@ export const GlobalAudioPlayer = () => {
           <span ref={timeDisplayRef}>{formatTime(currentTime)}</span>
         </div>
 
-        {/* Volume Button */}
         <button
           ref={volumeBtnRef}
+          type="button"
+          aria-label={t('audioPlayer.volume', 'Громкость')}
           onClick={(e) => {
             e.stopPropagation();
             clearVolumeTimers();
@@ -548,6 +568,8 @@ export const GlobalAudioPlayer = () => {
 
         <button
           ref={orderBtnRef}
+          type="button"
+          aria-label={shuffle ? t('audioPlayer.shuffle', 'Случайный') : t('audioPlayer.playback_order', 'Порядок воспроизведения')}
           onClick={(e) => {
             e.stopPropagation();
             setIsOrderOpen(!isOrderOpen);
@@ -590,6 +612,14 @@ export const GlobalAudioPlayer = () => {
         </button>
 
         <button
+          type="button"
+          aria-label={
+            repeat === 'one'
+              ? t('audioPlayer.repeat_one', 'Повторять один трек')
+              : repeat === 'all'
+                ? t('audioPlayer.repeat_all', 'Повторять список')
+                : t('audioPlayer.repeat_none', 'Без повтора')
+          }
           onClick={(e) => {
             e.stopPropagation();
             toggleRepeat();
@@ -628,7 +658,7 @@ export const GlobalAudioPlayer = () => {
                 fontWeight: 700,
                 lineHeight: 1,
                 color: 'var(--player-accent)',
-                textShadow: '0 0 2px rgba(0,0,0,0.8)',
+                textShadow: '0 0 2px var(--player-bg)',
               }}
             >
               1
@@ -638,6 +668,8 @@ export const GlobalAudioPlayer = () => {
 
         <button
           ref={speedBtnRef}
+          type="button"
+          aria-label={t('audioPlayer.playback_speed', 'Скорость воспроизведения')}
           onClick={(e) => {
             e.stopPropagation();
             setIsSpeedOpen(!isSpeedOpen);
@@ -670,8 +702,9 @@ export const GlobalAudioPlayer = () => {
           {playbackRate === 1 ? '1X' : `${playbackRate.toFixed(1)}X`}
         </button>
 
-        {/* Close / Clear Button */}
         <button
+          type="button"
+          aria-label={t('common.close', 'Закрыть')}
           onClick={(e) => {
             e.stopPropagation();
             clearQueue();
@@ -699,7 +732,6 @@ export const GlobalAudioPlayer = () => {
         </button>
       </div>
 
-      {/* Progress Bar Hover / Drag Area */}
       <div
         ref={progressRef}
         onClick={handleProgressClick}
@@ -710,9 +742,10 @@ export const GlobalAudioPlayer = () => {
         style={{
           position: 'absolute',
           bottom: 0,
-          left: 0,
-          right: 0,
-          height: '7px',
+          left: '18px',
+          right: '18px',
+          height: '8px',
+          paddingBottom: '2px',
           display: 'flex',
           alignItems: 'flex-end',
           cursor: 'pointer',
@@ -723,10 +756,11 @@ export const GlobalAudioPlayer = () => {
           style={{
             position: 'relative',
             width: '100%',
-            height: isExpanded ? '7px' : '2px',
+            height: isExpanded ? '6px' : '2px',
             backgroundColor: 'var(--player-track-bg)',
             transition: 'height 0.18s ease-out',
-            borderRadius: 0,
+            borderRadius: '9999px',
+            overflow: 'hidden',
             willChange: isExpanded ? 'height' : 'auto',
           }}
         >
@@ -740,14 +774,13 @@ export const GlobalAudioPlayer = () => {
               width: `${progress}%`,
               backgroundColor: 'var(--player-progress)',
               transition: 'none',
-              borderRadius: 0,
+              borderRadius: '9999px',
               willChange: 'width',
             }}
           />
         </div>
       </div>
 
-      {/* Volume Popover */}
       {isVolumeOpen && (
         <AudioVolumePopover
           anchorRect={volumeBtnRef.current?.getBoundingClientRect() || null}
@@ -760,7 +793,6 @@ export const GlobalAudioPlayer = () => {
         />
       )}
 
-      {/* Order Popover */}
       {isOrderOpen && (
         <AudioOrderPopover
           anchorRect={orderBtnRef.current?.getBoundingClientRect() || null}
@@ -768,7 +800,6 @@ export const GlobalAudioPlayer = () => {
         />
       )}
 
-      {/* Speed Popover */}
       {isSpeedOpen && (
         <AudioSpeedPopover
           anchorRect={speedBtnRef.current?.getBoundingClientRect() || null}
@@ -776,7 +807,6 @@ export const GlobalAudioPlayer = () => {
         />
       )}
 
-      {/* Queue Menu Portal */}
       {isMenuOpen && menuPosition && createPortal(
         <AudioQueueMenu
           position={menuPosition}

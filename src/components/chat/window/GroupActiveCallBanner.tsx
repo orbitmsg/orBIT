@@ -10,10 +10,14 @@ export const GroupActiveCallBanner: React.FC<GroupActiveCallBannerProps> = ({ on
 
   return (
     <div
-      className="flex-shrink-0 flex items-center justify-between select-none px-4 py-2.5 transition-all"
+      className="flex-shrink-0 flex items-center justify-between gap-3 select-none px-4 py-2.5 transition-all"
       style={{
         backgroundColor: 'color-mix(in srgb, var(--accent-color, #7C3AED) 14%, var(--bg-secondary))',
         borderBottom: 'none',
+        borderRadius: '18px',
+        margin: '0 10px 8px 10px',
+        width: 'calc(100% - 20px)',
+        overflow: 'hidden',
       }}
     >
       <div className="flex items-center gap-2.5 min-w-0">
@@ -37,7 +41,7 @@ export const GroupActiveCallBanner: React.FC<GroupActiveCallBannerProps> = ({ on
         type="button"
         onClick={onJoin}
         aria-label={t('groupCall.join', 'Присоединиться')}
-        className="px-3 py-1.5 rounded-lg text-white font-semibold text-[12px] transition-opacity hover:opacity-90 cursor-pointer border-0"
+        className="px-3.5 py-1.5 rounded-full text-white font-semibold text-[12px] transition-opacity hover:opacity-90 cursor-pointer border-0 flex-shrink-0"
         style={{ backgroundColor: 'var(--accent-color, #7C3AED)' }}
       >
         {t('groupCall.join', 'Присоединиться')}

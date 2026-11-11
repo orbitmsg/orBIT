@@ -225,7 +225,10 @@
       "minimize": "Minimize",
       "maximize": "Maximize",
       "restore": "Restore",
-      "close": "Close"
+      "close": "Close",
+      "direct_messages": "Direct Messages",
+      "community": "Community",
+      "group_chat": "Group Chat"
     },
     "welcome": {
       "title": "Orbita Desktop",
@@ -531,7 +534,12 @@
       "repeat_all": "Repeat all",
       "repeat_one": "Repeat current",
       "volume": "Volume",
-      "playback_speed": "Playback speed"
+      "playback_speed": "Playback speed",
+      "previous_track": "Previous track",
+      "next_track": "Next track",
+      "playback_order": "Playback order",
+      "play": "Play",
+      "pause": "Pause"
     },
     "call": {
       "speaking": "is speaking",

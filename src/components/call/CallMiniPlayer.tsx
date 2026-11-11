@@ -36,19 +36,48 @@ export const CallMiniPlayer = () => {
   return (
     <div
       onClick={() => setMinimized(false)}
-      className="global-call-mini-player flex-shrink-0 flex items-center select-none cursor-pointer transition-colors hover:bg-white/[0.04]"
+      className="global-call-mini-player flex-shrink-0 flex items-center select-none cursor-pointer"
       style={{
-        height: '34px',
-        backgroundColor: 'var(--surface-container-soft, rgba(255,255,255,0.02))',
-        borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.05))',
-        paddingLeft: '10px',
-        paddingRight: '12px',
+        height: '36px',
+        borderRadius: '18px',
+        overflow: 'hidden',
+        borderBottom: 'none',
+        paddingLeft: '14px',
+        paddingRight: '10px',
         position: 'relative',
         zIndex: 10,
         willChange: 'transform',
         transform: 'translateZ(0)',
+        transition: 'background-color 0.15s ease',
       }}
     >
+      <style>{`
+        .global-call-mini-player {
+          --call-mini-accent: var(--accent-light, #a995ec);
+          --call-mini-btn-hover: rgba(255, 255, 255, 0.08);
+          background-color: var(--chat-list-bg, #2b2d31);
+        }
+        .global-call-mini-player:hover {
+          background-color: color-mix(in srgb, var(--chat-list-bg, #2b2d31) 94%, #ffffff);
+        }
+        [data-theme="light"] .global-call-mini-player,
+        [data-theme-light="true"] .global-call-mini-player {
+          --call-mini-accent: var(--accent-color, #2c6bed);
+          --call-mini-btn-hover: rgba(0, 0, 0, 0.06);
+          background-color: var(--chat-list-bg, #f5f5f5);
+        }
+        [data-theme="light"] .global-call-mini-player:hover,
+        [data-theme-light="true"] .global-call-mini-player:hover {
+          background-color: color-mix(in srgb, var(--chat-list-bg, #f5f5f5) 95%, #000000);
+        }
+        .global-call-mini-btn {
+          background: transparent;
+          transition: background-color 0.15s ease;
+        }
+        .global-call-mini-btn:hover {
+          background-color: var(--call-mini-btn-hover);
+        }
+      `}</style>
       <div className="flex items-center gap-2.5 z-10">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -56,7 +85,7 @@ export const CallMiniPlayer = () => {
           width="16"
           height="16"
           className="flex-shrink-0"
-          style={{ color: 'var(--accent-light, #a995ec)' }}
+          style={{ color: 'var(--call-mini-accent)' }}
         >
           <path
             fill="currentColor"
@@ -74,7 +103,7 @@ export const CallMiniPlayer = () => {
         ) : isConnected ? (
           <span
             className="text-xs tabular-nums font-medium flex-shrink-0"
-            style={{ color: 'var(--accent-light, #a995ec)', fontSize: '12px' }}
+            style={{ color: 'var(--call-mini-accent)', fontSize: '12px' }}
           >
             {formatDuration(duration)}
           </span>
@@ -92,7 +121,7 @@ export const CallMiniPlayer = () => {
         </span>
       </div>
 
-      <div className="flex items-center gap-3 ml-auto flex-shrink-0 z-10">
+      <div className="flex items-center gap-1.5 ml-auto flex-shrink-0 z-10">
         <button
           type="button"
           aria-label={isMicEnabled ? t('call.mic') : t('call.mic_off')}
@@ -100,11 +129,10 @@ export const CallMiniPlayer = () => {
             e.stopPropagation();
             toggleMic();
           }}
-          className="flex items-center justify-center cursor-pointer border-0 outline-none"
+          className="global-call-mini-btn w-7 h-7 rounded-full flex items-center justify-center cursor-pointer border-0 outline-none"
           style={{
-            background: 'none',
             padding: 0,
-            color: isMicEnabled ? 'var(--accent-light, #a995ec)' : 'var(--text-dim, #8a96a3)',
+            color: isMicEnabled ? 'var(--call-mini-accent)' : 'var(--text-dim, #8a96a3)',
           }}
         >
           {isMicEnabled ? <Mic size={16} /> : <MicOff size={16} />}
@@ -118,11 +146,10 @@ export const CallMiniPlayer = () => {
               e.stopPropagation();
               initiateCall();
             }}
-            className="flex items-center justify-center cursor-pointer border-0 outline-none"
+            className="global-call-mini-btn w-7 h-7 rounded-full flex items-center justify-center cursor-pointer border-0 outline-none"
             style={{
-              background: 'none',
               padding: 0,
-              color: 'var(--accent-light, #a995ec)',
+              color: 'var(--call-mini-accent)',
             }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" className="w-4 h-4">
@@ -137,11 +164,10 @@ export const CallMiniPlayer = () => {
               e.stopPropagation();
               endCall();
             }}
-            className="flex items-center justify-center cursor-pointer border-0 outline-none"
+            className="global-call-mini-btn w-7 h-7 rounded-full flex items-center justify-center cursor-pointer border-0 outline-none"
             style={{
-              background: 'none',
               padding: 0,
-              color: 'var(--accent-light, #a995ec)',
+              color: 'var(--call-mini-accent)',
             }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" className="w-4 h-4">

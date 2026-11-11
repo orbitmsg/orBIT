@@ -225,7 +225,10 @@
       "minimize": "Свернуть",
       "maximize": "Развернуть",
       "restore": "Восстановить",
-      "close": "Закрыть"
+      "close": "Закрыть",
+      "direct_messages": "Личные сообщения",
+      "community": "Сообщество",
+      "group_chat": "Групповой чат"
     },
     "welcome": {
       "title": "Orbita Desktop",
@@ -531,7 +534,12 @@
       "repeat_all": "Повторять список",
       "repeat_one": "Повторять один трек",
       "volume": "Громкость",
-      "playback_speed": "Скорость воспроизведения"
+      "playback_speed": "Скорость воспроизведения",
+      "previous_track": "Предыдущий трек",
+      "next_track": "Следующий трек",
+      "playback_order": "Порядок воспроизведения",
+      "play": "Воспроизведение",
+      "pause": "Пауза"
     },
     "call": {
       "speaking": "говорит",

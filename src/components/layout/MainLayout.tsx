@@ -920,9 +920,9 @@ export const MainLayout = () => {
     thumb.style.display = 'block';
     track.style.display = 'block';
 
-    const trackHeight = clientHeight - 12;
+    const trackHeight = Math.max(0, clientHeight - 36);
     const thumbHeight = Math.max(24, (clientHeight / scrollHeight) * trackHeight);
-    const maxTop = trackHeight - thumbHeight;
+    const maxTop = Math.max(0, trackHeight - thumbHeight);
     const scrollableDistance = scrollHeight - clientHeight;
     const ratio = scrollableDistance > 0 ? scrollTop / scrollableDistance : 0;
     const top = maxTop * ratio;
@@ -1177,7 +1177,7 @@ export const MainLayout = () => {
 
       <div
         className="flex flex-1 min-w-0 relative flex-col"
-        style={{ backgroundColor: 'transparent' }}
+        style={{ backgroundColor: 'transparent', gap: isMobileView ? 0 : '8px' }}
       >
         {!(isMobileView && !activeChatId) && (isCallMinimized ? <CallMiniPlayer /> : <GlobalAudioPlayer />)}
 

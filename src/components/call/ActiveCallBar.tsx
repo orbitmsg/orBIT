@@ -248,6 +248,9 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
     const timeData = new Uint8Array(64);
     const freqData = new Uint8Array(32);
 
+    const cornerInset = 18;
+    const fadeWidth = 22;
+
     const drawWaveLayer = (
       ctx: CanvasRenderingContext2D,
       width: number,
@@ -264,10 +267,16 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
       ctx.moveTo(0, height);
       const step = 3;
       for (let x = 0; x <= width; x += step) {
+        let edgeFactor = 0;
+        if (width > cornerInset * 2 && x > cornerInset && x < width - cornerInset) {
+          const distFromEdge = Math.min(x - cornerInset, width - cornerInset - x);
+          const normEdge = Math.min(1, Math.max(0, distFromEdge / fadeWidth));
+          edgeFactor = normEdge * normEdge * (3 - 2 * normEdge);
+        }
         const s1 = Math.sin(x * f1 + wavePhase);
         const s2 = Math.sin(x * f2 - wavePhase * 0.75 + 1.3);
         const norm = (s1 * 0.68 + s2 * 0.32 + 1) * 0.5;
-        const elevation = Math.min(22, norm * amplitude);
+        const elevation = Math.min(22, norm * amplitude) * edgeFactor;
         const y = baseline - elevation;
         ctx.lineTo(x, y);
       }
@@ -363,14 +372,16 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
   return (
     <div
       ref={barRef}
-      className={`active-call-header-bar w-full flex items-center justify-between select-none cursor-pointer relative flex-shrink-0 ${className}`}
+      className={`active-call-header-bar flex items-center justify-between select-none cursor-pointer relative flex-shrink-0 ${className}`}
       style={{
         height: '42px',
-        background: gradientBackground,
+        width: 'calc(100% - 20px)',
+        margin: '0 10px 8px 10px',
+        background: 'transparent',
         border: 'none',
         borderBottom: 'none',
+        borderRadius: '18px',
         overflow: 'visible',
-        transition: 'background 0.3s ease',
         ...style,
       }}
       onClick={() => {
@@ -395,67 +406,77 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
         />
       )}
 
-      <div className="flex items-center gap-2.5 z-10 pl-3 relative">
-        <button
-          type="button"
-          aria-label={isMicEnabled ? t('call.mic') : t('call.mic_off')}
-          onClick={(e) => {
-            e.stopPropagation();
-            const next = !isMicEnabled;
-            setMicEnabled(next);
-            try {
-              (window as any).orbita?.sendCallAction?.({ type: 'toggleMic', payload: next });
-              const bc = new BroadcastChannel('orbita-call-channel');
-              bc.postMessage({ type: 'CALL_ACTION', action: 'toggleMic', payload: next });
-              setTimeout(() => { try { bc.close(); } catch {} }, 300);
-            } catch {}
-          }}
-          className="bg-transparent border-0 outline-none p-0 cursor-pointer flex items-center justify-center text-white transition-opacity hover:opacity-75 flex-shrink-0"
-        >
-          {isMicEnabled ? (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="21" height="21" className="w-[21px] h-[21px] text-white">
-              <g fill="currentColor">
-                <path d="M13 5a1 1 0 0 1 1 1a6 6 0 0 1-5.005 5.915Q9 11.957 9 12v1h1a1 1 0 1 1 0 2H6a1 1 0 1 1 0-2h1v-1q0-.043.004-.085A6 6 0 0 1 2 6a1 1 0 0 1 2 0a4 4 0 1 0 8 0a1 1 0 0 1 1-1" />
-                <path d="M8 1a3 3 0 0 1 3 3v2a3 3 0 0 1-6 0V4a3 3 0 0 1 3-3" />
-              </g>
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="21" height="21" className="w-[21px] h-[21px] text-white">
-              <path fill="currentColor" d="M4.113 6.945a4 4 0 0 0 2.94 2.94L9.069 11.9l-.073.015Q9 11.957 9 12v1h1a1 1 0 1 1 0 2H6a1 1 0 1 1 0-2h1v-1q0-.043.004-.085A6 6 0 0 1 2 6a1 1 0 0 1 .382-.786zM8 1a3 3 0 0 1 3 3v2c0 .978-.47 1.843-1.195 2.39l.712.713A3.99 3.99 0 0 0 12 6a1 1 0 0 1 2 0a5.97 5.97 0 0 1-2.065 4.52l2.772 2.773a1 1 0 1 1-1.414 1.414l-12-12a1 1 0 1 1 1.414-1.414l2.318 2.318A3 3 0 0 1 8 1" />
-            </svg>
-          )}
-        </button>
-        <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center">
-          <Avatar
-            src={currentCallAvatar}
-            alt={currentCallName}
-            className="w-7 h-7 object-cover"
-            style={{ fontSize: '11px' }}
-          />
+      <div
+        className="w-full h-full flex items-center justify-between relative"
+        style={{
+          background: gradientBackground,
+          borderRadius: '18px',
+          overflow: 'hidden',
+          transition: 'background 0.3s ease',
+        }}
+      >
+        <div className="flex items-center gap-2.5 z-10 pl-3.5 relative">
+          <button
+            type="button"
+            aria-label={isMicEnabled ? t('call.mic') : t('call.mic_off')}
+            onClick={(e) => {
+              e.stopPropagation();
+              const next = !isMicEnabled;
+              setMicEnabled(next);
+              try {
+                (window as any).orbita?.sendCallAction?.({ type: 'toggleMic', payload: next });
+                const bc = new BroadcastChannel('orbita-call-channel');
+                bc.postMessage({ type: 'CALL_ACTION', action: 'toggleMic', payload: next });
+                setTimeout(() => { try { bc.close(); } catch {} }, 300);
+              } catch {}
+            }}
+            className="w-8 h-8 rounded-full bg-transparent border-0 outline-none p-0 cursor-pointer flex items-center justify-center text-white transition-opacity hover:opacity-75 flex-shrink-0"
+          >
+            {isMicEnabled ? (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="21" height="21" className="w-[21px] h-[21px] text-white">
+                <g fill="currentColor">
+                  <path d="M13 5a1 1 0 0 1 1 1a6 6 0 0 1-5.005 5.915Q9 11.957 9 12v1h1a1 1 0 1 1 0 2H6a1 1 0 1 1 0-2h1v-1q0-.043.004-.085A6 6 0 0 1 2 6a1 1 0 0 1 2 0a4 4 0 1 0 8 0a1 1 0 0 1 1-1" />
+                  <path d="M8 1a3 3 0 0 1 3 3v2a3 3 0 0 1-6 0V4a3 3 0 0 1 3-3" />
+                </g>
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="21" height="21" className="w-[21px] h-[21px] text-white">
+                <path fill="currentColor" d="M4.113 6.945a4 4 0 0 0 2.94 2.94L9.069 11.9l-.073.015Q9 11.957 9 12v1h1a1 1 0 1 1 0 2H6a1 1 0 1 1 0-2h1v-1q0-.043.004-.085A6 6 0 0 1 2 6a1 1 0 0 1 .382-.786zM8 1a3 3 0 0 1 3 3v2c0 .978-.47 1.843-1.195 2.39l.712.713A3.99 3.99 0 0 0 12 6a1 1 0 0 1 2 0a5.97 5.97 0 0 1-2.065 4.52l2.772 2.773a1 1 0 1 1-1.414 1.414l-12-12a1 1 0 1 1 1.414-1.414l2.318 2.318A3 3 0 0 1 8 1" />
+              </svg>
+            )}
+          </button>
+          <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center">
+            <Avatar
+              src={currentCallAvatar}
+              alt={currentCallName}
+              className="w-7 h-7 object-cover"
+              style={{ fontSize: '11px' }}
+            />
+          </div>
         </div>
-      </div>
 
-      <div className="flex items-center ml-auto z-10 pr-4 relative">
-        <button
-          type="button"
-          aria-label={t('call.hang_up')}
-          onClick={(e) => {
-            e.stopPropagation();
-            endCall(false, 0);
-            try {
-              (window as any).orbita?.sendCallAction?.({ type: 'endCall', payload: { remainingRemotes: 0 } });
-              (window as any).orbita?.closeCallWindow?.();
-              const bc = new BroadcastChannel('orbita-call-channel');
-              bc.postMessage({ type: 'CALL_ACTION', action: 'endCall', payload: { remainingRemotes: 0 } });
-              setTimeout(() => { try { bc.close(); } catch {} }, 300);
-            } catch {}
-          }}
-          className="w-9 h-9 bg-transparent border-0 outline-none p-0 cursor-pointer flex items-center justify-center text-white transition-all hover:scale-110 hover:text-red-400 flex-shrink-0"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" className="w-[22px] h-[22px] text-white">
-            <path fill="currentColor" d="m4.51 15.48l2-1.59c.48-.38.76-.96.76-1.57v-2.6c3.02-.98 6.29-.99 9.32 0v2.61c0 .61.28 1.19.76 1.57l1.99 1.58c.8.63 1.94.57 2.66-.15l1.22-1.22c.8-.8.8-2.13-.05-2.88c-6.41-5.66-16.07-5.66-22.48 0c-.85.75-.85 2.08-.05 2.88l1.22 1.22c.71.72 1.85.78 2.65.15" />
-          </svg>
-        </button>
+        <div className="flex items-center ml-auto z-10 pr-2.5 relative">
+          <button
+            type="button"
+            aria-label={t('call.hang_up')}
+            onClick={(e) => {
+              e.stopPropagation();
+              endCall(false, 0);
+              try {
+                (window as any).orbita?.sendCallAction?.({ type: 'endCall', payload: { remainingRemotes: 0 } });
+                (window as any).orbita?.closeCallWindow?.();
+                const bc = new BroadcastChannel('orbita-call-channel');
+                bc.postMessage({ type: 'CALL_ACTION', action: 'endCall', payload: { remainingRemotes: 0 } });
+                setTimeout(() => { try { bc.close(); } catch {} }, 300);
+              } catch {}
+            }}
+            className="w-9 h-9 rounded-full bg-transparent border-0 outline-none p-0 cursor-pointer flex items-center justify-center text-white transition-all hover:scale-110 hover:text-red-400 flex-shrink-0"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" className="w-[22px] h-[22px] text-white">
+              <path fill="currentColor" d="m4.51 15.48l2-1.59c.48-.38.76-.96.76-1.57v-2.6c3.02-.98 6.29-.99 9.32 0v2.61c0 .61.28 1.19.76 1.57l1.99 1.58c.8.63 1.94.57 2.66-.15l1.22-1.22c.8-.8.8-2.13-.05-2.88c-6.41-5.66-16.07-5.66-22.48 0c-.85.75-.85 2.08-.05 2.88l1.22 1.22c.71.72 1.85.78 2.65.15" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ import { Avatar } from '../../common/Avatar';
 import { OnlineIndicator } from '../../common/OnlineIndicator';
 import { VerifiedBadge } from '../../common/VerifiedBadge';
 import { ArchiveListItem } from './ChatListItems';
+import { GearIcon, MicToggleIcon, HeadphonesToggleIcon } from './ProfileDockIcons';
 import { InChatSidebarSearch } from '../InChatSidebarSearch';
 import { CallMiniPlayer } from '../../call/CallMiniPlayer';
 import { GlobalAudioPlayer } from '../../audio/GlobalAudioPlayer';
@@ -23,6 +24,7 @@ import { useConnectionStore } from '../../../store/useConnectionStore';
 import { useCallStore } from '../../../store/useCallStore';
 import { callSoundService } from '../../../services/callSoundService';
 import { supportService, SUPPORT_AVATAR_URL } from '../../../services/supportService';
+import { useEdgeFoldScroll } from '../../../hooks/useEdgeFoldScroll';
 import type { ChannelInfo } from '../../../services/channelService';
 import type { UserDirectoryRecord } from '../../../services/supabaseService';
 
@@ -60,164 +62,6 @@ export interface SidebarContentProps {
   onOpenSettings?: () => void;
   onOpenProfile?: () => void;
 }
-
-const DiscordMicrophoneIcon: React.FC<{ className?: string }> = ({ className = '' }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    fill="none"
-    viewBox="0 0 24 24"
-    className={className}
-    aria-hidden="true"
-  >
-    <path fill="currentColor" d="M12 2a4 4 0 0 0-4 4v4a4 4 0 0 0 8 0V6a4 4 0 0 0-4-4Z" />
-    <path fill="currentColor" d="M6 10a1 1 0 0 0-2 0 8 8 0 0 0 7 7.94V20H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.06A8 8 0 0 0 20 10a1 1 0 1 0-2 0 6 6 0 0 1-12 0Z" />
-  </svg>
-);
-
-const DiscordMicrophoneSlashIcon: React.FC<{ className?: string }> = ({ className = '' }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    fill="none"
-    viewBox="0 0 24 24"
-    className={className}
-    aria-hidden="true"
-  >
-    <path
-      fill="currentColor"
-      d="m2.7 22.7 20-20a1 1 0 0 0-1.4-1.4l-20 20a1 1 0 1 0 1.4 1.4ZM10.8 17.32c-.21.21-.1.58.2.62V20H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.06A8 8 0 0 0 20 10a1 1 0 0 0-2 0c0 1.45-.52 2.79-1.38 3.83l-.02.02A5.99 5.99 0 0 1 12.32 16a.52.52 0 0 0-.34.15l-1.18 1.18ZM15.36 4.52c.15-.15.19-.38.08-.56A4 4 0 0 0 8 6v4c0 .3.03.58.1.86.07.34.49.43.74.18l6.52-6.52ZM5.06 13.98c.16.28.53.31.75.09l.75-.75c.16-.16.19-.4.08-.61A5.97 5.97 0 0 1 6 10a1 1 0 0 0-2 0c0 1.45.39 2.81 1.06 3.98Z"
-    />
-  </svg>
-);
-
-const DiscordHeadphonesIcon: React.FC<{ className?: string }> = ({ className = '' }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    fill="none"
-    viewBox="0 0 24 24"
-    className={className}
-    aria-hidden="true"
-  >
-    <path
-      fill="currentColor"
-      d="M12 3a9 9 0 0 0-8.95 10h1.87a5 5 0 0 1 4.1 2.13l1.37 1.97a3.1 3.1 0 0 1-.17 3.78 2.85 2.85 0 0 1-3.55.74 11 11 0 1 1 10.66 0c-1.27.71-2.73.23-3.55-.74a3.1 3.1 0 0 1-.17-3.78l1.38-1.97a5 5 0 0 1 4.1-2.13h1.86A9 9 0 0 0 12 3Z"
-    />
-  </svg>
-);
-
-const DiscordHeadphonesSlashIcon: React.FC<{ className?: string }> = ({ className = '' }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    fill="none"
-    viewBox="0 0 24 24"
-    className={className}
-    aria-hidden="true"
-  >
-    <path
-      fill="currentColor"
-      d="M22.7 2.7a1 1 0 0 0-1.4-1.4l-20 20a1 1 0 1 0 1.4 1.4l20-20ZM17.06 2.94a.48.48 0 0 0-.11-.77A11 11 0 0 0 2.18 16.94c.14.3.53.35.76.12l3.2-3.2c.25-.25.15-.68-.2-.76a5 5 0 0 0-1.02-.1H3.05a9 9 0 0 1 12.66-9.2c.2.09.44.05.59-.1l.76-.76ZM20.2 8.28a.52.52 0 0 1 .1-.58l.76-.76a.48.48 0 0 1 .77.11 11 11 0 0 1-4.5 14.57c-1.27.71-2.73.23-3.55-.74a3.1 3.1 0 0 1-.17-3.78l1.38-1.97a5 5 0 0 1 4.1-2.13h1.86a9.1 9.1 0 0 0-.75-4.72ZM10.1 17.9c.25-.25.65-.18.74.14a3.1 3.1 0 0 1-.62 2.84 2.85 2.85 0 0 1-3.55.74.16.16 0 0 1-.04-.25l3.48-3.48Z"
-    />
-  </svg>
-);
-
-const DiscordSettingsIcon: React.FC<{ className?: string }> = ({ className = '' }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    fill="none"
-    viewBox="0 0 24 24"
-    className={className}
-    aria-hidden="true"
-  >
-    <path
-      fill="currentColor"
-      fillRule="evenodd"
-      clipRule="evenodd"
-      d="M10.56 1.1c-.46.05-.7.53-.64.98.18 1.16-.19 2.2-.98 2.53-.8.33-1.79-.15-2.49-1.1-.27-.36-.78-.52-1.14-.24-.77.59-1.45 1.27-2.04 2.04-.28.36-.12.87.24 1.14.96.7 1.43 1.7 1.1 2.49-.33.8-1.37 1.16-2.53.98-.45-.07-.93.18-.99.64a11.1 11.1 0 0 0 0 2.88c.06.46.54.7.99.64 1.16-.18 2.2.19 2.53.98.33.8-.14 1.79-1.1 2.49-.36.27-.52.78-.24 1.14.59.77 1.27 1.45 2.04 2.04.36.28.87.12 1.14-.24.7-.95 1.7-1.43 2.49-1.1.8.33 1.16 1.37.98 2.53-.07.45.18.93.64.99a11.1 11.1 0 0 0 2.88 0c.46-.06.7-.54.64-.99-.18-1.16.19-2.2.98-2.53.8-.33 1.79.14 2.49 1.1.27.36.78.52 1.14.24.77-.59 1.45-1.27 2.04-2.04.28-.36.12-.87-.24-1.14-.96-.7-1.43-1.7-1.1-2.49.33-.8 1.37-1.16 2.53-.98.45.07.93-.18.99-.64a11.1 11.1 0 0 0 0-2.88c-.06-.46-.54-.7-.99-.64-1.16.18-2.2-.19-2.53-.98-.33-.8.14-1.79 1.1-2.49.36-.27.52-.78.24-1.14a11.07 11.07 0 0 0-2.04-2.04c-.36-.28-.87-.12-1.14.24-.7.96-1.7 1.43-2.49 1.1-.8-.33-1.16-1.37-.98-2.53.07-.45-.18-.93-.64-.99a11.1 11.1 0 0 0-2.88 0ZM16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"
-    />
-  </svg>
-);
-
-const GearIcon = () => (
-  <div className="flex items-center justify-center w-5 h-5">
-    <style>{`
-      .discord-gear-body {
-        transform-origin: 12px 12px;
-        fill: #b5bac1;
-        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), fill 0.15s ease;
-      }
-      .dock-btn:hover .discord-gear-body {
-        transform: rotate(90deg);
-        fill: #ffffff;
-      }
-      .dock-btn:active .discord-gear-body {
-        transform: rotate(180deg);
-        fill: #ffffff;
-      }
-    `}</style>
-    <DiscordSettingsIcon className="discord-gear-body" />
-  </div>
-);
-
-const MicToggleIcon = ({ muted }: { muted: boolean }) => (
-  <div className="flex items-center justify-center w-5 h-5">
-    <style>{`
-      .discord-mic-unmuted {
-        fill: #b5bac1;
-        transition: fill 0.15s ease;
-      }
-      .dock-btn:hover .discord-mic-unmuted {
-        fill: #ffffff;
-      }
-      .discord-mic-muted {
-        fill: #f23f43;
-        transition: fill 0.15s ease;
-      }
-      .dock-btn:hover .discord-mic-muted {
-        fill: #fa777c;
-      }
-    `}</style>
-    {muted ? (
-      <DiscordMicrophoneSlashIcon className="discord-mic-muted" />
-    ) : (
-      <DiscordMicrophoneIcon className="discord-mic-unmuted" />
-    )}
-  </div>
-);
-
-const HeadphonesToggleIcon = ({ muted }: { muted: boolean }) => (
-  <div className="flex items-center justify-center w-5 h-5">
-    <style>{`
-      .discord-headphones-unmuted {
-        fill: #b5bac1;
-        transition: fill 0.15s ease;
-      }
-      .dock-btn:hover .discord-headphones-unmuted {
-        fill: #ffffff;
-      }
-      .discord-headphones-muted {
-        fill: #f23f43;
-        transition: fill 0.15s ease;
-      }
-      .dock-btn:hover .discord-headphones-muted {
-        fill: #fa777c;
-      }
-    `}</style>
-    {muted ? (
-      <DiscordHeadphonesSlashIcon className="discord-headphones-muted" />
-    ) : (
-      <DiscordHeadphonesIcon className="discord-headphones-unmuted" />
-    )}
-  </div>
-);
 
 export const SidebarContent: React.FC<SidebarContentProps> = ({
   isMobileView,
@@ -267,11 +111,23 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   const avatarUrl = useAuthStore((s) => s.avatarUrl);
   const [isMicMuted, setIsMicMuted] = React.useState(false);
   const [isDeafened, setIsDeafened] = React.useState(false);
+  const isInChatSearch = Boolean(inChatSearch?.isOpen);
+
+  useEdgeFoldScroll(chatListScrollRef, {
+    itemSelector: '[data-fold-list] > :not(.w-full), [data-fold-list] > .w-full > *',
+    foldZone: 58,
+    maxAngle: 22,
+    minScale: 0.91,
+    minOpacity: 0.5,
+    perspective: 720,
+    enabled: !isInChatSearch,
+    deps: [visibleChats.length, isInChatSearch, isViewingArchive, activeFolderId, searchQuery, globalFoundUsers.length],
+  });
 
   const surfaceTint = isLightTheme ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.045)';
   const surfaceHoverTint = isLightTheme ? 'rgba(0, 0, 0, 0.075)' : 'rgba(255, 255, 255, 0.085)';
 
-  if (inChatSearch?.isOpen) {
+  if (isInChatSearch) {
     return (
       <div
         className="flex flex-col h-full rounded-[18px] overflow-hidden"
@@ -436,7 +292,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
               <ChatPlaceholder />
             </div>
           ) : (
-            <div className="flex flex-col w-full">
+            <div className="flex flex-col w-full" data-fold-list>
 
               {downloadedUpdateVersion && !isUpdateBannerDismissed && (
                 <div
@@ -812,8 +668,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           className="overlay-scroll-track"
           onMouseDown={(e) => handleScrollbarTrackMouseDown(e, chatListScrollRef.current)}
           style={{
-            top: '8px',
-            bottom: '8px',
+            top: '18px',
+            bottom: '18px',
             opacity: 0,
             transition: 'opacity 0.2s ease',
             pointerEvents: 'auto',
@@ -825,7 +681,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           className="overlay-scroll-thumb"
           onMouseDown={(e) => handleScrollbarThumbMouseDown(e, chatListScrollRef.current)}
           style={{
-            top: '8px',
+            top: '18px',
             opacity: 0,
             transition: 'opacity 0.2s ease',
             willChange: 'transform',
@@ -931,10 +787,11 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   callSoundService.play(next ? 'mute' : 'unmute');
                 }}
                 aria-label={isMicMuted ? t('discord.unmuteMicrophone', 'Включить микрофон') : t('discord.muteMicrophone', 'Отключить микрофон')}
-                className="dock-btn w-8 h-8 rounded-xl flex items-center justify-center p-0 m-0 bg-transparent hover:bg-white/[0.12] active:bg-white/[0.18] transition-colors duration-150 border-none outline-none select-none cursor-pointer"
+                className="dock-btn flex items-center justify-center m-0 bg-transparent hover:bg-white/[0.12] active:bg-white/[0.18] transition-colors duration-150 border-none outline-none select-none cursor-pointer"
                 style={{
                   WebkitTapHighlightColor: 'transparent',
-                  borderRadius: '12px',
+                  padding: '5px',
+                  borderRadius: '5px',
                   outline: 'none',
                   boxShadow: 'none',
                   border: 'none',
@@ -957,10 +814,11 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   callSoundService.play(next ? 'mute' : 'unmute');
                 }}
                 aria-label={isDeafened ? t('discord.undeafenAudio', 'Включить звук') : t('discord.deafenAudio', 'Заглушить звук')}
-                className="dock-btn w-8 h-8 rounded-xl flex items-center justify-center p-0 m-0 bg-transparent hover:bg-white/[0.12] active:bg-white/[0.18] transition-colors duration-150 border-none outline-none select-none cursor-pointer"
+                className="dock-btn flex items-center justify-center m-0 bg-transparent hover:bg-white/[0.12] active:bg-white/[0.18] transition-colors duration-150 border-none outline-none select-none cursor-pointer"
                 style={{
                   WebkitTapHighlightColor: 'transparent',
-                  borderRadius: '12px',
+                  padding: '5px',
+                  borderRadius: '5px',
                   outline: 'none',
                   boxShadow: 'none',
                   border: 'none',
@@ -980,10 +838,11 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   }
                 }}
                 aria-label={t('discord.userSettings', 'Настройки пользователя')}
-                className="dock-btn w-8 h-8 rounded-xl flex items-center justify-center p-0 m-0 bg-transparent hover:bg-white/[0.12] active:bg-white/[0.18] transition-colors duration-150 border-none outline-none select-none cursor-pointer"
+                className="dock-btn flex items-center justify-center m-0 bg-transparent hover:bg-white/[0.12] active:bg-white/[0.18] transition-colors duration-150 border-none outline-none select-none cursor-pointer"
                 style={{
                   WebkitTapHighlightColor: 'transparent',
-                  borderRadius: '12px',
+                  padding: '5px',
+                  borderRadius: '5px',
                   outline: 'none',
                   boxShadow: 'none',
                   border: 'none',

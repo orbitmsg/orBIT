@@ -83,6 +83,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       className="sticky top-0 z-20 w-full select-none"
       style={{
         backgroundColor: 'var(--bg-primary)',
+        overflow: 'visible',
         userSelect: 'none',
         WebkitUserSelect: 'none',
       }}
@@ -308,7 +309,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </div>
         </div>
       </header>
-      <ActiveCallBar />
+      <ActiveCallBar
+        style={{
+          margin: '4px 14px 8px 14px',
+          width: 'calc(100% - 28px)',
+        }}
+      />
     </div>
   );
 };

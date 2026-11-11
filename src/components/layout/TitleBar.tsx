@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, flushStorageSet } from '../../store/useChatStore';
+import { DiscordSettingsIcon } from './sidebar/ProfileDockIcons';
 
 export const isElectronApp = (): boolean => {
   if (typeof window === 'undefined') return false;
@@ -33,9 +34,11 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
     : currentView === 'settings'
       ? t('mainMenu.settings', 'Настройки')
       : activeChat
-        ? activeChat.id === 'notes'
-          ? t('connectModal.notes', 'Избранное')
-          : activeChat.name
+        ? activeChat.type === 'channel'
+          ? t('titleBar.community', 'Сообщество')
+          : activeChat.type === 'group'
+            ? t('titleBar.group_chat', 'Групповой чат')
+            : t('titleBar.direct_messages', 'Личные сообщения')
         : t('discord.friends', 'Друзья');
 
   useEffect(() => {
@@ -169,30 +172,34 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
           ['WebkitAppRegion' as any]: 'no-drag',
         }}
       >
-        {!title && currentView !== 'settings' && activeChat ? (
+        {!title && currentView === 'settings' ? (
+          <DiscordSettingsIcon size={14} className="shrink-0" />
+        ) : !title && activeChat ? (
           activeChat.type === 'channel' ? (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#949ba4] shrink-0">
-              <path d="m3 11 18-5v12L3 14v-3z" />
-              <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14" className="shrink-0" aria-hidden="true">
+              <path fill="currentColor" d="M5 13a1 1 0 0 1-2 0v-2a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2zm6.276-10.638a.5.5 0 0 1 .724.447v10.382a.5.5 0 0 1-.724.447L6 11V5zm3.171 4.362a1 1 0 0 1 .553.894v.764a1 1 0 0 1-.553.895L13 10V6z" />
             </svg>
           ) : activeChat.type === 'group' ? (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#949ba4] shrink-0">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-          ) : activeChat.id === 'notes' ? (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#949ba4] shrink-0">
-              <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="14" height="14" className="shrink-0" aria-hidden="true">
+              <path fill="currentColor" d="M10 9a3 3 0 1 0 0-6a3 3 0 0 0 0 6M6 8a2 2 0 1 1-4 0a2 2 0 0 1 4 0m-4.51 7.326a.78.78 0 0 1-.358-.442a3 3 0 0 1 4.308-3.516a6.48 6.48 0 0 0-1.905 3.959q-.034.335.025.654a5 5 0 0 1-2.07-.655m14.95.654a5 5 0 0 0 2.07-.654a.78.78 0 0 0 .357-.442a3 3 0 0 0-4.308-3.517a6.48 6.48 0 0 1 1.907 3.96a2.3 2.3 0 0 1-.026.654M18 8a2 2 0 1 1-4 0a2 2 0 0 1 4 0M5.304 16.19a.84.84 0 0 1-.277-.71a5 5 0 0 1 9.947 0a.84.84 0 0 1-.277.71A6.98 6.98 0 0 1 10 18a6.97 6.97 0 0 1-4.696-1.81" />
             </svg>
           ) : (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#949ba4] shrink-0">
-              <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="90 140 330 230" width="16" height="12" className="shrink-0" aria-hidden="true">
+              <defs>
+                <clipPath id="titlebar-clip-left">
+                  <rect x="0" y="0" width="230" height="512" />
+                </clipPath>
+                <clipPath id="titlebar-clip-right">
+                  <rect x="230" y="0" width="282" height="512" />
+                </clipPath>
+              </defs>
+              <rect x="200" y="220" width="200" height="130" rx="65" fill="none" stroke="#9c78ff" strokeWidth="18" clipPath="url(#titlebar-clip-left)" />
+              <rect x="110" y="160" width="180" height="120" rx="60" fill="none" stroke="#b2acff" strokeWidth="18" />
+              <rect x="200" y="220" width="200" height="130" rx="65" fill="none" stroke="#9c78ff" strokeWidth="18" clipPath="url(#titlebar-clip-right)" />
             </svg>
           )
         ) : (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#949ba4] shrink-0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#949ba4] shrink-0" aria-hidden="true">
             <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
             <circle cx="9" cy="7" r="4" />
             <path d="M22 21v-2a4 4 0 0 0-3-3.87" />

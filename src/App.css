@@ -571,6 +571,7 @@ a:hover {
   border-radius: 9999px;
   background-color: var(--scroll-thumb-color, rgba(255, 255, 255, 0.45));
   pointer-events: auto;
+  top: 6px;
   z-index: 11;
   cursor: pointer;
   user-select: none;
@@ -587,6 +588,16 @@ a:hover {
 
 [data-theme-light="true"] .overlay-scroll-thumb {
   background-color: var(--scroll-thumb-color, rgba(0, 0, 0, 0.32));
+}
+
+.overlay-scroll-thumb:hover,
+.overlay-scroll-thumb.is-dragging {
+  background-color: rgba(255, 255, 255, 0.68);
+}
+
+[data-theme-light="true"] .overlay-scroll-thumb:hover,
+[data-theme-light="true"] .overlay-scroll-thumb.is-dragging {
+  background-color: rgba(0, 0, 0, 0.52);
 }
 
 .scroll-btn {

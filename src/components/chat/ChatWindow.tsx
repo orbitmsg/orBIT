@@ -13,6 +13,7 @@ import { supabaseService } from '../../services/supabaseService';
 import { AttachedFile } from './FileAttachmentModal';
 import { useSelection } from '../../hooks/useSelection';
 import { useMessageDragSelect } from '../../hooks/useMessageDragSelect';
+import { useEdgeFoldScroll } from '../../hooks/useEdgeFoldScroll';
 import { SelectionPanel } from './SelectionPanel';
 import { handleScrollbarThumbMouseDown, handleScrollbarTrackMouseDown } from '../../utils/scrollbarDrag';
 import { MessageInput } from './MessageInput';
@@ -35,6 +36,7 @@ export {
 import { type ContextMenuState } from './MessageContextMenu';
 import { ChatPinnedBar } from './ChatPinnedBar';
 import { ChatHeader } from './ChatHeader';
+import { PeerProfilePanel } from './PeerProfilePanel';
 import { ChatWindowModals } from './window/ChatWindowModals';
 import { GroupActiveCallBanner } from './window/GroupActiveCallBanner';
 import { ChatScrollToBottomButton } from './window/ChatScrollToBottomButton';
@@ -431,6 +433,38 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
   }, [showScrollDown, messages, myCode, myNickname, activeChat, myUserId]);
   const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
 
+  const chatWindowRef = useRef<HTMLDivElement>(null);
+  const [hasRoomForPeerPanel, setHasRoomForPeerPanel] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return window.innerWidth >= 960;
+  });
+
+  useEffect(() => {
+    const el = chatWindowRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    let rafId = 0;
+    const updateRoom = (width: number) => {
+      const next = width >= 580;
+      setHasRoomForPeerPanel((prev) => (prev === next ? prev : next));
+    };
+    updateRoom(el.getBoundingClientRect().width);
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const width = entry.contentRect.width;
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        updateRoom(width);
+      });
+    });
+    observer.observe(el);
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      observer.disconnect();
+    };
+  }, []);
+
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesContentRef = useRef<HTMLDivElement>(null);
   const readMessageIdsRef = useRef<Set<string>>(new Set());
@@ -774,6 +808,17 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     setFloatingDate,
     setFloatingDateOffsetY,
   });
+
+  useEdgeFoldScroll(messagesContainerRef, {
+    itemSelector: '[data-message-row="true"], [data-message="true"]:not([data-message-row] [data-message])',
+    foldZone: 72,
+    maxAngle: 24,
+    minScale: 0.9,
+    minOpacity: 0.45,
+    perspective: 720,
+    enabled: Boolean(activeChatId && messages.length > 0),
+    deps: [activeChatId, visibleMessages.length, startIndex],
+  });
   const isChannelOwner = useMemo(() => {
     if (activeChat?.type !== 'channel') return false;
     if (activeChat.isOwner) return true;
@@ -1101,18 +1146,44 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
 
 
 
+  const showPeerProfilePanel = Boolean(
+    activeChat &&
+    activeChat.type === 'private' &&
+    activeChatId &&
+    activeChatId !== 'notes' &&
+    !isMobileView &&
+    hasRoomForPeerPanel
+  );
+
+  const handleOpenPeerFullProfile = useCallback(() => {
+    if (activeChatId) {
+      setActiveProfileChatId(activeChatId);
+    }
+  }, [activeChatId, setActiveProfileChatId]);
+
   return (
     <div
-      className="flex flex-col h-full bg-transparent overflow-hidden min-h-0 relative"
-      onMouseDown={handleChatWindowMouseDown}
-      onMouseUp={handleChatWindowMouseUp}
-      onClick={handleChatWindowClick}
-      onContextMenu={(e) => e.preventDefault()}
+      ref={chatWindowRef}
+      className="flex flex-row h-full bg-transparent overflow-hidden min-h-0 relative"
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
       onDrop={handleDropFiles}
     >
+      {showPeerProfilePanel && activeChat && (
+        <PeerProfilePanel
+          chat={activeChat}
+          onOpenFullProfile={handleOpenPeerFullProfile}
+        />
+      )}
+
+      <div
+        className="flex flex-col flex-1 min-w-0 h-full min-h-0 relative"
+        onMouseDown={handleChatWindowMouseDown}
+        onMouseUp={handleChatWindowMouseUp}
+        onClick={handleChatWindowClick}
+        onContextMenu={(e) => e.preventDefault()}
+      >
       <ChatHeader
         headerRef={headerRef}
         activeChatId={activeChatId}
@@ -1374,6 +1445,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
           onEmojiMouseLeave={handleEmojiMouseLeave}
         />
       )}
+      </div>
 
         <ChatWindowModals
           isDiscordFileLimitModalOpen={isDiscordFileLimitModalOpen}

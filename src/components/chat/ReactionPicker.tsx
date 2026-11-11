@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search } from 'lucide-react';
 import { Virtuoso } from 'react-virtuoso';
 import { sqliteStorage } from '../../services/sqliteStorage';
+import { useEdgeFoldScroll } from '../../hooks/useEdgeFoldScroll';
 import {
   EMOJI_CATEGORIES,
   categoryLabels,
@@ -37,6 +38,27 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const pickerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const scrollerRef = useRef<HTMLElement | null>(null);
+  const [hasScroller, setHasScroller] = useState(false);
+
+  const handleScrollerRef = useCallback((el: HTMLElement | Window | null) => {
+    const next = el instanceof HTMLElement ? el : null;
+    if (scrollerRef.current !== next) {
+      scrollerRef.current = next;
+      setHasScroller(Boolean(next));
+    }
+  }, []);
+
+  useEdgeFoldScroll(scrollerRef, {
+    itemSelector: '[data-fold-reaction-emoji="true"]',
+    foldZone: 48,
+    maxAngle: 32,
+    minScale: 0.74,
+    minOpacity: 0.3,
+    perspective: 540,
+    enabled: hasScroller,
+    deps: [hasScroller, searchQuery],
+  });
 
   const [recentEmojis, setRecentEmojis] = useState<string[]>(['❤️', '👍', '🔥', '🥰', '👏']);
 
@@ -122,7 +144,10 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
           ? 'Недавние'
           : categoryLabels[item.category] || item.category;
       return (
-        <div className="px-2 py-1 text-[11px] font-semibold text-white/50 uppercase tracking-wider select-none">
+        <div
+          data-fold-reaction-emoji="true"
+          className="px-2 py-1 text-[11px] font-semibold text-white/50 uppercase tracking-wider select-none"
+        >
           {label}
         </div>
       );
@@ -135,13 +160,14 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
           gridTemplateColumns: `repeat(${COLUMNS}, ${EMOJI_SIZE}px)`,
           gap: GAP,
           padding: `0 ${PADDING}px`,
-          contain: 'layout style paint',
+          contain: 'layout style',
         }}
       >
         {item.emojis.map((emoji) => (
           <button
             key={emoji.id}
             type="button"
+            data-fold-reaction-emoji="true"
             onClick={() => handleSelect(emoji.char)}
             className="emoji-font flex items-center justify-center active:scale-90"
             style={{ width: EMOJI_SIZE, height: EMOJI_SIZE, fontSize: '20px', cursor: 'pointer', border: 'none', background: 'none', padding: 0 }}
@@ -226,6 +252,7 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
             </div>
           ) : (
             <Virtuoso
+              scrollerRef={handleScrollerRef}
               style={{ height: '100%', width: '100%', willChange: 'transform' }}
               data={groupedRows}
               itemContent={renderItem}

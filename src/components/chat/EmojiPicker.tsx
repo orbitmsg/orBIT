@@ -21,6 +21,7 @@ import {
 } from '../../lib/stickers-and-gifs';
 import { TgsPlayer } from './TgsPlayer';
 import { useChatStore } from '../../store/useChatStore';
+import { useEdgeFoldScroll } from '../../hooks/useEdgeFoldScroll';
 
 interface EmojiPickerProps {
   onSelect: (emoji: string) => void;
@@ -57,10 +58,11 @@ const StickerGridButton: React.FC<{
   return (
     <button
       type="button"
+      data-fold-sticker-item="true"
       onClick={() => onSelect(sticker)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="relative aspect-square flex items-center justify-center p-1.5 rounded-lg hover:bg-white/10 active:scale-95 transition-all cursor-pointer bg-transparent border-0"
+      className="relative aspect-square flex items-center justify-center p-1.5 rounded-lg hover:bg-white/10 active:scale-95 transition-colors cursor-pointer bg-transparent border-0"
       aria-label={sticker.name}
     >
       {isTgs ? (
@@ -107,6 +109,16 @@ export const EmojiPicker = ({
 
   const pickerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const emojiScrollRef = useRef<HTMLDivElement>(null);
+  const gifScrollRef = useRef<HTMLDivElement>(null);
+  const [headerRectTick, setHeaderRectTick] = useState(0);
+
+  useEffect(() => {
+    if (!headerEl || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setHeaderRectTick((v) => v + 1));
+    ro.observe(headerEl);
+    return () => ro.disconnect();
+  }, [headerEl]);
 
   const [windowDimensions, setWindowDimensions] = useState(() => ({
     width: typeof window !== 'undefined' ? window.innerWidth : 1200,
@@ -227,11 +239,12 @@ export const EmojiPicker = ({
 
     const anchorRect = anchorEl.getBoundingClientRect();
 
-    // 1. Determine header bottom coordinate
-    let headerBottom = 86; // fallback: 30px TitleBar + 56px Chat Header
+    let headerBottom = 86;
+    let headerRight = windowDimensions.width;
     if (headerEl) {
       const headerRect = headerEl.getBoundingClientRect();
       headerBottom = headerRect.bottom;
+      headerRight = headerRect.right;
     } else {
       const headerDom = document.querySelector('header');
       if (headerDom) {
@@ -239,19 +252,19 @@ export const EmojiPicker = ({
       }
     }
 
-    const topMargin = 10; // Gap below header
-    const bottomMargin = 16; // Gap above input field / emoji button
+    const topMargin = 10;
+    const bottomMargin = 16;
     const minTop = headerBottom + topMargin;
     const pickerBottom = anchorRect.top - bottomMargin;
 
-    // Available vertical height between header and input area
     const availableHeight = Math.max(160, pickerBottom - minTop);
     const height = Math.min(PICKER_HEIGHT_DESKTOP, availableHeight);
     const top = pickerBottom - height;
 
     const width = Math.min(PICKER_WIDTH_DESKTOP, windowDimensions.width - 20);
-    const left = Math.max(10, windowDimensions.width - width - 10);
-    const rightMargin = windowDimensions.width - (left + width);
+    const rightBound = headerEl ? Math.min(windowDimensions.width - 10, headerRight - 8) : windowDimensions.width - 10;
+    const left = Math.max(10, rightBound - width);
+    const rightMargin = Math.max(0, (headerEl ? headerRight : windowDimensions.width) - (left + width));
 
     return {
       position: 'fixed' as const,
@@ -263,7 +276,7 @@ export const EmojiPicker = ({
       paddingBottom: bottomMargin,
       boxSizing: 'border-box' as const,
     };
-  }, [anchorEl, headerEl, isMobile, windowDimensions]);
+  }, [anchorEl, headerEl, isMobile, windowDimensions, headerRectTick]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -405,6 +418,39 @@ export const EmojiPicker = ({
   const handleStickerScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     setStickerScrollTop(e.currentTarget.scrollTop);
   }, []);
+
+  useEdgeFoldScroll(emojiScrollRef, {
+    itemSelector: '[data-fold-picker-item="true"]',
+    foldZone: 54,
+    maxAngle: 32,
+    minScale: 0.74,
+    minOpacity: 0.28,
+    perspective: 560,
+    enabled: activeTab === 'emoji',
+    deps: [activeTab, visibleEmojiRows.length, searchQuery],
+  });
+
+  useEdgeFoldScroll(stickersScrollRef, {
+    itemSelector: '[data-fold-sticker-item="true"]',
+    foldZone: 68,
+    maxAngle: 28,
+    minScale: 0.78,
+    minOpacity: 0.35,
+    perspective: 620,
+    enabled: activeTab === 'stickers',
+    deps: [activeTab, searchQuery, recentStickers.length],
+  });
+
+  useEdgeFoldScroll(gifScrollRef, {
+    itemSelector: '[data-fold-gif-item="true"]',
+    foldZone: 72,
+    maxAngle: 22,
+    minScale: 0.85,
+    minOpacity: 0.45,
+    perspective: 640,
+    enabled: activeTab === 'gif' && gifRows.length > 0,
+    deps: [activeTab, visibleGifRows.length, searchQuery, activeGifReaction],
+  });
 
   useEffect(() => {
     setStickerScrollTop(0);
@@ -648,9 +694,9 @@ export const EmojiPicker = ({
 
           {/* Main Content Area */}
           <div className="flex-1 overflow-hidden">
-            {/* TAB 1: EMOJI (CHUNKED) */}
             {activeTab === 'emoji' && (
               <div
+                ref={emojiScrollRef}
                 onScroll={handleEmojiScroll}
                 className="custom-chat-scrollbar h-full overflow-y-auto overflow-x-hidden"
                 style={{
@@ -665,6 +711,7 @@ export const EmojiPicker = ({
                     return (
                       <div
                         key={`header-${row.id || idx}`}
+                        data-fold-picker-item="true"
                         className="px-1 pt-2.5 pb-1 text-xs font-semibold text-white/40 select-none"
                       >
                         {row.label}
@@ -680,13 +727,14 @@ export const EmojiPicker = ({
                           gridTemplateColumns: `repeat(${COLUMNS}, 1fr)`,
                           gap: GAP,
                           marginBottom: GAP,
-                          contain: 'layout style paint',
+                          contain: 'layout style',
                         }}
                       >
                         {row.items.map((emoji: Emoji) => (
                           <button
                             key={emoji.id}
                             type="button"
+                            data-fold-picker-item="true"
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => handleSelectEmoji(emoji.char)}
                             className="emoji-font flex items-center justify-center active:opacity-70"
@@ -758,6 +806,7 @@ export const EmojiPicker = ({
                           <div
                             key={`header-${item.packId}`}
                             id={`sticker-pack-${item.packId}`}
+                            data-fold-sticker-item="true"
                             className="px-1 pt-2 pb-1 text-xs font-semibold text-white/40 select-none flex items-center"
                             style={{ height: `${item.height}px` }}
                           >
@@ -800,6 +849,7 @@ export const EmojiPicker = ({
                 </div>
               ) : (
                 <div
+                  ref={gifScrollRef}
                   onScroll={handleGifScroll}
                   className="custom-chat-scrollbar h-full overflow-y-auto overflow-x-hidden"
                   style={{
@@ -815,6 +865,7 @@ export const EmojiPicker = ({
                         <button
                           key={gif.id}
                           type="button"
+                          data-fold-gif-item="true"
                           onClick={() => handleSelectGifItem(gif)}
                           className="relative flex-1 rounded-lg overflow-hidden bg-white/5 active:opacity-70 cursor-pointer"
                           style={{ minHeight: '100px', maxHeight: '140px' }}

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { sqliteStorage } from '../../services/sqliteStorage';
+import { useEdgeFoldScroll } from '../../hooks/useEdgeFoldScroll';
 import {
   Copy, Image as ImageIcon, Download as DownloadIcon,
   CheckCircle, Trash, Search, Forward
@@ -100,6 +101,7 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [displayLimit, setDisplayLimit] = useState(96);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const reactionScrollRef = useRef<HTMLDivElement>(null);
 
   const [recentEmojis, setRecentEmojis] = useState<string[]>([...DEFAULT_QUICK_REACTIONS]);
 
@@ -173,6 +175,17 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
       setDisplayLimit((prev) => Math.min(allEmojisList.length, prev + 60));
     }
   }, [allEmojisList.length]);
+
+  useEdgeFoldScroll(reactionScrollRef, {
+    itemSelector: '[data-fold-reaction-emoji="true"]',
+    foldZone: 44,
+    maxAngle: 34,
+    minScale: 0.72,
+    minOpacity: 0.25,
+    perspective: 520,
+    enabled: isExpanded,
+    deps: [isExpanded, displayedEmojis.length, searchQuery],
+  });
 
   return (
     <motion.div
@@ -302,6 +315,7 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
       <AnimatePresence>
         {isExpanded && (
           <motion.div
+            ref={reactionScrollRef}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
@@ -314,6 +328,7 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
                 <button
                   key={emoji.id}
                   type="button"
+                  data-fold-reaction-emoji="true"
                   onClick={() => handleSelect(emoji.char)}
                   className="emoji-font flex items-center justify-center active:scale-95 cursor-pointer rounded-xl transition-colors"
                   style={{

@@ -223,211 +223,203 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
     <aside
       aria-label={t('common.profile', 'Профиль')}
       style={{
-        width: '280px',
+        width: '340px',
         flexShrink: 0,
         height: '100%',
         minHeight: 0,
-        padding: '10px 0 10px 10px',
-        boxSizing: 'border-box',
+        borderRadius: '18px',
+        backgroundColor: 'var(--chat-list-bg, #2b2d31)',
+        border: 'none',
+        outline: 'none',
+        boxShadow: 'none',
+        overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         userSelect: 'none',
         WebkitUserSelect: 'none',
+        boxSizing: 'border-box',
       }}
     >
-      <div
-        style={{
-          flex: 1,
-          minHeight: 0,
-          borderRadius: '18px',
-          backgroundColor: 'var(--chat-list-bg, #2b2d31)',
-          border: '1px solid var(--border-color, rgba(255, 255, 255, 0.06))',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-          boxSizing: 'border-box',
-        }}
-      >
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden chat-list-scrollbar">
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden chat-list-scrollbar">
+        <div
+          style={{
+            position: 'relative',
+            width: '100%',
+            height: '112px',
+            flexShrink: 0,
+            overflow: 'hidden',
+            background:
+              'linear-gradient(135deg, var(--accent-light, #7289da) 0%, var(--accent-color, #5865F2) 55%, var(--accent-dark, #4752c4) 100%)',
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.18), transparent 60%)',
+              pointerEvents: 'none',
+            }}
+          />
+          {bannerSrc && (
+            <img
+              src={bannerSrc}
+              alt=""
+              draggable={false}
+              onError={() => setBannerLoadFailed(true)}
+              style={{
+                position: 'relative',
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                display: 'block',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+              }}
+            />
+          )}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(to bottom, transparent 45%, rgba(0, 0, 0, 0.24) 100%)',
+              pointerEvents: 'none',
+            }}
+          />
+          {onOpenFullProfile && (
+            <button
+              type="button"
+              onClick={onOpenFullProfile}
+              aria-label={t('common.profile', 'Профиль')}
+              style={{
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                width: '30px',
+                height: '30px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(0, 0, 0, 0.42)',
+                backdropFilter: 'blur(6px)',
+                WebkitBackdropFilter: 'blur(6px)',
+                border: 'none',
+                outline: 'none',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                padding: 0,
+                zIndex: 2,
+                transition: 'background-color 0.15s ease, transform 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.65)';
+                e.currentTarget.style.transform = 'scale(1.06)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.42)';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              <Maximize2 size={14} />
+            </button>
+          )}
+        </div>
+
+        <div
+          style={{
+            padding: '0 18px',
+            marginTop: '-40px',
+            position: 'relative',
+            zIndex: 2,
+            display: 'flex',
+            alignItems: 'flex-end',
+          }}
+        >
           <div
             style={{
               position: 'relative',
-              width: '100%',
-              height: '98px',
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
               flexShrink: 0,
-              overflow: 'hidden',
-              background:
-                'linear-gradient(135deg, var(--accent-light, #7289da) 0%, var(--accent-color, #5865F2) 55%, var(--accent-dark, #4752c4) 100%)',
+              backgroundColor: 'var(--chat-list-bg, #2b2d31)',
+              boxShadow: '0 0 0 5px var(--chat-list-bg, #2b2d31)',
             }}
           >
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.18), transparent 60%)',
-                pointerEvents: 'none',
-              }}
-            />
-            {bannerSrc && (
-              <img
-                src={bannerSrc}
-                alt=""
-                draggable={false}
-                onError={() => setBannerLoadFailed(true)}
-                style={{
-                  position: 'relative',
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  display: 'block',
-                  userSelect: 'none',
-                  WebkitUserSelect: 'none',
-                }}
-              />
-            )}
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'linear-gradient(to bottom, transparent 45%, rgba(0, 0, 0, 0.24) 100%)',
-                pointerEvents: 'none',
-              }}
-            />
-            {onOpenFullProfile && (
+            {onOpenFullProfile ? (
               <button
                 type="button"
                 onClick={onOpenFullProfile}
                 aria-label={t('common.profile', 'Профиль')}
                 style={{
-                  position: 'absolute',
-                  top: '10px',
-                  right: '10px',
-                  width: '28px',
-                  height: '28px',
+                  width: '100%',
+                  height: '100%',
                   borderRadius: '50%',
-                  backgroundColor: 'rgba(0, 0, 0, 0.42)',
-                  backdropFilter: 'blur(6px)',
-                  WebkitBackdropFilter: 'blur(6px)',
+                  overflow: 'hidden',
+                  padding: 0,
                   border: 'none',
                   outline: 'none',
-                  color: '#ffffff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  backgroundColor: 'transparent',
                   cursor: 'pointer',
-                  padding: 0,
-                  zIndex: 2,
-                  transition: 'background-color 0.15s ease, transform 0.15s ease',
+                  display: 'block',
+                  transition: 'filter 0.15s ease, transform 0.15s ease',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.65)';
-                  e.currentTarget.style.transform = 'scale(1.06)';
+                  e.currentTarget.style.filter = 'brightness(1.06)';
+                  e.currentTarget.style.transform = 'scale(1.02)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.42)';
+                  e.currentTarget.style.filter = 'none';
                   e.currentTarget.style.transform = 'scale(1)';
                 }}
               >
-                <Maximize2 size={13} />
+                <Avatar
+                  src={effectiveChat.avatarUrl}
+                  alt={effectiveChat.name}
+                  className="w-20 h-20 rounded-full"
+                  style={{ width: '80px', height: '80px', fontSize: '32px' }}
+                />
               </button>
+            ) : (
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: '50%',
+                  overflow: 'hidden',
+                }}
+              >
+                <Avatar
+                  src={effectiveChat.avatarUrl}
+                  alt={effectiveChat.name}
+                  className="w-20 h-20 rounded-full"
+                  style={{ width: '80px', height: '80px', fontSize: '32px' }}
+                />
+              </div>
             )}
+            <OnlineIndicator
+              online={Boolean(effectiveChat.online)}
+              showOffline={true}
+              size="lg"
+              ringColor="var(--chat-list-bg, #2b2d31)"
+              ariaLabel={
+                effectiveChat.online
+                  ? t('userStatus.online', 'в сети')
+                  : t('userStatus.offline', 'был(а) недавно')
+              }
+            />
           </div>
+        </div>
 
-          <div
-            style={{
-              padding: '0 16px',
-              marginTop: '-38px',
-              position: 'relative',
-              zIndex: 2,
-              display: 'flex',
-              alignItems: 'flex-end',
-            }}
-          >
-            <div
-              style={{
-                position: 'relative',
-                width: '76px',
-                height: '76px',
-                borderRadius: '50%',
-                flexShrink: 0,
-                backgroundColor: 'var(--chat-list-bg, #2b2d31)',
-                boxShadow: '0 0 0 5px var(--chat-list-bg, #2b2d31)',
-              }}
-            >
-              {onOpenFullProfile ? (
-                <button
-                  type="button"
-                  onClick={onOpenFullProfile}
-                  aria-label={t('common.profile', 'Профиль')}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    borderRadius: '50%',
-                    overflow: 'hidden',
-                    padding: 0,
-                    border: 'none',
-                    outline: 'none',
-                    backgroundColor: 'transparent',
-                    cursor: 'pointer',
-                    display: 'block',
-                    transition: 'filter 0.15s ease, transform 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.filter = 'brightness(1.06)';
-                    e.currentTarget.style.transform = 'scale(1.02)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.filter = 'none';
-                    e.currentTarget.style.transform = 'scale(1)';
-                  }}
-                >
-                  <Avatar
-                    src={effectiveChat.avatarUrl}
-                    alt={effectiveChat.name}
-                    className="w-20 h-20 rounded-full"
-                    style={{ width: '76px', height: '76px', fontSize: '30px' }}
-                  />
-                </button>
-              ) : (
-                <div
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    borderRadius: '50%',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <Avatar
-                    src={effectiveChat.avatarUrl}
-                    alt={effectiveChat.name}
-                    className="w-20 h-20 rounded-full"
-                    style={{ width: '76px', height: '76px', fontSize: '30px' }}
-                  />
-                </div>
-              )}
-              <OnlineIndicator
-                online={Boolean(effectiveChat.online)}
-                showOffline={true}
-                size="lg"
-                ringColor="var(--chat-list-bg, #2b2d31)"
-                ariaLabel={
-                  effectiveChat.online
-                    ? t('userStatus.online', 'в сети')
-                    : t('userStatus.offline', 'был(а) недавно')
-                }
-              />
-            </div>
-          </div>
-
-          <div
-            style={{
-              padding: '12px 14px 14px 14px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px',
-              boxSizing: 'border-box',
-            }}
-          >
+        <div
+          style={{
+            padding: '14px 18px 18px 18px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            boxSizing: 'border-box',
+          }}
+        >
             <div
               style={{
                 padding: '0 2px',
@@ -513,8 +505,8 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
               <div
                 style={{
                   borderRadius: '14px',
-                  backgroundColor: 'var(--surface-container, #1e1f22)',
-                  border: '1px solid var(--border-color, rgba(255, 255, 255, 0.06))',
+                  backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.05))',
+                  border: 'none',
                   overflow: 'hidden',
                 }}
               >
@@ -538,7 +530,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                     transition: 'background-color 0.15s ease',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--surface-muted, rgba(255, 255, 255, 0.08))';
+                    e.currentTarget.style.backgroundColor = 'rgba(128, 128, 128, 0.12)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = 'transparent';
@@ -579,8 +571,8 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
               <div
                 style={{
                   borderRadius: '14px',
-                  backgroundColor: 'var(--surface-container, #1e1f22)',
-                  border: '1px solid var(--border-color, rgba(255, 255, 255, 0.06))',
+                  backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.05))',
+                  border: 'none',
                   overflow: 'hidden',
                 }}
               >
@@ -604,7 +596,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                     transition: 'background-color 0.15s ease',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--surface-muted, rgba(255, 255, 255, 0.08))';
+                    e.currentTarget.style.backgroundColor = 'rgba(128, 128, 128, 0.12)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = 'transparent';
@@ -645,8 +637,8 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
               <div
                 style={{
                   borderRadius: '14px',
-                  backgroundColor: 'var(--surface-container, #1e1f22)',
-                  border: '1px solid var(--border-color, rgba(255, 255, 255, 0.06))',
+                  backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.05))',
+                  border: 'none',
                   padding: '10px 12px',
                   display: 'flex',
                   flexDirection: 'column',
@@ -678,8 +670,8 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
               <div
                 style={{
                   borderRadius: '14px',
-                  backgroundColor: 'var(--surface-container, #1e1f22)',
-                  border: '1px solid var(--border-color, rgba(255, 255, 255, 0.06))',
+                  backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.05))',
+                  border: 'none',
                   padding: '10px 12px',
                   display: 'flex',
                   flexDirection: 'column',
@@ -713,7 +705,6 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                 </div>
               </div>
             )}
-          </div>
         </div>
       </div>
     </aside>

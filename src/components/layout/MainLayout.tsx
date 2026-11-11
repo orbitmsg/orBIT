@@ -13,6 +13,7 @@ import { groupService } from '../../services/groupService';
 import { extractCodeFromInput } from '../../utils/inviteLink';
 import { ChatPlaceholder } from '../chat/ChatPlaceholder';
 import { ChatWindow } from '../chat/ChatWindow';
+import { PeerProfilePanel } from '../chat/PeerProfilePanel';
 import { ablyService } from '../../services/ablyService';
 import { handleScrollbarThumbMouseDown, handleScrollbarTrackMouseDown } from '../../utils/scrollbarDrag';
 import { DoubleRatchet } from '../../lib/double-ratchet';
@@ -1109,6 +1110,50 @@ export const MainLayout = () => {
   }, [pinnedChatsSet, handleSelectChat, handleChatContextMenu, nickname, myCode, t, isLightTheme]);
 
   const hasActiveChat = Boolean(activeChatId && chats.some(c => c.id === activeChatId));
+  const activeChatObj = useMemo(
+    () => (activeChatId ? chats.find((c) => c.id === activeChatId) || null : null),
+    [activeChatId, chats]
+  );
+
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const [hasRoomForPeerPanel, setHasRoomForPeerPanel] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return window.innerWidth >= 1040;
+  });
+
+  useEffect(() => {
+    const el = workspaceRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    let rafId = 0;
+    const updateRoom = (width: number) => {
+      const next = width >= 660;
+      setHasRoomForPeerPanel((prev) => (prev === next ? prev : next));
+    };
+    updateRoom(el.getBoundingClientRect().width);
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const width = entry.contentRect.width;
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        updateRoom(width);
+      });
+    });
+    observer.observe(el);
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      observer.disconnect();
+    };
+  }, []);
+
+  const showPeerProfilePanel = Boolean(
+    !isMobileView &&
+    activeChatObj &&
+    activeChatObj.type === 'private' &&
+    activeChatObj.id !== 'notes' &&
+    hasRoomForPeerPanel
+  );
 
   return (
     <div
@@ -1176,40 +1221,53 @@ export const MainLayout = () => {
       )}
 
       <div
+        ref={workspaceRef}
         className="flex flex-1 min-w-0 relative flex-col"
         style={{ backgroundColor: 'transparent', gap: isMobileView ? 0 : '8px' }}
       >
         {!(isMobileView && !activeChatId) && (isCallMinimized ? <CallMiniPlayer /> : <GlobalAudioPlayer />)}
 
         {(!isMobileView || activeChatId) && (
-          <main
-            className="flex-1 flex flex-col overflow-hidden"
-            style={{
-              backgroundColor: hasActiveChat ? 'var(--bg-primary)' : 'transparent',
-              borderRadius: isMobileView ? 0 : '18px',
-              minWidth: isMobileView ? 0 : CHAT_MIN_WIDTH,
-            }}
+          <div
+            className="flex-1 flex min-h-0 min-w-0 flex-row"
+            style={{ gap: isMobileView ? 0 : '8px' }}
           >
-            <div className="flex flex-col h-full relative">
-              <div className="relative flex flex-col flex-1 min-h-0">
-                {activeChatId && chats.some(c => c.id === activeChatId) ? (
-                  <ChatWindow
-                    isMobileView={isMobileView}
-                    onBack={handleChatWindowBack}
-                  />
-                ) : (
-                  <>
-                    <ActiveCallBar />
-                    <ChatPlaceholder
-                      onConnectRequest={handleConnectRequest}
-                      onAcceptFriendRequest={handleAcceptFriendRequest}
-                      onRejectFriendRequest={handleRejectFriendRequest}
+            <main
+              className="flex-1 flex flex-col overflow-hidden"
+              style={{
+                backgroundColor: hasActiveChat ? 'var(--bg-primary)' : 'transparent',
+                borderRadius: isMobileView ? 0 : '18px',
+                minWidth: isMobileView ? 0 : CHAT_MIN_WIDTH,
+              }}
+            >
+              <div className="flex flex-col h-full relative">
+                <div className="relative flex flex-col flex-1 min-h-0">
+                  {activeChatId && chats.some(c => c.id === activeChatId) ? (
+                    <ChatWindow
+                      isMobileView={isMobileView}
+                      onBack={handleChatWindowBack}
                     />
-                  </>
-                )}
+                  ) : (
+                    <>
+                      <ActiveCallBar />
+                      <ChatPlaceholder
+                        onConnectRequest={handleConnectRequest}
+                        onAcceptFriendRequest={handleAcceptFriendRequest}
+                        onRejectFriendRequest={handleRejectFriendRequest}
+                      />
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          </main>
+            </main>
+
+            {showPeerProfilePanel && activeChatObj && (
+              <PeerProfilePanel
+                chat={activeChatObj}
+                onOpenFullProfile={() => setActiveProfileChatId(activeChatObj.id)}
+              />
+            )}
+          </div>
         )}
       </div>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
@@ -10,10 +10,15 @@ import {
   Copy,
   Check,
   Shield,
+  ShieldAlert,
   Phone,
   Radio,
+  Globe,
+  ListPlus,
+  AlertTriangle,
 } from 'lucide-react';
 import { useConnectionStore, type ProxyProfile } from '../../store/useConnectionStore';
+import { parseProxyList, formatProxyUri } from '../../lib/proxyParser';
 import { ProxyEditModal } from './ProxyEditModal';
 import { PillToggle } from '../common/PillToggle';
 
@@ -30,6 +35,9 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
     killSwitch,
     proxyCalls,
     autoFallback,
+    isApplying,
+    connectionStatus,
+    errorMessage,
     setProxyEnabled,
     setActiveProxy,
     deleteProxy,
@@ -38,6 +46,9 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
     setAutoFallback,
     checkAllPings,
     checkPing,
+    addProxiesBulk,
+    verifyActiveProxy,
+    clearError,
   } = useConnectionStore();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -45,10 +56,19 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [isRefreshingPings, setIsRefreshingPings] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isVerifyingIp, setIsVerifyingIp] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkText, setBulkText] = useState('');
+  const [isImportingBulk, setIsImportingBulk] = useState(false);
 
   useEffect(() => {
     checkAllPings();
   }, []);
+
+  const parsedBulk = useMemo(() => parseProxyList(bulkText), [bulkText]);
+  const activeProxy = proxies.find((p) => p.id === activeProxyId);
+  const isKillSwitchIsolating = proxyEnabled && killSwitch && connectionStatus === 'error';
 
   const handleRefreshPings = async () => {
     setIsRefreshingPings(true);
@@ -56,16 +76,64 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
     setIsRefreshingPings(false);
   };
 
+  const handleVerifyIp = async () => {
+    if (!activeProxy || isVerifyingIp) return;
+    setIsVerifyingIp(true);
+    setVerifyError(null);
+    const res = await verifyActiveProxy();
+    if (!res?.success && res?.error) {
+      setVerifyError(res.error);
+    }
+    setIsVerifyingIp(false);
+  };
+
+  const handleBulkImport = async () => {
+    if (parsedBulk.length === 0 || isImportingBulk) return;
+    setIsImportingBulk(true);
+    await addProxiesBulk(parsedBulk);
+    setBulkText('');
+    setBulkOpen(false);
+    setIsImportingBulk(false);
+  };
+
   const handleCopyLink = (proxy: ProxyProfile) => {
-    const auth = proxy.username ? `${encodeURIComponent(proxy.username)}${proxy.password ? `:${encodeURIComponent(proxy.password)}` : ''}@` : '';
-    const link = `${proxy.type}://${auth}${proxy.host}:${proxy.port}`;
+    const link = formatProxyUri(proxy);
     navigator.clipboard.writeText(link);
     setCopiedId(proxy.id);
     setTimeout(() => setCopiedId(null), 2000);
     setActiveMenuId(null);
   };
 
-  const activeProxy = proxies.find((p) => p.id === activeProxyId);
+  const getStatusBadgeStyle = () => {
+    switch (connectionStatus) {
+      case 'connected':
+        return {
+          label: t('proxy.status_connected'),
+          color: '#10b981',
+          bg: 'rgba(16, 185, 129, 0.14)',
+        };
+      case 'connecting':
+        return {
+          label: t('proxy.status_connecting'),
+          color: '#f59e0b',
+          bg: 'rgba(245, 158, 11, 0.14)',
+        };
+      case 'error':
+        return {
+          label: t('proxy.status_error'),
+          color: '#ef4444',
+          bg: 'rgba(239, 68, 68, 0.14)',
+        };
+      default:
+        return {
+          label: t('proxy.status_disconnected'),
+          color: 'var(--text-dim)',
+          bg: 'rgba(255, 255, 255, 0.08)',
+        };
+    }
+  };
+
+  const statusMeta = getStatusBadgeStyle();
 
   return (
     <motion.div
@@ -87,66 +155,361 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
           borderRadius: '16px',
           padding: '14px 16px',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          flexDirection: 'column',
           gap: '12px',
         }}
       >
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-main)' }}>
-            {t('proxy.use_proxy')}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-main)' }}>
+                {t('proxy.use_proxy')}
+              </span>
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  padding: '2px 8px',
+                  borderRadius: '999px',
+                  color: statusMeta.color,
+                  backgroundColor: statusMeta.bg,
+                }}
+              >
+                {statusMeta.label}
+              </span>
+            </div>
+
+            <div style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '4px' }}>
+              {proxyEnabled
+                ? activeProxy
+                  ? connectionStatus === 'connecting' || isApplying
+                    ? t('proxy.connecting')
+                    : t('proxy.connected', { name: activeProxy.name })
+                  : t('proxy.connecting')
+                : t('proxy.direct')}
+            </div>
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '2px' }}>
-            {proxyEnabled
-              ? activeProxy
-                ? `${t('proxy.connected', { name: activeProxy.name })}${activeProxy.ping ? ` (${activeProxy.ping} ms)` : ''}`
-                : t('proxy.connecting')
-              : t('proxy.direct')}
-          </div>
+
+          <PillToggle
+            checked={proxyEnabled}
+            disabled={isApplying}
+            onChange={() => setProxyEnabled(!proxyEnabled)}
+          />
         </div>
 
-        <PillToggle checked={proxyEnabled} onChange={() => setProxyEnabled(!proxyEnabled)} />
+        {activeProxy && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '10px',
+              paddingTop: '10px',
+              borderTop: '1px solid var(--border-color, rgba(255,255,255,0.06))',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', minWidth: 0 }}>
+              <span
+                style={{
+                  fontSize: '10.5px',
+                  fontWeight: 700,
+                  padding: '2px 6px',
+                  borderRadius: '5px',
+                  backgroundColor: 'rgba(155, 125, 212, 0.16)',
+                  color: 'var(--accent-color, #9b7dd4)',
+                  letterSpacing: '0.3px',
+                }}
+              >
+                {activeProxy.type.toUpperCase()}
+              </span>
+              <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
+                {activeProxy.host}:{activeProxy.port}
+              </span>
+              {activeProxy.ping !== null && activeProxy.ping !== undefined && (
+                <span style={{ fontSize: '12px', color: '#10b981', fontWeight: 500 }}>
+                  {activeProxy.ping} ms
+                </span>
+              )}
+              {activeProxy.exitIp && (
+                <span style={{ fontSize: '12px', color: 'var(--text-main)', fontWeight: 500 }}>
+                  • {t('proxy.exit_ip', { ip: activeProxy.exitIp })}
+                </span>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleVerifyIp}
+              disabled={isVerifyingIp}
+              aria-label={t('proxy.verify_ip')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '5px 10px',
+                borderRadius: '8px',
+                border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
+                backgroundColor: 'var(--surface-container, rgba(255,255,255,0.05))',
+                color: 'var(--text-main)',
+                fontSize: '11.5px',
+                fontWeight: 500,
+                cursor: isVerifyingIp ? 'default' : 'pointer',
+                opacity: isVerifyingIp ? 0.7 : 1,
+                flexShrink: 0,
+              }}
+            >
+              <Globe size={13} className={isVerifyingIp ? 'animate-spin' : ''} />
+              <span>{isVerifyingIp ? t('proxy.verifying_ip') : t('proxy.verify_ip')}</span>
+            </button>
+          </div>
+        )}
+
+        {verifyError && (
+          <div style={{ fontSize: '11.5px', color: '#ef4444' }}>
+            {verifyError}
+          </div>
+        )}
+
+        {(isKillSwitchIsolating || errorMessage) && (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              padding: '10px 12px',
+              borderRadius: '10px',
+              backgroundColor: 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.28)',
+              color: '#fca5a5',
+              fontSize: '12px',
+              lineHeight: 1.4,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              {isKillSwitchIsolating ? (
+                <ShieldAlert size={16} style={{ color: '#ef4444', flexShrink: 0, marginTop: '1px' }} />
+              ) : (
+                <AlertTriangle size={16} style={{ color: '#ef4444', flexShrink: 0, marginTop: '1px' }} />
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {isKillSwitchIsolating && (
+                  <div style={{ fontWeight: 600, color: '#ef4444', marginBottom: errorMessage ? '2px' : 0 }}>
+                    {t('proxy.kill_switch_isolated')}
+                  </div>
+                )}
+                {errorMessage && (
+                  <div style={{ wordBreak: 'break-word' }}>
+                    {errorMessage}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+              {activeProxy && (
+                <button
+                  type="button"
+                  onClick={() => setActiveProxy(activeProxy.id)}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    backgroundColor: 'rgba(239, 68, 68, 0.22)',
+                    color: '#fff',
+                    fontSize: '11.5px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {t('proxy.retry')}
+                </button>
+              )}
+              {errorMessage && (
+                <button
+                  type="button"
+                  onClick={clearError}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: 'none',
+                    color: '#fca5a5',
+                    fontSize: '11.5px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {t('proxy.dismiss')}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 8px', gap: '8px' }}>
           <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--md-on-surface-var, #9f96b3)' }}>
             {t('proxy.saved_proxies')}
           </span>
-          <button
-            type="button"
-            onClick={handleRefreshPings}
-            disabled={isRefreshingPings}
-            aria-label={t('proxy.refresh_ping')}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button
+              type="button"
+              onClick={() => setBulkOpen((prev) => !prev)}
+              aria-label={t('proxy.bulk_import')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--accent-color, #9b7dd4)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '12px',
+                padding: '2px 4px',
+              }}
+            >
+              <ListPlus size={14} />
+              <span>{t('proxy.bulk_import')}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleRefreshPings}
+              disabled={isRefreshingPings}
+              aria-label={t('proxy.refresh_ping')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--accent-color, #9b7dd4)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '12px',
+                padding: '2px 4px',
+              }}
+            >
+              <RotateCw size={13} className={isRefreshingPings ? 'animate-spin' : ''} />
+              <span>{t('proxy.refresh')}</span>
+            </button>
+          </div>
+        </div>
+
+        {bulkOpen && (
+          <div
             style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--accent-color, #9b7dd4)',
-              cursor: 'pointer',
+              backgroundColor: 'var(--surface-container-soft, rgba(255,255,255,0.03))',
+              borderRadius: '16px',
+              padding: '14px 16px',
               display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: '12px',
-              padding: '2px 4px',
+              flexDirection: 'column',
+              gap: '10px',
             }}
           >
-            <RotateCw size={13} className={isRefreshingPings ? 'animate-spin' : ''} />
-            <span>{t('proxy.refresh')}</span>
-          </button>
-        </div>
+            <span style={{ fontSize: '12px', color: 'var(--text-dim)', lineHeight: 1.4 }}>
+              {t('proxy.bulk_import_desc')}
+            </span>
+            <textarea
+              aria-label={t('proxy.bulk_import')}
+              value={bulkText}
+              onChange={(e) => setBulkText(e.target.value)}
+              placeholder={t('proxy.bulk_import_placeholder')}
+              rows={4}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '10px',
+                backgroundColor: 'var(--surface-container)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-main)',
+                fontSize: '12.5px',
+                fontFamily: 'monospace',
+                resize: 'vertical',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '12px', color: parsedBulk.length > 0 ? '#10b981' : 'var(--text-dim)' }}>
+                {t('proxy.bulk_parsed_count', { count: parsedBulk.length })}
+              </span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBulkOpen(false);
+                    setBulkText('');
+                  }}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--surface-container)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-main)',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {t('avatar.cancel')}
+                </button>
+                <button
+                  type="button"
+                  disabled={parsedBulk.length === 0 || isImportingBulk}
+                  onClick={handleBulkImport}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--accent-color, #9b7dd4)',
+                    border: 'none',
+                    color: '#fff',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: parsedBulk.length === 0 || isImportingBulk ? 'default' : 'pointer',
+                    opacity: parsedBulk.length === 0 || isImportingBulk ? 0.5 : 1,
+                  }}
+                >
+                  {t('proxy.bulk_import_btn', { count: parsedBulk.length })}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div
           style={{
             backgroundColor: 'var(--surface-container-soft, rgba(255,255,255,0.03))',
             borderRadius: '16px',
-            overflow: 'hidden',
+            overflow: 'visible',
             display: 'flex',
             flexDirection: 'column',
           }}
         >
+          {proxies.length === 0 && (
+            <div style={{ padding: '16px', textAlign: 'center', fontSize: '13px', color: 'var(--text-dim)' }}>
+              {t('proxy.no_saved_proxies')}
+            </div>
+          )}
+
           {proxies.map((proxy) => {
             const isSelected = proxy.id === activeProxyId;
             const hasMenu = activeMenuId === proxy.id;
+            const pingLabel =
+              proxy.pingStatus === 'testing'
+                ? t('proxy.checking')
+                : proxy.ping !== null && proxy.ping !== undefined
+                ? `${proxy.ping} ms`
+                : proxy.pingStatus === 'error'
+                ? t('proxy.unavailable')
+                : '—';
 
             return (
               <div
@@ -174,7 +537,11 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                       width: '18px',
                       height: '18px',
                       borderRadius: '50%',
-                      border: isSelected && proxyEnabled ? '5px solid var(--accent-color, #9b7dd4)' : '2px solid rgba(255, 255, 255, 0.3)',
+                      border: isSelected && proxyEnabled
+                        ? '5px solid var(--accent-color, #9b7dd4)'
+                        : isSelected
+                        ? '2px solid var(--accent-color, #9b7dd4)'
+                        : '2px solid rgba(255, 255, 255, 0.3)',
                       boxSizing: 'border-box',
                       flexShrink: 0,
                       transition: 'border 0.15s ease',
@@ -182,27 +549,72 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                   />
 
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <span style={{ fontSize: '13.5px', fontWeight: 500, display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-main)' }}>
-                      {proxy.name}
-                    </span>
-                    <span style={{ fontSize: '11.5px', color: 'var(--text-dim)', display: 'block', marginTop: '1px' }}>
-                      {proxy.type.toUpperCase()} • {proxy.host}:{proxy.port}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                      <span
+                        style={{
+                          fontSize: '13.5px',
+                          fontWeight: 500,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          color: 'var(--text-main)',
+                        }}
+                      >
+                        {proxy.name}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          padding: '1px 6px',
+                          borderRadius: '5px',
+                          backgroundColor: 'rgba(155, 125, 212, 0.16)',
+                          color: 'var(--accent-color, #9b7dd4)',
+                          flexShrink: 0,
+                          letterSpacing: '0.3px',
+                        }}
+                      >
+                        {proxy.type.toUpperCase()}
+                      </span>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: '11.5px',
+                        color: proxy.pingStatus === 'error' && proxy.lastError ? '#ef4444' : 'var(--text-dim)',
+                        display: 'block',
+                        marginTop: '2px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {proxy.host}:{proxy.port}
+                      {proxy.exitIp ? ` • ${proxy.exitIp}` : ''}
+                      {proxy.pingStatus === 'error' && proxy.lastError ? ` • ${proxy.lastError}` : ''}
                     </span>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                  <span style={{ fontSize: '12px', color: proxy.pingStatus === 'error' ? '#ef4444' : 'var(--text-dim)' }}>
-                    {proxy.pingStatus === 'testing'
-                      ? t('proxy.checking')
-                      : proxy.ping !== null && proxy.ping !== undefined
-                      ? `${proxy.ping} ms`
-                      : proxy.pingStatus === 'error'
-                      ? t('proxy.unavailable')
-                      : '—'}
+                  <span
+                    aria-label={
+                      proxy.pingStatus === 'error' && proxy.lastError
+                        ? t('proxy.ping_error_label', { error: proxy.lastError })
+                        : pingLabel
+                    }
+                    style={{
+                      fontSize: '12px',
+                      color:
+                        proxy.pingStatus === 'error'
+                          ? '#ef4444'
+                          : proxy.ping !== null && proxy.ping !== undefined
+                          ? '#10b981'
+                          : 'var(--text-dim)',
+                    }}
+                  >
+                    {pingLabel}
                   </span>
 
-                  {/* Actions button */}
                   <button
                     type="button"
                     aria-label={t('common.more_options')}
@@ -226,7 +638,6 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                   </button>
                 </div>
 
-                {/* Context Dropdown Menu */}
                 {hasMenu && (
                   <>
                     <div
@@ -249,7 +660,7 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                         padding: '4px',
                         display: 'flex',
                         flexDirection: 'column',
-                        minWidth: '150px',
+                        minWidth: '160px',
                       }}
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -361,7 +772,6 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
             );
           })}
 
-          {/* Add Proxy Button */}
           <button
             type="button"
             onClick={() => {
@@ -386,7 +796,7 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
             }}
           >
             <Plus size={16} />
-            <span>{t('proxy.add_socks5')}</span>
+            <span>{t('proxy.add_proxy')}</span>
           </button>
         </div>
       </div>
@@ -415,11 +825,33 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
             }}
           >
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', paddingRight: '12px' }}>
-              <Shield size={18} style={{ marginTop: '2px', color: 'var(--text-main)', flexShrink: 0 }} />
+              {isKillSwitchIsolating ? (
+                <ShieldAlert size={18} style={{ marginTop: '2px', color: '#ef4444', flexShrink: 0 }} />
+              ) : (
+                <Shield size={18} style={{ marginTop: '2px', color: killSwitch ? 'var(--accent-color, #9b7dd4)' : 'var(--text-main)', flexShrink: 0 }} />
+              )}
               <div>
-                <span style={{ fontSize: '13.5px', fontWeight: 500, display: 'block', color: 'var(--text-main)' }}>
-                  Kill Switch
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--text-main)' }}>
+                    {t('proxy.kill_switch_title')}
+                  </span>
+                  {killSwitch && (
+                    <span
+                      style={{
+                        fontSize: '10.5px',
+                        fontWeight: 600,
+                        padding: '1px 7px',
+                        borderRadius: '999px',
+                        color: isKillSwitchIsolating ? '#ef4444' : '#f59e0b',
+                        backgroundColor: isKillSwitchIsolating
+                          ? 'rgba(239, 68, 68, 0.16)'
+                          : 'rgba(245, 158, 11, 0.14)',
+                      }}
+                    >
+                      {isKillSwitchIsolating ? t('proxy.kill_switch_blocking') : t('proxy.kill_switch_armed')}
+                    </span>
+                  )}
+                </div>
                 <span style={{ fontSize: '11.5px', color: 'var(--text-dim)', marginTop: '2px', display: 'block', lineHeight: 1.35 }}>
                   {t('proxy.kill_switch')}
                 </span>

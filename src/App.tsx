@@ -388,8 +388,19 @@ function App() {
   }, [currentTheme, chatColor]);
 
   useEffect(() => {
-    setProxyActive(false);
-  }, [setProxyActive]);
+    if (!isHydrated) return;
+    const conn = useConnectionStore.getState();
+    const active = conn.proxies.find((p) => p.id === conn.activeProxyId) || null;
+    if (conn.connectionStatus === 'connected' && conn.proxyEnabled && active) {
+      setProxyActive(true, {
+        protocol: active.type.toUpperCase(),
+        address: active.host,
+        port: active.port,
+      });
+    } else if (conn.connectionStatus !== 'connecting') {
+      setProxyActive(false, null);
+    }
+  }, [isHydrated, setProxyActive]);
 
   useEffect(() => {
     sqliteStorage.get('orbita_font_family').then((saved) => {

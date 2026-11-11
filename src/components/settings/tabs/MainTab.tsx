@@ -6,6 +6,7 @@ import { DeveloperBadge } from '../../ui/DeveloperBadge';
 import { SettingsFolderIcon } from '../ChatFoldersSettings';
 import { MD3, Block, MenuItem, QrCodeMiniIcon, type TabId } from '../SettingsShared';
 import { type ChatFolder } from '../../../store/useChatStore';
+import { useConnectionStore } from '../../../store/useConnectionStore';
 
 export interface MainTabProps {
   avatarUrl: string | null;
@@ -41,6 +42,21 @@ export const MainTab = ({
   setDeleteModalOpen,
 }: MainTabProps) => {
   const { t } = useTranslation();
+  const connectionStatus = useConnectionStore((s) => s.connectionStatus);
+
+  const getProxyStatusText = () => {
+    if (!proxyEnabled) return t('proxy.direct_short');
+    if (connectionStatus === 'error') return t('proxy.status_error');
+    if (connectionStatus === 'connecting') return t('proxy.status_connecting');
+    return activeProxy ? activeProxy.name : t('proxy.enabled');
+  };
+
+  const getProxyStatusColor = () => {
+    if (!proxyEnabled || connectionStatus === 'connecting') return MD3.onSurfaceVar;
+    if (connectionStatus === 'error') return MD3.error;
+    return 'var(--accent-color, #9b7dd4)';
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -156,12 +172,12 @@ export const MainTab = ({
               <line x1="12" y1="20" x2="12.01" y2="20" />
             </svg>
           }
-          label={t('settings.connection') || 'Подключение'}
+          label={t('settings.connection')}
           onClick={() => pushTab('connection')}
           rightElement={
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-              <span style={{ fontSize: 13, color: proxyEnabled ? 'var(--accent-color, #9b7dd4)' : MD3.onSurfaceVar }}>
-                {proxyEnabled ? (activeProxy ? activeProxy.name : 'Включено') : 'Прямое'}
+              <span style={{ fontSize: 13, color: getProxyStatusColor() }}>
+                {getProxyStatusText()}
               </span>
               <ChevronRight size={16} color={MD3.onSurfaceVar} />
             </div>

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
-import { useConnectionStore, type ProxyProfile } from '../../store/useConnectionStore';
+import { useConnectionStore, type ProxyProfile, type ProxyType } from '../../store/useConnectionStore';
+import { parseProxyInput } from '../../lib/proxyParser';
+import { PillToggle } from '../common/PillToggle';
 
 interface ProxyEditModalProps {
   isOpen: boolean;
@@ -10,6 +12,42 @@ interface ProxyEditModalProps {
   onSaved: (proxyId: string) => void;
 }
 
+const PROTOCOL_OPTIONS: Array<{ id: ProxyType; label: string; defaultPort: string }> = [
+  { id: 'socks5', label: 'SOCKS5', defaultPort: '1080' },
+  { id: 'socks5h', label: 'SOCKS5h', defaultPort: '1080' },
+  { id: 'socks4', label: 'SOCKS4', defaultPort: '1080' },
+  { id: 'socks4a', label: 'SOCKS4a', defaultPort: '1080' },
+  { id: 'http', label: 'HTTP', defaultPort: '8080' },
+  { id: 'https', label: 'HTTPS', defaultPort: '443' },
+  { id: 'ss', label: 'SS', defaultPort: '8388' },
+  { id: 'trojan', label: 'Trojan', defaultPort: '443' },
+];
+
+const SS_CIPHER_METHODS = [
+  'aes-256-gcm',
+  'aes-128-gcm',
+  'chacha20-ietf-poly1305',
+] as const;
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '8px 12px',
+  borderRadius: '8px',
+  backgroundColor: 'var(--surface-container)',
+  border: '1px solid var(--border-color)',
+  color: 'var(--text-main)',
+  fontSize: '13px',
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: '12px',
+  color: 'var(--text-dim)',
+  marginBottom: '5px',
+};
+
 export const ProxyEditModal: React.FC<ProxyEditModalProps> = ({
   isOpen,
   proxyToEdit,
@@ -17,33 +55,52 @@ export const ProxyEditModal: React.FC<ProxyEditModalProps> = ({
   onSaved,
 }) => {
   const { t } = useTranslation();
-  const { addProxy, updateProxy, parseProxyUrl } = useConnectionStore();
+  const { addProxy, updateProxy } = useConnectionStore();
 
+  const [type, setType] = useState<ProxyType>('socks5');
   const [name, setName] = useState('');
   const [host, setHost] = useState('');
   const [port, setPort] = useState('1080');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [method, setMethod] = useState('aes-256-gcm');
+  const [sni, setSni] = useState('');
+  const [allowInsecure, setAllowInsecure] = useState(false);
   const [quickLink, setQuickLink] = useState('');
+  const [detectedType, setDetectedType] = useState<ProxyType | null>(null);
+  const [quickPasteError, setQuickPasteError] = useState(false);
+  const [portManuallyEdited, setPortManuallyEdited] = useState(false);
   const [testResult, setTestResult] = useState<{ ping?: number; error?: string; testing?: boolean } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       if (proxyToEdit) {
+        setType(proxyToEdit.type || 'socks5');
         setName(proxyToEdit.name);
         setHost(proxyToEdit.host);
         setPort(String(proxyToEdit.port));
         setUsername(proxyToEdit.username || '');
         setPassword(proxyToEdit.password || '');
+        setMethod(proxyToEdit.method || 'aes-256-gcm');
+        setSni(proxyToEdit.sni || '');
+        setAllowInsecure(Boolean(proxyToEdit.allowInsecure));
+        setPortManuallyEdited(true);
       } else {
+        setType('socks5');
         setName('');
         setHost('');
         setPort('1080');
         setUsername('');
         setPassword('');
+        setMethod('aes-256-gcm');
+        setSni('');
+        setAllowInsecure(false);
+        setPortManuallyEdited(false);
       }
       setQuickLink('');
+      setDetectedType(null);
+      setQuickPasteError(false);
       setTestResult(null);
       setErrorMessage(null);
     }
@@ -51,27 +108,78 @@ export const ProxyEditModal: React.FC<ProxyEditModalProps> = ({
 
   if (!isOpen) return null;
 
+  const isSocks4Family = type === 'socks4' || type === 'socks4a';
+  const isShadowsocks = type === 'ss';
+  const isTrojan = type === 'trojan';
+  const showUsername = !isShadowsocks && !isTrojan;
+  const showPassword = !isSocks4Family;
+  const showTlsFields = isTrojan || type === 'https';
+
+  const handleSelectProtocol = (nextType: ProxyType) => {
+    setType(nextType);
+    setTestResult(null);
+    setErrorMessage(null);
+    if (!proxyToEdit && !portManuallyEdited) {
+      const option = PROTOCOL_OPTIONS.find((item) => item.id === nextType);
+      if (option) {
+        setPort(option.defaultPort);
+      }
+    }
+  };
+
   const handleQuickLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setQuickLink(val);
-    if (!val.trim()) return;
+    if (!val.trim()) {
+      setDetectedType(null);
+      setQuickPasteError(false);
+      return;
+    }
 
-    const parsed = parseProxyUrl(val);
+    const parsed = parseProxyInput(val);
     if (parsed) {
-      if (parsed.name && !name) setName(parsed.name);
-      if (parsed.host) setHost(parsed.host);
-      if (parsed.port) setPort(String(parsed.port));
-      if (parsed.username !== undefined) setUsername(parsed.username);
-      if (parsed.password !== undefined) setPassword(parsed.password);
+      setDetectedType(parsed.type);
+      setQuickPasteError(false);
+      setType(parsed.type);
+      setHost(parsed.host);
+      setPort(String(parsed.port));
+      setPortManuallyEdited(true);
+      setUsername(parsed.username || '');
+      setPassword(parsed.password || '');
+      setMethod(parsed.method || 'aes-256-gcm');
+      setSni(parsed.sni || '');
+      setAllowInsecure(Boolean(parsed.allowInsecure));
+      if (parsed.name && (!name.trim() || !proxyToEdit)) {
+        setName(parsed.name);
+      }
       setErrorMessage(null);
+      setTestResult(null);
+    } else {
+      setDetectedType(null);
+      setQuickPasteError(true);
     }
   };
+
+  const buildCurrentConfig = (cleanHost: string, cleanPort: number) => ({
+    host: cleanHost,
+    port: cleanPort,
+    type,
+    username: showUsername && username.trim() ? username.trim() : undefined,
+    password: showPassword && password ? password : undefined,
+    method: isShadowsocks ? method : undefined,
+    sni: showTlsFields && sni.trim() ? sni.trim() : undefined,
+    allowInsecure: showTlsFields && allowInsecure ? true : undefined,
+  });
 
   const handleTestConnection = async () => {
     const cleanHost = host.trim();
     const cleanPort = parseInt(port.trim(), 10);
-    if (!cleanHost || isNaN(cleanPort)) {
+    if (!cleanHost || isNaN(cleanPort) || cleanPort <= 0 || cleanPort > 65535) {
       setErrorMessage(t('proxy.err_host_port'));
+      return;
+    }
+    if ((isShadowsocks || isTrojan) && !password) {
+      setErrorMessage(t('proxy.err_password_required'));
       return;
     }
 
@@ -79,16 +187,18 @@ export const ProxyEditModal: React.FC<ProxyEditModalProps> = ({
     setErrorMessage(null);
 
     if (window.orbita?.checkProxyPing) {
-      const res = await window.orbita.checkProxyPing(cleanHost, cleanPort, 4000);
-      if (res?.success && res.ping !== undefined) {
-        setTestResult({ ping: res.ping });
-      } else {
-        setTestResult({ error: res?.error || t('proxy.unavailable') });
+      try {
+        const res = await window.orbita.checkProxyPing(buildCurrentConfig(cleanHost, cleanPort), 5000);
+        if (res?.success && res.ping !== undefined) {
+          setTestResult({ ping: res.ping });
+        } else {
+          setTestResult({ error: res?.error || t('proxy.unavailable') });
+        }
+      } catch (err: any) {
+        setTestResult({ error: err?.message || t('proxy.unavailable') });
       }
     } else {
-      setTimeout(() => {
-        setTestResult({ ping: 48 });
-      }, 300);
+      setTestResult({ error: t('proxy.unavailable') });
     }
   };
 
@@ -103,27 +213,24 @@ export const ProxyEditModal: React.FC<ProxyEditModalProps> = ({
       setErrorMessage(t('proxy.err_port'));
       return;
     }
+    if ((isShadowsocks || isTrojan) && !password) {
+      setErrorMessage(t('proxy.err_password_required'));
+      return;
+    }
 
     const finalName = name.trim() || `${cleanHost}:${cleanPort}`;
+    const config = buildCurrentConfig(cleanHost, cleanPort);
 
     if (proxyToEdit) {
       await updateProxy(proxyToEdit.id, {
         name: finalName,
-        type: 'socks5',
-        host: cleanHost,
-        port: cleanPort,
-        username: username.trim() || undefined,
-        password: password || undefined,
+        ...config,
       });
       onSaved(proxyToEdit.id);
     } else {
       const newId = await addProxy({
         name: finalName,
-        type: 'socks5',
-        host: cleanHost,
-        port: cleanPort,
-        username: username.trim() || undefined,
-        password: password || undefined,
+        ...config,
       });
       onSaved(newId);
     }
@@ -151,9 +258,11 @@ export const ProxyEditModal: React.FC<ProxyEditModalProps> = ({
       <div
         style={{
           width: '100%',
-          maxWidth: '400px',
+          maxWidth: '440px',
+          maxHeight: '90vh',
+          overflowY: 'auto',
           backgroundColor: 'var(--settings-surface, var(--bg-secondary))',
-          borderRadius: '10px',
+          borderRadius: '12px',
           border: '1px solid var(--border-color)',
           boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
           padding: '18px 20px',
@@ -167,7 +276,7 @@ export const ProxyEditModal: React.FC<ProxyEditModalProps> = ({
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--text-main)' }}>
-            {proxyToEdit ? t('proxy.edit_proxy') : t('proxy.add_socks5')}
+            {proxyToEdit ? t('proxy.edit_proxy') : t('proxy.add_proxy')}
           </h3>
           <button
             type="button"
@@ -186,147 +295,229 @@ export const ProxyEditModal: React.FC<ProxyEditModalProps> = ({
           </button>
         </div>
 
-        {!proxyToEdit && (
-          <div>
-            <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-dim)', marginBottom: '5px' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px', gap: '8px' }}>
+            <label htmlFor="proxy-quick-paste" style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
               {t('proxy.quick_paste')}
             </label>
-            <input
-              type="text"
-              value={quickLink}
-              onChange={handleQuickLinkChange}
-              placeholder="socks5://user:pass@host:port"
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                borderRadius: '8px',
-                backgroundColor: 'var(--surface-container)',
-                border: '1px solid var(--border-color)',
-                color: 'var(--text-main)',
-                fontSize: '13px',
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
+            {detectedType && (
+              <span
+                style={{
+                  fontSize: '10.5px',
+                  fontWeight: 600,
+                  padding: '2px 7px',
+                  borderRadius: '6px',
+                  backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                  color: '#10b981',
+                  flexShrink: 0,
+                }}
+              >
+                {t('proxy.detected_protocol', { protocol: detectedType.toUpperCase() })}
+              </span>
+            )}
           </div>
-        )}
+          <input
+            id="proxy-quick-paste"
+            type="text"
+            value={quickLink}
+            onChange={handleQuickLinkChange}
+            placeholder={t('proxy.quick_paste_placeholder')}
+            style={inputStyle}
+          />
+          {quickPasteError && (
+            <span style={{ display: 'block', fontSize: '11.5px', color: '#f59e0b', marginTop: '4px' }}>
+              {t('proxy.quick_paste_invalid')}
+            </span>
+          )}
+        </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-dim)', marginBottom: '5px' }}>
+          <span style={labelStyle}>{t('proxy.protocol')}</span>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+              gap: '6px',
+            }}
+          >
+            {PROTOCOL_OPTIONS.map((option) => {
+              const active = type === option.id;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => handleSelectProtocol(option.id)}
+                  style={{
+                    padding: '6px 8px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: active ? 600 : 500,
+                    cursor: 'pointer',
+                    border: active
+                      ? '1px solid var(--accent-color, #9b7dd4)'
+                      : '1px solid var(--border-color)',
+                    backgroundColor: active
+                      ? 'var(--accent-color, #9b7dd4)'
+                      : 'var(--surface-container)',
+                    color: active ? '#fff' : 'var(--text-main)',
+                    transition: 'all 0.12s ease',
+                  }}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="proxy-name" style={labelStyle}>
             {t('proxy.name')}
           </label>
           <input
+            id="proxy-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={t('proxy.name_placeholder')}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              borderRadius: '8px',
-              backgroundColor: 'var(--surface-container)',
-              border: '1px solid var(--border-color)',
-              color: 'var(--text-main)',
-              fontSize: '13px',
-              outline: 'none',
-              boxSizing: 'border-box',
-            }}
+            style={inputStyle}
           />
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
           <div style={{ flex: 1 }}>
-            <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-dim)', marginBottom: '5px' }}>
+            <label htmlFor="proxy-host" style={labelStyle}>
               {t('proxy.server_host')}
             </label>
             <input
+              id="proxy-host"
               type="text"
               value={host}
               onChange={(e) => setHost(e.target.value)}
               placeholder={t('proxy.host_placeholder')}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                borderRadius: '8px',
-                backgroundColor: 'var(--surface-container)',
-                border: '1px solid var(--border-color)',
-                color: 'var(--text-main)',
-                fontSize: '13px',
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
+              style={inputStyle}
             />
           </div>
-          <div style={{ width: '90px' }}>
-            <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-dim)', marginBottom: '5px' }}>
+          <div style={{ width: '92px' }}>
+            <label htmlFor="proxy-port" style={labelStyle}>
               {t('proxy.port')}
             </label>
             <input
+              id="proxy-port"
               type="text"
               value={port}
-              onChange={(e) => setPort(e.target.value)}
-              placeholder="1080"
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                borderRadius: '8px',
-                backgroundColor: 'var(--surface-container)',
-                border: '1px solid var(--border-color)',
-                color: 'var(--text-main)',
-                fontSize: '13px',
-                outline: 'none',
-                boxSizing: 'border-box',
+              onChange={(e) => {
+                setPort(e.target.value);
+                setPortManuallyEdited(true);
               }}
+              placeholder="1080"
+              style={inputStyle}
             />
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <div style={{ flex: 1 }}>
-            <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-dim)', marginBottom: '5px' }}>
-              {t('proxy.username_optional')}
+        {isShadowsocks && (
+          <div>
+            <label htmlFor="proxy-ss-method" style={labelStyle}>
+              {t('proxy.cipher_method')}
             </label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder={t('proxy.username_placeholder')}
+            <select
+              id="proxy-ss-method"
+              aria-label={t('proxy.cipher_method')}
+              value={method}
+              onChange={(e) => setMethod(e.target.value)}
               style={{
-                width: '100%',
-                padding: '8px 12px',
+                ...inputStyle,
+                cursor: 'pointer',
+              }}
+            >
+              {SS_CIPHER_METHODS.map((cipher) => (
+                <option key={cipher} value={cipher}>
+                  {cipher}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {(showUsername || showPassword) && (
+          <div style={{ display: 'flex', gap: '10px' }}>
+            {showUsername && (
+              <div style={{ flex: 1 }}>
+                <label htmlFor="proxy-username" style={labelStyle}>
+                  {isSocks4Family ? t('proxy.user_id_optional') : t('proxy.username_optional')}
+                </label>
+                <input
+                  id="proxy-username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder={t('proxy.username_placeholder')}
+                  style={inputStyle}
+                />
+              </div>
+            )}
+            {showPassword && (
+              <div style={{ flex: 1 }}>
+                <label htmlFor="proxy-password" style={labelStyle}>
+                  {isShadowsocks || isTrojan ? t('proxy.password') : t('proxy.password_optional')}
+                </label>
+                <input
+                  id="proxy-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={t('proxy.password_placeholder')}
+                  style={inputStyle}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {showTlsFields && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div>
+              <label htmlFor="proxy-sni" style={labelStyle}>
+                {t('proxy.sni_optional')}
+              </label>
+              <input
+                id="proxy-sni"
+                type="text"
+                value={sni}
+                onChange={(e) => setSni(e.target.value)}
+                placeholder={t('proxy.sni_placeholder')}
+                style={inputStyle}
+              />
+            </div>
+
+            <div
+              onClick={() => setAllowInsecure(!allowInsecure)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                padding: '10px 12px',
                 borderRadius: '8px',
                 backgroundColor: 'var(--surface-container)',
                 border: '1px solid var(--border-color)',
-                color: 'var(--text-main)',
-                fontSize: '13px',
-                outline: 'none',
-                boxSizing: 'border-box',
+                cursor: 'pointer',
               }}
-            />
+            >
+              <div style={{ minWidth: 0 }}>
+                <span style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text-main)' }}>
+                  {t('proxy.allow_insecure_tls')}
+                </span>
+                <span style={{ display: 'block', fontSize: '11.5px', color: 'var(--text-dim)', marginTop: '2px' }}>
+                  {t('proxy.allow_insecure_tls_desc')}
+                </span>
+              </div>
+              <PillToggle checked={allowInsecure} onChange={() => setAllowInsecure(!allowInsecure)} />
+            </div>
           </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-dim)', marginBottom: '5px' }}>
-              {t('proxy.password_optional')}
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={t('proxy.password_placeholder')}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                borderRadius: '8px',
-                backgroundColor: 'var(--surface-container)',
-                border: '1px solid var(--border-color)',
-                color: 'var(--text-main)',
-                fontSize: '13px',
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-        </div>
+        )}
 
         {errorMessage && (
           <p style={{ margin: 0, fontSize: '12px', color: '#ef4444' }}>
@@ -334,7 +525,7 @@ export const ProxyEditModal: React.FC<ProxyEditModalProps> = ({
           </p>
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginTop: '2px' }}>
           <button
             type="button"
             onClick={handleTestConnection}
@@ -347,19 +538,27 @@ export const ProxyEditModal: React.FC<ProxyEditModalProps> = ({
               fontWeight: 500,
               cursor: testResult?.testing ? 'default' : 'pointer',
               padding: 0,
+              flexShrink: 0,
             }}
           >
             {testResult?.testing ? t('proxy.checking') : t('proxy.test_connection')}
           </button>
 
           {testResult && !testResult.testing && (
-            <span style={{ fontSize: '13px', color: testResult.ping ? 'var(--text-main)' : '#ef4444' }}>
+            <span
+              style={{
+                fontSize: '12.5px',
+                color: testResult.ping !== undefined ? '#10b981' : '#ef4444',
+                textAlign: 'right',
+                wordBreak: 'break-word',
+              }}
+            >
               {testResult.ping !== undefined ? `${testResult.ping} ms` : (testResult.error || t('proxy.unavailable'))}
             </span>
           )}
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '6px' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '4px' }}>
           <button
             type="button"
             onClick={onClose}

@@ -412,13 +412,50 @@ contextBridge.exposeInMainWorld('orbita', {
   decryptFileStream: (sourcePath: string, targetPath: string, keyHex: string) =>
     ipcRenderer.invoke('native:decrypt-file-stream', sourcePath, targetPath, keyHex),
 
-  setProxy: (config: { host: string; port: number; username?: string; password?: string; type?: string; proxyCalls?: boolean }) =>
-    ipcRenderer.invoke('orbita:setProxy', config),
+  setProxy: (config: {
+    host: string;
+    port: number;
+    type?: string;
+    username?: string;
+    password?: string;
+    method?: string;
+    sni?: string;
+    allowInsecure?: boolean;
+    proxyCalls?: boolean;
+  }) => ipcRenderer.invoke('orbita:setProxy', config),
+
   clearProxy: () => ipcRenderer.invoke('orbita:clearProxy'),
   setKillSwitchIsolation: (isolate: boolean) =>
     ipcRenderer.invoke('orbita:setKillSwitchIsolation', isolate),
-  checkProxyPing: (host: string, port: number, timeoutMs?: number) =>
-    ipcRenderer.invoke('orbita:checkProxyPing', host, port, timeoutMs),
+  checkProxyPing: (
+    configOrHost:
+      | {
+          host: string;
+          port: number;
+          type?: string;
+          username?: string;
+          password?: string;
+          method?: string;
+          sni?: string;
+          allowInsecure?: boolean;
+          proxyCalls?: boolean;
+        }
+      | string,
+    portOrTimeout?: number,
+    timeoutMs?: number
+  ) => ipcRenderer.invoke('orbita:checkProxyPing', configOrHost, portOrTimeout, timeoutMs),
+  verifyProxyConnection: (config?: {
+    host: string;
+    port: number;
+    type?: string;
+    username?: string;
+    password?: string;
+    method?: string;
+    sni?: string;
+    allowInsecure?: boolean;
+    proxyCalls?: boolean;
+  }) => ipcRenderer.invoke('orbita:verifyProxyConnection', config),
+
 
   rustEncryptFile: (data: Uint8Array | ArrayBuffer, sharedSecretHex: string) =>
     ipcRenderer.invoke('orbita:rustEncryptFile', data, sharedSecretHex),

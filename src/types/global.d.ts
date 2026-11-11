@@ -141,10 +141,47 @@ declare global {
       optimizeMemory?: () => Promise<{ success: boolean; trimmed: boolean; memory?: { workingSetBytes: number; pagefileBytes: number } }>;
       getMemoryInfo?: () => Promise<{ workingSetBytes: number; peakWorkingSetBytes: number; pagefileBytes: number }>;
       destroyCloudinaryMedia?: (publicId: string, resourceType?: string) => Promise<{ success: boolean }>;
-      setProxy?: (config: { host: string; port: number; username?: string; password?: string; type?: string; proxyCalls?: boolean }) => Promise<{ success: boolean; error?: string }>;
+      setProxy?: (config: {
+        host: string;
+        port: number;
+        type?: string;
+        username?: string;
+        password?: string;
+        method?: string;
+        sni?: string;
+        allowInsecure?: boolean;
+        proxyCalls?: boolean;
+      }) => Promise<{ success: boolean; localPort?: number; error?: string }>;
       clearProxy?: () => Promise<{ success: boolean; error?: string }>;
       setKillSwitchIsolation?: (isolate: boolean) => Promise<{ success: boolean; error?: string }>;
-      checkProxyPing?: (host: string, port: number, timeoutMs?: number) => Promise<{ success: boolean; ping?: number; error?: string }>;
+      checkProxyPing?: (
+        configOrHost:
+          | {
+              host: string;
+              port: number;
+              type?: string;
+              username?: string;
+              password?: string;
+              method?: string;
+              sni?: string;
+              allowInsecure?: boolean;
+              proxyCalls?: boolean;
+            }
+          | string,
+        portOrTimeout?: number,
+        timeoutMs?: number
+      ) => Promise<{ success: boolean; ping?: number; error?: string }>;
+      verifyProxyConnection?: (config?: {
+        host: string;
+        port: number;
+        type?: string;
+        username?: string;
+        password?: string;
+        method?: string;
+        sni?: string;
+        allowInsecure?: boolean;
+        proxyCalls?: boolean;
+      }) => Promise<{ success: boolean; exitIp?: string; ping?: number; error?: string }>;
 
       // Native Rust Hardware-Accelerated Cryptography
       rustEncryptFile?: (data: Uint8Array | ArrayBuffer, sharedSecretHex: string) => Promise<Uint8Array | null>;

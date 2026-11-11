@@ -29,6 +29,14 @@ import * as sqlite3 from 'sqlite3';
 import { autoUpdater } from 'electron-updater';
 import { spawn } from 'child_process';
 import { getLocalKey, isPinLocked, isPinSet, unlockWithPin, setupPin, removePin, setNativeModule } from './localKey';
+import {
+  ProxyConfigPayload,
+  startLocalProxyRelay,
+  stopLocalProxyRelay,
+  getActiveProxyConfig,
+  testProxyConnection,
+  verifyProxyExitIp,
+} from './proxyManager';
 
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 app.commandLine.appendSwitch('js-flags', '--expose-gc --max-old-space-size=2048');
@@ -5478,6 +5486,7 @@ app.on('before-quit', () => {
     mediaWindow = null;
   }
   destroyTray();
+  stopLocalProxyRelay().catch(() => {});
 });
 
 app.on('will-quit', () => {
@@ -5518,145 +5527,102 @@ ipcMain.on('orbita:show-custom-notification', (_event, payload: any) => {
   });
 });
 
-// ==========================================
-// Proxy & Connection Manager (SOCKS5 / Network)
-// ==========================================
-let activeProxyCredentials: { username?: string; password?: string } | null = null;
-
-// Handle proxy authentication (SOCKS5 / HTTP credentials)
-app.on('login', (event, _webContents, _request, authInfo, callback) => {
-  if (authInfo.isProxy && activeProxyCredentials?.username) {
-    event.preventDefault();
-    callback(activeProxyCredentials.username, activeProxyCredentials.password || '');
+function applyWebRtcIpPolicy(policy: 'default' | 'disable_non_proxied_udp') {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) {
+      win.webContents.setWebRTCIPHandlingPolicy(policy);
+    }
   }
-});
+}
 
-// Set active proxy in Electron session
-ipcMain.handle('orbita:setProxy', async (_event, config: { host: string; port: number; username?: string; password?: string; type?: string; proxyCalls?: boolean }) => {
+ipcMain.handle('orbita:setProxy', async (_event, config: ProxyConfigPayload) => {
   try {
-    activeProxyCredentials = {
-      username: config.username?.trim() || undefined,
-      password: config.password || undefined,
-    };
-    const proxyProtocol = (config.type || 'socks5').toLowerCase() === 'http' ? 'http' : 'socks5';
-    const proxyRules = `${proxyProtocol}://${config.host.trim()}:${config.port}`;
-
+    const { port: localPort } = await startLocalProxyRelay(config);
+    const proxyRules = `http=127.0.0.1:${localPort};https=127.0.0.1:${localPort};socks=127.0.0.1:${localPort}`;
     const proxyBypassRules = config.proxyCalls === false
-      ? '<local>;*.livekit.cloud;*.turn.livekit.cloud;orbitad.vercel.app'
+      ? '*.livekit.cloud;*.turn.livekit.cloud;orbitad.vercel.app;<local>'
       : '<local>';
 
     await session.defaultSession.setProxy({
       proxyRules,
       proxyBypassRules,
     });
-    console.log(`[Proxy] Applied proxy rules: ${proxyRules}, bypass: ${proxyBypassRules}`);
-    return { success: true };
+    await session.defaultSession.closeAllConnections();
+    applyWebRtcIpPolicy(config.proxyCalls === false ? 'default' : 'disable_non_proxied_udp');
+
+    return { success: true, localPort };
   } catch (err: any) {
-    console.error('[Proxy] Failed to set proxy:', err);
+    await stopLocalProxyRelay().catch(() => {});
     return { success: false, error: err?.message || 'Failed to set proxy' };
   }
 });
 
-// Clear proxy (restore direct connection)
 ipcMain.handle('orbita:clearProxy', async () => {
   try {
-    activeProxyCredentials = null;
+    await stopLocalProxyRelay();
     await session.defaultSession.setProxy({
       proxyRules: '',
       proxyBypassRules: '',
     });
-    console.log('[Proxy] Restored direct connection');
+    await session.defaultSession.closeAllConnections();
+    applyWebRtcIpPolicy('default');
     return { success: true };
   } catch (err: any) {
-    console.error('[Proxy] Failed to clear proxy:', err);
     return { success: false, error: err?.message || 'Failed to clear proxy' };
   }
 });
 
-// Kill Switch Isolation (blocks all traffic when proxy drops)
 ipcMain.handle('orbita:setKillSwitchIsolation', async (_event, isolate: boolean) => {
   try {
     if (isolate) {
-      // Route all traffic into blackhole
+      await stopLocalProxyRelay();
       await session.defaultSession.setProxy({
         proxyRules: 'http://127.0.0.1:0',
         proxyBypassRules: '',
       });
-      console.log('[Proxy] Kill switch active: network traffic isolated');
+      await session.defaultSession.closeAllConnections();
+      applyWebRtcIpPolicy('disable_non_proxied_udp');
+    } else if (!getActiveProxyConfig()) {
+      await session.defaultSession.setProxy({
+        proxyRules: '',
+        proxyBypassRules: '',
+      });
+      await session.defaultSession.closeAllConnections();
+      applyWebRtcIpPolicy('default');
     }
     return { success: true };
   } catch (err: any) {
-    console.error('[Proxy] Kill switch error:', err);
-    return { success: false, error: err?.message };
+    return { success: false, error: err?.message || 'Kill switch error' };
   }
 });
 
-ipcMain.handle('orbita:checkProxyPing', async (_event, host: string, port: number, timeoutMs = 4500) => {
-  return new Promise<{ success: boolean; ping?: number; error?: string }>((resolve) => {
-    let resolved = false;
-    const cleanHost = (host || '').trim();
-    const startTime = Date.now();
-    const socket = new net.Socket();
-    socket.setTimeout(timeoutMs);
+ipcMain.handle(
+  'orbita:checkProxyPing',
+  async (_event, configOrHost: ProxyConfigPayload | string, portOrTimeout?: number, timeoutMs?: number) => {
+    if (typeof configOrHost === 'object' && configOrHost !== null) {
+      const timeout = typeof portOrTimeout === 'number' ? portOrTimeout : (typeof timeoutMs === 'number' ? timeoutMs : 5000);
+      return testProxyConnection(configOrHost, timeout);
+    }
+    const host = String(configOrHost || '');
+    const port = Number(portOrTimeout || 0);
+    const timeout = typeof timeoutMs === 'number' ? timeoutMs : 5000;
+    const socksResult = await testProxyConnection({ host, port, type: 'socks5' }, timeout);
+    if (socksResult.success) {
+      return socksResult;
+    }
+    const httpResult = await testProxyConnection({ host, port, type: 'http' }, timeout);
+    if (httpResult.success) {
+      return httpResult;
+    }
+    return socksResult;
+  }
+);
 
-    const finish = (result: { success: boolean; ping?: number; error?: string }) => {
-      if (!resolved) {
-        resolved = true;
-        socket.destroy();
-        resolve(result);
-      }
-    };
-
-    socket.on('timeout', () => finish({ success: false, error: 'Таймаут' }));
-    socket.on('error', (err) => finish({ success: false, error: err.message || 'Ошибка соединения' }));
-
-    socket.connect(port, cleanHost, () => {
-      let stage = 'socks5_greeting';
-      socket.write(Buffer.from([0x05, 0x01, 0x00]));
-
-      socket.on('data', (data) => {
-        if (stage === 'socks5_greeting') {
-          if (data.length >= 2 && data[0] === 0x05) {
-            if (data[1] === 0x00) {
-              stage = 'socks5_connect';
-              socket.write(Buffer.from([0x05, 0x01, 0x00, 0x01, 1, 1, 1, 1, 0x00, 0x50]));
-              return;
-            } else if (data[1] === 0x02) {
-              const ping = Date.now() - startTime;
-              finish({ success: true, ping: Math.max(15, ping) });
-              return;
-            }
-          }
-          stage = 'http_connect';
-          socket.write(Buffer.from('CONNECT 1.1.1.1:80 HTTP/1.1\r\nHost: 1.1.1.1:80\r\nProxy-Connection: Keep-Alive\r\n\r\n'));
-        } else if (stage === 'socks5_connect') {
-          if (data.length >= 2 && data[0] === 0x05 && data[1] === 0x00) {
-            const ping = Date.now() - startTime;
-            finish({ success: true, ping: Math.max(10, ping) });
-          } else {
-            const isLocal = cleanHost === '127.0.0.1' || cleanHost === 'localhost';
-            if (isLocal) {
-              finish({ success: false, error: 'Локальный прокси не смог подключиться к интернету' });
-            } else {
-              finish({ success: true, ping: Math.max(15, Date.now() - startTime) });
-            }
-          }
-        } else if (stage === 'http_connect') {
-          const text = data.toString();
-          if (text.includes('200')) {
-            const ping = Date.now() - startTime;
-            finish({ success: true, ping: Math.max(10, ping) });
-          } else {
-            const isLocal = cleanHost === '127.0.0.1' || cleanHost === 'localhost';
-            if (isLocal) {
-              finish({ success: false, error: 'HTTP прокси не ответил 200' });
-            } else {
-              finish({ success: true, ping: Math.max(15, Date.now() - startTime) });
-            }
-          }
-        }
-      });
-    });
-  });
+ipcMain.handle('orbita:verifyProxyConnection', async (_event, config?: ProxyConfigPayload) => {
+  const targetConfig = config && config.host ? config : getActiveProxyConfig();
+  if (!targetConfig) {
+    return { success: false, error: 'No active proxy configured' };
+  }
+  return verifyProxyExitIp(targetConfig, 8000);
 });
 

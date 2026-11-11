@@ -315,10 +315,8 @@ export const MessageInput = memo<MessageInputProps>(({
     };
   }, [currentText, linkPreviewsEnabled, dismissedUrl, editingIndex]);
 
-  // Track true emptiness for placeholder rendering locally without lagging the main thread
   const [isEditorEmpty, setIsEditorEmpty] = useState(!currentText.trim());
 
-  // Forward ref for external components if needed
   useEffect(() => {
     if (inputRef) {
       (inputRef as React.MutableRefObject<HTMLDivElement | null>).current = editorRef.current;
@@ -630,12 +628,12 @@ export const MessageInput = memo<MessageInputProps>(({
         const codeEl = document.createElement('code');
         codeEl.style.fontFamily = 'monospace';
         codeEl.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
-        codeEl.style.padding = '2px 4px';
-        codeEl.style.borderRadius = '4px';
+        codeEl.style.padding = '2px 5px';
+        codeEl.style.borderRadius = '6px';
         try {
           range.surroundContents(codeEl);
         } catch {
-          document.execCommand('insertHTML', false, `<code style="font-family:monospace;background:rgba(255,255,255,0.12);padding:2px 4px;border-radius:4px;">${sel.toString()}</code>`);
+          document.execCommand('insertHTML', false, `<code style="font-family:monospace;background:rgba(255,255,255,0.12);padding:2px 5px;border-radius:6px;">${sel.toString()}</code>`);
         }
         break;
       }
@@ -662,12 +660,12 @@ export const MessageInput = memo<MessageInputProps>(({
         spoilerEl.setAttribute('data-spoiler', 'true');
         spoilerEl.style.backgroundColor = 'rgba(255, 255, 255, 0.18)';
         spoilerEl.style.filter = 'blur(3px)';
-        spoilerEl.style.padding = '0 3px';
-        spoilerEl.style.borderRadius = '4px';
+        spoilerEl.style.padding = '0 4px';
+        spoilerEl.style.borderRadius = '6px';
         try {
           range.surroundContents(spoilerEl);
         } catch {
-          document.execCommand('insertHTML', false, `<span class="spoiler" data-spoiler="true" style="background:rgba(255,255,255,0.18);filter:blur(3px);padding:0 3px;border-radius:4px;">${sel.toString()}</span>`);
+          document.execCommand('insertHTML', false, `<span class="spoiler" data-spoiler="true" style="background:rgba(255,255,255,0.18);filter:blur(3px);padding:0 4px;border-radius:6px;">${sel.toString()}</span>`);
         }
         break;
       }
@@ -886,17 +884,18 @@ export const MessageInput = memo<MessageInputProps>(({
               type="button"
               tabIndex={-1}
               onClick={onOpenTxtModal}
+              aria-label={t('chatWindow.send_as_file', 'Отправить как файл')}
               style={{
                 position: 'absolute',
                 bottom: '100%',
                 left: '0px',
                 marginBottom: '6px',
-                backgroundColor: 'var(--bg-secondary, #252836)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
+                backgroundColor: 'var(--surface-container, var(--bg-secondary, #252836))',
+                border: 'none',
                 outline: 'none',
-                boxShadow: '0 4px 14px rgba(0, 0, 0, 0.4)',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
                 color: 'var(--accent-color, #7C3AED)',
-                borderRadius: '50%',
+                borderRadius: '9999px',
                 width: '34px',
                 height: '34px',
                 display: 'flex',
@@ -1142,52 +1141,53 @@ export const MessageInput = memo<MessageInputProps>(({
           <div
             style={{
               backgroundColor: 'var(--bg-secondary, #252836)',
-              borderRadius: '8px',
+              borderRadius: '18px',
+              border: 'none',
               padding: '20px',
               width: '320px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              boxShadow: '0 12px 36px rgba(0,0,0,0.45)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '24px',
+              gap: '18px',
               color: 'var(--text-main)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ fontWeight: 600, fontSize: '15px' }}>{t('inputContextMenu.add_link')}</div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '12px', color: 'var(--text-dim, rgba(255,255,255,0.45))' }}>{t('inputContextMenu.text')}</label>
               <input
                 type="text"
                 value={linkModalData.text}
                 onChange={(e) => setLinkModalData({ ...linkModalData, text: e.target.value })}
                 style={{
-                  background: 'transparent',
+                  background: 'var(--surface-container, rgba(255,255,255,0.06))',
                   border: 'none',
-                  borderBottom: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '12px',
                   color: 'var(--text-main)',
-                  padding: '4px 0',
+                  padding: '10px 12px',
                   outline: 'none',
-                  fontSize: '14px'
+                  fontSize: '14px',
                 }}
                 autoFocus
               />
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '12px', color: 'var(--text-dim, rgba(255,255,255,0.45))' }}>{t('inputContextMenu.url')}</label>
               <input
                 type="text"
                 value={linkModalData.url}
                 onChange={(e) => setLinkModalData({ ...linkModalData, url: e.target.value })}
                 style={{
-                  background: 'transparent',
+                  background: 'var(--surface-container, rgba(255,255,255,0.06))',
                   border: 'none',
-                  borderBottom: '1px solid var(--accent-color, #7C3AED)',
+                  borderRadius: '12px',
                   color: 'var(--text-main)',
-                  padding: '4px 0',
+                  padding: '10px 12px',
                   outline: 'none',
-                  fontSize: '14px'
+                  fontSize: '14px',
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -1199,10 +1199,10 @@ export const MessageInput = memo<MessageInputProps>(({
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '20px', marginTop: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '4px' }}>
               <button
                 onClick={() => setLinkModalData({ ...linkModalData, open: false })}
-                style={{ color: 'var(--accent-color, #7C3AED)', background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', padding: 0 }}
+                style={{ color: 'var(--text-dim)', background: 'var(--surface-container, rgba(255,255,255,0.06))', border: 'none', borderRadius: '12px', fontSize: '14px', cursor: 'pointer', padding: '8px 14px' }}
                 className="hover:opacity-80 transition-opacity"
               >
                 {t('inputContextMenu.cancel')}
@@ -1237,8 +1237,8 @@ export const MessageInput = memo<MessageInputProps>(({
                     }
                   }
                 }}
-                style={{ color: 'var(--accent-color, #7C3AED)', background: 'none', border: 'none', fontSize: '14px', fontWeight: 600, cursor: 'pointer', padding: 0 }}
-                className="hover:opacity-80 transition-opacity"
+                style={{ color: '#ffffff', background: 'var(--accent-color, #7C3AED)', border: 'none', borderRadius: '12px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', padding: '8px 16px' }}
+                className="hover:opacity-90 transition-opacity"
               >
                 {t('inputContextMenu.add')}
               </button>
@@ -1281,15 +1281,15 @@ export const MessageInput = memo<MessageInputProps>(({
         .rich-editor code {
           font-family: monospace;
           background-color: rgba(255, 255, 255, 0.12);
-          padding: 2px 4px;
-          border-radius: 4px;
+          padding: 2px 5px;
+          border-radius: 6px;
         }
 
         .rich-editor .spoiler {
           background-color: rgba(255, 255, 255, 0.18);
           filter: blur(3px);
-          padding: 0 3px;
-          border-radius: 4px;
+          padding: 0 4px;
+          border-radius: 6px;
         }
 
         button:focus, button:focus-visible {

@@ -1,7 +1,6 @@
 import React from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { ConnectModal } from './ConnectModal';
-import { MainMenuDrawer } from './MainMenuDrawer';
 import { MyProfileModal } from '../chat/MyProfileModal';
 import { CallsModal } from '../call/CallsModal';
 import { FriendRequestsModal } from './FriendRequestsModal';
@@ -19,13 +18,10 @@ export interface MainLayoutModalsProps {
   connectModalConfig: { isOpen: boolean; type: 'friend' | 'group' | 'channel' };
   setConnectModalConfig: React.Dispatch<React.SetStateAction<{ isOpen: boolean; type: 'friend' | 'group' | 'channel' }>>;
   handleConnectRequest: (friendCode: string, callback: (success: boolean, error?: string) => void) => void;
-  isMainMenuOpen: boolean;
-  setIsMainMenuOpen: (open: boolean) => void;
   isMyProfileOpen: boolean;
   setIsMyProfileOpen: (open: boolean) => void;
   showCallsModal: boolean;
   setShowCallsModal: (open: boolean) => void;
-  handleOpenSettings: () => void;
   setActiveChat: (chatId: string | null) => void;
   isMobileView: boolean;
   showFriendRequestsModal: boolean;
@@ -66,13 +62,10 @@ export const MainLayoutModals: React.FC<MainLayoutModalsProps> = ({
   connectModalConfig,
   setConnectModalConfig,
   handleConnectRequest,
-  isMainMenuOpen,
-  setIsMainMenuOpen,
   isMyProfileOpen,
   setIsMyProfileOpen,
   showCallsModal,
   setShowCallsModal,
-  handleOpenSettings,
   setActiveChat,
   isMobileView,
   showFriendRequestsModal,
@@ -105,39 +98,6 @@ export const MainLayoutModals: React.FC<MainLayoutModalsProps> = ({
           onConnectRequest={handleConnectRequest}
         />
       )}
-
-      <MainMenuDrawer
-        isOpen={isMainMenuOpen}
-        onClose={() => setIsMainMenuOpen(false)}
-        onOpenProfile={() => {
-          setIsMainMenuOpen(false);
-          setIsMyProfileOpen(true);
-        }}
-        onOpenCreateGroup={() => {
-          setIsMainMenuOpen(false);
-          setConnectModalConfig({ isOpen: true, type: 'group' });
-        }}
-        onOpenCreateChannel={() => {
-          setIsMainMenuOpen(false);
-          setConnectModalConfig({ isOpen: true, type: 'channel' });
-        }}
-        onOpenCreateChat={() => {
-          setIsMainMenuOpen(false);
-          setConnectModalConfig({ isOpen: true, type: 'friend' });
-        }}
-        onOpenCalls={() => {
-          setIsMainMenuOpen(false);
-          setShowCallsModal(true);
-        }}
-        onOpenSavedMessages={() => {
-          setIsMainMenuOpen(false);
-          setActiveChat('notes');
-        }}
-        onOpenSettings={() => {
-          setIsMainMenuOpen(false);
-          handleOpenSettings();
-        }}
-      />
 
       <MyProfileModal
         isOpen={isMyProfileOpen}

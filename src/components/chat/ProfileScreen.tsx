@@ -27,6 +27,7 @@ import { useCallStore } from '../../store/useCallStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { MD3CircularSpinner } from '../common/MD3CircularSpinner';
 import { Avatar } from '../common/Avatar';
+import { OnlineIndicator } from '../common/OnlineIndicator';
 import { NotesAvatar } from '../common/NotesAvatar';
 import { getOrbitaMediaUrl } from '../../lib/media-utils';
 import { mediaManager } from '../../services/mediaManager';
@@ -839,6 +840,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
             borderRadius: '50%',
             backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
             boxShadow: effectiveBannerUrl ? '0 0 0 6px var(--settings-bg, var(--bg-secondary))' : 'none',
+            position: 'relative',
             flexShrink: 0,
           }}
         >
@@ -900,6 +902,15 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
               />
             )}
           </div>
+          {chat.type === 'private' && chatId !== 'notes' && chat.id !== 'system_support' && (
+            <OnlineIndicator
+              online={chat.online}
+              showOffline={false}
+              size="lg"
+              ringColor="var(--settings-bg, var(--bg-secondary))"
+              ariaLabel={t('userStatus.online', 'В сети')}
+            />
+          )}
         </div>
       </div>
 
@@ -1068,7 +1079,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
             margin: isMobileView ? '0' : '0 16px',
             marginTop: isMobileView ? '30px' : '0',
             backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
-            borderRadius: isMobileView ? 0 : 10,
+            borderRadius: isMobileView ? 0 : 16,
             boxShadow: isMobileView ? 'none' : '0 20px 60px rgba(0,0,0,0.5)',
             color: 'var(--text-main, #fff)',
             overflow: 'hidden',
@@ -1087,7 +1098,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                 justifyContent: 'space-between',
                 padding: '0 12px',
                 boxSizing: 'border-box',
-                borderBottom: '1px solid var(--surface-border, rgba(255,255,255,0.06))',
+                borderBottom: 'none',
                 flexShrink: 0,
                 zIndex: 30,
               }}
@@ -1457,7 +1468,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         </motion.div>
       </div>
 
-      {/* Fullscreen Telegram-style Media Viewer for Photos, Videos, GIFs */}
+
       {viewerState.isOpen && (
         <TelegramMediaViewer
           isOpen={viewerState.isOpen}

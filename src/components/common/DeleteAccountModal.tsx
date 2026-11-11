@@ -1,4 +1,3 @@
-// src/components/common/DeleteAccountModal.tsx
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
@@ -33,10 +32,11 @@ export const DeleteAccountModal = ({ isOpen, onClose, onConfirm }: DeleteAccount
           initial={{ scale: 0.95 }}
           animate={{ scale: 1 }}
           exit={{ scale: 0.95 }}
-          className="w-full max-w-sm rounded-2xl p-6"
+          className="w-full max-w-sm rounded-[20px] p-6"
           style={{
             backgroundColor: 'var(--bg-secondary)',
             border: 'none',
+            outline: 'none',
             boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
           }}
           onClick={(e) => e.stopPropagation()}
@@ -54,11 +54,12 @@ export const DeleteAccountModal = ({ isOpen, onClose, onConfirm }: DeleteAccount
             <div className="flex gap-3 justify-center">
               <button
                 onClick={onClose}
-                className="px-6 py-2 rounded-full text-sm font-medium transition-colors"
+                className="px-6 py-2 rounded-full text-sm font-medium transition-colors cursor-pointer"
                 style={{
                   backgroundColor: 'var(--surface-muted)',
                   color: 'var(--text-main)',
                   border: 'none',
+                  outline: 'none',
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-strong)')}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-muted)')}
@@ -67,11 +68,12 @@ export const DeleteAccountModal = ({ isOpen, onClose, onConfirm }: DeleteAccount
               </button>
               <button
                 onClick={onConfirm}
-                className="px-6 py-2 rounded-full text-sm font-bold transition-colors"
+                className="px-6 py-2 rounded-full text-sm font-bold transition-colors cursor-pointer"
                 style={{
                   backgroundColor: 'var(--accent-color)',
                   color: '#fff',
                   border: 'none',
+                  outline: 'none',
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--accent-light)')}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--accent-color)')}

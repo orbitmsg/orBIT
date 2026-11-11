@@ -104,26 +104,26 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
 
   const MinimizeIcon = () => (
     <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M0 5H10" stroke="currentColor" strokeWidth="1" strokeLinecap="square" />
+      <path d="M1 5H9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
     </svg>
   );
 
   const MaximizeIcon = () => (
     <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="0.5" y="0.5" width="9" height="9" stroke="currentColor" strokeWidth="1" />
+      <rect x="0.75" y="0.75" width="8.5" height="8.5" rx="1.75" stroke="currentColor" strokeWidth="1.1" />
     </svg>
   );
 
   const RestoreIcon = () => (
     <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M2.5 0.5H9.5V7.5" stroke="currentColor" strokeWidth="1" strokeLinecap="square" />
-      <rect x="0.5" y="2.5" width="7" height="7" stroke="currentColor" strokeWidth="1" fill="var(--title-bar-bg, var(--md-surface, #2a253b))" />
+      <path d="M2.5 0.75H8C8.69 0.75 9.25 1.31 9.25 2V7.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+      <rect x="0.75" y="2.5" width="6.75" height="6.75" rx="1.5" stroke="currentColor" strokeWidth="1.1" fill="var(--title-bar-bg, var(--md-surface, #2a253b))" />
     </svg>
   );
 
   const CloseIcon = () => (
     <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M1 1L9 9M9 1L1 9" stroke="currentColor" strokeWidth="1" strokeLinecap="square" />
+      <path d="M1.5 1.5L8.5 8.5M8.5 1.5L1.5 8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
     </svg>
   );
 
@@ -167,9 +167,10 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
       <style>{`
         .orbita-titlebar-btn {
           width: 30px;
-          height: 30px;
+          height: 22px;
           border: none;
           outline: none;
+          border-radius: 9999px;
           background: transparent;
           color: var(--text-dim, #9f96b3);
           cursor: pointer;
@@ -178,27 +179,34 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: background-color 0.12s ease, color 0.12s ease;
+          transition: background-color 0.14s ease, color 0.14s ease;
           -webkit-app-region: no-drag;
           user-select: none;
         }
         .orbita-titlebar-btn:not(.hover-suppressed):hover {
-          background-color: rgba(255, 255, 255, 0.08);
+          background-color: rgba(255, 255, 255, 0.09);
           color: var(--text-main, #ffffff);
         }
         .orbita-titlebar-btn:not(.hover-suppressed):active {
           background-color: rgba(255, 255, 255, 0.16);
+        }
+        .orbita-titlebar-btn-close:not(.hover-suppressed):hover {
+          background-color: rgba(239, 68, 68, 0.22);
+          color: #f87171;
+        }
+        .orbita-titlebar-btn-close:not(.hover-suppressed):active {
+          background-color: rgba(239, 68, 68, 0.34);
+          color: #fca5a5;
         }
         .orbita-titlebar-btn:focus {
           outline: none;
         }
       `}</style>
       <div
-        className="flex items-center h-full"
+        className="flex items-center h-full gap-1 pr-1.5"
         style={{
           height: '100%',
-          // @ts-ignore
-          WebkitAppRegion: 'no-drag',
+          ['WebkitAppRegion' as any]: 'no-drag',
         }}
       >
         <button
@@ -219,7 +227,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
 
         <button
           onClick={handleClose}
-          className={btnClass}
+          className={`${btnClass} orbita-titlebar-btn-close`}
           aria-label="Close"
         >
           <CloseIcon />

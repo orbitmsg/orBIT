@@ -992,7 +992,7 @@ export const SettingsScreen = () => {
             margin: isMobileWidth ? '0' : '0 16px',
             marginTop: isMobileWidth ? '30px' : '0',
             backgroundColor: MD3.bg,
-            borderRadius: isMobileWidth ? 0 : 10,
+            borderRadius: isMobileWidth ? 0 : 20,
             color: MD3.onSurface,
             boxShadow: isMobileWidth ? 'none' : '0 20px 60px rgba(0,0,0,0.5)',
             overflow: 'hidden',
@@ -1007,7 +1007,6 @@ export const SettingsScreen = () => {
               backgroundColor: MD3.bg,
               flexShrink: 0,
               userSelect: 'none',
-              borderBottom: 'none',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -1024,17 +1023,24 @@ export const SettingsScreen = () => {
                   style={{
                     background: 'none',
                     border: 'none',
+                    borderRadius: '12px',
                     color: MD3.onSurfaceVar,
                     cursor: 'pointer',
-                    padding: '4px',
-                    transition: 'color 150ms',
+                    padding: '6px',
+                    transition: 'color 150ms, background-color 150ms',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     outline: 'none',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = MD3.primary)}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = MD3.onSurfaceVar)}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = MD3.primary;
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = MD3.onSurfaceVar;
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M16 22L6 12L16 2l1.775 1.775L9.55 12l8.225 8.225z" />
@@ -1063,17 +1069,24 @@ export const SettingsScreen = () => {
                   style={{
                     background: 'none',
                     border: 'none',
+                    borderRadius: '12px',
                     color: MD3.onSurfaceVar,
                     cursor: 'pointer',
-                    padding: '4px',
-                    transition: 'color 150ms',
+                    padding: '6px',
+                    transition: 'color 150ms, background-color 150ms',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     outline: 'none',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = MD3.primary)}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = MD3.onSurfaceVar)}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = MD3.primary;
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = MD3.onSurfaceVar;
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
                 >
                   <svg width="18" height="18" viewBox="0 0 64 64" fill="currentColor">
                     <path d="M61.2 13c-3.2-3.4-6.6-6.8-10-10.1c-.7-.7-1.5-1.1-2.4-1.1s-1.8.3-2.4 1L8.7 40.2c-.6.6-1 1.3-1.3 2L1.9 59c-.3.8-.1 1.6.3 2.2c.5.6 1.2 1 2.1 1h.4l17.1-5.7c.8-.3 1.5-.7 2-1.3l37.5-37.4c.6-.6 1-1.5 1-2.4s-.4-1.7-1.1-2.4M20.6 52.1c-.1.1-.2.1-.3.2L7.4 56.6l4.3-12.9c0-.1.1-.2.2-.3L39.4 16l8.7 8.7zm30.6-30.6l-8.7-8.7l6.1-6.1c2.9 2.8 5.8 5.8 8.6 8.7z" />
@@ -1087,17 +1100,24 @@ export const SettingsScreen = () => {
                 style={{
                   background: 'none',
                   border: 'none',
+                  borderRadius: '12px',
                   color: MD3.onSurfaceVar,
                   cursor: 'pointer',
-                  padding: '4px',
-                  transition: 'color 150ms',
+                  padding: '6px',
+                  transition: 'color 150ms, background-color 150ms',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   outline: 'none',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = MD3.primary)}
-                onMouseLeave={(e) => (e.currentTarget.style.color = MD3.onSurfaceVar)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = MD3.primary;
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = MD3.onSurfaceVar;
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">
                   <path fill="currentColor" d="M6.225 4.811a1 1 0 0 0-1.414 1.414L10.586 12L4.81 17.775a1 1 0 1 0 1.414 1.414L12 13.414l5.775 5.775a1 1 0 0 0 1.414-1.414L13.414 12l5.775-5.775a1 1 0 0 0-1.414-1.414L12 10.586z" />

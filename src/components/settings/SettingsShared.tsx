@@ -38,15 +38,15 @@ export const GLOBAL_CSS = `
   .m3-switch-root input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
 
   .m3-track {
-    position: absolute; inset: 0; border-radius: 16px;
+    position: absolute; inset: 0; border-radius: 9999px;
     background: var(--switch-bg, rgba(255, 255, 255, 0.12));
-    border: 2px solid var(--switch-border, rgba(255, 255, 255, 0.25));
-    transition: background 200ms cubic-bezier(0.2, 0, 0, 1), border-color 200ms cubic-bezier(0.2, 0, 0, 1);
-    box-sizing: border-box; will-change: background, border-color;
+    box-shadow: inset 0 0 0 1.5px var(--switch-border, rgba(255, 255, 255, 0.22));
+    transition: background 200ms cubic-bezier(0.2, 0, 0, 1), box-shadow 200ms cubic-bezier(0.2, 0, 0, 1);
+    box-sizing: border-box; will-change: background, box-shadow;
   }
   .m3-switch-root input:checked ~ .m3-track {
     background: var(--accent-color, var(--md-primary, #c5b4e3));
-    border-color: var(--accent-color, var(--md-primary, #c5b4e3));
+    box-shadow: none;
   }
 
   .m3-thumb-wrap {
@@ -165,9 +165,9 @@ export const TogglePill = ({
       alignItems: 'center',
       gap: '8px',
       padding: '7px 18px',
-      borderRadius: '20px',
-      backgroundColor: 'var(--surface-container, #231e34)',
-      border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
+      borderRadius: '9999px',
+      backgroundColor: active ? 'var(--surface-container-high, rgba(255, 255, 255, 0.12))' : 'var(--surface-container, #231e34)',
+      border: 'none',
       color: active ? 'var(--text-main, #ffffff)' : 'var(--text-dim, #8a82a2)',
       fontSize: '13.5px',
       fontWeight: 500,
@@ -181,8 +181,9 @@ export const TogglePill = ({
         width: '17px',
         height: '17px',
         borderRadius: '50%',
-        backgroundColor: active ? 'var(--text-main, #ffffff)' : 'transparent',
-        border: active ? 'none' : '1.5px solid var(--text-dim, #6b6385)',
+        backgroundColor: active ? 'var(--text-main, #ffffff)' : 'rgba(255, 255, 255, 0.08)',
+        border: 'none',
+        boxShadow: active ? 'none' : 'inset 0 0 0 1.5px var(--text-dim, #6b6385)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -222,7 +223,7 @@ export const Block = ({ children, style }: { children: ReactNode; style?: React.
       backgroundColor: MD3.surface,
       width: 'calc(100% - 20px)',
       margin: '0 10px',
-      borderRadius: '16px',
+      borderRadius: '18px',
       overflow: 'hidden',
       display: 'flex',
       flexDirection: 'column',
@@ -253,7 +254,7 @@ export const SettingsRow = ({
       alignItems: 'center',
       justifyContent: 'space-between',
       padding: '12px 14px',
-      borderRadius: onClick ? '12px' : 0,
+      borderRadius: '12px',
       margin: onClick ? '2px 6px' : 0,
       cursor: onClick ? 'pointer' : 'default',
       transition: 'background 150ms',
@@ -269,7 +270,6 @@ export const SettingsRow = ({
         <div style={{
           width: 20,
           height: 20,
-          borderRadius: 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -356,7 +356,7 @@ export const MenuItem = ({
     onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(202,196,208,0.08)')}
     onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
   >
-    <div style={{ width: 20, height: 20, borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: MD3.onSurface, flexShrink: 0, backgroundColor: 'transparent' }}>
+    <div style={{ width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', color: MD3.onSurface, flexShrink: 0, backgroundColor: 'transparent' }}>
       {icon}
     </div>
     <div style={{ flex: 1, minWidth: 0 }}>
@@ -501,7 +501,7 @@ export const OrbitaSelect = ({
           backgroundColor: MD3.surfaceVar,
           color: MD3.onSurface,
           border: 'none',
-          borderRadius: 10,
+          borderRadius: 12,
           padding: '9px 14px',
           fontSize: 13.5,
           fontWeight: 600,
@@ -559,14 +559,14 @@ export const OrbitaSelect = ({
               maxWidth: 320,
               maxHeight: 164,
               overflowY: 'auto',
-              backgroundColor: 'var(--md-surface, #2a253b)',
-              border: '1px solid rgba(255,255,255,0.05)',
-              borderRadius: 10,
+              backgroundColor: 'var(--md-surface-var, #342e47)',
+              border: 'none',
+              borderRadius: 16,
               boxShadow: '0 12px 32px rgba(0, 0, 0, 0.65)',
               display: 'flex',
               flexDirection: 'column',
               gap: 4,
-              padding: 4,
+              padding: 6,
               zIndex: 1000,
               boxSizing: 'border-box',
             }}
@@ -588,7 +588,7 @@ export const OrbitaSelect = ({
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '8px 10px',
-                    borderRadius: 7,
+                    borderRadius: 12,
                     fontSize: 13,
                     fontWeight: isSelected ? 600 : 400,
                     color: isSelected ? '#ffffff' : MD3.onSurface,

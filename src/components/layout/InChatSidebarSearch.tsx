@@ -338,7 +338,7 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
           <button
             type="button"
             onClick={() => setIsScopeMenuOpen((prev) => !prev)}
-            className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer text-left"
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer text-left"
             style={{ border: 'none', background: 'transparent' }}
           >
             {scope === 'this_chat' ? (
@@ -374,10 +374,10 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
 
           {isScopeMenuOpen && (
             <div
-              className="absolute left-0 top-[38px] z-50 min-w-[170px] py-1 rounded-xl shadow-2xl backdrop-blur-xl"
+              className="absolute left-0 top-[38px] z-50 min-w-[170px] p-1.5 rounded-2xl backdrop-blur-xl flex flex-col gap-0.5"
               style={{
                 backgroundColor: 'var(--settings-bg, var(--bg-secondary, #1e2932))',
-                border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
+                border: 'none',
                 boxShadow: '0 8px 30px rgba(0, 0, 0, 0.45)',
               }}
             >
@@ -387,7 +387,7 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
                   setInChatSearchScope('this_chat');
                   setIsScopeMenuOpen(false);
                 }}
-                className="w-full flex items-center justify-between px-3 py-2 text-[13px] transition-colors hover:bg-white/5 text-left cursor-pointer"
+                className="w-full flex items-center justify-between px-3 py-2 text-[13px] rounded-xl transition-colors hover:bg-white/5 text-left cursor-pointer"
                 style={{ border: 'none', background: 'transparent' }}
               >
                 <div className="flex items-center gap-2 min-w-0">
@@ -415,7 +415,7 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
                   setInChatSearchScope('all_chats');
                   setIsScopeMenuOpen(false);
                 }}
-                className="w-full flex items-center justify-between px-3 py-2 text-[13px] transition-colors hover:bg-white/5 text-left cursor-pointer"
+                className="w-full flex items-center justify-between px-3 py-2 text-[13px] rounded-xl transition-colors hover:bg-white/5 text-left cursor-pointer"
                 style={{ border: 'none', background: 'transparent' }}
               >
                 <div className="flex items-center gap-2 min-w-0">
@@ -454,12 +454,7 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
       </div>
 
       {debouncedQuery.trim() !== '' && (
-        <div
-          className="px-4 py-2 select-none"
-          style={{
-            borderBottom: '1px solid var(--border-color, rgba(255, 255, 255, 0.05))',
-          }}
-        >
+        <div className="px-4 py-2 select-none">
           <span className="text-[12px] font-medium text-[var(--text-dim)]">
             {formatFoundCount(searchResults.length, isRu)}
           </span>
@@ -500,7 +495,7 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
             </span>
           </div>
         ) : (
-          <div className="flex flex-col py-1">
+          <div className="flex flex-col py-1 px-2 gap-0.5">
             {visibleResults.map((res, idx) => {
               const avatarToDisplay = res.isNotes
                 ? undefined
@@ -511,7 +506,7 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
                 <div
                   key={`${res.chatId}_${res.message.id || res.message.time}_${idx}`}
                   onClick={() => handleResultClick(res)}
-                  className="px-3.5 py-2 flex items-center gap-3 cursor-pointer hover:bg-white/5 transition-colors select-none group"
+                  className="px-2.5 py-2 rounded-xl flex items-center gap-3 cursor-pointer hover:bg-white/5 transition-colors select-none group"
                 >
                   {res.isNotes ? (
                     <NotesAvatar className="w-10 h-10 rounded-full flex-shrink-0" />

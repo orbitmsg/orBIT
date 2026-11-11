@@ -215,7 +215,11 @@
       "unmute_notifications": "Unmute notifications",
       "delete_chat": "Delete chat",
       "loading": "Loading...",
-      "days": "days"
+      "days": "days",
+      "accept": "Accept",
+      "decline": "Decline",
+      "add": "Add",
+      "this_is_you": "This is you"
     },
     "titleBar": {
       "minimize": "Minimize",
@@ -1669,7 +1673,22 @@
       "exploreServers": "Explore Discoverable Servers",
       "startGroupCall": "Start Voice Call",
       "inbox": "Inbox",
-      "help": "Help"
+      "help": "Help",
+      "addFriendDesc": "You can add friends using their username, code, or invite link.",
+      "addFriendPlaceholder": "Username, @username, UUID, or invite link",
+      "sendFriendRequest": "Send Friend Request",
+      "sendingRequest": "Sending...",
+      "addShort": "Add",
+      "searching": "Searching users...",
+      "cannotAddSelf": "You cannot add yourself",
+      "requestUnavailable": "Friend requests are currently unavailable",
+      "blockedEmpty": "You have no blocked users",
+      "allFriendsEmpty": "Your friends list is empty"
+    },
+    "sidebar": {
+      "find_or_create_group": "Find or create group",
+      "find_or_create_channel": "Find or create channel",
+      "find_friend": "Find friend"
     }
   },
   "group": {
@@ -1680,6 +1699,7 @@
     "admin_badge": "admin"
   },
   "chatWindow": {
-    "link_preview": "Link preview"
+    "link_preview": "Link preview",
+    "send_as_file": "Send as file"
   }
 }

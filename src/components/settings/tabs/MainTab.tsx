@@ -131,15 +131,25 @@ export const MainTab = ({
             style={{
               background: 'transparent',
               border: 'none',
+              borderRadius: '12px',
               color: MD3.onSurfaceVar,
               cursor: 'pointer',
               padding: '6px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              transition: 'background-color 150ms, color 150ms',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(202,196,208,0.08)';
+              e.currentTarget.style.color = MD3.onSurface;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = MD3.onSurfaceVar;
             }}
           >
-            <QrCodeMiniIcon size={20} color={MD3.onSurfaceVar} />
+            <QrCodeMiniIcon size={20} color="currentColor" />
           </button>
         </div>
       </div>

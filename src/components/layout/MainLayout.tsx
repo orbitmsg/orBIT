@@ -133,7 +133,6 @@ export const MainLayout = () => {
     type: 'group' | 'channel' | 'friend';
   }>({ isOpen: false, type: 'friend' });
   const [searchChannelResult, setSearchChannelResult] = useState<ChannelInfo | null>(null);
-  const [isMainMenuOpen, setIsMainMenuOpen] = useState(false);
   const [isMyProfileOpen, setIsMyProfileOpen] = useState(false);
   const [showCallsModal, setShowCallsModal] = useState(false);
   const [showFriendRequestsModal, setShowFriendRequestsModal] = useState(false);
@@ -1120,7 +1119,6 @@ export const MainLayout = () => {
           folders={folders}
           getFolderUnreadCount={getFolderUnreadCount}
           isLightTheme={isLightTheme}
-          setIsMainMenuOpen={setIsMainMenuOpen}
         />
       )}
 
@@ -1158,7 +1156,18 @@ export const MainLayout = () => {
             handleSelectFoundUser={handleSelectFoundUser}
             handleSelectFoundSupport={handleSelectFoundSupport}
             isLightTheme={isLightTheme}
-            setIsMainMenuOpen={setIsMainMenuOpen}
+            onOpenCreateGroup={() => setConnectModalConfig({ isOpen: true, type: 'group' })}
+            onOpenCreateChannel={() => setConnectModalConfig({ isOpen: true, type: 'channel' })}
+            onOpenAddFriend={() => setConnectModalConfig({ isOpen: true, type: 'friend' })}
+            onOpenFriends={() => {
+              setActiveFolderId(null);
+              setActiveChat(null);
+              setCurrentView('chats');
+            }}
+            onOpenSavedMessages={() => setActiveChat('notes')}
+            onOpenCalls={() => setShowCallsModal(true)}
+            onOpenSettings={handleOpenSettings}
+            onOpenProfile={() => setIsMyProfileOpen(true)}
           />
         </ResizableSidebar>
       )}
@@ -1168,7 +1177,7 @@ export const MainLayout = () => {
 
         {(!isMobileView || activeChatId) && (
           <main
-            className="flex-1 flex flex-col rounded-none overflow-hidden"
+            className="flex-1 flex flex-col rounded-tl-2xl overflow-hidden"
             style={{
               backgroundColor: 'var(--bg-primary)',
               minWidth: isMobileView ? 0 : CHAT_MIN_WIDTH,
@@ -1184,7 +1193,11 @@ export const MainLayout = () => {
                 ) : (
                   <>
                     <ActiveCallBar />
-                    <ChatPlaceholder />
+                    <ChatPlaceholder
+                      onConnectRequest={handleConnectRequest}
+                      onAcceptFriendRequest={handleAcceptFriendRequest}
+                      onRejectFriendRequest={handleRejectFriendRequest}
+                    />
                   </>
                 )}
               </div>
@@ -1275,13 +1288,10 @@ export const MainLayout = () => {
           connectModalConfig={connectModalConfig}
           setConnectModalConfig={setConnectModalConfig}
           handleConnectRequest={handleConnectRequest}
-          isMainMenuOpen={isMainMenuOpen}
-          setIsMainMenuOpen={setIsMainMenuOpen}
           isMyProfileOpen={isMyProfileOpen}
           setIsMyProfileOpen={setIsMyProfileOpen}
           showCallsModal={showCallsModal}
           setShowCallsModal={setShowCallsModal}
-          handleOpenSettings={handleOpenSettings}
           setActiveChat={setActiveChat}
           isMobileView={isMobileView}
           showFriendRequestsModal={showFriendRequestsModal}

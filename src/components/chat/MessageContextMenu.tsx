@@ -179,7 +179,7 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
       initial={false}
       animate={{
         height: isExpanded ? expandedHeight : 40,
-        borderRadius: '14px',
+        borderRadius: '16px',
       }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       className="relative backdrop-blur-xl select-none overflow-hidden flex flex-col"
@@ -187,7 +187,7 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
         width: '256px',
         backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
         border: 'none',
-        boxShadow: 'none',
+        boxShadow: '0 8px 30px rgba(0, 0, 0, 0.38)',
         marginBottom: isExpanded ? '0px' : '8px',
         willChange: 'height',
       }}
@@ -223,7 +223,7 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
                       background: 'transparent',
                       padding: 0,
                       userSelect: 'none',
-                      borderRadius: '8px',
+                      borderRadius: '10px',
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.1))';
@@ -246,7 +246,7 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
                 className="relative flex-1 flex items-center rounded-full px-2.5 py-1"
                 style={{
                   backgroundColor: 'var(--surface-container, rgba(128,128,128,0.15))',
-                  border: '1px solid var(--border-color, rgba(128,128,128,0.2))',
+                  border: 'none',
                   height: '28px',
                 }}
               >
@@ -315,7 +315,7 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
                   key={emoji.id}
                   type="button"
                   onClick={() => handleSelect(emoji.char)}
-                  className="emoji-font flex items-center justify-center active:scale-95 cursor-pointer rounded-lg transition-colors"
+                  className="emoji-font flex items-center justify-center active:scale-95 cursor-pointer rounded-xl transition-colors"
                   style={{
                     width: 36,
                     height: 36,
@@ -323,7 +323,7 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
                     border: 'none',
                     background: 'transparent',
                     padding: 0,
-                    borderRadius: '8px',
+                    borderRadius: '10px',
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.1))';
@@ -411,10 +411,10 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
 
   const iconColor = 'var(--text-main)';
   const baseBtnClass =
-    'w-full flex items-center gap-2.5 px-3 py-2 text-[13px] font-normal normal-case transition-colors cursor-pointer select-none';
+    'w-full flex items-center gap-2.5 px-3 py-2 text-[13px] font-normal normal-case transition-colors cursor-pointer select-none rounded-xl';
   const baseBtnStyle: React.CSSProperties = {
     color: 'var(--text-main)',
-    borderRadius: '8px',
+    borderRadius: '12px',
     border: 'none',
     backgroundColor: 'transparent',
   };
@@ -548,14 +548,14 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
           pointerEvents: isExpanded ? 'none' : 'auto',
         }}
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-        className="backdrop-blur-xl select-none overflow-hidden absolute top-[48px] left-0 z-[1]"
+        className="backdrop-blur-xl select-none overflow-hidden absolute top-[48px] left-0 z-[1] rounded-2xl"
         style={{
           width: '256px',
           backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
-          borderRadius: '14px',
+          borderRadius: '16px',
           border: 'none',
-          boxShadow: 'none',
-          padding: '4px',
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.38)',
+          padding: '6px',
           display: 'flex',
           flexDirection: 'column',
           gap: '2px',

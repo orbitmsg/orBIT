@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera } from 'lucide-react';
+import { Camera, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, type Chat } from '../../store/useChatStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -32,6 +32,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
   const [inputValue, setInputValue] = useState('');
   const [descriptionValue, setDescriptionValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const [isDescFocused, setIsDescFocused] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [cropperModalOpen, setCropperModalOpen] = useState(false);
   const [cropperImageSrc, setCropperImageSrc] = useState<string | null>(null);
@@ -373,8 +374,6 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
       ? t('createModal.channel_name', 'Название канала')
       : t('createModal.group_name', 'Название группы');
 
-  const isFloating = isFocused || inputValue.trim().length > 0;
-
   return (
     <AnimatePresence>
       <motion.div
@@ -389,6 +388,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
           backdropFilter: 'none',
           WebkitBackdropFilter: 'none',
           border: 'none',
+          outline: 'none',
         }}
         onClick={onClose}
       >
@@ -397,30 +397,31 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.94, opacity: 0 }}
           transition={{ duration: 0.15, ease: 'easeOut' }}
-          className="w-full max-w-[360px] rounded-[8px] p-5 shadow-2xl overflow-hidden relative"
+          className="w-full max-w-[360px] rounded-2xl p-5 shadow-2xl overflow-hidden relative"
           style={{
             backgroundColor: 'var(--settings-bg, var(--bg-secondary, #1e1b2e))',
             color: 'var(--text-main)',
-            borderRadius: '8px',
+            borderRadius: '16px',
             border: 'none',
+            outline: 'none',
             boxShadow: '0 20px 50px rgba(0, 0, 0, 0.35)',
-            minHeight: '175px',
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center gap-4 mt-2">
+          <div className="flex items-center gap-3.5 mt-1">
             {type !== 'friend' && (
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 self-end pb-0.5">
                 <button
                   type="button"
                   onClick={handleAvatarClick}
                   aria-label={t('createModal.choose_photo', 'Выбрать фото')}
-                  className="w-14 h-14 rounded-full bg-[#3B82F6] flex items-center justify-center cursor-pointer overflow-hidden relative border-none outline-none"
+                  className="w-14 h-14 rounded-full bg-[var(--accent-color,#3B82F6)] flex items-center justify-center cursor-pointer overflow-hidden relative border-none outline-none hover:opacity-90 transition-opacity"
+                  style={{ border: 'none', outline: 'none' }}
                 >
                   {avatarUrl ? (
                     <Avatar src={avatarUrl} style={{ width: '100%', height: '100%' }} />
                   ) : (
-                    <Camera size={26} className="text-white" />
+                    <Camera size={24} className="text-white" />
                   )}
                 </button>
                 <input
@@ -434,14 +435,11 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
               </div>
             )}
 
-            <div className="relative flex-1 flex flex-col justify-end min-w-0 pt-4">
-              <span
-                className="absolute left-0 pointer-events-none select-none text-[15px] leading-normal truncate max-w-full"
+            <div className="relative flex-1 flex flex-col min-w-0">
+              <label
+                htmlFor="connect-modal-main-input"
+                className="text-[12px] font-medium mb-1.5 px-0.5 truncate transition-colors"
                 style={{
-                  bottom: '8px',
-                  transformOrigin: 'left bottom',
-                  transform: (isFloating || Boolean(tempWarning)) ? 'translateY(-20px) scale(0.78)' : 'translateY(0) scale(1)',
-                  transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease',
                   color: tempWarning
                     ? '#ef4444'
                     : isFocused
@@ -450,11 +448,14 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                 }}
               >
                 {tempWarning || label}
-              </span>
+              </label>
               <input
+                id="connect-modal-main-input"
                 ref={inputRef}
                 type="text"
                 value={inputValue}
+                placeholder={label}
+                aria-label={label}
                 onChange={(e) => {
                   setInputValue(e.target.value);
                   if (tempWarning) setTempWarning(null);
@@ -469,18 +470,20 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                     onClose();
                   }
                 }}
-                className="w-full bg-transparent outline-none text-[15px] pt-4 pb-1 transition-colors"
+                className="w-full outline-none text-[14.5px] transition-all"
                 style={{
                   color: 'var(--text-main)',
+                  backgroundColor: 'var(--surface-container)',
                   border: 'none',
-                  borderRadius: 0,
+                  outline: 'none',
+                  borderRadius: '14px',
+                  padding: '10px 14px',
                   boxSizing: 'border-box',
-                  borderBottom: '2px solid',
-                  borderBottomColor: tempWarning
-                    ? '#ef4444'
+                  boxShadow: tempWarning
+                    ? '0 0 0 2px rgba(239, 68, 68, 0.45)'
                     : isFocused
-                    ? 'var(--accent-color, #7C3AED)'
-                    : 'var(--border-color, rgba(128, 128, 128, 0.2))',
+                    ? '0 0 0 2px color-mix(in srgb, var(--accent-color, #7C3AED) 45%, transparent)'
+                    : 'none',
                 }}
                 autoFocus
               />
@@ -490,9 +493,11 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
           {type === 'friend' && liveResults.length > 0 && (
             <div className="mt-3 flex flex-col gap-1 max-h-[160px] overflow-y-auto custom-scrollbar">
               {liveResults.map((u) => (
-                <div
+                <button
+                  type="button"
                   key={u.user_code}
                   onClick={() => {
+                    if (isLoading) return;
                     setIsLoading(true);
                     onConnectRequest(u.user_code, (ok, msg) => {
                       setIsLoading(false);
@@ -503,7 +508,8 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                       }
                     });
                   }}
-                  className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-[var(--surface-container-strong,rgba(255,255,255,0.08))] cursor-pointer transition-colors"
+                  className="w-full text-left flex items-center gap-2.5 p-2 rounded-xl bg-transparent hover:bg-[var(--surface-container-strong,rgba(255,255,255,0.08))] cursor-pointer transition-colors"
+                  style={{ border: 'none', outline: 'none' }}
                 >
                   <Avatar src={u.avatar_url} alt={u.nickname} className="w-8 h-8 rounded-full flex-shrink-0" />
                   <div className="flex flex-col min-w-0 flex-1">
@@ -516,7 +522,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                       </span>
                     )}
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           )}
@@ -527,14 +533,29 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                 type="text"
                 value={descriptionValue}
                 onChange={(e) => setDescriptionValue(e.target.value)}
+                onFocus={() => setIsDescFocused(true)}
+                onBlur={() => setIsDescFocused(false)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSubmit();
+                  } else if (e.key === 'Escape') {
+                    onClose();
+                  }
+                }}
                 placeholder={type === 'group' ? t('groupSettings.group_desc', 'Описание группы') : t('channel.description_optional', 'Описание (необязательно)')}
                 aria-label={type === 'group' ? t('groupSettings.group_desc', 'Описание группы') : t('channel.description_optional', 'Описание (необязательно)')}
-                className="w-full bg-transparent outline-none text-[13.5px] py-1.5 transition-colors"
+                className="w-full outline-none text-[13.5px] transition-all"
                 style={{
                   color: 'var(--text-main)',
+                  backgroundColor: 'var(--surface-container)',
                   border: 'none',
-                  borderRadius: 0,
-                  borderBottom: '1px solid var(--border-color, rgba(128, 128, 128, 0.2))',
+                  outline: 'none',
+                  borderRadius: '14px',
+                  padding: '10px 14px',
+                  boxSizing: 'border-box',
+                  boxShadow: isDescFocused
+                    ? '0 0 0 2px color-mix(in srgb, var(--accent-color, #7C3AED) 45%, transparent)'
+                    : 'none',
                 }}
               />
             </div>
@@ -546,12 +567,12 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
             </div>
           )}
 
-          <div className="flex justify-end items-center gap-2 mt-6">
+          <div className="flex justify-end items-center gap-2 mt-5">
             <button
               type="button"
               onClick={onClose}
               aria-label={t('common.cancel', 'Отмена')}
-              className="px-3.5 py-1.5 rounded-lg text-[14px] font-medium transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-xl text-[14px] font-medium transition-colors cursor-pointer"
               style={{
                 backgroundColor: 'transparent',
                 color: 'var(--accent-color, #7C3AED)',
@@ -573,7 +594,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
               onClick={handleSubmit}
               disabled={isLoading}
               aria-label={t('common.next', 'Далее')}
-              className="px-3.5 py-1.5 rounded-lg text-[14px] font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-2 rounded-xl text-[14px] font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
               style={{
                 backgroundColor: 'transparent',
                 color: 'var(--accent-color, #7C3AED)',
@@ -588,18 +609,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
               }}
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
             >
-              {isLoading && (
-                <div
-                  style={{
-                    width: 14,
-                    height: 14,
-                    borderRadius: '50%',
-                    border: '2px solid rgba(255,255,255,0.2)',
-                    borderTopColor: 'var(--accent-color, #7C3AED)',
-                    animation: 'spin 0.8s linear infinite',
-                  }}
-                />
-              )}
+              {isLoading && <Loader2 size={14} className="animate-spin" />}
               {t('common.next', 'Далее')}
             </button>
           </div>

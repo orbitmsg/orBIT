@@ -190,6 +190,8 @@ export const Avatar = ({ src, alt = '', className = '', style }: AvatarProps) =>
           justifyContent: 'center',
           lineHeight: 1,
           borderRadius: '50%',
+          border: 'none',
+          outline: 'none',
           overflow: 'hidden',
           transform: 'translateZ(0)',
           ...noDragStyle,
@@ -228,6 +230,8 @@ export const Avatar = ({ src, alt = '', className = '', style }: AvatarProps) =>
         className={`object-cover rounded-full flex-shrink-0 select-none ${className}`}
         style={{
           borderRadius: '50%',
+          border: 'none',
+          outline: 'none',
           overflow: 'hidden',
           transform: 'translateZ(0)',
           willChange: 'transform',
@@ -250,6 +254,8 @@ export const Avatar = ({ src, alt = '', className = '', style }: AvatarProps) =>
       className={`object-cover rounded-full flex-shrink-0 select-none ${className}`}
       style={{
         borderRadius: '50%',
+        border: 'none',
+        outline: 'none',
         overflow: 'hidden',
         transform: 'translateZ(0)',
         willChange: 'transform',

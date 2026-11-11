@@ -151,8 +151,10 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
     >
       <div
         style={{
-          backgroundColor: 'var(--surface-container-soft, rgba(255,255,255,0.03))',
-          borderRadius: '16px',
+          backgroundColor: 'var(--surface-container-soft, rgba(255,255,255,0.04))',
+          borderRadius: '18px',
+          border: 'none',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)',
           padding: '14px 16px',
           display: 'flex',
           flexDirection: 'column',
@@ -210,19 +212,21 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: '10px',
-              paddingTop: '10px',
-              borderTop: '1px solid var(--border-color, rgba(255,255,255,0.06))',
+              gap: '12px',
+              padding: '10px 12px',
+              borderRadius: '14px',
+              border: 'none',
+              backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.04))',
               flexWrap: 'wrap',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', minWidth: 0, flex: 1 }}>
               <span
                 style={{
                   fontSize: '10.5px',
                   fontWeight: 700,
-                  padding: '2px 6px',
-                  borderRadius: '5px',
+                  padding: '2px 8px',
+                  borderRadius: '999px',
                   backgroundColor: 'rgba(155, 125, 212, 0.16)',
                   color: 'var(--accent-color, #9b7dd4)',
                   letterSpacing: '0.3px',
@@ -254,10 +258,11 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '5px',
-                padding: '5px 10px',
-                borderRadius: '8px',
-                border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
-                backgroundColor: 'var(--surface-container, rgba(255,255,255,0.05))',
+                padding: '6px 12px',
+                borderRadius: '14px',
+                border: 'none',
+                backgroundColor: 'var(--surface-muted, var(--surface-container-high, rgba(255,255,255,0.06)))',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
                 color: 'var(--text-main)',
                 fontSize: '11.5px',
                 fontWeight: 500,
@@ -284,10 +289,11 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
               display: 'flex',
               flexDirection: 'column',
               gap: '8px',
-              padding: '10px 12px',
-              borderRadius: '10px',
-              backgroundColor: 'rgba(239, 68, 68, 0.12)',
-              border: '1px solid rgba(239, 68, 68, 0.28)',
+              padding: '12px 14px',
+              borderRadius: '14px',
+              backgroundColor: 'rgba(239, 68, 68, 0.14)',
+              border: 'none',
+              boxShadow: '0 4px 14px rgba(239, 68, 68, 0.12)',
               color: '#fca5a5',
               fontSize: '12px',
               lineHeight: 1.4,
@@ -319,8 +325,8 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                   type="button"
                   onClick={() => setActiveProxy(activeProxy.id)}
                   style={{
-                    padding: '4px 10px',
-                    borderRadius: '6px',
+                    padding: '6px 12px',
+                    borderRadius: '14px',
                     border: 'none',
                     backgroundColor: 'rgba(239, 68, 68, 0.22)',
                     color: '#fff',
@@ -337,8 +343,8 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                   type="button"
                   onClick={clearError}
                   style={{
-                    padding: '4px 10px',
-                    borderRadius: '6px',
+                    padding: '6px 12px',
+                    borderRadius: '14px',
                     border: 'none',
                     background: 'none',
                     color: '#fca5a5',
@@ -406,8 +412,10 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
         {bulkOpen && (
           <div
             style={{
-              backgroundColor: 'var(--surface-container-soft, rgba(255,255,255,0.03))',
-              borderRadius: '16px',
+              backgroundColor: 'var(--surface-container-soft, rgba(255,255,255,0.04))',
+              borderRadius: '18px',
+              border: 'none',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)',
               padding: '14px 16px',
               display: 'flex',
               flexDirection: 'column',
@@ -426,9 +434,10 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
               style={{
                 width: '100%',
                 padding: '10px 12px',
-                borderRadius: '10px',
-                backgroundColor: 'var(--surface-container)',
-                border: '1px solid var(--border-color)',
+                borderRadius: '14px',
+                backgroundColor: 'var(--surface-container, rgba(255,255,255,0.04))',
+                border: 'none',
+                boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.12)',
                 color: 'var(--text-main)',
                 fontSize: '12.5px',
                 fontFamily: 'monospace',
@@ -449,10 +458,10 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                     setBulkText('');
                   }}
                   style={{
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    backgroundColor: 'var(--surface-container)',
-                    border: '1px solid var(--border-color)',
+                    padding: '7px 14px',
+                    borderRadius: '14px',
+                    backgroundColor: 'var(--surface-muted, var(--surface-container-high, rgba(255,255,255,0.06)))',
+                    border: 'none',
                     color: 'var(--text-main)',
                     fontSize: '12px',
                     fontWeight: 500,
@@ -466,8 +475,8 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                   disabled={parsedBulk.length === 0 || isImportingBulk}
                   onClick={handleBulkImport}
                   style={{
-                    padding: '6px 14px',
-                    borderRadius: '8px',
+                    padding: '7px 16px',
+                    borderRadius: '14px',
                     backgroundColor: 'var(--accent-color, #9b7dd4)',
                     border: 'none',
                     color: '#fff',
@@ -486,11 +495,14 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
 
         <div
           style={{
-            backgroundColor: 'var(--surface-container-soft, rgba(255,255,255,0.03))',
-            borderRadius: '16px',
+            backgroundColor: 'var(--surface-container-soft, rgba(255,255,255,0.04))',
+            borderRadius: '18px',
+            border: 'none',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)',
             overflow: 'visible',
             display: 'flex',
             flexDirection: 'column',
+            padding: '4px 0',
           }}
         >
           {proxies.length === 0 && (
@@ -518,11 +530,12 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  gap: '12px',
                   padding: '12px 14px',
-                  borderRadius: '12px',
+                  borderRadius: '14px',
                   margin: '2px 6px',
-                  borderBottom: 'none',
-                  backgroundColor: isSelected && proxyEnabled ? 'rgba(255, 255, 255, 0.06)' : 'transparent',
+                  border: 'none',
+                  backgroundColor: isSelected && proxyEnabled ? 'var(--surface-muted, rgba(255, 255, 255, 0.06))' : 'transparent',
                   cursor: 'pointer',
                   position: 'relative',
                   boxSizing: 'border-box',
@@ -531,7 +544,7 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                   setActiveProxy(proxy.id);
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
                   <div
                     style={{
                       width: '18px',
@@ -548,8 +561,8 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                     }}
                   />
 
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                  <div style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, overflow: 'hidden' }}>
                       <span
                         style={{
                           fontSize: '13.5px',
@@ -566,8 +579,8 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                         style={{
                           fontSize: '10px',
                           fontWeight: 700,
-                          padding: '1px 6px',
-                          borderRadius: '5px',
+                          padding: '1px 7px',
+                          borderRadius: '999px',
                           backgroundColor: 'rgba(155, 125, 212, 0.16)',
                           color: 'var(--accent-color, #9b7dd4)',
                           flexShrink: 0,
@@ -604,6 +617,7 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                     }
                     style={{
                       fontSize: '12px',
+                      whiteSpace: 'nowrap',
                       color:
                         proxy.pingStatus === 'error'
                           ? '#ef4444'
@@ -628,7 +642,7 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                       color: 'rgba(255, 255, 255, 0.6)',
                       cursor: 'pointer',
                       padding: '4px',
-                      borderRadius: '6px',
+                      borderRadius: '14px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -653,13 +667,14 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                         right: '8px',
                         top: '44px',
                         zIndex: 999,
-                        backgroundColor: 'var(--surface-container-high)',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
-                        border: '1px solid var(--border-color)',
-                        padding: '4px',
+                        backgroundColor: 'var(--surface-container-high, var(--settings-surface, #2b2d31))',
+                        borderRadius: '16px',
+                        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.36)',
+                        border: 'none',
+                        padding: '6px',
                         display: 'flex',
                         flexDirection: 'column',
+                        gap: '2px',
                         minWidth: '160px',
                       }}
                       onClick={(e) => e.stopPropagation()}
@@ -680,10 +695,10 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                           color: 'var(--text-main)',
                           fontSize: '13px',
                           cursor: 'pointer',
-                          borderRadius: '6px',
+                          borderRadius: '14px',
                           textAlign: 'left',
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container)')}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-muted, var(--surface-container))')}
                         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                       >
                         <RotateCw size={14} />
@@ -707,10 +722,10 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                           color: 'var(--text-main)',
                           fontSize: '13px',
                           cursor: 'pointer',
-                          borderRadius: '6px',
+                          borderRadius: '14px',
                           textAlign: 'left',
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container)')}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-muted, var(--surface-container))')}
                         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                       >
                         <Edit2 size={14} />
@@ -730,10 +745,10 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                           color: 'var(--text-main)',
                           fontSize: '13px',
                           cursor: 'pointer',
-                          borderRadius: '6px',
+                          borderRadius: '14px',
                           textAlign: 'left',
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container)')}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-muted, var(--surface-container))')}
                         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                       >
                         {copiedId === proxy.id ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
@@ -756,7 +771,7 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                           color: '#ef4444',
                           fontSize: '13px',
                           cursor: 'pointer',
-                          borderRadius: '6px',
+                          borderRadius: '14px',
                           textAlign: 'left',
                         }}
                         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.12)')}
@@ -783,7 +798,7 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
               alignItems: 'center',
               gap: '10px',
               padding: '12px 14px',
-              borderRadius: '12px',
+              borderRadius: '14px',
               margin: '2px 6px',
               background: 'none',
               border: 'none',
@@ -808,8 +823,10 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
 
         <div
           style={{
-            backgroundColor: 'var(--surface-container-soft, rgba(255,255,255,0.03))',
-            borderRadius: '16px',
+            backgroundColor: 'var(--surface-container-soft, rgba(255,255,255,0.04))',
+            borderRadius: '18px',
+            border: 'none',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)',
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',

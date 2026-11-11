@@ -215,7 +215,11 @@
       "unmute_notifications": "Включить уведомления",
       "delete_chat": "Удалить чат",
       "loading": "Загрузка...",
-      "days": "дней"
+      "days": "дней",
+      "accept": "Принять",
+      "decline": "Отклонить",
+      "add": "Добавить",
+      "this_is_you": "Это вы"
     },
     "titleBar": {
       "minimize": "Свернуть",
@@ -1669,7 +1673,22 @@
       "exploreServers": "Публичные серверы",
       "startGroupCall": "Начать голосовой звонок",
       "inbox": "Почта",
-      "help": "Справка"
+      "help": "Справка",
+      "addFriendDesc": "Вы можете добавить друзей по имени пользователя, коду или ссылке-приглашению.",
+      "addFriendPlaceholder": "Имя пользователя, @username, UUID или ссылка",
+      "sendFriendRequest": "Отправить запрос",
+      "sendingRequest": "Отправка...",
+      "addShort": "Добавить",
+      "searching": "Поиск пользователей...",
+      "cannotAddSelf": "Нельзя добавить самого себя",
+      "requestUnavailable": "Отправка заявки сейчас недоступна",
+      "blockedEmpty": "У вас нет заблокированных пользователей",
+      "allFriendsEmpty": "Список друзей пока пуст"
+    },
+    "sidebar": {
+      "find_or_create_group": "Найти или создать группу",
+      "find_or_create_channel": "Найти или создать канал",
+      "find_friend": "Найти друга"
     }
   },
   "group": {
@@ -1680,6 +1699,7 @@
     "admin_badge": "администратор"
   },
   "chatWindow": {
-    "link_preview": "Предпросмотр ссылки"
+    "link_preview": "Предпросмотр ссылки",
+    "send_as_file": "Отправить как файл"
   }
 }

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Copy, Check, Search, UserPlus, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Avatar } from '../common/Avatar';
+import { OnlineIndicator } from '../common/OnlineIndicator';
 import { type Chat, useChatStore } from '../../store/useChatStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { groupService } from '../../services/groupService';
@@ -195,19 +196,14 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.94, y: 10 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
-          className="w-full max-w-[440px] flex flex-col rounded-[12px] shadow-2xl overflow-hidden relative max-h-[85vh]"
+          className="w-full max-w-[440px] flex flex-col rounded-2xl shadow-2xl overflow-hidden relative max-h-[85vh] border-none"
           style={{
             backgroundColor: 'var(--settings-bg, var(--bg-secondary, #1e1b2e))',
             color: 'var(--text-main, #ffffff)',
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div
-            className="flex items-center justify-between px-5 py-3.5 flex-shrink-0"
-            style={{
-              borderBottom: '1px solid var(--surface-border, rgba(255,255,255,0.06))',
-            }}
-          >
+          <div className="flex items-center justify-between px-5 py-3.5 flex-shrink-0">
             <div className="flex items-center gap-2.5">
               <Users size={20} className="text-[var(--accent-color, #7C3AED)]" />
               <h2 className="text-[16px] font-semibold">
@@ -218,7 +214,7 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
               type="button"
               onClick={onClose}
               aria-label={t('common.close', 'Закрыть')}
-              className="p-1 rounded-full text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-white/10 transition-colors"
+              className="p-1.5 rounded-full text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-white/10 transition-colors"
             >
               <X size={19} />
             </button>
@@ -226,10 +222,10 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
 
           <div className="p-4 flex flex-col gap-3 overflow-y-auto chat-list-scrollbar flex-1 min-h-0">
             <div
-              className="p-3 rounded-lg flex flex-col gap-2"
+              className="p-3.5 rounded-2xl flex flex-col gap-2"
               style={{
                 backgroundColor: 'var(--surface-container, rgba(255,255,255,0.04))',
-                border: '1px solid var(--surface-border, rgba(255,255,255,0.06))',
+                border: 'none',
               }}
             >
               <span className="text-[11.5px] font-medium text-[var(--text-dim)]">
@@ -243,7 +239,7 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
                   type="button"
                   onClick={handleCopyLink}
                   aria-label={t('groupSettings.copy_link', 'Скопировать ссылку')}
-                  className="flex-shrink-0 px-2.5 py-1 rounded text-[12px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="flex-shrink-0 px-3 py-1.5 rounded-xl text-[12px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer border-none"
                   style={{
                     backgroundColor: copiedLink ? 'rgba(34, 197, 94, 0.15)' : 'var(--accent-color)',
                     color: copiedLink ? '#4ade80' : '#ffffff',
@@ -256,10 +252,10 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
             </div>
 
             <div
-              className="p-3 rounded-lg flex flex-col gap-2"
+              className="p-3.5 rounded-2xl flex flex-col gap-2"
               style={{
                 backgroundColor: 'var(--surface-container, rgba(255,255,255,0.04))',
-                border: '1px solid var(--surface-border, rgba(255,255,255,0.06))',
+                border: 'none',
               }}
             >
               <span className="text-[11.5px] font-medium text-[var(--text-dim)]">
@@ -273,7 +269,7 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
                   type="button"
                   onClick={handleCopyCode}
                   aria-label={t('common.copy', 'Копировать')}
-                  className="flex-shrink-0 px-2.5 py-1 rounded text-[12px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer text-[var(--text-dim)] hover:text-white bg-white/5 hover:bg-white/10"
+                  className="flex-shrink-0 px-3 py-1.5 rounded-xl text-[12px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer text-[var(--text-dim)] hover:text-white bg-white/5 hover:bg-white/10 border-none"
                 >
                   {copiedCode ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
                   <span>{copiedCode ? t('profile.copied', 'Скопирован') : t('common.copy', 'Копировать')}</span>
@@ -291,19 +287,19 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
             </div>
 
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-dim)]" />
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-dim)]" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('groupSettings.search_contacts', 'Поиск среди контактов...')}
                 aria-label={t('groupSettings.search_contacts', 'Поиск среди контактов...')}
-                className="w-full bg-white/5 outline-none rounded-lg pl-9 pr-3 py-2 text-[13.5px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] transition-colors border border-white/5 focus:border-[var(--accent-color)]"
+                className="w-full bg-white/5 outline-none rounded-xl pl-10 pr-3.5 py-2.5 text-[13.5px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] transition-all border-none focus:ring-2 focus:ring-[var(--accent-color)]/40"
               />
             </div>
 
             {isGroupFull && (
-              <div className="p-2.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[12.5px] font-medium text-center">
+              <div className="p-2.5 rounded-xl bg-amber-500/15 border-none text-amber-300 text-[12.5px] font-medium text-center">
                 {t('groupSettings.max_members_reached', 'Группа заполнена (макс. 10 участников)')}
               </div>
             )}
@@ -324,14 +320,23 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
                   return (
                     <div
                       key={contact.id}
-                      className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors"
+                      className="flex items-center justify-between p-2 rounded-xl hover:bg-white/5 transition-colors"
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <Avatar
-                          src={contact.avatarUrl}
-                          alt={contact.name}
-                          className="w-9 h-9 rounded-full flex-shrink-0 object-cover"
-                        />
+                        <div className="relative flex-shrink-0">
+                          <Avatar
+                            src={contact.avatarUrl}
+                            alt={contact.name}
+                            className="w-9 h-9 rounded-full flex-shrink-0 object-cover"
+                          />
+                          <OnlineIndicator
+                            online={contact.online}
+                            showOffline={true}
+                            size="sm"
+                            ringColor="var(--settings-bg, var(--bg-secondary, #1e1b2e))"
+                            ariaLabel={contact.online ? t('chatWindow.online', 'в сети') : t('chatWindow.offline', 'не в сети')}
+                          />
+                        </div>
                         <div className="flex flex-col min-w-0">
                           <span className="text-[13.5px] font-medium text-[var(--text-main)] truncate">
                             {contact.name}
@@ -344,7 +349,7 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
 
                       <div className="flex-shrink-0 ml-2">
                         {alreadyMember || isAdded ? (
-                          <span className="px-2.5 py-1 rounded text-[12px] font-medium text-green-400 bg-green-500/10 flex items-center gap-1">
+                          <span className="px-2.5 py-1 rounded-full text-[12px] font-medium text-green-400 bg-green-500/10 flex items-center gap-1">
                             <Check size={14} />
                             <span>{t('groupSettings.already_member', 'Уже в группе')}</span>
                           </span>
@@ -354,7 +359,7 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
                             disabled={isGroupFull || isAdding}
                             onClick={() => handleAddContact(contact)}
                             aria-label={t('groupSettings.add_to_group', 'Добавить в группу')}
-                            className="px-3 py-1 rounded-md text-[12.5px] font-medium text-white bg-[var(--accent-color)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1.5 cursor-pointer"
+                            className="px-3 py-1.5 rounded-xl text-[12.5px] font-medium text-white bg-[var(--accent-color)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1.5 cursor-pointer border-none"
                           >
                             <UserPlus size={14} />
                             <span>{isAdding ? '...' : t('common.add', 'Добавить')}</span>

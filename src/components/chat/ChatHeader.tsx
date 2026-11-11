@@ -5,6 +5,7 @@ import { useChatStore, type Chat, type ChatAction, type ChatTypingUser } from '.
 import { Avatar } from '../common/Avatar';
 import { NotesAvatar } from '../common/NotesAvatar';
 import { BotAvatar } from '../common/BotAvatar';
+import { OnlineIndicator } from '../common/OnlineIndicator';
 import { VerifiedBadge } from '../common/VerifiedBadge';
 import { DeveloperBadge } from '../ui/DeveloperBadge';
 import { ChannelMegaphoneIcon } from '../common/ChannelMegaphoneIcon';
@@ -82,7 +83,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       className="sticky top-0 z-20 w-full select-none"
       style={{
         backgroundColor: 'var(--bg-primary)',
-        borderBottom: 'none',
         userSelect: 'none',
         WebkitUserSelect: 'none',
       }}
@@ -99,7 +99,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           className="flex items-center justify-between w-full select-none"
           style={{
             maxWidth: '100%',
-            borderRadius: 0,
             backgroundColor: 'transparent',
             padding: '0',
           }}
@@ -117,21 +116,31 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   onBack();
                 }}
                 aria-label={t('chatWindow.back')}
-                className="flex h-9 w-9 items-center justify-center text-[var(--text-main)] transition-opacity hover:opacity-80 border-none bg-transparent cursor-pointer"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-main)] transition-colors hover:bg-white/10 border-none outline-none bg-transparent cursor-pointer"
               >
                 <ArrowLeft size={20} />
               </button>
             )}
             {isMobileView && (
-              activeChatId === 'notes' ? (
-                <NotesAvatar className="w-10 h-10" />
-              ) : (activeChat?.avatarUrl || activeChatId === 'system_support') ? (
-                <Avatar src={activeChat?.avatarUrl || SUPPORT_AVATAR_URL} alt={activeChat?.name} className="w-10 h-10 rounded-full flex-shrink-0" />
-              ) : activeChat?.type === 'bot' ? (
-                <BotAvatar className="w-10 h-10" />
-              ) : (
-                <Avatar src={activeChat?.avatarUrl} alt={activeChat?.name} className="w-10 h-10 rounded-full flex-shrink-0" />
-              )
+              <div className="relative flex-shrink-0">
+                {activeChatId === 'notes' ? (
+                  <NotesAvatar className="w-10 h-10" />
+                ) : (activeChat?.avatarUrl || activeChatId === 'system_support') ? (
+                  <Avatar src={activeChat?.avatarUrl || SUPPORT_AVATAR_URL} alt={activeChat?.name} className="w-10 h-10 rounded-full flex-shrink-0" />
+                ) : activeChat?.type === 'bot' ? (
+                  <BotAvatar className="w-10 h-10" />
+                ) : (
+                  <Avatar src={activeChat?.avatarUrl} alt={activeChat?.name} className="w-10 h-10 rounded-full flex-shrink-0" />
+                )}
+                {(!activeChat?.type || activeChat.type === 'private') && activeChatId !== 'notes' && activeChatId !== 'system_support' && (
+                  <OnlineIndicator
+                    online={isOnline}
+                    size="xs"
+                    ringColor="var(--bg-secondary, #2b2d31)"
+                    ariaLabel={t('chatWindow.online')}
+                  />
+                )}
+              </div>
             )}
             <div className="flex flex-col min-w-0 flex-1 select-none" style={{ gap: 0, userSelect: 'none', WebkitUserSelect: 'none' }}>
               <div className="flex items-center gap-1.5 min-w-0 select-none">
@@ -155,7 +164,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   size={20}
                 />
                 {activeChat?.type === 'channel' && activeChat.isOfficial && (
-                  <span className="px-1.5 py-0.5 rounded-md bg-[var(--accent-color)]/20 text-[var(--accent-color)] text-[10px] font-bold uppercase tracking-wider flex-shrink-0">
+                  <span className="px-2 py-0.5 rounded-full bg-[var(--accent-color)]/20 text-[var(--accent-color)] text-[10px] font-bold uppercase tracking-wider flex-shrink-0">
                     {t('channel.official')}
                   </span>
                 )}
@@ -251,7 +260,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           <div className="flex items-center gap-1">
             {activeChatId === 'system_support' && supportService.isAdmin && (
               <button
-                className="p-2 transition-colors duration-200 text-[var(--accent-color, #7C3AED)] hover:opacity-80 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center relative"
+                type="button"
+                className="p-2 rounded-xl transition-colors duration-200 text-[var(--accent-color,#7C3AED)] hover:bg-white/10 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center relative"
                 onClick={(e) => {
                   e.stopPropagation();
                   onOpenSupportTickets();
@@ -268,7 +278,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             )}
             
             <button
-              className="p-2 transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
+              type="button"
+              className="p-2 rounded-xl transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-white/10 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
               onClick={(e) => {
                 e.stopPropagation();
                 useChatStore.getState().openInChatSearch('this_chat');
@@ -281,7 +292,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             </button>
             {activeChatId !== 'notes' && activeChat?.type !== 'channel' && voiceCallsEnabled && (
               <button
-                className="p-2 transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
+                type="button"
+                className="p-2 rounded-xl transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-white/10 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
                 onClick={(e) => {
                   e.stopPropagation();
                   onAudioCallPress();

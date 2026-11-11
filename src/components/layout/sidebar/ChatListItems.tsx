@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Archive } from 'lucide-react';
 import { SUPPORT_AVATAR_URL } from '../../../services/supportService';
 import { DeveloperBadge } from '../../ui/DeveloperBadge';
@@ -9,6 +9,7 @@ import { GroupUsersIcon } from '../../common/GroupUsersIcon';
 import { Avatar } from '../../common/Avatar';
 import { NotesAvatar } from '../../common/NotesAvatar';
 import { BotAvatar } from '../../common/BotAvatar';
+import { OnlineIndicator } from '../../common/OnlineIndicator';
 import { VerifiedBadge } from '../../common/VerifiedBadge';
 import { MessageStatus } from '../../MessageStatus';
 import { useChatStore, isMessageOutgoing, type Chat } from '../../../store/useChatStore';
@@ -86,23 +87,32 @@ export const ChatListItem = React.memo(({
   );
   const isChatTyping = Array.isArray(chatTypingUsers) && chatTypingUsers.length > 0;
 
-  const ringColor = isActive
-    ? (isLightTheme ? '#e5e5e7' : '#2c2c2c')
-    : (isLightTheme ? '#f5f5f5' : '#1e1e1e');
+  const [isHovered, setIsHovered] = useState(false);
+
+  const baseBg = isLightTheme
+    ? 'var(--chat-list-bg, #f5f5f5)'
+    : 'var(--chat-list-bg, #2b2d31)';
+  const rowBg = isActive
+    ? `color-mix(in srgb, ${isLightTheme ? '#000000' : '#ffffff'} 8%, ${baseBg})`
+    : isHovered
+    ? `color-mix(in srgb, ${isLightTheme ? '#000000' : '#ffffff'} 4%, ${baseBg})`
+    : 'transparent';
+  const ringColor = isActive || isHovered ? rowBg : baseBg;
 
   return (
     <div
       onClick={() => onSelect(chat.id)}
       onContextMenu={(e) => onContextMenu(e, chat.id)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className="group relative cursor-pointer"
       style={{
-        borderRadius: '10px',
+        borderRadius: '14px',
         margin: '2px 8px',
         width: 'calc(100% - 16px)',
-        backgroundColor: isActive
-          ? (isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)')
-          : 'transparent',
+        backgroundColor: rowBg,
         border: 'none',
+        outline: 'none',
         padding: '8px 10px',
         minHeight: 52,
         boxSizing: 'border-box',
@@ -110,18 +120,6 @@ export const ChatListItem = React.memo(({
         containIntrinsicSize: '64px',
         willChange: 'transform',
         transition: 'background-color 0.12s ease',
-      }}
-      onMouseEnter={(e) => {
-        if (!isActive) {
-          e.currentTarget.style.backgroundColor = isLightTheme
-            ? 'rgba(0, 0, 0, 0.04)'
-            : 'rgba(255, 255, 255, 0.04)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isActive) {
-          e.currentTarget.style.backgroundColor = 'transparent';
-        }
       }}
     >
       <div className="flex justify-between items-center min-w-0">
@@ -135,23 +133,13 @@ export const ChatListItem = React.memo(({
           ) : (
             <Avatar src={chat.avatarUrl} alt={chat.name} className="w-10 h-10" style={{ borderRadius: '50%' }} />
           )}
-          {chat.type === 'private' && chat.id !== 'notes' && chat.online && (
-            <span
-              aria-label={t('common.online', 'В сети')}
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                right: 0,
-                width: 12,
-                height: 12,
-                borderRadius: '50%',
-                backgroundColor: 'var(--accent-color, #7C3AED)',
-                boxShadow: `0 0 0 2px ${ringColor}`,
-                zIndex: 2,
-                pointerEvents: 'none',
-                flexShrink: 0,
-                transition: 'box-shadow 0.12s ease',
-              }}
+          {chat.type === 'private' && chat.id !== 'notes' && (
+            <OnlineIndicator
+              online={chat.online}
+              size="sm"
+              ringColor={ringColor}
+              className="z-[2]"
+              ariaLabel={t('common.online', 'В сети')}
             />
           )}
           {chat.type === 'group' && chat.activeCallRoom && (
@@ -225,7 +213,7 @@ export const ChatListItem = React.memo(({
                 style={{ pointerEvents: 'none' }}
               />
               {chat.type === 'channel' && chat.isOfficial && (
-                <span className="px-1 py-0.2 rounded bg-[var(--accent-color)]/20 text-[var(--accent-color)] text-[9px] font-extrabold uppercase flex-shrink-0">
+                <span className="px-1.5 py-0.5 rounded-full bg-[var(--accent-color)]/20 text-[var(--accent-color)] text-[9px] font-extrabold uppercase flex-shrink-0 leading-none">
                   {t('channel.official', 'ОФИЦ')}
                 </span>
               )}
@@ -312,12 +300,14 @@ export const ChatListItem = React.memo(({
                 )}
                 {(chat.unreadCount ?? 0) > 0 && (
                   <span
-                    className="text-[12px] font-bold px-2 rounded-full text-gray flex-shrink-0"
+                    className="text-[12px] font-bold rounded-full text-white flex-shrink-0"
                     style={{
                       backgroundColor: 'var(--accent-color, #7C3AED)',
-                      paddingTop: '0.1rem',
-                      paddingBottom: '0.1rem',
-                      minWidth: '24px',
+                      color: '#ffffff',
+                      padding: '1px 7px',
+                      minWidth: '22px',
+                      lineHeight: '1.3',
+                      borderRadius: '9999px',
                       textAlign: 'center',
                     }}
                   >
@@ -365,37 +355,35 @@ export const ArchiveListItem = React.memo(({
   const totalUnread = useMemo(() => {
     return archivedChats.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
   }, [archivedChats]);
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <div
       onClick={onOpenArchive}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className="group relative cursor-pointer"
       style={{
-        borderRadius: '10px',
+        borderRadius: '14px',
         margin: '2px 8px',
         width: 'calc(100% - 16px)',
-        backgroundColor: 'transparent',
+        backgroundColor: isHovered
+          ? (isLightTheme ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.04)')
+          : 'transparent',
         border: 'none',
+        outline: 'none',
         padding: '8px 10px',
-        minHeight: 48,
+        minHeight: 52,
         boxSizing: 'border-box',
         transition: 'background-color 0.12s ease',
       }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = isLightTheme
-          ? 'rgba(0, 0, 0, 0.04)'
-          : 'rgba(255, 255, 255, 0.04)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'transparent';
-      }}
     >
       <div className="flex justify-between items-center min-w-0">
-        <div style={{ width: 48, height: 48, marginRight: 10, flexShrink: 0, position: 'relative' }}>
+        <div style={{ width: 40, height: 40, marginRight: 10, flexShrink: 0, position: 'relative' }}>
           <div
             style={{
-              width: 48,
-              height: 48,
+              width: 40,
+              height: 40,
               borderRadius: '50%',
               backgroundColor: isLightTheme ? '#6c7a89' : 'rgba(255, 255, 255, 0.12)',
               display: 'flex',
@@ -404,7 +392,7 @@ export const ArchiveListItem = React.memo(({
               color: '#ffffff',
             }}
           >
-            <Archive size={22} color="#ffffff" strokeWidth={2.2} />
+            <Archive size={20} color="#ffffff" strokeWidth={2.2} />
           </div>
         </div>
         <div className="flex flex-col min-w-0 flex-1">
@@ -421,12 +409,14 @@ export const ArchiveListItem = React.memo(({
             {totalUnread > 0 && (
               <div className="ml-auto flex items-center flex-shrink-0">
                 <span
-                  className="text-[12px] font-bold px-2 rounded-full text-white flex-shrink-0"
+                  className="text-[12px] font-bold rounded-full text-white flex-shrink-0"
                   style={{
                     backgroundColor: 'var(--accent-color, #7C3AED)',
-                    paddingTop: '0.1rem',
-                    paddingBottom: '0.1rem',
-                    minWidth: '24px',
+                    color: '#ffffff',
+                    padding: '1px 7px',
+                    minWidth: '22px',
+                    lineHeight: '1.3',
+                    borderRadius: '9999px',
                     textAlign: 'center',
                   }}
                 >

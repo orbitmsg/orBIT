@@ -1,4 +1,3 @@
-// src/components/chat/InputContextMenu.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -61,11 +60,9 @@ export const InputContextMenu: React.FC<InputContextMenuProps> = ({
     const windowWidth = window.innerWidth;
 
     let posX = x;
-    // Context menu dimensions
     const menuWidth = 220;
     const menuHeight = 290;
 
-    // ALWAYS position menu ABOVE the click point / input area
     let posY = y - menuHeight - 6;
 
     if (posX + menuWidth > windowWidth - 10) {
@@ -95,7 +92,6 @@ export const InputContextMenu: React.FC<InputContextMenuProps> = ({
         subX = rect.left - subMenuWidth + 2;
       }
 
-      // Position sub-menu so it grows upwards and stays inside screen
       let subY = rect.bottom - subMenuHeight;
       if (subY + subMenuHeight > windowHeight - 10) {
         subY = Math.max(10, windowHeight - subMenuHeight - 10);
@@ -172,7 +168,7 @@ export const InputContextMenu: React.FC<InputContextMenuProps> = ({
           : 'var(--text-main, #f1f5f9)',
         background: 'none',
         border: 'none',
-        borderRadius: '6px',
+        borderRadius: '10px',
         cursor: disabled ? 'default' : 'pointer',
         textAlign: 'left',
         transition: 'background-color 0.12s ease',
@@ -215,7 +211,7 @@ export const InputContextMenu: React.FC<InputContextMenuProps> = ({
         backgroundColor: 'var(--bg-secondary, #252836)',
         backdropFilter: 'none',
         WebkitBackdropFilter: 'none',
-        borderRadius: '8px',
+        borderRadius: '16px',
         border: 'none',
         boxShadow: '0 10px 32px rgba(0, 0, 0, 0.55)',
         padding: '6px',
@@ -236,7 +232,6 @@ export const InputContextMenu: React.FC<InputContextMenuProps> = ({
 
       <Separator />
 
-      {/* Formatting Item with Sub-menu */}
       <div
         ref={formattingItemRef}
         style={{ position: 'relative', width: '100%' }}
@@ -254,7 +249,7 @@ export const InputContextMenu: React.FC<InputContextMenuProps> = ({
             fontWeight: 400,
             color: 'var(--text-main, #f1f5f9)',
             backgroundColor: isFormattingHovered ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-            borderRadius: '6px',
+            borderRadius: '10px',
             cursor: 'pointer',
             userSelect: 'none',
             transition: 'background-color 0.12s ease',
@@ -265,7 +260,6 @@ export const InputContextMenu: React.FC<InputContextMenuProps> = ({
           <ChevronRight size={16} style={{ color: 'var(--text-dim, rgba(255,255,255,0.45))' }} />
         </div>
 
-        {/* Sub-menu */}
         {isFormattingHovered && (
           <div
             style={{
@@ -277,7 +271,7 @@ export const InputContextMenu: React.FC<InputContextMenuProps> = ({
               backgroundColor: 'var(--bg-secondary, #252836)',
               backdropFilter: 'none',
               WebkitBackdropFilter: 'none',
-              borderRadius: '8px',
+              borderRadius: '16px',
               border: 'none',
               boxShadow: '0 10px 32px rgba(0, 0, 0, 0.55)',
               padding: '6px',

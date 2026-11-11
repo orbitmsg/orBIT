@@ -28,16 +28,18 @@ export const ChatPinnedBar: React.FC<ChatPinnedBarProps> = ({
   return (
     <div
       onClick={onScrollToPinned}
-      className="flex-shrink-0 flex items-center justify-between cursor-pointer transition-colors select-none"
+      className="flex-shrink-0 flex items-center justify-between cursor-pointer transition-colors select-none rounded-2xl"
       style={{
-        backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
-        padding: '8px 16px',
-        borderBottom: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
+        backgroundColor: 'var(--surface-container, var(--settings-bg, var(--bg-secondary)))',
+        padding: '8px 14px',
+        margin: '6px 14px 2px',
+        border: 'none',
+        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.14)',
         gap: '12px',
       }}
     >
       <div className="flex items-center gap-3 min-w-0 flex-1">
-        <div style={{ width: '2px', height: '32px', backgroundColor: 'var(--accent-color)', borderRadius: '1px', flexShrink: 0 }} />
+        <div style={{ width: '3px', height: '32px', backgroundColor: 'var(--accent-color)', borderRadius: '9999px', flexShrink: 0 }} />
         <div className="flex flex-col min-w-0 flex-1">
           <span className="font-semibold truncate" style={{ color: 'var(--accent-color)', fontSize: '13px', lineHeight: '1.2' }}>
             {t('chatWindow.pinned_message')}
@@ -74,7 +76,7 @@ export const ChatPinnedBar: React.FC<ChatPinnedBarProps> = ({
             e.stopPropagation();
             onUnpin();
           }}
-          className="p-1.5 rounded-full text-[var(--text-dim)] hover:text-[var(--text-main)] transition-colors flex-shrink-0 cursor-pointer border-none bg-transparent"
+          className="p-1.5 rounded-full text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-white/10 transition-colors flex-shrink-0 cursor-pointer border-none bg-transparent"
           aria-label={t('common.unpin')}
         >
           <X size={18} />

@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Cake, Check, Copy, Maximize2 } from 'lucide-react';
+import { Cake, Check, Copy } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useChatStore, type Chat } from '../../store/useChatStore';
 import { useToastStore } from '../../store/useToastStore';
 import { supabaseService } from '../../services/supabaseService';
 import { formatLastSeen } from '../../utils/messageUtils';
 import { formatBirthday } from '../../utils/birthday';
-import { Avatar, optimizeBannerUrl } from '../common/Avatar';
+import { Avatar } from '../common/Avatar';
 import { OnlineIndicator } from '../common/OnlineIndicator';
 import { VerifiedBadge } from '../common/VerifiedBadge';
 import { DeveloperBadge } from '../ui/DeveloperBadge';
@@ -21,14 +21,12 @@ export interface PeerProfilePanelProps {
 export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpenFullProfile }) => {
   const { t, i18n } = useTranslation();
   const [copiedField, setCopiedField] = useState<'username' | 'id' | null>(null);
-  const [bannerLoadFailed, setBannerLoadFailed] = useState(false);
   const [fetchedState, setFetchedState] = useState<{ chatId: string; data: Partial<Chat> } | null>(null);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const completedFetchKeysRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     setCopiedField(null);
-    setBannerLoadFailed(false);
     if (copyTimerRef.current) {
       clearTimeout(copyTimerRef.current);
       copyTimerRef.current = null;
@@ -63,10 +61,6 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
   }, [chat, fetchedState]);
 
   useEffect(() => {
-    setBannerLoadFailed(false);
-  }, [effectiveChat?.bannerUrl]);
-
-  useEffect(() => {
     if (!chat || chat.type !== 'private' || chat.id === 'notes') return;
 
     const myCode = useChatStore.getState().myCode;
@@ -80,7 +74,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
             ? chat.name
             : undefined;
 
-    const needsFetch = !chat.description || !chat.birthday || !chat.username || !chat.bannerUrl;
+    const needsFetch = !chat.description || !chat.birthday || !chat.username;
     const fetchKey = `${chat.id}|${targetCode || ''}|${chat.username || ''}`;
     if (!needsFetch || completedFetchKeysRef.current.has(fetchKey)) {
       return;
@@ -170,7 +164,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
     return () => {
       cancelled = true;
     };
-  }, [chat?.id, chat?.type, chat?.peerCode, chat?.originalPeerCode, chat?.username, chat?.description, chat?.birthday, chat?.bannerUrl]);
+  }, [chat?.id, chat?.type, chat?.peerCode, chat?.originalPeerCode, chat?.username, chat?.description, chat?.birthday]);
 
   const handleCopyValue = useCallback(
     async (value: string, field: 'username' | 'id') => {
@@ -209,7 +203,6 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
 
   const cleanUsername = effectiveChat.username ? effectiveChat.username.replace(/^@+/, '').trim() : '';
   const bioText = effectiveChat.description ? effectiveChat.description.trim() : '';
-  const bannerSrc = !bannerLoadFailed ? optimizeBannerUrl(effectiveChat.bannerUrl, 600) : null;
   const statusText = effectiveChat.online
     ? t('userStatus.online', 'в сети')
     : formatLastSeen(effectiveChat.lastSeen, t);
@@ -243,96 +236,9 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden chat-list-scrollbar">
         <div
           style={{
-            position: 'relative',
-            width: '100%',
-            height: '112px',
-            flexShrink: 0,
-            overflow: 'hidden',
-            background:
-              'linear-gradient(135deg, var(--accent-light, #7289da) 0%, var(--accent-color, #5865F2) 55%, var(--accent-dark, #4752c4) 100%)',
-          }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.18), transparent 60%)',
-              pointerEvents: 'none',
-            }}
-          />
-          {bannerSrc && (
-            <img
-              src={bannerSrc}
-              alt=""
-              draggable={false}
-              onError={() => setBannerLoadFailed(true)}
-              style={{
-                position: 'relative',
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                display: 'block',
-                userSelect: 'none',
-                WebkitUserSelect: 'none',
-              }}
-            />
-          )}
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(to bottom, transparent 45%, rgba(0, 0, 0, 0.24) 100%)',
-              pointerEvents: 'none',
-            }}
-          />
-          {onOpenFullProfile && (
-            <button
-              type="button"
-              onClick={onOpenFullProfile}
-              aria-label={t('common.profile', 'Профиль')}
-              style={{
-                position: 'absolute',
-                top: '12px',
-                right: '12px',
-                width: '30px',
-                height: '30px',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(0, 0, 0, 0.42)',
-                backdropFilter: 'blur(6px)',
-                WebkitBackdropFilter: 'blur(6px)',
-                border: 'none',
-                outline: 'none',
-                color: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                padding: 0,
-                zIndex: 2,
-                transition: 'background-color 0.15s ease, transform 0.15s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.65)';
-                e.currentTarget.style.transform = 'scale(1.06)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.42)';
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-            >
-              <Maximize2 size={14} />
-            </button>
-          )}
-        </div>
-
-        <div
-          style={{
-            padding: '0 18px',
-            marginTop: '-40px',
-            position: 'relative',
-            zIndex: 2,
+            padding: '18px 18px 0 18px',
             display: 'flex',
-            alignItems: 'flex-end',
+            alignItems: 'center',
           }}
         >
           <div
@@ -343,7 +249,6 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
               borderRadius: '50%',
               flexShrink: 0,
               backgroundColor: 'var(--chat-list-bg, #2b2d31)',
-              boxShadow: '0 0 0 5px var(--chat-list-bg, #2b2d31)',
             }}
           >
             {onOpenFullProfile ? (

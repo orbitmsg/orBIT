@@ -223,10 +223,14 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
 
   return (
     <div
-      className="flex flex-col w-full h-full select-none overflow-hidden"
-      style={{ backgroundColor: 'var(--bg-primary, #313338)' }}
+      className="flex w-full h-full select-none overflow-hidden gap-2"
+      style={{ backgroundColor: 'transparent' }}
     >
-      <div className="h-14 px-5 flex items-center justify-between shrink-0">
+      <div
+        className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden rounded-[18px]"
+        style={{ backgroundColor: 'var(--bg-primary, #313338)' }}
+      >
+        <div className="h-14 px-5 flex items-center justify-between shrink-0">
         <div className="flex items-center min-w-0 gap-2">
           <div className="flex items-center text-[#949ba4] shrink-0">
             <Users size={20} />
@@ -305,8 +309,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 flex min-h-0 overflow-hidden">
-        <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
           {activeTab === 'online' &&
             (onlineFriends.length === 0 ? (
               <div className="flex-1 flex items-center justify-center p-6 text-center">
@@ -636,9 +639,13 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
             </div>
           )}
         </div>
+      </div>
 
-        <div className="w-[360px] bg-[#2b2d31]/40 p-4 flex flex-col shrink-0 select-none hidden lg:flex">
-          <h2 className="text-[18px] font-bold text-white mb-4 px-1">
+      <div
+        className="w-[340px] p-4 flex flex-col shrink-0 select-none hidden lg:flex rounded-[18px] overflow-hidden"
+        style={{ backgroundColor: 'var(--bg-primary, #313338)' }}
+      >
+        <h2 className="text-[18px] font-bold text-white mb-4 px-1">
             {t('discord.activeContacts', 'Активные контакты')}
           </h2>
           {onlineFriends.length === 0 ? (
@@ -682,7 +689,6 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
               ))}
             </div>
           )}
-        </div>
       </div>
     </div>
   );

@@ -37,11 +37,12 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
 
   return (
     <div
-      className="flex flex-col items-center shrink-0 select-none py-3"
+      className="flex flex-col items-center shrink-0 select-none py-3 overflow-hidden"
       style={{
-        width: '72px',
-        backgroundColor: 'var(--title-bar-bg, #1e1f22)',
-        borderRight: 'none',
+        width: '64px',
+        backgroundColor: 'var(--chat-list-bg, #2b2d31)',
+        borderRadius: '18px',
+        border: 'none',
         height: '100%',
         boxSizing: 'border-box',
       }}

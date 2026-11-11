@@ -228,7 +228,6 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   setIsViewingArchive,
   archivedChats,
   searchQuery,
-  setSearchQuery,
   setShowFriendRequestsModal,
   incomingFriendRequests,
   isNetworkOnline,
@@ -267,7 +266,6 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   const activeFolderId = useChatStore((s) => s.activeFolderId);
   const isServerConnected = useConnectionStore((s) => s.isServerConnected);
   const isCallMinimized = useCallStore((s) => s.isMinimized);
-  const isCallActive = useCallStore((s) => Boolean(s.activeCall));
   const nickname = useAuthStore((s) => s.nickname);
   const avatarUrl = useAuthStore((s) => s.avatarUrl);
   const [isMicMuted, setIsMicMuted] = React.useState(false);
@@ -278,128 +276,177 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
 
   if (inChatSearch?.isOpen) {
     return (
-      <InChatSidebarSearch
-        onClose={closeInChatSearch}
-        activeChatId={activeChatId}
-        isMobileView={isMobileView}
-      />
+      <div
+        className="flex flex-col h-full rounded-[18px] overflow-hidden"
+        style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}
+      >
+        <InChatSidebarSearch
+          onClose={closeInChatSearch}
+          activeChatId={activeChatId}
+          isMobileView={isMobileView}
+        />
+      </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className={isMobileView ? 'flex flex-col h-full gap-2 p-2' : 'flex flex-col h-full gap-2'}>
       {isMobileView && !activeChatId && (isCallMinimized ? <CallMiniPlayer /> : <GlobalAudioPlayer />)}
 
-      <div
-        className="px-4 py-1 select-none"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingTop: '12px',
-        }}
-      >
-        <div className="flex items-center min-w-0" style={{ width: '100%' }}>
-          {isViewingArchive ? (
-            <div className="flex items-center w-full gap-2">
-              <button
-                type="button"
-                onClick={() => setIsViewingArchive(false)}
-                aria-label={t('common.back', 'Назад')}
-                className="flex items-center justify-center cursor-pointer transition-all active:scale-95 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-container)] rounded-full shrink-0"
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  border: 'none',
-                  background: 'transparent',
-                  outline: 'none',
-                  padding: 0,
-                }}
-              >
-                <ArrowLeft size={20} />
-              </button>
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span className="font-bold text-[16px] text-[var(--text-main)]">
-                  {t('common.archive', 'Архив')}
-                </span>
-                <span className="text-xs text-[var(--text-dim)]">
-                  {archivedChats.length}
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t('common.search', 'Поиск')}
-                style={{
-                  width: '100%',
-                  height: '36px',
-                  borderRadius: '999px',
-                  border: 'none',
-                  outline: 'none',
-                  boxShadow: 'none',
-                  backgroundColor: 'var(--md-surface, var(--surface-container, rgba(255,255,255,0.05)))',
-                  color: 'var(--text-main, #e0e0e0)',
-                  fontSize: '13px',
-                  paddingLeft: '14px',
-                  paddingRight: searchQuery ? '32px' : '14px',
-                  boxSizing: 'border-box',
-                }}
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  aria-label={t('common.close', 'Закрыть')}
-                  style={{
-                    position: 'absolute',
-                    right: '8px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: 'var(--text-dim, #9ca3af)',
-                    padding: '2px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 1,
-                  }}
-                >
-                  <X size={18} />
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {isMobileView && (
-        <div className="flex items-center px-4 pt-2.5 pb-1 gap-5 overflow-x-auto no-scrollbar select-none">
-          <div className="relative pb-1.5 cursor-pointer text-[13px] font-semibold text-[var(--accent-color)] flex-shrink-0">
-            <span>{t('common.all', 'Все')}</span>
-            <div
-              className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full"
-              style={{ backgroundColor: 'var(--accent-color, #7C3AED)' }}
-            />
+      {isViewingArchive ? (
+        <div
+          className="px-3 py-2 select-none shrink-0 rounded-[18px] overflow-hidden"
+          style={{
+            backgroundColor: 'var(--chat-list-bg, #2b2d31)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setIsViewingArchive(false)}
+            aria-label={t('common.back', 'Назад')}
+            className="flex items-center justify-center cursor-pointer transition-all active:scale-95 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-container)] rounded-full shrink-0"
+            style={{
+              width: '36px',
+              height: '36px',
+              border: 'none',
+              background: 'transparent',
+              outline: 'none',
+              padding: 0,
+            }}
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <span className="font-bold text-[16px] text-[var(--text-main)]">
+              {t('common.archive', 'Архив')}
+            </span>
+            <span className="text-xs text-[var(--text-dim)]">
+              {archivedChats.length}
+            </span>
           </div>
+        </div>
+      ) : (
+        <div
+          className="shrink-0 rounded-[18px] overflow-hidden p-2 flex flex-col gap-1.5 select-none"
+          style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}
+        >
+          <button
+            type="button"
+            onClick={() => onOpenCreateGroup?.()}
+            aria-label={t('sidebar.find_or_create_group', 'Найти или создать группу')}
+            className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-2xl border-none outline-none cursor-pointer transition-colors text-left"
+            style={{
+              borderRadius: '14px',
+              border: 'none',
+              backgroundColor: surfaceTint,
+              color: 'var(--text-main, #e0e0e0)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = surfaceHoverTint;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = surfaceTint;
+            }}
+          >
+            <span
+              className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+              style={{
+                backgroundColor: 'rgba(124, 58, 237, 0.18)',
+                color: 'var(--accent-color, #9f7aea)',
+              }}
+            >
+              <Users size={13} />
+            </span>
+            <span className="text-[12.5px] font-medium truncate flex-1 min-w-0">
+              {t('sidebar.find_or_create_group', 'Найти или создать группу')}
+            </span>
+            <ChevronRight size={14} className="shrink-0 text-[var(--text-dim)] opacity-60" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onOpenCreateChannel?.()}
+            aria-label={t('sidebar.find_or_create_channel', 'Найти или создать канал')}
+            className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-2xl border-none outline-none cursor-pointer transition-colors text-left"
+            style={{
+              borderRadius: '14px',
+              border: 'none',
+              backgroundColor: surfaceTint,
+              color: 'var(--text-main, #e0e0e0)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = surfaceHoverTint;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = surfaceTint;
+            }}
+          >
+            <span
+              className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+              style={{
+                backgroundColor: 'rgba(88, 101, 242, 0.18)',
+                color: '#8ea1ff',
+              }}
+            >
+              <Megaphone size={13} />
+            </span>
+            <span className="text-[12.5px] font-medium truncate flex-1 min-w-0">
+              {t('sidebar.find_or_create_channel', 'Найти или создать канал')}
+            </span>
+            <ChevronRight size={14} className="shrink-0 text-[var(--text-dim)] opacity-60" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onOpenAddFriend?.()}
+            aria-label={t('sidebar.find_friend', 'Найти друга')}
+            className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-2xl border-none outline-none cursor-pointer transition-colors text-left"
+            style={{
+              borderRadius: '14px',
+              border: 'none',
+              backgroundColor: surfaceTint,
+              color: 'var(--text-main, #e0e0e0)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = surfaceHoverTint;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = surfaceTint;
+            }}
+          >
+            <span
+              className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+              style={{
+                backgroundColor: 'rgba(35, 165, 90, 0.18)',
+                color: '#3ba55d',
+              }}
+            >
+              <UserPlus size={13} />
+            </span>
+            <span className="text-[12.5px] font-medium truncate flex-1 min-w-0">
+              {t('sidebar.find_friend', 'Найти друга')}
+            </span>
+            <ChevronRight size={14} className="shrink-0 text-[var(--text-dim)] opacity-60" />
+          </button>
         </div>
       )}
 
       {incomingFriendRequests.length > 0 && (
-        <div className="px-4 pt-2.5 pb-1">
+        <div
+          className="shrink-0 rounded-[18px] overflow-hidden p-2"
+          style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}
+        >
           <button
             type="button"
             onClick={() => setShowFriendRequestsModal(true)}
-            className="w-full flex items-center justify-between px-4 py-2.5 rounded-full hover:opacity-90 transition-opacity text-xs font-medium cursor-pointer shadow-none select-none"
+            className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl hover:opacity-90 transition-opacity text-xs font-medium cursor-pointer shadow-none select-none"
             style={{
-              borderRadius: '9999px',
+              borderRadius: '14px',
               border: 'none',
-              backgroundColor: 'var(--surface-container, rgba(255,255,255,0.06))',
+              backgroundColor: surfaceTint,
               color: 'var(--text-main, #ffffff)',
             }}
           >
@@ -425,7 +472,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
       )}
 
       <div
-        className="relative flex-1 min-h-0 overflow-hidden flex flex-col"
+        className="relative flex-1 min-h-0 overflow-hidden flex flex-col rounded-[18px]"
+        style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}
         onMouseEnter={showChatScrollbar}
         onMouseLeave={handleChatListMouseLeave}
       >
@@ -438,8 +486,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           }}
           className="flex-1 chat-list-scrollbar select-none"
           style={{
-            marginTop: (isMobileView && isCallActive) ? '0px' : '9px',
-            paddingTop: '0px',
+            marginTop: 0,
+            paddingTop: '8px',
             paddingBottom: '8px',
             overflowY: 'scroll',
             overflowX: 'hidden',
@@ -451,108 +499,6 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
             </div>
           ) : (
             <div className="flex flex-col w-full">
-              {!isViewingArchive && !searchQuery.trim() && (
-                <div className="px-2 pb-2 flex flex-col gap-1 select-none">
-                    <button
-                      type="button"
-                      onClick={() => onOpenCreateGroup?.()}
-                      aria-label={t('sidebar.find_or_create_group', 'Найти или создать группу')}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-2xl border-none outline-none cursor-pointer transition-colors text-left"
-                      style={{
-                        borderRadius: '14px',
-                        border: 'none',
-                        backgroundColor: surfaceTint,
-                        color: 'var(--text-main, #e0e0e0)',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = surfaceHoverTint;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = surfaceTint;
-                      }}
-                    >
-                      <span
-                        className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-                        style={{
-                          backgroundColor: 'rgba(124, 58, 237, 0.18)',
-                          color: 'var(--accent-color, #9f7aea)',
-                        }}
-                      >
-                        <Users size={13} />
-                      </span>
-                      <span className="text-[12.5px] font-medium truncate flex-1 min-w-0">
-                        {t('sidebar.find_or_create_group', 'Найти или создать группу')}
-                      </span>
-                      <ChevronRight size={14} className="shrink-0 text-[var(--text-dim)] opacity-60" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => onOpenCreateChannel?.()}
-                      aria-label={t('sidebar.find_or_create_channel', 'Найти или создать канал')}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-2xl border-none outline-none cursor-pointer transition-colors text-left"
-                      style={{
-                        borderRadius: '14px',
-                        border: 'none',
-                        backgroundColor: surfaceTint,
-                        color: 'var(--text-main, #e0e0e0)',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = surfaceHoverTint;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = surfaceTint;
-                      }}
-                    >
-                      <span
-                        className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-                        style={{
-                          backgroundColor: 'rgba(88, 101, 242, 0.18)',
-                          color: '#8ea1ff',
-                        }}
-                      >
-                        <Megaphone size={13} />
-                      </span>
-                      <span className="text-[12.5px] font-medium truncate flex-1 min-w-0">
-                        {t('sidebar.find_or_create_channel', 'Найти или создать канал')}
-                      </span>
-                      <ChevronRight size={14} className="shrink-0 text-[var(--text-dim)] opacity-60" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => onOpenAddFriend?.()}
-                      aria-label={t('sidebar.find_friend', 'Найти друга')}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-2xl border-none outline-none cursor-pointer transition-colors text-left"
-                      style={{
-                        borderRadius: '14px',
-                        border: 'none',
-                        backgroundColor: surfaceTint,
-                        color: 'var(--text-main, #e0e0e0)',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = surfaceHoverTint;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = surfaceTint;
-                      }}
-                    >
-                      <span
-                        className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-                        style={{
-                          backgroundColor: 'rgba(35, 165, 90, 0.18)',
-                          color: '#3ba55d',
-                        }}
-                      >
-                        <UserPlus size={13} />
-                      </span>
-                      <span className="text-[12.5px] font-medium truncate flex-1 min-w-0">
-                        {t('sidebar.find_friend', 'Найти друга')}
-                      </span>
-                      <ChevronRight size={14} className="shrink-0 text-[var(--text-dim)] opacity-60" />
-                    </button>
-                </div>
-              )}
 
               {downloadedUpdateVersion && !isUpdateBannerDismissed && (
                 <div
@@ -928,7 +874,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           className="overlay-scroll-track"
           onMouseDown={(e) => handleScrollbarTrackMouseDown(e, chatListScrollRef.current)}
           style={{
-            top: '15px',
+            top: '8px',
             bottom: '8px',
             opacity: 0,
             transition: 'opacity 0.2s ease',
@@ -941,7 +887,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           className="overlay-scroll-thumb"
           onMouseDown={(e) => handleScrollbarThumbMouseDown(e, chatListScrollRef.current)}
           style={{
-            top: '15px',
+            top: '8px',
             opacity: 0,
             transition: 'opacity 0.2s ease',
             willChange: 'transform',
@@ -982,12 +928,12 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
         </button>
       </div>
 
-      <div className="shrink-0 w-full z-20 select-none pointer-events-auto">
+      <div className="shrink-0 w-full z-20 select-none pointer-events-auto rounded-[18px] overflow-hidden">
         <div
           className="flex items-center justify-between px-2.5 py-2"
           style={{
             background: 'linear-gradient(135deg, #4349a8 0%, #8f3978 100%)',
-            borderRadius: 0,
+            borderRadius: '18px',
             border: 'none',
           }}
         >

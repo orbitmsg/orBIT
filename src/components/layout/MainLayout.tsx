@@ -1108,10 +1108,17 @@ export const MainLayout = () => {
     );
   }, [pinnedChatsSet, handleSelectChat, handleChatContextMenu, nickname, myCode, t, isLightTheme]);
 
+  const hasActiveChat = Boolean(activeChatId && chats.some(c => c.id === activeChatId));
+
   return (
     <div
       className="flex flex-1 h-full overflow-hidden"
-      style={{ backgroundColor: 'var(--title-bar-bg, #1e1f22)' }}
+      style={{
+        backgroundColor: 'var(--title-bar-bg, #1e1f22)',
+        padding: isMobileView ? 0 : '4px 8px 8px 8px',
+        gap: isMobileView ? 0 : '8px',
+        boxSizing: 'border-box',
+      }}
     >
       {!isMobileView && (
         <SidebarFolderRail
@@ -1170,7 +1177,7 @@ export const MainLayout = () => {
 
       <div
         className="flex flex-1 min-w-0 relative flex-col"
-        style={{ backgroundColor: 'var(--chat-list-bg, #1e1e1e)' }}
+        style={{ backgroundColor: 'transparent' }}
       >
         {!(isMobileView && !activeChatId) && (isCallMinimized ? <CallMiniPlayer /> : <GlobalAudioPlayer />)}
 
@@ -1178,8 +1185,8 @@ export const MainLayout = () => {
           <main
             className="flex-1 flex flex-col overflow-hidden"
             style={{
-              backgroundColor: 'var(--bg-primary)',
-              borderTopLeftRadius: isMobileView ? 0 : '18px',
+              backgroundColor: hasActiveChat ? 'var(--bg-primary)' : 'transparent',
+              borderRadius: isMobileView ? 0 : '18px',
               minWidth: isMobileView ? 0 : CHAT_MIN_WIDTH,
             }}
           >

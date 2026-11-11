@@ -8,6 +8,8 @@ export interface UseEdgeFoldScrollOptions {
   minScale?: number;
   minOpacity?: number;
   perspective?: number;
+  depth?: number;
+  exponent?: number;
   enabled?: boolean;
   deps?: ReadonlyArray<unknown>;
 }
@@ -15,10 +17,10 @@ export interface UseEdgeFoldScrollOptions {
 type FoldEdge = 'top' | 'bottom';
 
 interface AppliedFoldState {
-  edge: FoldEdge;
   origin: string;
   transform: string;
   opacity: string;
+  promoted: boolean;
 }
 
 interface PendingFoldWrite {
@@ -27,27 +29,34 @@ interface PendingFoldWrite {
 }
 
 const DEFAULT_FOLD_ZONE = 64;
-const DEFAULT_MAX_ANGLE = 24;
-const DEFAULT_MIN_SCALE = 0.9;
-const DEFAULT_MIN_OPACITY = 0.45;
-const DEFAULT_PERSPECTIVE = 720;
+const DEFAULT_MAX_ANGLE = 28;
+const DEFAULT_MIN_SCALE = 0.86;
+const DEFAULT_MIN_OPACITY = 0.4;
+const DEFAULT_PERSPECTIVE = 560;
+const DEFAULT_DEPTH = 18;
+const DEFAULT_EXPONENT = 1.22;
 const TALL_ITEM_RATIO = 2.2;
 const TALL_FOLD_RATIO = 1.6;
-const PROGRESS_EXPONENT = 1.45;
 const MIN_ACTIVE_PROGRESS = 0.002;
+const PRE_PROMOTE_MARGIN = 36;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function computeEdgeProgress(remaining: number, itemHeight: number, foldZone: number): number {
+function computeEdgeProgress(
+  remaining: number,
+  itemHeight: number,
+  foldZone: number,
+  exponent: number
+): number {
   const isTall = itemHeight > foldZone * TALL_ITEM_RATIO;
   const activeSpan = isTall ? foldZone * TALL_FOLD_RATIO : foldZone + itemHeight;
   if (activeSpan <= 0 || remaining >= activeSpan) {
     return 0;
   }
   const raw = clamp((activeSpan - remaining) / activeSpan, 0, 1);
-  const eased = Math.pow(raw, PROGRESS_EXPONENT);
+  const eased = Math.pow(raw, exponent);
   return eased <= MIN_ACTIVE_PROGRESS ? 0 : eased;
 }
 
@@ -61,32 +70,75 @@ function clearElementFoldStyles(el: HTMLElement): void {
   if (el.style.opacity !== '') {
     el.style.opacity = '';
   }
+  if (el.style.willChange !== '') {
+    el.style.willChange = '';
+  }
+  if (el.style.backfaceVisibility !== '') {
+    el.style.backfaceVisibility = '';
+  }
 }
 
-function resolveUntransformedBounds(
+function getOffsetTopToAncestor(
   el: HTMLElement,
-  rect: DOMRect,
-  prevEdge: FoldEdge | undefined,
-  naturalHeights: WeakMap<HTMLElement, number>
-): { top: number; bottom: number; height: number } {
-  if (!prevEdge) {
-    if (rect.height > 0) {
-      naturalHeights.set(el, rect.height);
+  stopAt: HTMLElement | null
+): { top: number; reached: boolean } {
+  let top = 0;
+  let node: HTMLElement | null = el;
+  while (node && node !== stopAt) {
+    top += node.offsetTop;
+    const parent = node.offsetParent as HTMLElement | null;
+    if (!parent) {
+      return { top, reached: stopAt === null };
     }
-    return { top: rect.top, bottom: rect.bottom, height: rect.height };
+    if (parent === stopAt) {
+      return { top, reached: true };
+    }
+    top += parent.clientTop;
+    node = parent;
+  }
+  return { top, reached: node === stopAt };
+}
+
+function measureLayoutBoundsInContainer(
+  el: HTMLElement,
+  container: HTMLElement,
+  scrollTop: number,
+  containerClientTop: number
+): { top: number; bottom: number; height: number } | null {
+  const height = el.offsetHeight;
+  if (height <= 0) {
+    return null;
   }
 
-  const layoutHeight = el.offsetHeight;
-  const cachedHeight = naturalHeights.get(el);
-  const height =
-    cachedHeight !== undefined && Math.abs(layoutHeight - cachedHeight) <= 1
-      ? cachedHeight
-      : layoutHeight || rect.height;
-
-  if (prevEdge === 'top') {
-    return { top: rect.bottom - height, bottom: rect.bottom, height };
+  let top = 0;
+  let node: HTMLElement | null = el;
+  while (node && node !== container) {
+    top += node.offsetTop;
+    const parent = node.offsetParent as HTMLElement | null;
+    if (!parent) {
+      return null;
+    }
+    if (parent === container) {
+      const localTop = top - scrollTop;
+      return { top: localTop, bottom: localTop + height, height };
+    }
+    if (!container.contains(parent)) {
+      const containerOffset = getOffsetTopToAncestor(container, parent);
+      if (!containerOffset.reached) {
+        return null;
+      }
+      const localTop = top - containerOffset.top - containerClientTop - scrollTop;
+      return { top: localTop, bottom: localTop + height, height };
+    }
+    top += parent.clientTop;
+    node = parent;
   }
-  return { top: rect.top, bottom: rect.top + height, height };
+
+  if (node === container) {
+    const localTop = top - scrollTop;
+    return { top: localTop, bottom: localTop + height, height };
+  }
+  return null;
 }
 
 export function useEdgeFoldScroll(
@@ -100,6 +152,8 @@ export function useEdgeFoldScroll(
     minScale: rawMinScale = DEFAULT_MIN_SCALE,
     minOpacity: rawMinOpacity = DEFAULT_MIN_OPACITY,
     perspective: rawPerspective = DEFAULT_PERSPECTIVE,
+    depth: rawDepth = DEFAULT_DEPTH,
+    exponent: rawExponent = DEFAULT_EXPONENT,
     enabled = true,
     deps,
   } = options;
@@ -108,7 +162,9 @@ export function useEdgeFoldScroll(
   const maxAngle = clamp(rawMaxAngle, 0, 85);
   const minScale = clamp(rawMinScale, 0.1, 1);
   const minOpacity = clamp(rawMinOpacity, 0, 1);
-  const perspective = Math.max(100, rawPerspective);
+  const perspective = Math.max(120, rawPerspective);
+  const depth = Math.max(0, rawDepth);
+  const exponent = clamp(rawExponent, 0.5, 3);
 
   const [prefersReducedMotion, setPrefersReducedMotion] = useState<boolean>(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
@@ -186,20 +242,17 @@ export function useEdgeFoldScroll(
       let disposed = false;
       let rafId = 0;
       const styledElements = new Set<HTMLElement>();
-      const activeEdges = new WeakMap<HTMLElement, FoldEdge>();
-      const naturalHeights = new WeakMap<HTMLElement, number>();
       const appliedStates = new WeakMap<HTMLElement, AppliedFoldState>();
 
       const resetAll = () => {
         styledElements.forEach((el) => {
           clearElementFoldStyles(el);
-          activeEdges.delete(el);
           appliedStates.delete(el);
         });
         styledElements.clear();
         if (container.isConnected) {
           container.querySelectorAll<HTMLElement>(itemSelector).forEach((el) => {
-            if (el.style.transform || el.style.opacity) {
+            if (el.style.transform || el.style.opacity || el.style.willChange) {
               clearElementFoldStyles(el);
             }
           });
@@ -212,25 +265,27 @@ export function useEdgeFoldScroll(
           return;
         }
 
-        const containerRect = container.getBoundingClientRect();
-        if (containerRect.height <= 0 || containerRect.width <= 0) {
+        const clientHeight = container.clientHeight;
+        const clientWidth = container.clientWidth;
+        if (clientHeight <= 0 || clientWidth <= 0) {
           resetAll();
           return;
         }
 
-        const effectiveFoldZone = Math.min(foldZone, containerRect.height * 0.35);
-        const safeTop = containerRect.top + effectiveFoldZone;
-        const safeBottom = containerRect.bottom - effectiveFoldZone;
-        const edgeRamp = Math.max(16, effectiveFoldZone * 0.5);
+        const effectiveFoldZone = Math.min(foldZone, clientHeight * 0.38);
+        const safeTop = effectiveFoldZone;
+        const safeBottom = clientHeight - effectiveFoldZone;
+        const edgeRamp = Math.min(20, Math.max(10, effectiveFoldZone * 0.35));
 
         const scrollTop = container.scrollTop;
+        const containerClientTop = container.clientTop;
         const bottomScrollRemaining = Math.max(
           0,
-          container.scrollHeight - container.clientHeight - scrollTop
+          container.scrollHeight - clientHeight - scrollTop
         );
-        const topScrollStrength = clamp((scrollTop <= 1 ? 0 : scrollTop - 1) / edgeRamp, 0, 1);
+        const topScrollStrength = clamp((scrollTop <= 0.5 ? 0 : scrollTop - 0.5) / edgeRamp, 0, 1);
         const bottomScrollStrength = clamp(
-          (bottomScrollRemaining <= 1 ? 0 : bottomScrollRemaining - 1) / edgeRamp,
+          (bottomScrollRemaining <= 0.5 ? 0 : bottomScrollRemaining - 0.5) / edgeRamp,
           0,
           1
         );
@@ -241,41 +296,55 @@ export function useEdgeFoldScroll(
 
         elements.forEach((el) => {
           seen.add(el);
-          const rect = el.getBoundingClientRect();
-          const { top, bottom, height } = resolveUntransformedBounds(
+          const bounds = measureLayoutBoundsInContainer(
             el,
-            rect,
-            activeEdges.get(el),
-            naturalHeights
+            container,
+            scrollTop,
+            containerClientTop
           );
 
-          if (height <= 0 || bottom <= containerRect.top || top >= containerRect.bottom) {
+          if (!bounds) {
+            writes.push({ el, next: null });
+            return;
+          }
+
+          const { top, bottom, height } = bounds;
+          if (bottom <= -PRE_PROMOTE_MARGIN || top >= clientHeight + PRE_PROMOTE_MARGIN) {
             writes.push({ el, next: null });
             return;
           }
 
           if (top >= safeTop && bottom <= safeBottom) {
-            writes.push({ el, next: null });
+            const nearZone =
+              top < safeTop + PRE_PROMOTE_MARGIN || bottom > safeBottom - PRE_PROMOTE_MARGIN;
+            writes.push({
+              el,
+              next: nearZone
+                ? { origin: '', transform: '', opacity: '', promoted: true }
+                : null,
+            });
             return;
           }
 
           let topProgress = 0;
-          if (top < safeTop && bottom > containerRect.top) {
+          if (top < safeTop && bottom > 0) {
             const topFactor = Math.max(
               topScrollStrength,
-              clamp((containerRect.top - top) / 16, 0, 1)
+              clamp((0 - top) / 12, 0, 1)
             );
-            topProgress = computeEdgeProgress(bottom - containerRect.top, height, effectiveFoldZone) * topFactor;
+            topProgress =
+              computeEdgeProgress(bottom, height, effectiveFoldZone, exponent) * topFactor;
           }
 
           let bottomProgress = 0;
-          if (bottom > safeBottom && top < containerRect.bottom) {
+          if (bottom > safeBottom && top < clientHeight) {
             const bottomFactor = Math.max(
               bottomScrollStrength,
-              clamp((bottom - containerRect.bottom) / 16, 0, 1)
+              clamp((bottom - clientHeight) / 12, 0, 1)
             );
             bottomProgress =
-              computeEdgeProgress(containerRect.bottom - top, height, effectiveFoldZone) * bottomFactor;
+              computeEdgeProgress(clientHeight - top, height, effectiveFoldZone, exponent) *
+              bottomFactor;
           }
 
           let winnerEdge: FoldEdge | null = null;
@@ -289,26 +358,34 @@ export function useEdgeFoldScroll(
           }
 
           if (!winnerEdge) {
-            writes.push({ el, next: null });
+            const insideViewport = bottom > 0 && top < clientHeight;
+            writes.push({
+              el,
+              next: insideViewport
+                ? { origin: '', transform: '', opacity: '', promoted: true }
+                : null,
+            });
             return;
           }
 
           const angle = progress * maxAngle;
           const signedAngle = winnerEdge === 'top' ? angle : -angle;
           const scale = 1 - progress * (1 - minScale);
+          const zShift = progress * depth;
           const opacityValue = 1 - progress * (1 - minOpacity);
 
           const origin = winnerEdge === 'top' ? 'center bottom' : 'center top';
-          const transform = `perspective(${perspective}px) rotateX(${signedAngle.toFixed(2)}deg) scale(${scale.toFixed(4)})`;
+          const zPart = depth > 0 ? ` translateZ(${(-zShift).toFixed(2)}px)` : '';
+          const transform = `perspective(${perspective}px)${zPart} rotateX(${signedAngle.toFixed(2)}deg) scale(${scale.toFixed(4)})`;
           const opacity = minOpacity < 1 ? opacityValue.toFixed(3) : '';
 
           writes.push({
             el,
             next: {
-              edge: winnerEdge,
               origin,
               transform,
               opacity,
+              promoted: true,
             },
           });
         });
@@ -316,11 +393,10 @@ export function useEdgeFoldScroll(
         for (const item of writes) {
           const { el, next } = item;
           if (!next) {
-            if (styledElements.has(el) || el.style.transform !== '' || el.style.opacity !== '') {
+            if (styledElements.has(el) || el.style.transform !== '' || el.style.opacity !== '' || el.style.willChange !== '') {
               clearElementFoldStyles(el);
             }
             styledElements.delete(el);
-            activeEdges.delete(el);
             appliedStates.delete(el);
             continue;
           }
@@ -328,10 +404,19 @@ export function useEdgeFoldScroll(
           const prev = appliedStates.get(el);
           if (
             !prev ||
+            prev.promoted !== next.promoted ||
             prev.origin !== next.origin ||
             prev.transform !== next.transform ||
             prev.opacity !== next.opacity
           ) {
+            const targetWillChange = next.promoted ? 'transform, opacity' : '';
+            const targetBackface = next.promoted ? 'hidden' : '';
+            if (el.style.willChange !== targetWillChange) {
+              el.style.willChange = targetWillChange;
+            }
+            if (el.style.backfaceVisibility !== targetBackface) {
+              el.style.backfaceVisibility = targetBackface;
+            }
             if (el.style.transformOrigin !== next.origin) {
               el.style.transformOrigin = next.origin;
             }
@@ -344,7 +429,6 @@ export function useEdgeFoldScroll(
             appliedStates.set(el, next);
           }
           styledElements.add(el);
-          activeEdges.set(el, next.edge);
         }
 
         styledElements.forEach((el) => {
@@ -353,7 +437,6 @@ export function useEdgeFoldScroll(
               clearElementFoldStyles(el);
             }
             styledElements.delete(el);
-            activeEdges.delete(el);
             appliedStates.delete(el);
           }
         });
@@ -366,7 +449,18 @@ export function useEdgeFoldScroll(
         rafId = requestAnimationFrame(applyUpdates);
       };
 
-      container.addEventListener('scroll', scheduleUpdate, { passive: true });
+      const handleScroll = () => {
+        if (disposed) {
+          return;
+        }
+        if (rafId !== 0) {
+          cancelAnimationFrame(rafId);
+          rafId = 0;
+        }
+        applyUpdates();
+      };
+
+      container.addEventListener('scroll', handleScroll, { passive: true });
 
       const resizeObserver =
         typeof ResizeObserver !== 'undefined' ? new ResizeObserver(scheduleUpdate) : null;
@@ -383,7 +477,7 @@ export function useEdgeFoldScroll(
         mutationObserver.observe(container, { childList: true, subtree: true });
       }
 
-      scheduleUpdate();
+      applyUpdates();
 
       cleanupFnRef.current = () => {
         disposed = true;
@@ -391,7 +485,7 @@ export function useEdgeFoldScroll(
           cancelAnimationFrame(rafId);
           rafId = 0;
         }
-        container.removeEventListener('scroll', scheduleUpdate);
+        container.removeEventListener('scroll', handleScroll);
         resizeObserver?.disconnect();
         mutationObserver?.disconnect();
         resetAll();
@@ -415,6 +509,8 @@ export function useEdgeFoldScroll(
     minScale,
     minOpacity,
     perspective,
+    depth,
+    exponent,
     isActive,
     depsVersion,
   ]);

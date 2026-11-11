@@ -169,22 +169,33 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
     return allEmojisList.slice(0, displayLimit);
   }, [allEmojisList, searchQuery, displayLimit]);
 
+  const reactionEmojiRows = useMemo(() => {
+    const rows: Emoji[][] = [];
+    for (let i = 0; i < displayedEmojis.length; i += 6) {
+      rows.push(displayedEmojis.slice(i, i + 6));
+    }
+    return rows;
+  }, [displayedEmojis]);
+
   const handleGridScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    if (scrollHeight - scrollTop - clientHeight < 100) {
-      setDisplayLimit((prev) => Math.min(allEmojisList.length, prev + 60));
+    if (scrollHeight - scrollTop - clientHeight < 120) {
+      const targetLimit = Math.ceil((scrollTop + clientHeight + 180) / 40) * 6;
+      setDisplayLimit((prev) => Math.min(allEmojisList.length, Math.max(prev + 60, targetLimit)));
     }
   }, [allEmojisList.length]);
 
   useEdgeFoldScroll(reactionScrollRef, {
-    itemSelector: '[data-fold-reaction-emoji="true"]',
-    foldZone: 44,
-    maxAngle: 34,
-    minScale: 0.72,
+    itemSelector: '[data-fold-reaction-row="true"]',
+    foldZone: 64,
+    maxAngle: 38,
+    minScale: 0.78,
     minOpacity: 0.25,
-    perspective: 520,
+    perspective: 440,
+    depth: 28,
+    exponent: 1.18,
     enabled: isExpanded,
-    deps: [isExpanded, displayedEmojis.length, searchQuery],
+    deps: [isExpanded, reactionEmojiRows.length, searchQuery],
   });
 
   return (
@@ -315,41 +326,53 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
       <AnimatePresence>
         {isExpanded && (
           <motion.div
-            ref={reactionScrollRef}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-            className="flex-1 overflow-y-auto overflow-x-hidden px-2 pb-2 custom-chat-scrollbar"
-            onScroll={handleGridScroll}
+            className="flex-1 min-h-0 flex flex-col overflow-hidden"
           >
-            <div className="grid grid-cols-6 gap-1 justify-items-center pt-1">
-              {displayedEmojis.map((emoji) => (
-                <button
-                  key={emoji.id}
-                  type="button"
-                  data-fold-reaction-emoji="true"
-                  onClick={() => handleSelect(emoji.char)}
-                  className="emoji-font flex items-center justify-center active:scale-95 cursor-pointer rounded-xl transition-colors"
-                  style={{
-                    width: 36,
-                    height: 36,
-                    fontSize: '23px',
-                    border: 'none',
-                    background: 'transparent',
-                    padding: 0,
-                    borderRadius: '10px',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.1))';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  {emoji.char}
-                </button>
-              ))}
+            <div
+              ref={reactionScrollRef}
+              onScroll={handleGridScroll}
+              className="flex-1 overflow-y-auto overflow-x-hidden px-2 pb-2 custom-chat-scrollbar"
+              style={{ transform: 'none', willChange: 'auto' }}
+            >
+              <div className="flex flex-col gap-1 pt-1">
+                {reactionEmojiRows.map((row, rowIdx) => (
+                  <div
+                    key={row[0]?.id ?? rowIdx}
+                    data-fold-reaction-row="true"
+                    className="grid grid-cols-6 gap-1 justify-items-center"
+                  >
+                    {row.map((emoji) => (
+                      <button
+                        key={emoji.id}
+                        type="button"
+                        onClick={() => handleSelect(emoji.char)}
+                        className="emoji-font flex items-center justify-center active:scale-95 cursor-pointer rounded-xl transition-colors"
+                        style={{
+                          width: 36,
+                          height: 36,
+                          fontSize: '23px',
+                          border: 'none',
+                          background: 'transparent',
+                          padding: 0,
+                          borderRadius: '10px',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.1))';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        {emoji.char}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
           </motion.div>
         )}

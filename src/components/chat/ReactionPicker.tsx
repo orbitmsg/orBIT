@@ -50,12 +50,14 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
   }, []);
 
   useEdgeFoldScroll(scrollerRef, {
-    itemSelector: '[data-fold-reaction-emoji="true"]',
-    foldZone: 48,
-    maxAngle: 32,
-    minScale: 0.74,
-    minOpacity: 0.3,
-    perspective: 540,
+    itemSelector: '[data-fold-reaction-row="true"]',
+    foldZone: 68,
+    maxAngle: 36,
+    minScale: 0.78,
+    minOpacity: 0.28,
+    perspective: 460,
+    depth: 26,
+    exponent: 1.18,
     enabled: hasScroller,
     deps: [hasScroller, searchQuery],
   });
@@ -145,7 +147,7 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
           : categoryLabels[item.category] || item.category;
       return (
         <div
-          data-fold-reaction-emoji="true"
+          data-fold-reaction-row="true"
           className="px-2 py-1 text-[11px] font-semibold text-white/50 uppercase tracking-wider select-none"
         >
           {label}
@@ -155,6 +157,7 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
 
     return (
       <div
+        data-fold-reaction-row="true"
         className="grid px-1"
         style={{
           gridTemplateColumns: `repeat(${COLUMNS}, ${EMOJI_SIZE}px)`,
@@ -167,7 +170,6 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
           <button
             key={emoji.id}
             type="button"
-            data-fold-reaction-emoji="true"
             onClick={() => handleSelect(emoji.char)}
             className="emoji-font flex items-center justify-center active:scale-90"
             style={{ width: EMOJI_SIZE, height: EMOJI_SIZE, fontSize: '20px', cursor: 'pointer', border: 'none', background: 'none', padding: 0 }}
@@ -253,7 +255,7 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
           ) : (
             <Virtuoso
               scrollerRef={handleScrollerRef}
-              style={{ height: '100%', width: '100%', willChange: 'transform' }}
+              style={{ height: '100%', width: '100%' }}
               data={groupedRows}
               itemContent={renderItem}
               increaseViewportBy={300}

@@ -58,7 +58,6 @@ const StickerGridButton: React.FC<{
   return (
     <button
       type="button"
-      data-fold-sticker-item="true"
       onClick={() => onSelect(sticker)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -397,7 +396,8 @@ export const EmojiPicker = ({
     const renderedHeight = renderedEmojiCount * 36;
     if (el.scrollTop + el.clientHeight >= renderedHeight - 350) {
       if (renderedEmojiCount < emojiRows.length) {
-        setRenderedEmojiCount((prev) => Math.min(emojiRows.length, prev + 25));
+        const targetCount = Math.ceil((el.scrollTop + el.clientHeight + 450) / 36);
+        setRenderedEmojiCount((prev) => Math.min(emojiRows.length, Math.max(prev + 25, targetCount)));
       }
     }
   }, [renderedEmojiCount, emojiRows.length]);
@@ -407,7 +407,8 @@ export const EmojiPicker = ({
     const renderedHeight = renderedGifCount * 120;
     if (el.scrollTop + el.clientHeight >= renderedHeight - 350) {
       if (renderedGifCount < gifRows.length) {
-        setRenderedGifCount((prev) => Math.min(gifRows.length, prev + 12));
+        const targetCount = Math.ceil((el.scrollTop + el.clientHeight + 450) / 120);
+        setRenderedGifCount((prev) => Math.min(gifRows.length, Math.max(prev + 12, targetCount)));
       }
     }
   }, [renderedGifCount, gifRows.length]);
@@ -420,34 +421,40 @@ export const EmojiPicker = ({
   }, []);
 
   useEdgeFoldScroll(emojiScrollRef, {
-    itemSelector: '[data-fold-picker-item="true"]',
-    foldZone: 54,
-    maxAngle: 32,
-    minScale: 0.74,
+    itemSelector: '[data-fold-picker-row="true"]',
+    foldZone: 84,
+    maxAngle: 36,
+    minScale: 0.78,
     minOpacity: 0.28,
-    perspective: 560,
+    perspective: 480,
+    depth: 28,
+    exponent: 1.18,
     enabled: activeTab === 'emoji',
     deps: [activeTab, visibleEmojiRows.length, searchQuery],
   });
 
   useEdgeFoldScroll(stickersScrollRef, {
-    itemSelector: '[data-fold-sticker-item="true"]',
-    foldZone: 68,
-    maxAngle: 28,
-    minScale: 0.78,
+    itemSelector: '[data-fold-sticker-row="true"]',
+    foldZone: 84,
+    maxAngle: 32,
+    minScale: 0.82,
     minOpacity: 0.35,
-    perspective: 620,
+    perspective: 540,
+    depth: 24,
+    exponent: 1.18,
     enabled: activeTab === 'stickers',
     deps: [activeTab, searchQuery, recentStickers.length],
   });
 
   useEdgeFoldScroll(gifScrollRef, {
-    itemSelector: '[data-fold-gif-item="true"]',
-    foldZone: 72,
-    maxAngle: 22,
-    minScale: 0.85,
+    itemSelector: '[data-fold-gif-row="true"]',
+    foldZone: 80,
+    maxAngle: 26,
+    minScale: 0.86,
     minOpacity: 0.45,
-    perspective: 640,
+    perspective: 580,
+    depth: 20,
+    exponent: 1.2,
     enabled: activeTab === 'gif' && gifRows.length > 0,
     deps: [activeTab, visibleGifRows.length, searchQuery, activeGifReaction],
   });
@@ -702,8 +709,8 @@ export const EmojiPicker = ({
                 style={{
                   padding: '0 8px 10px 8px',
                   overscrollBehaviorY: 'contain',
-                  transform: 'translateZ(0)',
-                  willChange: 'scroll-position',
+                  transform: 'none',
+                  willChange: 'auto',
                 }}
               >
                 {visibleEmojiRows.map((row, idx) => {
@@ -711,7 +718,7 @@ export const EmojiPicker = ({
                     return (
                       <div
                         key={`header-${row.id || idx}`}
-                        data-fold-picker-item="true"
+                        data-fold-picker-row="true"
                         className="px-1 pt-2.5 pb-1 text-xs font-semibold text-white/40 select-none"
                       >
                         {row.label}
@@ -722,6 +729,7 @@ export const EmojiPicker = ({
                     return (
                       <div
                         key={`row-${idx}`}
+                        data-fold-picker-row="true"
                         className="grid"
                         style={{
                           gridTemplateColumns: `repeat(${COLUMNS}, 1fr)`,
@@ -734,7 +742,6 @@ export const EmojiPicker = ({
                           <button
                             key={emoji.id}
                             type="button"
-                            data-fold-picker-item="true"
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => handleSelectEmoji(emoji.char)}
                             className="emoji-font flex items-center justify-center active:opacity-70"
@@ -771,8 +778,8 @@ export const EmojiPicker = ({
                 style={{
                   padding: '0 8px 10px 8px',
                   overscrollBehaviorY: 'contain',
-                  transform: 'translateZ(0)',
-                  willChange: 'scroll-position',
+                  transform: 'none',
+                  willChange: 'auto',
                 }}
               >
                 {searchQuery.trim() ? (
@@ -784,7 +791,7 @@ export const EmojiPicker = ({
                     <div className="pt-1">
                       {filteredTopSpacer > 0 && <div style={{ height: `${filteredTopSpacer}px` }} />}
                       {visibleFilteredRows.map((row, rIdx) => (
-                        <div key={`filtered-row-${rIdx}`} className="grid grid-cols-4 gap-2 mb-2">
+                        <div key={`filtered-row-${rIdx}`} data-fold-sticker-row="true" className="grid grid-cols-4 gap-2 mb-2">
                           {row.map((sticker) => (
                             <StickerGridButton
                               key={sticker.id}
@@ -806,7 +813,7 @@ export const EmojiPicker = ({
                           <div
                             key={`header-${item.packId}`}
                             id={`sticker-pack-${item.packId}`}
-                            data-fold-sticker-item="true"
+                            data-fold-sticker-row="true"
                             className="px-1 pt-2 pb-1 text-xs font-semibold text-white/40 select-none flex items-center"
                             style={{ height: `${item.height}px` }}
                           >
@@ -818,6 +825,7 @@ export const EmojiPicker = ({
                         return (
                           <div
                             key={item.id}
+                            data-fold-sticker-row="true"
                             className="grid grid-cols-4 gap-2 mb-2"
                           >
                             {item.stickers.map((sticker) => (
@@ -855,17 +863,16 @@ export const EmojiPicker = ({
                   style={{
                     padding: `0 10px 10px 10px`,
                     overscrollBehaviorY: 'contain',
-                    transform: 'translateZ(0)',
-                    willChange: 'scroll-position',
+                    transform: 'none',
+                    willChange: 'auto',
                   }}
                 >
                   {visibleGifRows.map((row, idx) => (
-                    <div key={`gif-row-${idx}`} className="flex gap-2 mb-2">
+                    <div key={`gif-row-${idx}`} data-fold-gif-row="true" className="flex gap-2 mb-2">
                       {row.items.map((gif: GifItem) => (
                         <button
                           key={gif.id}
                           type="button"
-                          data-fold-gif-item="true"
                           onClick={() => handleSelectGifItem(gif)}
                           className="relative flex-1 rounded-lg overflow-hidden bg-white/5 active:opacity-70 cursor-pointer"
                           style={{ minHeight: '100px', maxHeight: '140px' }}

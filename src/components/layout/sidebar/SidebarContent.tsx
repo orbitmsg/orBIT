@@ -115,11 +115,13 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
 
   useEdgeFoldScroll(chatListScrollRef, {
     itemSelector: '[data-fold-list] > :not(.w-full), [data-fold-list] > .w-full > *',
-    foldZone: 58,
-    maxAngle: 22,
-    minScale: 0.91,
-    minOpacity: 0.5,
-    perspective: 720,
+    foldZone: 62,
+    maxAngle: 24,
+    minScale: 0.9,
+    minOpacity: 0.48,
+    perspective: 620,
+    depth: 16,
+    exponent: 1.2,
     enabled: !isInChatSearch,
     deps: [visibleChats.length, isInChatSearch, isViewingArchive, activeFolderId, searchQuery, globalFoundUsers.length],
   });

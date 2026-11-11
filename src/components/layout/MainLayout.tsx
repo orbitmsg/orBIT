@@ -1109,7 +1109,10 @@ export const MainLayout = () => {
   }, [pinnedChatsSet, handleSelectChat, handleChatContextMenu, nickname, myCode, t, isLightTheme]);
 
   return (
-    <div className="flex flex-1 h-full overflow-hidden">
+    <div
+      className="flex flex-1 h-full overflow-hidden"
+      style={{ backgroundColor: 'var(--chat-list-bg, #1e1e1e)' }}
+    >
       {!isMobileView && (
         <SidebarFolderRail
           activeFolderId={activeFolderId}
@@ -1172,14 +1175,18 @@ export const MainLayout = () => {
         </ResizableSidebar>
       )}
 
-      <div className="flex flex-1 min-w-0 relative flex-col">
+      <div
+        className="flex flex-1 min-w-0 relative flex-col"
+        style={{ backgroundColor: 'var(--chat-list-bg, #1e1e1e)' }}
+      >
         {!(isMobileView && !activeChatId) && (isCallMinimized ? <CallMiniPlayer /> : <GlobalAudioPlayer />)}
 
         {(!isMobileView || activeChatId) && (
           <main
-            className="flex-1 flex flex-col rounded-tl-2xl overflow-hidden"
+            className="flex-1 flex flex-col overflow-hidden"
             style={{
               backgroundColor: 'var(--bg-primary)',
+              borderTopLeftRadius: isMobileView ? 0 : '18px',
               minWidth: isMobileView ? 0 : CHAT_MIN_WIDTH,
             }}
           >

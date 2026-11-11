@@ -222,8 +222,11 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
   };
 
   return (
-    <div className="flex flex-col w-full h-full select-none bg-[#313338] overflow-hidden">
-      <div className="h-14 bg-[#2b2d31]/80 px-5 flex items-center justify-between shrink-0">
+    <div
+      className="flex flex-col w-full h-full select-none overflow-hidden"
+      style={{ backgroundColor: 'var(--bg-primary, #313338)' }}
+    >
+      <div className="h-14 px-5 flex items-center justify-between shrink-0">
         <div className="flex items-center min-w-0 gap-2">
           <div className="flex items-center text-[#949ba4] shrink-0">
             <Users size={20} />

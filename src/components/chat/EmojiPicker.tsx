@@ -21,7 +21,6 @@ import {
 } from '../../lib/stickers-and-gifs';
 import { TgsPlayer } from './TgsPlayer';
 import { useChatStore } from '../../store/useChatStore';
-import { useEdgeFoldScroll } from '../../hooks/useEdgeFoldScroll';
 
 interface EmojiPickerProps {
   onSelect: (emoji: string) => void;
@@ -108,8 +107,6 @@ export const EmojiPicker = ({
 
   const pickerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const emojiScrollRef = useRef<HTMLDivElement>(null);
-  const gifScrollRef = useRef<HTMLDivElement>(null);
   const [headerRectTick, setHeaderRectTick] = useState(0);
 
   useEffect(() => {
@@ -420,45 +417,6 @@ export const EmojiPicker = ({
     setStickerScrollTop(e.currentTarget.scrollTop);
   }, []);
 
-  useEdgeFoldScroll(emojiScrollRef, {
-    itemSelector: '[data-fold-picker-row="true"]',
-    foldZone: 50,
-    maxAngle: 16,
-    minScale: 0.89,
-    minOpacity: 0.64,
-    perspective: 680,
-    depth: 0,
-    exponent: 1.3,
-    enabled: activeTab === 'emoji',
-    deps: [activeTab, visibleEmojiRows.length, searchQuery],
-  });
-
-  useEdgeFoldScroll(stickersScrollRef, {
-    itemSelector: '[data-fold-sticker-row="true"]',
-    foldZone: 52,
-    maxAngle: 15,
-    minScale: 0.91,
-    minOpacity: 0.68,
-    perspective: 720,
-    depth: 0,
-    exponent: 1.3,
-    enabled: activeTab === 'stickers',
-    deps: [activeTab, searchQuery, recentStickers.length],
-  });
-
-  useEdgeFoldScroll(gifScrollRef, {
-    itemSelector: '[data-fold-gif-row="true"]',
-    foldZone: 50,
-    maxAngle: 13,
-    minScale: 0.93,
-    minOpacity: 0.72,
-    perspective: 760,
-    depth: 0,
-    exponent: 1.3,
-    enabled: activeTab === 'gif' && gifRows.length > 0,
-    deps: [activeTab, visibleGifRows.length, searchQuery, activeGifReaction],
-  });
-
   useEffect(() => {
     setStickerScrollTop(0);
     if (stickersScrollRef.current) {
@@ -703,14 +661,13 @@ export const EmojiPicker = ({
           <div className="flex-1 overflow-hidden">
             {activeTab === 'emoji' && (
               <div
-                ref={emojiScrollRef}
                 onScroll={handleEmojiScroll}
                 className="custom-chat-scrollbar h-full overflow-y-auto overflow-x-hidden"
                 style={{
                   padding: '0 8px 10px 8px',
                   overscrollBehaviorY: 'contain',
-                  transform: 'none',
-                  willChange: 'auto',
+                  transform: 'translateZ(0)',
+                  willChange: 'scroll-position',
                 }}
               >
                 {visibleEmojiRows.map((row, idx) => {
@@ -718,7 +675,6 @@ export const EmojiPicker = ({
                     return (
                       <div
                         key={`header-${row.id || idx}`}
-                        data-fold-picker-row="true"
                         className="px-1 pt-2.5 pb-1 text-xs font-semibold text-white/40 select-none"
                       >
                         {row.label}
@@ -729,13 +685,12 @@ export const EmojiPicker = ({
                     return (
                       <div
                         key={`row-${idx}`}
-                        data-fold-picker-row="true"
                         className="grid"
                         style={{
                           gridTemplateColumns: `repeat(${COLUMNS}, 1fr)`,
                           gap: GAP,
                           marginBottom: GAP,
-                          contain: 'layout style',
+                          contain: 'layout style paint',
                         }}
                       >
                         {row.items.map((emoji: Emoji) => (
@@ -778,8 +733,8 @@ export const EmojiPicker = ({
                 style={{
                   padding: '0 8px 10px 8px',
                   overscrollBehaviorY: 'contain',
-                  transform: 'none',
-                  willChange: 'auto',
+                  transform: 'translateZ(0)',
+                  willChange: 'scroll-position',
                 }}
               >
                 {searchQuery.trim() ? (
@@ -791,7 +746,7 @@ export const EmojiPicker = ({
                     <div className="pt-1">
                       {filteredTopSpacer > 0 && <div style={{ height: `${filteredTopSpacer}px` }} />}
                       {visibleFilteredRows.map((row, rIdx) => (
-                        <div key={`filtered-row-${rIdx}`} data-fold-sticker-row="true" className="grid grid-cols-4 gap-2 mb-2">
+                        <div key={`filtered-row-${rIdx}`} className="grid grid-cols-4 gap-2 mb-2">
                           {row.map((sticker) => (
                             <StickerGridButton
                               key={sticker.id}
@@ -813,7 +768,6 @@ export const EmojiPicker = ({
                           <div
                             key={`header-${item.packId}`}
                             id={`sticker-pack-${item.packId}`}
-                            data-fold-sticker-row="true"
                             className="px-1 pt-2 pb-1 text-xs font-semibold text-white/40 select-none flex items-center"
                             style={{ height: `${item.height}px` }}
                           >
@@ -825,7 +779,6 @@ export const EmojiPicker = ({
                         return (
                           <div
                             key={item.id}
-                            data-fold-sticker-row="true"
                             className="grid grid-cols-4 gap-2 mb-2"
                           >
                             {item.stickers.map((sticker) => (
@@ -857,18 +810,17 @@ export const EmojiPicker = ({
                 </div>
               ) : (
                 <div
-                  ref={gifScrollRef}
                   onScroll={handleGifScroll}
                   className="custom-chat-scrollbar h-full overflow-y-auto overflow-x-hidden"
                   style={{
                     padding: `0 10px 10px 10px`,
                     overscrollBehaviorY: 'contain',
-                    transform: 'none',
-                    willChange: 'auto',
+                    transform: 'translateZ(0)',
+                    willChange: 'scroll-position',
                   }}
                 >
                   {visibleGifRows.map((row, idx) => (
-                    <div key={`gif-row-${idx}`} data-fold-gif-row="true" className="flex gap-2 mb-2">
+                    <div key={`gif-row-${idx}`} className="flex gap-2 mb-2">
                       {row.items.map((gif: GifItem) => (
                         <button
                           key={gif.id}

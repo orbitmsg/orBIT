@@ -24,7 +24,6 @@ import { useConnectionStore } from '../../../store/useConnectionStore';
 import { useCallStore } from '../../../store/useCallStore';
 import { callSoundService } from '../../../services/callSoundService';
 import { supportService, SUPPORT_AVATAR_URL } from '../../../services/supportService';
-import { useEdgeFoldScroll } from '../../../hooks/useEdgeFoldScroll';
 import type { ChannelInfo } from '../../../services/channelService';
 import type { UserDirectoryRecord } from '../../../services/supabaseService';
 
@@ -112,19 +111,6 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   const [isMicMuted, setIsMicMuted] = React.useState(false);
   const [isDeafened, setIsDeafened] = React.useState(false);
   const isInChatSearch = Boolean(inChatSearch?.isOpen);
-
-  useEdgeFoldScroll(chatListScrollRef, {
-    itemSelector: '[data-fold-list] > :not(.w-full), [data-fold-list] > .w-full > *',
-    foldZone: 44,
-    maxAngle: 12,
-    minScale: 0.95,
-    minOpacity: 0.74,
-    perspective: 760,
-    depth: 0,
-    exponent: 1.32,
-    enabled: !isInChatSearch,
-    deps: [visibleChats.length, isInChatSearch, isViewingArchive, activeFolderId, searchQuery, globalFoundUsers.length],
-  });
 
   const surfaceTint = isLightTheme ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.045)';
   const surfaceHoverTint = isLightTheme ? 'rgba(0, 0, 0, 0.075)' : 'rgba(255, 255, 255, 0.085)';
@@ -294,7 +280,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
               <ChatPlaceholder />
             </div>
           ) : (
-            <div className="flex flex-col w-full" data-fold-list>
+            <div className="flex flex-col w-full">
 
               {downloadedUpdateVersion && !isUpdateBannerDismissed && (
                 <div

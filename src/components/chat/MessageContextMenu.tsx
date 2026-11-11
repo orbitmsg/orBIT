@@ -187,13 +187,13 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
 
   useEdgeFoldScroll(reactionScrollRef, {
     itemSelector: '[data-fold-reaction-row="true"]',
-    foldZone: 64,
-    maxAngle: 38,
-    minScale: 0.78,
-    minOpacity: 0.25,
-    perspective: 440,
-    depth: 28,
-    exponent: 1.18,
+    foldZone: 42,
+    maxAngle: 18,
+    minScale: 0.89,
+    minOpacity: 0.62,
+    perspective: 650,
+    depth: 0,
+    exponent: 1.3,
     enabled: isExpanded,
     deps: [isExpanded, reactionEmojiRows.length, searchQuery],
   });

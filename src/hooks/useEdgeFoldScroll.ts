@@ -20,25 +20,25 @@ interface AppliedFoldState {
   origin: string;
   transform: string;
   opacity: string;
-  promoted: boolean;
 }
 
-interface PendingFoldWrite {
+interface CachedFoldItem {
   el: HTMLElement;
-  next: AppliedFoldState | null;
+  top: number;
+  bottom: number;
+  height: number;
 }
 
-const DEFAULT_FOLD_ZONE = 64;
-const DEFAULT_MAX_ANGLE = 28;
-const DEFAULT_MIN_SCALE = 0.86;
-const DEFAULT_MIN_OPACITY = 0.4;
-const DEFAULT_PERSPECTIVE = 560;
-const DEFAULT_DEPTH = 18;
-const DEFAULT_EXPONENT = 1.22;
+const DEFAULT_FOLD_ZONE = 46;
+const DEFAULT_MAX_ANGLE = 14;
+const DEFAULT_MIN_SCALE = 0.92;
+const DEFAULT_MIN_OPACITY = 0.65;
+const DEFAULT_PERSPECTIVE = 720;
+const DEFAULT_DEPTH = 0;
+const DEFAULT_EXPONENT = 1.3;
 const TALL_ITEM_RATIO = 2.2;
 const TALL_FOLD_RATIO = 1.6;
-const MIN_ACTIVE_PROGRESS = 0.002;
-const PRE_PROMOTE_MARGIN = 36;
+const MIN_ACTIVE_PROGRESS = 0.005;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -70,12 +70,6 @@ function clearElementFoldStyles(el: HTMLElement): void {
   if (el.style.opacity !== '') {
     el.style.opacity = '';
   }
-  if (el.style.willChange !== '') {
-    el.style.willChange = '';
-  }
-  if (el.style.backfaceVisibility !== '') {
-    el.style.backfaceVisibility = '';
-  }
 }
 
 function getOffsetTopToAncestor(
@@ -99,17 +93,11 @@ function getOffsetTopToAncestor(
   return { top, reached: node === stopAt };
 }
 
-function measureLayoutBoundsInContainer(
+function measureContentTopInContainer(
   el: HTMLElement,
   container: HTMLElement,
-  scrollTop: number,
   containerClientTop: number
-): { top: number; bottom: number; height: number } | null {
-  const height = el.offsetHeight;
-  if (height <= 0) {
-    return null;
-  }
-
+): number | null {
   let top = 0;
   let node: HTMLElement | null = el;
   while (node && node !== container) {
@@ -119,26 +107,35 @@ function measureLayoutBoundsInContainer(
       return null;
     }
     if (parent === container) {
-      const localTop = top - scrollTop;
-      return { top: localTop, bottom: localTop + height, height };
+      return top;
     }
     if (!container.contains(parent)) {
       const containerOffset = getOffsetTopToAncestor(container, parent);
       if (!containerOffset.reached) {
         return null;
       }
-      const localTop = top - containerOffset.top - containerClientTop - scrollTop;
-      return { top: localTop, bottom: localTop + height, height };
+      return top - containerOffset.top - containerClientTop;
     }
     top += parent.clientTop;
     node = parent;
   }
+  return node === container ? top : null;
+}
 
-  if (node === container) {
-    const localTop = top - scrollTop;
-    return { top: localTop, bottom: localTop + height, height };
+function findFirstVisibleIndex(items: CachedFoldItem[], minBottom: number): number {
+  let low = 0;
+  let high = items.length - 1;
+  let result = items.length;
+  while (low <= high) {
+    const mid = (low + high) >>> 1;
+    if (items[mid].bottom > minBottom) {
+      result = mid;
+      high = mid - 1;
+    } else {
+      low = mid + 1;
+    }
   }
-  return null;
+  return result;
 }
 
 export function useEdgeFoldScroll(
@@ -241,22 +238,72 @@ export function useEdgeFoldScroll(
 
       let disposed = false;
       let rafId = 0;
-      const styledElements = new Set<HTMLElement>();
+      let dirty = true;
+      let cachedScrollHeight = -1;
+      let cachedItems: CachedFoldItem[] = [];
+      let cachedElSet = new Set<HTMLElement>();
+      let activeElements = new Set<HTMLElement>();
       const appliedStates = new WeakMap<HTMLElement, AppliedFoldState>();
 
       const resetAll = () => {
-        styledElements.forEach((el) => {
+        activeElements.forEach((el) => {
           clearElementFoldStyles(el);
           appliedStates.delete(el);
         });
-        styledElements.clear();
+        activeElements.clear();
         if (container.isConnected) {
           container.querySelectorAll<HTMLElement>(itemSelector).forEach((el) => {
-            if (el.style.transform || el.style.opacity || el.style.willChange) {
+            if (el.style.transform || el.style.opacity) {
               clearElementFoldStyles(el);
             }
           });
         }
+      };
+
+      const rebuildCache = () => {
+        dirty = false;
+        cachedScrollHeight = container.scrollHeight;
+        const containerClientTop = container.clientTop;
+        const elements = container.querySelectorAll<HTMLElement>(itemSelector);
+        const nextItems: CachedFoldItem[] = [];
+        const nextElSet = new Set<HTMLElement>();
+
+        elements.forEach((el) => {
+          const height = el.offsetHeight;
+          if (height <= 0) {
+            return;
+          }
+          const top = measureContentTopInContainer(el, container, containerClientTop);
+          if (top === null) {
+            return;
+          }
+          nextItems.push({ el, top, bottom: top + height, height });
+          nextElSet.add(el);
+        });
+
+        let needsSort = false;
+        for (let i = 1; i < nextItems.length; i += 1) {
+          if (nextItems[i].top < nextItems[i - 1].top) {
+            needsSort = true;
+            break;
+          }
+        }
+        if (needsSort) {
+          nextItems.sort((a, b) => a.top - b.top);
+        }
+
+        cachedItems = nextItems;
+        cachedElSet = nextElSet;
+
+        activeElements.forEach((el) => {
+          if (!nextElSet.has(el)) {
+            if (el.isConnected) {
+              clearElementFoldStyles(el);
+            }
+            appliedStates.delete(el);
+            activeElements.delete(el);
+          }
+        });
       };
 
       const applyUpdates = () => {
@@ -272,17 +319,25 @@ export function useEdgeFoldScroll(
           return;
         }
 
-        const effectiveFoldZone = Math.min(foldZone, clientHeight * 0.38);
-        const safeTop = effectiveFoldZone;
-        const safeBottom = clientHeight - effectiveFoldZone;
-        const edgeRamp = Math.min(20, Math.max(10, effectiveFoldZone * 0.35));
+        const scrollHeight = container.scrollHeight;
+        if (dirty || scrollHeight !== cachedScrollHeight) {
+          rebuildCache();
+        }
+
+        if (cachedItems.length === 0) {
+          if (activeElements.size > 0) {
+            resetAll();
+          }
+          return;
+        }
 
         const scrollTop = container.scrollTop;
-        const containerClientTop = container.clientTop;
-        const bottomScrollRemaining = Math.max(
-          0,
-          container.scrollHeight - clientHeight - scrollTop
-        );
+        const effectiveFoldZone = Math.min(foldZone, clientHeight * 0.34);
+        const safeTop = effectiveFoldZone;
+        const safeBottom = clientHeight - effectiveFoldZone;
+        const edgeRamp = Math.min(20, Math.max(10, effectiveFoldZone * 0.38));
+
+        const bottomScrollRemaining = Math.max(0, scrollHeight - clientHeight - scrollTop);
         const topScrollStrength = clamp((scrollTop <= 0.5 ? 0 : scrollTop - 0.5) / edgeRamp, 0, 1);
         const bottomScrollStrength = clamp(
           (bottomScrollRemaining <= 0.5 ? 0 : bottomScrollRemaining - 0.5) / edgeRamp,
@@ -290,60 +345,38 @@ export function useEdgeFoldScroll(
           1
         );
 
-        const elements = container.querySelectorAll<HTMLElement>(itemSelector);
-        const seen = new Set<HTMLElement>();
-        const writes: PendingFoldWrite[] = [];
+        const nextActive = new Set<HTMLElement>();
+        const startIndex = findFirstVisibleIndex(cachedItems, scrollTop);
 
-        elements.forEach((el) => {
-          seen.add(el);
-          const bounds = measureLayoutBoundsInContainer(
-            el,
-            container,
-            scrollTop,
-            containerClientTop
-          );
-
-          if (!bounds) {
-            writes.push({ el, next: null });
-            return;
+        for (let i = startIndex; i < cachedItems.length; i += 1) {
+          const item = cachedItems[i];
+          const localTop = item.top - scrollTop;
+          if (localTop >= clientHeight) {
+            break;
           }
-
-          const { top, bottom, height } = bounds;
-          if (bottom <= -PRE_PROMOTE_MARGIN || top >= clientHeight + PRE_PROMOTE_MARGIN) {
-            writes.push({ el, next: null });
-            return;
-          }
-
-          if (top >= safeTop && bottom <= safeBottom) {
-            const nearZone =
-              top < safeTop + PRE_PROMOTE_MARGIN || bottom > safeBottom - PRE_PROMOTE_MARGIN;
-            writes.push({
-              el,
-              next: nearZone
-                ? { origin: '', transform: '', opacity: '', promoted: true }
-                : null,
-            });
-            return;
+          const localBottom = item.bottom - scrollTop;
+          if (localTop >= safeTop && localBottom <= safeBottom) {
+            continue;
           }
 
           let topProgress = 0;
-          if (top < safeTop && bottom > 0) {
+          if (localTop < safeTop && localBottom > 0) {
             const topFactor = Math.max(
               topScrollStrength,
-              clamp((0 - top) / 12, 0, 1)
+              clamp((0 - localTop) / 12, 0, 1)
             );
             topProgress =
-              computeEdgeProgress(bottom, height, effectiveFoldZone, exponent) * topFactor;
+              computeEdgeProgress(localBottom, item.height, effectiveFoldZone, exponent) * topFactor;
           }
 
           let bottomProgress = 0;
-          if (bottom > safeBottom && top < clientHeight) {
+          if (localBottom > safeBottom && localTop < clientHeight) {
             const bottomFactor = Math.max(
               bottomScrollStrength,
-              clamp((bottom - clientHeight) / 12, 0, 1)
+              clamp((localBottom - clientHeight) / 12, 0, 1)
             );
             bottomProgress =
-              computeEdgeProgress(clientHeight - top, height, effectiveFoldZone, exponent) *
+              computeEdgeProgress(clientHeight - localTop, item.height, effectiveFoldZone, exponent) *
               bottomFactor;
           }
 
@@ -358,88 +391,48 @@ export function useEdgeFoldScroll(
           }
 
           if (!winnerEdge) {
-            const insideViewport = bottom > 0 && top < clientHeight;
-            writes.push({
-              el,
-              next: insideViewport
-                ? { origin: '', transform: '', opacity: '', promoted: true }
-                : null,
-            });
-            return;
+            continue;
           }
 
           const angle = progress * maxAngle;
           const signedAngle = winnerEdge === 'top' ? angle : -angle;
           const scale = 1 - progress * (1 - minScale);
-          const zShift = progress * depth;
           const opacityValue = 1 - progress * (1 - minOpacity);
 
           const origin = winnerEdge === 'top' ? 'center bottom' : 'center top';
-          const zPart = depth > 0 ? ` translateZ(${(-zShift).toFixed(2)}px)` : '';
-          const transform = `perspective(${perspective}px)${zPart} rotateX(${signedAngle.toFixed(2)}deg) scale(${scale.toFixed(4)})`;
-          const opacity = minOpacity < 1 ? opacityValue.toFixed(3) : '';
+          const zPart = depth > 0 ? ` translateZ(${(-(progress * depth)).toFixed(1)}px)` : '';
+          const transform = `perspective(${perspective}px)${zPart} rotateX(${signedAngle.toFixed(1)}deg) scale(${scale.toFixed(3)})`;
+          const opacity = minOpacity < 1 ? opacityValue.toFixed(2) : '';
 
-          writes.push({
-            el,
-            next: {
-              origin,
-              transform,
-              opacity,
-              promoted: true,
-            },
-          });
-        });
-
-        for (const item of writes) {
-          const { el, next } = item;
-          if (!next) {
-            if (styledElements.has(el) || el.style.transform !== '' || el.style.opacity !== '' || el.style.willChange !== '') {
-              clearElementFoldStyles(el);
-            }
-            styledElements.delete(el);
-            appliedStates.delete(el);
-            continue;
-          }
-
+          const el = item.el;
+          nextActive.add(el);
           const prev = appliedStates.get(el);
           if (
             !prev ||
-            prev.promoted !== next.promoted ||
-            prev.origin !== next.origin ||
-            prev.transform !== next.transform ||
-            prev.opacity !== next.opacity
+            prev.origin !== origin ||
+            prev.transform !== transform ||
+            prev.opacity !== opacity
           ) {
-            const targetWillChange = next.promoted ? 'transform, opacity' : '';
-            const targetBackface = next.promoted ? 'hidden' : '';
-            if (el.style.willChange !== targetWillChange) {
-              el.style.willChange = targetWillChange;
+            if (el.style.transformOrigin !== origin) {
+              el.style.transformOrigin = origin;
             }
-            if (el.style.backfaceVisibility !== targetBackface) {
-              el.style.backfaceVisibility = targetBackface;
+            if (el.style.transform !== transform) {
+              el.style.transform = transform;
             }
-            if (el.style.transformOrigin !== next.origin) {
-              el.style.transformOrigin = next.origin;
+            if (el.style.opacity !== opacity) {
+              el.style.opacity = opacity;
             }
-            if (el.style.transform !== next.transform) {
-              el.style.transform = next.transform;
-            }
-            if (el.style.opacity !== next.opacity) {
-              el.style.opacity = next.opacity;
-            }
-            appliedStates.set(el, next);
+            appliedStates.set(el, { origin, transform, opacity });
           }
-          styledElements.add(el);
         }
 
-        styledElements.forEach((el) => {
-          if (!seen.has(el)) {
-            if (el.isConnected) {
-              clearElementFoldStyles(el);
-            }
-            styledElements.delete(el);
+        activeElements.forEach((el) => {
+          if (!nextActive.has(el)) {
+            clearElementFoldStyles(el);
             appliedStates.delete(el);
           }
         });
+        activeElements = nextActive;
       };
 
       const scheduleUpdate = () => {
@@ -463,7 +456,12 @@ export function useEdgeFoldScroll(
       container.addEventListener('scroll', handleScroll, { passive: true });
 
       const resizeObserver =
-        typeof ResizeObserver !== 'undefined' ? new ResizeObserver(scheduleUpdate) : null;
+        typeof ResizeObserver !== 'undefined'
+          ? new ResizeObserver(() => {
+              dirty = true;
+              scheduleUpdate();
+            })
+          : null;
       if (resizeObserver) {
         resizeObserver.observe(container);
         if (container.firstElementChild instanceof HTMLElement) {
@@ -471,10 +469,40 @@ export function useEdgeFoldScroll(
         }
       }
 
+      const isVirtuosoContainer = container.hasAttribute('data-virtuoso-scroller');
       const mutationObserver =
-        typeof MutationObserver !== 'undefined' ? new MutationObserver(scheduleUpdate) : null;
+        typeof MutationObserver !== 'undefined'
+          ? new MutationObserver((records) => {
+              let layoutChanged = false;
+              for (let i = 0; i < records.length; i += 1) {
+                const record = records[i];
+                if (record.type === 'childList') {
+                  layoutChanged = true;
+                  break;
+                }
+                if (
+                  isVirtuosoContainer &&
+                  record.type === 'attributes' &&
+                  record.target instanceof HTMLElement &&
+                  !cachedElSet.has(record.target)
+                ) {
+                  layoutChanged = true;
+                  break;
+                }
+              }
+              if (layoutChanged) {
+                dirty = true;
+                scheduleUpdate();
+              }
+            })
+          : null;
       if (mutationObserver) {
-        mutationObserver.observe(container, { childList: true, subtree: true });
+        mutationObserver.observe(
+          container,
+          isVirtuosoContainer
+            ? { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] }
+            : { childList: true, subtree: true }
+        );
       }
 
       applyUpdates();

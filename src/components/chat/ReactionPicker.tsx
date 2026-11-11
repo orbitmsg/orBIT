@@ -51,13 +51,13 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
 
   useEdgeFoldScroll(scrollerRef, {
     itemSelector: '[data-fold-reaction-row="true"]',
-    foldZone: 68,
-    maxAngle: 36,
-    minScale: 0.78,
-    minOpacity: 0.28,
-    perspective: 460,
-    depth: 26,
-    exponent: 1.18,
+    foldZone: 44,
+    maxAngle: 17,
+    minScale: 0.89,
+    minOpacity: 0.64,
+    perspective: 660,
+    depth: 0,
+    exponent: 1.3,
     enabled: hasScroller,
     deps: [hasScroller, searchQuery],
   });

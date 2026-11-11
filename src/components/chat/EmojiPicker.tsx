@@ -369,11 +369,11 @@ export const EmojiPicker = ({
     return rows;
   }, [gifs]);
 
-  const [renderedEmojiCount, setRenderedEmojiCount] = useState(25);
+  const [renderedEmojiCount, setRenderedEmojiCount] = useState(36);
   const [renderedGifCount, setRenderedGifCount] = useState(12);
 
   useEffect(() => {
-    setRenderedEmojiCount(25);
+    setRenderedEmojiCount(36);
     setRenderedGifCount(12);
   }, [searchQuery, activeTab]);
 
@@ -397,7 +397,7 @@ export const EmojiPicker = ({
     if (el.scrollTop + el.clientHeight >= renderedHeight - 350) {
       if (renderedEmojiCount < emojiRows.length) {
         const targetCount = Math.ceil((el.scrollTop + el.clientHeight + 450) / 36);
-        setRenderedEmojiCount((prev) => Math.min(emojiRows.length, Math.max(prev + 25, targetCount)));
+        setRenderedEmojiCount((prev) => Math.min(emojiRows.length, Math.max(prev + 40, targetCount)));
       }
     }
   }, [renderedEmojiCount, emojiRows.length]);
@@ -422,39 +422,39 @@ export const EmojiPicker = ({
 
   useEdgeFoldScroll(emojiScrollRef, {
     itemSelector: '[data-fold-picker-row="true"]',
-    foldZone: 84,
-    maxAngle: 36,
-    minScale: 0.78,
-    minOpacity: 0.28,
-    perspective: 480,
-    depth: 28,
-    exponent: 1.18,
+    foldZone: 50,
+    maxAngle: 16,
+    minScale: 0.89,
+    minOpacity: 0.64,
+    perspective: 680,
+    depth: 0,
+    exponent: 1.3,
     enabled: activeTab === 'emoji',
     deps: [activeTab, visibleEmojiRows.length, searchQuery],
   });
 
   useEdgeFoldScroll(stickersScrollRef, {
     itemSelector: '[data-fold-sticker-row="true"]',
-    foldZone: 84,
-    maxAngle: 32,
-    minScale: 0.82,
-    minOpacity: 0.35,
-    perspective: 540,
-    depth: 24,
-    exponent: 1.18,
+    foldZone: 52,
+    maxAngle: 15,
+    minScale: 0.91,
+    minOpacity: 0.68,
+    perspective: 720,
+    depth: 0,
+    exponent: 1.3,
     enabled: activeTab === 'stickers',
     deps: [activeTab, searchQuery, recentStickers.length],
   });
 
   useEdgeFoldScroll(gifScrollRef, {
     itemSelector: '[data-fold-gif-row="true"]',
-    foldZone: 80,
-    maxAngle: 26,
-    minScale: 0.86,
-    minOpacity: 0.45,
-    perspective: 580,
-    depth: 20,
-    exponent: 1.2,
+    foldZone: 50,
+    maxAngle: 13,
+    minScale: 0.93,
+    minOpacity: 0.72,
+    perspective: 760,
+    depth: 0,
+    exponent: 1.3,
     enabled: activeTab === 'gif' && gifRows.length > 0,
     deps: [activeTab, visibleGifRows.length, searchQuery, activeGifReaction],
   });

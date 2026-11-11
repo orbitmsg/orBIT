@@ -100,7 +100,7 @@ export const themePalettes: Record<ThemeId, ThemeDefinition> = {
       '--switch-border': 'rgba(255,255,255,0.22)',
       '--selection-bg': 'rgba(88,101,242,0.28)',
       '--logo-type': 'classic',
-      '--title-bar-bg': '#18191c',
+      '--title-bar-bg': '#232428',
       '--settings-bg': '#313338',
       '--settings-surface': '#2b2d31',
       '--settings-surface-var': '#1e1f22',
@@ -206,7 +206,7 @@ export const themePalettes: Record<ThemeId, ThemeDefinition> = {
       '--switch-border': 'rgba(255,255,255,0.22)',
       '--selection-bg': 'rgba(88,101,242,0.28)',
       '--logo-type': 'classic',
-      '--title-bar-bg': '#18191c',
+      '--title-bar-bg': '#232428',
       '--settings-bg': '#313338',
       '--settings-surface': '#2b2d31',
       '--settings-surface-var': '#1e1f22',
@@ -301,7 +301,7 @@ export const applyThemeToRoot = (themeId: ThemeId, chatColor?: string) => {
   root.style.setProperty('--md-error', theme.vars['--settings-error'] || '#f44336');
   root.style.setProperty('--md-error-cont', theme.vars['--settings-error-cont'] || 'rgba(244,67,54,0.12)');
 
-  root.style.setProperty('--title-bar-bg', theme.vars['--title-bar-bg'] || (resolvedMode === 'light' ? '#e4e6eb' : '#18191c'));
+  root.style.setProperty('--title-bar-bg', theme.vars['--title-bar-bg'] || (resolvedMode === 'light' ? '#e4e6eb' : '#232428'));
 
   try {
     applyMd3DynamicTokens(

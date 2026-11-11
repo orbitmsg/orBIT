@@ -6,9 +6,6 @@ import {
   RotateCw,
   WifiOff,
   ChevronUp,
-  Users,
-  Megaphone,
-  UserPlus,
   ChevronRight,
 } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
@@ -331,113 +328,54 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
       ) : (
         <div
           className="shrink-0 rounded-[18px] overflow-hidden p-2 flex flex-col gap-1.5 select-none"
-          style={{ backgroundColor: isLightTheme ? '#eef0f4' : '#26282d' }}
+          style={{ backgroundColor: isLightTheme ? '#f5f5f5' : 'var(--chat-list-bg, #2b2d31)' }}
         >
-          <button
-            type="button"
-            onClick={() => onOpenCreateGroup?.()}
-            aria-label={t('sidebar.find_or_create_group', 'Найти или создать группу')}
-            className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-2xl border-none outline-none cursor-pointer transition-colors text-left"
-            style={{
-              borderRadius: '14px',
-              border: 'none',
-              backgroundColor: surfaceTint,
-              color: 'var(--text-main, #e0e0e0)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = surfaceHoverTint;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = surfaceTint;
-            }}
-          >
-            <span
-              className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+          {[
+            {
+              label: t('sidebar.find_or_create_group', 'Найти или создать группу'),
+              onClick: onOpenCreateGroup,
+            },
+            {
+              label: t('sidebar.find_or_create_channel', 'Найти или создать канал'),
+              onClick: onOpenCreateChannel,
+            },
+            {
+              label: t('sidebar.find_friend', 'Найти друга'),
+              onClick: onOpenAddFriend,
+            },
+          ].map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => item.onClick?.()}
+              aria-label={item.label}
+              className="w-full flex items-center justify-between gap-2 px-3.5 py-2 rounded-2xl border-none outline-none cursor-pointer transition-colors text-left"
               style={{
-                backgroundColor: 'rgba(124, 58, 237, 0.18)',
-                color: 'var(--accent-color, #9f7aea)',
+                borderRadius: '14px',
+                border: 'none',
+                backgroundColor: surfaceTint,
+                color: 'var(--text-main, #e0e0e0)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = surfaceHoverTint;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = surfaceTint;
               }}
             >
-              <Users size={13} />
-            </span>
-            <span className="text-[12.5px] font-medium truncate flex-1 min-w-0">
-              {t('sidebar.find_or_create_group', 'Найти или создать группу')}
-            </span>
-            <ChevronRight size={14} className="shrink-0 text-[var(--text-dim)] opacity-60" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onOpenCreateChannel?.()}
-            aria-label={t('sidebar.find_or_create_channel', 'Найти или создать канал')}
-            className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-2xl border-none outline-none cursor-pointer transition-colors text-left"
-            style={{
-              borderRadius: '14px',
-              border: 'none',
-              backgroundColor: surfaceTint,
-              color: 'var(--text-main, #e0e0e0)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = surfaceHoverTint;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = surfaceTint;
-            }}
-          >
-            <span
-              className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-              style={{
-                backgroundColor: 'rgba(88, 101, 242, 0.18)',
-                color: '#8ea1ff',
-              }}
-            >
-              <Megaphone size={13} />
-            </span>
-            <span className="text-[12.5px] font-medium truncate flex-1 min-w-0">
-              {t('sidebar.find_or_create_channel', 'Найти или создать канал')}
-            </span>
-            <ChevronRight size={14} className="shrink-0 text-[var(--text-dim)] opacity-60" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onOpenAddFriend?.()}
-            aria-label={t('sidebar.find_friend', 'Найти друга')}
-            className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-2xl border-none outline-none cursor-pointer transition-colors text-left"
-            style={{
-              borderRadius: '14px',
-              border: 'none',
-              backgroundColor: surfaceTint,
-              color: 'var(--text-main, #e0e0e0)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = surfaceHoverTint;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = surfaceTint;
-            }}
-          >
-            <span
-              className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-              style={{
-                backgroundColor: 'rgba(35, 165, 90, 0.18)',
-                color: '#3ba55d',
-              }}
-            >
-              <UserPlus size={13} />
-            </span>
-            <span className="text-[12.5px] font-medium truncate flex-1 min-w-0">
-              {t('sidebar.find_friend', 'Найти друга')}
-            </span>
-            <ChevronRight size={14} className="shrink-0 text-[var(--text-dim)] opacity-60" />
-          </button>
+              <span className="text-[12.5px] font-medium truncate flex-1 min-w-0">
+                {item.label}
+              </span>
+              <ChevronRight size={14} className="shrink-0 text-[var(--text-dim)] opacity-60" />
+            </button>
+          ))}
         </div>
       )}
 
       {incomingFriendRequests.length > 0 && (
         <div
           className="shrink-0 rounded-[18px] overflow-hidden p-2"
-          style={{ backgroundColor: isLightTheme ? '#eef0f4' : '#26282d' }}
+          style={{ backgroundColor: isLightTheme ? '#f5f5f5' : 'var(--chat-list-bg, #2b2d31)' }}
         >
           <button
             type="button"

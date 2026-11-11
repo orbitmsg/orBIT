@@ -20,6 +20,7 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
   setCurrentView,
   folders,
   getFolderUnreadCount,
+  isLightTheme,
 }) => {
   const { t } = useTranslation();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
@@ -40,7 +41,7 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
       className="flex flex-col items-center shrink-0 select-none py-3 overflow-hidden"
       style={{
         width: '64px',
-        backgroundColor: 'var(--chat-list-bg, #2b2d31)',
+        backgroundColor: isLightTheme ? '#eef0f4' : 'var(--surface-container-strong, #232428)',
         borderRadius: '18px',
         border: 'none',
         height: '100%',

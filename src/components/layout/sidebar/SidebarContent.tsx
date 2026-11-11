@@ -331,7 +331,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
       ) : (
         <div
           className="shrink-0 rounded-[18px] overflow-hidden p-2 flex flex-col gap-1.5 select-none"
-          style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}
+          style={{ backgroundColor: isLightTheme ? '#eef0f4' : '#26282d' }}
         >
           <button
             type="button"
@@ -437,7 +437,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
       {incomingFriendRequests.length > 0 && (
         <div
           className="shrink-0 rounded-[18px] overflow-hidden p-2"
-          style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}
+          style={{ backgroundColor: isLightTheme ? '#eef0f4' : '#26282d' }}
         >
           <button
             type="button"

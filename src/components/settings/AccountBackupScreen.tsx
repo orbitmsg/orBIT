@@ -239,7 +239,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
             height: '48px',
             borderRadius: '50%',
             backgroundColor: 'var(--accent-glow-light, rgba(88, 101, 242, 0.15))',
-            color: 'var(--accent-color, #9b7dd4)',
+            color: 'var(--accent-text, var(--accent-color, #9b7dd4))',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -311,7 +311,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
             gap: '6px',
             background: 'none',
             border: 'none',
-            color: hasCopiedRecovery ? '#4ade80' : 'var(--accent-color, #9b7dd4)',
+            color: hasCopiedRecovery ? '#10b981' : 'var(--accent-text, var(--accent-color, #9b7dd4))',
             fontSize: '13px',
             fontWeight: 600,
             cursor: 'pointer',
@@ -367,7 +367,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
                 cursor: 'pointer',
                 transition: 'background-color 0.15s ease',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.12))')}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(255, 255, 255, 0.12))')}
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-soft, rgba(255, 255, 255, 0.06))')}
             >
               {t('common.back', 'Назад')}
@@ -384,7 +384,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
               borderRadius: '18px',
               border: 'none',
               backgroundColor: 'var(--accent-color, #6366f1)',
-              color: '#ffffff',
+              color: 'var(--accent-on-color, #ffffff)',
               fontSize: '13px',
               fontWeight: 600,
               cursor: 'pointer',
@@ -487,7 +487,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
                   borderRadius: '16px',
                   border: 'none',
                   backgroundColor: 'var(--accent-color, #9b7dd4)',
-                  color: '#ffffff',
+                  color: 'var(--accent-on-color, #ffffff)',
                   fontSize: '12.5px',
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -575,7 +575,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
                   cursor: 'pointer',
                   transition: 'background-color 0.15s ease',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.2))')}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(255, 255, 255, 0.2))')}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = backupEnabled ? 'var(--surface-container-soft, rgba(255, 255, 255, 0.08))' : 'var(--surface-container-strong, rgba(255, 255, 255, 0.12))')}
               >
                 {backupEnabled ? t('backup.manage_btn') : t('backup.enable_btn')}
@@ -620,7 +620,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
                 borderRadius: '18px',
                 border: 'none',
                 backgroundColor: 'var(--accent-color, #6366f1)',
-                color: '#ffffff',
+                color: 'var(--accent-on-color, #ffffff)',
                 fontSize: '13px',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -662,7 +662,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
                   transition: 'background-color 0.15s ease',
                 }}
                 onMouseEnter={(e) => {
-                  if (!isBackingUp) e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.18))';
+                  if (!isBackingUp) e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(255, 255, 255, 0.18))';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.12))';
@@ -708,7 +708,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
                     cursor: 'pointer',
                     transition: 'background-color 0.15s ease',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.16))')}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(255, 255, 255, 0.16))')}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.1))')}
                 >
                   {t('backup.show_in_folder')}
@@ -728,7 +728,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
                     cursor: 'pointer',
                     transition: 'background-color 0.15s ease',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.12))')}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(255, 255, 255, 0.12))')}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-soft, rgba(255, 255, 255, 0.06))')}
                 >
                   {t('backup.change_folder')}
@@ -761,7 +761,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
                   cursor: 'pointer',
                   transition: 'background-color 0.15s ease',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.16))')}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(255, 255, 255, 0.16))')}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.1))')}
               >
                 {t('backup.view_key')}
@@ -777,8 +777,8 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
                   padding: '6px 16px',
                   borderRadius: '16px',
                   border: 'none',
-                  backgroundColor: 'rgba(239, 68, 68, 0.12)',
-                  color: '#ef4444',
+                  backgroundColor: 'var(--md-error-cont, rgba(239, 68, 68, 0.12))',
+                  color: 'var(--md-error, #ef4444)',
                   fontSize: '12.5px',
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -840,7 +840,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-          <div style={{ color: 'var(--accent-color, #9b7dd4)', marginTop: '2px', flexShrink: 0 }}>
+          <div style={{ color: 'var(--accent-text, var(--accent-color, #9b7dd4))', marginTop: '2px', flexShrink: 0 }}>
             <Lock size={16} />
           </div>
           <div>
@@ -854,7 +854,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-          <div style={{ color: 'var(--accent-color, #9b7dd4)', marginTop: '2px', flexShrink: 0 }}>
+          <div style={{ color: 'var(--accent-text, var(--accent-color, #9b7dd4))', marginTop: '2px', flexShrink: 0 }}>
             <ShieldCheck size={16} />
           </div>
           <div>
@@ -868,7 +868,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-          <div style={{ color: 'var(--accent-color, #9b7dd4)', marginTop: '2px', flexShrink: 0 }}>
+          <div style={{ color: 'var(--accent-text, var(--accent-color, #9b7dd4))', marginTop: '2px', flexShrink: 0 }}>
             <Trash2 size={16} />
           </div>
           <div>
@@ -927,7 +927,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: hasCopiedMaster ? '#4ade80' : 'var(--text-dim, rgba(255, 255, 255, 0.7))',
+              color: hasCopiedMaster ? '#10b981' : 'var(--text-dim, rgba(255, 255, 255, 0.7))',
               flexShrink: 0,
               transition: 'all 0.18s ease',
             }}
@@ -981,7 +981,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
             borderRadius: '18px',
             border: 'none',
             backgroundColor: 'var(--accent-color, #6366f1)',
-            color: '#ffffff',
+            color: 'var(--accent-on-color, #ffffff)',
             fontSize: '13px',
             fontWeight: 600,
             cursor: isSyncingCloud || syncStatus === 'syncing' ? 'default' : 'pointer',
@@ -1021,8 +1021,8 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
               padding: '10px 18px',
               borderRadius: '18px',
               border: 'none',
-              backgroundColor: 'rgba(239, 68, 68, 0.12)',
-              color: '#ef4444',
+              backgroundColor: 'var(--md-error-cont, rgba(239, 68, 68, 0.12))',
+              color: 'var(--md-error, #ef4444)',
               fontSize: '13px',
               fontWeight: 600,
               cursor: isDeletingCloud ? 'default' : 'pointer',

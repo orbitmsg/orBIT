@@ -233,13 +233,13 @@ export const PasswordSettingsScreen = ({ onSaved }: { onSaved?: () => void }) =>
             </p>
 
             <div style={{
-              backgroundColor: 'rgba(0, 0, 0, 0.35)',
+              backgroundColor: 'var(--surface-container)',
               borderRadius: 12,
               padding: '14px 16px',
               display: 'flex',
               flexDirection: 'column',
               gap: '10px',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
+              border: '1px solid var(--border-color)',
             }}>
               <div className="flex items-center gap-3 text-xs font-medium">
                 {isLength12 ? (
@@ -312,8 +312,8 @@ export const PasswordSettingsScreen = ({ onSaved }: { onSaved?: () => void }) =>
             disabled={isSubmitting || !newPassword || newPassword !== confirmPassword}
             className="px-8 py-2.5 rounded-full text-sm font-semibold border transition-all cursor-pointer"
             style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
-              borderColor: 'rgba(255, 255, 255, 0.2)',
+              backgroundColor: 'var(--surface-container-strong)',
+              borderColor: 'var(--border-color)',
               color: MD3.onSurface,
               opacity: isSubmitting || !newPassword || newPassword !== confirmPassword ? 0.4 : 1,
             }}

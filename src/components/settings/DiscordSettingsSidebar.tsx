@@ -142,7 +142,7 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
                 fontWeight: 600,
                 padding: '1px 6px',
                 borderRadius: 999,
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                backgroundColor: 'var(--surface-container-strong)',
                 color: MD3.onSurfaceVar,
               }}
             >
@@ -303,7 +303,7 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
           transition: 'background-color 140ms ease',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
+          e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.backgroundColor = 'transparent';
@@ -363,7 +363,7 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
             padding: '0 10px',
             borderRadius: 8,
             backgroundColor: 'var(--surface-container, #1e1f22)',
-            border: '1px solid rgba(255, 255, 255, 0.06)',
+            border: '1px solid var(--border-color)',
             boxSizing: 'border-box',
           }}
         >
@@ -440,7 +440,7 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
                 flexDirection: 'column',
                 gap: 2,
                 paddingTop: groupIdx > 0 ? 10 : 0,
-                borderTop: groupIdx > 0 ? '1px solid rgba(255, 255, 255, 0.06)' : 'none',
+                borderTop: groupIdx > 0 ? '1px solid var(--border-color)' : 'none',
               }}
             >
               <div
@@ -482,9 +482,7 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
                         width: '100%',
                         boxSizing: 'border-box',
                         textAlign: 'left',
-                        backgroundColor: parentActive
-                          ? 'color-mix(in srgb, var(--accent-color, #5865F2) 18%, transparent)'
-                          : 'transparent',
+                        backgroundColor: parentActive ? 'var(--surface-active)' : 'transparent',
                         color: parentActive ? 'var(--text-heading, var(--md-on-surface))' : MD3.onSurfaceVar,
                         fontSize: 13.5,
                         fontWeight: parentActive ? 600 : 500,
@@ -492,7 +490,7 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
                       }}
                       onMouseEnter={(e) => {
                         if (!parentActive) {
-                          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
+                          e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
                           e.currentTarget.style.color = MD3.onSurface;
                         }
                       }}
@@ -526,7 +524,7 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
                         style={{
                           marginLeft: 18,
                           paddingLeft: 10,
-                          borderLeft: '2px solid rgba(255, 255, 255, 0.1)',
+                          borderLeft: '2px solid var(--border-color)',
                           display: 'flex',
                           flexDirection: 'column',
                           gap: 2,
@@ -553,9 +551,7 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
                                 width: '100%',
                                 boxSizing: 'border-box',
                                 textAlign: 'left',
-                                backgroundColor: isSubActive
-                                  ? 'color-mix(in srgb, var(--accent-color, #5865F2) 15%, transparent)'
-                                  : 'transparent',
+                                backgroundColor: isSubActive ? 'var(--surface-active)' : 'transparent',
                                 color: isSubActive ? 'var(--text-heading, var(--md-on-surface))' : MD3.onSurfaceVar,
                                 fontSize: 13,
                                 fontWeight: isSubActive ? 600 : 400,
@@ -563,7 +559,7 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
                               }}
                               onMouseEnter={(e) => {
                                 if (!isSubActive) {
-                                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                                  e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
                                   e.currentTarget.style.color = MD3.onSurface;
                                 }
                               }}
@@ -594,7 +590,7 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
               flexDirection: 'column',
               gap: 2,
               paddingTop: 10,
-              borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+              borderTop: '1px solid var(--border-color)',
             }}
           >
             <button
@@ -624,7 +620,7 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
                 transition: 'background-color 120ms ease, color 120ms ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
+                e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
                 e.currentTarget.style.color = MD3.onSurface;
               }}
               onMouseLeave={(e) => {
@@ -680,7 +676,7 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
           paddingTop: 8,
           paddingLeft: 10,
           paddingRight: 10,
-          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+          borderTop: '1px solid var(--border-color)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',

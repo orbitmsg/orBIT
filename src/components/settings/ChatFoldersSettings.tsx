@@ -27,10 +27,13 @@ export const SettingsFolderIcon: React.FC<{ size?: number; className?: string; s
 );
 
 const MD3 = {
-  onSurface: '#e6e1e5',
-  onSurfaceVar: '#cac4d0',
-  primary: 'var(--accent-color, #c5b4e3)',
-  error: '#ff898a',
+  onSurface: 'var(--md-on-surface, var(--text-main, #e6e1e5))',
+  onSurfaceVar: 'var(--md-on-surface-var, var(--text-dim, #cac4d0))',
+  primary: 'var(--accent-text, var(--accent-color, #c5b4e3))',
+  accent: 'var(--accent-color, #c5b4e3)',
+  onPrimary: 'var(--accent-on-color, #ffffff)',
+  error: 'var(--md-error, #ff898a)',
+  errorCont: 'var(--md-error-cont, rgba(255, 89, 90, 0.1))',
 };
 
 const SectionHeader = ({ title, style }: { title: string; style?: React.CSSProperties }) => (
@@ -247,7 +250,7 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
                         borderRadius: '12px',
                         margin: '2px 6px',
                         cursor: 'pointer',
-                        backgroundColor: isHovered ? 'rgba(202,196,208,0.08)' : 'transparent',
+                        backgroundColor: isHovered ? 'var(--surface-hover, rgba(202,196,208,0.08))' : 'transparent',
                         transition: 'background-color 150ms ease',
                         boxSizing: 'border-box',
                       }}
@@ -255,7 +258,7 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0, flex: 1 }}>
                         <div
                           style={{
-                            color: 'var(--accent-color, #9b7dd4)',
+                            color: MD3.primary,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -323,7 +326,7 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
                           }}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.color = MD3.error;
-                            e.currentTarget.style.backgroundColor = 'rgba(255, 89, 90, 0.1)';
+                            e.currentTarget.style.backgroundColor = MD3.errorCont;
                           }}
                           onMouseLeave={(e) => {
                             e.currentTarget.style.color = MD3.onSurfaceVar;
@@ -351,7 +354,7 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
                   margin: '2px 6px',
                   backgroundColor: 'transparent',
                   border: 'none',
-                  color: 'var(--accent-color, #9b7dd4)',
+                  color: MD3.primary,
                   fontSize: 14,
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -360,7 +363,7 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
                   width: 'calc(100% - 12px)',
                   transition: 'background-color 150ms ease',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(202,196,208,0.08)')}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(202,196,208,0.08))')}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
                 <Plus size={18} />
@@ -381,7 +384,7 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
                 height: 36,
                 borderRadius: '10px',
                 border: 'none',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                backgroundColor: 'var(--surface-container-strong, rgba(255, 255, 255, 0.05))',
                 color: MD3.onSurface,
                 cursor: 'pointer',
                 display: 'flex',
@@ -415,7 +418,7 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
                     border: 'none',
                     outline: 'none',
                     fontSize: 14,
-                    color: '#ffffff',
+                    color: MD3.onSurface,
                     boxSizing: 'border-box',
                   }}
                 />
@@ -435,7 +438,7 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
-                    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                    backgroundColor: 'var(--surface-container, rgba(255, 255, 255, 0.04))',
                     borderRadius: '12px',
                     padding: '8px 12px',
                   }}
@@ -452,7 +455,7 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
                       background: 'transparent',
                       border: 'none',
                       outline: 'none',
-                      color: '#ffffff',
+                      color: MD3.onSurface,
                       fontSize: 13,
                     }}
                   />
@@ -490,7 +493,7 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
                         borderRadius: '12px',
                         margin: '2px 6px',
                         cursor: 'pointer',
-                        backgroundColor: isHovered ? 'rgba(202,196,208,0.08)' : 'transparent',
+                        backgroundColor: isHovered ? 'var(--surface-hover, rgba(202,196,208,0.08))' : 'transparent',
                         transition: 'background-color 150ms ease',
                         boxSizing: 'border-box',
                       }}
@@ -529,8 +532,8 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
                           width: 22,
                           height: 22,
                           borderRadius: '50%',
-                          border: `2px solid ${isSelected ? 'var(--accent-color, #9b7dd4)' : MD3.onSurfaceVar}`,
-                          backgroundColor: isSelected ? 'var(--accent-color, #9b7dd4)' : 'transparent',
+                          border: `2px solid ${isSelected ? MD3.accent : MD3.onSurfaceVar}`,
+                          backgroundColor: isSelected ? MD3.accent : 'transparent',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -538,7 +541,7 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
                           transition: 'all 150ms ease',
                         }}
                       >
-                        {isSelected && <Check size={14} color="#ffffff" strokeWidth={3} />}
+                        {isSelected && <Check size={14} color="var(--accent-on-color, #ffffff)" strokeWidth={3} />}
                       </div>
                     </div>
                   );
@@ -558,8 +561,8 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
                 padding: '12px 16px',
                 borderRadius: '12px',
                 border: 'none',
-                backgroundColor: folderName.trim() ? 'var(--accent-color, #9b7dd4)' : 'rgba(255, 255, 255, 0.08)',
-                color: folderName.trim() ? '#ffffff' : MD3.onSurfaceVar,
+                backgroundColor: folderName.trim() ? MD3.accent : 'var(--surface-muted, rgba(255, 255, 255, 0.08))',
+                color: folderName.trim() ? MD3.onPrimary : MD3.onSurfaceVar,
                 fontWeight: 600,
                 fontSize: 14,
                 cursor: folderName.trim() ? 'pointer' : 'default',
@@ -576,7 +579,7 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
                 padding: '12px 18px',
                 borderRadius: '12px',
                 border: 'none',
-                backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                backgroundColor: 'var(--surface-container-strong, rgba(255, 255, 255, 0.06))',
                 color: MD3.onSurface,
                 fontWeight: 500,
                 fontSize: 14,

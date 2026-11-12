@@ -1,4 +1,3 @@
-// src/components/settings/NotificationPreview.tsx
 import React from 'react';
 import { NotificationPosition } from '../../store/useChatStore';
 
@@ -56,8 +55,8 @@ export const NotificationMonitor: React.FC<NotificationPreviewProps> = ({
           width: '74px',
           height: '17px',
           borderRadius: '0px',
-          backgroundColor: isSelected ? 'var(--bg-secondary, #1b172a)' : 'rgba(28, 24, 42, 0.45)',
-          border: isSelected ? '1px solid var(--accent-color, #9b7dd4)' : 'none',
+          backgroundColor: isSelected ? 'var(--bg-secondary, #1b172a)' : 'var(--surface-container)',
+          border: isSelected ? '1px solid var(--accent-color, #9b7dd4)' : '1px solid var(--border-color)',
           boxShadow: 'none',
           display: 'flex',
           alignItems: 'center',
@@ -67,24 +66,22 @@ export const NotificationMonitor: React.FC<NotificationPreviewProps> = ({
           transition: 'all 150ms ease',
         }}
       >
-        {/* Avatar circle */}
         <div
           style={{
             width: '9px',
             height: '9px',
             borderRadius: '50%',
-            backgroundColor: isSelected ? 'var(--accent-color, #a89ec4)' : 'rgba(255, 255, 255, 0.25)',
+            backgroundColor: isSelected ? 'var(--accent-color, #a89ec4)' : 'var(--border-color)',
             flexShrink: 0,
           }}
         />
-        {/* Content bars */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
           <div
             style={{
               width: '85%',
               height: '2px',
               borderRadius: '0px',
-              backgroundColor: isSelected ? 'var(--text-main, #ffffff)' : 'rgba(255, 255, 255, 0.3)',
+              backgroundColor: isSelected ? 'var(--text-main)' : 'var(--text-dim)',
             }}
           />
           <div
@@ -92,17 +89,16 @@ export const NotificationMonitor: React.FC<NotificationPreviewProps> = ({
               width: '60%',
               height: '2px',
               borderRadius: '0px',
-              backgroundColor: isSelected ? 'var(--text-dim, #a89ec4)' : 'rgba(255, 255, 255, 0.18)',
+              backgroundColor: isSelected ? 'var(--text-dim)' : 'var(--border-color)',
             }}
           />
         </div>
-        {/* Close dot */}
         <div
           style={{
             width: '2px',
             height: '2px',
             borderRadius: '0px',
-            backgroundColor: isSelected ? 'var(--accent-color, #a89ec4)' : 'rgba(255, 255, 255, 0.2)',
+            backgroundColor: isSelected ? 'var(--accent-color, #a89ec4)' : 'var(--border-color)',
             flexShrink: 0,
           }}
         />
@@ -112,7 +108,6 @@ export const NotificationMonitor: React.FC<NotificationPreviewProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '0 auto', userSelect: 'none' }}>
-      {/* Monitor Outer Chassis */}
       <div
         style={{
           width: '300px',
@@ -127,7 +122,6 @@ export const NotificationMonitor: React.FC<NotificationPreviewProps> = ({
           flexDirection: 'column',
         }}
       >
-        {/* Monitor Screen Area */}
         <div
           style={{
             width: '100%',
@@ -172,7 +166,6 @@ export const NotificationMonitor: React.FC<NotificationPreviewProps> = ({
         </div>
       </div>
 
-      {/* Monitor Stand Neck */}
       <div
         style={{
           width: '54px',
@@ -184,7 +177,6 @@ export const NotificationMonitor: React.FC<NotificationPreviewProps> = ({
         }}
       />
 
-      {/* Monitor Stand Base */}
       <div
         style={{
           width: '84px',
@@ -206,7 +198,6 @@ export const NotificationCountSelector: React.FC<{
 
   return (
     <div style={{ width: '100%', padding: '0 20px', boxSizing: 'border-box', userSelect: 'none' }}>
-      {/* 5 Segment bars */}
       <div
         style={{
           display: 'flex',
@@ -226,8 +217,8 @@ export const NotificationCountSelector: React.FC<{
                 flex: 1,
                 height: isActive ? '4px' : '3px',
                 borderRadius: '2px',
-                backgroundColor: isActive ? 'var(--accent-color, #a888f8)' : 'rgba(255, 255, 255, 0.14)',
-                boxShadow: isActive ? '0 0 8px rgba(168, 136, 248, 0.4)' : 'none',
+                backgroundColor: isActive ? 'var(--accent-color, #a888f8)' : 'var(--border-color)',
+                boxShadow: isActive ? '0 0 8px color-mix(in srgb, var(--accent-color) 40%, transparent)' : 'none',
                 transition: 'all 150ms ease',
                 marginTop: isActive ? '0' : '0.5px',
               }}
@@ -236,7 +227,6 @@ export const NotificationCountSelector: React.FC<{
         })}
       </div>
 
-      {/* Numbers */}
       <div
         style={{
           display: 'flex',
@@ -256,7 +246,7 @@ export const NotificationCountSelector: React.FC<{
                 textAlign: 'center',
                 fontSize: '13px',
                 fontWeight: isActive ? 600 : 400,
-                color: isActive ? 'var(--accent-color, #a888f8)' : 'rgba(255, 255, 255, 0.45)',
+                color: isActive ? 'var(--accent-text, var(--accent-color, #a888f8))' : 'var(--text-dim)',
                 cursor: 'pointer',
                 transition: 'color 150ms ease',
               }}

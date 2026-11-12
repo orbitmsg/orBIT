@@ -1256,7 +1256,8 @@ export const CallWindowView = () => {
             <div
               className="inline-flex items-center justify-center px-3 rounded-full shadow-md"
               style={{
-                backgroundColor: 'var(--surface-muted, rgba(255, 255, 255, 0.08))',
+                backgroundColor: 'var(--surface-container, var(--surface-muted, rgba(255, 255, 255, 0.08)))',
+                border: '1px solid var(--border-color, transparent)',
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
               }}
@@ -1269,7 +1270,8 @@ export const CallWindowView = () => {
           <div
             className="relative inline-flex flex-col items-center justify-center select-none px-4 py-1.5 rounded-full shadow-md"
             style={{
-              backgroundColor: 'var(--surface-muted, rgba(255, 255, 255, 0.08))',
+              backgroundColor: 'var(--surface-container, var(--surface-muted, rgba(255, 255, 255, 0.08)))',
+              border: '1px solid var(--border-color, transparent)',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
               borderRadius: 9999,
@@ -1277,13 +1279,13 @@ export const CallWindowView = () => {
               minWidth: 140,
             }}
           >
-            <div className="text-xs font-semibold text-white/90 truncate max-w-[200px] leading-tight text-center">
+            <div className="text-xs font-semibold truncate max-w-[200px] leading-tight text-center" style={{ color: 'var(--text-main)' }}>
               {(useChatStore.getState().chats || []).find((c) => c.id === activeCall?.chatId)?.name || otherName || t('call.group_call')}
             </div>
-            <div className="text-[11px] font-medium text-white/75 leading-tight text-center mt-0.5 flex items-center justify-center gap-1.5">
+            <div className="text-[11px] font-medium leading-tight text-center mt-0.5 flex items-center justify-center gap-1.5" style={{ color: 'var(--text-dim)' }}>
               <span>{formatParticipantsCount(allGroupParticipants.length)}</span>
-              <span className="text-white/40">·</span>
-              <span className="font-mono text-white/60">{formatDuration(localDuration > 0 ? localDuration : duration)}</span>
+              <span className="opacity-60">·</span>
+              <span className="font-mono opacity-85">{formatDuration(localDuration > 0 ? localDuration : duration)}</span>
             </div>
           </div>
         )}
@@ -1456,12 +1458,15 @@ export const CallWindowView = () => {
 
         {hasAnyActiveStream && !expandedShare && (
           <div className="flex flex-col items-center mt-3 select-none">
-            <h2 className="text-xl font-bold tracking-tight text-center truncate max-w-full text-white">
+            <h2
+              className="text-xl font-bold tracking-tight text-center truncate max-w-full"
+              style={{ color: 'var(--text-main, #ffffff)' }}
+            >
               {otherName}
             </h2>
             <p
               className="mt-0.5 text-sm tabular-nums font-semibold text-center"
-              style={{ color: 'var(--accent-light, #a995ec)' }}
+              style={{ color: 'var(--accent-text, var(--accent-color, #a995ec))' }}
             >
               {formatDuration(localDuration > 0 ? localDuration : duration)}
             </p>
@@ -1474,7 +1479,10 @@ export const CallWindowView = () => {
               {otherName ? (
                 <Avatar src={otherAvatar} alt={otherName} className="w-full h-full object-cover pointer-events-none" style={{ fontSize: '54px' }} />
               ) : (
-                <div className="w-full h-full rounded-full bg-white/5 animate-pulse" />
+                <div
+                  className="w-full h-full rounded-full animate-pulse"
+                  style={{ backgroundColor: 'var(--surface-container-strong, rgba(255,255,255,0.06))' }}
+                />
               )}
             </div>
 
@@ -1496,7 +1504,7 @@ export const CallWindowView = () => {
             ) : isConnected ? (
               <p
                 className="mt-1 text-sm tabular-nums font-semibold text-center"
-                style={{ color: 'var(--accent-light, #a995ec)' }}
+                style={{ color: 'var(--accent-text, var(--accent-color, #a995ec))' }}
               >
                 {formatDuration(localDuration > 0 ? localDuration : duration)}
               </p>
@@ -1517,12 +1525,20 @@ export const CallWindowView = () => {
           <div
             className="relative inline-flex items-center justify-center select-none px-4 py-1.5 rounded-full shadow-md"
             style={{
-              backgroundColor: 'var(--surface-muted, rgba(255, 255, 255, 0.08))',
+              backgroundColor: (expandedShare && hasAnyActiveStream)
+                ? 'rgba(255, 255, 255, 0.14)'
+                : 'var(--surface-container, var(--surface-muted, rgba(255, 255, 255, 0.08)))',
+              border: (expandedShare && hasAnyActiveStream)
+                ? '1px solid rgba(255, 255, 255, 0.16)'
+                : '1px solid var(--border-color, transparent)',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
             }}
           >
-            <span className="text-[12px] font-medium text-white/90">
+            <span
+              className="text-[12px] font-medium"
+              style={{ color: (expandedShare && hasAnyActiveStream) ? '#ffffff' : 'var(--text-main)' }}
+            >
               {t('call.sharing_your_screen', 'Вы транслируете свой экран')}
             </span>
           </div>

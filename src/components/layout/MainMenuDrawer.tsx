@@ -214,7 +214,7 @@ export const MainMenuDrawer: React.FC<MainMenuDrawerProps> = ({
               transition={{ duration: 0.18, ease: 'easeOut' }}
               className="overflow-hidden flex flex-col py-1"
               style={{
-                backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                backgroundColor: 'var(--surface-container)',
               }}
             >
               {otherAccount ? (
@@ -281,7 +281,7 @@ export const MainMenuDrawer: React.FC<MainMenuDrawerProps> = ({
                     className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
                     style={{
                       backgroundColor: 'var(--accent-color, #7c3aed)',
-                      color: '#ffffff',
+                      color: 'var(--accent-on-color, #ffffff)',
                     }}
                   >
                     <Plus size={13} strokeWidth={2.5} />
@@ -493,7 +493,7 @@ export const MainMenuDrawer: React.FC<MainMenuDrawerProps> = ({
           </button>
         </div>
 
-        <div className="px-4 py-2.5 mt-auto border-t border-[var(--border-color)]/25 flex flex-col gap-0.5 select-none shrink-0">
+        <div className="px-4 py-2.5 mt-auto border-t border-[var(--border-color)] flex flex-col gap-0.5 select-none shrink-0">
           <span className="text-[12px] font-medium text-[var(--text-main)] opacity-80">
             Orbita Desktop
           </span>

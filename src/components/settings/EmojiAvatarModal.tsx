@@ -261,7 +261,7 @@ export const EmojiAvatarModal: React.FC<EmojiAvatarModalProps> = ({
                     background: grad,
                     border: 'none',
                     cursor: 'pointer',
-                    boxShadow: isSelected ? '0 0 0 2.5px #ffffff' : 'none',
+                    boxShadow: isSelected ? '0 0 0 2.5px var(--text-main, #ffffff)' : 'none',
                     transition: 'transform 0.15s ease, box-shadow 0.15s ease',
                     transform: isSelected ? 'scale(1.12)' : 'scale(1)',
                   }}
@@ -302,14 +302,14 @@ export const EmojiAvatarModal: React.FC<EmojiAvatarModalProps> = ({
                             width: '100%',
                             aspectRatio: '1/1',
                             borderRadius: '6px',
-                            backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
+                            backgroundColor: isSelected ? 'var(--surface-active)' : 'transparent',
                             border: 'none',
                             cursor: 'pointer',
                             transition: 'background-color 0.12s ease',
                             padding: 0,
                           }}
                           onMouseEnter={(e) => {
-                            if (!isSelected) e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                            if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
                           }}
                           onMouseLeave={(e) => {
                             if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';

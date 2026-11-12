@@ -96,7 +96,7 @@ export const CallsTab = ({
                 width: '100%',
                 height: 8,
                 accentColor: peerVolume > 100 ? '#f59e0b' : 'var(--accent-color, #7C3AED)',
-                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                backgroundColor: 'var(--border-color)',
                 borderRadius: 4,
                 cursor: 'pointer',
               }}
@@ -136,7 +136,7 @@ export const CallsTab = ({
                 width: '100%',
                 height: 8,
                 accentColor: micVolume > 100 ? '#f59e0b' : 'var(--accent-color, #7C3AED)',
-                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                backgroundColor: 'var(--border-color)',
                 borderRadius: 4,
                 cursor: 'pointer',
               }}

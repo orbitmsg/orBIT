@@ -132,9 +132,9 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
           transition={{ duration: 0.15, ease: 'easeOut' }}
           className="w-full max-w-[640px] rounded-[16px] shadow-2xl flex flex-col overflow-hidden"
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 97%, #000)',
-            border: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.08))',
-            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.6)',
+            backgroundColor: 'var(--bg-secondary, #1e1b2e)',
+            border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
+            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.45)',
             maxHeight: '90vh',
           }}
           onClick={(e) => e.stopPropagation()}
@@ -154,7 +154,7 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
                   type="button"
                   onClick={fetchSources}
                   aria-label={t('common.refresh', 'Обновить')}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text-dim,#8a96a3)] hover:text-[var(--text-main,#ffffff)] hover:bg-[var(--surface-container-hover,rgba(255,255,255,0.06))] transition-colors border-0 bg-transparent cursor-pointer outline-none"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text-dim,#8a96a3)] hover:text-[var(--text-main,#ffffff)] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] transition-colors border-0 bg-transparent cursor-pointer outline-none"
                 >
                   <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
                 </button>
@@ -163,7 +163,7 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
                 type="button"
                 onClick={handleClose}
                 aria-label={t('common.close', 'Закрыть')}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text-dim,#8a96a3)] hover:text-[var(--text-main,#ffffff)] hover:bg-[var(--surface-container-hover,rgba(255,255,255,0.06))] transition-colors border-0 bg-transparent cursor-pointer outline-none"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text-dim,#8a96a3)] hover:text-[var(--text-main,#ffffff)] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] transition-colors border-0 bg-transparent cursor-pointer outline-none"
               >
                 <X size={18} />
               </button>
@@ -171,14 +171,14 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
           </div>
 
           {isElectron && (
-            <div className="flex items-center gap-2 px-6 border-b border-[var(--border-subtle,rgba(255,255,255,0.08))]">
+            <div className="flex items-center gap-2 px-6 border-b border-[var(--border-color,rgba(255,255,255,0.08))]">
               <button
                 type="button"
                 onClick={() => setActiveTab('screens')}
                 aria-label={t('call.screens')}
                 className="flex items-center gap-2 py-2.5 px-3 text-[13px] font-medium border-0 bg-transparent cursor-pointer relative transition-colors outline-none"
                 style={{
-                  color: activeTab === 'screens' ? 'var(--accent-color, #7C3AED)' : 'var(--text-dim, #8a96a3)',
+                  color: activeTab === 'screens' ? 'var(--accent-text, var(--accent-color, #7C3AED))' : 'var(--text-dim, #8a96a3)',
                 }}
               >
                 <Monitor size={16} />
@@ -203,7 +203,7 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
                 aria-label={t('call.applications')}
                 className="flex items-center gap-2 py-2.5 px-3 text-[13px] font-medium border-0 bg-transparent cursor-pointer relative transition-colors outline-none"
                 style={{
-                  color: activeTab === 'windows' ? 'var(--accent-color, #7C3AED)' : 'var(--text-dim, #8a96a3)',
+                  color: activeTab === 'windows' ? 'var(--accent-text, var(--accent-color, #7C3AED))' : 'var(--text-dim, #8a96a3)',
                 }}
               >
                 <AppWindow size={16} />
@@ -228,7 +228,7 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
             {isElectron ? (
               isLoading ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-3 text-[var(--text-dim,#8a96a3)]">
-                  <RefreshCw size={24} className="animate-spin text-[var(--accent-color,#7C3AED)]" />
+                  <RefreshCw size={24} className="animate-spin text-[var(--accent-text,var(--accent-color,#7C3AED))]" />
                   <span className="text-[13px]">{t('call.loading_sources')}</span>
                 </div>
               ) : currentItems.length === 0 ? (
@@ -251,10 +251,10 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
                             : 'var(--surface-container, rgba(255, 255, 255, 0.04))',
                           border: isSelected
                             ? '1.5px solid var(--accent-color, #7C3AED)'
-                            : '1.5px solid transparent',
+                            : '1.5px solid var(--border-color, transparent)',
                         }}
                       >
-                        <div className="relative w-full aspect-video rounded-[8px] overflow-hidden bg-black/40 flex items-center justify-center">
+                        <div className="relative w-full aspect-video rounded-[8px] overflow-hidden bg-black/75 flex items-center justify-center">
                           {item.thumbnail ? (
                             <img
                               src={item.thumbnail}
@@ -262,14 +262,17 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <Monitor size={36} className="text-white/30" />
+                            <Monitor size={36} className="text-white/60" />
                           )}
                           {isSelected && (
                             <div
                               className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center shadow"
-                              style={{ backgroundColor: 'var(--accent-color, #7C3AED)' }}
+                              style={{
+                                backgroundColor: 'var(--accent-color, #7C3AED)',
+                                color: 'var(--accent-on-color, #ffffff)',
+                              }}
                             >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                 <polyline points="20 6 9 17 4 12" />
                               </svg>
                             </div>
@@ -298,7 +301,7 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
               )
             ) : (
               <div className="flex flex-col items-center justify-center py-8 text-center text-[var(--text-dim,#8a96a3)]">
-                <Monitor size={48} className="text-[var(--accent-color,#7C3AED)] mb-3" />
+                <Monitor size={48} className="text-[var(--accent-text,var(--accent-color,#7C3AED))] mb-3" />
                 <p className="text-[14px] text-[var(--text-main,#ffffff)] font-medium m-0">
                   {t('call.screen_share_modal_hint')}
                 </p>
@@ -307,9 +310,9 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
           </div>
 
           <div
-            className="px-6 py-3.5 border-t border-[var(--border-subtle,rgba(255,255,255,0.08))] flex flex-col gap-3"
+            className="px-6 py-3.5 border-t border-[var(--border-color,rgba(255,255,255,0.08))] flex flex-col gap-3"
             style={{
-              backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 92%, #000)',
+              backgroundColor: 'var(--surface-container, var(--bg-secondary, #1e1b2e))',
             }}
           >
             <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -317,19 +320,22 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
                 onClick={() => setShareAudio(!shareAudio)}
                 className="flex items-center gap-2 cursor-pointer select-none"
               >
-                <Volume2 size={16} className={shareAudio ? 'text-[var(--accent-color,#7C3AED)]' : 'text-[var(--text-dim,#8a96a3)]'} />
+                <Volume2 size={16} className={shareAudio ? 'text-[var(--accent-text,var(--accent-color,#7C3AED))]' : 'text-[var(--text-dim,#8a96a3)]'} />
                 <span className="text-[12px] font-medium text-[var(--text-main,#ffffff)]">
                   {t('call.share_audio')}
                 </span>
                 <div
                   className="w-8 h-4 rounded-full transition-colors relative flex items-center px-0.5 ml-1"
                   style={{
-                    backgroundColor: shareAudio ? 'var(--accent-color, #7C3AED)' : 'var(--surface-container-strong, rgba(255,255,255,0.2))',
+                    backgroundColor: shareAudio
+                      ? 'var(--accent-color, #7C3AED)'
+                      : 'var(--switch-bg, var(--surface-container-strong, rgba(128,128,128,0.28)))',
                   }}
                 >
                   <div
-                    className="w-3 h-3 rounded-full bg-white transition-transform"
+                    className="w-3 h-3 rounded-full transition-transform"
                     style={{
+                      backgroundColor: shareAudio ? 'var(--accent-on-color, #ffffff)' : '#ffffff',
                       transform: shareAudio ? 'translateX(16px)' : 'translateX(0px)',
                     }}
                   />
@@ -338,7 +344,14 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
             </div>
 
             {shareAudio && (
-              <div className="w-full text-[11.5px] text-amber-300/90 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-lg select-none">
+              <div
+                className="w-full text-[11.5px] px-3 py-1.5 rounded-lg select-none"
+                style={{
+                  color: 'color-mix(in srgb, #f59e0b 55%, var(--text-main))',
+                  backgroundColor: 'rgba(245, 158, 11, 0.14)',
+                  border: '1px solid rgba(245, 158, 11, 0.35)',
+                }}
+              >
                 {t('call.share_audio_echo_warning')}
               </div>
             )}
@@ -348,7 +361,7 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
                 type="button"
                 onClick={handleClose}
                 aria-label={t('common.cancel', 'Отмена')}
-                className="px-4 py-2 rounded-lg text-[13px] font-medium text-[var(--text-main,#ffffff)] hover:bg-[var(--surface-container-hover,rgba(255,255,255,0.06))] transition-colors border-0 bg-transparent cursor-pointer"
+                className="px-4 py-2 rounded-lg text-[13px] font-medium text-[var(--text-main,#ffffff)] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] transition-colors border-0 bg-transparent cursor-pointer"
               >
                 {t('common.cancel', 'Отмена')}
               </button>
@@ -357,9 +370,10 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
                 type="button"
                 onClick={handleStart}
                 aria-label={t('call.go_live')}
-                className="px-5 py-2 rounded-lg text-[13px] font-medium text-white shadow-lg cursor-pointer transition-transform active:scale-95 border-0"
+                className="px-5 py-2 rounded-lg text-[13px] font-medium shadow-lg cursor-pointer transition-transform active:scale-95 border-0"
                 style={{
                   background: 'linear-gradient(135deg, var(--accent-color, #7C3AED), var(--accent-dark, #5B21B6))',
+                  color: 'var(--accent-on-color, #ffffff)',
                 }}
               >
                 {t('call.go_live')}

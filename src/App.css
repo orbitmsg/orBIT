@@ -125,7 +125,7 @@ h6 {
 
 .select-text a,
 a.message-inline-link {
-  color: var(--accent-color);
+  color: var(--accent-text, var(--accent-color));
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
@@ -139,7 +139,7 @@ a.message-inline-link:hover {
 .select-text-own a,
 .select-text-own a.message-inline-link,
 [data-is-own="true"] .select-text a {
-  color: #ffffff !important;
+  color: var(--bubble-own-text, #ffffff) !important;
   text-decoration: underline !important;
   text-underline-offset: 2px !important;
 }
@@ -147,7 +147,7 @@ a.message-inline-link:hover {
 .select-text-own a:hover,
 .select-text-own a.message-inline-link:hover,
 [data-is-own="true"] .select-text a:hover {
-  color: #ffffff !important;
+  color: var(--bubble-own-text, #ffffff) !important;
   opacity: 0.85;
 }
 
@@ -255,7 +255,7 @@ blockquote {
 /* 🎨 ЖЁСТКИЕ ЦВЕТА ДЛЯ НАСТРОЕК (Иконки и текст) */
 /* =============================================== */
 [data-theme-light="true"] {
-  --md-on-surface: #49454f;
+  --md-on-surface: #181b22;
   --chat-list-bg: #f5f5f5;
   --switch-bg: rgba(0, 0, 0, 0.12);
   --switch-border: rgba(0, 0, 0, 0.18);
@@ -581,15 +581,15 @@ a:hover {
 }
 
 [data-theme-light="true"] {
-  --scroll-thumb-color: rgba(0, 0, 0, 0.32);
+  --scroll-thumb-color: rgba(15, 23, 42, 0.24);
 }
 
 [data-theme-light="true"] .overlay-scroll-track {
-  background-color: rgba(0, 0, 0, 0.07);
+  background-color: rgba(15, 23, 42, 0.08);
 }
 
 [data-theme-light="true"] .overlay-scroll-thumb {
-  background-color: var(--scroll-thumb-color, rgba(0, 0, 0, 0.32));
+  background-color: var(--scroll-thumb-color, rgba(15, 23, 42, 0.24));
 }
 
 .overlay-scroll-thumb:hover,
@@ -660,8 +660,8 @@ a:hover {
   position: absolute;
   inset: 0;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 2px solid rgba(255, 255, 255, 0.25);
+  background: var(--switch-bg, rgba(255, 255, 255, 0.08));
+  border: 2px solid var(--switch-border, rgba(255, 255, 255, 0.25));
   transition: background 200ms cubic-bezier(0.2, 0, 0, 1), border-color 200ms cubic-bezier(0.2, 0, 0, 1);
   box-sizing: border-box;
   will-change: background, border-color;
@@ -707,7 +707,7 @@ a:hover {
 
 .m3-switch-root input:checked~.m3-track~.m3-thumb-wrap .m3-thumb {
   transform: scale(1);
-  background: var(--bg-primary, #1c1b1f);
+  background: var(--accent-on-color, #ffffff);
 }
 
 .m3-switch-root:active .m3-thumb {
@@ -855,7 +855,7 @@ textarea,
 input::selection,
 textarea::selection,
 [contenteditable="true"]::selection {
-  background: rgba(92, 84, 229, 0.45) !important;
+  background: var(--selection-bg, rgba(92, 84, 229, 0.45)) !important;
   color: inherit !important;
 }
 
@@ -915,19 +915,19 @@ textarea::selection,
 .reaction-badge-btn.is-incoming.is-active {
   --reaction-badge-bg: var(--accent-color, #7C3AED);
   background-color: var(--accent-color, #7C3AED) !important;
-  color: #ffffff !important;
+  color: var(--accent-on-color, #ffffff) !important;
 }
 
 .reaction-badge-btn.is-own.is-inactive {
-  --reaction-badge-bg: color-mix(in srgb, var(--chat-bubble-own-bg, #2c6bed) 70%, #000000 30%);
+  --reaction-badge-bg: color-mix(in srgb, var(--accent-color, #5865F2) 72%, #000000 28%);
   background-color: rgba(0, 0, 0, 0.3) !important;
-  color: #ffffff !important;
+  color: var(--bubble-own-text, #ffffff) !important;
 }
 
 .reaction-badge-btn.is-own.is-active {
-  --reaction-badge-bg: #ffffff;
-  background-color: #ffffff !important;
-  color: var(--accent-color, #7C3AED) !important;
+  --reaction-badge-bg: var(--accent-on-color, #ffffff);
+  background-color: var(--accent-on-color, #ffffff) !important;
+  color: var(--accent-text, var(--accent-color, #7C3AED)) !important;
 }
 
 html.app-paused *,

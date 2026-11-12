@@ -112,8 +112,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   const [isDeafened, setIsDeafened] = React.useState(false);
   const isInChatSearch = Boolean(inChatSearch?.isOpen);
 
-  const surfaceTint = 'var(--surface-container-soft, rgba(255, 255, 255, 0.045))';
-  const surfaceHoverTint = isLightTheme ? 'rgba(0, 0, 0, 0.075)' : 'rgba(255, 255, 255, 0.085)';
+  const surfaceTint = 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))';
+  const surfaceHoverTint = 'var(--surface-hover, rgba(128, 128, 128, 0.14))';
 
   if (isInChatSearch) {
     return (
@@ -193,12 +193,12 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
               type="button"
               onClick={() => item.onClick?.()}
               aria-label={item.label}
-              className="w-full flex items-center justify-between gap-2 px-3.5 py-2 rounded-2xl border-none outline-none cursor-pointer transition-colors text-left"
+              className="w-full flex items-center justify-between gap-2 px-3.5 py-2 rounded-2xl outline-none cursor-pointer transition-colors text-left"
               style={{
                 borderRadius: '14px',
-                border: 'none',
+                border: '1px solid var(--border-color, transparent)',
                 backgroundColor: surfaceTint,
-                color: 'var(--text-main, #e0e0e0)',
+                color: 'var(--text-main)',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = surfaceHoverTint;
@@ -227,9 +227,9 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
             className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl hover:opacity-90 transition-opacity text-xs font-medium cursor-pointer shadow-none select-none"
             style={{
               borderRadius: '14px',
-              border: 'none',
+              border: '1px solid var(--border-color, transparent)',
               backgroundColor: surfaceTint,
-              color: 'var(--text-main, #ffffff)',
+              color: 'var(--text-main)',
             }}
           >
             <span className="font-semibold text-xs text-[var(--text-main)]">
@@ -240,7 +240,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
               style={{
                 borderRadius: '9999px',
                 backgroundColor: 'var(--accent-color, #7C3AED)',
-                color: '#ffffff',
+                color: 'var(--accent-on-color, #ffffff)',
               }}
             >
               {incomingFriendRequests.length}
@@ -490,9 +490,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                       backgroundColor: 'transparent',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = isLightTheme
-                        ? 'rgba(0, 0, 0, 0.04)'
-                        : 'rgba(255, 255, 255, 0.04)';
+                      e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(128, 128, 128, 0.08))';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.backgroundColor = 'transparent';
@@ -509,7 +507,13 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                           {searchChannelResult.name}
                         </span>
                         {searchChannelResult.isOfficial && (
-                          <span className="px-2 py-0.5 rounded-full bg-[var(--accent-color)]/20 text-[var(--accent-color)] text-[10px] font-bold">
+                          <span
+                            className="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                            style={{
+                              backgroundColor: 'color-mix(in srgb, var(--accent-color, #5865F2) 16%, transparent)',
+                              color: 'var(--accent-text, var(--accent-color))',
+                            }}
+                          >
                             Orbita
                           </span>
                         )}
@@ -525,8 +529,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                         handleSelectFoundChannel(searchChannelResult);
                       }}
                       aria-label={chats.some(c => c.id === searchChannelResult.id) ? t('common.open', 'Открыть') : t('common.join', 'Вступить')}
-                      className="px-3 py-1.5 rounded-xl bg-[var(--accent-color)] text-white text-xs font-semibold hover:opacity-90 transition-opacity border-none outline-none cursor-pointer flex-shrink-0"
-                      style={{ borderRadius: '12px', border: 'none' }}
+                      className="px-3 py-1.5 rounded-xl bg-[var(--accent-color)] text-xs font-semibold hover:opacity-90 transition-opacity border-none outline-none cursor-pointer flex-shrink-0"
+                      style={{ borderRadius: '12px', border: 'none', color: 'var(--accent-on-color, #ffffff)' }}
                     >
                       {chats.some(c => c.id === searchChannelResult.id)
                         ? t('common.open', 'Открыть')
@@ -566,9 +570,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                           backgroundColor: 'transparent',
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = isLightTheme
-                            ? 'rgba(0, 0, 0, 0.04)'
-                            : 'rgba(255, 255, 255, 0.04)';
+                          e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(128, 128, 128, 0.08))';
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.backgroundColor = 'transparent';
@@ -587,24 +589,33 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                             {isSupport && (
                               <>
                                 <VerifiedBadge size={15} className="flex-shrink-0" />
-                                <span className="px-2 py-0.5 rounded-full bg-[var(--accent-color)]/20 text-[var(--accent-color)] text-[10px] font-bold">
+                                <span
+                                  className="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                  style={{
+                                    backgroundColor: 'color-mix(in srgb, var(--accent-color, #5865F2) 16%, transparent)',
+                                    color: 'var(--accent-text, var(--accent-color))',
+                                  }}
+                                >
                                   Support
                                 </span>
                               </>
                             )}
                             {isMe && (
-                              <span className="px-2 py-0.5 rounded-full bg-[var(--accent-color)] text-white text-[10px] font-bold">
+                              <span
+                                className="px-2 py-0.5 rounded-full bg-[var(--accent-color)] text-[10px] font-bold"
+                                style={{ color: 'var(--accent-on-color, #ffffff)' }}
+                              >
                                 {t('common.this_is_you', 'Это вы')}
                               </span>
                             )}
                           </div>
                           {user.username && (
-                            <div className="text-xs text-[var(--accent-color,#7C3AED)] truncate mt-0.5 font-mono">
+                            <div className="text-xs truncate mt-0.5 font-mono" style={{ color: 'var(--accent-text, var(--accent-color, #7C3AED))' }}>
                               @{user.username}
                             </div>
                           )}
                           {!user.username && user.user_code && (
-                            <div className="text-xs text-[var(--accent-color,#7C3AED)] truncate mt-0.5 font-mono">
+                            <div className="text-xs truncate mt-0.5 font-mono" style={{ color: 'var(--accent-text, var(--accent-color, #7C3AED))' }}>
                               ID: {user.user_code}
                             </div>
                           )}
@@ -622,8 +633,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                               handleSelectFoundSupport();
                             }}
                             aria-label={t('common.open', 'Открыть')}
-                            className="px-3 py-1.5 rounded-xl bg-[var(--accent-color)] text-white text-xs font-semibold hover:opacity-90 transition-opacity border-none outline-none cursor-pointer flex-shrink-0"
-                            style={{ borderRadius: '12px', border: 'none' }}
+                            className="px-3 py-1.5 rounded-xl bg-[var(--accent-color)] text-xs font-semibold hover:opacity-90 transition-opacity border-none outline-none cursor-pointer flex-shrink-0"
+                            style={{ borderRadius: '12px', border: 'none', color: 'var(--accent-on-color, #ffffff)' }}
                           >
                             {t('common.open', 'Открыть')}
                           </button>
@@ -694,10 +705,10 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
             width: '44px',
             height: '44px',
             borderRadius: '50%',
-            backgroundColor: 'var(--surface-container, #33363f)',
+            backgroundColor: 'var(--surface-container-strong, var(--surface-container, #33363f))',
             color: 'var(--text-main)',
-            boxShadow: '0 4px 14px rgba(0, 0, 0, 0.28)',
-            border: 'none',
+            boxShadow: isLightTheme ? '0 4px 14px rgba(0, 0, 0, 0.12)' : '0 4px 14px rgba(0, 0, 0, 0.28)',
+            border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
             outline: 'none',
             cursor: 'pointer',
             display: 'flex',
@@ -711,12 +722,33 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
       </div>
 
       <div className="shrink-0 w-full z-20 select-none pointer-events-auto rounded-[18px] overflow-hidden">
+        <style>{`
+          .orbita-dock-panel .dock-profile-btn:hover,
+          .orbita-dock-panel .dock-btn:hover {
+            background-color: color-mix(in srgb, var(--accent-on-color, #ffffff) 14%, transparent);
+          }
+          .orbita-dock-panel .dock-profile-btn:active,
+          .orbita-dock-panel .dock-btn:active {
+            background-color: color-mix(in srgb, var(--accent-on-color, #ffffff) 22%, transparent);
+          }
+          .orbita-dock-panel .pdi-gear-wrap,
+          .orbita-dock-panel .pdi-mic-unmuted,
+          .orbita-dock-panel .pdi-hp-unmuted {
+            color: color-mix(in srgb, var(--accent-on-color, #ffffff) 82%, transparent);
+          }
+          .orbita-dock-panel .dock-btn:hover .pdi-gear-wrap,
+          .orbita-dock-panel .dock-btn:hover .pdi-mic-unmuted,
+          .orbita-dock-panel .dock-btn:hover .pdi-hp-unmuted {
+            color: var(--accent-on-color, #ffffff);
+          }
+        `}</style>
         <div
-          className="flex items-center justify-between px-2.5 py-2"
+          className="orbita-dock-panel flex items-center justify-between px-2.5 py-2"
           style={{
             background: 'var(--accent-gradient, linear-gradient(135deg, var(--accent-color, #5865F2) 0%, var(--accent-dark, #4752c4) 100%))',
             borderRadius: '18px',
             border: 'none',
+            color: 'var(--accent-on-color, #ffffff)',
           }}
         >
             <button
@@ -729,13 +761,14 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                 }
               }}
               aria-label={t('mainMenu.my_profile', 'Мой профиль')}
-              className="flex items-center gap-2.5 min-w-0 flex-1 hover:bg-white/[0.1] rounded-xl transition-colors bg-transparent border-none outline-none cursor-pointer text-left p-1"
+              className="dock-profile-btn flex items-center gap-2.5 min-w-0 flex-1 rounded-xl transition-colors bg-transparent border-none outline-none cursor-pointer text-left p-1"
               style={{
                 WebkitTapHighlightColor: 'transparent',
                 borderRadius: '12px',
                 outline: 'none',
                 boxShadow: 'none',
                 border: 'none',
+                color: 'var(--accent-on-color, #ffffff)',
               }}
             >
               <div className="relative shrink-0">
@@ -753,10 +786,16 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                 />
               </div>
               <div className="flex flex-col min-w-0 flex-1 leading-none">
-                <span className="text-[13.5px] font-bold text-white truncate leading-tight">
+                <span
+                  className="text-[13.5px] font-bold truncate leading-tight"
+                  style={{ color: 'var(--accent-on-color, #ffffff)' }}
+                >
                   {nickname || 'Saizzi'}
                 </span>
-                <span className="text-[11px] text-white/80 truncate mt-0.5">
+                <span
+                  className="text-[11px] truncate mt-0.5"
+                  style={{ color: 'color-mix(in srgb, var(--accent-on-color, #ffffff) 80%, transparent)' }}
+                >
                   {isServerConnected ? t('discord.online', 'В сети') : t('common.network_connecting_title', 'Соединение...')}
                 </span>
               </div>
@@ -775,7 +814,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   callSoundService.play(next ? 'mute' : 'unmute');
                 }}
                 aria-label={isMicMuted ? t('discord.unmuteMicrophone', 'Включить микрофон') : t('discord.muteMicrophone', 'Отключить микрофон')}
-                className="dock-btn flex items-center justify-center m-0 bg-transparent hover:bg-white/[0.12] active:bg-white/[0.18] transition-colors duration-150 border-none outline-none select-none cursor-pointer"
+                className="dock-btn flex items-center justify-center m-0 bg-transparent transition-colors duration-150 border-none outline-none select-none cursor-pointer"
                 style={{
                   WebkitTapHighlightColor: 'transparent',
                   padding: '5px',
@@ -783,6 +822,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   outline: 'none',
                   boxShadow: 'none',
                   border: 'none',
+                  color: 'var(--accent-on-color, #ffffff)',
                 }}
               >
                 <MicToggleIcon muted={isMicMuted} />
@@ -802,7 +842,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   callSoundService.play(next ? 'mute' : 'unmute');
                 }}
                 aria-label={isDeafened ? t('discord.undeafenAudio', 'Включить звук') : t('discord.deafenAudio', 'Заглушить звук')}
-                className="dock-btn flex items-center justify-center m-0 bg-transparent hover:bg-white/[0.12] active:bg-white/[0.18] transition-colors duration-150 border-none outline-none select-none cursor-pointer"
+                className="dock-btn flex items-center justify-center m-0 bg-transparent transition-colors duration-150 border-none outline-none select-none cursor-pointer"
                 style={{
                   WebkitTapHighlightColor: 'transparent',
                   padding: '5px',
@@ -810,6 +850,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   outline: 'none',
                   boxShadow: 'none',
                   border: 'none',
+                  color: 'var(--accent-on-color, #ffffff)',
                 }}
               >
                 <HeadphonesToggleIcon muted={isDeafened} />
@@ -826,7 +867,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   }
                 }}
                 aria-label={t('discord.userSettings', 'Настройки пользователя')}
-                className="dock-btn flex items-center justify-center m-0 bg-transparent hover:bg-white/[0.12] active:bg-white/[0.18] transition-colors duration-150 border-none outline-none select-none cursor-pointer"
+                className="dock-btn flex items-center justify-center m-0 bg-transparent transition-colors duration-150 border-none outline-none select-none cursor-pointer"
                 style={{
                   WebkitTapHighlightColor: 'transparent',
                   padding: '5px',
@@ -834,6 +875,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   outline: 'none',
                   boxShadow: 'none',
                   border: 'none',
+                  color: 'var(--accent-on-color, #ffffff)',
                 }}
               >
                 <GearIcon />

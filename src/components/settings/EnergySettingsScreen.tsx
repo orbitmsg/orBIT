@@ -124,7 +124,7 @@ export const EnergySettingsScreen: React.FC = () => {
                     cursor: 'pointer',
                     userSelect: 'none',
                   }}
-                  className="hover:bg-white/[0.04]"
+                  className="hover:bg-[var(--surface-hover)]"
                 >
                   <div
                     style={{
@@ -135,13 +135,13 @@ export const EnergySettingsScreen: React.FC = () => {
                       alignItems: 'center',
                       justifyContent: 'center',
                       backgroundColor: stickersAutoplayPanel ? 'var(--accent-color, #7C3AED)' : 'transparent',
-                      border: stickersAutoplayPanel ? 'none' : '2px solid rgba(255, 255, 255, 0.35)',
+                      border: stickersAutoplayPanel ? 'none' : '2px solid var(--border-color)',
                       transition: 'all 0.15s ease',
                       flexShrink: 0,
                     }}
                   >
                     {stickersAutoplayPanel && (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent-on-color, #ffffff)" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     )}
@@ -161,7 +161,7 @@ export const EnergySettingsScreen: React.FC = () => {
                     cursor: 'pointer',
                     userSelect: 'none',
                   }}
-                  className="hover:bg-white/[0.04]"
+                  className="hover:bg-[var(--surface-hover)]"
                 >
                   <div
                     style={{
@@ -172,13 +172,13 @@ export const EnergySettingsScreen: React.FC = () => {
                       alignItems: 'center',
                       justifyContent: 'center',
                       backgroundColor: stickersAutoplayChat ? 'var(--accent-color, #7C3AED)' : 'transparent',
-                      border: stickersAutoplayChat ? 'none' : '2px solid rgba(255, 255, 255, 0.35)',
+                      border: stickersAutoplayChat ? 'none' : '2px solid var(--border-color)',
                       transition: 'all 0.15s ease',
                       flexShrink: 0,
                     }}
                   >
                     {stickersAutoplayChat && (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent-on-color, #ffffff)" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     )}
@@ -288,7 +288,7 @@ export const EnergySettingsScreen: React.FC = () => {
                     cursor: 'pointer',
                     userSelect: 'none',
                   }}
-                  className="hover:bg-white/[0.04]"
+                  className="hover:bg-[var(--surface-hover)]"
                 >
                   <div
                     style={{
@@ -299,13 +299,13 @@ export const EnergySettingsScreen: React.FC = () => {
                       alignItems: 'center',
                       justifyContent: 'center',
                       backgroundColor: chatAutoPlayVideos ? 'var(--accent-color, #7C3AED)' : 'transparent',
-                      border: chatAutoPlayVideos ? 'none' : '2px solid rgba(255, 255, 255, 0.35)',
+                      border: chatAutoPlayVideos ? 'none' : '2px solid var(--border-color)',
                       transition: 'all 0.15s ease',
                       flexShrink: 0,
                     }}
                   >
                     {chatAutoPlayVideos && (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent-on-color, #ffffff)" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     )}
@@ -325,7 +325,7 @@ export const EnergySettingsScreen: React.FC = () => {
                     cursor: 'pointer',
                     userSelect: 'none',
                   }}
-                  className="hover:bg-white/[0.04]"
+                  className="hover:bg-[var(--surface-hover)]"
                 >
                   <div
                     style={{
@@ -336,13 +336,13 @@ export const EnergySettingsScreen: React.FC = () => {
                       alignItems: 'center',
                       justifyContent: 'center',
                       backgroundColor: chatElementAnimations ? 'var(--accent-color, #7C3AED)' : 'transparent',
-                      border: chatElementAnimations ? 'none' : '2px solid rgba(255, 255, 255, 0.35)',
+                      border: chatElementAnimations ? 'none' : '2px solid var(--border-color)',
                       transition: 'all 0.15s ease',
                       flexShrink: 0,
                     }}
                   >
                     {chatElementAnimations && (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent-on-color, #ffffff)" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     )}
@@ -362,7 +362,7 @@ export const EnergySettingsScreen: React.FC = () => {
                     cursor: 'pointer',
                     userSelect: 'none',
                   }}
-                  className="hover:bg-white/[0.04]"
+                  className="hover:bg-[var(--surface-hover)]"
                 >
                   <div
                     style={{
@@ -373,13 +373,13 @@ export const EnergySettingsScreen: React.FC = () => {
                       alignItems: 'center',
                       justifyContent: 'center',
                       backgroundColor: messageDeleteAnimation ? 'var(--accent-color, #7C3AED)' : 'transparent',
-                      border: messageDeleteAnimation ? 'none' : '2px solid rgba(255, 255, 255, 0.35)',
+                      border: messageDeleteAnimation ? 'none' : '2px solid var(--border-color)',
                       transition: 'all 0.15s ease',
                       flexShrink: 0,
                     }}
                   >
                     {messageDeleteAnimation && (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent-on-color, #ffffff)" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     )}

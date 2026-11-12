@@ -1,4 +1,3 @@
-// src/components/audio/AudioControlsPopups.tsx
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useAudioStore } from '../../store/useAudioStore';
@@ -9,7 +8,6 @@ interface PopupProps {
   onClose: () => void;
 }
 
-// ----------------------------------------------------
 interface AudioVolumePopoverProps extends PopupProps {
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
@@ -23,7 +21,6 @@ export const AudioVolumePopover: React.FC<AudioVolumePopoverProps> = ({ anchorRe
   const popoverRef = useRef<HTMLDivElement>(null);
   const isMouseInsideRef = useRef(false);
 
-  // Close on outside click
   useEffect(() => {
     const handleDown = (e: MouseEvent) => {
       if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
@@ -113,10 +110,10 @@ export const AudioVolumePopover: React.FC<AudioVolumePopoverProps> = ({ anchorRe
         top: `${top}px`,
         width: '32px',
         height: '110px',
-        backgroundColor: 'var(--md-surface, var(--surface-container, rgba(255,255,255,0.05)))',
+        backgroundColor: 'var(--md-surface, var(--bg-secondary))',
         borderRadius: '8px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-        border: 'none',
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.22)',
+        border: '1px solid var(--border-color)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -144,12 +141,11 @@ export const AudioVolumePopover: React.FC<AudioVolumePopoverProps> = ({ anchorRe
           position: 'relative',
           width: '4px',
           height: '84px',
-          backgroundColor: 'var(--surface-muted, rgba(255,255,255,0.15))',
+          backgroundColor: 'color-mix(in srgb, var(--text-dim) 28%, transparent)',
           borderRadius: '2px',
           cursor: 'pointer',
         }}
       >
-        {/* Fill */}
         <div
           style={{
             position: 'absolute',
@@ -157,11 +153,10 @@ export const AudioVolumePopover: React.FC<AudioVolumePopoverProps> = ({ anchorRe
             left: 0,
             width: '100%',
             height: `${volume * 100}%`,
-            backgroundColor: 'var(--accent-color, #7C3AED)',
+            backgroundColor: 'var(--accent-color)',
             borderRadius: '2px',
           }}
         />
-        {/* Thumb */}
         <div
           style={{
             position: 'absolute',
@@ -171,8 +166,9 @@ export const AudioVolumePopover: React.FC<AudioVolumePopoverProps> = ({ anchorRe
             width: '10px',
             height: '10px',
             borderRadius: '50%',
-            backgroundColor: 'var(--accent-color, #a995ec)',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
+            backgroundColor: 'var(--accent-color)',
+            border: '1.5px solid var(--accent-on-color, #ffffff)',
+            boxShadow: '0 1px 4px rgba(0, 0, 0, 0.3)',
           }}
         />
       </div>
@@ -181,9 +177,6 @@ export const AudioVolumePopover: React.FC<AudioVolumePopoverProps> = ({ anchorRe
   );
 };
 
-// ----------------------------------------------------
-// 2. ORDER / SHUFFLE POPOVER
-// ----------------------------------------------------
 export const AudioOrderPopover: React.FC<PopupProps> = ({ anchorRect, onClose }) => {
   const { t } = useTranslation();
   const isReverseOrder = useAudioStore((s) => s.isReverseOrder);
@@ -220,10 +213,10 @@ export const AudioOrderPopover: React.FC<PopupProps> = ({ anchorRect, onClose })
         left: `${left}px`,
         top: `${top}px`,
         width: `${width}px`,
-        backgroundColor: 'var(--md-surface, var(--surface-container, rgba(255,255,255,0.05)))',
+        backgroundColor: 'var(--md-surface, var(--bg-secondary))',
         borderRadius: '10px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-        border: 'none',
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.22)',
+        border: '1px solid var(--border-color)',
         padding: '4px 0',
         zIndex: 1000,
         overflow: 'hidden',
@@ -234,8 +227,9 @@ export const AudioOrderPopover: React.FC<PopupProps> = ({ anchorRect, onClose })
       }}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Reverse order */}
       <button
+        type="button"
+        aria-label={t('audioPlayer.reverse_order', 'Обратный')}
         onClick={() => {
           toggleReverseOrder();
         }}
@@ -245,9 +239,9 @@ export const AudioOrderPopover: React.FC<PopupProps> = ({ anchorRect, onClose })
           gap: '10px',
           padding: '7px 12px',
           borderRadius: 0,
-          backgroundColor: isReverseOrder ? 'var(--surface-container-soft, rgba(255,255,255,0.06))' : 'transparent',
+          backgroundColor: isReverseOrder ? 'color-mix(in srgb, var(--accent-color) 14%, transparent)' : 'transparent',
           border: 'none',
-          color: isReverseOrder ? 'var(--accent-color, #a995ec)' : 'var(--text-main)',
+          color: isReverseOrder ? 'var(--accent-text, var(--accent-color))' : 'var(--text-main)',
           fontSize: '13px',
           cursor: 'pointer',
           textAlign: 'left',
@@ -256,7 +250,7 @@ export const AudioOrderPopover: React.FC<PopupProps> = ({ anchorRect, onClose })
           whiteSpace: 'nowrap',
         }}
         onMouseEnter={(e) => {
-          if (!isReverseOrder) e.currentTarget.style.backgroundColor = 'var(--surface-container-soft, rgba(255,255,255,0.04))';
+          if (!isReverseOrder) e.currentTarget.style.backgroundColor = 'var(--surface-hover, var(--surface-container-soft))';
         }}
         onMouseLeave={(e) => {
           if (!isReverseOrder) e.currentTarget.style.backgroundColor = 'transparent';
@@ -278,8 +272,9 @@ export const AudioOrderPopover: React.FC<PopupProps> = ({ anchorRect, onClose })
         )}
       </button>
 
-      {/* Shuffle */}
       <button
+        type="button"
+        aria-label={t('audioPlayer.shuffle', 'Случайный')}
         onClick={() => {
           toggleShuffle();
         }}
@@ -289,9 +284,9 @@ export const AudioOrderPopover: React.FC<PopupProps> = ({ anchorRect, onClose })
           gap: '10px',
           padding: '7px 12px',
           borderRadius: 0,
-          backgroundColor: shuffle ? 'var(--surface-container-soft, rgba(255,255,255,0.06))' : 'transparent',
+          backgroundColor: shuffle ? 'color-mix(in srgb, var(--accent-color) 14%, transparent)' : 'transparent',
           border: 'none',
-          color: shuffle ? 'var(--accent-color, #a995ec)' : 'var(--text-main)',
+          color: shuffle ? 'var(--accent-text, var(--accent-color))' : 'var(--text-main)',
           fontSize: '13px',
           cursor: 'pointer',
           textAlign: 'left',
@@ -300,7 +295,7 @@ export const AudioOrderPopover: React.FC<PopupProps> = ({ anchorRect, onClose })
           whiteSpace: 'nowrap',
         }}
         onMouseEnter={(e) => {
-          if (!shuffle) e.currentTarget.style.backgroundColor = 'var(--surface-container-soft, rgba(255,255,255,0.04))';
+          if (!shuffle) e.currentTarget.style.backgroundColor = 'var(--surface-hover, var(--surface-container-soft))';
         }}
         onMouseLeave={(e) => {
           if (!shuffle) e.currentTarget.style.backgroundColor = 'transparent';
@@ -327,9 +322,6 @@ export const AudioOrderPopover: React.FC<PopupProps> = ({ anchorRect, onClose })
   );
 };
 
-// ----------------------------------------------------
-// 3. PLAYBACK SPEED POPOVER
-// ----------------------------------------------------
 const SPEED_PRESETS = [
   { rate: 0.5, labelKey: 'audioPlayer.speed_slow', defaultLabel: 'Медленно', display: '0.5x' },
   { rate: 1.0, labelKey: 'audioPlayer.speed_default', defaultLabel: 'По умолчанию', display: '1.0x' },
@@ -373,10 +365,10 @@ export const AudioSpeedPopover: React.FC<PopupProps> = ({ anchorRect, onClose })
         left: `${left}px`,
         top: `${top}px`,
         width: `${width}px`,
-        backgroundColor: 'var(--md-surface, var(--surface-container, rgba(255,255,255,0.05)))',
+        backgroundColor: 'var(--md-surface, var(--bg-secondary))',
         borderRadius: '10px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-        border: 'none',
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.22)',
+        border: '1px solid var(--border-color)',
         padding: '10px 0 4px 0',
         zIndex: 1000,
         overflow: 'hidden',
@@ -387,7 +379,6 @@ export const AudioSpeedPopover: React.FC<PopupProps> = ({ anchorRect, onClose })
       }}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Slider Header */}
       <div style={{ display: 'flex', alignItems: 'center', padding: '0 12px 10px 12px', gap: '10px' }}>
         <span style={{ fontSize: '13px', fontWeight: 600, minWidth: '32px', color: 'var(--text-main)' }}>
           {playbackRate.toFixed(1)}x
@@ -395,6 +386,7 @@ export const AudioSpeedPopover: React.FC<PopupProps> = ({ anchorRect, onClose })
         <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
           <input
             type="range"
+            aria-label={t('audioPlayer.playback_speed', 'Скорость воспроизведения')}
             min="0.5"
             max="2.0"
             step="0.05"
@@ -402,7 +394,7 @@ export const AudioSpeedPopover: React.FC<PopupProps> = ({ anchorRect, onClose })
             onChange={(e) => setPlaybackRate(parseFloat(e.target.value))}
             style={{
               width: '100%',
-              accentColor: 'var(--accent-color, #7C3AED)',
+              accentColor: 'var(--accent-color)',
               cursor: 'pointer',
               height: '4px',
               borderRadius: '2px',
@@ -412,16 +404,16 @@ export const AudioSpeedPopover: React.FC<PopupProps> = ({ anchorRect, onClose })
         </div>
       </div>
 
-      {/* Divider */}
-      <div style={{ height: '1px', backgroundColor: 'var(--border-color, rgba(255,255,255,0.06))', margin: '0 0 4px 0' }} />
+      <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '0 0 4px 0' }} />
 
-      {/* Presets with edge-to-edge highlight */}
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         {SPEED_PRESETS.map((preset) => {
           const isActive = Math.abs(playbackRate - preset.rate) < 0.04;
           return (
             <button
               key={preset.rate}
+              type="button"
+              aria-label={`${preset.display} ${t(preset.labelKey, preset.defaultLabel)}`}
               onClick={() => {
                 setPlaybackRate(preset.rate);
               }}
@@ -430,9 +422,9 @@ export const AudioSpeedPopover: React.FC<PopupProps> = ({ anchorRect, onClose })
                 alignItems: 'center',
                 padding: '6px 12px',
                 borderRadius: 0,
-                backgroundColor: isActive ? 'var(--surface-container-soft, rgba(255,255,255,0.06))' : 'transparent',
+                backgroundColor: isActive ? 'color-mix(in srgb, var(--accent-color) 14%, transparent)' : 'transparent',
                 border: 'none',
-                color: isActive ? 'var(--accent-color, #a995ec)' : 'var(--text-main)',
+                color: isActive ? 'var(--accent-text, var(--accent-color))' : 'var(--text-main)',
                 fontSize: '13px',
                 cursor: 'pointer',
                 textAlign: 'left',
@@ -440,13 +432,13 @@ export const AudioSpeedPopover: React.FC<PopupProps> = ({ anchorRect, onClose })
                 transition: 'background 0.15s',
               }}
               onMouseEnter={(e) => {
-                if (!isActive) e.currentTarget.style.backgroundColor = 'var(--surface-container-soft, rgba(255,255,255,0.04))';
+                if (!isActive) e.currentTarget.style.backgroundColor = 'var(--surface-hover, var(--surface-container-soft))';
               }}
               onMouseLeave={(e) => {
                 if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
               }}
             >
-              <span style={{ width: '36px', fontSize: '12px', color: 'var(--text-dim)' }}>
+              <span style={{ width: '36px', fontSize: '12px', color: isActive ? 'var(--accent-text, var(--accent-color))' : 'var(--text-dim)' }}>
                 {preset.display}
               </span>
               <span style={{ flex: 1, fontWeight: isActive ? 500 : 400 }}>

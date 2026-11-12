@@ -246,7 +246,7 @@ export const FileMessage = memo(({
             className="font-semibold truncate"
             style={{
               fontSize: orbitFs(13),
-              color: isOwn ? '#ffffff' : 'var(--text-main)',
+              color: isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--chat-bubble-incoming-text, var(--text-main))',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -260,7 +260,7 @@ export const FileMessage = memo(({
             className="tabular-nums"
             style={{
               fontSize: orbitFs(11),
-              color: isOwn ? 'rgba(255, 255, 255, 0.75)' : 'var(--text-dim)',
+              color: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 78%, transparent)' : 'var(--text-dim)',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -273,7 +273,9 @@ export const FileMessage = memo(({
               style={{
                 width: '100%',
                 height: '4px',
-                background: 'rgba(255, 255, 255, 0.1)',
+                background: isOwn
+                  ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 22%, transparent)'
+                  : 'var(--border-color, rgba(128, 128, 128, 0.22))',
                 borderRadius: '4px',
                 marginTop: '4px',
                 overflow: 'hidden',
@@ -283,7 +285,7 @@ export const FileMessage = memo(({
                 style={{
                   height: '100%',
                   width: `${activePercent}%`,
-                  background: 'var(--accent-color, #6c5ce7)',
+                  background: isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--accent-color, #6c5ce7)',
                   borderRadius: '4px',
                   transition: 'width 0.14s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}

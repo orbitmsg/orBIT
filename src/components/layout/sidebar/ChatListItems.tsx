@@ -93,9 +93,9 @@ export const ChatListItem = React.memo(({
     ? 'var(--chat-list-bg, #f5f5f5)'
     : 'var(--chat-list-bg, #2b2d31)';
   const rowBg = isActive
-    ? `color-mix(in srgb, ${isLightTheme ? '#000000' : '#ffffff'} 8%, ${baseBg})`
+    ? 'color-mix(in srgb, var(--accent-color, #5865F2) 15%, var(--chat-list-bg, #2b2d31))'
     : isHovered
-    ? `color-mix(in srgb, ${isLightTheme ? '#000000' : '#ffffff'} 4%, ${baseBg})`
+    ? `color-mix(in srgb, ${isLightTheme ? '#000000' : '#ffffff'} 5%, ${baseBg})`
     : 'transparent';
   const ringColor = isActive || isHovered ? rowBg : baseBg;
 
@@ -177,7 +177,7 @@ export const ChatListItem = React.memo(({
                   size={15}
                   className="flex-shrink-0"
                   style={{
-                    color: isLightTheme ? '#555555' : 'rgba(255, 255, 255, 0.85)',
+                    color: 'var(--text-main)',
                     marginRight: 2,
                   }}
                 />
@@ -187,7 +187,7 @@ export const ChatListItem = React.memo(({
                   size={15}
                   className="flex-shrink-0"
                   style={{
-                    color: isLightTheme ? '#555555' : 'rgba(255, 255, 255, 0.85)',
+                    color: 'var(--text-main)',
                     marginRight: 2,
                   }}
                 />
@@ -195,7 +195,7 @@ export const ChatListItem = React.memo(({
               <span
                 className="text-[14px] font-bold truncate whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
                 style={{
-                  color: isActive ? '#ffffff' : (isLightTheme ? '#111111' : '#949ba4'),
+                  color: isActive ? 'var(--text-heading, var(--text-main))' : 'var(--text-main)',
                   fontFamily: 'inherit'
                 }}
               >
@@ -213,7 +213,13 @@ export const ChatListItem = React.memo(({
                 style={{ pointerEvents: 'none' }}
               />
               {chat.type === 'channel' && chat.isOfficial && (
-                <span className="px-1.5 py-0.5 rounded-full bg-[var(--accent-color)]/20 text-[var(--accent-color)] text-[9px] font-extrabold uppercase flex-shrink-0 leading-none">
+                <span
+                  className="px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase flex-shrink-0 leading-none"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--accent-color, #5865F2) 16%, transparent)',
+                    color: 'var(--accent-text, var(--accent-color))',
+                  }}
+                >
                   {t('channel.official', 'ОФИЦ')}
                 </span>
               )}
@@ -224,7 +230,7 @@ export const ChatListItem = React.memo(({
                   <MessageStatus
                     status={status}
                     isOwn={true}
-                    color={status === 'read' ? 'var(--accent-color, #7C3AED)' : (isLightTheme ? '#757575' : '#ffffff')}
+                    color={status === 'read' ? 'var(--accent-text, var(--accent-color, #7C3AED))' : 'var(--text-dim, #757575)'}
                   />
                 </div>
               )}
@@ -232,7 +238,7 @@ export const ChatListItem = React.memo(({
                 <span
                   className="text-[12px] font-medium tabular-nums whitespace-nowrap"
                   style={{
-                    color: isLightTheme ? '#757575' : 'var(--text-dim, #808080)',
+                    color: 'var(--text-dim, #808080)',
                   }}
                 >
                   {timeStr}
@@ -245,17 +251,17 @@ export const ChatListItem = React.memo(({
               className="text-[13px] font-normal whitespace-nowrap overflow-hidden text-ellipsis flex-1 min-w-0"
               style={{
                 color: isChatTyping
-                  ? 'var(--accent-color, #7C3AED)'
+                  ? 'var(--accent-text, var(--accent-color, #7C3AED))'
                   : showDraft
-                  ? (isLightTheme ? '#111111' : 'rgba(255,255,255,0.85)')
-                  : (isLightTheme ? '#757575' : 'var(--text-dim, #8e8e93)'),
+                  ? 'var(--text-main)'
+                  : 'var(--text-dim, #8e8e93)',
                 textTransform: 'none',
                 fontFamily: 'inherit',
                 pointerEvents: 'none',
               }}
             >
               {isChatTyping ? (
-                <span className="inline-flex items-center gap-1.5 min-w-0 truncate font-medium text-[var(--accent-color)]">
+                <span className="inline-flex items-center gap-1.5 min-w-0 truncate font-medium" style={{ color: 'var(--accent-text, var(--accent-color))' }}>
                   <span className="truncate">
                     {(() => {
                       const count = chatTypingUsers.length;
@@ -296,14 +302,14 @@ export const ChatListItem = React.memo(({
             {(isPinned || (chat.unreadCount ?? 0) > 0) && (
               <div className="ml-1.5 flex items-center gap-1.5 flex-shrink-0">
                 {isPinned && (
-                  <CustomPinIcon size={13} style={{ color: 'var(--accent-color, #7C3AED)' }} className="flex-shrink-0" />
+                  <CustomPinIcon size={13} style={{ color: 'var(--accent-text, var(--accent-color, #7C3AED))' }} className="flex-shrink-0" />
                 )}
                 {(chat.unreadCount ?? 0) > 0 && (
                   <span
-                    className="text-[12px] font-bold rounded-full text-white flex-shrink-0"
+                    className="text-[12px] font-bold rounded-full flex-shrink-0"
                     style={{
                       backgroundColor: 'var(--accent-color, #7C3AED)',
-                      color: '#ffffff',
+                      color: 'var(--accent-on-color, #ffffff)',
                       padding: '1px 7px',
                       minWidth: '22px',
                       lineHeight: '1.3',
@@ -345,7 +351,7 @@ export const ArchiveListItem = React.memo(({
   archivedChats,
   onOpenArchive,
   t,
-  isLightTheme,
+  isLightTheme: _isLightTheme,
 }: {
   archivedChats: Chat[];
   onOpenArchive: () => void;
@@ -368,7 +374,7 @@ export const ArchiveListItem = React.memo(({
         margin: '2px 8px',
         width: 'calc(100% - 16px)',
         backgroundColor: isHovered
-          ? (isLightTheme ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.04)')
+          ? 'var(--surface-hover, rgba(128, 128, 128, 0.08))'
           : 'transparent',
         border: 'none',
         outline: 'none',
@@ -385,14 +391,14 @@ export const ArchiveListItem = React.memo(({
               width: 40,
               height: 40,
               borderRadius: '50%',
-              backgroundColor: isLightTheme ? '#6c7a89' : 'rgba(255, 255, 255, 0.12)',
+              backgroundColor: 'var(--surface-container-strong, rgba(128, 128, 128, 0.16))',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#ffffff',
+              color: 'var(--text-main)',
             }}
           >
-            <Archive size={20} color="#ffffff" strokeWidth={2.2} />
+            <Archive size={20} strokeWidth={2.2} />
           </div>
         </div>
         <div className="flex flex-col min-w-0 flex-1">
@@ -400,7 +406,7 @@ export const ArchiveListItem = React.memo(({
             <span
               className="text-[14px] font-bold truncate whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
               style={{
-                color: isLightTheme ? '#111111' : 'rgba(255,255,255,0.85)',
+                color: 'var(--text-heading, var(--text-main))',
                 fontFamily: 'inherit',
               }}
             >
@@ -409,10 +415,10 @@ export const ArchiveListItem = React.memo(({
             {totalUnread > 0 && (
               <div className="ml-auto flex items-center flex-shrink-0">
                 <span
-                  className="text-[12px] font-bold rounded-full text-white flex-shrink-0"
+                  className="text-[12px] font-bold rounded-full flex-shrink-0"
                   style={{
                     backgroundColor: 'var(--accent-color, #7C3AED)',
-                    color: '#ffffff',
+                    color: 'var(--accent-on-color, #ffffff)',
                     padding: '1px 7px',
                     minWidth: '22px',
                     lineHeight: '1.3',
@@ -433,7 +439,7 @@ export const ArchiveListItem = React.memo(({
                   {i > 0 && <span style={{ color: 'var(--text-dim, #8e8e93)' }}>, </span>}
                   <span
                     style={{
-                      color: hasUnread ? (isLightTheme ? '#000000' : '#ffffff') : 'var(--text-dim, #8e8e93)',
+                      color: hasUnread ? 'var(--text-main)' : 'var(--text-dim, #8e8e93)',
                       fontWeight: hasUnread ? 600 : 400,
                     }}
                   >

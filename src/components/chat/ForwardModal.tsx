@@ -92,7 +92,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                     margin: 0,
                     fontSize: '18px',
                     fontWeight: 700,
-                    color: 'var(--text-main, #ffffff)',
+                    color: 'var(--text-main)',
                   }}
                 >
                   {t('forward.forward_messages', 'Переслать сообщения')}
@@ -100,7 +100,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                 <span
                   style={{
                     fontSize: '12px',
-                    color: 'var(--text-dim, #8e8e93)',
+                    color: 'var(--text-dim)',
                   }}
                 >
                   {t('forward.messages_count', { count: messagesToForward.length })}
@@ -112,7 +112,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: 'var(--text-dim, #8e8e93)',
+                  color: 'var(--text-dim)',
                   cursor: 'pointer',
                   padding: '8px',
                   borderRadius: '9999px',
@@ -122,12 +122,12 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                   transition: 'background 0.15s, color 0.15s',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-                  e.currentTarget.style.color = 'var(--text-main, #ffffff)';
+                  e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                  e.currentTarget.style.color = 'var(--text-main)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.color = 'var(--text-dim, #8e8e93)';
+                  e.currentTarget.style.color = 'var(--text-dim)';
                 }}
               >
                 <X size={20} />
@@ -140,13 +140,13 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  backgroundColor: 'var(--surface-container-high, rgba(255, 255, 255, 0.06))',
+                  backgroundColor: 'var(--surface-container)',
                   borderRadius: '9999px',
                   padding: '9px 16px',
                   border: 'none',
                 }}
               >
-                <Search size={16} style={{ color: 'var(--text-dim, #8e8e93)', flexShrink: 0 }} />
+                <Search size={16} style={{ color: 'var(--text-dim)', flexShrink: 0 }} />
                 <input
                   type="text"
                   value={searchQuery}
@@ -156,7 +156,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                     background: 'none',
                     border: 'none',
                     outline: 'none',
-                    color: 'var(--text-main, #ffffff)',
+                    color: 'var(--text-main)',
                     fontSize: '13.5px',
                     width: '100%',
                   }}
@@ -179,7 +179,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                   style={{
                     textAlign: 'center',
                     padding: '32px 16px',
-                    color: 'var(--text-dim, #8e8e93)',
+                    color: 'var(--text-dim)',
                     fontSize: '13px',
                   }}
                 >
@@ -209,7 +209,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                         textAlign: 'left',
                         boxSizing: 'border-box',
                       }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)')}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-hover)')}
                       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                     >
                       <div style={{ flexShrink: 0, position: 'relative' }}>
@@ -223,7 +223,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              color: '#ffffff',
+                              color: 'var(--accent-on-color, #ffffff)',
                             }}
                           >
                             <Bookmark size={20} />
@@ -243,7 +243,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                             style={{
                               fontSize: '14.5px',
                               fontWeight: 500,
-                              color: 'var(--text-main, #ffffff)',
+                              color: 'var(--text-main)',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
@@ -255,7 +255,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                             <span
                               style={{
                                 fontSize: '11px',
-                                color: 'var(--accent-color, #9b7dd4)',
+                                color: 'var(--accent-text, var(--accent-color, #9b7dd4))',
                                 fontWeight: 500,
                               }}
                             >
@@ -266,7 +266,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                         <span
                           style={{
                             fontSize: '12px',
-                            color: 'var(--text-dim, #8e8e93)',
+                            color: 'var(--text-dim)',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',

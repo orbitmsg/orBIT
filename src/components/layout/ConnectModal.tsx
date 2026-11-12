@@ -421,7 +421,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                   {avatarUrl ? (
                     <Avatar src={avatarUrl} style={{ width: '100%', height: '100%' }} />
                   ) : (
-                    <Camera size={24} className="text-white" />
+                    <Camera size={24} style={{ color: 'var(--accent-on-color, #ffffff)' }} />
                   )}
                 </button>
                 <input
@@ -443,7 +443,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                   color: tempWarning
                     ? '#ef4444'
                     : isFocused
-                    ? 'var(--accent-color, #7C3AED)'
+                    ? 'var(--accent-text, var(--accent-color, #7C3AED))'
                     : 'var(--text-dim, #9ca3af)',
                 }}
               >
@@ -508,7 +508,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                       }
                     });
                   }}
-                  className="w-full text-left flex items-center gap-2.5 p-2 rounded-xl bg-transparent hover:bg-[var(--surface-container-strong,rgba(255,255,255,0.08))] cursor-pointer transition-colors"
+                  className="w-full text-left flex items-center gap-2.5 p-2 rounded-xl bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer transition-colors"
                   style={{ border: 'none', outline: 'none' }}
                 >
                   <Avatar src={u.avatar_url} alt={u.nickname} className="w-8 h-8 rounded-full flex-shrink-0" />
@@ -517,7 +517,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                       {u.nickname}
                     </span>
                     {u.username && (
-                      <span className="text-[11px] text-[var(--accent-color,#7C3AED)] truncate leading-normal">
+                      <span className="text-[11px] text-[var(--accent-text,var(--accent-color,#7C3AED))] truncate leading-normal">
                         @{u.username}
                       </span>
                     )}
@@ -575,7 +575,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
               className="px-4 py-2 rounded-xl text-[14px] font-medium transition-colors cursor-pointer"
               style={{
                 backgroundColor: 'transparent',
-                color: 'var(--accent-color, #7C3AED)',
+                color: 'var(--accent-text, var(--accent-color, #7C3AED))',
                 border: 'none',
                 outline: 'none',
               }}
@@ -597,7 +597,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
               className="px-4 py-2 rounded-xl text-[14px] font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
               style={{
                 backgroundColor: 'transparent',
-                color: 'var(--accent-color, #7C3AED)',
+                color: 'var(--accent-text, var(--accent-color, #7C3AED))',
                 border: 'none',
                 outline: 'none',
               }}

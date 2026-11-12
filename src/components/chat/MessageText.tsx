@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-export const SpoilerSpan: React.FC<{ content: string }> = ({ content }) => {
+export const SpoilerSpan: React.FC<{ content: string; isOwn?: boolean }> = ({ content, isOwn = true }) => {
   const { t } = useTranslation();
   const [revealed, setRevealed] = useState(false);
   return (
@@ -12,7 +12,9 @@ export const SpoilerSpan: React.FC<{ content: string }> = ({ content }) => {
       }}
       style={{
         filter: revealed ? 'none' : 'blur(4px)',
-        backgroundColor: revealed ? 'transparent' : 'rgba(255, 255, 255, 0.2)',
+        backgroundColor: revealed
+          ? 'transparent'
+          : (isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 22%, transparent)' : 'color-mix(in srgb, var(--text-main) 14%, transparent)'),
         borderRadius: '3px',
         padding: '0 4px',
         cursor: 'pointer',
@@ -29,13 +31,17 @@ export const SpoilerSpan: React.FC<{ content: string }> = ({ content }) => {
 export function renderFormattedInlineText(
   rawText: string,
   themeColor: string,
-  onLinkClick?: (url: string) => void
+  onLinkClick?: (url: string) => void,
+  isOwn: boolean = true
 ): React.ReactNode[] {
   const regex = /(\[(.*?)\]\(((?:https?:\/\/|ftp:\/\/|[a-zA-Z0-9-]+\.[a-zA-Z]{2,})[^\s)]*)\)|(?:https?:\/\/|ftp:\/\/)[^\s<>"'\)]+|\b(?:[a-zA-Z0-9-]+\.)+(?:com|ru|org|net|io|dev|app|me|co|uk|de|fr|by|kz|info|biz|cc|tv|store|online|site|tech|xyz|top|live|pro|space|fun|cloud|link|[a-zA-Z]{2,63})(?:\/[^\s<>"'\)]*)?|(?<![\w@])@[a-zA-Z0-9_]{3,32}\b|\*\*(.*?)\*\*|<b>(.*?)<\/b>|\*(.*?)\*|<i>(.*?)<\/i>|<u>(.*?)<\/u>|~~(.*?)~~|<s>(.*?)<\/s>|`(.*?)`|\|\|(.*?)\|\||<spoiler>(.*?)<\/spoiler>)/gi;
   const result: React.ReactNode[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
   let keyCounter = 0;
+  const linkColor = isOwn
+    ? 'var(--bubble-own-text, #ffffff)'
+    : (themeColor && themeColor !== 'var(--accent-color)' ? themeColor : 'var(--accent-text, var(--accent-color))');
 
   while ((match = regex.exec(rawText)) !== null) {
     if (match.index > lastIndex) {
@@ -64,7 +70,7 @@ export function renderFormattedInlineText(
               onLinkClick(fullMatch);
             }
           }}
-          style={{ color: themeColor, textDecoration: 'none', cursor: 'pointer', fontWeight: 500 }}
+          style={{ color: linkColor, textDecoration: isOwn ? 'underline' : 'none', cursor: 'pointer', fontWeight: 500 }}
         >
           {fullMatch}
         </a>
@@ -84,7 +90,7 @@ export function renderFormattedInlineText(
               onLinkClick(targetUrl);
             }
           }}
-          style={{ color: themeColor, textDecoration: 'none', cursor: 'pointer' }}
+          style={{ color: linkColor, textDecoration: isOwn ? 'underline' : 'none', cursor: 'pointer' }}
         >
           {mdLinkLabel}
         </a>
@@ -107,7 +113,7 @@ export function renderFormattedInlineText(
               onLinkClick(targetUrl);
             }
           }}
-          style={{ color: themeColor, textDecoration: 'none', cursor: 'pointer' }}
+          style={{ color: linkColor, textDecoration: isOwn ? 'underline' : 'none', cursor: 'pointer' }}
         >
           {fullMatch}
         </a>
@@ -125,7 +131,7 @@ export function renderFormattedInlineText(
         <code
           key={`code-${keyCounter++}`}
           style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.12)',
+            backgroundColor: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 16%, transparent)' : 'color-mix(in srgb, var(--text-main) 10%, transparent)',
             padding: '2px 6px',
             borderRadius: '4px',
             fontFamily: 'monospace',
@@ -136,7 +142,7 @@ export function renderFormattedInlineText(
         </code>
       );
     } else if (spoilerText !== undefined) {
-      result.push(<SpoilerSpan key={`spoiler-${keyCounter++}`} content={spoilerText} />);
+      result.push(<SpoilerSpan key={`spoiler-${keyCounter++}`} content={spoilerText} isOwn={isOwn} />);
     } else {
       result.push(fullMatch);
     }
@@ -184,13 +190,13 @@ export const MessageText: React.FC<MessageTextProps> = ({
             <blockquote
               key={`quote-${idx}`}
               style={{
-                borderLeft: '3px solid var(--accent-color, #7C3AED)',
+                borderLeft: isOwn ? '3px solid var(--bubble-own-text, #ffffff)' : '3px solid var(--accent-text, var(--accent-color, #7C3AED))',
                 paddingLeft: '8px',
                 margin: '4px 0',
                 opacity: 0.95,
               }}
             >
-              {renderFormattedInlineText(quoteLines.join('\n'), themeColor, onLinkClick)}
+              {renderFormattedInlineText(quoteLines.join('\n'), themeColor, onLinkClick, isOwn)}
             </blockquote>
           );
           quoteLines = [];
@@ -198,7 +204,7 @@ export const MessageText: React.FC<MessageTextProps> = ({
         }
         nodes.push(
           <React.Fragment key={`line-${idx}`}>
-            {renderFormattedInlineText(line, themeColor, onLinkClick)}
+            {renderFormattedInlineText(line, themeColor, onLinkClick, isOwn)}
             {idx < lines.length - 1 && <br />}
           </React.Fragment>
         );
@@ -210,25 +216,25 @@ export const MessageText: React.FC<MessageTextProps> = ({
         <blockquote
           key="quote-last"
           style={{
-            borderLeft: '3px solid var(--accent-color, #7C3AED)',
+            borderLeft: isOwn ? '3px solid var(--bubble-own-text, #ffffff)' : '3px solid var(--accent-text, var(--accent-color, #7C3AED))',
             paddingLeft: '8px',
             margin: '4px 0',
             opacity: 0.95,
           }}
         >
-          {renderFormattedInlineText(quoteLines.join('\n'), themeColor, onLinkClick)}
+          {renderFormattedInlineText(quoteLines.join('\n'), themeColor, onLinkClick, isOwn)}
         </blockquote>
       );
     }
 
     return nodes;
-  }, [text, themeColor, onLinkClick]);
+  }, [text, themeColor, onLinkClick, isOwn]);
 
   const spacerWidth = isOwn ? (isPinned ? '72px' : '60px') : (isPinned ? '52px' : '40px');
 
   return (
     <div
-      className="select-text"
+      className={`select-text ${isOwn ? 'select-text-own' : 'select-text-incoming'}`}
       style={{
         fontSize: 'inherit',
         lineHeight: 1.5,

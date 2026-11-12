@@ -99,8 +99,8 @@ export const SignalThemePicker: React.FC<{
                 : 'var(--surface-container, #262626)',
               border: isActive
                 ? '2px solid var(--accent-color, #2c6bed)'
-                : '2px solid transparent',
-              color: isActive ? 'var(--accent-color, #2c6bed)' : 'var(--text-main)',
+                : '2px solid var(--border-color, transparent)',
+              color: isActive ? 'var(--accent-text, var(--accent-color, #2c6bed))' : 'var(--text-main)',
               transition: 'all 0.18s ease',
               boxSizing: 'border-box',
             }}
@@ -157,7 +157,7 @@ export const SignalChatColorPicker: React.FC = () => {
           padding: '14px 12px',
           backgroundColor: 'var(--bg-primary, #121212)',
           borderRadius: 12,
-          border: '1px solid var(--border-color, rgba(255,255,255,0.06))',
+          border: '1px solid var(--border-color)',
         }}
       >
         <div
@@ -170,7 +170,7 @@ export const SignalChatColorPicker: React.FC = () => {
             padding: '6.5px 12px 6.5px 11px',
             borderRadius: `var(--bubble-radius, ${bubbleRadius}px)`,
             background: 'var(--chat-bubble-incoming-bg, var(--surface-container, #282828))',
-            color: 'var(--chat-bubble-incoming-text, var(--text-main, #ffffff))',
+            color: 'var(--chat-bubble-incoming-text, var(--text-main))',
             fontSize: 'calc(12px * var(--text-scale, 1))',
           }}
         >
@@ -233,7 +233,7 @@ export const SignalChatColorPicker: React.FC = () => {
             padding: '6.5px 12px 6.5px 11px',
             borderRadius: `var(--bubble-radius, ${bubbleRadius}px)`,
             background: chatColor || DEFAULT_CHAT_COLOR,
-            color: '#ffffff',
+            color: 'var(--bubble-own-text, #ffffff)',
             fontSize: 'calc(12px * var(--text-scale, 1))',
           }}
         >
@@ -272,7 +272,7 @@ export const SignalChatColorPicker: React.FC = () => {
               <span
                 className="tabular-nums select-none"
                 style={{
-                  color: 'rgba(255, 255, 255, 0.9)',
+                  color: 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 82%, transparent)',
                   fontSize: 'calc(11px * var(--text-scale, 1))',
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -281,7 +281,7 @@ export const SignalChatColorPicker: React.FC = () => {
               >
                 20:20
                 <span style={{ display: 'inline-flex', width: '26px', minWidth: '26px', flexShrink: 0, justifyContent: 'flex-end' }}>
-                  <MessageStatus status="read" isOwn={true} />
+                  <MessageStatus status="read" isOwn={true} color="var(--bubble-own-text, #ffffff)" />
                 </span>
               </span>
             </span>
@@ -342,8 +342,9 @@ export const SignalChatColorPicker: React.FC = () => {
             width: 36,
             height: 36,
             borderRadius: '50%',
-            backgroundColor: isCustomActive ? chatColor : '#ffffff',
-            color: isCustomActive ? '#ffffff' : '#121212',
+            backgroundColor: isCustomActive ? chatColor : 'var(--surface-container-strong)',
+            color: isCustomActive ? 'var(--bubble-own-text, #ffffff)' : 'var(--text-main)',
+            border: '1px solid var(--border-color)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -356,7 +357,7 @@ export const SignalChatColorPicker: React.FC = () => {
           }}
         >
           {isCustomActive ? (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--bubble-own-text, #ffffff)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
           ) : (
@@ -384,7 +385,7 @@ export const SignalChatColorPicker: React.FC = () => {
             cursor: 'pointer',
             fontSize: 13,
             fontWeight: 500,
-            color: 'var(--accent-color, #2c6bed)',
+            color: 'var(--accent-text, var(--accent-color, #2c6bed))',
             padding: '6px 12px',
             borderRadius: 8,
             transition: 'opacity 0.15s ease',
@@ -612,7 +613,7 @@ export const BubbleSlider = ({
             style={{
               fontSize: 13,
               fontWeight: 600,
-              color: labelColor || 'var(--accent-color, #9b7dd4)',
+              color: labelColor || 'var(--accent-text, var(--accent-color, #9b7dd4))',
               marginBottom: 10,
             }}
           >
@@ -625,7 +626,7 @@ export const BubbleSlider = ({
             style={{
               fontSize: 13,
               fontWeight: 600,
-              color: labelColor || 'var(--accent-color, #9b7dd4)',
+              color: labelColor || 'var(--accent-text, var(--accent-color, #9b7dd4))',
               minWidth: 40,
               textAlign: 'right',
             }}
@@ -797,22 +798,22 @@ export const ChatSettingsTab: React.FC<ChatSettingsTabProps> = ({ fontOptions })
                     borderRadius: 12,
                     userSelect: 'none',
                     backgroundColor: isActive
-                      ? 'color-mix(in srgb, var(--accent-color, #5865F2) 15%, var(--surface-container-strong, #232428))'
-                      : 'var(--surface-container-soft, rgba(255,255,255,0.04))',
+                      ? 'var(--surface-active, color-mix(in srgb, var(--accent-color, #5865F2) 15%, var(--surface-container-strong)))'
+                      : 'var(--surface-container-soft)',
                     border: isActive
                       ? '2px solid var(--accent-color, #5865F2)'
-                      : '2px solid var(--border-color, rgba(255,255,255,0.06))',
-                    color: isActive ? 'var(--text-heading, #ffffff)' : MD3.onSurface,
+                      : '2px solid var(--border-color)',
+                    color: isActive ? 'var(--text-heading, var(--text-main))' : MD3.onSurface,
                     transition: 'background-color 150ms ease, border-color 150ms ease, transform 150ms ease',
                   }}
                   onMouseEnter={(e) => {
                     if (!isActive) {
-                      e.currentTarget.style.backgroundColor = 'var(--surface-muted, rgba(255,255,255,0.08))';
+                      e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!isActive) {
-                      e.currentTarget.style.backgroundColor = 'var(--surface-container-soft, rgba(255,255,255,0.04))';
+                      e.currentTarget.style.backgroundColor = 'var(--surface-container-soft)';
                     }
                   }}
                 >
@@ -824,7 +825,7 @@ export const ChatSettingsTab: React.FC<ChatSettingsTabProps> = ({ fontOptions })
                       borderRadius: '50%',
                       overflow: 'hidden',
                       backgroundColor: modeTokens.bgPrimary,
-                      border: `1.5px solid ${isActive ? modeTokens.accent : 'rgba(255,255,255,0.18)'}`,
+                      border: `1.5px solid ${isActive ? modeTokens.accent : 'var(--border-color)'}`,
                       boxShadow: isActive ? `0 0 0 2px color-mix(in srgb, ${modeTokens.accent} 35%, transparent)` : 'none',
                       flexShrink: 0,
                     }}
@@ -862,7 +863,7 @@ export const ChatSettingsTab: React.FC<ChatSettingsTabProps> = ({ fontOptions })
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
-                      color: isActive ? 'var(--accent-color, #5865F2)' : MD3.onSurface,
+                      color: isActive ? 'var(--accent-text, var(--accent-color, #5865F2))' : MD3.onSurface,
                     }}
                   >
                     {tintName}
@@ -879,7 +880,7 @@ export const ChatSettingsTab: React.FC<ChatSettingsTabProps> = ({ fontOptions })
               justifyContent: 'space-between',
               gap: 12,
               paddingTop: 10,
-              borderTop: '1px solid var(--border-color, rgba(255,255,255,0.08))',
+              borderTop: '1px solid var(--border-color)',
               flexWrap: 'wrap',
             }}
           >
@@ -910,14 +911,14 @@ export const ChatSettingsTab: React.FC<ChatSettingsTabProps> = ({ fontOptions })
                   height: 22,
                   borderRadius: '50%',
                   background: isCustomColor ? chatColor : activeTintTokens.bubbleOwnBg,
-                  border: '1.5px solid rgba(255,255,255,0.28)',
+                  border: '1.5px solid var(--border-color)',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
                 }}
               >
-                {isCustomColor && <Check size={12} strokeWidth={3} color="#ffffff" />}
+                {isCustomColor && <Check size={12} strokeWidth={3} color="var(--bubble-own-text, #ffffff)" />}
               </span>
               <span>{t('settings.custom_color', 'Свой цвет')}</span>
               <input
@@ -939,7 +940,7 @@ export const ChatSettingsTab: React.FC<ChatSettingsTabProps> = ({ fontOptions })
                 cursor: 'pointer',
                 fontSize: 12.5,
                 fontWeight: 500,
-                color: 'var(--accent-color, #5865F2)',
+                color: 'var(--accent-text, var(--accent-color, #5865F2))',
                 padding: '4px 8px',
                 borderRadius: 8,
                 transition: 'opacity 150ms ease',

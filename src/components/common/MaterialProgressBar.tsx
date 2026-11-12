@@ -192,14 +192,59 @@ export const MaterialProgressBar = forwardRef<MaterialProgressBarHandle, Materia
       const isExpanded = isCurrentHovered || isCurrentDragging;
 
       const strokeW = isExpanded ? 5 : 4;
+      const isLightMode =
+        typeof document !== 'undefined' &&
+        (document.documentElement.getAttribute('data-theme-light') === 'true' ||
+          document.documentElement.getAttribute('data-theme') === 'light');
       let computedActive = '#5865F2';
-      let computedTrack = 'rgba(255, 255, 255, 0.16)';
+      let computedTrack = isLightMode ? 'rgba(0, 0, 0, 0.16)' : 'rgba(255, 255, 255, 0.18)';
 
       const containerEl = containerRef.current;
       if (containerEl) {
         const comp = getComputedStyle(containerEl);
-        computedActive = activeColor || comp.getPropertyValue('--player-progress').trim() || comp.getPropertyValue('--accent-color').trim() || '#7C3AED';
-        computedTrack = trackColor || comp.getPropertyValue('--player-track-bg').trim() || comp.getPropertyValue('--surface-muted').trim() || 'rgba(255, 255, 255, 0.16)';
+        const resolveVarColor = (raw: string): string => {
+          const trimmed = raw.trim();
+          if (!trimmed) return '';
+          const varMatch = trimmed.match(/^var\(\s*(--[a-zA-Z0-9-_]+)/);
+          if (varMatch) {
+            return resolveVarColor(comp.getPropertyValue(varMatch[1]));
+          }
+          if (trimmed.includes('var(')) return '';
+          return trimmed;
+        };
+
+        const hexToRgba = (hex: string, alpha: number): string => {
+          const clean = hex.replace('#', '');
+          if (clean.length === 6) {
+            const r = parseInt(clean.slice(0, 2), 16);
+            const g = parseInt(clean.slice(2, 4), 16);
+            const b = parseInt(clean.slice(4, 6), 16);
+            if (!Number.isNaN(r) && !Number.isNaN(g) && !Number.isNaN(b)) {
+              return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            }
+          }
+          return '';
+        };
+
+        const activeCandidate =
+          (activeColor ? resolveVarColor(activeColor) : '') ||
+          resolveVarColor(comp.getPropertyValue('--player-progress')) ||
+          resolveVarColor(comp.getPropertyValue('--accent-color'));
+        if (activeCandidate) {
+          computedActive = activeCandidate;
+        }
+
+        const textDimHex = comp.getPropertyValue('--text-dim').trim();
+        const dimTrackFallback = textDimHex.startsWith('#') ? hexToRgba(textDimHex, 0.28) : '';
+        const trackCandidate =
+          (trackColor ? resolveVarColor(trackColor) : '') ||
+          resolveVarColor(comp.getPropertyValue('--player-track-bg')) ||
+          dimTrackFallback ||
+          resolveVarColor(comp.getPropertyValue('--border-color')) ||
+          resolveVarColor(comp.getPropertyValue('--surface-muted'));
+        if (trackCandidate) {
+          computedTrack = trackCandidate;
+        }
       }
 
       if (progressX < width) {
@@ -252,7 +297,7 @@ export const MaterialProgressBar = forwardRef<MaterialProgressBarHandle, Materia
         ctx.arc(progressX, centerY, thumbRadius, 0, Math.PI * 2);
         ctx.fillStyle = computedActive;
         if (isExpanded) {
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
           ctx.shadowBlur = 4;
           ctx.shadowOffsetY = 1;
         }

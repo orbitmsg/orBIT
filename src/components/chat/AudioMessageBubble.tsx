@@ -237,7 +237,7 @@ export const AudioMessageBubble = memo(({
             className="font-semibold truncate"
             style={{
               fontSize: orbitFs(13),
-              color: isOwn ? '#ffffff' : 'var(--text-main)',
+              color: isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--chat-bubble-incoming-text, var(--text-main))',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -247,7 +247,12 @@ export const AudioMessageBubble = memo(({
           >
             {artist ? `${artist} – ${title}` : title}
           </div>
-          <div style={{ fontSize: orbitFs(11), color: isOwn ? 'rgba(255, 255, 255, 0.8)' : 'var(--text-dim)' }}>
+          <div
+            style={{
+              fontSize: orbitFs(11),
+              color: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 80%, transparent)' : 'var(--text-dim)',
+            }}
+          >
             {isUploading ? `${uploadedMbStr} / ${sizeMbStr} MB` : (isLoading ? t('chatWindow.loading') : timeDisplay)}
           </div>
         </div>
@@ -269,7 +274,12 @@ export const AudioMessageBubble = memo(({
         {timeNode ? (
           timeNode
         ) : (
-          <span style={{ fontSize: orbitFs(11), color: isOwn ? 'rgba(255, 255, 255, 0.9)' : 'var(--text-dim)' }}>
+          <span
+            style={{
+              fontSize: orbitFs(11),
+              color: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 90%, transparent)' : 'var(--text-dim)',
+            }}
+          >
             {formatTimeOfDay(msg.time)}
           </span>
         )}

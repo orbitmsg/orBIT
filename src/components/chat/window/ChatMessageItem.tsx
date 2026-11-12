@@ -204,9 +204,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     const mIsOwn = isMessageOutgoing(m, myCode, myNickname, activeChat, myUserId);
     const isFailed = m.status === 'failed' || m.status === 'error';
     return (
-      <span className="tabular-nums select-none message-time-badge" style={{ color: mIsOwn ? 'rgba(255, 255, 255, 0.9)' : 'var(--text-dim)', fontSize: orbitFs(11), display: 'inline-flex', alignItems: 'center', lineHeight: 1, userSelect: 'none', WebkitUserSelect: 'none' }}>
+      <span className="tabular-nums select-none message-time-badge" style={{ color: mIsOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 88%, transparent)' : 'var(--text-dim)', fontSize: orbitFs(11), display: 'inline-flex', alignItems: 'center', lineHeight: 1, userSelect: 'none', WebkitUserSelect: 'none' }}>
         {isPinned && (
-          <CustomPinIcon size={12} style={{ color: mIsOwn ? 'rgba(255, 255, 255, 0.95)' : 'var(--accent-color, #7C3AED)', userSelect: 'none' }} className="flex-shrink-0 select-none" />
+          <CustomPinIcon size={12} style={{ color: mIsOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--accent-text, var(--accent-color, #7C3AED))', userSelect: 'none' }} className="flex-shrink-0 select-none" />
         )}
         {m.isEdited && (
           <span style={{ marginRight: '4px', opacity: 0.75, fontSize: orbitFs(10), fontStyle: 'italic', userSelect: 'none', WebkitUserSelect: 'none' }}>
@@ -231,6 +231,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   : 'sent'
               }
               isOwn={mIsOwn}
+              color={mIsOwn ? 'var(--bubble-own-text, #ffffff)' : undefined}
               onRetry={isFailed && handleRetryMessage ? () => handleRetryMessage(m.id || index) : undefined}
             />
           </span>
@@ -242,7 +243,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   const bubbleStyle = useCallback((bIsOwn: boolean, extra?: React.CSSProperties): React.CSSProperties => {
     const baseBg = bIsOwn ? 'var(--chat-bubble-own-bg, #2c6bed)' : 'var(--chat-bubble-incoming-bg, var(--surface-container))';
     const selectedBg = bIsOwn
-      ? 'color-mix(in srgb, var(--chat-bubble-own-bg, #2c6bed) 76%, #000)'
+      ? 'color-mix(in srgb, var(--accent-color, #2c6bed) 76%, #000)'
       : 'color-mix(in srgb, var(--chat-bubble-incoming-bg, var(--surface-container)) 78%, var(--accent-color, #7C3AED))';
     return {
       padding: '6.5px 12px 6.5px 11px',
@@ -250,10 +251,10 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
       background: isSelected ? selectedBg : baseBg,
       filter: isSelected ? 'brightness(0.9) contrast(1.05)' : 'none',
       border: 'none',
-      color: bIsOwn ? '#ffffff' : 'var(--chat-bubble-incoming-text, var(--text-main, #ffffff))',
+      color: bIsOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--chat-bubble-incoming-text, var(--text-main))',
       fontSize: orbitFs(12),
       maxWidth: 'min(440px, 75%)',
-      transition: 'background-color 0.15s ease, filter 0.15s ease',
+      transition: 'background 0.15s ease, filter 0.15s ease',
       ...extra,
     };
   }, [bubbleRadius, isSelected]);
@@ -418,11 +419,11 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
               }
             }}
           >
-            <File size={22} className="text-[var(--accent-light)] flex-shrink-0" />
+            <File size={22} className="flex-shrink-0" style={{ color: mIsOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--accent-text, var(--accent-color))' }} />
             <div className="flex-1 min-w-0 select-none">
-              <div className="text-xs font-medium text-[var(--text-main)] truncate select-none">{file.name}</div>
+              <div className="text-xs font-medium truncate select-none" style={{ color: mIsOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--chat-bubble-incoming-text, var(--text-main))' }}>{file.name}</div>
               {file.size ? (
-                <div className="text-[10.5px] text-[var(--text-dim)] select-none">
+                <div className="text-[10.5px] select-none" style={{ color: mIsOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 78%, transparent)' : 'var(--text-dim)' }}>
                   {file.size > 1024 * 1024 ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` : `${Math.round(file.size / 1024)} KB`}
                 </div>
               ) : null}
@@ -431,7 +432,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         ))}
         {m.text ? (
           <div className="flex items-end justify-between gap-3 px-1 pt-1 select-none">
-            <div className="text-[13.5px] text-[var(--text-main)] leading-snug break-words flex-1 select-none">
+            <div className="text-[13.5px] leading-snug break-words flex-1 select-none" style={{ color: mIsOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--chat-bubble-incoming-text, var(--text-main))' }}>
               {m.text}
             </div>
             <div className="flex items-center justify-end gap-1 flex-shrink-0 select-none">
@@ -551,8 +552,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: isSelected ? 'var(--accent-color, #7C3AED)' : 'rgba(255, 255, 255, 0.12)',
-          border: isSelected ? 'none' : '1px solid rgba(255, 255, 255, 0.18)',
+          backgroundColor: isSelected ? 'var(--accent-color, #7C3AED)' : 'var(--surface-container-soft)',
+          border: isSelected ? 'none' : '1.5px solid var(--border-color)',
           transition: 'background-color 0.1s ease, border-color 0.1s ease, transform 0.1s ease',
           pointerEvents: 'none',
           zIndex: 10,
@@ -560,7 +561,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         }}
       >
         {isSelected && (
-          <Check size={14} strokeWidth={3.2} color="#ffffff" />
+          <Check size={14} strokeWidth={3.2} color="var(--accent-on-color, #ffffff)" />
         )}
       </div>
     );
@@ -577,8 +578,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
       <div
         className="date-badge-pill select-none"
         style={{
-          backgroundColor: 'color-mix(in srgb, var(--surface-container, rgba(255,255,255,0.06)) 92%, #000)',
-          color: 'var(--text-main, #ffffff)',
+          backgroundColor: 'var(--surface-container)',
+          color: 'var(--text-main)',
           fontSize: '12px',
           fontWeight: 500,
           padding: '3px 12px',
@@ -587,7 +588,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           alignItems: 'center',
           justifyContent: 'center',
           boxShadow: 'none',
-          border: 'none',
+          border: '1px solid var(--border-color)',
           filter: 'none',
           backdropFilter: 'none',
           WebkitBackdropFilter: 'none',
@@ -665,8 +666,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         >
           <div
             style={{
-              backgroundColor: 'color-mix(in srgb, var(--surface-container, rgba(255,255,255,0.06)) 92%, #000)',
-              color: 'var(--text-main, #ffffff)',
+              backgroundColor: 'var(--surface-container)',
+              color: 'var(--text-main)',
               fontSize: '12px',
               fontWeight: 500,
               padding: '3px 6px 3px 12px',
@@ -676,7 +677,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow: 'none',
-              border: 'none',
+              border: '1px solid var(--border-color)',
               filter: 'none',
               backdropFilter: 'none',
               WebkitBackdropFilter: 'none',
@@ -693,8 +694,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
               style={{
                 fontSize: '11px',
                 fontWeight: 600,
-                color: 'rgba(255, 255, 255, 0.9)',
-                backgroundColor: 'rgba(0, 0, 0, 0.35)',
+                color: 'var(--text-dim)',
+                backgroundColor: 'var(--surface-container-soft)',
                 padding: '1px 7px',
                 borderRadius: '9999px',
                 lineHeight: 1.35,
@@ -1152,7 +1153,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 className="max-w-[min(440px, 75%)] min-w-[60px] w-fit mt-1"
                 style={bubbleStyle(isOwn, isMessagePinned(msg) ? { outline: '1px solid color-mix(in srgb, var(--md-sys-color-primary) 35%, transparent)' } : {})}
               >
-                <MessageText text={msg.text.replace(/^\[(?:Photo|GIF|Sticker|Video)\]\s*https?:\/\/[^\s]+/i, '').trim() || msg.text} timeNode={timeBadge(msg, isMessagePinned(msg))} themeColor={themeColor} isOwn={isOwn} isPinned={isMessagePinned(msg)} onLinkClick={handleLinkClick} />
+                <MessageText text={msg.text.replace(/^\[(?:Photo|GIF|Sticker|Video)\]\s*https?:\/\/[^\s]+/i, '').trim() || msg.text} timeNode={timeBadge(msg, isMessagePinned(msg))} themeColor={isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--accent-text, var(--accent-color))'} isOwn={isOwn} isPinned={isMessagePinned(msg)} onLinkClick={handleLinkClick} />
               </div>
             )}
 
@@ -1174,12 +1175,12 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                       onChange={(e) => setEditText(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') { triggerEditMessage(index, editText); setEditingIndex(null); setEditText(''); } if (e.key === 'Escape') { setEditingIndex(null); setEditText(''); } }}
                       className="bg-transparent border-b outline-none py-1 select-text w-full"
-                      style={{ borderColor: 'color-mix(in srgb, var(--accent-color, #7C3AED) 30%, transparent)', color: 'var(--text-main, #ffffff)', fontSize: orbitFs(11) }}
+                      style={{ borderColor: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 35%, transparent)' : 'var(--border-color)', color: isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--chat-bubble-incoming-text, var(--text-main))', fontSize: orbitFs(11) }}
                       autoFocus
                     />
                     <div className="flex gap-2 justify-end select-none">
-                      <button type="button" onClick={() => { setEditingIndex(null); setEditText(''); }} className="uppercase" style={{ color: 'var(--text-dim, #4b5563)', fontSize: orbitFs(8) }}>{t('common.cancel')}</button>
-                      <button type="button" onClick={() => { triggerEditMessage(index, editText); setEditingIndex(null); setEditText(''); }} className="uppercase font-bold" style={{ color: 'var(--accent-color, #7C3AED)', fontSize: orbitFs(8) }}>{t('common.save')}</button>
+                      <button type="button" onClick={() => { setEditingIndex(null); setEditText(''); }} className="uppercase" style={{ color: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 75%, transparent)' : 'var(--text-dim)', fontSize: orbitFs(8) }}>{t('common.cancel')}</button>
+                      <button type="button" onClick={() => { triggerEditMessage(index, editText); setEditingIndex(null); setEditText(''); }} className="uppercase font-bold" style={{ color: isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--accent-text, var(--accent-color, #7C3AED))', fontSize: orbitFs(8) }}>{t('common.save')}</button>
                     </div>
                   </div>
                 ) : quotes.length > 0 ? (
@@ -1190,24 +1191,24 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                         className="flex w-full items-start gap-2 mb-0.5"
                         style={{
                           padding: '5px 10px',
-                          backgroundColor: isOwn ? 'rgba(255, 255, 255, 0.15)' : 'color-mix(in srgb, var(--accent-color) 12%, transparent)',
+                          backgroundColor: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 15%, transparent)' : 'color-mix(in srgb, var(--accent-color) 12%, transparent)',
                           borderRadius: '0 6px 6px 0',
-                          borderLeft: isOwn ? '3px solid #ffffff' : '3px solid var(--accent-color)',
+                          borderLeft: isOwn ? '3px solid var(--bubble-own-text, #ffffff)' : '3px solid var(--accent-text, var(--accent-color))',
                         }}
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="truncate font-semibold flex items-center gap-1" style={{ color: isOwn ? '#ffffff' : 'var(--accent-color)', fontSize: '12.5px', lineHeight: '1.2' }}>
+                          <p className="truncate font-semibold flex items-center gap-1" style={{ color: isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--accent-text, var(--accent-color))', fontSize: '12.5px', lineHeight: '1.2' }}>
                             {activeChat?.type === 'channel' && <ChannelMegaphoneIcon size={12} className="flex-shrink-0" />}
                             <span>{q.sender}</span>
                           </p>
-                          <p className="truncate" style={{ color: isOwn ? 'rgba(255, 255, 255, 0.9)' : 'var(--text-main)', fontSize: '13px', lineHeight: '1.35', marginTop: '2px' }}>{q.text}</p>
+                          <p className="truncate" style={{ color: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 90%, transparent)' : 'var(--chat-bubble-incoming-text, var(--text-main))', fontSize: '13px', lineHeight: '1.35', marginTop: '2px' }}>{q.text}</p>
                         </div>
                       </div>
                     ))}
-                    <MessageText text={mainText} timeNode={timeBadge(msg, isMessagePinned(msg))} themeColor={themeColor} isOwn={isOwn} onLinkClick={handleLinkClick} />
+                    <MessageText text={mainText} timeNode={timeBadge(msg, isMessagePinned(msg))} themeColor={isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--accent-text, var(--accent-color))'} isOwn={isOwn} onLinkClick={handleLinkClick} />
                   </div>
                 ) : (
-                  <MessageText text={mainText} timeNode={timeBadge(msg, isMessagePinned(msg))} themeColor={themeColor} isOwn={isOwn} onLinkClick={handleLinkClick} />
+                  <MessageText text={mainText} timeNode={timeBadge(msg, isMessagePinned(msg))} themeColor={isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--accent-text, var(--accent-color))'} isOwn={isOwn} onLinkClick={handleLinkClick} />
                 )}
               </div>
             )}

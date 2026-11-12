@@ -117,7 +117,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   onBack();
                 }}
                 aria-label={t('chatWindow.back')}
-                className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-main)] transition-colors hover:bg-white/10 border-none outline-none bg-transparent cursor-pointer"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-main)] transition-colors hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] border-none outline-none bg-transparent cursor-pointer"
               >
                 <ArrowLeft size={20} />
               </button>
@@ -137,7 +137,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   <OnlineIndicator
                     online={isOnline}
                     size="xs"
-                    ringColor="var(--bg-secondary, #2b2d31)"
+                    ringColor="var(--bg-primary, #313338)"
                     ariaLabel={t('chatWindow.online')}
                   />
                 )}
@@ -146,12 +146,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             <div className="flex flex-col min-w-0 flex-1 select-none" style={{ gap: 0, userSelect: 'none', WebkitUserSelect: 'none' }}>
               <div className="flex items-center gap-1.5 min-w-0 select-none">
                 {activeChat?.type === 'channel' && (
-                  <ChannelMegaphoneIcon size={16} className="flex-shrink-0 text-[var(--accent-color)]" style={{ marginRight: 2 }} />
+                  <ChannelMegaphoneIcon size={16} className="flex-shrink-0 text-[var(--accent-text,var(--accent-color))]" style={{ marginRight: 2 }} />
                 )}
                 {activeChat?.type === 'group' && (
-                  <GroupUsersIcon size={16} className="flex-shrink-0 text-[var(--accent-color)]" style={{ marginRight: 2 }} />
+                  <GroupUsersIcon size={16} className="flex-shrink-0 text-[var(--accent-text,var(--accent-color))]" style={{ marginRight: 2 }} />
                 )}
-                <h2 className="font-bold text-[14px] truncate select-none m-0" style={{ color: 'var(--text-main)', userSelect: 'none', WebkitUserSelect: 'none' }}>
+                <h2 className="font-bold text-[14px] truncate select-none m-0" style={{ color: 'var(--text-heading, var(--text-main))', userSelect: 'none', WebkitUserSelect: 'none' }}>
                   {activeChatId === 'notes' ? t('connectModal.notes') : activeChat?.name}
                 </h2>
                 {(activeChat?.isOfficial || activeChatId === 'system_support') && (
@@ -165,7 +165,13 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   size={20}
                 />
                 {activeChat?.type === 'channel' && activeChat.isOfficial && (
-                  <span className="px-2 py-0.5 rounded-full bg-[var(--accent-color)]/20 text-[var(--accent-color)] text-[10px] font-bold uppercase tracking-wider flex-shrink-0">
+                  <span
+                    className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider flex-shrink-0"
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, var(--accent-color) 16%, transparent)',
+                      color: 'var(--accent-text, var(--accent-color))',
+                    }}
+                  >
                     {t('channel.official')}
                   </span>
                 )}
@@ -179,7 +185,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   </span>
                 ) : activeChat?.type === 'group' ? (
                   groupTypingUsers && groupTypingUsers.length > 0 ? (
-                    <span className="text-[11px] font-semibold text-[var(--accent-color)] inline-flex items-center gap-1.5">
+                    <span className="text-[11px] font-semibold text-[var(--accent-text,var(--accent-color))] inline-flex items-center gap-1.5">
                       <span>
                         {(() => {
                           const count = groupTypingUsers.length;
@@ -228,19 +234,19 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                     </span>
                   ) : null
                 ) : !isServerConnected ? (
-                  <span className="text-[11px] font-semibold text-[var(--accent-color)] animate-pulse">
+                  <span className="text-[11px] font-semibold text-[var(--accent-text,var(--accent-color))] animate-pulse">
                     {t('common.connecting') || 'соединение...'}
                   </span>
                 ) : (
                   <span
                     className="text-[11.5px] font-normal"
                     style={{
-                      color: isOnline ? 'var(--accent-color)' : 'var(--text-dim)',
-                      textShadow: isOnline ? '0 0 1.5px color-mix(in srgb, var(--accent-color) 30%, transparent)' : 'none',
+                      color: isOnline ? 'var(--accent-text, var(--accent-color))' : 'var(--text-dim)',
+                      textShadow: isOnline ? '0 0 1.5px color-mix(in srgb, var(--accent-text, var(--accent-color)) 24%, transparent)' : 'none',
                     }}
                   >
                     {otherUserTyping && activeChatId !== 'notes' ? (
-                      <span className="text-[11.5px] font-semibold inline-flex items-center gap-1.5" style={{ color: 'var(--accent-color)' }}>
+                      <span className="text-[11.5px] font-semibold inline-flex items-center gap-1.5" style={{ color: 'var(--accent-text, var(--accent-color))' }}>
                         <span>
                           {otherUserAction === 'sticker'
                             ? t('chatWindow.choosing_sticker')
@@ -262,7 +268,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             {activeChatId === 'system_support' && supportService.isAdmin && (
               <button
                 type="button"
-                className="p-2 rounded-xl transition-colors duration-200 text-[var(--accent-color,#7C3AED)] hover:bg-white/10 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center relative"
+                className="p-2 rounded-xl transition-colors duration-200 text-[var(--accent-text,var(--accent-color,#7C3AED))] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center relative"
                 onClick={(e) => {
                   e.stopPropagation();
                   onOpenSupportTickets();
@@ -280,7 +286,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             
             <button
               type="button"
-              className="p-2 rounded-xl transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-white/10 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
+              className="p-2 rounded-xl transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
               onClick={(e) => {
                 e.stopPropagation();
                 useChatStore.getState().openInChatSearch('this_chat');
@@ -294,7 +300,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             {activeChatId !== 'notes' && activeChat?.type !== 'channel' && voiceCallsEnabled && (
               <button
                 type="button"
-                className="p-2 rounded-xl transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-white/10 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
+                className="p-2 rounded-xl transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
                 onClick={(e) => {
                   e.stopPropagation();
                   onAudioCallPress();

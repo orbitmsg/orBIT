@@ -152,8 +152,8 @@ export const QuickEntry = ({ onStatusChange }: QuickEntryProps) => {
   return (
     <div
       style={{
-        backgroundColor: '#161224',
-        border: '1px solid rgba(93, 63, 211, 0.25)',
+        backgroundColor: 'var(--surface-container)',
+        border: '1px solid var(--border-color)',
         borderRadius: '16px',
         padding: '20px 24px',
         width: '100%',
@@ -175,7 +175,7 @@ export const QuickEntry = ({ onStatusChange }: QuickEntryProps) => {
             style={{
               fontSize: '16px',
               fontWeight: 700,
-              color: '#ffffff',
+              color: 'var(--text-main)',
               margin: 0,
               letterSpacing: '0.02em',
             }}
@@ -185,7 +185,7 @@ export const QuickEntry = ({ onStatusChange }: QuickEntryProps) => {
           <p
             style={{
               fontSize: '13px',
-              color: '#b0a8c8',
+              color: 'var(--text-dim)',
               margin: '4px 0 0',
             }}
           >
@@ -205,11 +205,11 @@ export const QuickEntry = ({ onStatusChange }: QuickEntryProps) => {
                   gap: '6px',
                   padding: '4px 12px',
                   borderRadius: '999px',
-                  backgroundColor: 'rgba(93, 63, 211, 0.15)',
-                  border: '1px solid rgba(93, 63, 211, 0.2)',
+                  backgroundColor: 'color-mix(in srgb, var(--accent-color) 15%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--accent-color) 28%, transparent)',
                   fontSize: '11px',
                   fontWeight: 600,
-                  color: '#a88cf0',
+                  color: 'var(--accent-text, var(--accent-color))',
                 }}
               >
                 <div
@@ -217,8 +217,8 @@ export const QuickEntry = ({ onStatusChange }: QuickEntryProps) => {
                     width: '6px',
                     height: '6px',
                     borderRadius: '50%',
-                    backgroundColor: '#5D3FD3',
-                    boxShadow: '0 0 8px rgba(93, 63, 211, 0.5)',
+                    backgroundColor: 'var(--accent-color)',
+                    boxShadow: '0 0 8px color-mix(in srgb, var(--accent-color) 50%, transparent)',
                     animation: 'pulse-dot 1.5s ease-in-out infinite',
                   }}
                 />
@@ -244,13 +244,13 @@ export const QuickEntry = ({ onStatusChange }: QuickEntryProps) => {
               width: '180px',
               height: '180px',
               borderRadius: '16px',
-              backgroundColor: 'rgba(93, 63, 211, 0.1)',
+              backgroundColor: 'var(--surface-container-strong)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Loader size={36} className="animate-spin" style={{ color: '#5D3FD3' }} />
+            <Loader size={36} className="animate-spin" style={{ color: 'var(--accent-color)' }} />
           </div>
         ) : status.running && status.url ? (
           <div
@@ -270,11 +270,11 @@ export const QuickEntry = ({ onStatusChange }: QuickEntryProps) => {
               width: '180px',
               height: '180px',
               borderRadius: '16px',
-              border: '2px dashed rgba(93, 63, 211, 0.2)',
+              border: '2px dashed var(--border-color)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#b0a8c8',
+              color: 'var(--text-dim)',
               fontSize: '13px',
               textAlign: 'center',
               padding: '16px',
@@ -292,7 +292,7 @@ export const QuickEntry = ({ onStatusChange }: QuickEntryProps) => {
               alignItems: 'center',
               gap: '4px',
               fontSize: '12px',
-              color: '#b0a8c8',
+              color: 'var(--text-dim)',
               textAlign: 'center',
             }}
           >
@@ -304,12 +304,12 @@ export const QuickEntry = ({ onStatusChange }: QuickEntryProps) => {
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
-                  color: '#b0a8c8',
+                  color: 'var(--text-dim)',
                   padding: '2px',
                   transition: 'color 0.2s',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#a88cf0')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = '#b0a8c8')}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent-text, var(--accent-color))')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-dim)')}
               >
                 {copied ? <Check size={14} style={{ color: '#22c55e' }} /> : <span style={{ fontSize: '10px' }}>📋</span>}
               </button>
@@ -350,14 +350,14 @@ export const QuickEntry = ({ onStatusChange }: QuickEntryProps) => {
             alignItems: 'center',
             gap: '8px',
             fontSize: '13px',
-            color: '#b0a8c8',
+            color: 'var(--text-dim)',
             padding: '8px 12px',
-            backgroundColor: 'rgba(255, 215, 0, 0.05)',
+            backgroundColor: 'var(--surface-container-strong)',
             borderRadius: '10px',
-            border: '1px solid rgba(255, 215, 0, 0.1)',
+            border: '1px solid var(--border-color)',
           }}
         >
-          <Bluetooth size={16} style={{ color: '#FFD700' }} />
+          <Bluetooth size={16} style={{ color: 'var(--accent-text, #d97706)' }} />
           <span>{t('quickEntry.bluetooth_info')}</span>
         </div>
 
@@ -379,19 +379,19 @@ export const QuickEntry = ({ onStatusChange }: QuickEntryProps) => {
               flex: 1,
               padding: '10px 16px',
               borderRadius: '12px',
-              backgroundColor: 'rgba(93, 63, 211, 0.15)',
-              border: '1px solid rgba(93, 63, 211, 0.3)',
-              color: '#a88cf0',
+              backgroundColor: 'var(--surface-container-strong)',
+              border: '1px solid var(--border-color)',
+              color: 'var(--accent-text, var(--accent-color))',
               fontSize: '13px',
               fontWeight: 600,
               cursor: 'pointer',
               transition: 'all 0.2s',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(93, 63, 211, 0.25)';
+              e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(93, 63, 211, 0.15)';
+              e.currentTarget.style.backgroundColor = 'var(--surface-container-strong)';
             }}
           >
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
@@ -408,11 +408,11 @@ export const QuickEntry = ({ onStatusChange }: QuickEntryProps) => {
               gap: '6px',
               padding: '10px 16px',
               borderRadius: '12px',
-              backgroundColor: status.running ? 'rgba(239, 68, 68, 0.1)' : 'rgba(93, 63, 211, 0.2)',
+              backgroundColor: status.running ? 'rgba(239, 68, 68, 0.12)' : 'var(--accent-color)',
               border: status.running
-                ? '1px solid rgba(239, 68, 68, 0.3)'
-                : '1px solid rgba(93, 63, 211, 0.4)',
-              color: status.running ? '#ef4444' : '#a88cf0',
+                ? '1px solid rgba(239, 68, 68, 0.35)'
+                : '1px solid transparent',
+              color: status.running ? '#ef4444' : 'var(--accent-on-color, #ffffff)',
               fontSize: '13px',
               fontWeight: 600,
               cursor: 'pointer',

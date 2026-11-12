@@ -76,7 +76,7 @@ const MessageText = ({
       <span className="selectable-message-text" style={{ userSelect: 'text', WebkitUserSelect: 'text', cursor: 'text' }}>
         <span 
           style={{ userSelect: 'text', WebkitUserSelect: 'text', cursor: 'text' }}
-          dangerouslySetInnerHTML={{ __html: markdownToHtml(text, isOwn ? '#ffffff' : (themeColor || 'var(--accent-color)')) }} 
+          dangerouslySetInnerHTML={{ __html: markdownToHtml(text, themeColor || (isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--accent-text, var(--accent-color))')) }} 
           onClick={handleHtmlClick}
         />
       </span>
@@ -145,7 +145,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
       <span
         className="tabular-nums select-none message-time-badge"
         style={{
-          color: isOwn ? 'rgba(255, 255, 255, 0.9)' : 'var(--text-dim)',
+          color: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 88%, transparent)' : 'var(--text-dim)',
           fontSize: '11px',
           display: 'inline-flex',
           alignItems: 'center',
@@ -177,6 +177,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                   : 'sent'
               }
               isOwn={isOwn}
+              color={isOwn ? 'var(--bubble-own-text, #ffffff)' : undefined}
               onRetry={(msg.status === 'failed' || msg.status === 'error') && onRetry ? () => onRetry(msg.id || '') : undefined}
             />
           </span>
@@ -288,16 +289,16 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                 boxSizing: 'border-box',
                 background: isSelected
                   ? (isOwn
-                      ? 'color-mix(in srgb, var(--chat-bubble-own-bg, #2c6bed) 76%, #000)'
+                      ? 'color-mix(in srgb, var(--accent-color, #2c6bed) 76%, #000)'
                       : 'color-mix(in srgb, var(--chat-bubble-incoming-bg, var(--surface-container)) 78%, var(--accent-color, #7C3AED))')
                   : (isOwn
                       ? 'var(--chat-bubble-own-bg, #2c6bed)'
                       : 'var(--chat-bubble-incoming-bg, var(--surface-container))'),
                 filter: isSelected ? 'brightness(0.9) contrast(1.05)' : 'none',
-                transition: 'background-color 0.15s ease, filter 0.15s ease',
+                transition: 'background 0.15s ease, filter 0.15s ease',
                 color: isOwn
-                  ? '#ffffff'
-                  : 'var(--chat-bubble-incoming-text, var(--text-main, #ffffff))',
+                  ? 'var(--bubble-own-text, #ffffff)'
+                  : 'var(--chat-bubble-incoming-text, var(--text-main))',
                 fontSize: bubbleFontSize,
               }}
             >
@@ -347,7 +348,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                     }}
                     className="font-semibold select-none message-sender-name hover:underline cursor-pointer"
                     style={{
-                      color: themeColor || 'var(--accent-color, #7C3AED)',
+                      color: 'var(--accent-text, var(--accent-color, #7C3AED))',
                       fontSize: '12.5px',
                       lineHeight: '1.2',
                       userSelect: 'none',
@@ -364,8 +365,8 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                     <span
                       className="ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0 select-none inline-flex items-center"
                       style={{
-                        backgroundColor: 'color-mix(in srgb, var(--accent-color, #7C3AED) 20%, transparent)',
-                        color: 'var(--accent-color, #9b7dd4)',
+                        backgroundColor: 'color-mix(in srgb, var(--accent-color, #7C3AED) 16%, transparent)',
+                        color: 'var(--accent-text, var(--accent-color, #9b7dd4))',
                         lineHeight: 1.2,
                         userSelect: 'none',
                         WebkitUserSelect: 'none',
@@ -378,8 +379,8 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                     <span
                       className="ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0 select-none inline-flex items-center"
                       style={{
-                        backgroundColor: 'rgba(34, 197, 94, 0.18)',
-                        color: '#22c55e',
+                        backgroundColor: 'rgba(22, 163, 74, 0.16)',
+                        color: '#16a34a',
                         lineHeight: 1.2,
                         userSelect: 'none',
                         WebkitUserSelect: 'none',
@@ -410,9 +411,9 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                     className="flex w-full items-start gap-2 cursor-pointer hover:opacity-85 transition-opacity"
                     style={{
                       padding: '5px 10px',
-                      backgroundColor: isOwn ? 'rgba(255, 255, 255, 0.15)' : 'color-mix(in srgb, var(--accent-color) 12%, transparent)',
+                      backgroundColor: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 15%, transparent)' : 'color-mix(in srgb, var(--accent-color) 12%, transparent)',
                       borderRadius: '0 6px 6px 0',
-                      borderLeft: isOwn ? '3px solid #ffffff' : '3px solid var(--accent-color)',
+                      borderLeft: isOwn ? '3px solid var(--bubble-own-text, #ffffff)' : '3px solid var(--accent-text, var(--accent-color))',
                     }}
                   >
                     <div className="flex-1 min-w-0">
@@ -421,7 +422,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                         <p
                           className="truncate font-semibold"
                           style={{
-                            color: isOwn ? '#ffffff' : 'var(--accent-color)',
+                            color: isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--accent-text, var(--accent-color))',
                             fontSize: '12.5px',
                             lineHeight: '1.2',
                           }}
@@ -441,12 +442,12 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                       <p
                         className="truncate"
                         style={{
-                          color: isOwn ? 'rgba(255, 255, 255, 0.9)' : 'var(--text-main)',
+                          color: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 90%, transparent)' : 'var(--chat-bubble-incoming-text, var(--text-main))',
                           fontSize: '13px',
                           lineHeight: '1.35',
                           marginTop: '2px',
                         }}
-                        dangerouslySetInnerHTML={{ __html: markdownToHtml(formatPreviewText(q.text, t), isOwn ? '#ffffff' : themeColor).replace(/<br\s*\/?>/gi, ' ') }}
+                        dangerouslySetInnerHTML={{ __html: markdownToHtml(formatPreviewText(q.text, t), isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--accent-text, var(--accent-color))').replace(/<br\s*\/?>/gi, ' ') }}
                       />
                     </div>
                   </div>
@@ -457,7 +458,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
             <MessageText
               text={parsed.body}
               timeNode={(!hasLinkPreview && !hasReactions) ? timeBadge : undefined}
-              themeColor={isOwn ? '#ffffff' : (themeColor || 'var(--accent-color)')}
+              themeColor={isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--accent-text, var(--accent-color))'}
               isOwn={isOwn}
               isEmojiOnly={isEmoji && emojiCount >= 4}
               onLinkClick={onLinkClick}
@@ -474,15 +475,15 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                   className="flex flex-col w-full min-w-0 mt-2 cursor-pointer hover:opacity-90 transition-opacity select-none"
                   style={{
                     padding: '8px 12px',
-                    backgroundColor: isOwn ? 'rgba(0,0,0,0.18)' : 'color-mix(in srgb, var(--accent-color) 10%, rgba(0,0,0,0.15))',
+                    backgroundColor: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 12%, transparent)' : 'color-mix(in srgb, var(--accent-color) 10%, var(--surface-container-soft, transparent))',
                     borderRadius: '0 8px 8px 0',
-                    borderLeft: isOwn ? '3px solid rgba(255,255,255,0.7)' : '3px solid var(--accent-color)',
+                    borderLeft: isOwn ? '3px solid color-mix(in srgb, var(--bubble-own-text, #ffffff) 75%, transparent)' : '3px solid var(--accent-text, var(--accent-color))',
                   }}
                 >
                   {msg.linkPreview!.siteName && (
                     <span
                       className="font-bold text-[12.5px] mb-0.5 truncate"
-                      style={{ color: isOwn ? 'rgba(255,255,255,0.95)' : 'var(--accent-color)' }}
+                      style={{ color: isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--accent-text, var(--accent-color))' }}
                     >
                       {msg.linkPreview!.siteName}
                     </span>
@@ -492,7 +493,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                       msg.linkPreview!.title.trim().toLowerCase() !== msg.linkPreview!.siteName.trim().toLowerCase()) && (
                     <span
                       className="font-bold text-[13.5px] leading-snug mb-1 line-clamp-2"
-                      style={{ color: isOwn ? '#ffffff' : 'var(--text-main)' }}
+                      style={{ color: isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--chat-bubble-incoming-text, var(--text-main))' }}
                     >
                       {msg.linkPreview!.title}
                     </span>
@@ -500,7 +501,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                   {msg.linkPreview!.description && (
                     <span
                       className="text-[12.5px] leading-normal mb-1.5 opacity-90 line-clamp-4"
-                      style={{ color: isOwn ? 'rgba(255,255,255,0.85)' : 'var(--text-dim)' }}
+                      style={{ color: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 85%, transparent)' : 'var(--text-dim)' }}
                     >
                       {msg.linkPreview!.description}
                     </span>
@@ -582,17 +583,17 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                     aria-label={btn.text}
                     className="w-full flex items-center justify-center px-3.5 py-2 rounded-xl text-[13px] font-semibold transition-all cursor-pointer shadow-sm active:scale-[0.98]"
                     style={{
-                      backgroundColor: 'color-mix(in srgb, var(--surface-container, rgba(255, 255, 255, 0.08)) 80%, var(--accent-color) 12%)',
-                      color: 'var(--text-main, #ffffff)',
-                      border: 'none',
+                      backgroundColor: 'color-mix(in srgb, var(--surface-container) 82%, var(--accent-color) 18%)',
+                      color: 'var(--text-main)',
+                      border: '1px solid var(--border-color)',
                       outline: 'none',
                       backdropFilter: 'blur(8px)',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--surface-container, rgba(255, 255, 255, 0.14)) 70%, var(--accent-color) 24%)';
+                      e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--surface-container) 70%, var(--accent-color) 30%)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--surface-container, rgba(255, 255, 255, 0.08)) 80%, var(--accent-color) 12%)';
+                      e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--surface-container) 82%, var(--accent-color) 18%)';
                     }}
                   >
                     <span className="truncate">{btn.text}</span>
@@ -605,7 +606,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
         {isPinned && (
           <Pin
             size={10}
-            style={{ color: 'var(--accent-color, #7C3AED)' }}
+            style={{ color: 'var(--accent-text, var(--accent-color, #7C3AED))' }}
             className="mt-1 select-none"
           />
         )}

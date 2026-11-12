@@ -69,9 +69,9 @@ export const CallMessage = memo(
       <div
         className="flex items-center justify-between p-3 rounded-xl cursor-pointer select-none"
         style={{
-          backgroundColor: isOwn
+          background: isOwn
             ? 'var(--chat-bubble-own-bg, #2c6bed)'
-            : 'var(--chat-bubble-incoming-bg, var(--surface-container, rgba(255,255,255,0.05)))',
+            : 'var(--chat-bubble-incoming-bg, var(--surface-container, var(--surface-container-soft)))',
           borderRadius: customRadius || bubbleRadius,
           border: 'none',
           gap: '40px',
@@ -82,15 +82,30 @@ export const CallMessage = memo(
         onClick={() => onCall(chatId)}
       >
         <div className="flex flex-col min-w-0">
-          <span className="font-medium truncate" style={{ color: isOwn ? '#ffffff' : 'var(--text-main)', fontSize: orbitFs(13) }}>
+          <span
+            className="font-medium truncate"
+            style={{
+              color: isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--chat-bubble-incoming-text, var(--text-main))',
+              fontSize: orbitFs(13),
+            }}
+          >
             {mainText}
           </span>
-          <div className="text-xs truncate" style={{ color: isOwn ? 'rgba(255, 255, 255, 0.7)' : 'var(--text-dim)', fontSize: orbitFs(11) }}>
+          <div
+            className="text-xs truncate"
+            style={{
+              color: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 78%, transparent)' : 'var(--text-dim)',
+              fontSize: orbitFs(11),
+            }}
+          >
             {timeStr}
             {durationDisplay && `, ${durationDisplay}`}
           </div>
         </div>
-        <div style={{ color: isOwn ? '#ffffff' : 'var(--accent-color)' }} className="flex-shrink-0 flex items-center justify-center">
+        <div
+          style={{ color: isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--accent-text, var(--accent-color))' }}
+          className="flex-shrink-0 flex items-center justify-center"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 42 42" fill="currentColor">
             <path d="M15.562 20.766c-1.328-1.922-2.118-4.241-2.281-4.438c1.945-1.356 5.749-3.06 5.962-5.505c.271-3.159-5.081-9.763-6.107-9.823c-2.808.03-7.947 4.782-8.556 6.218c-1.132 2.969-.571 5.732 1.375 9.732c2.478 5.95 11.682 17.237 16.947 20.78c3.484 2.674 6.029 3.724 9.068 3.09c1.413-.268 6.516-4.455 7.027-7.286c.125-1.05-5.807-8.011-8.875-8.287c-2.382-.22-4.666 3.346-6.303 5.089c-.163-.208-1.559-1.297-3.057-3.021c-1.95-2.049-3.762-4.456-5.2-6.549" />
           </svg>

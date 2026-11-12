@@ -52,7 +52,7 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
         <div
           className="absolute left-0 w-1 rounded-r-full transition-all duration-200"
           style={{
-            backgroundColor: 'var(--text-heading, #ffffff)',
+            backgroundColor: 'var(--text-heading, var(--text-main))',
             height: isHomeActive ? '40px' : hoveredItem === 'home' ? '20px' : '0px',
           }}
         />
@@ -70,7 +70,7 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
               : hoveredItem === 'home'
               ? 'var(--accent-color, #5865F2)'
               : 'var(--bg-primary, #313338)',
-            color: isHomeActive || hoveredItem === 'home' ? '#ffffff' : 'var(--text-main, #ffffff)',
+            color: isHomeActive || hoveredItem === 'home' ? 'var(--accent-on-color, #ffffff)' : 'var(--text-main)',
           }}
         >
           <Users size={22} />
@@ -92,7 +92,7 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
                   <div
                     className="absolute left-0 w-1 rounded-r-full transition-all duration-200"
                     style={{
-                      backgroundColor: 'var(--text-heading, #ffffff)',
+                      backgroundColor: 'var(--text-heading, var(--text-main))',
                       height: isFolderActive ? '40px' : isHovered ? '20px' : '0px',
                     }}
                   />
@@ -113,13 +113,17 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
                         : isHovered
                         ? 'var(--accent-color, #5865F2)'
                         : 'var(--bg-primary, #313338)',
-                      color: isFolderActive || isHovered ? '#ffffff' : 'var(--text-main, #ffffff)',
+                      color: isFolderActive || isHovered ? 'var(--accent-on-color, #ffffff)' : 'var(--text-main)',
                     }}
                   >
                     <span>{folder.name.slice(0, 2).toUpperCase()}</span>
                     {unreadCount > 0 && (
                       <span
-                        className="absolute -top-1 -right-1 bg-[#f23f43] text-white text-[11px] font-bold px-1.5 py-0.5 rounded-full border-none leading-tight shadow-sm"
+                        className="absolute -top-1 -right-1 text-[11px] font-bold px-1.5 py-0.5 rounded-full border-none leading-tight shadow-sm"
+                        style={{
+                          backgroundColor: '#e11d48',
+                          color: '#ffffff',
+                        }}
                       >
                         {unreadCount > 99 ? '99+' : unreadCount}
                       </span>

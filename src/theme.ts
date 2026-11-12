@@ -232,6 +232,30 @@ let systemThemeListenerAttached = false;
 let activeThemeTintId = DEFAULT_THEME_TINT_ID;
 let activeChatColor: string | undefined;
 
+const parseFirstHexRgb = (color: string): [number, number, number] | null => {
+  const match = color.match(/#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})\b/);
+  if (!match) return null;
+  let hex = match[1];
+  if (hex.length === 3) {
+    hex = hex.split('').map((ch) => ch + ch).join('');
+  }
+  const n = parseInt(hex, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
+
+const getHexBrightness = (color: string): number => {
+  const rgb = parseFirstHexRgb(color);
+  if (!rgb) return 0;
+  return (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+};
+
+export const getContrastTextColor = (color: string): string => {
+  const rgb = parseFirstHexRgb(color);
+  if (!rgb) return '#ffffff';
+  const brightness = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+  return brightness > 0.62 ? '#111318' : '#ffffff';
+};
+
 export const resolveThemeMode = (themeId: ThemeId): 'light' | 'dark' => {
   if (themeId === 'light' || themeId === 'dark') {
     return themeId;
@@ -245,6 +269,7 @@ export const resolveThemeMode = (themeId: ThemeId): 'light' | 'dark' => {
 
 export const resolveThemeVars = (themeId: ThemeId, chatColor?: string, themeTintId?: string) => {
   const resolvedMode = resolveThemeMode(themeId);
+  const isLight = resolvedMode === 'light';
   const theme = themePalettes[resolvedMode] || themePalettes.dark;
   const root = typeof document !== 'undefined' ? document.documentElement : null;
   const resolvedTintId = themeTintId || root?.getAttribute('data-theme-tint') || activeThemeTintId || DEFAULT_THEME_TINT_ID;
@@ -263,17 +288,31 @@ export const resolveThemeVars = (themeId: ThemeId, chatColor?: string, themeTint
 
   const accentColor = isCustomChatColor ? customHex : tintTokens.accent;
   const accentLight = isCustomChatColor
-    ? (resolvedMode === 'light' ? customHex : `color-mix(in srgb, ${customHex} 76%, white)`)
+    ? (isLight ? customHex : tintTokens.accentLight)
     : tintTokens.accentLight;
-  const accentDark = isCustomChatColor
-    ? `color-mix(in srgb, ${customHex} 72%, black)`
-    : tintTokens.accentDark;
-  const accentGradient = effectiveChatColor.startsWith('linear-gradient')
-    ? effectiveChatColor
-    : `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 100%)`;
-  const accentHover = isCustomChatColor
-    ? `color-mix(in srgb, ${customHex} 82%, black)`
-    : `color-mix(in srgb, ${accentColor} 84%, black)`;
+  const accentDark = tintTokens.accentDark;
+
+  const accentOnColor = getContrastTextColor(accentColor);
+  const bubbleOwnText = getContrastTextColor(effectiveChatColor);
+  const accentBrightness = getHexBrightness(accentColor);
+  const accentText = isLight
+    ? isCustomChatColor
+      ? (accentBrightness > 0.42 ? `color-mix(in srgb, ${accentColor} 78%, #0b0d12)` : accentColor)
+      : (accentBrightness > 0.42 ? `color-mix(in srgb, ${accentDark} 82%, #0b0d12)` : accentDark)
+    : accentLight;
+
+  const textMain = isLight
+    ? '#181b22'
+    : `color-mix(in srgb, ${accentColor} 4%, #eceff4)`;
+  const textHeading = isLight ? '#0e1117' : '#f8fafc';
+  const textDim = isLight
+    ? '#5c6370'
+    : `color-mix(in srgb, ${accentColor} 8%, #9aa3b2)`;
+
+  const surfaceHover = 'color-mix(in srgb, var(--text-main) 6%, transparent)';
+  const surfaceActive = `color-mix(in srgb, ${accentColor} 16%, ${tintTokens.surfaceContainerStrong})`;
+  const scrollThumbColor = isLight ? 'rgba(15, 23, 42, 0.24)' : 'rgba(255, 255, 255, 0.28)';
+  const mdOutlineMed = `color-mix(in srgb, ${tintTokens.borderColor} 76%, ${textMain})`;
 
   const vars: Record<string, string> = {
     ...theme.vars,
@@ -282,40 +321,53 @@ export const resolveThemeVars = (themeId: ThemeId, chatColor?: string, themeTint
     '--chat-list-bg': tintTokens.chatListBg,
     '--surface-container': tintTokens.surfaceContainer,
     '--surface-container-strong': tintTokens.surfaceContainerStrong,
-    '--surface-container-soft': `color-mix(in srgb, ${accentColor} 7%, ${resolvedMode === 'light' ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)'})`,
+    '--surface-container-soft': `color-mix(in srgb, ${accentColor} 7%, ${isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)'})`,
+    '--surface-hover': surfaceHover,
+    '--surface-active': surfaceActive,
     '--border-color': tintTokens.borderColor,
     '--surface-border': tintTokens.borderColor,
     '--title-bar-bg': tintTokens.titleBarBg,
+    '--scroll-thumb-color': scrollThumbColor,
+    '--text-main': textMain,
+    '--text-heading': textHeading,
+    '--text-dim': textDim,
     '--settings-bg': tintTokens.bgPrimary,
     '--settings-surface': tintTokens.bgSecondary,
     '--settings-surface-var': tintTokens.surfaceContainer,
     '--settings-outline': tintTokens.borderColor,
+    '--settings-outline-med': mdOutlineMed,
+    '--settings-on-surface': textMain,
+    '--settings-on-surface-var': textDim,
     '--chat-bubble-own-bg': effectiveChatColor,
+    '--bubble-own-text': bubbleOwnText,
     '--chat-bubble-incoming-bg': tintTokens.bubbleIncomingBg,
-    '--chat-bubble-incoming-text': resolvedMode === 'light' ? '#1b1b1b' : '#f6f6f6',
+    '--chat-bubble-incoming-text': isLight ? '#181b22' : '#eceff4',
     '--accent-color': accentColor,
     '--accent-light': accentLight,
     '--accent-dark': accentDark,
-    '--accent-hover': accentHover,
-    '--accent-gradient': accentGradient,
+    '--accent-hover': `color-mix(in srgb, ${accentColor} 84%, black)`,
+    '--accent-gradient': effectiveChatColor.startsWith('linear-gradient') ? effectiveChatColor : `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 100%)`,
+    '--accent-on-color': accentOnColor,
+    '--accent-text': accentText,
     '--accent-glow': `color-mix(in srgb, ${accentColor} 30%, transparent)`,
     '--accent-glow-light': `color-mix(in srgb, ${accentColor} 15%, transparent)`,
     '--selection-bg': `color-mix(in srgb, ${accentColor} 28%, transparent)`,
     '--md-sys-color-primary': accentColor,
     '--settings-primary': accentColor,
+    '--settings-on-primary': accentOnColor,
     '--settings-primary-cont': accentDark,
   };
 
   const mdVars: Record<string, string> = {
-    '--md-bg': vars['--settings-bg'] || vars['--bg-secondary'],
-    '--md-surface': vars['--settings-surface'] || vars['--surface-container'],
-    '--md-surface-var': vars['--settings-surface-var'] || vars['--surface-container-strong'],
-    '--md-outline': vars['--settings-outline'] || vars['--border-color'],
-    '--md-outline-med': vars['--settings-outline-med'] || vars['--border-color'],
-    '--md-on-surface': vars['--settings-on-surface'] || vars['--text-main'],
-    '--md-on-surface-var': vars['--settings-on-surface-var'] || vars['--text-dim'],
+    '--md-bg': vars['--settings-bg'],
+    '--md-surface': vars['--settings-surface'],
+    '--md-surface-var': vars['--settings-surface-var'],
+    '--md-outline': vars['--settings-outline'],
+    '--md-outline-med': mdOutlineMed,
+    '--md-on-surface': textMain,
+    '--md-on-surface-var': textDim,
     '--md-primary': accentColor,
-    '--md-on-primary': '#ffffff',
+    '--md-on-primary': accentOnColor,
     '--md-primary-cont': accentColor,
     '--md-error': vars['--settings-error'] || '#f44336',
     '--md-error-cont': vars['--settings-error-cont'] || 'rgba(244,67,54,0.12)',

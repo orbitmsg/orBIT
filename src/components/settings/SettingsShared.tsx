@@ -10,16 +10,16 @@ export const QrCodeMiniIcon: React.FC<{ size?: number; color?: string }> = ({ si
 );
 
 export const MD3 = {
-  bg:            'var(--md-bg,            #211d2f)',
-  surface:       'var(--md-surface,       #2a253b)',
-  surfaceVar:    'var(--md-surface-var,   #342e47)',
-  outline:       'var(--md-outline,       rgba(255,255,255,0.12))',
-  outlineMed:    'var(--md-outline-med,   rgba(255,255,255,0.20))',
-  onSurface:     'var(--md-on-surface,    #ffffff)',
-  onSurfaceVar:  'var(--md-on-surface-var,#9f96b3)',
-  primary:       'var(--md-primary,       #9b7dd4)',
-  onPrimary:     'var(--md-on-primary,    #ffffff)',
-  primaryCont:   'var(--md-primary-cont,  #42345e)',
+  bg:            'var(--md-bg,            var(--bg-primary, #211d2f))',
+  surface:       'var(--md-surface,       var(--bg-secondary, #2a253b))',
+  surfaceVar:    'var(--md-surface-var,   var(--surface-container-strong, #342e47))',
+  outline:       'var(--md-outline,       var(--border-color, rgba(255,255,255,0.12)))',
+  outlineMed:    'var(--md-outline-med,   var(--border-color, rgba(255,255,255,0.20)))',
+  onSurface:     'var(--md-on-surface,    var(--text-main, #dbdee1))',
+  onSurfaceVar:  'var(--md-on-surface-var,var(--text-dim, #949ba4))',
+  primary:       'var(--md-primary,       var(--accent-color, #9b7dd4))',
+  onPrimary:     'var(--md-on-primary,    var(--accent-on-color, #ffffff))',
+  primaryCont:   'var(--md-primary-cont,  var(--surface-active, #42345e))',
   error:         'var(--md-error,         #ff595a)',
   errorCont:    'var(--md-error-cont,    rgba(255,89,90,0.12))',
 };
@@ -39,8 +39,8 @@ export const GLOBAL_CSS = `
 
   .m3-track {
     position: absolute; inset: 0; border-radius: 9999px;
-    background: var(--switch-bg, rgba(255, 255, 255, 0.12));
-    box-shadow: inset 0 0 0 1.5px var(--switch-border, rgba(255, 255, 255, 0.22));
+    background: var(--switch-bg, var(--surface-container-strong));
+    box-shadow: inset 0 0 0 1.5px var(--switch-border, var(--border-color));
     transition: background 200ms cubic-bezier(0.2, 0, 0, 1), box-shadow 200ms cubic-bezier(0.2, 0, 0, 1);
     box-sizing: border-box; will-change: background, box-shadow;
   }
@@ -166,9 +166,9 @@ export const TogglePill = ({
       gap: '8px',
       padding: '7px 18px',
       borderRadius: '9999px',
-      backgroundColor: active ? 'var(--surface-container-high, rgba(255, 255, 255, 0.12))' : 'var(--surface-container, #231e34)',
-      border: 'none',
-      color: active ? 'var(--text-main, #ffffff)' : 'var(--text-dim, #8a82a2)',
+      backgroundColor: active ? 'var(--surface-active, var(--surface-container-strong))' : 'var(--surface-container)',
+      border: active ? '1px solid var(--accent-color, var(--border-color))' : '1px solid var(--border-color)',
+      color: active ? 'var(--text-heading, var(--text-main))' : 'var(--text-dim)',
       fontSize: '13.5px',
       fontWeight: 500,
       cursor: 'pointer',
@@ -181,9 +181,9 @@ export const TogglePill = ({
         width: '17px',
         height: '17px',
         borderRadius: '50%',
-        backgroundColor: active ? 'var(--text-main, #ffffff)' : 'rgba(255, 255, 255, 0.08)',
+        backgroundColor: active ? 'var(--accent-color, var(--text-main))' : 'var(--surface-hover, transparent)',
         border: 'none',
-        boxShadow: active ? 'none' : 'inset 0 0 0 1.5px var(--text-dim, #6b6385)',
+        boxShadow: active ? 'none' : 'inset 0 0 0 1.5px var(--text-dim)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -191,7 +191,7 @@ export const TogglePill = ({
       }}
     >
       {active && (
-        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="var(--bg-secondary, #231e34)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="var(--accent-on-color, #ffffff)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="2.5 6 5 8.5 9.5 3.5" />
         </svg>
       )}
@@ -262,7 +262,7 @@ export const SettingsRow = ({
       boxSizing: 'border-box',
       userSelect: 'none',
     }}
-    onMouseEnter={e => onClick && ((e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(202,196,208,0.08)')}
+    onMouseEnter={e => onClick && ((e.currentTarget as HTMLElement).style.backgroundColor = 'var(--surface-hover)')}
     onMouseLeave={e => onClick && ((e.currentTarget as HTMLElement).style.backgroundColor = 'transparent')}
   >
     <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1, minWidth: 0 }}>
@@ -306,8 +306,8 @@ export const M3Switch = memo(({
       width: '42px',
       height: '24px',
       borderRadius: '12px',
-      backgroundColor: checked ? 'var(--accent-color, #7C3AED)' : 'var(--switch-bg, rgba(255,255,255,0.14))',
-      boxShadow: checked ? 'none' : 'inset 0 0 0 1.5px var(--switch-border, rgba(255,255,255,0.22))',
+      backgroundColor: checked ? 'var(--accent-color, #7C3AED)' : 'var(--switch-bg, var(--surface-container-strong))',
+      boxShadow: checked ? 'none' : 'inset 0 0 0 1.5px var(--switch-border, var(--border-color))',
       position: 'relative',
       cursor: disabled ? 'not-allowed' : 'pointer',
       transition: 'background-color 200ms ease, box-shadow 200ms ease',
@@ -324,8 +324,8 @@ export const M3Switch = memo(({
         width: '18px',
         height: '18px',
         borderRadius: '50%',
-        backgroundColor: '#ffffff',
-        transition: 'left 200ms cubic-bezier(0.2,0,0,1)',
+        backgroundColor: checked ? 'var(--accent-on-color, #ffffff)' : 'var(--md-on-surface-var, #949ba4)',
+        transition: 'left 200ms cubic-bezier(0.2,0,0,1), background-color 200ms ease',
         boxShadow: '0 1px 3px rgba(0,0,0,0.35)',
       }}
     />
@@ -353,7 +353,7 @@ export const MenuItem = ({
       boxSizing: 'border-box',
       userSelect: 'none',
     }}
-    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(202,196,208,0.08)')}
+    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-hover)')}
     onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
   >
     <div style={{ width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', color: MD3.onSurface, flexShrink: 0, backgroundColor: 'transparent' }}>
@@ -512,7 +512,7 @@ export const OrbitaSelect = ({
           boxShadow: 'none',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+          e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.backgroundColor = MD3.surfaceVar;
@@ -559,10 +559,10 @@ export const OrbitaSelect = ({
               maxWidth: 320,
               maxHeight: 164,
               overflowY: 'auto',
-              backgroundColor: 'var(--md-surface-var, #342e47)',
-              border: 'none',
+              backgroundColor: 'var(--md-surface-var, var(--surface-container))',
+              border: '1px solid var(--border-color)',
               borderRadius: 16,
-              boxShadow: '0 12px 32px rgba(0, 0, 0, 0.65)',
+              boxShadow: '0 12px 32px rgba(0, 0, 0, 0.35)',
               display: 'flex',
               flexDirection: 'column',
               gap: 4,
@@ -591,7 +591,7 @@ export const OrbitaSelect = ({
                     borderRadius: 12,
                     fontSize: 13,
                     fontWeight: isSelected ? 600 : 400,
-                    color: isSelected ? '#ffffff' : MD3.onSurface,
+                    color: isSelected ? 'var(--accent-on-color, #ffffff)' : MD3.onSurface,
                     backgroundColor: isSelected ? 'var(--accent-color, #7C3AED)' : 'transparent',
                     cursor: 'pointer',
                     transition: 'background-color 0.12s ease',
@@ -600,7 +600,7 @@ export const OrbitaSelect = ({
                   }}
                   onMouseEnter={(e) => {
                     if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = 'rgba(130, 130, 130, 0.2)';
+                      e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -623,7 +623,7 @@ export const OrbitaSelect = ({
                     <Check
                       size={15}
                       style={{
-                        color: '#ffffff',
+                        color: 'var(--accent-on-color, #ffffff)',
                         flexShrink: 0,
                       }}
                     />

@@ -44,7 +44,7 @@ export const LanguageTab = ({ language, setLanguage, languageDisplayOptions }: L
                 margin: '2px 6px',
                 cursor: 'pointer',
                 transition: 'background 150ms',
-                backgroundColor: isSelected ? 'rgba(197,180,227,0.12)' : 'transparent',
+                backgroundColor: isSelected ? 'var(--surface-active, rgba(197,180,227,0.12))' : 'transparent',
                 userSelect: 'none',
                 contentVisibility: 'auto',
                 containIntrinsicSize: '48px',
@@ -52,7 +52,7 @@ export const LanguageTab = ({ language, setLanguage, languageDisplayOptions }: L
               }}
               onMouseEnter={(e) => {
                 if (!isSelected) {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(202,196,208,0.08)';
+                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--surface-hover)';
                 }
               }}
               onMouseLeave={(e) => {
@@ -123,8 +123,6 @@ export const ChatBubblePreview: React.FC<ChatBubblePreviewProps> = ({
   const tintTokens = tint[resolvedMode];
   const activeFont = FONT_MAP[fontFamily] || FONT_MAP.system;
   const scaleFactor = (Number.isFinite(textScale) && textScale > 0 ? textScale : 100) / 100;
-  const incomingTextColor = resolvedMode === 'light' ? '#1b1b1b' : '#f6f6f6';
-  const incomingDimColor = resolvedMode === 'light' ? 'rgba(27,27,27,0.55)' : 'rgba(255,255,255,0.55)';
   const ownBubbleBg = chatColor || tintTokens.bubbleOwnBg || DEFAULT_CHAT_COLOR;
 
   return (
@@ -150,7 +148,7 @@ export const ChatBubblePreview: React.FC<ChatBubblePreviewProps> = ({
           padding: '7px 12px 7px 11px',
           borderRadius: `${bubbleRadius}px`,
           background: tintTokens.bubbleIncomingBg,
-          color: incomingTextColor,
+          color: 'var(--chat-bubble-incoming-text, var(--text-main))',
           fontSize: `calc(13px * ${scaleFactor})`,
           transition: 'background 180ms ease, border-radius 120ms ease, color 180ms ease',
         }}
@@ -189,7 +187,7 @@ export const ChatBubblePreview: React.FC<ChatBubblePreviewProps> = ({
             <span
               className="tabular-nums select-none"
               style={{
-                color: incomingDimColor,
+                color: 'var(--text-dim)',
                 fontSize: `calc(11px * ${scaleFactor})`,
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -213,7 +211,7 @@ export const ChatBubblePreview: React.FC<ChatBubblePreviewProps> = ({
           padding: '7px 12px 7px 11px',
           borderRadius: `${bubbleRadius}px`,
           background: ownBubbleBg,
-          color: '#ffffff',
+          color: 'var(--bubble-own-text, #ffffff)',
           fontSize: `calc(13px * ${scaleFactor})`,
           transition: 'background 180ms ease, border-radius 120ms ease',
         }}
@@ -252,7 +250,7 @@ export const ChatBubblePreview: React.FC<ChatBubblePreviewProps> = ({
             <span
               className="tabular-nums select-none"
               style={{
-                color: 'rgba(255, 255, 255, 0.9)',
+                color: 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 82%, transparent)',
                 fontSize: `calc(11px * ${scaleFactor})`,
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -269,7 +267,7 @@ export const ChatBubblePreview: React.FC<ChatBubblePreviewProps> = ({
                   justifyContent: 'flex-end',
                 }}
               >
-                <MessageStatus status="read" isOwn={true} />
+                <MessageStatus status="read" isOwn={true} color="var(--bubble-own-text, #ffffff)" />
               </span>
             </span>
           </span>
@@ -337,22 +335,22 @@ export const FontTab = ({
                 userSelect: 'none',
                 minWidth: 0,
                 backgroundColor: isSelected
-                  ? 'color-mix(in srgb, var(--accent-color, #5865F2) 16%, var(--surface-container-strong, #232428))'
-                  : 'var(--surface-container-soft, rgba(255,255,255,0.04))',
+                  ? 'var(--surface-active, color-mix(in srgb, var(--accent-color, #5865F2) 16%, var(--surface-container-strong)))'
+                  : 'var(--surface-container-soft)',
                 border: isSelected
                   ? '1.5px solid var(--accent-color, #5865F2)'
-                  : '1.5px solid var(--border-color, rgba(255,255,255,0.08))',
-                color: isSelected ? 'var(--text-heading, #ffffff)' : MD3.onSurface,
+                  : '1.5px solid var(--border-color)',
+                color: isSelected ? 'var(--text-heading, var(--text-main))' : MD3.onSurface,
                 transition: 'background-color 140ms ease, border-color 140ms ease, color 140ms ease',
               }}
               onMouseEnter={(e) => {
                 if (!isSelected) {
-                  e.currentTarget.style.backgroundColor = 'var(--surface-muted, rgba(255,255,255,0.08))';
+                  e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isSelected) {
-                  e.currentTarget.style.backgroundColor = 'var(--surface-container-soft, rgba(255,255,255,0.04))';
+                  e.currentTarget.style.backgroundColor = 'var(--surface-container-soft)';
                 }
               }}
             >
@@ -375,7 +373,7 @@ export const FontTab = ({
                 <Check
                   size={14}
                   style={{
-                    color: 'var(--accent-color, #5865F2)',
+                    color: 'var(--accent-text, var(--accent-color, #5865F2))',
                     flexShrink: 0,
                   }}
                 />

@@ -299,7 +299,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
           minHeight: 0,
           borderRadius: '18px',
           backgroundColor: 'var(--chat-list-bg, #2b2d31)',
-          border: 'none',
+          border: '1px solid var(--border-color)',
           outline: 'none',
           boxShadow: 'none',
           overflow: 'hidden',
@@ -421,7 +421,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                     fontSize: '18px',
                     fontWeight: 700,
                     lineHeight: 1.25,
-                    color: 'var(--text-heading, var(--text-main, #ffffff))',
+                    color: 'var(--text-heading, var(--text-main))',
                     wordBreak: 'break-word',
                     userSelect: 'text',
                     WebkitUserSelect: 'text',
@@ -460,7 +460,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                       height: '7px',
                       borderRadius: '50%',
                       flexShrink: 0,
-                      backgroundColor: 'var(--accent-color, #5865F2)',
+                      backgroundColor: 'var(--accent-text, var(--accent-color, #5865F2))',
                     }}
                   />
                 )}
@@ -469,7 +469,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                     fontSize: '12.5px',
                     fontWeight: effectiveChat.online ? 600 : 400,
                     color: effectiveChat.online
-                      ? 'var(--accent-color, #5865F2)'
+                      ? 'var(--accent-text, var(--accent-color, #5865F2))'
                       : 'var(--text-dim, #949ba4)',
                     lineHeight: 1.3,
                   }}
@@ -483,8 +483,8 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
               <div
                 style={{
                   borderRadius: '14px',
-                  backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.05))',
-                  border: 'none',
+                  backgroundColor: 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))',
+                  border: '1px solid var(--border-color)',
                   padding: '10px 12px',
                   display: 'flex',
                   alignItems: 'center',
@@ -514,14 +514,14 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                       textAlign: 'left',
                       fontSize: '13.5px',
                       fontWeight: 500,
-                      color: 'var(--accent-color, #5865F2)',
+                      color: 'var(--accent-text, var(--accent-color, #5865F2))',
                       fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
                       wordBreak: 'break-all',
                       lineHeight: 1.35,
                       transition: 'background-color 0.15s ease',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'rgba(128, 128, 128, 0.16)';
+                      e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(128, 128, 128, 0.14))';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.backgroundColor = 'transparent';
@@ -533,7 +533,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                 <span
                   style={{
                     flexShrink: 0,
-                    color: copiedField === 'username' ? 'var(--accent-color, #5865F2)' : 'var(--text-dim, #949ba4)',
+                    color: copiedField === 'username' ? 'var(--accent-text, var(--accent-color, #5865F2))' : 'var(--text-dim, #949ba4)',
                     display: 'flex',
                     alignItems: 'center',
                     pointerEvents: 'none',
@@ -548,8 +548,8 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
               <div
                 style={{
                   borderRadius: '14px',
-                  backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.05))',
-                  border: 'none',
+                  backgroundColor: 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))',
+                  border: '1px solid var(--border-color)',
                   padding: '10px 12px',
                   display: 'flex',
                   alignItems: 'center',
@@ -579,14 +579,14 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                       textAlign: 'left',
                       fontSize: '12.5px',
                       fontWeight: 500,
-                      color: 'var(--accent-color, #5865F2)',
+                      color: 'var(--accent-text, var(--accent-color, #5865F2))',
                       fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
                       wordBreak: 'break-all',
                       lineHeight: 1.35,
                       transition: 'background-color 0.15s ease',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'rgba(128, 128, 128, 0.16)';
+                      e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(128, 128, 128, 0.14))';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.backgroundColor = 'transparent';
@@ -598,7 +598,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                 <span
                   style={{
                     flexShrink: 0,
-                    color: copiedField === 'id' ? 'var(--accent-color, #5865F2)' : 'var(--text-dim, #949ba4)',
+                    color: copiedField === 'id' ? 'var(--accent-text, var(--accent-color, #5865F2))' : 'var(--text-dim, #949ba4)',
                     display: 'flex',
                     alignItems: 'center',
                     pointerEvents: 'none',
@@ -613,8 +613,8 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
               <div
                 style={{
                   borderRadius: '14px',
-                  backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.05))',
-                  border: 'none',
+                  backgroundColor: 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))',
+                  border: '1px solid var(--border-color)',
                   padding: '10px 12px',
                   display: 'flex',
                   flexDirection: 'column',
@@ -629,7 +629,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                   style={{
                     fontSize: '13px',
                     lineHeight: 1.45,
-                    color: 'var(--text-main, #dbdee1)',
+                    color: 'var(--text-main)',
                     whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',
                     userSelect: 'text',
@@ -646,8 +646,8 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
               <div
                 style={{
                   borderRadius: '14px',
-                  backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.05))',
-                  border: 'none',
+                  backgroundColor: 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))',
+                  border: '1px solid var(--border-color)',
                   padding: '10px 12px',
                   display: 'flex',
                   flexDirection: 'column',
@@ -665,12 +665,12 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                     gap: '6px',
                   }}
                 >
-                  <Cake size={14} style={{ color: 'var(--accent-color, #5865F2)', flexShrink: 0 }} />
+                  <Cake size={14} style={{ color: 'var(--accent-text, var(--accent-color, #5865F2))', flexShrink: 0 }} />
                   <span
                     style={{
                       fontSize: '13px',
                       lineHeight: 1.35,
-                      color: 'var(--text-main, #dbdee1)',
+                      color: 'var(--text-main)',
                       userSelect: 'text',
                       WebkitUserSelect: 'text',
                       cursor: 'text',
@@ -688,6 +688,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
         <div
           style={{
             padding: '12px 18px 18px 18px',
+            borderTop: '1px solid var(--border-color)',
             flexShrink: 0,
             boxSizing: 'border-box',
           }}
@@ -700,10 +701,10 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
               width: '100%',
               padding: '10px 14px',
               borderRadius: '14px',
-              border: 'none',
+              border: '1px solid var(--border-color)',
               outline: 'none',
-              backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.06))',
-              color: 'var(--text-main, #ffffff)',
+              backgroundColor: 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))',
+              color: 'var(--text-main)',
               fontSize: '13.5px',
               fontWeight: 600,
               lineHeight: 1.3,
@@ -714,10 +715,10 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
               transition: 'background-color 0.15s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--accent-color, #5865F2) 18%, var(--surface-container-soft, rgba(128, 128, 128, 0.14)))';
+              e.currentTarget.style.backgroundColor = 'var(--surface-active, color-mix(in srgb, var(--accent-color, #5865F2) 16%, var(--surface-container-strong)))';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--surface-container-soft, rgba(255, 255, 255, 0.06))';
+              e.currentTarget.style.backgroundColor = 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))';
             }}
           >
             {t('profile.show_full', 'Показать полностью')}

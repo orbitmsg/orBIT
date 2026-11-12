@@ -394,17 +394,17 @@ export const GlobalAudioPlayer = () => {
     >
       <style>{`
         .global-audio-player {
-          --player-bg: var(--chat-list-bg, #2b2d31);
-          --player-accent: var(--accent-color);
+          --player-bg: var(--chat-list-bg, var(--bg-secondary, #2b2d31));
+          --player-accent: var(--accent-text, var(--accent-light, var(--accent-color)));
           --player-progress: var(--accent-color);
-          --player-track-bg: var(--surface-muted);
+          --player-track-bg: color-mix(in srgb, var(--text-dim, #949ba4) 28%, transparent);
         }
         [data-theme="light"] .global-audio-player,
         [data-theme-light="true"] .global-audio-player {
-          --player-bg: #f5f5f5;
-          --player-accent: var(--accent-color);
+          --player-bg: var(--chat-list-bg, var(--bg-secondary));
+          --player-accent: var(--accent-text, var(--accent-color));
           --player-progress: var(--accent-color);
-          --player-track-bg: rgba(0, 0, 0, 0.12);
+          --player-track-bg: color-mix(in srgb, var(--text-dim, #6e6e73) 28%, transparent);
         }
         .global-audio-player,
         .global-audio-player * {
@@ -534,7 +534,7 @@ export const GlobalAudioPlayer = () => {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            opacity: isVolumeOpen ? 1 : 0.75,
+            opacity: isVolumeOpen ? 1 : 0.85,
             transition: 'color 0.15s, opacity 0.15s',
           }}
           onMouseEnter={(e) => {
@@ -542,7 +542,7 @@ export const GlobalAudioPlayer = () => {
             handleVolumeMouseEnter();
           }}
           onMouseLeave={(e) => {
-            if (!isVolumeOpen) e.currentTarget.style.opacity = '0.75';
+            if (!isVolumeOpen) e.currentTarget.style.opacity = '0.85';
             handleVolumeMouseLeave();
           }}
         >
@@ -587,11 +587,11 @@ export const GlobalAudioPlayer = () => {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            opacity: isOrderActive || isOrderOpen ? 1 : 0.75,
+            opacity: isOrderActive || isOrderOpen ? 1 : 0.85,
             transition: 'color 0.15s, opacity 0.15s',
           }}
           onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-          onMouseLeave={(e) => { if (!isOrderActive && !isOrderOpen) e.currentTarget.style.opacity = '0.75'; }}
+          onMouseLeave={(e) => { if (!isOrderActive && !isOrderOpen) e.currentTarget.style.opacity = '0.85'; }}
         >
           {shuffle ? (
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -635,12 +635,12 @@ export const GlobalAudioPlayer = () => {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            opacity: repeat !== 'none' ? 1 : 0.6,
+            opacity: repeat !== 'none' ? 1 : 0.8,
             transition: 'color 0.15s, opacity 0.15s',
             position: 'relative',
           }}
           onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-          onMouseLeave={(e) => { if (repeat === 'none') e.currentTarget.style.opacity = '0.6'; }}
+          onMouseLeave={(e) => { if (repeat === 'none') e.currentTarget.style.opacity = '0.8'; }}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="17 1 21 5 17 9"/>
@@ -693,11 +693,11 @@ export const GlobalAudioPlayer = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: playbackRate !== 1 || isSpeedOpen ? 1 : 0.75,
+            opacity: playbackRate !== 1 || isSpeedOpen ? 1 : 0.85,
             transition: 'color 0.15s, opacity 0.15s',
           }}
           onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-          onMouseLeave={(e) => { if (playbackRate === 1 && !isSpeedOpen) e.currentTarget.style.opacity = '0.75'; }}
+          onMouseLeave={(e) => { if (playbackRate === 1 && !isSpeedOpen) e.currentTarget.style.opacity = '0.85'; }}
         >
           {playbackRate === 1 ? '1X' : `${playbackRate.toFixed(1)}X`}
         </button>
@@ -720,11 +720,11 @@ export const GlobalAudioPlayer = () => {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            opacity: 0.6,
+            opacity: 0.8,
             transition: 'opacity 0.2s',
           }}
           onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.6'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.8'; }}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
             <path fill="currentColor" d="M6.4 19L5 17.6l5.6-5.6L5 6.4L6.4 5l5.6 5.6L17.6 5L19 6.4L13.4 12l5.6 5.6l-1.4 1.4l-5.6-5.6z"/>

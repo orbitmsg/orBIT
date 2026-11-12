@@ -429,7 +429,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
               cy={100}
               r={70}
               fill="none"
-              stroke="rgba(255, 255, 255, 0.05)"
+              stroke="var(--surface-container-strong, rgba(255, 255, 255, 0.08))"
               strokeWidth={30}
             />
 
@@ -449,7 +449,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
               />
             ))}
 
-            <circle cx={100} cy={100} r={55} fill="#1e1a2b" />
+            <circle cx={100} cy={100} r={55} fill="var(--settings-bg, var(--bg-secondary, #1e1a2b))" />
           </svg>
 
           <svg width={200} height={200} viewBox="0 0 200 200" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
@@ -483,16 +483,16 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
               pointerEvents: 'none',
             }}
           >
-            <span style={{ fontSize: 28, fontWeight: 800, color: '#ffffff', lineHeight: 1 }}>
+            <span style={{ fontSize: 28, fontWeight: 800, color: 'var(--text-heading, var(--md-on-surface))', lineHeight: 1 }}>
               {centerDisplay.val}
             </span>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#a8a0c2', marginTop: 4, letterSpacing: '0.06em' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-dim, var(--md-on-surface-var))', marginTop: 4, letterSpacing: '0.06em' }}>
               {centerDisplay.unit}
             </span>
           </div>
         </div>
 
-        <div style={{ marginTop: 14, fontSize: 13, color: '#a8a0c2', textAlign: 'center', fontWeight: 500 }}>
+        <div style={{ marginTop: 14, fontSize: 13, color: 'var(--text-dim, var(--md-on-surface-var))', textAlign: 'center', fontWeight: 500 }}>
           {diskUsageText}
         </div>
 
@@ -501,7 +501,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
             width: 38,
             height: 4,
             borderRadius: 2,
-            backgroundColor: 'rgba(255, 255, 255, 0.12)',
+            backgroundColor: 'var(--border-color, rgba(255, 255, 255, 0.12))',
             marginTop: 14,
             marginBottom: 6,
           }}
@@ -534,7 +534,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
                 cursor: 'pointer',
                 transition: 'background-color 0.15s ease',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.04)')}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(255, 255, 255, 0.04))')}
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -544,7 +544,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
                     height: 20,
                     borderRadius: '50%',
                     backgroundColor: isChecked ? cfg.color : 'transparent',
-                    border: isChecked ? 'none' : '2px solid rgba(255, 255, 255, 0.3)',
+                    border: isChecked ? 'none' : '2px solid var(--md-outline-med, var(--text-dim))',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -556,18 +556,18 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: '#ffffff' }}>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--md-on-surface, var(--text-main))' }}>
                     {t(cfg.labelKey)}
                   </span>
                   {size > 0 && (
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255, 255, 255, 0.55)' }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-dim, var(--md-on-surface-var))' }}>
                       {percent}%
                     </span>
                   )}
                 </div>
               </div>
 
-              <div style={{ fontSize: 13.5, fontWeight: 600, color: '#ffffff' }}>
+              <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--md-on-surface, var(--text-main))' }}>
                 {formatBytes(size)}
               </div>
             </div>
@@ -589,8 +589,9 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
               height: 44,
               borderRadius: 22,
               border: 'none',
-              backgroundColor: selectedSize > 0 && !isClearing ? 'var(--accent-color, #7C3AED)' : 'rgba(255, 255, 255, 0.08)',
-              color: selectedSize > 0 && !isClearing ? '#ffffff' : 'rgba(255, 255, 255, 0.3)',
+              backgroundColor: selectedSize > 0 && !isClearing ? 'var(--accent-color, #7C3AED)' : 'var(--surface-muted, rgba(255, 255, 255, 0.08))',
+              color: selectedSize > 0 && !isClearing ? 'var(--accent-on-color, #ffffff)' : 'var(--text-dim)',
+              opacity: selectedSize > 0 && !isClearing ? 1 : 0.65,
               fontSize: 14,
               fontWeight: 600,
               cursor: selectedSize > 0 && !isClearing ? 'pointer' : 'default',
@@ -611,7 +612,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
         </div>
       </div>
 
-      <div style={{ padding: '10px 20px 14px', fontSize: 12, color: '#8a82a2', lineHeight: 1.45 }}>
+      <div style={{ padding: '10px 20px 14px', fontSize: 12, color: 'var(--text-dim, var(--md-on-surface-var))', lineHeight: 1.45 }}>
         {t('settings.cloud_storage_notice')}
       </div>
 
@@ -621,14 +622,14 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
         </div>
         <div style={{ backgroundColor: MD3.surface, borderRadius: 16, margin: '0 10px', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: 'var(--accent-glow-light, rgba(88, 101, 242, 0.15))', color: 'var(--accent-color, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: 'var(--accent-glow-light, rgba(88, 101, 242, 0.15))', color: 'var(--accent-text, var(--accent-color, #a78bfa))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Folder size={18} />
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#ffffff', wordBreak: 'break-all' }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--md-on-surface, var(--text-main))', wordBreak: 'break-all' }}>
                 {folderInfo?.path || '...'}
               </div>
-              <div style={{ fontSize: 11.5, color: folderInfo?.exists ? 'rgba(255, 255, 255, 0.5)' : '#f59e0b', marginTop: 2 }}>
+              <div style={{ fontSize: 11.5, color: folderInfo?.exists ? 'var(--text-dim, var(--md-on-surface-var))' : '#f59e0b', marginTop: 2 }}>
                 {folderInfo?.exists ? (folderInfo.isDefault ? t('settings.reset_folder_default') : 'Custom') : t('settings.media_folder_not_created')}
               </div>
             </div>
@@ -638,7 +639,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
               type="button"
               onClick={handlePickFolder}
               aria-label={t('settings.change_folder')}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: 'none', backgroundColor: 'var(--accent-color, #7c3aed)', color: '#ffffff', fontSize: 12.5, fontWeight: 500, cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: 'none', backgroundColor: 'var(--accent-color, #7c3aed)', color: 'var(--accent-on-color, #ffffff)', fontSize: 12.5, fontWeight: 500, cursor: 'pointer' }}
             >
               <Folder size={14} />
               <span>{t('settings.change_folder')}</span>
@@ -647,7 +648,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
               type="button"
               onClick={handleOpenFolder}
               aria-label={t('settings.open_in_explorer')}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: 'none', backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#ffffff', fontSize: 12.5, fontWeight: 500, cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: 'none', backgroundColor: 'var(--surface-container-strong, var(--surface-muted))', color: 'var(--md-on-surface, var(--text-main))', fontSize: 12.5, fontWeight: 500, cursor: 'pointer' }}
             >
               <ExternalLink size={14} />
               <span>{t('settings.open_in_explorer')}</span>
@@ -657,7 +658,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
                 type="button"
                 onClick={handleResetFolder}
                 aria-label={t('settings.reset_folder_default')}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: 'none', backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#ffffff', fontSize: 12.5, fontWeight: 500, cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: 'none', backgroundColor: 'var(--surface-container-strong, var(--surface-muted))', color: 'var(--md-on-surface, var(--text-main))', fontSize: 12.5, fontWeight: 500, cursor: 'pointer' }}
               >
                 <RotateCcw size={14} />
                 <span>{t('settings.reset_folder_default')}</span>
@@ -665,7 +666,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
             )}
           </div>
         </div>
-        <div style={{ padding: '8px 20px 0', fontSize: 12, color: '#8a82a2', lineHeight: 1.45 }}>
+        <div style={{ padding: '8px 20px 0', fontSize: 12, color: 'var(--text-dim, var(--md-on-surface-var))', lineHeight: 1.45 }}>
           {t('settings.media_folder_desc')}
         </div>
       </div>
@@ -676,14 +677,14 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
         </div>
         <div style={{ backgroundColor: MD3.surface, borderRadius: 16, margin: '0 10px', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Cpu size={18} />
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#ffffff' }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--md-on-surface, var(--text-main))' }}>
                 {t('settings.current_ram_usage', { size: formatBytes(ramUsage || 0) })}
               </div>
-              <div style={{ fontSize: 11.5, color: 'rgba(255, 255, 255, 0.5)', marginTop: 2 }}>
+              <div style={{ fontSize: 11.5, color: 'var(--text-dim, var(--md-on-surface-var))', marginTop: 2 }}>
                 {t('settings.memory_management_desc')}
               </div>
             </div>
@@ -693,7 +694,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
             onClick={handleOptimizeRam}
             disabled={isOptimizingRam}
             aria-label={t('settings.optimize_ram_action')}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: 'none', backgroundColor: 'var(--accent-color, #7c3aed)', color: '#ffffff', fontSize: 12.5, fontWeight: 500, cursor: isOptimizingRam ? 'default' : 'pointer', flexShrink: 0 }}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: 'none', backgroundColor: 'var(--accent-color, #7c3aed)', color: 'var(--accent-on-color, #ffffff)', fontSize: 12.5, fontWeight: 500, cursor: isOptimizingRam ? 'default' : 'pointer', flexShrink: 0 }}
           >
             {isOptimizingRam ? <RefreshCw size={14} className="animate-spin" /> : <Cpu size={14} />}
             <span>{t('settings.optimize_ram_action')}</span>
@@ -749,7 +750,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
                             width: 38,
                             height: 38,
                             backgroundColor: 'var(--accent-glow-light, rgba(88, 101, 242, 0.25))',
-                            color: '#ffffff',
+                            color: 'var(--accent-text, var(--accent-color, #ffffff))',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -763,7 +764,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
                     </div>
 
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--md-on-surface, var(--text-main))', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {item.chatName}
                       </div>
                       <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>
@@ -773,7 +774,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-                    <span style={{ fontSize: 13.5, fontWeight: 600, color: '#ffffff' }}>
+                    <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--md-on-surface, var(--text-main))' }}>
                       {formatBytes(item.size)}
                     </span>
                     <button
@@ -795,7 +796,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.color = MD3.error;
-                        e.currentTarget.style.backgroundColor = 'rgba(255, 89, 90, 0.1)';
+                        e.currentTarget.style.backgroundColor = 'var(--md-error-cont, rgba(255, 89, 90, 0.1))';
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.color = MD3.onSurfaceVar;
@@ -827,7 +828,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
                         width: 38,
                         height: 38,
                         borderRadius: '50%',
-                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                        backgroundColor: 'var(--surface-muted, rgba(255, 255, 255, 0.08))',
                         color: MD3.onSurfaceVar,
                         display: 'flex',
                         alignItems: 'center',
@@ -839,7 +840,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
                     </div>
 
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: '#ffffff' }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--md-on-surface, var(--text-main))' }}>
                         {t('settings.other_chats_media')}
                       </div>
                       <div style={{ fontSize: 12, color: MD3.onSurfaceVar, marginTop: 2 }}>
@@ -849,7 +850,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-                    <span style={{ fontSize: 13.5, fontWeight: 600, color: '#ffffff' }}>
+                    <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--md-on-surface, var(--text-main))' }}>
                       {formatBytes(orphanStats.size)}
                     </span>
                     <button
@@ -957,7 +958,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
 
             {autoLoadMedia && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 14, paddingBottom: 12 }}>
-                <div style={{ padding: '10px 14px', borderRadius: 12, backgroundColor: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                <div style={{ padding: '10px 14px', borderRadius: 12, backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.03))', border: '1px solid var(--border-color, rgba(255, 255, 255, 0.05))' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: 13, fontWeight: 500, color: MD3.onSurface }}>{t('settings.auto_load_photos')}</span>
                     <M3Switch checked={autoLoadPhotos} onChange={() => setAutoLoadPhotos(!autoLoadPhotos)} />
@@ -977,7 +978,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
                   )}
                 </div>
 
-                <div style={{ padding: '10px 14px', borderRadius: 12, backgroundColor: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                <div style={{ padding: '10px 14px', borderRadius: 12, backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.03))', border: '1px solid var(--border-color, rgba(255, 255, 255, 0.05))' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: 13, fontWeight: 500, color: MD3.onSurface }}>{t('settings.auto_load_videos')}</span>
                     <M3Switch checked={autoLoadVideos} onChange={() => setAutoLoadVideos(!autoLoadVideos)} />
@@ -997,7 +998,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
                   )}
                 </div>
 
-                <div style={{ padding: '10px 14px', borderRadius: 12, backgroundColor: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                <div style={{ padding: '10px 14px', borderRadius: 12, backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.03))', border: '1px solid var(--border-color, rgba(255, 255, 255, 0.05))' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: 13, fontWeight: 500, color: MD3.onSurface }}>{t('settings.auto_load_audio')}</span>
                     <M3Switch checked={autoLoadAudio} onChange={() => setAutoLoadAudio(!autoLoadAudio)} />
@@ -1017,7 +1018,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
                   )}
                 </div>
 
-                <div style={{ padding: '10px 14px', borderRadius: 12, backgroundColor: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                <div style={{ padding: '10px 14px', borderRadius: 12, backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.03))', border: '1px solid var(--border-color, rgba(255, 255, 255, 0.05))' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: 13, fontWeight: 500, color: MD3.onSurface }}>{t('settings.auto_load_files')}</span>
                     <M3Switch checked={autoLoadFiles} onChange={() => setAutoLoadFiles(!autoLoadFiles)} />
@@ -1041,7 +1042,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
           </div>
         </div>
 
-        <div style={{ padding: '10px 20px', fontSize: 12, color: '#8a82a2', lineHeight: 1.45 }}>
+        <div style={{ padding: '10px 20px', fontSize: 12, color: 'var(--text-dim, var(--md-on-surface-var))', lineHeight: 1.45 }}>
           {t('settings.limits_section_desc')}
         </div>
       </div>
@@ -1059,7 +1060,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
               transform: 'translateX(-50%)',
               backgroundColor: 'var(--surface-container-strong, #232428)',
               border: '1px solid var(--border-color, rgba(255, 255, 255, 0.12))',
-              color: '#ffffff',
+              color: 'var(--text-main, #ffffff)',
               padding: '10px 20px',
               borderRadius: 20,
               fontSize: 13,

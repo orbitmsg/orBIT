@@ -147,7 +147,7 @@ export const PreferencesTab = ({
                         <span>{t('settings.update_downloading')}</span>
                         <span>{updateStatus.percent || 0}%</span>
                       </div>
-                      <div style={{ width: '100%', height: 4, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: 2, overflow: 'hidden' }}>
+                      <div style={{ width: '100%', height: 4, backgroundColor: 'var(--border-color)', borderRadius: 2, overflow: 'hidden' }}>
                         <div
                           style={{
                             width: `${updateStatus.percent || 0}%`,
@@ -188,7 +188,7 @@ export const PreferencesTab = ({
                         padding: '8px 14px',
                         borderRadius: 8,
                         backgroundColor: MD3.primary,
-                        color: '#ffffff',
+                        color: 'var(--accent-on-color, #ffffff)',
                         fontSize: 12.5,
                         fontWeight: 600,
                         border: 'none',
@@ -212,7 +212,7 @@ export const PreferencesTab = ({
                         padding: '8px 14px',
                         borderRadius: 8,
                         backgroundColor: MD3.primary,
-                        color: '#ffffff',
+                        color: 'var(--accent-on-color, #ffffff)',
                         fontSize: 12.5,
                         fontWeight: 600,
                         border: 'none',
@@ -251,7 +251,7 @@ export const PreferencesTab = ({
                       }}
                       onMouseEnter={(e) => {
                         if (!isCheckingUpdate && updateStatus.status !== 'downloading') {
-                          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+                          e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
                         }
                       }}
                       onMouseLeave={(e) => {

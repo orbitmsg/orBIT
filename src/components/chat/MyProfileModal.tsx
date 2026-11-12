@@ -632,7 +632,7 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                     transition: 'color 150ms, background 150ms',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
+                    e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
                     e.currentTarget.style.color = 'var(--text-main)';
                   }}
                   onMouseLeave={(e) => {
@@ -663,7 +663,7 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                     transition: 'color 150ms, background 150ms',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
+                    e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
                     e.currentTarget.style.color = 'var(--text-main)';
                   }}
                   onMouseLeave={(e) => {
@@ -812,7 +812,7 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                               boxSizing: 'border-box',
                               borderRadius: '50%',
                               background: 'var(--accent-color)',
-                              color: '#fff',
+                              color: 'var(--accent-on-color, #ffffff)',
                               border: 'none',
                               cursor: 'pointer',
                               display: 'flex',
@@ -1083,7 +1083,7 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                                   margin: '-2px -6px',
                                   transition: 'background-color 0.15s ease',
                                 }}
-                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)'; }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-hover)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                               >
                                 @{username}
@@ -1142,7 +1142,7 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                                     margin: '-2px -6px',
                                     transition: 'background-color 0.15s ease',
                                   }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)'; }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-hover)'; }}
                                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                                 >
                                   {myCode || userId}

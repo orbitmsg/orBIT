@@ -100,10 +100,15 @@ const renderCircularWaves = (
   const baseAmp = 3.5 + pulse + vol * 7.2;
 
   if (isOwn) {
-    const white: [number, number, number] = [255, 255, 255];
-    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp, phase * 0.65, 0, white, 0.18 + vol * 0.12);
-    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.75, -phase * 0.50 + 1.7, 2.1, white, 0.28 + vol * 0.18);
-    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.45, phase * 0.85 + 3.2, 4.3, white, 0.45 + vol * 0.22);
+    let ownRgb: [number, number, number] = [255, 255, 255];
+    if (typeof document !== 'undefined') {
+      const ownText = getComputedStyle(document.documentElement).getPropertyValue('--bubble-own-text').trim();
+      const parsedOwn = parseHexColor(ownText);
+      if (parsedOwn) ownRgb = parsedOwn;
+    }
+    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp, phase * 0.65, 0, ownRgb, 0.18 + vol * 0.12);
+    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.75, -phase * 0.50 + 1.7, 2.1, ownRgb, 0.28 + vol * 0.18);
+    drawCircularWaveLayer(ctx, cx, cy, baseR, baseAmp * 0.45, phase * 0.85 + 3.2, 4.3, ownRgb, 0.45 + vol * 0.22);
   } else {
     let rgb: [number, number, number] = [124, 58, 237];
     if (typeof document !== 'undefined') {
@@ -150,16 +155,29 @@ const drawWaveformCanvas = (
   const barCount = bars.length;
   if (barCount === 0) return;
 
-  const inactiveColor = isLoaded
-    ? (isOwn ? 'rgba(255, 255, 255, 0.40)' : 'rgba(255, 255, 255, 0.28)')
-    : (isOwn ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.12)');
+  const isLightTheme =
+    typeof document !== 'undefined' &&
+    document.documentElement.getAttribute('data-theme-light') === 'true';
 
+  let ownTextColor = '#ffffff';
   let accentColor = '#5865F2';
   if (typeof document !== 'undefined') {
-    const val = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim();
-    if (val) accentColor = val;
+    const styles = getComputedStyle(document.documentElement);
+    const ownVal = styles.getPropertyValue('--bubble-own-text').trim();
+    if (ownVal) ownTextColor = ownVal;
+    const accentVal = styles.getPropertyValue('--accent-text').trim() || styles.getPropertyValue('--accent-color').trim();
+    if (accentVal) accentColor = accentVal;
   }
-  const activeColor = isOwn ? '#ffffff' : accentColor;
+
+  const isOwnDarkText = ownTextColor.toLowerCase() === '#111318';
+  const inactiveOwn = isLoaded
+    ? (isOwnDarkText ? 'rgba(17, 19, 24, 0.36)' : 'rgba(255, 255, 255, 0.40)')
+    : (isOwnDarkText ? 'rgba(17, 19, 24, 0.18)' : 'rgba(255, 255, 255, 0.18)');
+  const inactiveIncoming = isLoaded
+    ? (isLightTheme ? 'rgba(24, 27, 34, 0.26)' : 'rgba(255, 255, 255, 0.28)')
+    : (isLightTheme ? 'rgba(24, 27, 34, 0.14)' : 'rgba(255, 255, 255, 0.12)');
+  const inactiveColor = isOwn ? inactiveOwn : inactiveIncoming;
+  const activeColor = isOwn ? ownTextColor : accentColor;
 
   ctx.beginPath();
   for (let i = 0; i < barCount; i++) {
@@ -234,6 +252,9 @@ export const VoiceMessagePlayer = memo(({
   const bubbleRadius = useChatStore((state) => state.bubbleRadius);
   const markVoiceListened = useChatStore((state) => state.markVoiceListened);
   const chatElementAnimations = useChatStore((state) => state.chatElementAnimations);
+  const currentTheme = useChatStore((state) => state.currentTheme);
+  const themeTintId = useChatStore((state) => state.themeTintId);
+  const chatColor = useChatStore((state) => state.chatColor);
 
   const trackId = msg?.id || messageId || url;
   const isCurrentTrack = useAudioStore((state) => state.currentTrack?.id === trackId);
@@ -364,7 +385,7 @@ export const VoiceMessagePlayer = memo(({
     const canvas = waveformCanvasRef.current;
     const ratio = effectiveDuration > 0 ? Math.min(1, Math.max(0, savedPosition / effectiveDuration)) : 0;
     drawWaveformCanvas(canvas, bars, ratio, isLoaded, isOwn);
-  }, [bars, isLoaded, isOwn, isPlaying, savedPosition, effectiveDuration]);
+  }, [bars, isLoaded, isOwn, isPlaying, savedPosition, effectiveDuration, currentTheme, themeTintId, chatColor]);
 
   const handlePlayToggle = useCallback(() => {
     if (isCurrentTrack) {
@@ -652,7 +673,7 @@ export const VoiceMessagePlayer = memo(({
             width: '48px',
             height: '48px',
             borderRadius: '50%',
-            backgroundColor: isOwn
+            background: isOwn
               ? 'var(--chat-bubble-own-bg, #2c6bed)'
               : 'var(--chat-bubble-incoming-bg, var(--surface-container))',
             zIndex: 1,
@@ -691,7 +712,14 @@ export const VoiceMessagePlayer = memo(({
           />
         </div>
 
-        <div className="flex items-center justify-between" style={{ fontSize: '10.5px', color: isOwn ? 'rgba(255, 255, 255, 0.7)' : 'var(--text-dim)', marginTop: '1px' }}>
+        <div
+          className="flex items-center justify-between"
+          style={{
+            fontSize: '10.5px',
+            color: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 78%, transparent)' : 'var(--text-dim)',
+            marginTop: '1px',
+          }}
+        >
           <div style={{ display: 'inline-flex', alignItems: 'center' }}>
             <span ref={timeDisplayRef} className="tabular-nums">
               {isUploading
@@ -710,7 +738,7 @@ export const VoiceMessagePlayer = memo(({
                   width: '6px',
                   height: '6px',
                   borderRadius: '50%',
-                  backgroundColor: isOwn ? '#ffffff' : 'var(--accent-color, #7C3AED)',
+                  backgroundColor: isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--accent-text, var(--accent-color, #7C3AED))',
                   marginLeft: '5px',
                   flexShrink: 0,
                 }}

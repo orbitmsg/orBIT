@@ -361,7 +361,7 @@ export const ProxyEditModal: React.FC<ProxyEditModalProps> = ({
                       ? 'var(--accent-color, #9b7dd4)'
                       : 'var(--surface-container, rgba(255, 255, 255, 0.05))',
                     boxShadow: active ? '0 4px 12px var(--accent-glow, rgba(88, 101, 242, 0.25))' : 'none',
-                    color: active ? '#fff' : 'var(--text-main)',
+                    color: active ? 'var(--accent-on-color, #ffffff)' : 'var(--text-main)',
                     transition: 'all 0.12s ease',
                   }}
                 >
@@ -585,7 +585,7 @@ export const ProxyEditModal: React.FC<ProxyEditModalProps> = ({
               borderRadius: '12px',
               background: 'var(--accent-color, #9b7dd4)',
               border: 'none',
-              color: '#fff',
+              color: 'var(--accent-on-color, #ffffff)',
               fontSize: '13px',
               fontWeight: 600,
               cursor: 'pointer',

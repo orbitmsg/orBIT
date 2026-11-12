@@ -109,7 +109,7 @@ export const MyAccountTab = ({
               boxSizing: 'border-box',
               borderRadius: '50%',
               background: 'var(--accent-color)',
-              color: '#fff',
+              color: 'var(--accent-on-color, #ffffff)',
               border: '3.5px solid var(--settings-bg, var(--bg-secondary))',
               cursor: 'pointer',
               display: 'flex',
@@ -183,11 +183,11 @@ export const MyAccountTab = ({
                     boxSizing: 'border-box',
                     transition: 'background-color 0.12s ease',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.08))')}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-hover, var(--surface-container-strong))')}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
                   <div style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" style={{ color: 'var(--text-main, rgba(255, 255, 255, 0.85))' }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" style={{ color: 'var(--text-main)' }}>
                       <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
                         <path d="M15 8h.01M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z" />
                         <path d="m3 16l5-5c.928-.893 2.072-.893 3 0l5 5" />
@@ -222,11 +222,11 @@ export const MyAccountTab = ({
                     boxSizing: 'border-box',
                     transition: 'background-color 0.12s ease',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.08))')}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-hover, var(--surface-container-strong))')}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
                   <div style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" style={{ color: 'var(--text-main, rgba(255, 255, 255, 0.85))' }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" style={{ color: 'var(--text-main)' }}>
                       <path fill="currentColor" d="M5 5h2v1c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V5h2v6h2V5c0-1.1-.9-2-2-2h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h5v-2H5zm7-2c.55 0 1 .45 1 1s-.45 1-1 1s-1-.45-1-1s.45-1 1-1" />
                       <path fill="currentColor" d="m21.29 16.29l-2.58-2.58a.996.996 0 1 0-1.41 1.41l.87.88H13c-.55 0-1 .45-1 1s.45 1 1 1h5.17l-.87.88a.996.996 0 1 0 1.41 1.41l2.58-2.58c.39-.4.39-1.03 0-1.42" />
                     </svg>
@@ -258,7 +258,7 @@ export const MyAccountTab = ({
                     boxSizing: 'border-box',
                     transition: 'background-color 0.12s ease',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.08))')}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-hover, var(--surface-container-strong))')}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
                   <div
@@ -305,7 +305,7 @@ export const MyAccountTab = ({
                       boxSizing: 'border-box',
                       transition: 'background-color 0.12s ease',
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.08))')}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-hover, var(--surface-container-strong))')}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
                     <div style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -337,7 +337,7 @@ export const MyAccountTab = ({
           </div>
         </div>
 
-        <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--accent-color, #9b7dd4)' }}>
+        <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--accent-text, var(--accent-color, #9b7dd4))' }}>
           {t('status.online', 'в сети')}
         </div>
       </div>
@@ -433,7 +433,7 @@ export const MyAccountTab = ({
               margin: '-2px -6px',
               transition: 'background-color 0.15s ease',
             }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)')}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-hover, var(--surface-container-strong))')}
             onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
             {nickname || 'User'}
@@ -460,7 +460,7 @@ export const MyAccountTab = ({
             style={{
               fontSize: '13px',
               fontWeight: 500,
-              color: 'var(--accent-color, #9b7dd4)',
+              color: 'var(--accent-text, var(--accent-color, #9b7dd4))',
               fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
               maxWidth: '55%',
               overflow: 'hidden',
@@ -472,7 +472,7 @@ export const MyAccountTab = ({
               margin: '-2px -6px',
               transition: 'background-color 0.15s ease',
             }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)')}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-hover, var(--surface-container-strong))')}
             onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
             {myCode || userId || '------'}
@@ -500,7 +500,7 @@ export const MyAccountTab = ({
               style={{
                 fontSize: '14px',
                 fontWeight: 500,
-                color: username ? 'var(--accent-color, #9b7dd4)' : MD3.onSurfaceVar,
+                color: username ? 'var(--accent-text, var(--accent-color, #9b7dd4))' : MD3.onSurfaceVar,
                 fontFamily: username ? '"JetBrains Mono", Consolas, Menlo, monospace' : 'inherit',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -511,7 +511,7 @@ export const MyAccountTab = ({
                 margin: '-2px -6px',
                 transition: 'background-color 0.15s ease',
               }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)')}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-hover, var(--surface-container-strong))')}
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
             >
               {username ? `@${username}` : t('profile.username_not_set', 'Не установлено')}
@@ -560,14 +560,14 @@ export const MyAccountTab = ({
             style={{
               fontSize: '14px',
               fontWeight: 500,
-              color: birthday ? 'var(--text-main, #ffffff)' : MD3.onSurfaceVar,
+              color: birthday ? MD3.onSurface : MD3.onSurfaceVar,
               cursor: 'pointer',
               borderRadius: '6px',
               padding: '2px 6px',
               margin: '-2px -6px',
               transition: 'background-color 0.15s ease',
             }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)')}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-hover, var(--surface-container-strong))')}
             onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
             {birthday ? formatBirthday(birthday, i18n.language) : t('profile.birthday_not_set', 'Не указан')}

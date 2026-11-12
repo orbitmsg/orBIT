@@ -1033,7 +1033,7 @@ export const SettingsScreen = () => {
                 height: isMobileWidth ? undefined : '52px',
                 padding: isMobileWidth ? '16px 20px' : '0 22px',
                 backgroundColor: MD3.bg,
-                borderBottom: isMobileWidth ? 'none' : '1px solid rgba(255, 255, 255, 0.06)',
+                borderBottom: isMobileWidth ? 'none' : '1px solid var(--border-color)',
                 flexShrink: 0,
                 userSelect: 'none',
                 display: 'flex',
@@ -1064,7 +1064,7 @@ export const SettingsScreen = () => {
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.color = MD3.onSurface;
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                      e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.color = MD3.onSurfaceVar;
@@ -1110,7 +1110,7 @@ export const SettingsScreen = () => {
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.color = MD3.onSurface;
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                      e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.color = MD3.onSurfaceVar;
@@ -1141,7 +1141,7 @@ export const SettingsScreen = () => {
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.color = MD3.onSurface;
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                    e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.color = MD3.onSurfaceVar;

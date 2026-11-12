@@ -1010,7 +1010,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                   boxSizing: 'border-box',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
+                  e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = 'transparent';
@@ -1121,7 +1121,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                   transition: 'color 150ms, background 150ms',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
+                  e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
                   e.currentTarget.style.color = 'var(--text-main)';
                 }}
                 onMouseLeave={(e) => {
@@ -1157,7 +1157,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                 }}
                 onMouseEnter={(e) => {
                   if (!isSavingChannel && editName.trim()) {
-                    e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
+                    e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -1312,7 +1312,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                       transition: 'color 150ms, background 150ms',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = (effectiveBannerUrl && scrollOffset < 160) ? 'rgba(0, 0, 0, 0.65)' : 'rgba(255,255,255,0.08)';
+                      e.currentTarget.style.backgroundColor = (effectiveBannerUrl && scrollOffset < 160) ? 'rgba(0, 0, 0, 0.65)' : 'var(--surface-hover)';
                       e.currentTarget.style.color = 'var(--text-main)';
                     }}
                     onMouseLeave={(e) => {
@@ -1344,7 +1344,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                       transition: 'color 150ms, background 150ms',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = (effectiveBannerUrl && scrollOffset < 160) ? 'rgba(0, 0, 0, 0.65)' : 'rgba(255,255,255,0.08)';
+                      e.currentTarget.style.backgroundColor = (effectiveBannerUrl && scrollOffset < 160) ? 'rgba(0, 0, 0, 0.65)' : 'var(--surface-hover)';
                       e.currentTarget.style.color = 'var(--text-main)';
                     }}
                     onMouseLeave={(e) => {

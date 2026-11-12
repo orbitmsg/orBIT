@@ -10,13 +10,15 @@ interface OrbitaKeySettingsProps {
 }
 
 const MD3 = {
-  surface: 'var(--surface-container-low, #1e1e1e)',
-  surfaceHigh: 'var(--surface-container-high, #2d2d2d)',
-  onSurface: 'var(--text-main, #ffffff)',
-  onSurfaceVar: 'var(--text-dim, rgba(255, 255, 255, 0.6))',
-  primary: 'var(--accent-color, #7C3AED)',
-  outline: 'rgba(255, 255, 255, 0.1)',
-  error: '#ef4444',
+  surface: 'var(--md-surface, var(--surface-container, #1e1e1e))',
+  surfaceHigh: 'var(--surface-container-strong, var(--md-surface-var, #2d2d2d))',
+  onSurface: 'var(--md-on-surface, var(--text-main, #ffffff))',
+  onSurfaceVar: 'var(--md-on-surface-var, var(--text-dim, #9f96b3))',
+  primary: 'var(--accent-color, var(--md-primary, #7C3AED))',
+  accentText: 'var(--accent-text, var(--accent-color, #7C3AED))',
+  onPrimary: 'var(--accent-on-color, #ffffff)',
+  outline: 'var(--md-outline, var(--border-color, rgba(255, 255, 255, 0.1)))',
+  error: 'var(--md-error, #ef4444)',
   success: '#10b981',
 };
 
@@ -158,13 +160,13 @@ export const OrbitaKeySettings: React.FC<OrbitaKeySettingsProps> = ({ onBack }) 
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: MD3.primary,
+              color: MD3.accentText,
             }}
           >
             <Usb size={20} />
           </div>
           <div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: MD3.onSurface, margin: 0 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-heading, var(--md-on-surface, #ffffff))', margin: 0 }}>
               {t('security.orbita_key_screen_title')}
             </h2>
             <span style={{ fontSize: 12, color: MD3.onSurfaceVar }}>
@@ -269,7 +271,7 @@ export const OrbitaKeySettings: React.FC<OrbitaKeySettingsProps> = ({ onBack }) 
               onClick={handleRemoveKey}
               aria-label={t('security.orbita_key_remove_btn')}
               style={{
-                backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                backgroundColor: 'var(--md-error-cont, rgba(239, 68, 68, 0.12))',
                 color: MD3.error,
                 border: 'none',
                 borderRadius: 999,
@@ -338,7 +340,7 @@ export const OrbitaKeySettings: React.FC<OrbitaKeySettingsProps> = ({ onBack }) 
             }}
           >
             <div style={{ fontSize: 13, fontWeight: 600, color: MD3.onSurface, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <HardDrive size={16} style={{ color: MD3.primary }} />
+              <HardDrive size={16} style={{ color: MD3.accentText }} />
               <span>{t('security.orbita_key_select_drive')}</span>
             </div>
 
@@ -352,7 +354,7 @@ export const OrbitaKeySettings: React.FC<OrbitaKeySettingsProps> = ({ onBack }) 
                     aria-label={d.label}
                     style={{
                       backgroundColor: selectedDrivePath === d.path ? MD3.primary : MD3.surfaceHigh,
-                      color: '#ffffff',
+                      color: selectedDrivePath === d.path ? MD3.onPrimary : MD3.onSurface,
                       border: 'none',
                       borderRadius: 999,
                       padding: '8px 16px',
@@ -426,7 +428,7 @@ export const OrbitaKeySettings: React.FC<OrbitaKeySettingsProps> = ({ onBack }) 
               aria-label={t('security.orbita_key_create_btn')}
               style={{
                 backgroundColor: MD3.primary,
-                color: '#ffffff',
+                color: MD3.onPrimary,
                 border: 'none',
                 borderRadius: 999,
                 padding: '14px 20px',

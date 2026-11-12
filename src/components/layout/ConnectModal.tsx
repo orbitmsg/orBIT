@@ -13,7 +13,7 @@ import {
   Shield,
   Link2,
 } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import QRCode from 'qrcode';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, type Chat } from '../../store/useChatStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -55,6 +55,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
   const [tempWarning, setTempWarning] = useState<string | null>(null);
   const [liveResults, setLiveResults] = useState<UserDirectoryRecord[]>([]);
   const [copiedContactField, setCopiedContactField] = useState<'username' | 'id' | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const tempWarningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const copyContactTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -105,6 +106,29 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
   const myCode = useChatStore((s) => s.myCode);
   const addChannelChat = useChatStore((s) => s.addChannelChat);
   const setActiveChat = useChatStore((s) => s.setActiveChat);
+
+  useEffect(() => {
+    if (activeType !== 'friend' || !myCode) {
+      setQrDataUrl('');
+      return;
+    }
+    let cancelled = false;
+    QRCode.toDataURL(myCode, {
+      width: 192,
+      margin: 0,
+      errorCorrectionLevel: 'M',
+      color: { dark: '#111318', light: '#ffffff' },
+    })
+      .then((url) => {
+        if (!cancelled) setQrDataUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl('');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeType, myCode]);
 
   const cleanMyUsername = myUsername.replace(/^@+/, '').trim();
 
@@ -730,7 +754,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                   </div>
 
                   <div className="mt-3.5 flex flex-col sm:flex-row items-center sm:items-stretch gap-3.5">
-                    {myCode && (
+                    {myCode && qrDataUrl && (
                       <button
                         type="button"
                         onClick={() => handleCopyContact(myCode, 'id')}
@@ -743,7 +767,11 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                           outline: 'none',
                         }}
                       >
-                        <QRCodeSVG value={myCode} size={96} bgColor="#ffffff" fgColor="#111318" level="M" />
+                        <img
+                          src={qrDataUrl}
+                          alt={myCode}
+                          style={{ width: '96px', height: '96px', display: 'block', borderRadius: '6px' }}
+                        />
                       </button>
                     )}
 

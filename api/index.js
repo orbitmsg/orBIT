@@ -83,6 +83,103 @@ function toUuid(id) {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-a${h.slice(17, 20)}-${h.slice(20, 32)}`;
 }
 
+function normalizeUsernameInput(value) {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value !== 'string') return null;
+  const cleaned = value.replace(/^@+/, '').trim().toLowerCase();
+  return cleaned.length > 0 ? cleaned : null;
+}
+
+function parseProfileRow(row) {
+  if (!row) return null;
+  let bannerUrl = row.banner_url || null;
+  let bio = row.bio || null;
+  if (bio && typeof bio === 'string') {
+    const bannerMatch = bio.match(/<!--banner:(.*?)-->/);
+    if (bannerMatch) {
+      if (!bannerUrl) {
+        bannerUrl = bannerMatch[1] || null;
+      }
+      bio = bio.replace(/<!--banner:.*?-->/g, '').trim() || null;
+    }
+  }
+  const username = normalizeUsernameInput(row.username);
+  return {
+    ...row,
+    username: username === undefined ? null : username,
+    banner_url: bannerUrl,
+    bio,
+  };
+}
+
+function coalesceProfileRows(rows) {
+  if (!rows || rows.length === 0) return null;
+  const parsedRows = rows.map(parseProfileRow).filter(Boolean);
+  if (parsedRows.length === 0) return null;
+  const newest = parsedRows[0];
+  const pickFirst = (key) => {
+    for (const r of parsedRows) {
+      const val = r[key];
+      if (val !== undefined && val !== null && val !== '') {
+        return val;
+      }
+    }
+    return null;
+  };
+  const pickBooleanOrValue = (key) => {
+    for (const r of parsedRows) {
+      if (r[key] !== undefined && r[key] !== null) {
+        return r[key];
+      }
+    }
+    return null;
+  };
+  return {
+    ...newest,
+    nickname: pickFirst('nickname'),
+    avatar_url: pickFirst('avatar_url'),
+    banner_url: pickFirst('banner_url'),
+    username: pickFirst('username'),
+    bio: pickFirst('bio'),
+    birthday: pickFirst('birthday'),
+    sender_code: pickFirst('sender_code'),
+    numeric_id: pickFirst('numeric_id'),
+    hide_profile_id: pickBooleanOrValue('hide_profile_id'),
+  };
+}
+
+function isSameProfileOwner(row, chatId, senderCode) {
+  const rSender = row.sender_code ? String(row.sender_code).toLowerCase() : null;
+  const rChat = row.chat_id ? String(row.chat_id).toLowerCase() : null;
+  const bSender = senderCode ? String(senderCode).toLowerCase() : null;
+  const bChat = chatId ? String(chatId).toLowerCase() : null;
+  if (bSender && rSender) {
+    return rSender === bSender;
+  }
+  if (!rSender && rChat) {
+    return rChat === bSender || rChat === bChat;
+  }
+  if (!bSender && rSender) {
+    return rSender === bChat;
+  }
+  return Boolean(rChat && bChat && rChat === bChat);
+}
+
+function stripMissingProfileColumns(payload, error) {
+  const msg = String(error?.message || '');
+  const code = String(error?.code || '');
+  if (!msg && code !== 'PGRST204') return false;
+  let stripped = false;
+  for (const col of ['banner_url', 'birthday', 'username', 'hide_profile_id', 'numeric_id']) {
+    if (Object.prototype.hasOwnProperty.call(payload, col) && (msg.includes(col) || (code === 'PGRST204' && col === 'banner_url'))) {
+      delete payload[col];
+      stripped = true;
+    }
+  }
+  return stripped;
+}
+
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 180;
 const rateLimitMap = new Map();
@@ -924,79 +1021,151 @@ module.exports = async function handler(req, res) {
       if (!supabase) return sendError(res, 'Database not configured', 500);
       if (!body.chatId) return sendError(res, 'Missing chatId parameter', 400);
 
-      const cleanUsername = body.username ? body.username.replace(/^@+/, '').trim().toLowerCase() : null;
-      if (cleanUsername) {
-        const { data: existingRows } = await supabase
+      const incomingUsername = normalizeUsernameInput(body.username);
+      const incomingSenderCode = body.senderCode ? String(body.senderCode).trim() : undefined;
+
+      if (incomingUsername) {
+        const { data: existingRows, error: checkError } = await supabase
           .from('profile_updates')
           .select('sender_code, chat_id')
-          .ilike('username', cleanUsername);
+          .ilike('username', incomingUsername);
+
+        if (checkError) return sendError(res, checkError.message, 500);
 
         if (existingRows && existingRows.length > 0) {
-          const isTaken = existingRows.some((row) => {
-            const owner = row.sender_code || row.chat_id;
-            const current = body.senderCode || body.chatId;
-            return owner && current && owner !== current;
-          });
+          const isTaken = existingRows.some((row) => !isSameProfileOwner(row, body.chatId, incomingSenderCode));
           if (isTaken) {
             return sendError(res, 'USERNAME_TAKEN', 409);
           }
         }
       }
 
-      let cleanBannerUrl = body.bannerUrl !== undefined ? body.bannerUrl : undefined;
-      let cleanBirthday = body.birthday !== undefined ? (body.birthday || null) : undefined;
-      let cleanBio = body.bio !== undefined ? (body.bio || null) : undefined;
-      let targetUsername = cleanUsername !== undefined ? cleanUsername : undefined;
+      let existingProfileRows = [];
+      if (incomingSenderCode) {
+        const { data: rowsBySender, error: lookupError } = await supabase
+          .from('profile_updates')
+          .select('*')
+          .eq('chat_id', body.chatId)
+          .ilike('sender_code', incomingSenderCode)
+          .order('updated_at', { ascending: false })
+          .limit(10);
 
-      if (body.senderCode && (targetUsername === undefined || cleanBirthday === undefined || cleanBannerUrl === undefined || cleanBio === undefined)) {
-        try {
-          const { data: existing } = await supabase
+        if (lookupError) return sendError(res, lookupError.message, 500);
+        existingProfileRows = rowsBySender || [];
+
+        if (existingProfileRows.length === 0 && String(body.chatId).toLowerCase() === incomingSenderCode.toLowerCase()) {
+          const { data: legacyRows, error: legacyError } = await supabase
             .from('profile_updates')
-            .select('username, birthday, banner_url, bio')
+            .select('*')
             .eq('chat_id', body.chatId)
-            .eq('sender_code', body.senderCode)
-            .maybeSingle();
-          if (existing) {
-            if (targetUsername === undefined) targetUsername = existing.username || null;
-            if (cleanBirthday === undefined) cleanBirthday = existing.birthday || null;
-            if (cleanBannerUrl === undefined) cleanBannerUrl = existing.banner_url || null;
-            if (cleanBio === undefined && existing.bio) cleanBio = existing.bio;
-          }
-        } catch {}
-      }
-
-      try {
-        if (body.senderCode) {
-          await supabase.from('profile_updates').delete().eq('chat_id', body.chatId).eq('sender_code', body.senderCode);
+            .is('sender_code', null)
+            .order('updated_at', { ascending: false })
+            .limit(10);
+          if (legacyError) return sendError(res, legacyError.message, 500);
+          existingProfileRows = legacyRows || [];
         }
-      } catch {}
+      } else {
+        const { data: rowsWithoutSender, error: lookupError } = await supabase
+          .from('profile_updates')
+          .select('*')
+          .eq('chat_id', body.chatId)
+          .is('sender_code', null)
+          .order('updated_at', { ascending: false })
+          .limit(10);
 
-      let effectiveBio = cleanBio || null;
-      if (cleanBannerUrl) {
-        effectiveBio = effectiveBio ? `${effectiveBio}\n<!--banner:${cleanBannerUrl}-->` : `<!--banner:${cleanBannerUrl}-->`;
+        if (lookupError) return sendError(res, lookupError.message, 500);
+        existingProfileRows = rowsWithoutSender || [];
       }
 
-      const insertPayload = {
+      const existingMerged = coalesceProfileRows(existingProfileRows);
+
+      let incomingBanner = body.bannerUrl !== undefined ? (body.bannerUrl || null) : undefined;
+      let incomingBio = body.bio !== undefined ? (body.bio || null) : undefined;
+      if (typeof incomingBio === 'string') {
+        const bannerMatch = incomingBio.match(/<!--banner:(.*?)-->/);
+        if (bannerMatch && incomingBanner === undefined) {
+          incomingBanner = bannerMatch[1] || null;
+        }
+        incomingBio = incomingBio.replace(/<!--banner:.*?-->/g, '').trim() || null;
+      }
+
+      const mergedNickname = body.nickname !== undefined ? (body.nickname || null) : (existingMerged?.nickname ?? null);
+      const mergedAvatarUrl = body.avatarUrl !== undefined ? (body.avatarUrl || null) : (existingMerged?.avatar_url ?? null);
+      const mergedBannerUrl = incomingBanner !== undefined ? incomingBanner : (existingMerged?.banner_url ?? null);
+      const mergedBio = incomingBio !== undefined ? incomingBio : (existingMerged?.bio ?? null);
+      const mergedUsername = incomingUsername !== undefined ? incomingUsername : (existingMerged?.username ?? null);
+      const mergedBirthday = body.birthday !== undefined ? (body.birthday || null) : (existingMerged?.birthday ?? null);
+      const mergedHideProfileId = body.hideProfileId !== undefined ? body.hideProfileId : (existingMerged?.hide_profile_id ?? null);
+      const mergedSenderCode = incomingSenderCode !== undefined ? incomingSenderCode : (existingMerged?.sender_code ?? null);
+      const incomingNumericId = body.numericId !== undefined ? (body.numericId || null) : (body.numeric_id !== undefined ? (body.numeric_id || null) : undefined);
+      const mergedNumericId = incomingNumericId !== undefined ? incomingNumericId : (existingMerged?.numeric_id ?? null);
+
+      let effectiveBio = mergedBio || null;
+      if (mergedBannerUrl) {
+        effectiveBio = effectiveBio ? `${effectiveBio}\n<!--banner:${mergedBannerUrl}-->` : `<!--banner:${mergedBannerUrl}-->`;
+      }
+
+      const writePayload = {
         chat_id: body.chatId,
-        nickname: body.nickname || null,
-        avatar_url: body.avatarUrl || null,
-        banner_url: cleanBannerUrl !== undefined ? cleanBannerUrl : null,
-        hide_profile_id: body.hideProfileId !== undefined ? body.hideProfileId : null,
-        sender_code: body.senderCode || null,
+        nickname: mergedNickname,
+        avatar_url: mergedAvatarUrl,
+        banner_url: mergedBannerUrl,
+        hide_profile_id: mergedHideProfileId,
+        sender_code: mergedSenderCode,
+        numeric_id: mergedNumericId,
         bio: effectiveBio,
-        username: targetUsername !== undefined ? targetUsername : null,
-        birthday: cleanBirthday !== undefined ? cleanBirthday : null,
+        username: mergedUsername,
+        birthday: mergedBirthday,
+        updated_at: new Date().toISOString(),
       };
 
-      let { data, error } = await supabase.from('profile_updates').insert(insertPayload).select();
-      if (error && (error.message?.includes('banner_url') || error.message?.includes('birthday') || error.message?.includes('username') || error.code === 'PGRST204')) {
-        if (error.message?.includes('banner_url')) delete insertPayload.banner_url;
-        if (error.message?.includes('birthday')) delete insertPayload.birthday;
-        if (error.message?.includes('username')) delete insertPayload.username;
-        const retryRes = await supabase.from('profile_updates').insert(insertPayload).select();
-        error = retryRes.error;
-        data = retryRes.data;
+      let data = null;
+      let error = null;
+
+      if (existingProfileRows.length > 0 && existingProfileRows[0]?.id) {
+        const targetId = existingProfileRows[0].id;
+        const updateRes = await supabase
+          .from('profile_updates')
+          .update(writePayload)
+          .eq('id', targetId)
+          .select();
+        data = updateRes.data;
+        error = updateRes.error;
+
+        if (error && stripMissingProfileColumns(writePayload, error)) {
+          const retryRes = await supabase
+            .from('profile_updates')
+            .update(writePayload)
+            .eq('id', targetId)
+            .select();
+          data = retryRes.data;
+          error = retryRes.error;
+        }
+
+        if (!error && existingProfileRows.length > 1) {
+          const duplicateIds = existingProfileRows.slice(1).map((r) => r.id).filter(Boolean);
+          if (duplicateIds.length > 0) {
+            await supabase.from('profile_updates').delete().in('id', duplicateIds);
+          }
+        }
+      } else {
+        const insertRes = await supabase
+          .from('profile_updates')
+          .insert(writePayload)
+          .select();
+        data = insertRes.data;
+        error = insertRes.error;
+
+        if (error && stripMissingProfileColumns(writePayload, error)) {
+          const retryRes = await supabase
+            .from('profile_updates')
+            .insert(writePayload)
+            .select();
+          data = retryRes.data;
+          error = retryRes.error;
+        }
       }
+
       if (error) return sendError(res, error.message, 500);
       return sendJson(res, { status: 'ok', data });
     }
@@ -1004,7 +1173,7 @@ module.exports = async function handler(req, res) {
     if (pathname === '/relay/check-username' && req.method === 'GET') {
       const supabase = getSupabaseClient();
       if (!supabase) return sendError(res, 'Database not configured', 500);
-      const username = (query.username || '').replace(/^@+/, '').trim().toLowerCase();
+      const username = normalizeUsernameInput(query.username) || '';
       const excludeCode = query.excludeCode || null;
       if (!username || username === 'support') return sendJson(res, { available: false });
 
@@ -1016,9 +1185,12 @@ module.exports = async function handler(req, res) {
       if (error) return sendError(res, error.message, 500);
       if (!data || data.length === 0) return sendJson(res, { available: true });
 
+      const ex = excludeCode ? String(excludeCode).toLowerCase() : null;
       const isTaken = data.some((row) => {
-        const owner = row.sender_code || row.chat_id;
-        return owner && excludeCode && owner !== excludeCode;
+        if (!ex) return true;
+        if (row.sender_code) return String(row.sender_code).toLowerCase() !== ex;
+        if (row.chat_id) return String(row.chat_id).toLowerCase() !== ex;
+        return true;
       });
 
       return sendJson(res, { available: !isTaken });
@@ -1027,7 +1199,7 @@ module.exports = async function handler(req, res) {
     if (pathname === '/relay/resolve-username' && req.method === 'GET') {
       const supabase = getSupabaseClient();
       if (!supabase) return sendError(res, 'Database not configured', 500);
-      const username = (query.username || '').replace(/^@+/, '').trim().toLowerCase();
+      const username = normalizeUsernameInput(query.username) || '';
       if (!username) return sendJson(res, { user: null });
 
       const { data, error } = await supabase
@@ -1035,11 +1207,10 @@ module.exports = async function handler(req, res) {
         .select('*')
         .ilike('username', username)
         .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(10);
 
       if (error) return sendError(res, error.message, 500);
-      if (!data) {
+      if (!data || data.length === 0) {
         if (username === 'support') {
           return sendJson(res, {
             user: {
@@ -1056,26 +1227,22 @@ module.exports = async function handler(req, res) {
         return sendJson(res, { user: null });
       }
 
-      let bannerUrl = data.banner_url || null;
-      let bio = data.bio || null;
-      if (bio && typeof bio === 'string') {
-        const bannerMatch = bio.match(/<!--banner:(.*?)-->/);
-        if (bannerMatch) {
-          if (!bannerUrl) bannerUrl = bannerMatch[1];
-          bio = bio.replace(/<!--banner:.*?-->/g, '').trim() || null;
-        }
-      }
+      const primaryOwner = String(data[0].sender_code || data[0].chat_id || '').toLowerCase();
+      const ownerRows = data.filter((r) => String(r.sender_code || r.chat_id || '').toLowerCase() === primaryOwner);
+      const merged = coalesceProfileRows(ownerRows);
+      if (!merged) return sendJson(res, { user: null });
 
       return sendJson(res, {
         user: {
-          user_code: data.sender_code || data.chat_id,
-          nickname: data.nickname || 'User',
-          avatar_url: data.avatar_url,
-          banner_url: bannerUrl,
-          username: data.username,
-          bio: bio,
-          birthday: data.birthday,
-          updated_at: data.updated_at,
+          user_code: merged.sender_code || merged.chat_id,
+          numeric_id: merged.numeric_id || null,
+          nickname: merged.nickname || 'User',
+          avatar_url: merged.avatar_url || null,
+          banner_url: merged.banner_url || null,
+          username: merged.username || null,
+          bio: merged.bio || null,
+          birthday: merged.birthday || null,
+          updated_at: merged.updated_at,
         }
       });
     }
@@ -1083,37 +1250,50 @@ module.exports = async function handler(req, res) {
     if (pathname === '/relay/search-users' && req.method === 'GET') {
       const supabase = getSupabaseClient();
       if (!supabase) return sendError(res, 'Database not configured', 500);
-      const q = (query.q || '').replace(/^@+/, '').trim().toLowerCase();
-      const limit = parseInt(query.limit, 10) || 20;
+      const rawQ = (query.q || '').replace(/^@+/, '').trim().replace(/[,()]/g, '');
+      const q = rawQ.toLowerCase();
+      const limit = Math.max(1, parseInt(query.limit, 10) || 20);
       if (!q) return sendJson(res, { users: [] });
 
-      const filter = `username.ilike.${q}%,sender_code.eq.${q}`;
+      const filter = `username.ilike.${q}%,sender_code.ilike.${rawQ}`;
 
       const { data, error } = await supabase
         .from('profile_updates')
         .select('*')
         .or(filter)
         .order('updated_at', { ascending: false })
-        .limit(limit);
+        .limit(Math.max(limit * 3, 50));
 
       if (error) return sendError(res, error.message, 500);
 
-      const seen = new Set();
-      const users = [];
+      const grouped = new Map();
       for (const row of (data || [])) {
         const userCode = row.sender_code || row.chat_id;
-        if (userCode && !seen.has(userCode)) {
-          seen.add(userCode);
-          users.push({
-            user_code: userCode,
-            nickname: row.nickname || 'User',
-            avatar_url: row.avatar_url,
-            username: row.username,
-            bio: row.bio,
-            birthday: row.birthday,
-            updated_at: row.updated_at,
-          });
+        if (!userCode) continue;
+        const key = String(userCode).toLowerCase();
+        const entry = grouped.get(key);
+        if (entry) {
+          entry.rows.push(row);
+        } else if (grouped.size < limit) {
+          grouped.set(key, { userCode, rows: [row] });
         }
+      }
+
+      const users = [];
+      for (const { userCode, rows } of grouped.values()) {
+        const merged = coalesceProfileRows(rows);
+        if (!merged) continue;
+        users.push({
+          user_code: userCode,
+          numeric_id: merged.numeric_id || null,
+          nickname: merged.nickname || 'User',
+          avatar_url: merged.avatar_url || null,
+          banner_url: merged.banner_url || null,
+          username: merged.username || null,
+          bio: merged.bio || null,
+          birthday: merged.birthday || null,
+          updated_at: merged.updated_at,
+        });
       }
 
       if (q.length >= 2 && ('support'.startsWith(q) || 'system_support'.includes(q))) {
@@ -1342,30 +1522,45 @@ module.exports = async function handler(req, res) {
       const supabase = getSupabaseClient();
       if (!supabase) return sendError(res, 'Database not configured', 500);
       const chatId = query.chatId;
+      const excludeCode = query.excludeCode;
       if (!chatId) return sendError(res, 'Missing chatId parameter', 400);
-      let queryBuilder = supabase
+
+      const safeChatId = String(chatId).replace(/[,()]/g, '');
+      const { data, error } = await supabase
         .from('profile_updates')
         .select('*')
-        .or(`chat_id.eq.${chatId},sender_code.eq.${chatId}`);
-      if (query.excludeCode) {
-        queryBuilder = queryBuilder.neq('sender_code', query.excludeCode);
-      }
-      const { data, error } = await queryBuilder
+        .or(`chat_id.eq.${safeChatId},sender_code.ilike.${safeChatId}`)
         .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(20);
+
       if (error) return sendError(res, error.message, 500);
-      let profile = data || null;
-      if (profile && profile.bio && typeof profile.bio === 'string') {
-        const bannerMatch = profile.bio.match(/<!--banner:(.*?)-->/);
-        if (bannerMatch) {
-          profile = {
-            ...profile,
-            banner_url: profile.banner_url || bannerMatch[1],
-            bio: profile.bio.replace(/<!--banner:.*?-->/g, '').trim() || null,
-          };
+
+      const ex = excludeCode ? String(excludeCode).toLowerCase() : null;
+      const filtered = (data || []).filter((row) => {
+        if (!ex) return true;
+        return !row.sender_code || String(row.sender_code).toLowerCase() !== ex;
+      });
+
+      if (filtered.length === 0) return sendJson(res, { profile: null });
+
+      let prioritized = filtered;
+      if (!ex) {
+        const directPublicRows = filtered.filter((r) =>
+          (r.sender_code && String(r.sender_code).toLowerCase() === safeChatId.toLowerCase()) ||
+          (String(r.chat_id || '').toLowerCase() === safeChatId.toLowerCase() && !r.sender_code)
+        );
+        if (directPublicRows.length > 0) {
+          prioritized = directPublicRows;
         }
       }
+
+      const newestSender = prioritized[0].sender_code ? String(prioritized[0].sender_code).toLowerCase() : null;
+      const ownerRows = prioritized.filter((r) => {
+        if (!newestSender) return !r.sender_code || String(r.chat_id || '').toLowerCase() === String(prioritized[0].chat_id || '').toLowerCase();
+        return !r.sender_code || String(r.sender_code).toLowerCase() === newestSender;
+      });
+
+      const profile = coalesceProfileRows(ownerRows);
       return sendJson(res, { profile });
     }
 

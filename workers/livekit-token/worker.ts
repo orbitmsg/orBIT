@@ -71,6 +71,103 @@ function errorResponse(error: string, status = 400): Response {
   return jsonResponse({ error }, status);
 }
 
+function normalizeUsernameInput(value: any): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value !== 'string') return null;
+  const cleaned = value.replace(/^@+/, '').trim().toLowerCase();
+  return cleaned.length > 0 ? cleaned : null;
+}
+
+function parseProfileRow(row: any): any {
+  if (!row) return null;
+  let bannerUrl = row.banner_url || null;
+  let bio = row.bio || null;
+  if (bio && typeof bio === 'string') {
+    const bannerMatch = bio.match(/<!--banner:(.*?)-->/);
+    if (bannerMatch) {
+      if (!bannerUrl) {
+        bannerUrl = bannerMatch[1] || null;
+      }
+      bio = bio.replace(/<!--banner:.*?-->/g, '').trim() || null;
+    }
+  }
+  const username = normalizeUsernameInput(row.username);
+  return {
+    ...row,
+    username: username === undefined ? null : username,
+    banner_url: bannerUrl,
+    bio,
+  };
+}
+
+function coalesceProfileRows(rows: any[]): any {
+  if (!rows || rows.length === 0) return null;
+  const parsedRows = rows.map(parseProfileRow).filter(Boolean);
+  if (parsedRows.length === 0) return null;
+  const newest = parsedRows[0];
+  const pickFirst = (key: string) => {
+    for (const r of parsedRows) {
+      const val = r[key];
+      if (val !== undefined && val !== null && val !== '') {
+        return val;
+      }
+    }
+    return null;
+  };
+  const pickBooleanOrValue = (key: string) => {
+    for (const r of parsedRows) {
+      if (r[key] !== undefined && r[key] !== null) {
+        return r[key];
+      }
+    }
+    return null;
+  };
+  return {
+    ...newest,
+    nickname: pickFirst('nickname'),
+    avatar_url: pickFirst('avatar_url'),
+    banner_url: pickFirst('banner_url'),
+    username: pickFirst('username'),
+    bio: pickFirst('bio'),
+    birthday: pickFirst('birthday'),
+    sender_code: pickFirst('sender_code'),
+    numeric_id: pickFirst('numeric_id'),
+    hide_profile_id: pickBooleanOrValue('hide_profile_id'),
+  };
+}
+
+function isSameProfileOwner(row: any, chatId: string, senderCode?: string | null): boolean {
+  const rSender = row.sender_code ? String(row.sender_code).toLowerCase() : null;
+  const rChat = row.chat_id ? String(row.chat_id).toLowerCase() : null;
+  const bSender = senderCode ? String(senderCode).toLowerCase() : null;
+  const bChat = chatId ? String(chatId).toLowerCase() : null;
+  if (bSender && rSender) {
+    return rSender === bSender;
+  }
+  if (!rSender && rChat) {
+    return rChat === bSender || rChat === bChat;
+  }
+  if (!bSender && rSender) {
+    return rSender === bChat;
+  }
+  return Boolean(rChat && bChat && rChat === bChat);
+}
+
+function stripMissingProfileColumns(payload: Record<string, any>, error: any): boolean {
+  const msg = String(error?.message || '');
+  const code = String(error?.code || '');
+  if (!msg && code !== 'PGRST204') return false;
+  let stripped = false;
+  for (const col of ['banner_url', 'birthday', 'username', 'hide_profile_id', 'numeric_id']) {
+    if (Object.prototype.hasOwnProperty.call(payload, col) && (msg.includes(col) || (code === 'PGRST204' && col === 'banner_url'))) {
+      delete payload[col];
+      stripped = true;
+    }
+  }
+  return stripped;
+}
+
 function getSupabaseClient(env: Env): SupabaseClient | null {
   const url = env.SUPABASE_URL || 'https://majmrtymawymomliowbz.supabase.co';
   const key = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
@@ -984,6 +1081,7 @@ export default {
           chatId: string;
           nickname?: string | null;
           avatarUrl?: string | null;
+          bannerUrl?: string | null;
           hideProfileId?: boolean | null;
           senderCode?: string | null;
           bio?: string | null;
@@ -995,61 +1093,149 @@ export default {
 
         if (!body.chatId) return errorResponse('Missing chatId parameter', 400);
 
-        const cleanUsername = body.username ? body.username.replace(/^@+/, '').trim().toLowerCase() : null;
-        if (cleanUsername) {
-          const { data: existingRows } = await supabase
+        const incomingUsername = normalizeUsernameInput(body.username);
+        const incomingSenderCode = body.senderCode ? String(body.senderCode).trim() : undefined;
+
+        if (incomingUsername) {
+          const { data: existingRows, error: checkError } = await supabase
             .from('profile_updates')
             .select('sender_code, chat_id')
-            .ilike('username', cleanUsername);
+            .ilike('username', incomingUsername);
+
+          if (checkError) return errorResponse(checkError.message, 500);
 
           if (existingRows && existingRows.length > 0) {
-            const isTaken = existingRows.some((row: any) => {
-              const owner = row.sender_code || row.chat_id;
-              const current = body.senderCode || body.chatId;
-              return owner && current && owner !== current;
-            });
+            const isTaken = existingRows.some((row: any) => !isSameProfileOwner(row, body.chatId, incomingSenderCode));
             if (isTaken) {
               return errorResponse('USERNAME_TAKEN', 409);
             }
           }
         }
 
-        try {
-          if (body.senderCode) {
-            await supabase.from('profile_updates').delete().eq('chat_id', body.chatId).eq('sender_code', body.senderCode);
-          }
-        } catch {}
+        let existingProfileRows: any[] = [];
+        if (incomingSenderCode) {
+          const { data: rowsBySender, error: lookupError } = await supabase
+            .from('profile_updates')
+            .select('*')
+            .eq('chat_id', body.chatId)
+            .ilike('sender_code', incomingSenderCode)
+            .order('updated_at', { ascending: false })
+            .limit(10);
 
-        let effectiveBio = body.bio || null;
-        if ((body as any).bannerUrl) {
-          effectiveBio = effectiveBio ? `${effectiveBio}\n<!--banner:${(body as any).bannerUrl}-->` : `<!--banner:${(body as any).bannerUrl}-->`;
+          if (lookupError) return errorResponse(lookupError.message, 500);
+          existingProfileRows = rowsBySender || [];
+
+          if (existingProfileRows.length === 0 && String(body.chatId).toLowerCase() === incomingSenderCode.toLowerCase()) {
+            const { data: legacyRows, error: legacyError } = await supabase
+              .from('profile_updates')
+              .select('*')
+              .eq('chat_id', body.chatId)
+              .is('sender_code', null)
+              .order('updated_at', { ascending: false })
+              .limit(10);
+            if (legacyError) return errorResponse(legacyError.message, 500);
+            existingProfileRows = legacyRows || [];
+          }
+        } else {
+          const { data: rowsWithoutSender, error: lookupError } = await supabase
+            .from('profile_updates')
+            .select('*')
+            .eq('chat_id', body.chatId)
+            .is('sender_code', null)
+            .order('updated_at', { ascending: false })
+            .limit(10);
+
+          if (lookupError) return errorResponse(lookupError.message, 500);
+          existingProfileRows = rowsWithoutSender || [];
         }
 
-        const insertPayload: Record<string, any> = {
+        const existingMerged = coalesceProfileRows(existingProfileRows);
+
+        let incomingBanner = body.bannerUrl !== undefined ? (body.bannerUrl || null) : undefined;
+        let incomingBio: string | null | undefined = body.bio !== undefined ? (body.bio || null) : undefined;
+        if (typeof incomingBio === 'string') {
+          const bannerMatch = incomingBio.match(/<!--banner:(.*?)-->/);
+          if (bannerMatch && incomingBanner === undefined) {
+            incomingBanner = bannerMatch[1] || null;
+          }
+          incomingBio = incomingBio.replace(/<!--banner:.*?-->/g, '').trim() || null;
+        }
+
+        const mergedNickname = body.nickname !== undefined ? (body.nickname || null) : (existingMerged?.nickname ?? null);
+        const mergedAvatarUrl = body.avatarUrl !== undefined ? (body.avatarUrl || null) : (existingMerged?.avatar_url ?? null);
+        const mergedBannerUrl = incomingBanner !== undefined ? incomingBanner : (existingMerged?.banner_url ?? null);
+        const mergedBio = incomingBio !== undefined ? incomingBio : (existingMerged?.bio ?? null);
+        const mergedUsername = incomingUsername !== undefined ? incomingUsername : (existingMerged?.username ?? null);
+        const mergedBirthday = body.birthday !== undefined ? (body.birthday || null) : (existingMerged?.birthday ?? null);
+        const mergedHideProfileId = body.hideProfileId !== undefined ? body.hideProfileId : (existingMerged?.hide_profile_id ?? null);
+        const mergedSenderCode = incomingSenderCode !== undefined ? incomingSenderCode : (existingMerged?.sender_code ?? null);
+        const incomingNumericId = body.numericId !== undefined ? (body.numericId || null) : (body.numeric_id !== undefined ? (body.numeric_id || null) : undefined);
+        const mergedNumericId = incomingNumericId !== undefined ? incomingNumericId : (existingMerged?.numeric_id ?? null);
+
+        let effectiveBio = mergedBio || null;
+        if (mergedBannerUrl) {
+          effectiveBio = effectiveBio ? `${effectiveBio}\n<!--banner:${mergedBannerUrl}-->` : `<!--banner:${mergedBannerUrl}-->`;
+        }
+
+        const writePayload: Record<string, any> = {
           chat_id: body.chatId,
-          nickname: body.nickname || null,
-          avatar_url: body.avatarUrl || null,
-          banner_url: (body as any).bannerUrl !== undefined ? (body as any).bannerUrl : null,
-          hide_profile_id: body.hideProfileId !== undefined ? body.hideProfileId : null,
-          sender_code: body.senderCode || null,
+          nickname: mergedNickname,
+          avatar_url: mergedAvatarUrl,
+          banner_url: mergedBannerUrl,
+          hide_profile_id: mergedHideProfileId,
+          sender_code: mergedSenderCode,
+          numeric_id: mergedNumericId,
           bio: effectiveBio,
-          username: cleanUsername,
-          birthday: body.birthday || null,
+          username: mergedUsername,
+          birthday: mergedBirthday,
+          updated_at: new Date().toISOString(),
         };
 
-        let { data, error } = await supabase
-          .from('profile_updates')
-          .insert(insertPayload)
-          .select();
+        let data: any = null;
+        let error: any = null;
 
-        if (error && (error.message?.includes('banner_url') || error.code === 'PGRST204')) {
-          delete insertPayload.banner_url;
-          const retryRes = await supabase
+        if (existingProfileRows.length > 0 && existingProfileRows[0]?.id) {
+          const targetId = existingProfileRows[0].id;
+          const updateRes = await supabase
             .from('profile_updates')
-            .insert(insertPayload)
+            .update(writePayload)
+            .eq('id', targetId)
             .select();
-          error = retryRes.error;
-          data = retryRes.data;
+          data = updateRes.data;
+          error = updateRes.error;
+
+          if (error && stripMissingProfileColumns(writePayload, error)) {
+            const retryRes = await supabase
+              .from('profile_updates')
+              .update(writePayload)
+              .eq('id', targetId)
+              .select();
+            data = retryRes.data;
+            error = retryRes.error;
+          }
+
+          if (!error && existingProfileRows.length > 1) {
+            const duplicateIds = existingProfileRows.slice(1).map((r: any) => r.id).filter(Boolean);
+            if (duplicateIds.length > 0) {
+              await supabase.from('profile_updates').delete().in('id', duplicateIds);
+            }
+          }
+        } else {
+          const insertRes = await supabase
+            .from('profile_updates')
+            .insert(writePayload)
+            .select();
+          data = insertRes.data;
+          error = insertRes.error;
+
+          if (error && stripMissingProfileColumns(writePayload, error)) {
+            const retryRes = await supabase
+              .from('profile_updates')
+              .insert(writePayload)
+              .select();
+            data = retryRes.data;
+            error = retryRes.error;
+          }
         }
 
         if (error) return errorResponse(error.message, 500);
@@ -1060,9 +1246,9 @@ export default {
         const supabase = getSupabaseClient(env);
         if (!supabase) return errorResponse('Database not configured on server', 500);
 
-        const username = (url.searchParams.get('username') || '').replace(/^@+/, '').trim().toLowerCase();
+        const username = normalizeUsernameInput(url.searchParams.get('username')) || '';
         const excludeCode = url.searchParams.get('excludeCode') || null;
-        if (!username) return jsonResponse({ available: false });
+        if (!username || username === 'support') return jsonResponse({ available: false });
 
         const { data, error } = await supabase
           .from('profile_updates')
@@ -1072,9 +1258,12 @@ export default {
         if (error) return errorResponse(error.message, 500);
         if (!data || data.length === 0) return jsonResponse({ available: true });
 
+        const ex = excludeCode ? excludeCode.toLowerCase() : null;
         const isTaken = data.some((row: any) => {
-          const owner = row.sender_code || row.chat_id;
-          return owner && excludeCode && owner !== excludeCode;
+          if (!ex) return true;
+          if (row.sender_code) return String(row.sender_code).toLowerCase() !== ex;
+          if (row.chat_id) return String(row.chat_id).toLowerCase() !== ex;
+          return true;
         });
 
         return jsonResponse({ available: !isTaken });
@@ -1084,37 +1273,50 @@ export default {
         const supabase = getSupabaseClient(env);
         if (!supabase) return errorResponse('Database not configured on server', 500);
 
-        const q = (url.searchParams.get('q') || '').replace(/^@+/, '').trim().toLowerCase();
-        const limit = parseInt(url.searchParams.get('limit') || '20', 10);
+        const rawQ = (url.searchParams.get('q') || '').replace(/^@+/, '').trim().replace(/[,()]/g, '');
+        const q = rawQ.toLowerCase();
+        const limit = Math.max(1, parseInt(url.searchParams.get('limit') || '20', 10) || 20);
         if (!q) return jsonResponse({ users: [] });
 
-        const filter = `username.eq.${q},sender_code.eq.${q}`;
+        const filter = `username.ilike.${q}%,sender_code.ilike.${rawQ}`;
 
         const { data, error } = await supabase
           .from('profile_updates')
           .select('*')
           .or(filter)
           .order('updated_at', { ascending: false })
-          .limit(limit);
+          .limit(Math.max(limit * 3, 50));
 
         if (error) return errorResponse(error.message, 500);
 
-        const seen = new Set();
-        const users: any[] = [];
+        const grouped = new Map<string, { userCode: string; rows: any[] }>();
         for (const row of (data || [])) {
           const userCode = row.sender_code || row.chat_id;
-          if (userCode && !seen.has(userCode)) {
-            seen.add(userCode);
-            users.push({
-              user_code: userCode,
-              nickname: row.nickname || 'User',
-              avatar_url: row.avatar_url,
-              username: row.username,
-              bio: row.bio,
-              birthday: row.birthday,
-              updated_at: row.updated_at,
-            });
+          if (!userCode) continue;
+          const key = String(userCode).toLowerCase();
+          const entry = grouped.get(key);
+          if (entry) {
+            entry.rows.push(row);
+          } else if (grouped.size < limit) {
+            grouped.set(key, { userCode, rows: [row] });
           }
+        }
+
+        const users: any[] = [];
+        for (const { userCode, rows } of grouped.values()) {
+          const merged = coalesceProfileRows(rows);
+          if (!merged) continue;
+          users.push({
+            user_code: userCode,
+            numeric_id: merged.numeric_id || null,
+            nickname: merged.nickname || 'User',
+            avatar_url: merged.avatar_url || null,
+            banner_url: merged.banner_url || null,
+            username: merged.username || null,
+            bio: merged.bio || null,
+            birthday: merged.birthday || null,
+            updated_at: merged.updated_at,
+          });
         }
         return jsonResponse({ users });
       }
@@ -1123,7 +1325,7 @@ export default {
         const supabase = getSupabaseClient(env);
         if (!supabase) return errorResponse('Database not configured on server', 500);
 
-        const username = (url.searchParams.get('username') || '').replace(/^@+/, '').trim().toLowerCase();
+        const username = normalizeUsernameInput(url.searchParams.get('username')) || '';
         if (!username) return jsonResponse({ user: null });
 
         const { data, error } = await supabase
@@ -1131,32 +1333,27 @@ export default {
           .select('*')
           .ilike('username', username)
           .order('updated_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .limit(10);
 
         if (error) return errorResponse(error.message, 500);
-        if (!data) return jsonResponse({ user: null });
+        if (!data || data.length === 0) return jsonResponse({ user: null });
 
-        let bannerUrl = data.banner_url || null;
-        let bio = data.bio || null;
-        if (bio && typeof bio === 'string') {
-          const bannerMatch = bio.match(/<!--banner:(.*?)-->/);
-          if (bannerMatch) {
-            if (!bannerUrl) bannerUrl = bannerMatch[1];
-            bio = bio.replace(/<!--banner:.*?-->/g, '').trim() || null;
-          }
-        }
+        const primaryOwner = String(data[0].sender_code || data[0].chat_id || '').toLowerCase();
+        const ownerRows = data.filter((r: any) => String(r.sender_code || r.chat_id || '').toLowerCase() === primaryOwner);
+        const merged = coalesceProfileRows(ownerRows);
+        if (!merged) return jsonResponse({ user: null });
 
         return jsonResponse({
           user: {
-            user_code: data.sender_code || data.chat_id,
-            nickname: data.nickname || 'User',
-            avatar_url: data.avatar_url,
-            banner_url: bannerUrl,
-            username: data.username,
-            bio: bio,
-            birthday: data.birthday,
-            updated_at: data.updated_at,
+            user_code: merged.sender_code || merged.chat_id,
+            numeric_id: merged.numeric_id || null,
+            nickname: merged.nickname || 'User',
+            avatar_url: merged.avatar_url || null,
+            banner_url: merged.banner_url || null,
+            username: merged.username || null,
+            bio: merged.bio || null,
+            birthday: merged.birthday || null,
+            updated_at: merged.updated_at,
           }
         });
       }
@@ -1370,32 +1567,42 @@ export default {
         if (!chatId) return errorResponse('Missing chatId parameter', 400);
         const excludeCode = url.searchParams.get('excludeCode');
 
-        let query = supabase
+        const safeChatId = chatId.replace(/[,()]/g, '');
+        const { data, error } = await supabase
           .from('profile_updates')
           .select('*')
-          .or(`chat_id.eq.${chatId},sender_code.eq.${chatId}`);
-
-        if (excludeCode) {
-          query = query.neq('sender_code', excludeCode);
-        }
-
-        const { data, error } = await query
+          .or(`chat_id.eq.${safeChatId},sender_code.ilike.${safeChatId}`)
           .order('updated_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .limit(20);
 
         if (error) return errorResponse(error.message, 500);
-        let profile = data || null;
-        if (profile && profile.bio && typeof profile.bio === 'string') {
-          const bannerMatch = profile.bio.match(/<!--banner:(.*?)-->/);
-          if (bannerMatch) {
-            profile = {
-              ...profile,
-              banner_url: profile.banner_url || bannerMatch[1],
-              bio: profile.bio.replace(/<!--banner:.*?-->/g, '').trim() || null,
-            };
+
+        const ex = excludeCode ? excludeCode.toLowerCase() : null;
+        const filtered = (data || []).filter((row: any) => {
+          if (!ex) return true;
+          return !row.sender_code || String(row.sender_code).toLowerCase() !== ex;
+        });
+
+        if (filtered.length === 0) return jsonResponse({ profile: null });
+
+        let prioritized = filtered;
+        if (!ex) {
+          const directPublicRows = filtered.filter((r: any) =>
+            (r.sender_code && String(r.sender_code).toLowerCase() === safeChatId.toLowerCase()) ||
+            (String(r.chat_id || '').toLowerCase() === safeChatId.toLowerCase() && !r.sender_code)
+          );
+          if (directPublicRows.length > 0) {
+            prioritized = directPublicRows;
           }
         }
+
+        const newestSender = prioritized[0].sender_code ? String(prioritized[0].sender_code).toLowerCase() : null;
+        const ownerRows = prioritized.filter((r: any) => {
+          if (!newestSender) return !r.sender_code || String(r.chat_id || '').toLowerCase() === String(prioritized[0].chat_id || '').toLowerCase();
+          return !r.sender_code || String(r.sender_code).toLowerCase() === newestSender;
+        });
+
+        const profile = coalesceProfileRows(ownerRows);
         return jsonResponse({ profile });
       }
 

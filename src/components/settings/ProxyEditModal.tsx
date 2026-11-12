@@ -360,7 +360,7 @@ export const ProxyEditModal: React.FC<ProxyEditModalProps> = ({
                     backgroundColor: active
                       ? 'var(--accent-color, #9b7dd4)'
                       : 'var(--surface-container, rgba(255, 255, 255, 0.05))',
-                    boxShadow: active ? '0 4px 12px rgba(155, 125, 212, 0.25)' : 'none',
+                    boxShadow: active ? '0 4px 12px var(--accent-glow, rgba(88, 101, 242, 0.25))' : 'none',
                     color: active ? '#fff' : 'var(--text-main)',
                     transition: 'all 0.12s ease',
                   }}

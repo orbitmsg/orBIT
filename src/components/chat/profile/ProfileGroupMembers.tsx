@@ -268,7 +268,7 @@ export const ProfileGroupMembers: React.FC<ProfileGroupMembersProps> = ({
                         fontWeight: 500,
                         padding: '2px 8px',
                         borderRadius: '9999px',
-                        backgroundColor: 'rgba(155, 125, 212, 0.18)',
+                        backgroundColor: 'var(--accent-glow-light, rgba(88, 101, 242, 0.18))',
                         color: 'var(--accent-color, #9b7dd4)',
                         userSelect: 'none',
                       }}

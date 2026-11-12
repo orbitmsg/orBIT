@@ -154,7 +154,7 @@ export const OrbitaKeySettings: React.FC<OrbitaKeySettingsProps> = ({ onBack }) 
               width: 36,
               height: 36,
               borderRadius: '50%',
-              backgroundColor: 'rgba(124, 58, 237, 0.15)',
+              backgroundColor: 'var(--accent-glow-light, rgba(88, 101, 242, 0.15))',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

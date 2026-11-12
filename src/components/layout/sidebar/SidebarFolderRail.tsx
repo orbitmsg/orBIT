@@ -20,7 +20,7 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
   setCurrentView,
   folders,
   getFolderUnreadCount,
-  isLightTheme,
+  isLightTheme: _isLightTheme,
 }) => {
   const { t } = useTranslation();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
@@ -41,7 +41,7 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
       className="flex flex-col items-center shrink-0 select-none py-3 overflow-hidden"
       style={{
         width: '64px',
-        backgroundColor: isLightTheme ? '#eef0f4' : '#282a2e',
+        backgroundColor: 'var(--surface-container-strong, var(--chat-list-bg, #23252c))',
         borderRadius: '18px',
         border: 'none',
         height: '100%',
@@ -50,8 +50,9 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
     >
       <div className="relative w-full flex items-center justify-center mb-2">
         <div
-          className="absolute left-0 w-1 bg-white rounded-r-full transition-all duration-200"
+          className="absolute left-0 w-1 rounded-r-full transition-all duration-200"
           style={{
+            backgroundColor: 'var(--text-heading, #ffffff)',
             height: isHomeActive ? '40px' : hoveredItem === 'home' ? '20px' : '0px',
           }}
         />
@@ -61,10 +62,15 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
           onMouseEnter={() => setHoveredItem('home')}
           onMouseLeave={() => setHoveredItem(null)}
           aria-label={t('discord.friends', 'Друзья')}
-          className="w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 text-white outline-none border-none"
+          className="w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 outline-none border-none"
           style={{
             borderRadius: isHomeActive || hoveredItem === 'home' ? '16px' : '24px',
-            backgroundColor: isHomeActive || hoveredItem === 'home' ? '#5865F2' : '#313338',
+            background: isHomeActive
+              ? 'var(--accent-gradient, var(--accent-color, #5865F2))'
+              : hoveredItem === 'home'
+              ? 'var(--accent-color, #5865F2)'
+              : 'var(--bg-primary, #313338)',
+            color: isHomeActive || hoveredItem === 'home' ? '#ffffff' : 'var(--text-main, #ffffff)',
           }}
         >
           <Users size={22} />
@@ -73,7 +79,7 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
 
       {hasFolders && (
         <>
-          <div className="w-8 h-[2px] bg-[#35363c] rounded-full my-1" />
+          <div className="w-8 h-[2px] rounded-full my-1" style={{ backgroundColor: 'var(--border-color, #35363c)' }} />
 
           <div className="flex-1 w-full flex flex-col items-center overflow-y-auto no-scrollbar pt-1 space-y-2">
             {(folders || []).map((folder) => {
@@ -84,8 +90,9 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
               return (
                 <div key={folder.id} className="relative w-full flex items-center justify-center">
                   <div
-                    className="absolute left-0 w-1 bg-white rounded-r-full transition-all duration-200"
+                    className="absolute left-0 w-1 rounded-r-full transition-all duration-200"
                     style={{
+                      backgroundColor: 'var(--text-heading, #ffffff)',
                       height: isFolderActive ? '40px' : isHovered ? '20px' : '0px',
                     }}
                   />
@@ -98,10 +105,15 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
                     onMouseEnter={() => setHoveredItem(folder.id)}
                     onMouseLeave={() => setHoveredItem(null)}
                     aria-label={folder.name}
-                    className="relative w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 text-white outline-none border-none font-semibold text-sm select-none"
+                    className="relative w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 outline-none border-none font-semibold text-sm select-none"
                     style={{
                       borderRadius: isFolderActive || isHovered ? '16px' : '24px',
-                      backgroundColor: isFolderActive || isHovered ? '#5865F2' : '#313338',
+                      background: isFolderActive
+                        ? 'var(--accent-gradient, var(--accent-color, #5865F2))'
+                        : isHovered
+                        ? 'var(--accent-color, #5865F2)'
+                        : 'var(--bg-primary, #313338)',
+                      color: isFolderActive || isHovered ? '#ffffff' : 'var(--text-main, #ffffff)',
                     }}
                   >
                     <span>{folder.name.slice(0, 2).toUpperCase()}</span>

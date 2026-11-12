@@ -112,7 +112,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   const [isDeafened, setIsDeafened] = React.useState(false);
   const isInChatSearch = Boolean(inChatSearch?.isOpen);
 
-  const surfaceTint = isLightTheme ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.045)';
+  const surfaceTint = 'var(--surface-container-soft, rgba(255, 255, 255, 0.045))';
   const surfaceHoverTint = isLightTheme ? 'rgba(0, 0, 0, 0.075)' : 'rgba(255, 255, 255, 0.085)';
 
   if (isInChatSearch) {
@@ -172,7 +172,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
       ) : (
         <div
           className="shrink-0 rounded-[18px] overflow-hidden p-2 flex flex-col gap-1.5 select-none"
-          style={{ backgroundColor: isLightTheme ? '#f5f5f5' : 'var(--chat-list-bg, #2b2d31)' }}
+          style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}
         >
           {[
             {
@@ -219,7 +219,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
       {incomingFriendRequests.length > 0 && (
         <div
           className="shrink-0 rounded-[18px] overflow-hidden p-2"
-          style={{ backgroundColor: isLightTheme ? '#f5f5f5' : 'var(--chat-list-bg, #2b2d31)' }}
+          style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}
         >
           <button
             type="button"
@@ -714,7 +714,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
         <div
           className="flex items-center justify-between px-2.5 py-2"
           style={{
-            background: 'linear-gradient(135deg, #4349a8 0%, #8f3978 100%)',
+            background: 'var(--accent-gradient, linear-gradient(135deg, var(--accent-color, #5865F2) 0%, var(--accent-dark, #4752c4) 100%))',
             borderRadius: '18px',
             border: 'none',
           }}
@@ -748,7 +748,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                   online={isServerConnected}
                   showOffline={true}
                   size="xs"
-                  ringColor="#4349a8"
+                  ringColor="var(--accent-dark, var(--accent-color, #5865F2))"
                   ariaLabel={isServerConnected ? t('discord.online', 'В сети') : t('common.network_connecting_title', 'Соединение...')}
                 />
               </div>

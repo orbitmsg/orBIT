@@ -192,7 +192,7 @@ export const MaterialProgressBar = forwardRef<MaterialProgressBarHandle, Materia
       const isExpanded = isCurrentHovered || isCurrentDragging;
 
       const strokeW = isExpanded ? 5 : 4;
-      let computedActive = '#7C3AED';
+      let computedActive = '#5865F2';
       let computedTrack = 'rgba(255, 255, 255, 0.16)';
 
       const containerEl = containerRef.current;

@@ -1312,7 +1312,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
                 borderRadius: '9999px',
                 border: 'none',
                 outline: 'none',
-                background: 'var(--accent-color, #7C3AED)',
+                background: 'var(--accent-gradient, var(--accent-color, #5865F2))',
                 color: '#ffffff',
                 fontSize: '14.5px',
                 fontWeight: 600,
@@ -1322,7 +1322,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 2px 10px rgba(124, 58, 237, 0.25)',
+                boxShadow: '0 2px 10px var(--accent-glow, rgba(88, 101, 242, 0.25))',
               }}
               onMouseDown={(e) => {
                 if (!isSubscribing) (e.currentTarget as HTMLElement).style.transform = 'scale(0.98)';

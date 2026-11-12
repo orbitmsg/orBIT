@@ -227,7 +227,7 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                   fontWeight: 700,
                   padding: '2px 8px',
                   borderRadius: '999px',
-                  backgroundColor: 'rgba(155, 125, 212, 0.16)',
+                  backgroundColor: 'var(--accent-glow-light, rgba(88, 101, 242, 0.16))',
                   color: 'var(--accent-color, #9b7dd4)',
                   letterSpacing: '0.3px',
                 }}
@@ -581,7 +581,7 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
                           fontWeight: 700,
                           padding: '1px 7px',
                           borderRadius: '999px',
-                          backgroundColor: 'rgba(155, 125, 212, 0.16)',
+                          backgroundColor: 'var(--accent-glow-light, rgba(88, 101, 242, 0.16))',
                           color: 'var(--accent-color, #9b7dd4)',
                           flexShrink: 0,
                           letterSpacing: '0.3px',

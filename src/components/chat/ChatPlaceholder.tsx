@@ -232,13 +232,13 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
       >
         <div className="h-14 px-5 flex items-center justify-between shrink-0">
         <div className="flex items-center min-w-0 gap-2">
-          <div className="flex items-center text-[#949ba4] shrink-0">
+          <div className="flex items-center text-[var(--text-dim)] shrink-0">
             <Users size={20} />
           </div>
-          <span className="font-bold text-white text-[15px] mr-1 whitespace-nowrap">
+          <span className="font-bold text-[var(--text-heading,var(--text-main))] text-[15px] mr-1 whitespace-nowrap">
             {t('discord.friends', 'Друзья')}
           </span>
-          <div className="w-[2px] h-4 rounded-full bg-[#3f4147] mx-1.5 shrink-0" />
+          <div className="w-[2px] h-4 rounded-full bg-[var(--border-color)] mx-1.5 shrink-0" />
 
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
             <button
@@ -246,9 +246,10 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
               onClick={() => setActiveTab('online')}
               className={`px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors cursor-pointer border-none outline-none whitespace-nowrap ${
                 activeTab === 'online'
-                  ? 'bg-[#404249] text-white'
-                  : 'text-[#949ba4] hover:bg-[#35373c] hover:text-[#dbdee1] bg-transparent'
+                  ? 'text-[var(--text-heading,var(--text-main))]'
+                  : 'text-[var(--text-dim)] hover:bg-[var(--surface-container-soft)] hover:text-[var(--text-main)] bg-transparent'
               }`}
+              style={activeTab === 'online' ? { backgroundColor: 'color-mix(in srgb, var(--accent-color, #5865F2) 18%, var(--surface-container-strong))' } : undefined}
             >
               {t('discord.online', 'В сети')}
             </button>
@@ -258,9 +259,10 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
               onClick={() => setActiveTab('all')}
               className={`px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors cursor-pointer border-none outline-none whitespace-nowrap ${
                 activeTab === 'all'
-                  ? 'bg-[#404249] text-white'
-                  : 'text-[#949ba4] hover:bg-[#35373c] hover:text-[#dbdee1] bg-transparent'
+                  ? 'text-[var(--text-heading,var(--text-main))]'
+                  : 'text-[var(--text-dim)] hover:bg-[var(--surface-container-soft)] hover:text-[var(--text-main)] bg-transparent'
               }`}
+              style={activeTab === 'all' ? { backgroundColor: 'color-mix(in srgb, var(--accent-color, #5865F2) 18%, var(--surface-container-strong))' } : undefined}
             >
               {t('discord.all', 'Все')}
             </button>
@@ -270,13 +272,17 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
               onClick={() => setActiveTab('pending')}
               className={`px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors cursor-pointer border-none outline-none whitespace-nowrap flex items-center gap-1.5 ${
                 activeTab === 'pending'
-                  ? 'bg-[#404249] text-white'
-                  : 'text-[#949ba4] hover:bg-[#35373c] hover:text-[#dbdee1] bg-transparent'
+                  ? 'text-[var(--text-heading,var(--text-main))]'
+                  : 'text-[var(--text-dim)] hover:bg-[var(--surface-container-soft)] hover:text-[var(--text-main)] bg-transparent'
               }`}
+              style={activeTab === 'pending' ? { backgroundColor: 'color-mix(in srgb, var(--accent-color, #5865F2) 18%, var(--surface-container-strong))' } : undefined}
             >
               <span>{t('discord.pending', 'В ожидании')}</span>
               {incomingFriendRequests.length > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full bg-[#5865F2] text-white text-[11px] font-bold leading-none">
+                <span
+                  className="px-1.5 py-0.5 rounded-full text-white text-[11px] font-bold leading-none"
+                  style={{ backgroundColor: 'var(--accent-color, #5865F2)' }}
+                >
                   {incomingFriendRequests.length}
                 </span>
               )}
@@ -287,9 +293,10 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
               onClick={() => setActiveTab('blocked')}
               className={`px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors cursor-pointer border-none outline-none whitespace-nowrap ${
                 activeTab === 'blocked'
-                  ? 'bg-[#404249] text-white'
-                  : 'text-[#949ba4] hover:bg-[#35373c] hover:text-[#dbdee1] bg-transparent'
+                  ? 'text-[var(--text-heading,var(--text-main))]'
+                  : 'text-[var(--text-dim)] hover:bg-[var(--surface-container-soft)] hover:text-[var(--text-main)] bg-transparent'
               }`}
+              style={activeTab === 'blocked' ? { backgroundColor: 'color-mix(in srgb, var(--accent-color, #5865F2) 18%, var(--surface-container-strong))' } : undefined}
             >
               {t('discord.blocked', 'Заблокированные')}
             </button>
@@ -297,11 +304,12 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('add')}
-              className={`text-[13px] font-medium px-3.5 py-1.5 rounded-xl transition-colors cursor-pointer border-none outline-none ml-1 whitespace-nowrap ${
-                activeTab === 'add'
-                  ? 'bg-[#4752c4] text-white'
-                  : 'bg-[#5865F2] hover:bg-[#4752c4] text-white'
-              }`}
+              className="text-[13px] font-medium px-3.5 py-1.5 rounded-xl transition-opacity cursor-pointer border-none outline-none ml-1 whitespace-nowrap text-white hover:opacity-90"
+              style={{
+                background: activeTab === 'add'
+                  ? 'var(--accent-dark, var(--accent-color, #4752c4))'
+                  : 'var(--accent-gradient, var(--accent-color, #5865F2))',
+              }}
             >
               {t('discord.addFriend', 'Добавить в друзья')}
             </button>
@@ -313,15 +321,15 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
           {activeTab === 'online' &&
             (onlineFriends.length === 0 ? (
               <div className="flex-1 flex items-center justify-center p-6 text-center">
-                <div className="bg-[#2b2d31] rounded-2xl px-6 py-5 max-w-[380px]">
-                  <span className="text-[#949ba4] text-[14px]">
+                <div className="bg-[var(--bg-secondary)] rounded-2xl px-6 py-5 max-w-[380px]">
+                  <span className="text-[var(--text-dim)] text-[14px]">
                     {t('discord.noFriendsOnline', 'Сейчас никого из ваших друзей нет в сети. Зайдите позже!')}
                   </span>
                 </div>
               </div>
             ) : (
               <div className="p-4 flex flex-col gap-1.5">
-                <div className="text-[12px] font-bold text-[#949ba4] uppercase tracking-wider px-2.5 py-1">
+                <div className="text-[12px] font-bold text-[var(--text-dim)] uppercase tracking-wider px-2.5 py-1">
                   {t('discord.online', 'В сети')} — {onlineFriends.length}
                 </div>
                 {onlineFriends.map((friend) => (
@@ -330,7 +338,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                     onClick={() => setActiveChat(friend.id)}
                     onMouseEnter={() => setHoveredFriendId(friend.id)}
                     onMouseLeave={() => setHoveredFriendId(null)}
-                    className="flex items-center justify-between p-2.5 rounded-xl hover:bg-[#35373c] cursor-pointer group transition-colors"
+                    className="flex items-center justify-between p-2.5 rounded-xl hover:bg-[var(--surface-container-strong)] cursor-pointer group transition-colors"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative shrink-0">
@@ -339,13 +347,13 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                           online={friend.online}
                           showOffline={true}
                           size="sm"
-                          ringColor={hoveredFriendId === friend.id ? '#35373c' : '#313338'}
+                          ringColor={hoveredFriendId === friend.id ? 'var(--surface-container-strong)' : 'var(--bg-primary)'}
                           ariaLabel={t('discord.online', 'В сети')}
                         />
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className="font-semibold text-white text-[15px] truncate">{friend.name}</span>
-                        <span className="text-xs text-[#949ba4] truncate">
+                        <span className="font-semibold text-[var(--text-heading,var(--text-main))] text-[15px] truncate">{friend.name}</span>
+                        <span className="text-xs text-[var(--text-dim)] truncate">
                           {friend.username ? `@${friend.username} · ` : ''}
                           {t('discord.online', 'В сети')}
                         </span>
@@ -359,7 +367,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                           setActiveChat(friend.id);
                         }}
                         aria-label={friend.name}
-                        className="w-9 h-9 rounded-full bg-[#2b2d31] hover:bg-[#1e1f22] text-[#b5bac1] hover:text-white flex items-center justify-center transition-colors border-none outline-none cursor-pointer"
+                        className="w-9 h-9 rounded-full bg-[var(--bg-secondary)] hover:bg-[var(--surface-container)] text-[var(--text-dim)] hover:text-[var(--text-heading,var(--text-main))] flex items-center justify-center transition-colors border-none outline-none cursor-pointer"
                       >
                         <MessageSquare size={18} />
                       </button>
@@ -372,15 +380,15 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
           {activeTab === 'all' &&
             (privateChats.length === 0 ? (
               <div className="flex-1 flex items-center justify-center p-6 text-center">
-                <div className="bg-[#2b2d31] rounded-2xl px-6 py-5 max-w-[380px]">
-                  <span className="text-[#949ba4] text-[14px]">
+                <div className="bg-[var(--bg-secondary)] rounded-2xl px-6 py-5 max-w-[380px]">
+                  <span className="text-[var(--text-dim)] text-[14px]">
                     {t('discord.allFriendsEmpty', 'Список друзей пока пуст')}
                   </span>
                 </div>
               </div>
             ) : (
               <div className="p-4 flex flex-col gap-1.5">
-                <div className="text-[12px] font-bold text-[#949ba4] uppercase tracking-wider px-2.5 py-1">
+                <div className="text-[12px] font-bold text-[var(--text-dim)] uppercase tracking-wider px-2.5 py-1">
                   {t('discord.all', 'Все')} — {privateChats.length}
                 </div>
                 {privateChats.map((friend) => (
@@ -389,7 +397,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                     onClick={() => setActiveChat(friend.id)}
                     onMouseEnter={() => setHoveredFriendId(friend.id)}
                     onMouseLeave={() => setHoveredFriendId(null)}
-                    className="flex items-center justify-between p-2.5 rounded-xl hover:bg-[#35373c] cursor-pointer group transition-colors"
+                    className="flex items-center justify-between p-2.5 rounded-xl hover:bg-[var(--surface-container-strong)] cursor-pointer group transition-colors"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative shrink-0">
@@ -398,13 +406,13 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                           online={friend.online}
                           showOffline={true}
                           size="sm"
-                          ringColor={hoveredFriendId === friend.id ? '#35373c' : '#313338'}
+                          ringColor={hoveredFriendId === friend.id ? 'var(--surface-container-strong)' : 'var(--bg-primary)'}
                           ariaLabel={friend.online ? t('discord.online', 'В сети') : t('common.offline', 'Не в сети')}
                         />
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className="font-semibold text-white text-[15px] truncate">{friend.name}</span>
-                        <span className="text-xs text-[#949ba4] truncate">
+                        <span className="font-semibold text-[var(--text-heading,var(--text-main))] text-[15px] truncate">{friend.name}</span>
+                        <span className="text-xs text-[var(--text-dim)] truncate">
                           {friend.username ? `@${friend.username} · ` : ''}
                           {friend.online ? t('discord.online', 'В сети') : t('common.offline', 'Не в сети')}
                         </span>
@@ -418,7 +426,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                           setActiveChat(friend.id);
                         }}
                         aria-label={friend.name}
-                        className="w-9 h-9 rounded-full bg-[#2b2d31] hover:bg-[#1e1f22] text-[#b5bac1] hover:text-white flex items-center justify-center transition-colors border-none outline-none cursor-pointer"
+                        className="w-9 h-9 rounded-full bg-[var(--bg-secondary)] hover:bg-[var(--surface-container)] text-[var(--text-dim)] hover:text-[var(--text-heading,var(--text-main))] flex items-center justify-center transition-colors border-none outline-none cursor-pointer"
                       >
                         <MessageSquare size={18} />
                       </button>
@@ -431,15 +439,15 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
           {activeTab === 'pending' &&
             (incomingFriendRequests.length === 0 ? (
               <div className="flex-1 flex items-center justify-center p-6 text-center">
-                <div className="bg-[#2b2d31] rounded-2xl px-6 py-5 max-w-[380px]">
-                  <span className="text-[#949ba4] text-[14px]">
+                <div className="bg-[var(--bg-secondary)] rounded-2xl px-6 py-5 max-w-[380px]">
+                  <span className="text-[var(--text-dim)] text-[14px]">
                     {t('friendRequests.empty', 'Нет новых запросов')}
                   </span>
                 </div>
               </div>
             ) : (
               <div className="p-4 flex flex-col gap-1.5">
-                <div className="text-[12px] font-bold text-[#949ba4] uppercase tracking-wider px-2.5 py-1">
+                <div className="text-[12px] font-bold text-[var(--text-dim)] uppercase tracking-wider px-2.5 py-1">
                   {t('discord.pending', 'В ожидании')} — {incomingFriendRequests.length}
                 </div>
                 {incomingFriendRequests.map((req) => {
@@ -447,7 +455,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                   return (
                     <div
                       key={req.id}
-                      className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-[#2b2d31]/60 hover:bg-[#35373c] transition-colors"
+                      className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--surface-container-strong)] transition-colors"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <Avatar
@@ -456,10 +464,10 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                           className="w-10 h-10 rounded-full shrink-0"
                         />
                         <div className="flex flex-col min-w-0">
-                          <span className="font-semibold text-white text-[15px] truncate">
+                          <span className="font-semibold text-[var(--text-heading,var(--text-main))] text-[15px] truncate">
                             {req.senderNickname}
                           </span>
-                          <span className="text-xs text-[#949ba4] truncate">
+                          <span className="text-xs text-[var(--text-dim)] truncate">
                             {req.username ? `@${req.username}` : req.senderCode || req.chatId}
                           </span>
                         </div>
@@ -480,7 +488,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                           disabled={isBusy}
                           onClick={() => handleReject(req)}
                           aria-label={t('common.decline', 'Отклонить')}
-                          className="px-3.5 py-1.5 rounded-xl bg-[#2b2d31] hover:bg-[#1e1f22] disabled:opacity-50 disabled:cursor-not-allowed text-[#dbdee1] text-xs font-semibold flex items-center gap-1.5 transition-colors border-none outline-none cursor-pointer"
+                          className="px-3.5 py-1.5 rounded-xl bg-[var(--surface-container)] hover:bg-[var(--surface-container-strong)] disabled:opacity-50 disabled:cursor-not-allowed text-[var(--text-main)] text-xs font-semibold flex items-center gap-1.5 transition-colors border-none outline-none cursor-pointer"
                         >
                           <X size={15} />
                           <span>{t('common.decline', 'Отклонить')}</span>
@@ -495,27 +503,27 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
           {activeTab === 'blocked' &&
             (blockedUsers.length === 0 ? (
               <div className="flex-1 flex items-center justify-center p-6 text-center">
-                <div className="bg-[#2b2d31] rounded-2xl px-6 py-5 max-w-[380px]">
-                  <span className="text-[#949ba4] text-[14px]">
+                <div className="bg-[var(--bg-secondary)] rounded-2xl px-6 py-5 max-w-[380px]">
+                  <span className="text-[var(--text-dim)] text-[14px]">
                     {t('discord.blockedEmpty', 'У вас нет заблокированных пользователей')}
                   </span>
                 </div>
               </div>
             ) : (
               <div className="p-4 flex flex-col gap-1.5">
-                <div className="text-[12px] font-bold text-[#949ba4] uppercase tracking-wider px-2.5 py-1">
+                <div className="text-[12px] font-bold text-[var(--text-dim)] uppercase tracking-wider px-2.5 py-1">
                   {t('discord.blocked', 'Заблокированные')} — {blockedUsers.length}
                 </div>
                 {blockedUsers.map((user) => (
                   <div
                     key={user.id}
-                    className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-[#2b2d31]/60 hover:bg-[#35373c] transition-colors"
+                    className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--surface-container-strong)] transition-colors"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <Avatar src={user.avatarUrl} alt={user.name} className="w-10 h-10 rounded-full shrink-0" />
                       <div className="flex flex-col min-w-0">
-                        <span className="font-semibold text-white text-[15px] truncate">{user.name}</span>
-                        <span className="text-xs text-[#949ba4] truncate">
+                        <span className="font-semibold text-[var(--text-heading,var(--text-main))] text-[15px] truncate">{user.name}</span>
+                        <span className="text-xs text-[var(--text-dim)] truncate">
                           {user.username ? `@${user.username}` : t('discord.blocked', 'Заблокированные')}
                         </span>
                       </div>
@@ -524,7 +532,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                       type="button"
                       onClick={() => toggleChatBlocked(user.id)}
                       aria-label={t('profile.unblock', 'Разблокировать')}
-                      className="px-3.5 py-1.5 rounded-xl bg-[#2b2d31] hover:bg-[#1e1f22] text-[#dbdee1] hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors border-none outline-none cursor-pointer shrink-0"
+                      className="px-3.5 py-1.5 rounded-xl bg-[var(--surface-container)] hover:bg-[var(--surface-container-strong)] text-[var(--text-main)] text-xs font-semibold flex items-center gap-1.5 transition-colors border-none outline-none cursor-pointer shrink-0"
                     >
                       <ShieldOff size={14} />
                       <span>{t('profile.unblock', 'Разблокировать')}</span>
@@ -536,17 +544,17 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
 
           {activeTab === 'add' && (
             <div className="p-6 flex flex-col max-w-[560px]">
-              <h2 className="text-white text-base font-bold uppercase tracking-wide mb-1.5">
+              <h2 className="text-[var(--text-heading,var(--text-main))] text-base font-bold uppercase tracking-wide mb-1.5">
                 {t('discord.addFriend', 'Добавить в друзья')}
               </h2>
-              <p className="text-[#949ba4] text-xs mb-4 leading-relaxed">
+              <p className="text-[var(--text-dim)] text-xs mb-4 leading-relaxed">
                 {t(
                   'discord.addFriendDesc',
                   'Вы можете добавить друзей по имени пользователя, коду или ссылке-приглашению.'
                 )}
               </p>
 
-              <div className="flex items-center gap-2 bg-[#1e1f22] rounded-2xl p-2 pl-4 focus-within:bg-[#191a1d] transition-colors">
+              <div className="flex items-center gap-2 bg-[var(--surface-container)] rounded-2xl p-2 pl-4 focus-within:ring-1 focus-within:ring-[var(--accent-color)] transition-all">
                 <input
                   type="text"
                   value={query}
@@ -567,14 +575,15 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                     'discord.addFriendPlaceholder',
                     'Имя пользователя, @username, UUID или ссылка'
                   )}
-                  className="bg-transparent border-none outline-none text-white text-sm flex-1 min-w-0 placeholder-[#949ba4]"
+                  className="bg-transparent border-none outline-none text-[var(--text-main)] text-sm flex-1 min-w-0 placeholder-[var(--text-dim)]"
                 />
                 <button
                   type="button"
                   onClick={handleSendFriendRequest}
                   disabled={isSubmitting || !query.trim()}
                   aria-label={t('discord.sendFriendRequest', 'Отправить запрос')}
-                  className="bg-[#5865F2] hover:bg-[#4752c4] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors border-none outline-none cursor-pointer shrink-0"
+                  className="hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-opacity border-none outline-none cursor-pointer shrink-0"
+                  style={{ background: 'var(--accent-gradient, var(--accent-color, #5865F2))' }}
                 >
                   {isSubmitting
                     ? t('discord.sendingRequest', 'Отправка...')
@@ -595,16 +604,16 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
               )}
 
               {(isSearching || liveResults.length > 0) && (
-                <div className="mt-4 bg-[#2b2d31] rounded-2xl p-2 flex flex-col gap-1">
+                <div className="mt-4 bg-[var(--bg-secondary)] rounded-2xl p-2 flex flex-col gap-1">
                   {isSearching && liveResults.length === 0 ? (
-                    <div className="px-3 py-3 text-xs text-[#949ba4]">
+                    <div className="px-3 py-3 text-xs text-[var(--text-dim)]">
                       {t('discord.searching', 'Поиск пользователей...')}
                     </div>
                   ) : (
                     liveResults.map((user) => (
                       <div
                         key={user.user_code}
-                        className="flex items-center justify-between gap-3 p-2.5 rounded-xl hover:bg-[#35373c] transition-colors"
+                        className="flex items-center justify-between gap-3 p-2.5 rounded-xl hover:bg-[var(--surface-container-strong)] transition-colors"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <Avatar
@@ -613,10 +622,10 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                             className="w-9 h-9 rounded-full shrink-0"
                           />
                           <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-semibold text-white truncate">
+                            <span className="text-sm font-semibold text-[var(--text-heading,var(--text-main))] truncate">
                               {user.nickname}
                             </span>
-                            <span className="text-xs text-[#949ba4] truncate">
+                            <span className="text-xs text-[var(--text-dim)] truncate">
                               {user.username ? `@${user.username}` : user.user_code}
                             </span>
                           </div>
@@ -626,7 +635,8 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                           disabled={isSubmitting}
                           onClick={() => sendRequestToCode(user.user_code)}
                           aria-label={t('discord.addShort', 'Добавить')}
-                          className="bg-[#5865F2] hover:bg-[#4752c4] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-colors border-none outline-none cursor-pointer shrink-0"
+                          className="hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-opacity border-none outline-none cursor-pointer shrink-0"
+                          style={{ background: 'var(--accent-gradient, var(--accent-color, #5865F2))' }}
                         >
                           <UserPlus size={14} />
                           <span>{t('discord.addShort', 'Добавить')}</span>
@@ -645,15 +655,15 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
         className="w-[340px] p-4 flex flex-col shrink-0 select-none hidden lg:flex rounded-[18px] overflow-hidden"
         style={{ backgroundColor: 'var(--bg-primary, #313338)' }}
       >
-        <h2 className="text-[18px] font-bold text-white mb-4 px-1">
+        <h2 className="text-[18px] font-bold text-[var(--text-heading,var(--text-main))] mb-4 px-1">
             {t('discord.activeContacts', 'Активные контакты')}
           </h2>
           {onlineFriends.length === 0 ? (
-            <div className="bg-[#2b2d31] rounded-2xl p-5 text-center">
-              <h3 className="font-bold text-white text-[15px] mb-2">
+            <div className="bg-[var(--bg-secondary)] rounded-2xl p-5 text-center">
+              <h3 className="font-bold text-[var(--text-heading,var(--text-main))] text-[15px] mb-2">
                 {t('discord.quietForNow', 'Пока что тут тихо...')}
               </h3>
-              <p className="text-xs text-[#949ba4] leading-relaxed m-0">
+              <p className="text-xs text-[var(--text-dim)] leading-relaxed m-0">
                 {t(
                   'discord.quietForNowDesc',
                   'Если ваш друг начнет чем-то заниматься — например, запустит игру или войдет в голосовой чат, — вы увидите это здесь!'
@@ -668,20 +678,20 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                   onClick={() => setActiveChat(friend.id)}
                   onMouseEnter={() => setHoveredActiveId(friend.id)}
                   onMouseLeave={() => setHoveredActiveId(null)}
-                  className="bg-[#2b2d31] hover:bg-[#35373c] rounded-2xl p-3.5 flex items-center gap-3 cursor-pointer transition-colors"
+                  className="bg-[var(--bg-secondary)] hover:bg-[var(--surface-container-strong)] rounded-2xl p-3.5 flex items-center gap-3 cursor-pointer transition-colors"
                 >
                   <div className="relative shrink-0">
                     <Avatar src={friend.avatarUrl} alt={friend.name} className="w-10 h-10 rounded-full" />
                     <OnlineIndicator
                       online={true}
                       size="sm"
-                      ringColor={hoveredActiveId === friend.id ? '#35373c' : '#2b2d31'}
+                      ringColor={hoveredActiveId === friend.id ? 'var(--surface-container-strong)' : 'var(--bg-secondary)'}
                       ariaLabel={t('discord.online', 'В сети')}
                     />
                   </div>
                   <div className="flex flex-col min-w-0 flex-1">
-                    <span className="font-semibold text-white text-[14px] truncate">{friend.name}</span>
-                    <span className="text-xs text-[#949ba4] truncate">
+                    <span className="font-semibold text-[var(--text-heading,var(--text-main))] text-[14px] truncate">{friend.name}</span>
+                    <span className="text-xs text-[var(--text-dim)] truncate">
                       {t('discord.online', 'В сети')}
                     </span>
                   </div>

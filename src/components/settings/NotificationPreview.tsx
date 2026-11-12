@@ -177,7 +177,7 @@ export const NotificationMonitor: React.FC<NotificationPreviewProps> = ({
         style={{
           width: '54px',
           height: '24px',
-          background: 'linear-gradient(180deg, #6c667c 0%, #3e3a4c 100%)',
+          background: 'linear-gradient(180deg, var(--surface-container-strong, #3e3a4c) 0%, var(--bg-secondary, #2b2d31) 100%)',
           clipPath: 'polygon(12% 0%, 88% 0%, 100% 100%, 0% 100%)',
           marginTop: '-1px',
           boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
@@ -189,7 +189,7 @@ export const NotificationMonitor: React.FC<NotificationPreviewProps> = ({
         style={{
           width: '84px',
           height: '6px',
-          background: 'linear-gradient(180deg, #5a5468 0%, #2f2a3a 100%)',
+          background: 'linear-gradient(180deg, var(--surface-container-strong, #2c2a35) 0%, var(--surface-container, #1e1f22) 100%)',
           borderRadius: '0 0 6px 6px',
           boxShadow: '0 3px 8px rgba(0,0,0,0.4)',
         }}

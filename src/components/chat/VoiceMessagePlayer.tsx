@@ -154,7 +154,7 @@ const drawWaveformCanvas = (
     ? (isOwn ? 'rgba(255, 255, 255, 0.40)' : 'rgba(255, 255, 255, 0.28)')
     : (isOwn ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.12)');
 
-  let accentColor = '#7C3AED';
+  let accentColor = '#5865F2';
   if (typeof document !== 'undefined') {
     const val = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim();
     if (val) accentColor = val;

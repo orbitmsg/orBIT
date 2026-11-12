@@ -621,7 +621,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
         </div>
         <div style={{ backgroundColor: MD3.surface, borderRadius: 16, margin: '0 10px', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(124, 58, 237, 0.15)', color: '#a78bfa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: 'var(--accent-glow-light, rgba(88, 101, 242, 0.15))', color: 'var(--accent-color, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Folder size={18} />
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
@@ -748,7 +748,7 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
                           style={{
                             width: 38,
                             height: 38,
-                            backgroundColor: 'rgba(155, 125, 212, 0.25)',
+                            backgroundColor: 'var(--accent-glow-light, rgba(88, 101, 242, 0.25))',
                             color: '#ffffff',
                             display: 'flex',
                             alignItems: 'center',
@@ -1057,8 +1057,8 @@ export const DataMemorySettings: React.FC<DataMemorySettingsProps> = ({
               bottom: 24,
               left: '50%',
               transform: 'translateX(-50%)',
-              backgroundColor: 'rgba(30, 26, 43, 0.95)',
-              border: '1px solid rgba(155, 125, 212, 0.3)',
+              backgroundColor: 'var(--surface-container-strong, #232428)',
+              border: '1px solid var(--border-color, rgba(255, 255, 255, 0.12))',
               color: '#ffffff',
               padding: '10px 20px',
               borderRadius: 20,

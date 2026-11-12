@@ -440,7 +440,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
             ) : (
               <div
                 className="w-full h-full flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, #7C3AED, #3B82F6)' }}
+                style={{ background: 'var(--accent-gradient, linear-gradient(135deg, var(--accent-color, #5865F2), var(--accent-dark, #4752c4)))' }}
               >
                 <Users size={40} className="text-white" />
               </div>

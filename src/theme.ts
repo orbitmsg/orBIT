@@ -263,9 +263,17 @@ export const resolveThemeVars = (themeId: ThemeId, chatColor?: string, themeTint
 
   const accentColor = isCustomChatColor ? customHex : tintTokens.accent;
   const accentLight = isCustomChatColor
-    ? (resolvedMode === 'light' ? customHex : tintTokens.accentLight)
+    ? (resolvedMode === 'light' ? customHex : `color-mix(in srgb, ${customHex} 76%, white)`)
     : tintTokens.accentLight;
-  const accentDark = tintTokens.accentDark;
+  const accentDark = isCustomChatColor
+    ? `color-mix(in srgb, ${customHex} 72%, black)`
+    : tintTokens.accentDark;
+  const accentGradient = effectiveChatColor.startsWith('linear-gradient')
+    ? effectiveChatColor
+    : `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 100%)`;
+  const accentHover = isCustomChatColor
+    ? `color-mix(in srgb, ${customHex} 82%, black)`
+    : `color-mix(in srgb, ${accentColor} 84%, black)`;
 
   const vars: Record<string, string> = {
     ...theme.vars,
@@ -274,6 +282,7 @@ export const resolveThemeVars = (themeId: ThemeId, chatColor?: string, themeTint
     '--chat-list-bg': tintTokens.chatListBg,
     '--surface-container': tintTokens.surfaceContainer,
     '--surface-container-strong': tintTokens.surfaceContainerStrong,
+    '--surface-container-soft': `color-mix(in srgb, ${accentColor} 7%, ${resolvedMode === 'light' ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)'})`,
     '--border-color': tintTokens.borderColor,
     '--surface-border': tintTokens.borderColor,
     '--title-bar-bg': tintTokens.titleBarBg,
@@ -287,9 +296,12 @@ export const resolveThemeVars = (themeId: ThemeId, chatColor?: string, themeTint
     '--accent-color': accentColor,
     '--accent-light': accentLight,
     '--accent-dark': accentDark,
+    '--accent-hover': accentHover,
+    '--accent-gradient': accentGradient,
     '--accent-glow': `color-mix(in srgb, ${accentColor} 30%, transparent)`,
     '--accent-glow-light': `color-mix(in srgb, ${accentColor} 15%, transparent)`,
     '--selection-bg': `color-mix(in srgb, ${accentColor} 28%, transparent)`,
+    '--md-sys-color-primary': accentColor,
     '--settings-primary': accentColor,
     '--settings-primary-cont': accentDark,
   };

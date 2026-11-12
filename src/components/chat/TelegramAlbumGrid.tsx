@@ -397,7 +397,7 @@ const AlbumTile = memo(({
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: 'radial-gradient(circle at 30% 30%, rgba(139, 92, 246, 0.22), transparent 70%), radial-gradient(circle at 70% 70%, rgba(59, 130, 246, 0.18), transparent 70%), rgba(255, 255, 255, 0.05)',
+            background: 'radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--accent-color, #5865F2) 22%, transparent), transparent 70%), radial-gradient(circle at 70% 70%, color-mix(in srgb, var(--accent-light, #7289da) 18%, transparent), transparent 70%), var(--surface-container-soft, rgba(255, 255, 255, 0.05))',
             backdropFilter: 'none',
           }}
         />

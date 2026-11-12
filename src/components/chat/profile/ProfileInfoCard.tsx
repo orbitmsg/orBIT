@@ -261,7 +261,7 @@ export const ProfileInfoCard: React.FC<ProfileInfoCardProps> = ({
                   }}
                   style={{
                     padding: '6px 10px',
-                    background: chat.inviteActive === false ? 'rgba(155, 125, 212, 0.15)' : 'rgba(255, 77, 79, 0.1)',
+                    background: chat.inviteActive === false ? 'var(--accent-glow-light, rgba(88, 101, 242, 0.15))' : 'rgba(255, 77, 79, 0.1)',
                     border: 'none',
                     borderRadius: '8px',
                     color: chat.inviteActive === false ? 'var(--accent-color, #9b7dd4)' : '#ff4d4f',

@@ -152,7 +152,7 @@ export const AppLockScreen: React.FC<AppLockScreenProps> = ({ onUnlocked }) => {
             style={{ 
               border: 'none',
               boxShadow: '0 4px 14px rgba(0,0,0,0.4)',
-              background: userProfile.avatarUrl ? 'transparent' : 'linear-gradient(135deg, var(--accent-color), #4f46e5)'
+              background: userProfile.avatarUrl ? 'transparent' : 'var(--accent-gradient, linear-gradient(135deg, var(--accent-color), var(--accent-dark)))'
             }}
           >
             {userProfile.avatarUrl ? (
@@ -179,7 +179,7 @@ export const AppLockScreen: React.FC<AppLockScreenProps> = ({ onUnlocked }) => {
               transition={{ repeat: usbStatus === 'success' ? 0 : Infinity, duration: 1.8, ease: 'easeInOut' }}
               className="w-16 h-16 rounded-full flex items-center justify-center mb-3 mt-1"
               style={{
-                backgroundColor: usbStatus === 'success' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(124, 58, 237, 0.15)',
+                backgroundColor: usbStatus === 'success' ? 'rgba(16, 185, 129, 0.2)' : 'var(--accent-glow-light, rgba(88, 101, 242, 0.15))',
                 border: `2px solid ${usbStatus === 'success' ? '#10b981' : 'var(--accent-color, #7C3AED)'}`,
               }}
             >

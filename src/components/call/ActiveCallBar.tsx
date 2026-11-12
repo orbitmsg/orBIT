@@ -33,13 +33,12 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
   const currentCallName = currentCallChat?.name || (activeCall as any)?.otherName || activeChat?.name || '';
   const currentCallAvatar = currentCallChat?.avatarUrl || (activeCall as any)?.otherAvatar || (currentCallChat?.id === activeChatId ? activeChat?.avatarUrl : null);
 
-  const baseColor = chatColor || 'var(--accent-color, #5c54e5)';
   const gradientBackground = useMemo(() => {
     if (chatColor && chatColor.startsWith('linear-gradient')) {
       return chatColor;
     }
-    return `linear-gradient(90deg, color-mix(in srgb, ${baseColor} 75%, black) 0%, ${baseColor} 50%, color-mix(in srgb, ${baseColor} 80%, white) 100%)`;
-  }, [chatColor, baseColor]);
+    return 'var(--accent-gradient, linear-gradient(90deg, var(--accent-dark, #4752c4) 0%, var(--accent-color, #5865F2) 55%, var(--accent-light, #7289da) 100%))';
+  }, [chatColor]);
 
   const barRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);

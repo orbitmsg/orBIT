@@ -238,7 +238,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
             width: '48px',
             height: '48px',
             borderRadius: '50%',
-            backgroundColor: 'rgba(155, 125, 212, 0.15)',
+            backgroundColor: 'var(--accent-glow-light, rgba(88, 101, 242, 0.15))',
             color: 'var(--accent-color, #9b7dd4)',
             display: 'flex',
             alignItems: 'center',

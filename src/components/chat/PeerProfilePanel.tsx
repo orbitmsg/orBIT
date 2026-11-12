@@ -714,7 +714,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
               transition: 'background-color 0.15s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(128, 128, 128, 0.16)';
+              e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--accent-color, #5865F2) 18%, var(--surface-container-soft, rgba(128, 128, 128, 0.14)))';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = 'var(--surface-container-soft, rgba(255, 255, 255, 0.06))';

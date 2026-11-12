@@ -10,7 +10,7 @@ export const BotAvatar: React.FC<BotAvatarProps> = ({ className = '', style }) =
     <div
       className={`flex items-center justify-center rounded-full flex-shrink-0 ${className}`}
       style={{
-        background: 'linear-gradient(135deg, var(--accent-color, #7C3AED) 0%, #a855f7 100%)',
+        background: 'var(--accent-gradient, linear-gradient(135deg, var(--accent-color, #5865F2) 0%, var(--accent-dark, #4752c4) 100%))',
         color: '#ffffff',
         ...style,
       }}

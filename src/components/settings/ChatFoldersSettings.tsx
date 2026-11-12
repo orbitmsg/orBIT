@@ -29,7 +29,7 @@ export const SettingsFolderIcon: React.FC<{ size?: number; className?: string; s
 const MD3 = {
   onSurface: '#e6e1e5',
   onSurfaceVar: '#cac4d0',
-  primary: '#c5b4e3',
+  primary: 'var(--accent-color, #c5b4e3)',
   error: '#ff898a',
 };
 

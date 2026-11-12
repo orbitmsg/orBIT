@@ -482,8 +482,10 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
                         width: '100%',
                         boxSizing: 'border-box',
                         textAlign: 'left',
-                        backgroundColor: parentActive ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                        color: parentActive ? MD3.onSurface : MD3.onSurfaceVar,
+                        backgroundColor: parentActive
+                          ? 'color-mix(in srgb, var(--accent-color, #5865F2) 18%, transparent)'
+                          : 'transparent',
+                        color: parentActive ? 'var(--text-heading, var(--md-on-surface))' : MD3.onSurfaceVar,
                         fontSize: 13.5,
                         fontWeight: parentActive ? 600 : 500,
                         transition: 'background-color 120ms ease, color 120ms ease',
@@ -551,8 +553,10 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
                                 width: '100%',
                                 boxSizing: 'border-box',
                                 textAlign: 'left',
-                                backgroundColor: isSubActive ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-                                color: isSubActive ? MD3.onSurface : MD3.onSurfaceVar,
+                                backgroundColor: isSubActive
+                                  ? 'color-mix(in srgb, var(--accent-color, #5865F2) 15%, transparent)'
+                                  : 'transparent',
+                                color: isSubActive ? 'var(--text-heading, var(--md-on-surface))' : MD3.onSurfaceVar,
                                 fontSize: 13,
                                 fontWeight: isSubActive ? 600 : 400,
                                 transition: 'background-color 120ms ease, color 120ms ease',

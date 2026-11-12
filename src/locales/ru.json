@@ -1280,7 +1280,10 @@
       "choose_file": "Выбрать файл",
       "paste_clipboard": "Вставить из буфера",
       "choose_emoji": "Выбрать эмодзи-аватар",
-      "delete_photo": "Удалить фото"
+      "delete_photo": "Удалить фото",
+      "birthday_invalid_year": "Укажите корректный год",
+      "birthday_invalid_date": "Некорректная дата",
+      "save_error": "Не удалось сохранить профиль"
     },
     "channel": {
       "edit_channel": "Редактировать канал",

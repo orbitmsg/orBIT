@@ -42,11 +42,11 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
       ...chat,
       name: patch.name || chat.name,
       avatarUrl: patch.avatarUrl || chat.avatarUrl,
-      bannerUrl: chat.bannerUrl ?? patch.bannerUrl,
-      username: chat.username ?? patch.username,
-      description: chat.description ?? patch.description,
-      birthday: chat.birthday ?? patch.birthday,
-      numericId: chat.numericId ?? patch.numericId,
+      bannerUrl: chat.bannerUrl || patch.bannerUrl,
+      username: chat.username || patch.username,
+      description: chat.description || patch.description,
+      birthday: chat.birthday || patch.birthday,
+      numericId: chat.numericId || patch.numericId,
       peerCode: chat.peerCode || patch.peerCode,
       originalPeerCode: chat.originalPeerCode || patch.originalPeerCode,
     };
@@ -57,14 +57,8 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
 
     const myCode = useChatStore.getState().myCode;
     const myUserId = useAuthStore.getState().userId;
-    const targetCode =
-      chat.peerCode && chat.peerCode !== myCode
-        ? chat.peerCode
-        : chat.originalPeerCode && chat.originalPeerCode !== myCode
-          ? chat.originalPeerCode
-          : chat.name && chat.name.length === 36 && chat.name !== myCode
-            ? chat.name
-            : undefined;
+    const resolved = resolveProfileId(chat, chat.id);
+    const targetCode = resolved && resolved !== myCode ? resolved : undefined;
 
     const needsFetch = !chat.description || !chat.birthday || !chat.username;
     const fetchKey = `${chat.id}|${targetCode || ''}|${chat.username || ''}`;
@@ -90,13 +84,31 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
             ((myCode && rawUpdate.sender_code === myCode) ||
               (myUserId && (rawUpdate.user_id === myUserId || rawUpdate.sender_id === myUserId)))
         );
-        const validUpdate = rawUpdate && !isMyOwnUpdate ? rawUpdate : null;
+        let validUpdate = rawUpdate && !isMyOwnUpdate ? rawUpdate : null;
+        if (isMyOwnUpdate && rawUpdate?.sender_code) {
+          try {
+            const peerUpdate = await supabaseService.getLatestProfileUpdate(chat.id, rawUpdate.sender_code);
+            if (cancelled) return;
+            const peerUpdateIsOwn = Boolean(
+              peerUpdate &&
+                ((myCode && peerUpdate.sender_code === myCode) ||
+                  (myUserId && (peerUpdate.user_id === myUserId || peerUpdate.sender_id === myUserId)))
+            );
+            if (peerUpdate && !peerUpdateIsOwn) {
+              validUpdate = peerUpdate;
+            }
+          } catch {}
+        }
+
         let pub = pubRes.status === 'fulfilled' ? pubRes.value : null;
         const pubByUname = unameRes.status === 'fulfilled' ? unameRes.value : null;
 
-        if (!pub && validUpdate?.sender_code && validUpdate.sender_code !== myCode) {
+        const fallbackCode =
+          (validUpdate?.sender_code && validUpdate.sender_code !== myCode ? validUpdate.sender_code : undefined) ||
+          (pubByUname?.user_code && pubByUname.user_code !== myCode ? pubByUname.user_code : undefined);
+        if (!pub && fallbackCode && fallbackCode !== targetCode) {
           try {
-            pub = await supabaseService.lookupPublicProfile(validUpdate.sender_code);
+            pub = await supabaseService.lookupPublicProfile(fallbackCode);
           } catch {}
           if (cancelled) return;
         }
@@ -144,7 +156,14 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
           chatUpdates.bannerUrl = nextBanner;
         }
 
-        completedFetchKeysRef.current.add(fetchKey);
+        const hasFetchError =
+          updateRes.status === 'rejected' ||
+          (Boolean(targetCode) && pubRes.status === 'rejected') ||
+          (Boolean(chat.username) && unameRes.status === 'rejected');
+        const hasServerProfile = Boolean(validUpdate || pub || pubByUname);
+        if (!hasFetchError && hasServerProfile) {
+          completedFetchKeysRef.current.add(fetchKey);
+        }
 
         if (Object.keys(chatUpdates).length > 0) {
           useChatStore.getState().updateChat(chat.id, chatUpdates);

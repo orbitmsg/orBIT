@@ -1,9 +1,13 @@
 import { useChatStore } from '../../store/useChatStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useToastStore } from '../../store/useToastStore';
 import { supabaseService } from '../../services/supabaseService';
 import { groupService } from '../../services/groupService';
 import { ablyService } from '../../services/ablyService';
 import { getPusher, getGroupPusher } from '../../utils/pusher';
+import i18n from '../../i18n';
+
+export type ProfileField = 'nickname' | 'avatarUrl' | 'bannerUrl' | 'bio' | 'username' | 'birthday';
 
 export interface ProfileUpdates {
   avatarUrl?: string | null;
@@ -12,15 +16,11 @@ export interface ProfileUpdates {
   bio?: string | null;
   username?: string | null;
   birthday?: string | null;
+  clearedFields?: ProfileField[];
 }
-export const broadcastProfileUpdate = (updates: {
-  avatarUrl?: string | null;
-  bannerUrl?: string | null;
-  nickname?: string;
-  bio?: string | null;
-  username?: string | null;
-  birthday?: string | null;
-}) => {
+
+export const broadcastProfileUpdate = async (updates: ProfileUpdates): Promise<boolean> => {
+  const clearedSet = new Set<ProfileField>(updates.clearedFields || []);
   const currentNickname = useAuthStore.getState().nickname;
   const currentAvatar = useAuthStore.getState().avatarUrl;
   const currentBanner = useAuthStore.getState().bannerUrl;
@@ -31,11 +31,31 @@ export const broadcastProfileUpdate = (updates: {
   const currentNumericId = useAuthStore.getState().numericId;
   const myCode = useChatStore.getState().myCode;
   const finalNickname = updates.nickname !== undefined ? updates.nickname : currentNickname;
-  const finalAvatar = updates.avatarUrl !== undefined ? updates.avatarUrl : currentAvatar;
-  const finalBanner = updates.bannerUrl !== undefined ? updates.bannerUrl : currentBanner;
-  const finalBio = updates.bio !== undefined ? updates.bio : currentBio;
-  const finalUsername = updates.username !== undefined ? updates.username : currentUsername;
-  const finalBirthday = updates.birthday !== undefined ? updates.birthday : currentBirthday;
+  const finalAvatar = updates.avatarUrl !== undefined ? updates.avatarUrl : (clearedSet.has('avatarUrl') ? null : currentAvatar);
+  const finalBanner = updates.bannerUrl !== undefined ? updates.bannerUrl : (clearedSet.has('bannerUrl') ? null : currentBanner);
+  const finalBio = updates.bio !== undefined ? updates.bio : (clearedSet.has('bio') ? null : currentBio);
+  const finalUsername = updates.username !== undefined ? updates.username : (clearedSet.has('username') ? null : currentUsername);
+  const finalBirthday = updates.birthday !== undefined ? updates.birthday : (clearedSet.has('birthday') ? null : currentBirthday);
+
+  const resolveServerOptional = (explicit: string | null | undefined, field: ProfileField): string | null | undefined => {
+    if (explicit !== undefined) return explicit;
+    if (clearedSet.has(field)) return null;
+    return undefined;
+  };
+
+  const resolvePayloadField = (
+    explicit: string | null | undefined,
+    field: ProfileField,
+    resolved: string | null
+  ): string | null | undefined => {
+    if (explicit !== undefined || clearedSet.has(field)) return resolved;
+    return resolved || undefined;
+  };
+
+  const serverBio = resolveServerOptional(updates.bio, 'bio');
+  const serverUsername = resolveServerOptional(updates.username, 'username');
+  const serverBirthday = resolveServerOptional(updates.birthday, 'birthday');
+  const serverBanner = resolveServerOptional(updates.bannerUrl, 'bannerUrl');
 
   const payload = {
     type: 'profile-update',
@@ -46,25 +66,45 @@ export const broadcastProfileUpdate = (updates: {
     numericId: currentNumericId,
     senderId: currentUserId || myCode,
     avatarUrl: finalAvatar,
-    bannerUrl: finalBanner,
+    bannerUrl: resolvePayloadField(updates.bannerUrl, 'bannerUrl', finalBanner),
     nickname: finalNickname,
-    bio: finalBio,
-    username: finalUsername,
-    birthday: finalBirthday,
+    bio: resolvePayloadField(updates.bio, 'bio', finalBio),
+    username: resolvePayloadField(updates.username, 'username', finalUsername),
+    birthday: resolvePayloadField(updates.birthday, 'birthday', finalBirthday),
   };
 
-  if (myCode) {
-    supabaseService.publishPublicProfile(myCode, finalNickname, finalAvatar, null, finalBio, finalUsername, finalBirthday, finalBanner).catch(() => {});
+  const persistenceTasks: Promise<unknown>[] = [];
+  const publicCode = myCode || currentUserId;
+  if (publicCode) {
+    persistenceTasks.push(
+      supabaseService.publishPublicProfile(
+        publicCode,
+        finalNickname,
+        finalAvatar,
+        null,
+        serverBio,
+        serverUsername,
+        serverBirthday,
+        serverBanner
+      )
+    );
   }
 
   if (currentUserId || myCode) {
-    useChatStore.getState().setUserProfile(currentUserId || myCode, {
+    const userProfilePatch = {
       nickname: finalNickname,
       avatarUrl: finalAvatar,
       bio: finalBio,
       username: finalUsername,
+      birthday: finalBirthday,
       bannerUrl: finalBanner,
-    });
+    };
+    if (currentUserId) {
+      useChatStore.getState().setUserProfile(currentUserId, userProfilePatch);
+    }
+    if (myCode && myCode !== currentUserId) {
+      useChatStore.getState().setUserProfile(myCode, userProfilePatch);
+    }
   }
 
   groupService.updateMemberProfile(currentUserId, myCode, finalNickname, finalAvatar).catch(() => {});
@@ -72,7 +112,18 @@ export const broadcastProfileUpdate = (updates: {
   const chats = useChatStore.getState().chats;
   chats.forEach((chat) => {
     if (chat.type === 'private' && chat.id !== 'notes') {
-      supabaseService.saveProfileUpdate(chat.id, finalNickname, finalAvatar, myCode, finalBio, finalUsername, finalBirthday, finalBanner).catch(() => {});
+      persistenceTasks.push(
+        supabaseService.saveProfileUpdate(
+          chat.id,
+          finalNickname,
+          finalAvatar,
+          myCode,
+          serverBio,
+          serverUsername,
+          serverBirthday,
+          serverBanner
+        )
+      );
       ablyService.sendMessage(chat.id, payload).catch(() => {});
       const pusher = getPusher();
       const channel = pusher.subscribe(`private-chat-${chat.id}`);
@@ -106,9 +157,10 @@ export const broadcastProfileUpdate = (updates: {
         oldNickname: currentNickname,
         nickname: finalNickname,
         avatarUrl: finalAvatar,
-        bannerUrl: finalBanner,
-        bio: finalBio,
-        username: finalUsername,
+        bannerUrl: resolvePayloadField(updates.bannerUrl, 'bannerUrl', finalBanner),
+        bio: resolvePayloadField(updates.bio, 'bio', finalBio),
+        username: resolvePayloadField(updates.username, 'username', finalUsername),
+        birthday: resolvePayloadField(updates.birthday, 'birthday', finalBirthday),
         sender: finalNickname,
         senderUserId: currentUserId,
         senderCode: myCode,
@@ -139,12 +191,26 @@ export const broadcastProfileUpdate = (updates: {
           ? { ...m, nickname: finalNickname, avatarUrl: finalAvatar || null }
           : m
       );
-      const updates: any = { members: updatedMembers };
+      const chatUpdates: any = { members: updatedMembers };
       if (chat.creatorNickname && currentNickname && chat.creatorNickname === currentNickname) {
-        updates.creatorNickname = finalNickname;
+        chatUpdates.creatorNickname = finalNickname;
       }
-      useChatStore.getState().updateChat(chat.id, updates);
+      useChatStore.getState().updateChat(chat.id, chatUpdates);
     }
   });
+
+  if (persistenceTasks.length > 0) {
+    const results = await Promise.allSettled(persistenceTasks);
+    const rejected = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
+    if (rejected) {
+      const msg = rejected.reason instanceof Error ? rejected.reason.message : '';
+      if (msg === 'USERNAME_TAKEN') {
+        useToastStore.getState().showToast(i18n.t('profile.username_taken', 'Это имя пользователя уже занято'), 'text');
+      } else {
+        useToastStore.getState().showToast(i18n.t('profile.save_error', 'Не удалось сохранить профиль'), 'text');
+      }
+      return false;
+    }
+  }
+  return true;
 };
-

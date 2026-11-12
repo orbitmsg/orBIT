@@ -273,13 +273,13 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
   return (
     <aside
       style={{
-        width: 248,
+        width: 268,
         flexShrink: 0,
         display: 'flex',
         flexDirection: 'column',
         backgroundColor: 'var(--bg-secondary, #2b2d31)',
-        borderRight: '1px solid rgba(255, 255, 255, 0.06)',
-        padding: '12px 8px 10px',
+        borderRight: 'none',
+        padding: '14px 10px 12px',
         boxSizing: 'border-box',
         minHeight: 0,
       }}

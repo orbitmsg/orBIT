@@ -17,6 +17,12 @@ import { extractCodeFromInput } from '../../../utils/inviteLink';
 import { DoubleRatchet } from '../../../lib/double-ratchet';
 import { revalidateDevelopersOnConnection } from '../../ui/DeveloperBadge';
 
+const isValidProfileString = (val: unknown): val is string =>
+  typeof val === 'string' && val.trim().length > 0 && val.trim() !== 'undefined' && val.trim() !== 'null';
+
+const pickNonEmptyProfileValue = (incoming: unknown, existing?: string | null): string | undefined =>
+  isValidProfileString(incoming) ? incoming.trim() : (isValidProfileString(existing) ? existing : undefined);
+
 export interface UseConnectRequestHandlerParams {
   nickname: string | null;
   myCode: string | null;
@@ -133,40 +139,41 @@ export const useConnectRequestHandler = ({
           revalidateDevelopersOnConnection(peerCode);
         }
         const peerNumericId = data.numericId || data.numeric_id || (peerCode ? getInitialNumericId(peerCode) : undefined);
-        if (currentChats.some((c) => c.id === chatId)) {
+        const existingChat = currentChats.find((c) => c.id === chatId);
+        if (existingChat) {
           updateChat(chatId, {
-            name: data.nickname,
+            name: pickNonEmptyProfileValue(data.nickname, existingChat.name) || existingChat.name,
             lastMsg: 'E2EE_SECURE_CHANNEL_READY',
             sharedSecret: sharedSecret,
             ratchetState: ratchet.getState(),
-            avatarUrl: data.avatarUrl ?? undefined,
-            bannerUrl: data.bannerUrl ?? undefined,
+            avatarUrl: pickNonEmptyProfileValue(data.avatarUrl, existingChat.avatarUrl),
+            bannerUrl: pickNonEmptyProfileValue(data.bannerUrl, existingChat.bannerUrl),
             peerCode: peerCode,
             originalPeerCode: peerCode || friendCode,
-            numericId: peerNumericId,
-            username: data.username !== undefined ? data.username : undefined,
-            description: data.bio !== undefined ? data.bio : undefined,
-            birthday: data.birthday !== undefined ? data.birthday : undefined,
+            numericId: pickNonEmptyProfileValue(data.numericId || data.numeric_id, existingChat.numericId) || peerNumericId,
+            username: pickNonEmptyProfileValue(data.username, existingChat.username),
+            description: pickNonEmptyProfileValue(data.bio, existingChat.description),
+            birthday: pickNonEmptyProfileValue(data.birthday, existingChat.birthday),
             peerPublicKey: data.publicKey,
           });
         } else {
           addChat({
             id: chatId,
             type: 'private',
-            name: data.nickname,
+            name: isValidProfileString(data.nickname) ? data.nickname.trim() : friendCode,
             lastMsg: 'E2EE_SECURE_CHANNEL_READY',
             online: false,
             sharedSecret: sharedSecret,
             isChatInitiator: true,
             ratchetState: ratchet.getState(),
-            avatarUrl: data.avatarUrl ?? undefined,
-            bannerUrl: data.bannerUrl ?? undefined,
+            avatarUrl: isValidProfileString(data.avatarUrl) ? data.avatarUrl.trim() : undefined,
+            bannerUrl: isValidProfileString(data.bannerUrl) ? data.bannerUrl.trim() : undefined,
             peerCode: peerCode,
             originalPeerCode: peerCode || friendCode,
             numericId: peerNumericId,
-            username: data.username || undefined,
-            description: data.bio || undefined,
-            birthday: data.birthday || undefined,
+            username: isValidProfileString(data.username) ? data.username.trim() : undefined,
+            description: isValidProfileString(data.bio) ? data.bio.trim() : undefined,
+            birthday: isValidProfileString(data.birthday) ? data.birthday.trim() : undefined,
             peerPublicKey: data.publicKey,
           });
         }
@@ -197,13 +204,15 @@ export const useConnectRequestHandler = ({
         setIsHandshaking(false);
       };
 
-      const initialName = initialProfile?.nickname || friendCode;
-      const initialAvatar = initialProfile?.avatar_url || undefined;
-      const initialBanner = initialProfile?.banner_url || undefined;
-      const initialUsername = initialProfile?.username || undefined;
-      const initialBio = initialProfile?.bio || undefined;
-      const initialBirthday = initialProfile?.birthday || undefined;
-      const initialNumeric = initialProfile?.numeric_id || getInitialNumericId(friendCode);
+      const initialName = isValidProfileString(initialProfile?.nickname)
+        ? initialProfile.nickname.trim()
+        : (existingPeerChat?.name || friendCode);
+      const initialAvatar = isValidProfileString(initialProfile?.avatar_url) ? initialProfile.avatar_url.trim() : undefined;
+      const initialBanner = isValidProfileString(initialProfile?.banner_url) ? initialProfile.banner_url.trim() : undefined;
+      const initialUsername = isValidProfileString(initialProfile?.username) ? initialProfile.username.trim() : undefined;
+      const initialBio = isValidProfileString(initialProfile?.bio) ? initialProfile.bio.trim() : undefined;
+      const initialBirthday = isValidProfileString(initialProfile?.birthday) ? initialProfile.birthday.trim() : undefined;
+      const initialNumeric = initialProfile?.numeric_id || existingPeerChat?.numericId || getInitialNumericId(friendCode);
 
       addChat({
         id: chatId,
@@ -254,54 +263,54 @@ export const useConnectRequestHandler = ({
 
         const targetsToSend = new Set<string>(allTargets);
 
-        if (friendProfile && !settled) {
-          const friendNumericId = friendProfile.numeric_id || initialNumeric;
+        if (friendProfile) {
+          const friendNumericId = isValidProfileString(friendProfile.numeric_id) ? friendProfile.numeric_id.trim() : initialNumeric;
           if (friendProfile.user_code) targetsToSend.add(friendProfile.user_code);
           if (friendProfile.numeric_id) targetsToSend.add(friendProfile.numeric_id);
           if (friendProfile.username) targetsToSend.add(friendProfile.username);
 
-          if (friendProfile.public_key) {
+          const currentChat = useChatStore.getState().chats.find((c) => c.id === chatId);
+          const profileUpdates: Partial<Chat> = {
+            peerCode: friendProfile.user_code || currentChat?.peerCode || friendCode,
+            originalPeerCode: friendProfile.user_code || currentChat?.originalPeerCode || friendCode,
+            numericId: pickNonEmptyProfileValue(friendNumericId, currentChat?.numericId),
+          };
+          const nextName = pickNonEmptyProfileValue(friendProfile.nickname, currentChat?.name);
+          if (nextName) profileUpdates.name = nextName;
+          const nextAvatar = pickNonEmptyProfileValue(friendProfile.avatar_url, currentChat?.avatarUrl);
+          if (nextAvatar) profileUpdates.avatarUrl = nextAvatar;
+          const nextBanner = pickNonEmptyProfileValue(friendProfile.banner_url, currentChat?.bannerUrl);
+          if (nextBanner) profileUpdates.bannerUrl = nextBanner;
+          const nextUsername = pickNonEmptyProfileValue(friendProfile.username, currentChat?.username);
+          if (nextUsername) profileUpdates.username = nextUsername;
+          const nextBio = pickNonEmptyProfileValue(friendProfile.bio, currentChat?.description);
+          if (nextBio) profileUpdates.description = nextBio;
+          const nextBirthday = pickNonEmptyProfileValue(friendProfile.birthday, currentChat?.birthday);
+          if (nextBirthday) profileUpdates.birthday = nextBirthday;
+
+          if (!settled && friendProfile.public_key && !currentChat?.ratchetState) {
             const sharedSecret = deriveSharedSecret(myKeys.privateKey, friendProfile.public_key);
             const rootKey = deriveRootKey(sharedSecret);
             const ratchet = DoubleRatchet.initSymmetric(rootKey, myKeys.privateKey, myKeys.publicKey, friendProfile.public_key);
-            updateChat(chatId, {
-              name: friendProfile.nickname,
-              avatarUrl: friendProfile.avatar_url ?? undefined,
-              bannerUrl: friendProfile.banner_url ?? undefined,
-              username: friendProfile.username ?? undefined,
-              description: friendProfile.bio ?? undefined,
-              birthday: friendProfile.birthday ?? undefined,
-              numericId: friendNumericId,
-              sharedSecret: sharedSecret,
-              ratchetState: ratchet.getState(),
-              lastMsg: 'E2EE_SECURE_CHANNEL_READY',
-              peerCode: friendProfile.user_code || friendCode,
-              originalPeerCode: friendProfile.user_code || friendCode,
-            });
-          } else {
-            updateChat(chatId, {
-              name: friendProfile.nickname,
-              avatarUrl: friendProfile.avatar_url ?? undefined,
-              bannerUrl: friendProfile.banner_url ?? undefined,
-              username: friendProfile.username ?? undefined,
-              description: friendProfile.bio ?? undefined,
-              birthday: friendProfile.birthday ?? undefined,
-              numericId: friendNumericId,
-              peerCode: friendProfile.user_code || friendCode,
-              originalPeerCode: friendProfile.user_code || friendCode,
-            });
+            profileUpdates.sharedSecret = sharedSecret;
+            profileUpdates.ratchetState = ratchet.getState();
+            profileUpdates.lastMsg = 'E2EE_SECURE_CHANNEL_READY';
           }
 
-          for (const targetKey of targetsToSend) {
-            if (!allTargets.has(targetKey)) {
-              supabaseService.sendOfflineHandshake(
-                chatId,
-                targetKey,
-                nickname || '',
-                myKeys.publicKey,
-                avatarUrl || null,
-                myCode || ''
-              ).catch(() => {});
+          updateChat(chatId, profileUpdates);
+
+          if (!settled) {
+            for (const targetKey of targetsToSend) {
+              if (!allTargets.has(targetKey)) {
+                supabaseService.sendOfflineHandshake(
+                  chatId,
+                  targetKey,
+                  nickname || '',
+                  myKeys.publicKey,
+                  avatarUrl || null,
+                  myCode || ''
+                ).catch(() => {});
+              }
             }
           }
         }

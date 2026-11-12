@@ -10,6 +10,12 @@ import { deriveGroupKey, isValidGroupCode } from '../../../lib/groupCrypto';
 import { DoubleRatchet } from '../../../lib/double-ratchet';
 import { revalidateDevelopersOnConnection } from '../../ui/DeveloperBadge';
 
+const isValidProfileString = (val: unknown): val is string =>
+  typeof val === 'string' && val.trim().length > 0 && val.trim() !== 'undefined' && val.trim() !== 'null';
+
+const pickNonEmptyProfileValue = (incoming: unknown, existing?: string | null): string | undefined =>
+  isValidProfileString(incoming) ? incoming.trim() : (isValidProfileString(existing) ? existing : undefined);
+
 export interface UseHandshakeListenersParams {
   chats: Chat[];
   myCode: string | null;
@@ -364,15 +370,15 @@ export const useHandshakeListeners = ({
       }
 
       const updates: Partial<Chat> = {
-        name: data.nickname || existing.name,
-        avatarUrl: data.avatarUrl ?? existing.avatarUrl,
-        bannerUrl: data.bannerUrl ?? existing.bannerUrl,
+        name: pickNonEmptyProfileValue(data.nickname, existing.name) || existing.name,
+        avatarUrl: pickNonEmptyProfileValue(data.avatarUrl, existing.avatarUrl),
+        bannerUrl: pickNonEmptyProfileValue(data.bannerUrl, existing.bannerUrl),
         peerCode: peerCode,
         originalPeerCode: peerCode || existing.originalPeerCode || existing.peerCode,
-        numericId: data.numericId || data.numeric_id || existing.numericId || (peerCode ? getInitialNumericId(peerCode) : undefined),
-        username: data.username !== undefined ? data.username : existing.username,
-        description: data.bio !== undefined ? data.bio : existing.description,
-        birthday: data.birthday !== undefined ? data.birthday : existing.birthday,
+        numericId: pickNonEmptyProfileValue(data.numericId || data.numeric_id, existing.numericId) || (peerCode ? getInitialNumericId(peerCode) : undefined),
+        username: pickNonEmptyProfileValue(data.username, existing.username),
+        description: pickNonEmptyProfileValue(data.bio, existing.description),
+        birthday: pickNonEmptyProfileValue(data.birthday, existing.birthday),
       };
 
       if (existing.sharedSecret && !existing.ratchetState) {
@@ -704,7 +710,7 @@ export const useHandshakeListeners = ({
     return () => {
       unsubscribes.forEach((u) => u());
     };
-  }, [myCode, nickname, addIncomingFriendRequest, updateChat]);
+  }, [myCode, nickname, username, addIncomingFriendRequest, updateChat]);
 
   const chatPresenceKey = useMemo(() => {
     return chats

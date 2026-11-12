@@ -63,6 +63,7 @@ export const createAccountBackup = async (mnemonic: string): Promise<Uint8Array>
       userId: authState.userId,
       nickname: authState.nickname,
       avatarUrl: authState.avatarUrl,
+      bannerUrl: authState.bannerUrl,
       username: authState.username,
       bio: authState.bio,
       birthday: authState.birthday,
@@ -70,6 +71,7 @@ export const createAccountBackup = async (mnemonic: string): Promise<Uint8Array>
     },
     chatStore: {
       myCode: chatState.myCode,
+      usersById: chatState.usersById || {},
       chats: (chatState.chats || []).map((chat) => ({
         id: chat.id,
         type: chat.type,
@@ -292,12 +294,24 @@ export const restoreAccountBackup = async (
     throw new Error('INVALID_STRUCTURE');
   }
 
-  const restoredUserId = payload.auth.userId || useAuthStore.getState().userId;
-  const restoredNickname = payload.auth.nickname || '';
-  const restoredAvatarUrl = payload.auth.avatarUrl || null;
-  const restoredUsername = payload.auth.username !== undefined ? payload.auth.username : null;
-  const restoredBio = payload.auth.bio !== undefined ? payload.auth.bio : null;
-  const restoredBirthday = payload.auth.birthday !== undefined ? payload.auth.birthday : null;
+  const currentAuth = useAuthStore.getState();
+  const currentChat = useChatStore.getState();
+  const restoredUserId = payload.auth.userId || currentAuth.userId;
+  const isSameUser = Boolean(currentAuth.userId && restoredUserId && currentAuth.userId === restoredUserId);
+  const isNonEmpty = (val: unknown): val is string => typeof val === 'string' && val.trim().length > 0;
+  const pickField = (backupVal: any, localVal: string | null | undefined): string | null => {
+    if (isNonEmpty(backupVal)) return backupVal;
+    if (isSameUser && isNonEmpty(localVal)) return localVal;
+    return backupVal ?? (isSameUser ? localVal ?? null : null);
+  };
+  const restoredNickname = isNonEmpty(payload.auth.nickname)
+    ? payload.auth.nickname
+    : (isSameUser ? currentAuth.nickname : '') || '';
+  const restoredAvatarUrl = pickField(payload.auth.avatarUrl, currentAuth.avatarUrl);
+  const restoredBannerUrl = pickField(payload.auth.bannerUrl, currentAuth.bannerUrl);
+  const restoredUsername = pickField(payload.auth.username, currentAuth.username);
+  const restoredBio = pickField(payload.auth.bio, currentAuth.bio);
+  const restoredBirthday = pickField(payload.auth.birthday, currentAuth.birthday);
   const restoredChats = Array.isArray(payload.chatStore.chats)
     ? payload.chatStore.chats.map((c: any) => {
         const isOwner = c.isOwner !== undefined
@@ -314,8 +328,50 @@ export const restoreAccountBackup = async (
       })
     : [];
 
+  const existingUsers = isSameUser ? (currentChat.usersById || {}) : {};
+  const backupUsers = (payload.chatStore.usersById && typeof payload.chatStore.usersById === 'object')
+    ? payload.chatStore.usersById
+    : {};
+  const mergedUsersById: Record<string, any> = {};
+  const allUserIds = new Set([...Object.keys(existingUsers), ...Object.keys(backupUsers)]);
+  for (const uid of allUserIds) {
+    const localU = existingUsers[uid];
+    const backupU = backupUsers[uid];
+    if (!localU) {
+      mergedUsersById[uid] = backupU;
+    } else if (!backupU) {
+      mergedUsersById[uid] = localU;
+    } else {
+      mergedUsersById[uid] = {
+        ...localU,
+        ...backupU,
+        nickname: isNonEmpty(backupU.nickname) ? backupU.nickname : (localU.nickname || ''),
+        avatarUrl: isNonEmpty(backupU.avatarUrl) ? backupU.avatarUrl : (localU.avatarUrl ?? null),
+        bannerUrl: isNonEmpty(backupU.bannerUrl) ? backupU.bannerUrl : (localU.bannerUrl ?? null),
+        username: isNonEmpty(backupU.username) ? backupU.username : (localU.username ?? null),
+        bio: isNonEmpty(backupU.bio) ? backupU.bio : (localU.bio ?? null),
+        birthday: isNonEmpty(backupU.birthday) ? backupU.birthday : (localU.birthday ?? null),
+      };
+    }
+  }
+  if (restoredUserId) {
+    const prevSelf = mergedUsersById[restoredUserId] || {};
+    mergedUsersById[restoredUserId] = {
+      ...prevSelf,
+      id: restoredUserId,
+      nickname: restoredNickname || prevSelf.nickname || '',
+      avatarUrl: restoredAvatarUrl ?? prevSelf.avatarUrl ?? null,
+      bannerUrl: restoredBannerUrl ?? prevSelf.bannerUrl ?? null,
+      username: restoredUsername ?? prevSelf.username ?? null,
+      bio: restoredBio ?? prevSelf.bio ?? null,
+      birthday: restoredBirthday ?? prevSelf.birthday ?? null,
+      updatedAt: Date.now(),
+    };
+  }
+
   useChatStore.setState({
     ...payload.chatStore,
+    usersById: mergedUsersById,
     chats: restoredChats,
     messagesByChatId: {},
     activeChatId: null,
@@ -327,6 +383,7 @@ export const restoreAccountBackup = async (
     userId: restoredUserId,
     nickname: restoredNickname,
     avatarUrl: restoredAvatarUrl,
+    bannerUrl: restoredBannerUrl,
     username: restoredUsername,
     bio: restoredBio,
     birthday: restoredBirthday,

@@ -262,6 +262,12 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
         deduplicatedGroups.push(canonical);
       }
 
+      const isValidString = (val: unknown): val is string =>
+        typeof val === 'string' && val.trim().length > 0 && val.trim() !== 'undefined' && val.trim() !== 'null';
+
+      const pickValid = (primary: any, fallback: any) =>
+        isValidString(primary) ? primary : (isValidString(fallback) ? fallback : (primary ?? fallback));
+
       const groups: typeof privateChats[] = [];
       for (const chat of privateChats) {
         let foundGroup = groups.find((group) =>
@@ -272,7 +278,16 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
             if (chat.peerPublicKey && c.peerPublicKey && c.peerPublicKey === chat.peerPublicKey) return true;
             if (chat.numericId && c.numericId && chat.numericId === c.numericId) return true;
             if (chat.username && c.username && chat.username.replace(/^@+/, '').trim().toLowerCase() === c.username.replace(/^@+/, '').trim().toLowerCase()) return true;
-            if (chat.name && c.name && chat.name !== 'Unknown' && c.name !== 'Unknown' && chat.name.trim().toLowerCase() === c.name.trim().toLowerCase()) return true;
+            if (chat.name && c.name && chat.name !== 'Unknown' && c.name !== 'Unknown' && chat.name.trim().toLowerCase() === c.name.trim().toLowerCase()) {
+              if (chat.peerCode && c.peerCode && chat.peerCode !== c.peerCode) return false;
+              if (chat.originalPeerCode && c.originalPeerCode && chat.originalPeerCode !== c.originalPeerCode) return false;
+              if (chat.peerPublicKey && c.peerPublicKey && chat.peerPublicKey !== c.peerPublicKey) return false;
+              if (chat.numericId && c.numericId && chat.numericId !== c.numericId) return false;
+              const u1 = chat.username ? chat.username.replace(/^@+/, '').trim().toLowerCase() : '';
+              const u2 = c.username ? c.username.replace(/^@+/, '').trim().toLowerCase() : '';
+              if (u1 && u2 && u1 !== u2) return false;
+              return true;
+            }
             return false;
           })
         );
@@ -327,11 +342,12 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
             ratchetState: pickBestRatchetState(canonical.ratchetState, dup.ratchetState),
             sharedSecret: canonical.sharedSecret || dup.sharedSecret,
             peerPublicKey: canonical.peerPublicKey || dup.peerPublicKey,
-            avatarUrl: canonical.avatarUrl || dup.avatarUrl,
-            bannerUrl: canonical.bannerUrl || dup.bannerUrl,
-            username: canonical.username || dup.username,
-            description: canonical.description || dup.description,
-            numericId: canonical.numericId || dup.numericId,
+            avatarUrl: pickValid(canonical.avatarUrl, dup.avatarUrl),
+            bannerUrl: pickValid(canonical.bannerUrl, dup.bannerUrl),
+            username: pickValid(canonical.username, dup.username),
+            description: pickValid(canonical.description, dup.description),
+            numericId: pickValid(canonical.numericId, dup.numericId),
+            birthday: pickValid(canonical.birthday, dup.birthday),
             peerCode: canonical.peerCode || dup.peerCode,
             originalPeerCode: canonical.originalPeerCode || dup.originalPeerCode,
             name: (canonical.name && canonical.name !== 'Unknown') ? canonical.name : dup.name,

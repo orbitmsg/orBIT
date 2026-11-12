@@ -70,15 +70,58 @@ export const ipcStorage: StateStorage = {
     if (!checkHydrated()) return;
     if (lastSavedValues[name] === value) return;
 
+    let valueToPersist = value;
     const previousSaved = lastSavedValues[name];
     if (previousSaved && countRealChats(previousSaved) > 0 && countRealChats(value) === 0) {
-      return;
+      let allowSave = false;
+      try {
+        const prevParsed = JSON.parse(previousSaved);
+        const nextParsed = JSON.parse(value);
+        const prevState = prevParsed?.state || prevParsed;
+        const nextState = nextParsed?.state || nextParsed;
+        const prevRealChatIds: string[] = Array.isArray(prevState?.chats)
+          ? prevState.chats
+              .filter((c: any) => c && c.id && !SYSTEM_CHAT_IDS.has(c.id))
+              .map((c: any) => c.id)
+          : [];
+        const nextDeleted = new Set<string>(Array.isArray(nextState?.deletedChatIds) ? nextState.deletedChatIds : []);
+        const allDeletedExplicitly = prevRealChatIds.length > 0 && prevRealChatIds.every((id) => nextDeleted.has(id));
+
+        if (allDeletedExplicitly) {
+          allowSave = true;
+        } else {
+          const hasUsers = nextState?.usersById && typeof nextState.usersById === 'object' && Object.keys(nextState.usersById).length > 0;
+          const hasActiveSession = typeof nextState?.myCode === 'string' && nextState.myCode.trim().length > 0;
+          if ((hasUsers || hasActiveSession) && nextState?.myCode !== '') {
+            const preservedChats = Array.isArray(prevState?.chats) ? prevState.chats : [];
+            if (nextParsed?.state) {
+              valueToPersist = JSON.stringify({
+                ...nextParsed,
+                state: {
+                  ...nextParsed.state,
+                  chats: preservedChats,
+                },
+              });
+            } else {
+              valueToPersist = JSON.stringify({
+                ...nextParsed,
+                chats: preservedChats,
+              });
+            }
+            allowSave = true;
+          }
+        }
+      } catch {}
+
+      if (!allowSave) {
+        return;
+      }
     }
 
-    lastSavedValues[name] = value;
+    lastSavedValues[name] = valueToPersist;
     if ((window as any).orbita?.storageSet) {
       try {
-        await (window as any).orbita.storageSet(name, value);
+        await (window as any).orbita.storageSet(name, valueToPersist);
       } catch {}
     }
   },

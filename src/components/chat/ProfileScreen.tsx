@@ -147,30 +147,41 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
   const voiceCallsEnabled = useChatStore((state) => state.voiceCallsEnabled);
 
   useEffect(() => {
+    setLoadedBannerUrl(null);
     if (!chatId || chatId === 'notes' || !chat) return;
-    const peer = chat.peerCode || chat.originalPeerCode || (chat.name && chat.name.length === 36 ? chat.name : null);
+    let cancelled = false;
+    const myCode = useChatStore.getState().myCode;
+    const resolved = resolveProfileId(chat, chatId);
+    const peer = resolved && resolved !== myCode ? resolved : null;
     const updateFriendBanner = (url?: string | null) => {
-      if (url) {
-        setLoadedBannerUrl(url);
-        if (url !== chat.bannerUrl) {
-          useChatStore.getState().updateChat(chatId, { bannerUrl: url });
-        }
+      if (cancelled || !url) return;
+      setLoadedBannerUrl(url);
+      if (url !== chat.bannerUrl) {
+        useChatStore.getState().updateChat(chatId, { bannerUrl: url });
       }
     };
     if (peer) {
       supabaseService.lookupPublicProfile(peer).then((p) => {
-        if (p?.banner_url) updateFriendBanner(p.banner_url);
+        if (!cancelled && p?.banner_url) updateFriendBanner(p.banner_url);
       }).catch(() => {});
     }
     if (chat.username) {
       supabaseService.lookupProfileByUsername(chat.username).then((p) => {
-        if (p?.banner_url) updateFriendBanner(p.banner_url);
+        if (!cancelled && p?.banner_url) updateFriendBanner(p.banner_url);
       }).catch(() => {});
     }
-    supabaseService.getLatestProfileUpdate(chatId, myUserId || undefined).then((u) => {
-      if (u?.banner_url) updateFriendBanner(u.banner_url);
+    supabaseService.getLatestProfileUpdate(chatId, myCode || undefined).then((u) => {
+      if (cancelled || !u) return;
+      const isMyOwnUpdate = Boolean(
+        (myCode && u.sender_code === myCode) ||
+          (myUserId && (u.user_id === myUserId || u.sender_id === myUserId))
+      );
+      if (!isMyOwnUpdate && u.banner_url) updateFriendBanner(u.banner_url);
     }).catch(() => {});
-  }, [chatId, chat?.peerCode, chat?.originalPeerCode, chat?.username]);
+    return () => {
+      cancelled = true;
+    };
+  }, [chatId, chat?.peerCode, chat?.originalPeerCode, chat?.username, myUserId]);
 
   const isChannel = chat?.type === 'channel';
   const isGroup = chat?.type === 'group';
@@ -348,13 +359,8 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
   useEffect(() => {
     if (!chat || chat.type !== 'private' || chatId === 'notes') return;
     const myCode = useChatStore.getState().myCode;
-    const targetCode = (chat.peerCode && chat.peerCode !== myCode)
-      ? chat.peerCode
-      : (chat.originalPeerCode && chat.originalPeerCode !== myCode)
-        ? chat.originalPeerCode
-        : (chat.name && chat.name.length === 36 && chat.name !== myCode)
-          ? chat.name
-          : undefined;
+    const resolved = resolveProfileId(chat, chatId);
+    const targetCode = resolved && resolved !== myCode ? resolved : undefined;
 
     let isMounted = true;
     (async () => {
@@ -366,21 +372,38 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         let updateBirthday: string | undefined = undefined;
         let updateBio: string | undefined = undefined;
         let pubNumericId: string | null | undefined = undefined;
+        let pubByUnameUserCode: string | undefined = undefined;
 
         const update = await supabaseService.getLatestProfileUpdate(chat.id, myCode || undefined);
         const myUserId = useAuthStore.getState().userId;
-        const isMyOwnUpdate = update && (
-          (myCode && update.sender_code === myCode) ||
-          (myUserId && (update.user_id === myUserId || update.sender_id === myUserId))
+        const isMyOwnUpdate = Boolean(
+          update &&
+            ((myCode && update.sender_code === myCode) ||
+              (myUserId && (update.user_id === myUserId || update.sender_id === myUserId)))
         );
+        let validUpdate = update && !isMyOwnUpdate ? update : null;
+        if (isMyOwnUpdate && update?.sender_code) {
+          try {
+            const peerUpdate = await supabaseService.getLatestProfileUpdate(chat.id, update.sender_code);
+            if (!isMounted) return;
+            const peerUpdateIsOwn = Boolean(
+              peerUpdate &&
+                ((myCode && peerUpdate.sender_code === myCode) ||
+                  (myUserId && (peerUpdate.user_id === myUserId || peerUpdate.sender_id === myUserId)))
+            );
+            if (peerUpdate && !peerUpdateIsOwn) {
+              validUpdate = peerUpdate;
+            }
+          } catch {}
+        }
 
-        if (update && !isMyOwnUpdate) {
-          if (update.nickname) updateNick = update.nickname;
-          if (update.avatar_url) updateAvatar = update.avatar_url;
-          if (update.banner_url) updateBanner = update.banner_url;
-          if (update.username) updateUsername = update.username;
-          if (update.birthday) updateBirthday = update.birthday;
-          if (update.bio) updateBio = update.bio;
+        if (validUpdate) {
+          if (validUpdate.nickname) updateNick = validUpdate.nickname;
+          if (validUpdate.avatar_url) updateAvatar = validUpdate.avatar_url;
+          if (validUpdate.banner_url) updateBanner = validUpdate.banner_url;
+          if (validUpdate.username) updateUsername = validUpdate.username;
+          if (validUpdate.birthday) updateBirthday = validUpdate.birthday;
+          if (validUpdate.bio) updateBio = validUpdate.bio;
         }
 
         if (targetCode) {
@@ -394,14 +417,16 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
           if (pub?.numeric_id) pubNumericId = pub.numeric_id;
         }
 
-        if (chat.username && !updateBanner) {
+        if (chat.username) {
           const pubByUname = await supabaseService.lookupProfileByUsername(chat.username);
           if (pubByUname?.nickname && !updateNick) updateNick = pubByUname.nickname;
           if (pubByUname?.avatar_url && !updateAvatar) updateAvatar = pubByUname.avatar_url;
           if (pubByUname?.banner_url && !updateBanner) updateBanner = pubByUname.banner_url;
+          if (pubByUname?.username && !updateUsername) updateUsername = pubByUname.username;
           if (pubByUname?.birthday && !updateBirthday) updateBirthday = pubByUname.birthday;
           if (pubByUname?.bio && !updateBio) updateBio = pubByUname.bio;
           if (pubByUname?.numeric_id && !pubNumericId) pubNumericId = pubByUname.numeric_id;
+          if (pubByUname?.user_code && pubByUname.user_code !== myCode) pubByUnameUserCode = pubByUname.user_code;
         }
 
         if (!isMounted) return;
@@ -409,12 +434,15 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         const chatUpdates: Partial<Chat> = {};
         if (!chat.peerCode && chat.originalPeerCode) {
           chatUpdates.peerCode = chat.originalPeerCode;
-        } else if (update?.sender_code && update.sender_code !== myCode) {
-          chatUpdates.peerCode = update.sender_code;
-          chatUpdates.originalPeerCode = update.sender_code;
+        } else if (!chat.peerCode && validUpdate?.sender_code && validUpdate.sender_code !== myCode) {
+          chatUpdates.peerCode = validUpdate.sender_code;
+          chatUpdates.originalPeerCode = validUpdate.sender_code;
+        } else if (!chat.peerCode && pubByUnameUserCode) {
+          chatUpdates.peerCode = pubByUnameUserCode;
+          chatUpdates.originalPeerCode = pubByUnameUserCode;
         }
-        if (update?.numeric_id && update.numeric_id !== chat.numericId) {
-          chatUpdates.numericId = update.numeric_id;
+        if (validUpdate?.numeric_id && validUpdate.numeric_id !== chat.numericId) {
+          chatUpdates.numericId = validUpdate.numeric_id;
         }
         if (pubNumericId && pubNumericId !== chat.numericId) {
           chatUpdates.numericId = pubNumericId;
@@ -449,7 +477,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
     return () => {
       isMounted = false;
     };
-  }, [chat?.id, chat?.type, chat?.peerCode, updateChat]);
+  }, [chat?.id, chat?.type, chat?.peerCode, chat?.originalPeerCode, chat?.username, updateChat]);
 
   const [isEditingChannel, setIsEditingChannel] = useState(false);
   const [editName, setEditName] = useState(chat?.name || '');

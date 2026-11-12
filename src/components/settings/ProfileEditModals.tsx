@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { parseBirthday, serializeBirthday, MONTH_FULL_RU, MONTH_FULL_EN } from '../../utils/birthday';
+import { parseBirthday, serializeBirthday, getDaysInMonth, MONTH_FULL_RU, MONTH_FULL_EN } from '../../utils/birthday';
 import { useChatStore } from '../../store/useChatStore';
 import { supabaseService } from '../../services/supabaseService';
 
@@ -184,7 +184,7 @@ interface UsernameEditModalProps {
   open: boolean;
   onClose: () => void;
   currentUsername: string | null;
-  onSave: (newUsername: string | null) => void;
+  onSave: (newUsername: string | null) => void | Promise<void | boolean>;
 }
 
 export const UsernameEditModal = ({ open, onClose, currentUsername, onSave }: UsernameEditModalProps) => {
@@ -193,12 +193,14 @@ export const UsernameEditModal = ({ open, onClose, currentUsername, onSave }: Us
   const [value, setValue] = useState(currentUsername || '');
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
       setValue(currentUsername || '');
       setError(null);
       setStatus('idle');
+      setIsSaving(false);
     }
   }, [open, currentUsername]);
 
@@ -240,12 +242,20 @@ export const UsernameEditModal = ({ open, onClose, currentUsername, onSave }: Us
   }, [value, open, currentUsername, myCode, t]);
 
   const handleSave = async () => {
+    if (isSaving) return;
     const raw = value.trim().replace(/^@+/, '').toLowerCase();
     const cur = (currentUsername || '').replace(/^@+/, '').trim().toLowerCase();
 
     if (!raw) {
-      onSave(null);
-      onClose();
+      setIsSaving(true);
+      try {
+        const res = await onSave(null);
+        if (res !== false) onClose();
+      } catch (err: any) {
+        setError(err?.message === 'USERNAME_TAKEN' ? t('profile.username_taken', 'Это имя пользователя уже занято') : t('profile.save_error', 'Не удалось сохранить профиль'));
+      } finally {
+        setIsSaving(false);
+      }
       return;
     }
     if (raw.length < 5) {
@@ -271,13 +281,26 @@ export const UsernameEditModal = ({ open, onClose, currentUsername, onSave }: Us
           return;
         }
       } catch {
-        setError(t('profile.username_taken', 'Это имя пользователя уже занято'));
+        setStatus('idle');
+        setError(t('profile.save_error', 'Не удалось сохранить профиль'));
         return;
       }
     }
 
-    onSave(raw);
-    onClose();
+    setIsSaving(true);
+    try {
+      const res = await onSave(raw);
+      if (res !== false) onClose();
+    } catch (err: any) {
+      if (err?.message === 'USERNAME_TAKEN') {
+        setStatus('taken');
+        setError(t('profile.username_taken', 'Это имя пользователя уже занято'));
+      } else {
+        setError(t('profile.save_error', 'Не удалось сохранить профиль'));
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -402,15 +425,16 @@ export const UsernameEditModal = ({ open, onClose, currentUsername, onSave }: Us
               <button
                 type="button"
                 onClick={handleSave}
-                disabled={status === 'checking' || status === 'taken'}
+                disabled={isSaving || status === 'checking' || status === 'taken'}
                 aria-label={t('common.save', 'Сохранить')}
                 style={{
                   padding: '8px 16px',
                   borderRadius: '9999px',
                   border: 'none',
-                  backgroundColor: 'var(--accent-color, #7C3AED)', opacity: status === 'checking' || status === 'taken' ? 0.45 : 1,
+                  backgroundColor: 'var(--accent-color, #7C3AED)',
+                  opacity: isSaving || status === 'checking' || status === 'taken' ? 0.45 : 1,
                   color: 'var(--accent-on-color, #ffffff)',
-                  cursor: status === 'checking' || status === 'taken' ? 'not-allowed' : 'pointer',
+                  cursor: isSaving || status === 'checking' || status === 'taken' ? 'not-allowed' : 'pointer',
                   fontSize: '14px',
                   fontWeight: 600,
                 }}
@@ -429,7 +453,7 @@ interface BirthdayEditModalProps {
   open: boolean;
   onClose: () => void;
   currentBirthday: string | null;
-  onSave: (newBirthday: string | null) => void;
+  onSave: (newBirthday: string | null) => void | Promise<void | boolean>;
 }
 
 export const BirthdayEditModal = ({ open, onClose, currentBirthday, onSave }: BirthdayEditModalProps) => {
@@ -438,29 +462,75 @@ export const BirthdayEditModal = ({ open, onClose, currentBirthday, onSave }: Bi
   const [day, setDay] = useState(parsed?.day || 1);
   const [month, setMonth] = useState(parsed?.month || 1);
   const [year, setYear] = useState<number | ''>(parsed?.year || '');
+  const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const currentYear = new Date().getFullYear();
+  const validYearForDays = typeof year === 'number' && !Number.isNaN(year) && year > 1900 && year <= currentYear ? year : null;
+  const maxDays = getDaysInMonth(month, validYearForDays);
 
   useEffect(() => {
     if (open) {
       const p = parseBirthday(currentBirthday);
-      setDay(p?.day || 1);
-      setMonth(p?.month || 1);
-      setYear(p?.year || '');
+      const nextMonth = p?.month || 1;
+      const nextYear = p?.year || '';
+      const nextMaxDays = getDaysInMonth(nextMonth, typeof nextYear === 'number' ? nextYear : null);
+      setMonth(nextMonth);
+      setYear(nextYear);
+      setDay(Math.min(p?.day || 1, nextMaxDays));
+      setError(null);
+      setIsSaving(false);
     }
   }, [open, currentBirthday]);
+
+  useEffect(() => {
+    if (day > maxDays) {
+      setDay(maxDays);
+    }
+  }, [day, maxDays]);
 
   const isRu = i18n.language === 'ru' || i18n.language === 'uk' || i18n.language === 'be';
   const monthNames = isRu ? MONTH_FULL_RU : MONTH_FULL_EN;
 
-  const handleSave = () => {
-    const y = typeof year === 'number' && year > 1900 && year <= new Date().getFullYear() ? year : null;
+  const handleSave = async () => {
+    if (isSaving) return;
+    if (year !== '') {
+      if (typeof year !== 'number' || Number.isNaN(year) || year <= 1900 || year > currentYear) {
+        setError(t('profile.birthday_invalid_year', 'Укажите корректный год'));
+        return;
+      }
+    }
+    const y = year === '' ? null : year;
+    const allowedDays = getDaysInMonth(month, y);
+    if (month < 1 || month > 12 || day < 1 || day > allowedDays) {
+      setError(t('profile.birthday_invalid_date', 'Некорректная дата'));
+      return;
+    }
     const serialized = serializeBirthday(day, month, y);
-    onSave(serialized);
-    onClose();
+    setIsSaving(true);
+    setError(null);
+    try {
+      const res = await onSave(serialized);
+      if (res !== false) onClose();
+    } catch {
+      setError(t('profile.save_error', 'Не удалось сохранить профиль'));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDelete = () => {
-    onSave(null);
-    onClose();
+  const handleDelete = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    setError(null);
+    try {
+      const res = await onSave(null);
+      if (res !== false) onClose();
+    } catch {
+      setError(t('profile.save_error', 'Не удалось сохранить профиль'));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -508,8 +578,11 @@ export const BirthdayEditModal = ({ open, onClose, currentBirthday, onSave }: Bi
                   {t('profile.day', 'День')}
                 </label>
                 <select
-                  value={day}
-                  onChange={(e) => setDay(parseInt(e.target.value, 10))}
+                  value={Math.min(day, maxDays)}
+                  onChange={(e) => {
+                    setDay(parseInt(e.target.value, 10));
+                    if (error) setError(null);
+                  }}
                   aria-label={t('profile.day', 'День')}
                   style={{
                     width: '100%',
@@ -523,7 +596,7 @@ export const BirthdayEditModal = ({ open, onClose, currentBirthday, onSave }: Bi
                     cursor: 'pointer',
                   }}
                 >
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                  {Array.from({ length: maxDays }, (_, i) => i + 1).map((d) => (
                     <option key={d} value={d} style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-main)' }}>
                       {d}
                     </option>
@@ -537,7 +610,13 @@ export const BirthdayEditModal = ({ open, onClose, currentBirthday, onSave }: Bi
                 </label>
                 <select
                   value={month}
-                  onChange={(e) => setMonth(parseInt(e.target.value, 10))}
+                  onChange={(e) => {
+                    const nextMonth = parseInt(e.target.value, 10);
+                    const nextMax = getDaysInMonth(nextMonth, validYearForDays);
+                    setMonth(nextMonth);
+                    if (day > nextMax) setDay(nextMax);
+                    if (error) setError(null);
+                  }}
                   aria-label={t('profile.month', 'Месяц')}
                   style={{
                     width: '100%',
@@ -569,10 +648,11 @@ export const BirthdayEditModal = ({ open, onClose, currentBirthday, onSave }: Bi
                   onChange={(e) => {
                     const v = e.target.value;
                     setYear(v === '' ? '' : parseInt(v, 10));
+                    if (error) setError(null);
                   }}
                   placeholder="YYYY"
-                  min={1920}
-                  max={new Date().getFullYear()}
+                  min={1901}
+                  max={currentYear}
                   aria-label={t('profile.year_optional', 'Год')}
                   style={{
                     width: '100%',
@@ -589,12 +669,15 @@ export const BirthdayEditModal = ({ open, onClose, currentBirthday, onSave }: Bi
               </div>
             </div>
 
+            {error && <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '12px', marginBottom: 0 }}>{error}</p>}
+
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px' }}>
               <div>
                 {currentBirthday && (
                   <button
                     type="button"
                     onClick={handleDelete}
+                    disabled={isSaving}
                     aria-label={t('common.delete', 'Удалить')}
                     style={{
                       padding: '8px 12px',
@@ -602,7 +685,8 @@ export const BirthdayEditModal = ({ open, onClose, currentBirthday, onSave }: Bi
                       border: 'none',
                       backgroundColor: 'transparent',
                       color: 'var(--md-error, #ff595a)',
-                      cursor: 'pointer',
+                      cursor: isSaving ? 'not-allowed' : 'pointer',
+                      opacity: isSaving ? 0.45 : 1,
                       fontSize: '14px',
                       fontWeight: 600,
                     }}
@@ -633,14 +717,16 @@ export const BirthdayEditModal = ({ open, onClose, currentBirthday, onSave }: Bi
                 <button
                   type="button"
                   onClick={handleSave}
+                  disabled={isSaving}
                   aria-label={t('common.save', 'Сохранить')}
                   style={{
                     padding: '8px 16px',
                     borderRadius: '9999px',
                     border: 'none',
                     backgroundColor: 'var(--accent-color, #7C3AED)',
+                    opacity: isSaving ? 0.45 : 1,
                     color: 'var(--accent-on-color, #ffffff)',
-                    cursor: 'pointer',
+                    cursor: isSaving ? 'not-allowed' : 'pointer',
                     fontSize: '14px',
                     fontWeight: 600,
                   }}
@@ -655,4 +741,3 @@ export const BirthdayEditModal = ({ open, onClose, currentBirthday, onSave }: Bi
     </AnimatePresence>
   );
 };
-

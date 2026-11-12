@@ -114,6 +114,8 @@ const AuthFlowOverlay: React.FC<{ isElectron: boolean; isOpen: boolean }> = ({ i
 function App() {
   const isElectron = isElectronApp();
   const [isHydrated, setIsHydrated] = useState(() => useAuthStore.persist.hasHydrated() && useChatStore.persist.hasHydrated());
+  const [isAccountInitialized, setIsAccountInitialized] = useState(false);
+  const startupChainRef = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     document.documentElement.style.setProperty('--titlebar-height', isElectron ? '30px' : '0px');
@@ -166,11 +168,21 @@ function App() {
   const registeredAccountId = accounts.find((a) => a.id === activeAccountId && a.isRegistered)?.id || 'account_1';
   const hasRegisteredAccount = accounts.some((a) => a.isRegistered && a.id === 'account_1') || (isHydrated && step === 'main');
 
-  useEffect(() => {
-    if (isHydrated && !isAppLocked) {
-      useAccountStore.getState().init().catch(() => {});
-    }
-  }, [isHydrated, isAppLocked]);
+  const hydrateAndInitAccounts = () => {
+    startupChainRef.current = startupChainRef.current.catch(() => {}).then(async () => {
+      await Promise.all([
+        Promise.resolve(useAuthStore.persist.rehydrate()),
+        Promise.resolve(useChatStore.persist.rehydrate()),
+      ]);
+      if (!useAuthStore.persist.hasHydrated() || !useChatStore.persist.hasHydrated()) {
+        return;
+      }
+      setIsHydrated(true);
+      await useAccountStore.getState().init();
+      setIsAccountInitialized(true);
+    });
+    return startupChainRef.current;
+  };
 
   useEffect(() => {
     initAutoBackupListener();
@@ -197,7 +209,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (isHydrated && step === 'main' && !isAppLocked) {
+    if (isHydrated && isAccountInitialized && step === 'main' && !isAppLocked) {
       accountSyncService.init();
       
       const activeId = useAuthStore.getState().userId;
@@ -205,7 +217,7 @@ function App() {
         initializeIdentityKeys(activeId).catch(console.error);
       }
     }
-  }, [isHydrated, step, isAppLocked]);
+  }, [isHydrated, isAccountInitialized, step, isAppLocked]);
 
   const currentTheme = useChatStore((state) => state.currentTheme);
   const setProxyActive = useChatStore((state) => state.setProxyActive);
@@ -222,11 +234,10 @@ function App() {
   const setShowInSystemTray = useChatStore((state) => state.setShowInSystemTray);
   const setAutoLaunch = useChatStore((state) => state.setAutoLaunch);
 
-  const handleUnlockApp = () => {
+  const handleUnlockApp = async () => {
+    setIsAccountInitialized(false);
     setIsAppLocked(false);
-    useAuthStore.persist.rehydrate();
-    useChatStore.persist.rehydrate();
-    useAccountStore.getState().init().catch(() => {});
+    await hydrateAndInitAccounts();
   };
 
   useEffect(() => {
@@ -239,17 +250,15 @@ function App() {
 
   useEffect(() => {
     securityService.cleanUnencryptedLocalStorage();
-    securityService.isStorageLocked().then((locked) => {
+    securityService.isStorageLocked().then(async (locked) => {
       if (locked) {
         setIsAppLocked(true);
       } else {
         setIsAppLocked(false);
-        useAuthStore.persist.rehydrate();
-        useChatStore.persist.rehydrate();
+        await hydrateAndInitAccounts();
       }
-    }).catch(() => {
-      useAuthStore.persist.rehydrate();
-      useChatStore.persist.rehydrate();
+    }).catch(async () => {
+      await hydrateAndInitAccounts();
     });
   }, []);
 

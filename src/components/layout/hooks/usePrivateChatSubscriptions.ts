@@ -17,6 +17,9 @@ import { messageQueue } from '../../../lib/message-queue';
 import { showNotification } from '../../../utils/notification';
 import { isAppInFocusAndVisible } from './layoutSyncUtils';
 
+const isValidProfileString = (val: unknown): val is string =>
+  typeof val === 'string' && val.trim().length > 0 && val.trim() !== 'undefined' && val.trim() !== 'null';
+
 export interface UsePrivateChatSubscriptionsParams {
   activeSubscriptions: React.MutableRefObject<Map<string, { channel: any; handler: (data: any) => void }>>;
   processedMessageIds: React.MutableRefObject<Set<string>>;
@@ -229,17 +232,19 @@ export const usePrivateChatSubscriptions = ({
           return;
         }
         const updates: Partial<Chat> = {};
-        if (data.avatarUrl !== undefined) updates.avatarUrl = data.avatarUrl;
-        if (data.bannerUrl !== undefined) updates.bannerUrl = data.bannerUrl;
-        if (data.nickname !== undefined) updates.name = data.nickname;
-        if (data.bio !== undefined) updates.description = data.bio;
-        if (data.username !== undefined) updates.username = data.username;
-        if (data.birthday !== undefined) updates.birthday = data.birthday;
-        if (data.senderCode && (!myCode || data.senderCode !== myCode)) {
-          updates.peerCode = data.senderCode;
-          updates.originalPeerCode = data.senderCode;
+        if (isValidProfileString(data.avatarUrl)) updates.avatarUrl = data.avatarUrl.trim();
+        if (isValidProfileString(data.bannerUrl)) updates.bannerUrl = data.bannerUrl.trim();
+        if (isValidProfileString(data.nickname)) updates.name = data.nickname.trim();
+        if (isValidProfileString(data.bio)) updates.description = data.bio.trim();
+        if (isValidProfileString(data.username)) updates.username = data.username.trim();
+        if (isValidProfileString(data.birthday)) updates.birthday = data.birthday.trim();
+        if (isValidProfileString(data.senderCode) && (!myCode || data.senderCode !== myCode)) {
+          updates.peerCode = data.senderCode.trim();
+          updates.originalPeerCode = data.senderCode.trim();
         }
-        updateChat(targetChatId, updates);
+        if (Object.keys(updates).length > 0) {
+          updateChat(targetChatId, updates);
+        }
         return;
       }
 

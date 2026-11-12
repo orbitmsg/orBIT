@@ -4,24 +4,25 @@ export const sqliteStorage = {
       try {
         const val = await (window as any).orbita.storageGet(key);
         if (val !== null && val !== undefined) return val;
-      } catch {}
+      } catch (err) {
+        console.error(`[sqliteStorage] Failed to get "${key}":`, err);
+      }
     }
     return null;
   },
 
   async set(key: string, value: string): Promise<void> {
     if (typeof window !== 'undefined' && (window as any).orbita?.storageSet) {
-      try {
-        await (window as any).orbita.storageSet(key, value);
-      } catch {}
+      const res = await (window as any).orbita.storageSet(key, value);
+      if (res && typeof res === 'object' && res.ok === false) {
+        throw new Error(res.locked ? 'Storage is locked' : (res.error || 'Storage write failed'));
+      }
     }
   },
 
   async remove(key: string): Promise<void> {
     if (typeof window !== 'undefined' && (window as any).orbita?.storageRemove) {
-      try {
-        await (window as any).orbita.storageRemove(key);
-      } catch {}
+      await (window as any).orbita.storageRemove(key);
     }
   },
 
@@ -36,8 +37,6 @@ export const sqliteStorage = {
   },
 
   async setJson<T>(key: string, data: T): Promise<void> {
-    try {
-      await this.set(key, JSON.stringify(data));
-    } catch {}
+    await this.set(key, JSON.stringify(data));
   },
 };

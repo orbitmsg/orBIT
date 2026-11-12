@@ -17,6 +17,7 @@ export interface UserConfigPayload {
     userId: string;
     nickname: string;
     avatarUrl: string | null;
+    bannerUrl?: string | null;
     username?: string | null;
     bio?: string | null;
     birthday?: string | null;
@@ -65,6 +66,49 @@ export interface UserConfigPayload {
     noiseSuppressionMode?: any;
   };
 }
+
+const isNonEmptyStr = (val: unknown): val is string =>
+  typeof val === 'string' && val.trim().length > 0;
+
+const mergeUserProfileEntry = (localUser: any, cloudUser: any): any => {
+  if (!localUser) return cloudUser;
+  if (!cloudUser) return localUser;
+  const localUpdated = Number(localUser.updatedAt) || 0;
+  const cloudUpdated = Number(cloudUser.updatedAt) || 0;
+  const primary = localUpdated >= cloudUpdated ? localUser : cloudUser;
+  const secondary = localUpdated >= cloudUpdated ? cloudUser : localUser;
+  const pick = (a: unknown, b: unknown) => {
+    if (isNonEmptyStr(a)) return a;
+    if (isNonEmptyStr(b)) return b;
+    return a ?? b ?? null;
+  };
+  const maxUpdated = Math.max(localUpdated, cloudUpdated);
+  return {
+    ...secondary,
+    ...primary,
+    nickname: pick(primary.nickname, secondary.nickname) || '',
+    avatarUrl: pick(primary.avatarUrl, secondary.avatarUrl),
+    bannerUrl: pick(primary.bannerUrl, secondary.bannerUrl),
+    username: pick(primary.username, secondary.username),
+    bio: pick(primary.bio, secondary.bio),
+    birthday: pick(primary.birthday, secondary.birthday),
+    ...(maxUpdated > 0 ? { updatedAt: maxUpdated } : {}),
+  };
+};
+
+const mergeUsersByIdMaps = (
+  localUsers: Record<string, any> | undefined,
+  cloudUsers: Record<string, any> | undefined
+): Record<string, any> => {
+  const localMap = localUsers && typeof localUsers === 'object' ? localUsers : {};
+  const cloudMap = cloudUsers && typeof cloudUsers === 'object' ? cloudUsers : {};
+  const merged: Record<string, any> = {};
+  const allIds = new Set([...Object.keys(cloudMap), ...Object.keys(localMap)]);
+  for (const uid of allIds) {
+    merged[uid] = mergeUserProfileEntry(localMap[uid], cloudMap[uid]);
+  }
+  return merged;
+};
 
 class AccountSyncService {
   private syncTimer: any = null;
@@ -130,6 +174,7 @@ class AccountSyncService {
         userId: authState.userId,
         nickname: authState.nickname,
         avatarUrl: authState.avatarUrl,
+        bannerUrl: authState.bannerUrl,
         username: authState.username,
         bio: authState.bio,
         birthday: authState.birthday,
@@ -180,14 +225,57 @@ class AccountSyncService {
     };
   }
 
-  public unpackAccountState(payload: UserConfigPayload): void {
+  public unpackAccountState(payload: UserConfigPayload, options?: { preferLocalOnConflict?: boolean }): void {
     if (!payload || !payload.auth || !payload.chatStore) {
       throw new Error('INVALID_CONFIG_STRUCTURE');
     }
 
     const authState = useAuthStore.getState();
+    const chatState = useChatStore.getState();
     const currentUserId = authState.userId;
     const restoredUserId = payload.auth.userId || currentUserId;
+    const isSameUser = Boolean(!currentUserId || !payload.auth.userId || currentUserId === payload.auth.userId);
+    const preferLocal = Boolean(options?.preferLocalOnConflict && isSameUser);
+
+    const pickField = (cloudVal: string | null | undefined, localVal: string | null | undefined): string | null => {
+      if (preferLocal) {
+        if (isNonEmptyStr(localVal)) return localVal;
+        if (isNonEmptyStr(cloudVal)) return cloudVal;
+        return cloudVal ?? localVal ?? null;
+      }
+      if (isNonEmptyStr(cloudVal)) return cloudVal;
+      if (isSameUser && isNonEmptyStr(localVal)) return localVal;
+      return cloudVal ?? (isSameUser ? localVal ?? null : null);
+    };
+
+    const nextNickname = preferLocal
+      ? (isNonEmptyStr(authState.nickname) ? authState.nickname : (payload.auth.nickname || ''))
+      : (isNonEmptyStr(payload.auth.nickname) ? payload.auth.nickname : (isSameUser ? authState.nickname : '') || '');
+    const nextAvatarUrl = pickField(payload.auth.avatarUrl, authState.avatarUrl);
+    const nextBannerUrl = pickField(payload.auth.bannerUrl, authState.bannerUrl);
+    const nextUsername = pickField(payload.auth.username, authState.username);
+    const nextBio = pickField(payload.auth.bio, authState.bio);
+    const nextBirthday = pickField(payload.auth.birthday, authState.birthday);
+
+    const mergedUsersById = mergeUsersByIdMaps(
+      isSameUser ? chatState.usersById : {},
+      payload.chatStore.usersById
+    );
+    if (restoredUserId) {
+      mergedUsersById[restoredUserId] = mergeUserProfileEntry(
+        {
+          id: restoredUserId,
+          nickname: nextNickname,
+          avatarUrl: nextAvatarUrl,
+          bannerUrl: nextBannerUrl,
+          username: nextUsername,
+          bio: nextBio,
+          birthday: nextBirthday,
+          updatedAt: Date.now(),
+        },
+        mergedUsersById[restoredUserId]
+      );
+    }
 
     const restoredChats: Chat[] = Array.isArray(payload.chatStore.chats)
       ? payload.chatStore.chats.map((c: any) => ({
@@ -200,17 +288,19 @@ class AccountSyncService {
 
     useChatStore.setState({
       ...(payload.chatStore as any),
+      usersById: mergedUsersById,
       chats: restoredChats,
-      messagesByChatId: useChatStore.getState().messagesByChatId || {},
+      messagesByChatId: chatState.messagesByChatId || {},
     });
 
     useAuthStore.setState({
       userId: restoredUserId,
-      nickname: payload.auth.nickname || authState.nickname,
-      avatarUrl: payload.auth.avatarUrl || authState.avatarUrl,
-      username: payload.auth.username !== undefined ? payload.auth.username : authState.username,
-      bio: payload.auth.bio !== undefined ? payload.auth.bio : authState.bio,
-      birthday: payload.auth.birthday !== undefined ? payload.auth.birthday : authState.birthday,
+      nickname: nextNickname,
+      avatarUrl: nextAvatarUrl,
+      bannerUrl: nextBannerUrl,
+      username: nextUsername,
+      bio: nextBio,
+      birthday: nextBirthday,
     });
   }
 
@@ -298,11 +388,77 @@ class AccountSyncService {
     if (!data || !data.config_blob) return;
 
     const decryptedJson = await decryptConfigBlob(backupEncKey, data.config_blob);
-    const parsed = JSON.parse(decryptedJson);
-    this.unpackAccountState(parsed);
-    useAuthStore.getState().setConfigVersion(Number(data.version) || 1);
+    const parsed: UserConfigPayload = JSON.parse(decryptedJson);
+
+    this.unpackAccountState(parsed, { preferLocalOnConflict: true });
+
+    const serverVersion = Number(data.version) || 1;
+    useAuthStore.getState().setConfigVersion(serverVersion);
+
+    const mergedAuth = useAuthStore.getState();
+    const mergedUsersById = useChatStore.getState().usersById || {};
+    const cloudAuth = parsed.auth || ({} as UserConfigPayload['auth']);
+    const cloudUsersById = parsed.chatStore?.usersById || {};
+
+    const authHasNewerData =
+      (isNonEmptyStr(mergedAuth.nickname) && mergedAuth.nickname !== cloudAuth.nickname) ||
+      (isNonEmptyStr(mergedAuth.avatarUrl) && mergedAuth.avatarUrl !== cloudAuth.avatarUrl) ||
+      (isNonEmptyStr(mergedAuth.bannerUrl) && mergedAuth.bannerUrl !== cloudAuth.bannerUrl) ||
+      (isNonEmptyStr(mergedAuth.username) && mergedAuth.username !== cloudAuth.username) ||
+      (isNonEmptyStr(mergedAuth.bio) && mergedAuth.bio !== cloudAuth.bio) ||
+      (isNonEmptyStr(mergedAuth.birthday) && mergedAuth.birthday !== cloudAuth.birthday);
+
+    const usersHaveNewerData = Object.keys(mergedUsersById).some((uid) => {
+      const mergedUser = mergedUsersById[uid];
+      const cloudUser = cloudUsersById[uid];
+      if (!cloudUser) return true;
+      return (
+        (isNonEmptyStr(mergedUser?.nickname) && mergedUser.nickname !== cloudUser.nickname) ||
+        (isNonEmptyStr(mergedUser?.avatarUrl) && mergedUser.avatarUrl !== cloudUser.avatarUrl) ||
+        (isNonEmptyStr(mergedUser?.bannerUrl) && mergedUser.bannerUrl !== cloudUser.bannerUrl) ||
+        (isNonEmptyStr(mergedUser?.username) && mergedUser.username !== cloudUser.username) ||
+        (isNonEmptyStr(mergedUser?.bio) && mergedUser.bio !== cloudUser.bio) ||
+        (isNonEmptyStr(mergedUser?.birthday) && mergedUser.birthday !== cloudUser.birthday)
+      );
+    });
+
+    if (authHasNewerData || usersHaveNewerData) {
+      try {
+        const masterSeed = mergedAuth.masterSeed;
+        if (masterSeed && isValidMasterSeedHex(masterSeed)) {
+          const keys = deriveAccountKeys(masterSeed);
+          const mergedPayload = this.packAccountState();
+          const mergedJson = JSON.stringify(mergedPayload);
+          const mergedByteLength = new TextEncoder().encode(mergedJson).length;
+          if (mergedByteLength <= 4.5 * 1024 * 1024) {
+            const mergedBlob = await encryptConfigBlob(backupEncKey, mergedJson);
+            const nextVersion = serverVersion + 1;
+            const signature = signConfigPayload(keys.authSeed, keys.userId, nextVersion, mergedBlob);
+            const putRes = await gatewayManager.fetch('/user/config', {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-user-id': keys.userId,
+              },
+              body: JSON.stringify({
+                user_id: keys.userId,
+                config_blob: mergedBlob,
+                version: nextVersion,
+                signature,
+              }),
+            });
+            if (putRes.ok) {
+              const putData = await putRes.json().catch(() => ({}));
+              const finalVersion = Number(putData.version) || nextVersion;
+              useAuthStore.getState().setConfigVersion(finalVersion);
+            }
+          }
+        }
+      } catch {}
+    }
+
     useAuthStore.getState().setSyncStatus('synced', Date.now());
-    
+
     if (typeof window !== 'undefined') {
       import('./accountManager').then((m) => {
         m.useAccountStore.getState().syncCurrentAccountMeta();

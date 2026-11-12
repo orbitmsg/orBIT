@@ -18,6 +18,18 @@ import { sendEncryptedReadReceipt } from '../../../services/receiptService';
 import { showNotification } from '../../../utils/notification';
 import { isAppInFocusAndVisible } from './layoutSyncUtils';
 
+const isValidProfileString = (val: unknown): val is string =>
+  typeof val === 'string' && val.trim().length > 0 && val.trim() !== 'undefined' && val.trim() !== 'null';
+
+const parseProfileTimestamp = (val?: string | number | null): number => {
+  if (typeof val === 'number') return Number.isFinite(val) ? val : 0;
+  if (typeof val === 'string' && val.trim().length > 0) {
+    const parsed = Date.parse(val);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+};
+
 export interface UseMainLayoutSyncParams {
   nickname: string | null;
   myCode: string | null;
@@ -214,12 +226,12 @@ export const useMainLayoutSync = ({
             ? existing.lastMsg
             : 'E2EE_SECURE_CHANNEL_READY';
           updateChat(existing.id, {
-            name: conf.sender_nickname,
+            name: isValidProfileString(conf.sender_nickname) ? conf.sender_nickname.trim() : existing.name,
             lastMsg: safeLastMsg,
             online: false,
             sharedSecret: sharedSecret,
             ratchetState: ratchet.getState(),
-            avatarUrl: conf.sender_avatar_url ?? undefined,
+            avatarUrl: isValidProfileString(conf.sender_avatar_url) ? conf.sender_avatar_url.trim() : existing.avatarUrl,
             peerCode: peerCode,
           });
           subscribeToChat(existing.id, sharedSecret);
@@ -998,18 +1010,23 @@ export const useMainLayoutSync = ({
                 continue;
               }
               const updates: Partial<Chat> = {};
-              if (messageData.avatarUrl !== undefined) updates.avatarUrl = messageData.avatarUrl;
-              if (messageData.bannerUrl !== undefined) updates.bannerUrl = messageData.bannerUrl;
-              if (messageData.nickname !== undefined) updates.name = messageData.nickname;
-              if (messageData.bio !== undefined) updates.description = messageData.bio;
-              if (messageData.username !== undefined) updates.username = messageData.username;
-              if (messageData.birthday !== undefined) updates.birthday = messageData.birthday;
-              if (messageData.senderCode && (!currentMyCode || messageData.senderCode !== currentMyCode)) {
-                updates.peerCode = messageData.senderCode;
-                updates.originalPeerCode = messageData.senderCode;
+              if (isValidProfileString(messageData.avatarUrl)) updates.avatarUrl = messageData.avatarUrl.trim();
+              if (isValidProfileString(messageData.bannerUrl)) updates.bannerUrl = messageData.bannerUrl.trim();
+              if (isValidProfileString(messageData.nickname)) updates.name = messageData.nickname.trim();
+              if (isValidProfileString(messageData.bio)) updates.description = messageData.bio.trim();
+              if (isValidProfileString(messageData.username)) updates.username = messageData.username.trim();
+              if (isValidProfileString(messageData.birthday)) updates.birthday = messageData.birthday.trim();
+              if (isValidProfileString(messageData.senderCode) && (!currentMyCode || messageData.senderCode !== currentMyCode)) {
+                updates.peerCode = messageData.senderCode.trim();
+                updates.originalPeerCode = messageData.senderCode.trim();
               }
               if (Object.keys(updates).length > 0) {
-                updateChat(record.chat_id, updates);
+                const currentChatsForUpdate = useChatStore.getState().chats;
+                const matchedChat = currentChatsForUpdate.find((c) =>
+                  c.id === record.chat_id ||
+                  (c.type === 'private' && updates.peerCode && (c.peerCode === updates.peerCode || c.originalPeerCode === updates.peerCode))
+                );
+                updateChat(matchedChat ? matchedChat.id : record.chat_id, updates);
               }
               nonDeliveredIds.push(record.id);
               continue;
@@ -1230,6 +1247,18 @@ export const useMainLayoutSync = ({
             if (profile.banner_url && profile.banner_url !== 'undefined' && profile.banner_url !== 'null' && profile.banner_url.trim()) {
               updates.bannerUrl = profile.banner_url.trim();
             }
+            if (isValidProfileString(profile.username)) {
+              updates.username = profile.username.trim();
+            }
+            if (isValidProfileString(profile.birthday)) {
+              updates.birthday = profile.birthday.trim();
+            }
+            if (isValidProfileString(profile.bio)) {
+              updates.description = profile.bio.trim();
+            }
+            if (isValidProfileString(profile.numeric_id)) {
+              updates.numericId = profile.numeric_id.trim();
+            }
           }
         } catch {}
       }
@@ -1244,7 +1273,7 @@ export const useMainLayoutSync = ({
       }
       if (isCorruptedAvatar) {
         if (recoveredAvatar !== chat.avatarUrl) {
-          updatesFinal.avatarUrl = recoveredAvatar;
+          updatesFinal.avatarUrl = recoveredAvatar ?? '';
         }
       } else if (recoveredAvatar && recoveredAvatar !== chat.avatarUrl && recoveredAvatar !== 'undefined' && recoveredAvatar !== 'null') {
         updatesFinal.avatarUrl = recoveredAvatar;
@@ -1276,6 +1305,107 @@ export const useMainLayoutSync = ({
 
   const lastProfileCheckTimeRef = useRef<Map<string, number>>(new Map());
   const lastChannelCheckTimeRef = useRef<Map<string, number>>(new Map());
+  const lastSelfProfileSyncRef = useRef<number>(0);
+
+  const reconcileSelfProfile = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+    const authState = useAuthStore.getState();
+    const chatHydrated = useChatStore.persist?.hasHydrated ? useChatStore.persist.hasHydrated() : true;
+    if (!authState._hasHydrated || !chatHydrated) return;
+
+    const now = Date.now();
+    const SELF_PROFILE_TTL = 900000;
+    if (now - lastSelfProfileSyncRef.current < SELF_PROFILE_TTL) return;
+
+    const currentMyCode = myCode || useChatStore.getState().myCode;
+    const lookupKeys = Array.from(new Set([currentMyCode, authState.userId].filter(isValidProfileString)));
+    if (lookupKeys.length === 0) return;
+
+    try {
+      let pub: Awaited<ReturnType<typeof supabaseService.lookupPublicProfile>> = null;
+      let upd: Awaited<ReturnType<typeof supabaseService.getLatestProfileUpdate>> = null;
+
+      for (const key of lookupKeys) {
+        const [pubRes, updRes] = await Promise.allSettled([
+          supabaseService.lookupPublicProfile(key),
+          supabaseService.getLatestProfileUpdate(key),
+        ]);
+        if (pubRes.status === 'rejected' && updRes.status === 'rejected') {
+          throw pubRes.reason || updRes.reason;
+        }
+        if (!pub && pubRes.status === 'fulfilled' && pubRes.value) pub = pubRes.value;
+        if (!upd && updRes.status === 'fulfilled' && updRes.value) upd = updRes.value;
+        if (pub && upd) break;
+      }
+
+      const pickServerField = (pubVal: unknown, updVal: unknown): string | undefined => {
+        const hasPub = isValidProfileString(pubVal);
+        const hasUpd = isValidProfileString(updVal);
+        if (hasPub && hasUpd) {
+          const pubTs = parseProfileTimestamp(pub?.updated_at);
+          const updTs = parseProfileTimestamp(upd?.updated_at);
+          return updTs > pubTs ? updVal.trim() : pubVal.trim();
+        }
+        if (hasPub) return pubVal.trim();
+        if (hasUpd) return updVal.trim();
+        return undefined;
+      };
+
+      const latestAuth = useAuthStore.getState();
+      const serverNickname = pickServerField(pub?.nickname, upd?.nickname);
+      const serverUsername = pickServerField(pub?.username, upd?.username);
+      const serverBirthday = pickServerField(pub?.birthday, upd?.birthday);
+      const serverBio = pickServerField(pub?.bio, upd?.bio);
+      const serverBannerUrl = pickServerField(pub?.banner_url, upd?.banner_url);
+      const serverAvatarUrl = pickServerField(pub?.avatar_url, upd?.avatar_url);
+
+      if (!isValidProfileString(latestAuth.nickname) && serverNickname) {
+        latestAuth.setNickname(serverNickname);
+      }
+      if (!isValidProfileString(latestAuth.username) && serverUsername) {
+        latestAuth.setUsername(serverUsername);
+      }
+      if (!isValidProfileString(latestAuth.birthday) && serverBirthday) {
+        latestAuth.setBirthday(serverBirthday);
+      }
+      if (!isValidProfileString(latestAuth.bio) && serverBio) {
+        latestAuth.setBio(serverBio);
+      }
+      if (!isValidProfileString(latestAuth.bannerUrl) && serverBannerUrl) {
+        latestAuth.setBannerUrl(serverBannerUrl);
+      }
+      if (!isValidProfileString(latestAuth.avatarUrl) && serverAvatarUrl) {
+        latestAuth.setAvatarUrl(serverAvatarUrl);
+      }
+
+      const profileKey = latestAuth.userId || currentMyCode;
+      if (profileKey) {
+        const afterAuth = useAuthStore.getState();
+        const cachedUser = useChatStore.getState().getUserProfile(profileKey);
+        const patch: Partial<Record<'nickname' | 'username' | 'birthday' | 'bio' | 'bannerUrl' | 'avatarUrl', string>> = {};
+
+        const finalNickname = isValidProfileString(afterAuth.nickname) ? afterAuth.nickname : serverNickname;
+        const finalUsername = isValidProfileString(afterAuth.username) ? afterAuth.username : serverUsername;
+        const finalBirthday = isValidProfileString(afterAuth.birthday) ? afterAuth.birthday : serverBirthday;
+        const finalBio = isValidProfileString(afterAuth.bio) ? afterAuth.bio : serverBio;
+        const finalBanner = isValidProfileString(afterAuth.bannerUrl) ? afterAuth.bannerUrl : serverBannerUrl;
+        const finalAvatar = isValidProfileString(afterAuth.avatarUrl) ? afterAuth.avatarUrl : serverAvatarUrl;
+
+        if (!isValidProfileString(cachedUser?.nickname) && finalNickname) patch.nickname = finalNickname;
+        if (!isValidProfileString(cachedUser?.username) && finalUsername) patch.username = finalUsername;
+        if (!isValidProfileString(cachedUser?.birthday) && finalBirthday) patch.birthday = finalBirthday;
+        if (!isValidProfileString(cachedUser?.bio) && finalBio) patch.bio = finalBio;
+        if (!isValidProfileString(cachedUser?.bannerUrl) && finalBanner) patch.bannerUrl = finalBanner;
+        if (!isValidProfileString(cachedUser?.avatarUrl) && finalAvatar) patch.avatarUrl = finalAvatar;
+
+        if (Object.keys(patch).length > 0) {
+          useChatStore.getState().setUserProfile(profileKey, patch);
+        }
+      }
+
+      lastSelfProfileSyncRef.current = now;
+    } catch {}
+  }, [myCode]);
 
   const syncOfflineFriendProfiles = useCallback(async () => {
     if (typeof navigator !== 'undefined' && !navigator.onLine) return;
@@ -1290,62 +1420,113 @@ export const useMainLayoutSync = ({
       if (now - lastCheck < PROFILE_TTL) {
         continue;
       }
-      lastProfileCheckTimeRef.current.set(chat.id, now);
       try {
-        const update = await supabaseService.getLatestProfileUpdate(chat.id, myCode || undefined);
-        const updates: Partial<Chat> = {};
-        const myUserId = useAuthStore.getState().userId;
-        const isMyOwnUpdate = update && (
-          (myCode && update.sender_code === myCode) ||
-          (myUserId && (update.user_id === myUserId || update.sender_id === myUserId))
-        );
-        const targetPeerCode = (chat.peerCode && chat.peerCode !== myCode)
+        const updatePromise = supabaseService.getLatestProfileUpdate(chat.id, myCode || undefined);
+        const initialPeerCode = (chat.peerCode && chat.peerCode !== myCode)
           ? chat.peerCode
           : (chat.originalPeerCode && chat.originalPeerCode !== myCode)
             ? chat.originalPeerCode
-            : (update?.sender_code && update.sender_code !== myCode)
-              ? update.sender_code
+            : (chat.numericId && chat.numericId !== myCode)
+              ? chat.numericId
               : (chat.name && chat.name.length === 36 && chat.name !== myCode)
                 ? chat.name
                 : undefined;
 
-        if (update && !isMyOwnUpdate) {
-          if (update.nickname && update.nickname !== chat.name) updates.name = update.nickname;
-          if (update.avatar_url && update.avatar_url !== chat.avatarUrl) updates.avatarUrl = update.avatar_url;
-          if (update.banner_url && update.banner_url !== chat.bannerUrl) updates.bannerUrl = update.banner_url;
-          if (update.username && update.username !== chat.username) updates.username = update.username;
-          if (update.birthday && update.birthday !== chat.birthday) updates.birthday = update.birthday;
-          if (update.bio && update.bio !== chat.description) updates.description = update.bio;
-          if (update.sender_code && update.sender_code !== myCode && !chat.peerCode) {
-            updates.peerCode = update.sender_code;
+        const update = await updatePromise;
+        const myUserId = useAuthStore.getState().userId;
+        const isMyOwnUpdate = Boolean(update && (
+          (myCode && update.sender_code === myCode) ||
+          (myUserId && (update.user_id === myUserId || update.sender_id === myUserId))
+        ));
+        const validUpdate = update && !isMyOwnUpdate ? update : null;
+
+        const targetPeerCode = initialPeerCode || (
+          validUpdate?.sender_code && validUpdate.sender_code !== myCode
+            ? validUpdate.sender_code
+            : undefined
+        );
+
+        const pub = targetPeerCode ? await supabaseService.lookupPublicProfile(targetPeerCode) : null;
+
+        const usernameForLookup =
+          (isValidProfileString(pub?.username) ? pub.username.trim() : null) ||
+          (isValidProfileString(validUpdate?.username) ? validUpdate.username.trim() : null) ||
+          (isValidProfileString(chat.username) ? chat.username.trim() : null);
+
+        const pubByUname = usernameForLookup
+          ? await supabaseService.lookupProfileByUsername(usernameForLookup)
+          : null;
+
+        const sources: Array<{
+          ts: number;
+          nickname?: string | null;
+          avatar_url?: string | null;
+          banner_url?: string | null;
+          username?: string | null;
+          birthday?: string | null;
+          bio?: string | null;
+          numeric_id?: string | null;
+          user_code?: string | null;
+        }> = [];
+
+        if (pub) {
+          sources.push({ ...pub, ts: parseProfileTimestamp(pub.updated_at) });
+        }
+        if (validUpdate) {
+          sources.push({
+            ...validUpdate,
+            user_code: validUpdate.sender_code || null,
+            ts: parseProfileTimestamp(validUpdate.updated_at),
+          });
+        }
+        if (pubByUname) {
+          sources.push({ ...pubByUname, ts: parseProfileTimestamp(pubByUname.updated_at) });
+        }
+
+        const pickBestString = (getter: (s: typeof sources[number]) => unknown): string | undefined => {
+          let bestVal: string | undefined;
+          let bestTs = -1;
+          for (const src of sources) {
+            const val = getter(src);
+            if (isValidProfileString(val)) {
+              const trimmed = val.trim();
+              if (bestVal === undefined || src.ts > bestTs) {
+                bestVal = trimmed;
+                bestTs = src.ts;
+              }
+            }
+          }
+          return bestVal;
+        };
+
+        const updates: Partial<Chat> = {};
+        const nextNick = pickBestString((s) => s.nickname);
+        const nextAvatar = pickBestString((s) => s.avatar_url);
+        const nextBanner = pickBestString((s) => s.banner_url);
+        const nextUsername = pickBestString((s) => s.username);
+        const nextBirthday = pickBestString((s) => s.birthday);
+        const nextBio = pickBestString((s) => s.bio);
+        const nextNumericId = pickBestString((s) => s.numeric_id);
+        const nextPeerCode = pickBestString((s) => s.user_code);
+
+        if (nextNick && nextNick !== chat.name) updates.name = nextNick;
+        if (nextAvatar && nextAvatar !== chat.avatarUrl) updates.avatarUrl = nextAvatar;
+        if (nextBanner && nextBanner !== chat.bannerUrl) updates.bannerUrl = nextBanner;
+        if (nextUsername && nextUsername !== chat.username) updates.username = nextUsername;
+        if (nextBirthday && nextBirthday !== chat.birthday) updates.birthday = nextBirthday;
+        if (nextBio && nextBio !== chat.description) updates.description = nextBio;
+        if (nextNumericId && nextNumericId !== chat.numericId) updates.numericId = nextNumericId;
+        if (nextPeerCode && (!myCode || nextPeerCode !== myCode) && !chat.peerCode) {
+          updates.peerCode = nextPeerCode;
+          if (!chat.originalPeerCode) {
+            updates.originalPeerCode = nextPeerCode;
           }
         }
 
-        if (targetPeerCode) {
-          const pub = await supabaseService.lookupPublicProfile(targetPeerCode);
-          if (pub) {
-            if (pub.nickname && pub.nickname !== chat.name && !updates.name) updates.name = pub.nickname;
-            if (pub.avatar_url && pub.avatar_url !== chat.avatarUrl && !updates.avatarUrl) updates.avatarUrl = pub.avatar_url;
-            if (pub.banner_url && pub.banner_url !== chat.bannerUrl && !updates.bannerUrl) updates.bannerUrl = pub.banner_url;
-            if (pub.username && pub.username !== chat.username && !updates.username) updates.username = pub.username;
-            if (pub.birthday && pub.birthday !== chat.birthday && !updates.birthday) updates.birthday = pub.birthday;
-            if (pub.bio && pub.bio !== chat.description && !updates.description) updates.description = pub.bio;
-          }
-        }
-
-        if (chat.username && !updates.bannerUrl) {
-          const pubByUname = await supabaseService.lookupProfileByUsername(chat.username);
-          if (pubByUname) {
-            if (pubByUname.nickname && pubByUname.nickname !== chat.name && !updates.name) updates.name = pubByUname.nickname;
-            if (pubByUname.avatar_url && pubByUname.avatar_url !== chat.avatarUrl && !updates.avatarUrl) updates.avatarUrl = pubByUname.avatar_url;
-            if (pubByUname.banner_url && pubByUname.banner_url !== chat.bannerUrl && !updates.bannerUrl) updates.bannerUrl = pubByUname.banner_url;
-            if (pubByUname.birthday && pubByUname.birthday !== chat.birthday && !updates.birthday) updates.birthday = pubByUname.birthday;
-            if (pubByUname.bio && pubByUname.bio !== chat.description && !updates.description) updates.description = pubByUname.bio;
-          }
-        }
         if (Object.keys(updates).length > 0) {
           updateChat(chat.id, updates);
         }
+        lastProfileCheckTimeRef.current.set(chat.id, now);
       } catch {}
     }
 
@@ -1434,6 +1615,8 @@ export const useMainLayoutSync = ({
   loadPendingGroupsRef.current = loadPendingGroups;
   const recoverProfilesRef = useRef(recoverCorruptedFriendProfiles);
   recoverProfilesRef.current = recoverCorruptedFriendProfiles;
+  const reconcileSelfProfileRef = useRef(reconcileSelfProfile);
+  reconcileSelfProfileRef.current = reconcileSelfProfile;
   const syncOfflineProfilesRef = useRef(syncOfflineFriendProfiles);
   syncOfflineProfilesRef.current = syncOfflineFriendProfiles;
 
@@ -1488,6 +1671,7 @@ export const useMainLayoutSync = ({
         await Promise.allSettled([
           loadPendingMessagesRef.current(),
           loadPendingGroupsRef.current(),
+          reconcileSelfProfileRef.current(),
           syncOfflineProfilesRef.current(),
         ]);
 

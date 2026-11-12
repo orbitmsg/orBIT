@@ -75,6 +75,31 @@ export {
   flushStorageSet,
 };
 
+const isValidProfileString = (val: unknown): val is string =>
+  typeof val === 'string' && val.trim().length > 0 && val.trim() !== 'undefined' && val.trim() !== 'null';
+
+const pickNonEmptyProfileValue = (
+  incoming: string | null | undefined,
+  existing: string | null | undefined
+): string | null | undefined => {
+  if (isValidProfileString(incoming)) return incoming;
+  if (isValidProfileString(existing)) return existing;
+  return incoming !== undefined ? incoming : existing;
+};
+
+const isSamePrivateChatByName = (a: Chat, b: Chat): boolean => {
+  if (!a.name || !b.name || a.name === 'Unknown' || b.name === 'Unknown') return false;
+  if (a.name.trim().toLowerCase() !== b.name.trim().toLowerCase()) return false;
+  if (a.peerCode && b.peerCode && a.peerCode !== b.peerCode) return false;
+  if (a.originalPeerCode && b.originalPeerCode && a.originalPeerCode !== b.originalPeerCode) return false;
+  if (a.peerPublicKey && b.peerPublicKey && a.peerPublicKey !== b.peerPublicKey) return false;
+  if (a.numericId && b.numericId && a.numericId !== b.numericId) return false;
+  const uA = a.username ? a.username.replace(/^@+/, '').trim().toLowerCase() : '';
+  const uB = b.username ? b.username.replace(/^@+/, '').trim().toLowerCase() : '';
+  if (uA && uB && uA !== uB) return false;
+  return true;
+};
+
 export const useChatStore = create<ChatState>()(
   persist(
     (set, get) => ({
@@ -83,10 +108,16 @@ export const useChatStore = create<ChatState>()(
         set((state) => {
           if (!userId) return state;
           const current = state.usersById[userId] || { id: userId, nickname: '' };
-          const updatedUser = {
+          const updatedUser: UserProfile = {
             ...current,
             ...profile,
-            nickname: profile.nickname ?? current.nickname,
+            id: userId,
+            nickname: (isValidProfileString(profile.nickname) ? profile.nickname : current.nickname) ?? '',
+            avatarUrl: pickNonEmptyProfileValue(profile.avatarUrl, current.avatarUrl),
+            bannerUrl: pickNonEmptyProfileValue(profile.bannerUrl, current.bannerUrl),
+            username: pickNonEmptyProfileValue(profile.username, current.username),
+            bio: pickNonEmptyProfileValue(profile.bio, current.bio),
+            birthday: pickNonEmptyProfileValue(profile.birthday, current.birthday),
             updatedAt: Date.now(),
           };
           try {
@@ -392,7 +423,7 @@ export const useChatStore = create<ChatState>()(
               if (chatEntry.peerPublicKey && c.peerPublicKey && c.peerPublicKey === chatEntry.peerPublicKey) return true;
               if (chatEntry.numericId && c.numericId && c.numericId === chatEntry.numericId) return true;
               if (chatEntry.username && c.username && c.username.replace(/^@+/, '').trim().toLowerCase() === chatEntry.username.replace(/^@+/, '').trim().toLowerCase()) return true;
-              if (chatEntry.name && chatEntry.name !== 'Unknown' && c.name && c.name.trim().toLowerCase() === chatEntry.name.trim().toLowerCase()) return true;
+              if (isSamePrivateChatByName(c, chatEntry)) return true;
               return false;
             });
           } else if (chatEntry.type === 'group') {
@@ -449,11 +480,12 @@ export const useChatStore = create<ChatState>()(
               ratchetState: pickBestRatchetState(exists.ratchetState, chatEntry.ratchetState),
               sharedSecret: exists.sharedSecret || chatEntry.sharedSecret,
               peerPublicKey: exists.peerPublicKey || chatEntry.peerPublicKey,
-              avatarUrl: chatEntry.avatarUrl || exists.avatarUrl,
-              bannerUrl: chatEntry.bannerUrl || exists.bannerUrl,
-              username: chatEntry.username || exists.username,
-              description: chatEntry.description || exists.description,
-              numericId: chatEntry.numericId || exists.numericId,
+              avatarUrl: isValidProfileString(chatEntry.avatarUrl) ? chatEntry.avatarUrl : exists.avatarUrl,
+              bannerUrl: isValidProfileString(chatEntry.bannerUrl) ? chatEntry.bannerUrl : exists.bannerUrl,
+              username: isValidProfileString(chatEntry.username) ? chatEntry.username : exists.username,
+              description: isValidProfileString(chatEntry.description) ? chatEntry.description : exists.description,
+              numericId: isValidProfileString(chatEntry.numericId) ? chatEntry.numericId : exists.numericId,
+              birthday: isValidProfileString(chatEntry.birthday) ? chatEntry.birthday : exists.birthday,
               peerCode: chatEntry.peerCode || exists.peerCode,
               originalPeerCode: chatEntry.originalPeerCode || exists.originalPeerCode,
               name: (chatEntry.name && chatEntry.name !== 'Unknown') ? chatEntry.name : exists.name,
@@ -473,7 +505,7 @@ export const useChatStore = create<ChatState>()(
                       if (c.peerCode && merged.peerCode && (c.peerCode === merged.peerCode || c.originalPeerCode === merged.peerCode)) return false;
                       if (c.numericId && merged.numericId && c.numericId === merged.numericId) return false;
                       if (c.username && merged.username && c.username.replace(/^@+/, '').trim().toLowerCase() === merged.username.replace(/^@+/, '').trim().toLowerCase()) return false;
-                      if (c.name && merged.name && c.name !== 'Unknown' && c.name.trim().toLowerCase() === merged.name.trim().toLowerCase()) return false;
+                      if (isSamePrivateChatByName(c, merged)) return false;
                     }
                   } else if (c.type === 'group' && merged.type === 'group') {
                     if (c.inviteCode && merged.inviteCode && c.inviteCode === merged.inviteCode) return false;
@@ -560,11 +592,29 @@ export const useChatStore = create<ChatState>()(
             if (cleanUpdates.name && myNick && cleanUpdates.name.trim().toLowerCase() === myNick.trim().toLowerCase()) {
               delete cleanUpdates.name;
             }
+            if ('name' in cleanUpdates && (!isValidProfileString(cleanUpdates.name) || cleanUpdates.name === 'Unknown') && isValidProfileString(target.name) && target.name !== 'Unknown') {
+              delete cleanUpdates.name;
+            }
             if (cleanUpdates.peerCode && ((myCode && cleanUpdates.peerCode === myCode) || (myUserId && cleanUpdates.peerCode === myUserId))) {
               delete cleanUpdates.peerCode;
             }
             if (cleanUpdates.avatarUrl && myAvatar && cleanUpdates.avatarUrl === myAvatar) {
               delete cleanUpdates.avatarUrl;
+            }
+            for (const field of ['username', 'birthday', 'description', 'bannerUrl', 'avatarUrl'] as const) {
+              if (field in cleanUpdates) {
+                const incoming = cleanUpdates[field];
+                const existing: unknown = target[field];
+                if (!isValidProfileString(incoming)) {
+                  if (isValidProfileString(existing)) {
+                    delete cleanUpdates[field];
+                  } else if (typeof existing === 'string' && (existing.trim() === 'undefined' || existing.trim() === 'null')) {
+                    (cleanUpdates as any)[field] = undefined;
+                  } else {
+                    delete cleanUpdates[field];
+                  }
+                }
+              }
             }
           }
 

@@ -88,6 +88,7 @@ const getInitialUserId = (): string => {
 };
 
 const lastSavedAuthValues: Record<string, string> = {};
+const authWriteChains: Record<string, Promise<void>> = {};
 
 const isBlankAuthState = (jsonStr: string): boolean => {
   try {
@@ -113,17 +114,22 @@ const hasExistingAccount = (jsonStr: string | null | undefined): boolean => {
 const ipcStorage: StateStorage = {
   getItem: async (name: string): Promise<string | null> => {
     if (typeof window === 'undefined') return null;
-    let val: string | null = null;
-    if ((window as any).orbita?.storageGet) {
-      try {
-        val = await (window as any).orbita.storageGet(name);
-      } catch {}
-      if (securityService.isPasswordSet() && !val) {
-        return null;
-      }
+    if (await securityService.isStorageLocked()) {
+      throw new Error('STORAGE_LOCKED');
     }
-    if (val !== null) lastSavedAuthValues[name] = val;
-    return val;
+    if ((window as any).orbita?.storageGet) {
+      const val = await (window as any).orbita.storageGet(name);
+      if (securityService.isPasswordSet() && (val === null || val === undefined)) {
+        if (await securityService.isStorageLocked()) {
+          throw new Error('STORAGE_LOCKED');
+        }
+      }
+      if (val !== null && val !== undefined) {
+        lastSavedAuthValues[name] = val;
+      }
+      return val ?? null;
+    }
+    return null;
   },
   setItem: async (name: string, value: string): Promise<void> => {
     if (typeof window === 'undefined') return;
@@ -132,31 +138,44 @@ const ipcStorage: StateStorage = {
       return;
     }
 
-    if (lastSavedAuthValues[name] === value) return;
+    const prevChain = authWriteChains[name] || Promise.resolve();
+    const nextWrite = prevChain.catch(() => {}).then(async () => {
+      if (lastSavedAuthValues[name] === value) return;
 
-    const previousSaved = lastSavedAuthValues[name];
-    if (hasExistingAccount(previousSaved) && isBlankAuthState(value)) {
-      return;
-    }
+      const previousSaved = lastSavedAuthValues[name];
+      if (hasExistingAccount(previousSaved) && isBlankAuthState(value)) {
+        return;
+      }
 
-    lastSavedAuthValues[name] = value;
-
-    if ((window as any).orbita?.storageSet) {
-      try {
-        await (window as any).orbita.storageSet(name, value);
-        
-      } catch {}
-    }
+      const storageSet = (window as any).orbita?.storageSet;
+      if (storageSet) {
+        try {
+          const result = await storageSet(name, value);
+          if (result === false) {
+            return;
+          }
+          lastSavedAuthValues[name] = value;
+        } catch {}
+      } else {
+        lastSavedAuthValues[name] = value;
+      }
+    });
+    authWriteChains[name] = nextWrite.catch(() => {});
+    return nextWrite;
   },
   removeItem: async (name: string): Promise<void> => {
     if (typeof window === 'undefined') return;
-    delete lastSavedAuthValues[name];
-    
-    if ((window as any).orbita?.storageRemove) {
-      try {
-        await (window as any).orbita.storageRemove(name);
-      } catch {}
-    }
+    const prevChain = authWriteChains[name] || Promise.resolve();
+    const nextRemove = prevChain.catch(() => {}).then(async () => {
+      delete lastSavedAuthValues[name];
+      if ((window as any).orbita?.storageRemove) {
+        try {
+          await (window as any).orbita.storageRemove(name);
+        } catch {}
+      }
+    });
+    authWriteChains[name] = nextRemove.catch(() => {});
+    return nextRemove;
   },
 };
 
@@ -351,30 +370,63 @@ export const useAuthStore = create<AuthState>()(
         oneTimePreKeys: get().oneTimePreKeys,
       }),
       importAuthState: (data: any) => {
+        const prev = get();
         const uid = data?.userId || getInitialUserId();
+        const isSameUser = Boolean(prev.userId && data?.userId && prev.userId === data.userId);
+        const pickNonEmpty = (incoming: any, existing: string | null): string | null => {
+          if (typeof incoming === 'string' && incoming.trim().length > 0) {
+            return incoming;
+          }
+          if (isSameUser && typeof existing === 'string' && existing.trim().length > 0) {
+            return existing;
+          }
+          return incoming || null;
+        };
+        const nextNumericId = data?.numericId || (isSameUser ? prev.numericId : '') || getInitialNumericId(uid);
+        const nextNickname = (typeof data?.nickname === 'string' && data.nickname.length > 0)
+          ? data.nickname
+          : (isSameUser ? prev.nickname : '') || '';
+        const nextAvatarUrl = pickNonEmpty(data?.avatarUrl, prev.avatarUrl);
+        const nextBannerUrl = pickNonEmpty(data?.bannerUrl, prev.bannerUrl);
+        const nextUsername = pickNonEmpty(data?.username, prev.username);
+        const nextBio = pickNonEmpty(data?.bio, prev.bio);
+        const nextBirthday = pickNonEmpty(data?.birthday, prev.birthday);
+        const nextStep = data?.step || 'welcome';
         set({
           userId: uid,
-          numericId: data?.numericId || getInitialNumericId(uid),
-          nickname: data?.nickname || '',
-          avatarUrl: data?.avatarUrl || null,
-          bannerUrl: data?.bannerUrl || null,
-          username: data?.username || null,
-          bio: data?.bio || null,
-          birthday: data?.birthday || null,
-          step: data?.step || 'welcome',
-          recoveryKey: data?.recoveryKey || null,
-          masterSeed: data?.masterSeed || null,
-          configVersion: data?.configVersion || 0,
-          lastSyncTime: data?.lastSyncTime || null,
+          numericId: nextNumericId,
+          nickname: nextNickname,
+          avatarUrl: nextAvatarUrl,
+          bannerUrl: nextBannerUrl,
+          username: nextUsername,
+          bio: nextBio,
+          birthday: nextBirthday,
+          step: nextStep,
+          recoveryKey: data?.recoveryKey ?? (isSameUser ? prev.recoveryKey : null),
+          masterSeed: data?.masterSeed ?? (isSameUser ? prev.masterSeed : null),
+          configVersion: data?.configVersion ?? (isSameUser ? prev.configVersion : 0),
+          lastSyncTime: data?.lastSyncTime ?? (isSameUser ? prev.lastSyncTime : null),
           syncStatus: data?.syncStatus || 'idle',
-          backupEnabled: data?.backupEnabled || false,
-          backupFolder: data?.backupFolder || null,
-          lastBackupTime: data?.lastBackupTime || null,
-          identityKeyPair: data?.identityKeyPair || null,
-          signedPreKeyPair: data?.signedPreKeyPair || null,
-          identitySigningKeyPair: data?.identitySigningKeyPair || null,
-          oneTimePreKeys: data?.oneTimePreKeys || [],
+          backupEnabled: data?.backupEnabled ?? (isSameUser ? prev.backupEnabled : false),
+          backupFolder: data?.backupFolder ?? (isSameUser ? prev.backupFolder : null),
+          lastBackupTime: data?.lastBackupTime ?? (isSameUser ? prev.lastBackupTime : null),
+          identityKeyPair: data?.identityKeyPair ?? (isSameUser ? prev.identityKeyPair : null),
+          signedPreKeyPair: data?.signedPreKeyPair ?? (isSameUser ? prev.signedPreKeyPair : null),
+          identitySigningKeyPair: data?.identitySigningKeyPair ?? (isSameUser ? prev.identitySigningKeyPair : null),
+          oneTimePreKeys: Array.isArray(data?.oneTimePreKeys) && data.oneTimePreKeys.length > 0
+            ? data.oneTimePreKeys
+            : (isSameUser ? prev.oneTimePreKeys : (data?.oneTimePreKeys || [])),
         });
+        if (uid && (nextNickname || nextUsername || nextBirthday || nextAvatarUrl || nextBannerUrl || nextBio)) {
+          useChatStore.getState().setUserProfile(uid, {
+            nickname: nextNickname,
+            avatarUrl: nextAvatarUrl,
+            bannerUrl: nextBannerUrl,
+            username: nextUsername,
+            bio: nextBio,
+            birthday: nextBirthday,
+          });
+        }
       },
     }),
     {
@@ -390,7 +442,11 @@ export const useAuthStore = create<AuthState>()(
         }
         return persistedState;
       },
-      onRehydrateStorage: () => (state) => {
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          useAuthStore.getState().setHasHydrated(false);
+          return;
+        }
         if (state) {
           if (!state.numericId && state.userId) {
             const generated = getInitialNumericId(state.userId);
@@ -398,6 +454,8 @@ export const useAuthStore = create<AuthState>()(
             state.setNumericId(generated);
           }
           state.setHasHydrated(true);
+        } else {
+          useAuthStore.getState().setHasHydrated(false);
         }
       },
       storage: createJSONStorage(() => ipcStorage),

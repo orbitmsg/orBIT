@@ -1280,7 +1280,10 @@
       "choose_file": "Choose from file",
       "paste_clipboard": "Paste from clipboard",
       "choose_emoji": "Choose emoji avatar",
-      "delete_photo": "Delete photo"
+      "delete_photo": "Delete photo",
+      "birthday_invalid_year": "Enter a valid year",
+      "birthday_invalid_date": "Invalid date",
+      "save_error": "Failed to save profile"
     },
     "channel": {
       "edit_channel": "Edit Channel",

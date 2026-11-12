@@ -11,17 +11,23 @@ CREATE INDEX IF NOT EXISTS idx_profile_updates_username_lower ON public.profile_
 
 DELETE FROM public.profile_updates a
 USING public.profile_updates b
-WHERE a.id < b.id
+WHERE a.chat_id = b.chat_id
   AND a.username IS NOT NULL
-  AND a.username <> ''
   AND TRIM(a.username) <> ''
   AND b.username IS NOT NULL
-  AND b.username <> ''
   AND TRIM(b.username) <> ''
   AND LOWER(TRIM(a.username)) = LOWER(TRIM(b.username))
   AND (
-    COALESCE(a.sender_code, a.chat_id) = COALESCE(b.sender_code, b.chat_id)
-    OR ((a.sender_code IS NULL OR b.sender_code IS NULL) AND a.chat_id = b.chat_id)
+    COALESCE(a.sender_code, '') = COALESCE(b.sender_code, '')
+    OR a.sender_code IS NULL
+    OR b.sender_code IS NULL
+  )
+  AND (
+    COALESCE(a.updated_at, to_timestamp(0)) < COALESCE(b.updated_at, to_timestamp(0))
+    OR (
+      COALESCE(a.updated_at, to_timestamp(0)) = COALESCE(b.updated_at, to_timestamp(0))
+      AND a.id < b.id
+    )
   );
 
 ALTER TABLE public.handshakes ENABLE ROW LEVEL SECURITY;

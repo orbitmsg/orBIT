@@ -211,7 +211,7 @@ export const MediaWindowView: React.FC = () => {
       }}
     >
       <div className="absolute top-0 left-0 right-0 z-50 pointer-events-auto">
-        <TitleBar
+        <TitleBar hideTitle
           onClose={handleClose}
           style={{
             backgroundColor: 'transparent',

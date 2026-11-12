@@ -1246,7 +1246,7 @@ export const CallWindowView = () => {
       )}
 
       <div className="relative z-50">
-        <TitleBar />
+        <TitleBar hideTitle />
       </div>
 
       <div className="flex items-center justify-center flex-shrink-0 relative z-30 py-1">

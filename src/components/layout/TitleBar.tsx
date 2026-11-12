@@ -14,12 +14,13 @@ export const isElectronApp = (): boolean => {
 
 export interface TitleBarProps {
   title?: string;
+  hideTitle?: boolean;
   onClose?: () => void;
   style?: React.CSSProperties;
   className?: string;
 }
 
-export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, className }) => {
+export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, style, className }) => {
   const { t } = useTranslation();
   const isElectron = isElectronApp();
   const planetSvgId = useId().replace(/:/g, '');
@@ -165,14 +166,15 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
       } as React.CSSProperties}
       onDoubleClick={handleDoubleClick}
     >
-      <div
-        className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center gap-1.5 text-xs text-[var(--text-dim,#949ba4)] font-medium pointer-events-none select-none max-w-[45%]"
-        style={{
-          top: 0,
-          bottom: 0,
-          ['WebkitAppRegion' as any]: 'no-drag',
-        }}
-      >
+      {!hideTitle && (
+        <div
+          className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center gap-1.5 text-xs text-[var(--text-dim,#949ba4)] font-medium pointer-events-none select-none max-w-[45%]"
+          style={{
+            top: 0,
+            bottom: 0,
+            ['WebkitAppRegion' as any]: 'no-drag',
+          }}
+        >
         {!title && currentView === 'settings' ? (
           <DiscordSettingsIcon size={14} className="shrink-0" />
         ) : !title && activeChat ? (
@@ -234,16 +236,17 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, onClose, style, class
             <path d="M16 3.13a4 4 0 0 1 0 7.75" />
           </svg>
         )}
-        <span className="truncate">{resolvedTitle}</span>
-      </div>
+          <span className="truncate">{resolvedTitle}</span>
+        </div>
+      )}
       <div className="flex-1" />
       <style>{`
         .orbita-titlebar-btn {
-          width: 30px;
-          height: 22px;
+          width: 24px;
+          height: 24px;
           border: none;
           outline: none;
-          border-radius: 9999px;
+          border-radius: 7px;
           background: transparent;
           color: var(--text-dim, #9f96b3);
           cursor: pointer;

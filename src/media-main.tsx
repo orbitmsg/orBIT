@@ -216,6 +216,9 @@ export const MediaWindowView: React.FC = () => {
           style={{
             backgroundColor: 'transparent',
             ['--titlebar-fg' as any]: '#ffffff',
+            ['--titlebar-hover-fg' as any]: '#ffffff',
+            ['--titlebar-hover-bg' as any]: 'rgba(255, 255, 255, 0.14)',
+            ['--titlebar-active-bg' as any]: 'rgba(255, 255, 255, 0.22)',
           }}
         />
       </div>

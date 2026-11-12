@@ -1576,11 +1576,13 @@ function initStorageDb(): Promise<void> {
   return new Promise((resolve, reject) => {
     const dbPath = getAppDbPath();
     appDbInstance = new sqlite3.Database(dbPath);
-    appDbInstance.run('PRAGMA journal_mode = WAL;');
-    appDbInstance.run('PRAGMA synchronous = NORMAL;');
-    appDbInstance.run('PRAGMA wal_autocheckpoint = 2000;');
-    appDbInstance.run('PRAGMA cache_size = -8192;');
+    appDbInstance.configure('busyTimeout', 5000);
     appDbInstance.serialize(() => {
+      appDbInstance!.run('PRAGMA busy_timeout = 5000;');
+      appDbInstance!.run('PRAGMA journal_mode = WAL;');
+      appDbInstance!.run('PRAGMA synchronous = NORMAL;');
+      appDbInstance!.run('PRAGMA wal_autocheckpoint = 2000;');
+      appDbInstance!.run('PRAGMA cache_size = -8192;');
       appDbInstance!.run(
         `
         CREATE TABLE IF NOT EXISTS ${KV_TABLE} (
@@ -1658,7 +1660,9 @@ function writeVaultShadow(key: string, value: string) {
     const filePath = path.join(getVaultDir(), `${safeKey}.enc`);
     const enc = encryptData(Buffer.from(value, 'utf8'));
     fs.writeFileSync(filePath, enc);
-  } catch {}
+  } catch (err) {
+    console.error(`[Storage] Failed to write vault shadow for "${key}":`, err);
+  }
 }
 
 function readVaultShadow(key: string): string | null {
@@ -1670,7 +1674,9 @@ function readVaultShadow(key: string): string | null {
       const dec = decryptData(raw);
       if (dec) return dec.toString('utf8');
     }
-  } catch {}
+  } catch (err) {
+    console.error(`[Storage] Failed to read vault shadow for "${key}":`, err);
+  }
   return null;
 }
 
@@ -1684,26 +1690,64 @@ function deleteVaultShadow(key: string) {
   } catch {}
 }
 
-const kvWriteQueue = new Map<string, { value: string; timer?: NodeJS.Timeout }>();
+type KvWaiter = { resolve: () => void; reject: (err: unknown) => void };
+const kvWriteQueue = new Map<string, { value: string; timer?: NodeJS.Timeout; waiters: KvWaiter[] }>();
 
 function flushKvWritesSync() {
-  const masterKey = getMasterKey();
-  for (const [key, item] of kvWriteQueue.entries()) {
-    if (item.timer) clearTimeout(item.timer);
-    try {
-      if (nativeModule && nativeModule.rustStorageKvSet && masterKey) {
-        nativeModule.rustStorageKvSet(getAppDbPath(), key, item.value, masterKey.toString('hex'), getVaultDir());
-      } else {
-        const encrypted = encryptData(Buffer.from(item.value, 'utf8')).toString('base64');
-        getDb().run(`INSERT OR REPLACE INTO ${KV_TABLE} (key, value) VALUES (?, ?)`, [key, encrypted]);
-      }
-    } catch {}
+  if (kvWriteQueue.size === 0) return;
+
+  let masterKey: Buffer | null = null;
+  try {
+    masterKey = getMasterKey();
+  } catch (err) {
+    console.error('[Storage] Cannot flush KV writes, local key unavailable:', err);
+    return;
   }
-  kvWriteQueue.clear();
+
+  if (!masterKey) {
+    console.error('[Storage] Cannot flush KV writes while storage is locked');
+    return;
+  }
+
+  for (const [key, item] of Array.from(kvWriteQueue.entries())) {
+    if (item.timer) {
+      clearTimeout(item.timer);
+      item.timer = undefined;
+    }
+    try {
+      let wroteViaRust = false;
+      if (nativeModule && nativeModule.rustStorageKvSet) {
+        try {
+          nativeModule.rustStorageKvSet(getAppDbPath(), key, item.value, masterKey.toString('hex'), getVaultDir());
+          wroteViaRust = true;
+        } catch (rustErr) {
+          console.error(`[Storage] rustStorageKvSet failed during flush for "${key}":`, rustErr);
+        }
+      }
+      if (!wroteViaRust) {
+        const encrypted = encryptData(Buffer.from(item.value, 'utf8')).toString('base64');
+        getDb().run(`INSERT OR REPLACE INTO ${KV_TABLE} (key, value) VALUES (?, ?)`, [key, encrypted], (dbErr) => {
+          if (dbErr) {
+            console.error(`[Storage] Failed to flush KV key "${key}" to SQLite:`, dbErr);
+            if (!kvWriteQueue.has(key)) {
+              kvWriteQueue.set(key, { value: item.value, waiters: [] });
+            }
+          }
+        });
+      }
+      kvWriteQueue.delete(key);
+      for (const w of item.waiters) w.resolve();
+    } catch (err) {
+      console.error(`[Storage] Failed to flush KV key "${key}", preserving in queue:`, err);
+    }
+  }
+
   if (nativeModule && nativeModule.rustStorageKvFlush) {
     try {
       nativeModule.rustStorageKvFlush(getAppDbPath());
-    } catch {}
+    } catch (err) {
+      console.error('[Storage] rustStorageKvFlush failed:', err);
+    }
   }
 }
 
@@ -1712,23 +1756,41 @@ function getKvValue(key: string): Promise<string | null> {
   if (pending) {
     return Promise.resolve(pending.value);
   }
-  const masterKey = getMasterKey();
-  if (nativeModule && nativeModule.rustStorageKvGet && masterKey) {
+
+  let masterKey: Buffer | null = null;
+  try {
+    masterKey = getMasterKey();
+  } catch (err) {
+    return Promise.reject(err);
+  }
+
+  if (!masterKey) {
+    return Promise.resolve(null);
+  }
+
+  if (nativeModule && nativeModule.rustStorageKvGet) {
     try {
       const res = nativeModule.rustStorageKvGet(getAppDbPath(), key, masterKey.toString('hex'), getVaultDir());
       if (res !== undefined && res !== null) {
         return Promise.resolve(res);
       }
-    } catch {}
+    } catch (err) {
+      console.error(`[Storage] rustStorageKvGet failed for "${key}":`, err);
+    }
   }
-  return new Promise((resolve) => {
+
+  return new Promise((resolve, reject) => {
     getDb().get(`SELECT value FROM ${KV_TABLE} WHERE key = ?`, [key], (err, row: any) => {
+      if (err) {
+        console.error(`[Storage] SQLite read failed for KV key "${key}":`, err);
+      }
       if (!err && row) {
         const raw = Buffer.from(row.value, 'base64');
         const decrypted = decryptData(raw);
         if (decrypted) {
           return resolve(decrypted.toString('utf8'));
         }
+        console.error(`[Storage] Failed to decrypt KV key "${key}" from SQLite`);
       }
       const shadow = readVaultShadow(key);
       if (shadow !== null) {
@@ -1738,27 +1800,47 @@ function getKvValue(key: string): Promise<string | null> {
         } catch {}
         return resolve(shadow);
       }
+      if (err) {
+        return reject(err);
+      }
+      if (row) {
+        return reject(new Error(`Failed to decrypt KV key "${key}"`));
+      }
       resolve(null);
     });
   });
 }
 
 function setKvValue(key: string, value: string): Promise<void> {
+  let masterKey: Buffer | null = null;
+  try {
+    masterKey = getMasterKey();
+  } catch (err) {
+    return Promise.reject(err);
+  }
+
+  if (!masterKey) {
+    return Promise.reject(new Error('Storage is locked'));
+  }
+
   const isCritical = key.includes('auth') || key.includes('chat') || key.includes('registry') || key.includes('account');
-  const masterKey = getMasterKey();
 
   if (isCritical) {
     const existing = kvWriteQueue.get(key);
+    const pendingWaiters = existing ? existing.waiters : [];
     if (existing && existing.timer) {
       clearTimeout(existing.timer);
     }
     kvWriteQueue.delete(key);
 
-    if (nativeModule && nativeModule.rustStorageKvSet && masterKey) {
+    if (nativeModule && nativeModule.rustStorageKvSet) {
       try {
         nativeModule.rustStorageKvSet(getAppDbPath(), key, value, masterKey.toString('hex'), getVaultDir());
+        for (const w of pendingWaiters) w.resolve();
         return Promise.resolve();
-      } catch {}
+      } catch (rustErr) {
+        console.error(`[Storage] rustStorageKvSet failed for critical key "${key}", falling back to Node sqlite3:`, rustErr);
+      }
     }
 
     writeVaultShadow(key, value);
@@ -1766,10 +1848,16 @@ function setKvValue(key: string, value: string): Promise<void> {
       try {
         const encrypted = encryptData(Buffer.from(value, 'utf8')).toString('base64');
         getDb().run(`INSERT OR REPLACE INTO ${KV_TABLE} (key, value) VALUES (?, ?)`, [key, encrypted], (err) => {
-          if (err) reject(err);
-          else resolve();
+          if (err) {
+            for (const w of pendingWaiters) w.reject(err);
+            reject(err);
+          } else {
+            for (const w of pendingWaiters) w.resolve();
+            resolve();
+          }
         });
       } catch (e) {
+        for (const w of pendingWaiters) w.reject(e);
         reject(e);
       }
     });
@@ -1777,30 +1865,50 @@ function setKvValue(key: string, value: string): Promise<void> {
 
   return new Promise((resolve, reject) => {
     const existing = kvWriteQueue.get(key);
+    const waiters: KvWaiter[] = existing ? existing.waiters : [];
+    waiters.push({ resolve, reject });
     if (existing && existing.timer) {
       clearTimeout(existing.timer);
     }
 
-    const timer = setTimeout(() => {
-      kvWriteQueue.delete(key);
+    const entry = { value, timer: undefined as NodeJS.Timeout | undefined, waiters };
+    entry.timer = setTimeout(() => {
+      if (kvWriteQueue.get(key) === entry) {
+        kvWriteQueue.delete(key);
+      }
+      const finishResolve = () => {
+        for (const w of entry.waiters) w.resolve();
+      };
+      const finishReject = (err: unknown) => {
+        for (const w of entry.waiters) w.reject(err);
+      };
+
       try {
         const currentKey = getMasterKey();
-        if (nativeModule && nativeModule.rustStorageKvSet && currentKey) {
-          nativeModule.rustStorageKvSet(getAppDbPath(), key, value, currentKey.toString('hex'), getVaultDir());
+        if (!currentKey) {
+          finishReject(new Error('Storage is locked'));
           return;
         }
-        const encrypted = encryptData(Buffer.from(value, 'utf8')).toString('base64');
+        if (nativeModule && nativeModule.rustStorageKvSet) {
+          try {
+            nativeModule.rustStorageKvSet(getAppDbPath(), key, entry.value, currentKey.toString('hex'), getVaultDir());
+            finishResolve();
+            return;
+          } catch (rustErr) {
+            console.error(`[Storage] rustStorageKvSet failed for "${key}", falling back to Node sqlite3:`, rustErr);
+          }
+        }
+        const encrypted = encryptData(Buffer.from(entry.value, 'utf8')).toString('base64');
         getDb().run(`INSERT OR REPLACE INTO ${KV_TABLE} (key, value) VALUES (?, ?)`, [key, encrypted], (err) => {
-          if (err) reject(err);
-          else resolve();
+          if (err) finishReject(err);
+          else finishResolve();
         });
       } catch (e) {
-        reject(e);
+        finishReject(e);
       }
     }, 150);
 
-    kvWriteQueue.set(key, { value, timer });
-    resolve();
+    kvWriteQueue.set(key, entry);
   });
 }
 
@@ -1828,8 +1936,16 @@ function deleteKvValue(key: string): Promise<void> {
 }
 
 function getMessages(chatId: string, limit?: number, offset?: number): Promise<any[]> {
-  const masterKey = getMasterKey();
-  if (nativeModule && nativeModule.rustStorageGetMessages && masterKey) {
+  let masterKey: Buffer | null = null;
+  try {
+    masterKey = getMasterKey();
+  } catch (err) {
+    return Promise.reject(err);
+  }
+  if (!masterKey) {
+    return Promise.resolve([]);
+  }
+  if (nativeModule && nativeModule.rustStorageGetMessages) {
     try {
       const jsonList: string[] = nativeModule.rustStorageGetMessages(
         getAppDbPath(),
@@ -1893,8 +2009,16 @@ function getMessages(chatId: string, limit?: number, offset?: number): Promise<a
 }
 
 function addMessage(chatId: string, messageId: string, messageData: any): Promise<void> {
-  const masterKey = getMasterKey();
-  if (nativeModule && nativeModule.rustStorageAddMessage && masterKey) {
+  let masterKey: Buffer | null = null;
+  try {
+    masterKey = getMasterKey();
+  } catch (err) {
+    return Promise.reject(err);
+  }
+  if (!masterKey) {
+    return Promise.reject(new Error('Storage is locked'));
+  }
+  if (nativeModule && nativeModule.rustStorageAddMessage) {
     try {
       const json = JSON.stringify(messageData);
       const createdAt = messageData?.time || Date.now();
@@ -1927,8 +2051,16 @@ function addMessage(chatId: string, messageId: string, messageData: any): Promis
 
 function addMessagesBatch(chatId: string, messages: Array<{ id: string; messageData: any }>): Promise<void> {
   if (!messages || messages.length === 0) return Promise.resolve();
-  const masterKey = getMasterKey();
-  if (nativeModule && nativeModule.rustStorageAddMessagesBatch && masterKey) {
+  let masterKey: Buffer | null = null;
+  try {
+    masterKey = getMasterKey();
+  } catch (err) {
+    return Promise.reject(err);
+  }
+  if (!masterKey) {
+    return Promise.reject(new Error('Storage is locked'));
+  }
+  if (nativeModule && nativeModule.rustStorageAddMessagesBatch) {
     try {
       const json = JSON.stringify(messages);
       nativeModule.rustStorageAddMessagesBatch(
@@ -1964,8 +2096,16 @@ function addMessagesBatch(chatId: string, messages: Array<{ id: string; messageD
 }
 
 function getAllRecentMessages(scopePrefix?: string, limitPerChat: number = 30): Promise<Record<string, any[]>> {
-  const masterKey = getMasterKey();
-  if (nativeModule && nativeModule.rustStorageGetAllRecentMessages && masterKey) {
+  let masterKey: Buffer | null = null;
+  try {
+    masterKey = getMasterKey();
+  } catch (err) {
+    return Promise.reject(err);
+  }
+  if (!masterKey) {
+    return Promise.resolve({});
+  }
+  if (nativeModule && nativeModule.rustStorageGetAllRecentMessages) {
     try {
       const jsonStr: string = nativeModule.rustStorageGetAllRecentMessages(
         getAppDbPath(),
@@ -2136,15 +2276,21 @@ function registerStorageIpcHandlers() {
   ipcMain.handle('storage:set-pin', async (_event, pin: string) => setupPin(pin));
   ipcMain.handle('storage:remove-pin', async () => removePin());
   ipcMain.handle('storage:get', async (_event, key: string) => {
-    let val = await getKvValue(key);
-    val = autoSanitizeKvPayload(key, val);
-    appendDebugLog(`[Storage IPC] GET "${key}" -> ${val ? `len ${val.length}` : 'null'}`);
-    return val;
+    try {
+      let val = await getKvValue(key);
+      val = autoSanitizeKvPayload(key, val);
+      appendDebugLog(`[Storage IPC] GET "${key}" -> ${val ? `len ${val.length}` : 'null'}`);
+      return val;
+    } catch (err: any) {
+      appendDebugLog(`[Storage IPC] GET "${key}" ERROR: ${err?.message || String(err)}`);
+      throw err;
+    }
   });
   ipcMain.handle('storage:set', async (_event, key: string, value: string) => {
     const safeValue = autoSanitizeKvPayload(key, value) || value;
     appendDebugLog(`[Storage IPC] SET "${key}" -> len ${safeValue ? safeValue.length : 0} preview: ${safeValue ? safeValue.slice(0, 120) : ''}`);
     await setKvValue(key, safeValue);
+    return { ok: true };
   });
   ipcMain.handle('storage:remove', async (_event, key: string) => {
     appendDebugLog(`[Storage IPC] REMOVE "${key}"`);
@@ -2175,7 +2321,7 @@ function registerStorageIpcHandlers() {
   ipcMain.handle('storage:search-messages', async (_event, query: string, limit?: number) => {
     if (nativeModule && typeof nativeModule.rustSearchMessages === 'function') {
       try {
-        const res = nativeModule.rustSearchMessages(STORAGE_DB_PATH, query, limit);
+        const res = nativeModule.rustSearchMessages(getAppDbPath(), query, limit);
         return JSON.parse(res);
       } catch (e) {
         return [];
@@ -2186,7 +2332,7 @@ function registerStorageIpcHandlers() {
   ipcMain.handle('storage:search-messages-in-chat', async (_event, chatId: string, query: string, limit?: number) => {
     if (nativeModule && typeof nativeModule.rustSearchMessagesInChat === 'function') {
       try {
-        const res = nativeModule.rustSearchMessagesInChat(STORAGE_DB_PATH, chatId, query, limit);
+        const res = nativeModule.rustSearchMessagesInChat(getAppDbPath(), chatId, query, limit);
         return JSON.parse(res);
       } catch (e) {
         return [];
@@ -2195,10 +2341,10 @@ function registerStorageIpcHandlers() {
     return [];
   });
   ipcMain.handle('storage:sync-fts', async () => {
-    const masterKey = getMasterKey();
-    if (!masterKey || !nativeModule || typeof nativeModule.rustSearchSyncFts !== 'function') return 0;
     try {
-      return nativeModule.rustSearchSyncFts(STORAGE_DB_PATH, masterKey.toString('hex'));
+      const masterKey = getMasterKey();
+      if (!masterKey || !nativeModule || typeof nativeModule.rustSearchSyncFts !== 'function') return 0;
+      return nativeModule.rustSearchSyncFts(getAppDbPath(), masterKey.toString('hex'));
     } catch (e) {
       return 0;
     }
@@ -5341,7 +5487,11 @@ app.whenReady().then(async () => {
     });
   }
 
-  getMasterKey();
+  try {
+    getMasterKey();
+  } catch (err) {
+    console.error('[LocalKey] Master key initialization failed:', err);
+  }
   registerOrbitaMediaProtocol();
   registerMediaIpcHandlers();
   registerDownloadsIpcHandlers();

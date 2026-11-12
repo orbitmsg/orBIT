@@ -227,28 +227,28 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
       style={{ backgroundColor: 'transparent' }}
     >
       <div
-        className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden rounded-[18px]"
+        className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden"
         style={{ backgroundColor: 'var(--bg-primary, #313338)' }}
       >
-        <div className="h-14 px-5 flex items-center justify-between shrink-0">
+        <div className="h-12 px-5 flex items-center justify-between shrink-0 border-b border-[var(--border-color,#1f2023)] shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
         <div className="flex items-center min-w-0 gap-2">
           <div className="flex items-center text-[var(--text-dim)] shrink-0">
             <Users size={20} />
           </div>
-          <span className="font-bold text-[var(--text-heading,var(--text-main))] text-[15px] mr-2 whitespace-nowrap">
+          <span className="font-bold text-[var(--text-heading,#ffffff)] text-[16px] whitespace-nowrap">
             {t('discord.friends', 'Друзья')}
           </span>
+          <div className="w-[1px] h-4 bg-[#3f4147] mx-2 shrink-0" />
 
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
             <button
               type="button"
               onClick={() => setActiveTab('online')}
-              className={`px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors cursor-pointer outline-none whitespace-nowrap ${
+              className={`px-2 py-1 rounded-[4px] text-[14px] font-medium transition-colors cursor-pointer outline-none whitespace-nowrap border-none ${
                 activeTab === 'online'
-                  ? 'text-[var(--text-heading,var(--text-main))] border border-[var(--border-color)]'
-                  : 'text-[var(--text-dim)] border border-transparent hover:bg-[var(--surface-hover,var(--surface-container-soft))] hover:text-[var(--text-main)] bg-transparent'
+                  ? 'text-white bg-[#3f4147]'
+                  : 'text-[var(--text-dim,#949ba4)] hover:bg-[#35373c] hover:text-[var(--text-main,#dbdee1)] bg-transparent'
               }`}
-              style={activeTab === 'online' ? { backgroundColor: 'var(--surface-active, color-mix(in srgb, var(--accent-color, #5865F2) 18%, var(--surface-container-strong)))' } : undefined}
             >
               {t('discord.online', 'В сети')}
             </button>
@@ -256,12 +256,11 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('all')}
-              className={`px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors cursor-pointer outline-none whitespace-nowrap ${
+              className={`px-2 py-1 rounded-[4px] text-[14px] font-medium transition-colors cursor-pointer outline-none whitespace-nowrap border-none ${
                 activeTab === 'all'
-                  ? 'text-[var(--text-heading,var(--text-main))] border border-[var(--border-color)]'
-                  : 'text-[var(--text-dim)] border border-transparent hover:bg-[var(--surface-hover,var(--surface-container-soft))] hover:text-[var(--text-main)] bg-transparent'
+                  ? 'text-white bg-[#3f4147]'
+                  : 'text-[var(--text-dim,#949ba4)] hover:bg-[#35373c] hover:text-[var(--text-main,#dbdee1)] bg-transparent'
               }`}
-              style={activeTab === 'all' ? { backgroundColor: 'var(--surface-active, color-mix(in srgb, var(--accent-color, #5865F2) 18%, var(--surface-container-strong)))' } : undefined}
             >
               {t('discord.all', 'Все')}
             </button>
@@ -269,20 +268,19 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('pending')}
-              className={`px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors cursor-pointer outline-none whitespace-nowrap flex items-center gap-1.5 ${
+              className={`px-2 py-1 rounded-[4px] text-[14px] font-medium transition-colors cursor-pointer outline-none whitespace-nowrap flex items-center gap-1.5 border-none ${
                 activeTab === 'pending'
-                  ? 'text-[var(--text-heading,var(--text-main))] border border-[var(--border-color)]'
-                  : 'text-[var(--text-dim)] border border-transparent hover:bg-[var(--surface-hover,var(--surface-container-soft))] hover:text-[var(--text-main)] bg-transparent'
+                  ? 'text-white bg-[#3f4147]'
+                  : 'text-[var(--text-dim,#949ba4)] hover:bg-[#35373c] hover:text-[var(--text-main,#dbdee1)] bg-transparent'
               }`}
-              style={activeTab === 'pending' ? { backgroundColor: 'var(--surface-active, color-mix(in srgb, var(--accent-color, #5865F2) 18%, var(--surface-container-strong)))' } : undefined}
             >
               <span>{t('discord.pending', 'В ожидании')}</span>
               {incomingFriendRequests.length > 0 && (
                 <span
                   className="px-1.5 py-0.5 rounded-full text-[11px] font-bold leading-none"
                   style={{
-                    backgroundColor: 'var(--accent-color, #5865F2)',
-                    color: 'var(--accent-on-color, #ffffff)',
+                    backgroundColor: '#e11d48',
+                    color: '#ffffff',
                   }}
                 >
                   {incomingFriendRequests.length}
@@ -293,12 +291,11 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('blocked')}
-              className={`px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors cursor-pointer outline-none whitespace-nowrap ${
+              className={`px-2 py-1 rounded-[4px] text-[14px] font-medium transition-colors cursor-pointer outline-none whitespace-nowrap border-none ${
                 activeTab === 'blocked'
-                  ? 'text-[var(--text-heading,var(--text-main))] border border-[var(--border-color)]'
-                  : 'text-[var(--text-dim)] border border-transparent hover:bg-[var(--surface-hover,var(--surface-container-soft))] hover:text-[var(--text-main)] bg-transparent'
+                  ? 'text-white bg-[#3f4147]'
+                  : 'text-[var(--text-dim,#949ba4)] hover:bg-[#35373c] hover:text-[var(--text-main,#dbdee1)] bg-transparent'
               }`}
-              style={activeTab === 'blocked' ? { backgroundColor: 'var(--surface-active, color-mix(in srgb, var(--accent-color, #5865F2) 18%, var(--surface-container-strong)))' } : undefined}
             >
               {t('discord.blocked', 'Заблокированные')}
             </button>
@@ -306,12 +303,9 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('add')}
-              className="text-[13px] font-medium px-3.5 py-1.5 rounded-xl transition-opacity cursor-pointer border-none outline-none ml-1 whitespace-nowrap hover:opacity-90"
+              className="text-[14px] font-medium px-2.5 py-1 rounded-[4px] transition-colors cursor-pointer border-none outline-none ml-1 whitespace-nowrap text-white hover:bg-[#1a6334]"
               style={{
-                background: activeTab === 'add'
-                  ? 'var(--accent-dark, var(--accent-color, #4752c4))'
-                  : 'var(--accent-gradient, var(--accent-color, #5865F2))',
-                color: activeTab === 'add' ? '#ffffff' : 'var(--accent-on-color, #ffffff)',
+                backgroundColor: '#248046',
               }}
             >
               {t('discord.addFriend', 'Добавить в друзья')}
@@ -670,7 +664,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
       </div>
 
       <div
-        className="w-[340px] p-4 flex flex-col shrink-0 select-none hidden lg:flex rounded-[18px] overflow-hidden"
+        className="w-[340px] p-4 flex flex-col shrink-0 select-none hidden lg:flex border-l border-[var(--border-color,#1f2023)] overflow-hidden"
         style={{ backgroundColor: 'var(--bg-primary, #313338)' }}
       >
         <h2 className="text-[18px] font-bold text-[var(--text-heading,var(--text-main))] mb-4 px-1">

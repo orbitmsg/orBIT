@@ -107,36 +107,36 @@ export const ChatListItem = React.memo(({
       onMouseLeave={() => setIsHovered(false)}
       className="group relative cursor-pointer"
       style={{
-        borderRadius: '14px',
-        margin: '2px 8px',
+        borderRadius: '4px',
+        margin: '1px 8px',
         width: 'calc(100% - 16px)',
         backgroundColor: rowBg,
         border: 'none',
         outline: 'none',
-        padding: '8px 10px',
-        minHeight: 52,
+        padding: '6px 8px',
+        minHeight: 44,
         boxSizing: 'border-box',
         contentVisibility: 'auto',
-        containIntrinsicSize: '64px',
+        containIntrinsicSize: '44px',
         willChange: 'transform',
         transition: 'background-color 0.12s ease',
       }}
     >
       <div className="flex justify-between items-center min-w-0">
-        <div style={{ width: 40, height: 40, marginRight: 10, flexShrink: 0, position: 'relative' }}>
+        <div style={{ width: 32, height: 32, marginRight: 10, flexShrink: 0, position: 'relative' }}>
           {chat.id === 'notes' ? (
-            <NotesAvatar className="w-10 h-10" />
+            <NotesAvatar className="w-8 h-8" />
           ) : (chat.avatarUrl || chat.id === 'system_support') ? (
-            <Avatar src={chat.avatarUrl || SUPPORT_AVATAR_URL} alt={chat.name} className="w-10 h-10" style={{ borderRadius: '50%' }} />
+            <Avatar src={chat.avatarUrl || SUPPORT_AVATAR_URL} alt={chat.name} className="w-8 h-8 rounded-full" />
           ) : chat.type === 'bot' ? (
-            <BotAvatar className="w-10 h-10" />
+            <BotAvatar className="w-8 h-8" />
           ) : (
-            <Avatar src={chat.avatarUrl} alt={chat.name} className="w-10 h-10" style={{ borderRadius: '50%' }} />
+            <Avatar src={chat.avatarUrl} alt={chat.name} className="w-8 h-8 rounded-full" />
           )}
           {chat.type === 'private' && chat.id !== 'notes' && (
             <OnlineIndicator
               online={chat.online}
-              size="sm"
+              size="xs"
               ringColor={ringColor}
               className="z-[2]"
               ariaLabel={t('common.online', 'В сети')}
@@ -193,9 +193,9 @@ export const ChatListItem = React.memo(({
                 />
               )}
               <span
-                className="text-[14px] font-bold truncate whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
+                className="text-[14px] font-medium truncate whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
                 style={{
-                  color: isActive ? 'var(--text-heading, var(--text-main))' : 'var(--text-main)',
+                  color: isActive ? '#ffffff' : (isHovered ? 'var(--text-main, #dbdee1)' : 'var(--text-dim, #949ba4)'),
                   fontFamily: 'inherit'
                 }}
               >

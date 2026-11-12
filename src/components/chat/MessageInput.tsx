@@ -801,7 +801,6 @@ export const MessageInput = memo<MessageInputProps>(({
   };
 
   const isHasContent = canSend || !isEditorEmpty;
-  const attachColor = hoverAttach ? 'var(--text-main)' : 'var(--text-dim)';
   const emojiColor = (hoverEmoji || isEmojiOpen) ? 'var(--text-main)' : 'var(--text-dim)';
   const micColor = (isRecording || (isHasContent && !isRecording)) ? (hoverMic ? 'var(--text-main)' : 'var(--accent-color)') : (hoverMic ? 'var(--text-main)' : 'var(--text-dim)');
 
@@ -816,7 +815,7 @@ export const MessageInput = memo<MessageInputProps>(({
         flexShrink: 0,
         zIndex: 10,
         backgroundColor: 'transparent',
-        padding: '6px 14px 10px 14px',
+        padding: '0 16px 20px 16px',
         borderTop: 'none',
         display: 'flex',
         flexDirection: 'column',
@@ -878,7 +877,20 @@ export const MessageInput = memo<MessageInputProps>(({
           }}
         />
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', minHeight: '34px', position: 'relative' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            width: '100%',
+            minHeight: '44px',
+            position: 'relative',
+            backgroundColor: 'var(--surface-container-strong, #383a40)',
+            borderRadius: '8px',
+            padding: '2px 10px',
+            boxSizing: 'border-box',
+          }}
+        >
           {currentText.length > 256 && onOpenTxtModal && (
             <button
               type="button"
@@ -922,21 +934,22 @@ export const MessageInput = memo<MessageInputProps>(({
             onMouseEnter={() => isRatchetReady && setHoverAttach(true)}
             onMouseLeave={() => setHoverAttach(false)}
             style={{
-              background: 'transparent',
-              backgroundColor: 'transparent',
+              background: hoverAttach ? '#5d6069' : '#4e5058',
+              backgroundColor: hoverAttach ? '#5d6069' : '#4e5058',
+              borderRadius: '50%',
               border: 'none',
               outline: 'none',
               boxShadow: 'none',
-              color: attachColor,
+              color: '#dbdee1',
               cursor: isRatchetReady ? 'pointer' : 'not-allowed',
               opacity: isRatchetReady ? 1 : 0.35,
-              width: '32px',
-              height: '32px',
+              width: '28px',
+              height: '28px',
               padding: '4px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'color 0.2s, opacity 0.2s',
+              transition: 'background-color 0.15s, opacity 0.15s',
               userSelect: 'none',
               WebkitUserSelect: 'none',
               flexShrink: 0,
@@ -948,10 +961,10 @@ export const MessageInput = memo<MessageInputProps>(({
           <div
             style={{
               flex: 1,
-              backgroundColor: 'var(--surface-container, #33363f)',
-              borderRadius: '20px',
-              padding: '0 14px',
-              minHeight: '34px',
+              backgroundColor: 'transparent',
+              borderRadius: 0,
+              padding: '0 4px',
+              minHeight: '36px',
               maxHeight: '120px',
               display: 'flex',
               alignItems: 'center',

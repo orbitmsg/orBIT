@@ -17,8 +17,8 @@ const MAX_WIDTH_PERCENT = 0.75;
 
 export const ResizableSidebar: React.FC<ResizableSidebarProps> = ({
   children,
-  defaultWidth = 300,
-  minWidth = 300,
+  defaultWidth = 240,
+  minWidth = 240,
   maxWidth: propMaxWidth,
   className = '',
   onWidthChange,
@@ -31,7 +31,7 @@ export const ResizableSidebar: React.FC<ResizableSidebarProps> = ({
     if (propMaxWidth !== undefined) return propMaxWidth;
     const byChatReserve = window.innerWidth - MIN_CHAT_WIDTH;
     const byPercent = window.innerWidth * MAX_WIDTH_PERCENT;
-    return Math.max(300, Math.min(byChatReserve, byPercent));
+    return Math.max(240, Math.min(byChatReserve, byPercent));
   }, [propMaxWidth]);
 
   const [maxWidth, setMaxWidth] = useState<number>(computeMaxWidth);
@@ -73,7 +73,7 @@ export const ResizableSidebar: React.FC<ResizableSidebarProps> = ({
       if (savedWidth) {
         const parsed = parseInt(savedWidth, 10);
         if (!isNaN(parsed)) {
-          const clamped = Math.max(300, Math.min(maxWidth, parsed));
+          const clamped = Math.max(240, Math.min(maxWidth, parsed));
           setWidth(clamped);
         } if (false) {
           setWidth(parsed);

@@ -53,7 +53,7 @@ export const CallMiniPlayer = () => {
     >
       <style>{`
         .global-call-mini-player {
-          --call-mini-accent: var(--accent-light, #a995ec);
+          --call-mini-accent: var(--accent-color, #a995ec);
           --call-mini-btn-hover: rgba(255, 255, 255, 0.08);
           background-color: var(--chat-list-bg, #2b2d31);
         }

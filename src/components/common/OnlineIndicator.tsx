@@ -18,19 +18,17 @@ const SIZE_MAP: Record<OnlineIndicatorSize, string> = {
 
 export const OnlineIndicator = ({
   online = false,
-  showOffline = false,
   size = 'sm',
   ringColor,
   className = '',
   ariaLabel,
 }: OnlineIndicatorProps) => {
-  if (!online && !showOffline) {
+  if (!online) {
     return null;
   }
 
   const dimension = SIZE_MAP[size];
   const cutoutColor = ringColor || 'var(--bg-primary, #313338)';
-  const offlineFillColor = ringColor || 'var(--bg-secondary, #2b2d31)';
 
   return (
     <span
@@ -42,8 +40,8 @@ export const OnlineIndicator = ({
         width: dimension,
         height: dimension,
         boxSizing: 'border-box',
-        backgroundColor: online ? '#23a55a' : offlineFillColor,
-        border: online ? '2px solid #23a55a' : '2px solid #80848e',
+        backgroundColor: 'var(--accent-color, #5865F2)',
+        border: '2px solid var(--accent-color, #5865F2)',
         boxShadow: `0 0 0 2.5px ${cutoutColor}`,
         transition: 'box-shadow 180ms ease, background-color 180ms ease, border-color 180ms ease',
       }}

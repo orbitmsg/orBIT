@@ -237,7 +237,7 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
       const rect = container.getBoundingClientRect();
       if (rect.width > 0) {
         canvas.width = rect.width;
-        canvas.height = 24;
+        canvas.height = 42;
       }
     };
 
@@ -248,8 +248,8 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
     const timeData = new Uint8Array(64);
     const freqData = new Uint8Array(32);
 
-    const cornerInset = 18;
-    const fadeWidth = 22;
+    const cornerRadius = 18;
+    const fadeWidth = 10;
 
     const drawWaveLayer = (
       ctx: CanvasRenderingContext2D,
@@ -265,26 +265,25 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
     ) => {
       ctx.beginPath();
       ctx.moveTo(0, height);
-      const step = 3;
+      const step = 2;
       for (let x = 0; x <= width; x += step) {
-        let edgeFactor = 0;
-        if (width > cornerInset * 2 && x > cornerInset && x < width - cornerInset) {
-          const distFromEdge = Math.min(x - cornerInset, width - cornerInset - x);
-          const normEdge = Math.min(1, Math.max(0, distFromEdge / fadeWidth));
-          edgeFactor = normEdge * normEdge * (3 - 2 * normEdge);
-        }
+        const distFromEdge = Math.min(x, width - x);
+        const normEdge = Math.min(1, Math.max(0, distFromEdge / fadeWidth));
+        const edgeFactor = normEdge * normEdge * (3 - 2 * normEdge);
+        const dx = x < cornerRadius ? cornerRadius - x : x > width - cornerRadius ? x - (width - cornerRadius) : 0;
+        const cornerDrop = dx > 0 ? cornerRadius - Math.sqrt(Math.max(0, cornerRadius * cornerRadius - dx * dx)) : 0;
         const s1 = Math.sin(x * f1 + wavePhase);
         const s2 = Math.sin(x * f2 - wavePhase * 0.75 + 1.3);
         const norm = (s1 * 0.68 + s2 * 0.32 + 1) * 0.5;
         const elevation = Math.min(22, norm * amplitude) * edgeFactor;
-        const y = baseline - elevation;
+        const y = baseline + cornerDrop - elevation;
         ctx.lineTo(x, y);
       }
       ctx.lineTo(width, height);
       ctx.closePath();
 
       const [r, g, b] = colorRgb;
-      const grad = ctx.createLinearGradient(0, Math.max(0, baseline - 22), 0, height);
+      const grad = ctx.createLinearGradient(0, Math.max(0, baseline - 22), 0, baseline);
       grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.25})`);
       grad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.70})`);
       grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, ${alpha})`);
@@ -396,12 +395,12 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
           ref={canvasRef}
           style={{
             position: 'absolute',
-            bottom: '100%',
+            bottom: 'calc(100% - 18px)',
             left: 0,
             width: '100%',
-            height: '24px',
+            height: '42px',
             pointerEvents: 'none',
-            zIndex: 15,
+            zIndex: 1,
           }}
         />
       )}
@@ -412,6 +411,8 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
           background: gradientBackground,
           borderRadius: '18px',
           overflow: 'hidden',
+          position: 'relative',
+          zIndex: 2,
           transition: 'background 0.3s ease',
         }}
       >

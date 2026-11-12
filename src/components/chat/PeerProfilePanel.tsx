@@ -5,12 +5,14 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useChatStore, type Chat } from '../../store/useChatStore';
 import { useToastStore } from '../../store/useToastStore';
 import { supabaseService } from '../../services/supabaseService';
+import { SUPPORT_AVATAR_URL } from '../../services/supportService';
 import { formatLastSeen } from '../../utils/messageUtils';
 import { formatBirthday } from '../../utils/birthday';
 import { Avatar } from '../common/Avatar';
 import { OnlineIndicator } from '../common/OnlineIndicator';
 import { VerifiedBadge } from '../common/VerifiedBadge';
 import { DeveloperBadge } from '../ui/DeveloperBadge';
+import { TelegramMediaViewer, type MediaViewerItem } from './TelegramMediaViewer';
 import { resolveProfileId } from './profile/resolveProfileId';
 
 export interface PeerProfilePanelProps {
@@ -22,11 +24,17 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
   const { t, i18n } = useTranslation();
   const [copiedField, setCopiedField] = useState<'username' | 'id' | null>(null);
   const [fetchedState, setFetchedState] = useState<{ chatId: string; data: Partial<Chat> } | null>(null);
+  const [avatarViewerState, setAvatarViewerState] = useState<{
+    isOpen: boolean;
+    items: MediaViewerItem[];
+    initialIndex: number;
+  }>({ isOpen: false, items: [], initialIndex: 0 });
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const completedFetchKeysRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     setCopiedField(null);
+    setAvatarViewerState({ isOpen: false, items: [], initialIndex: 0 });
     if (copyTimerRef.current) {
       clearTimeout(copyTimerRef.current);
       copyTimerRef.current = null;
@@ -173,7 +181,14 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
         await navigator.clipboard.writeText(value);
       } catch {}
       setCopiedField(field);
-      useToastStore.getState().showToast(t('common.copied', 'Скопировано'), 'image');
+      const toastText =
+        field === 'id'
+          ? t('profile.id_copied_share', 'ID скопирован в буфер обмена. Поделитесь им!')
+          : t('profile.username_copied_share', {
+              username: value,
+              defaultValue: `${value} скопирован в буфер обмена. Поделитесь им!`,
+            });
+      useToastStore.getState().showToast(toastText, 'image');
       if (copyTimerRef.current) {
         clearTimeout(copyTimerRef.current);
       }
@@ -184,6 +199,62 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
     },
     [t]
   );
+
+  const handleOpenAvatar = useCallback(() => {
+    if (!effectiveChat) return;
+    const avatarUrl =
+      effectiveChat.id === 'system_support'
+        ? effectiveChat.avatarUrl || SUPPORT_AVATAR_URL
+        : effectiveChat.avatarUrl;
+    if (!avatarUrl) return;
+
+    const myUserId = useAuthStore.getState().userId;
+    const myNickname = useAuthStore.getState().nickname;
+    const avatarSenderId =
+      effectiveChat.peerCode ||
+      effectiveChat.originalPeerCode ||
+      (effectiveChat.id && effectiveChat.id.length === 36 ? effectiveChat.id : undefined);
+    const usersById = useChatStore.getState().usersById || {};
+    const actualSender =
+      (avatarSenderId
+        ? avatarSenderId === myUserId
+          ? myNickname
+          : usersById[avatarSenderId]?.nickname
+        : undefined) || effectiveChat.name;
+
+    const avatarItems: MediaViewerItem[] = [
+      {
+        id: 'avatar',
+        url: avatarUrl,
+        directUrl: avatarUrl,
+        type: 'photo',
+        name: `${effectiveChat.name || 'Avatar'}.jpg`,
+        sender: actualSender,
+        senderId: avatarSenderId,
+        time: Date.now(),
+      },
+    ];
+
+    const orbita = (window as any).orbita;
+    if (orbita?.openMediaWindow) {
+      orbita.openMediaWindow({
+        items: avatarItems,
+        initialIndex: 0,
+        sharedSecret: effectiveChat.sharedSecret,
+        chatId: effectiveChat.id,
+        usersById,
+        myUserId,
+        myNickname,
+      });
+      return;
+    }
+
+    setAvatarViewerState({
+      isOpen: true,
+      items: avatarItems,
+      initialIndex: 0,
+    });
+  }, [effectiveChat]);
 
   const resolvedId = useMemo(() => {
     if (!effectiveChat) return '';
@@ -203,6 +274,11 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
 
   const cleanUsername = effectiveChat.username ? effectiveChat.username.replace(/^@+/, '').trim() : '';
   const bioText = effectiveChat.description ? effectiveChat.description.trim() : '';
+  const displayAvatarUrl =
+    effectiveChat.id === 'system_support'
+      ? effectiveChat.avatarUrl || SUPPORT_AVATAR_URL
+      : effectiveChat.avatarUrl;
+  const hasAvatar = Boolean(displayAvatarUrl);
   const statusText = effectiveChat.online
     ? t('userStatus.online', 'в сети')
     : formatLastSeen(effectiveChat.lastSeen, t);
@@ -213,108 +289,105 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
     effectiveChat.id;
 
   return (
-    <aside
-      aria-label={t('common.profile', 'Профиль')}
-      style={{
-        width: '340px',
-        flexShrink: 0,
-        height: '100%',
-        minHeight: 0,
-        borderRadius: '18px',
-        backgroundColor: 'var(--chat-list-bg, #2b2d31)',
-        border: 'none',
-        outline: 'none',
-        boxShadow: 'none',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-        userSelect: 'none',
-        WebkitUserSelect: 'none',
-        boxSizing: 'border-box',
-      }}
-    >
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden chat-list-scrollbar">
-        <div
-          style={{
-            padding: '18px 18px 0 18px',
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
+    <>
+      <aside
+        aria-label={t('common.profile', 'Профиль')}
+        style={{
+          width: '340px',
+          flexShrink: 0,
+          height: '100%',
+          minHeight: 0,
+          borderRadius: '18px',
+          backgroundColor: 'var(--chat-list-bg, #2b2d31)',
+          border: 'none',
+          outline: 'none',
+          boxShadow: 'none',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          boxSizing: 'border-box',
+        }}
+      >
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden chat-list-scrollbar">
           <div
             style={{
-              position: 'relative',
-              width: '80px',
-              height: '80px',
-              borderRadius: '50%',
-              flexShrink: 0,
-              backgroundColor: 'var(--chat-list-bg, #2b2d31)',
+              padding: '18px 18px 0 18px',
+              display: 'flex',
+              alignItems: 'center',
             }}
           >
-            {onOpenFullProfile ? (
-              <button
-                type="button"
-                onClick={onOpenFullProfile}
-                aria-label={t('common.profile', 'Профиль')}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  padding: 0,
-                  border: 'none',
-                  outline: 'none',
-                  backgroundColor: 'transparent',
-                  cursor: 'pointer',
-                  display: 'block',
-                  transition: 'filter 0.15s ease, transform 0.15s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.filter = 'brightness(1.06)';
-                  e.currentTarget.style.transform = 'scale(1.02)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.filter = 'none';
-                  e.currentTarget.style.transform = 'scale(1)';
-                }}
-              >
-                <Avatar
-                  src={effectiveChat.avatarUrl}
-                  alt={effectiveChat.name}
-                  className="w-20 h-20 rounded-full"
-                  style={{ width: '80px', height: '80px', fontSize: '32px' }}
-                />
-              </button>
-            ) : (
-              <div
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                }}
-              >
-                <Avatar
-                  src={effectiveChat.avatarUrl}
-                  alt={effectiveChat.name}
-                  className="w-20 h-20 rounded-full"
-                  style={{ width: '80px', height: '80px', fontSize: '32px' }}
-                />
-              </div>
-            )}
-            <OnlineIndicator
-              online={Boolean(effectiveChat.online)}
-              showOffline={true}
-              size="lg"
-              ringColor="var(--chat-list-bg, #2b2d31)"
-              ariaLabel={
-                effectiveChat.online
-                  ? t('userStatus.online', 'в сети')
-                  : t('userStatus.offline', 'был(а) недавно')
-              }
-            />
+            <div
+              style={{
+                position: 'relative',
+                width: '80px',
+                height: '80px',
+                borderRadius: '50%',
+                flexShrink: 0,
+                backgroundColor: 'var(--chat-list-bg, #2b2d31)',
+              }}
+            >
+              {hasAvatar ? (
+                <button
+                  type="button"
+                  onClick={handleOpenAvatar}
+                  aria-label={effectiveChat.name}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                    padding: 0,
+                    border: 'none',
+                    outline: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer',
+                    display: 'block',
+                    transition: 'filter 0.15s ease, transform 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.filter = 'brightness(1.06)';
+                    e.currentTarget.style.transform = 'scale(1.02)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.filter = 'none';
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
+                  <Avatar
+                    src={displayAvatarUrl}
+                    alt={effectiveChat.name}
+                    className="w-20 h-20 rounded-full"
+                    style={{ width: '80px', height: '80px', fontSize: '32px' }}
+                  />
+                </button>
+              ) : (
+                <div
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <Avatar
+                    src={displayAvatarUrl}
+                    alt={effectiveChat.name}
+                    className="w-20 h-20 rounded-full"
+                    style={{ width: '80px', height: '80px', fontSize: '32px' }}
+                  />
+                </div>
+              )}
+              <OnlineIndicator
+                online={Boolean(effectiveChat.online)}
+                showOffline={false}
+                size="lg"
+                ringColor="var(--chat-list-bg, #2b2d31)"
+                ariaLabel={effectiveChat.online ? t('userStatus.online', 'в сети') : undefined}
+              />
+            </div>
           </div>
-        </div>
 
         <div
           style={{
@@ -380,17 +453,17 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                   minWidth: 0,
                 }}
               >
-                <span
-                  style={{
-                    width: '7px',
-                    height: '7px',
-                    borderRadius: '50%',
-                    flexShrink: 0,
-                    backgroundColor: effectiveChat.online
-                      ? 'var(--online-color, #23a55a)'
-                      : 'var(--text-offline, #80848e)',
-                  }}
-                />
+                {effectiveChat.online && (
+                  <span
+                    style={{
+                      width: '7px',
+                      height: '7px',
+                      borderRadius: '50%',
+                      flexShrink: 0,
+                      backgroundColor: 'var(--accent-color, #5865F2)',
+                    }}
+                  />
+                )}
                 <span
                   style={{
                     fontSize: '12.5px',
@@ -412,63 +485,62 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                   borderRadius: '14px',
                   backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.05))',
                   border: 'none',
-                  overflow: 'hidden',
+                  padding: '10px 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '10px',
+                  boxSizing: 'border-box',
                 }}
               >
-                <button
-                  type="button"
-                  onClick={() => handleCopyValue(`@${cleanUsername}`, 'username')}
-                  aria-label={t('common.copy', 'Копировать')}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '10px',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    outline: 'none',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    boxSizing: 'border-box',
-                    transition: 'background-color 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(128, 128, 128, 0.12)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-dim, #949ba4)' }}>
-                      {t('profile.username', 'Короткое имя')}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: '13.5px',
-                        fontWeight: 500,
-                        color: 'var(--accent-color, #5865F2)',
-                        fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
-                        wordBreak: 'break-all',
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      @{cleanUsername}
-                    </span>
-                  </div>
-                  <span
+                <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-dim, #949ba4)' }}>
+                    {t('profile.username', 'Короткое имя')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyValue(`@${cleanUsername}`, 'username')}
+                    aria-label={t('common.copy', 'Копировать')}
                     style={{
-                      flexShrink: 0,
-                      color: copiedField === 'username' ? 'var(--accent-color, #5865F2)' : 'var(--text-dim, #949ba4)',
-                      display: 'flex',
-                      alignItems: 'center',
+                      width: 'fit-content',
+                      maxWidth: '100%',
+                      padding: '2px 6px',
+                      margin: '-2px -6px',
+                      borderRadius: '6px',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      outline: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      fontSize: '13.5px',
+                      fontWeight: 500,
+                      color: 'var(--accent-color, #5865F2)',
+                      fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
+                      wordBreak: 'break-all',
+                      lineHeight: 1.35,
+                      transition: 'background-color 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(128, 128, 128, 0.16)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
                     }}
                   >
-                    {copiedField === 'username' ? <Check size={15} /> : <Copy size={15} />}
-                  </span>
-                </button>
+                    @{cleanUsername}
+                  </button>
+                </div>
+                <span
+                  style={{
+                    flexShrink: 0,
+                    color: copiedField === 'username' ? 'var(--accent-color, #5865F2)' : 'var(--text-dim, #949ba4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {copiedField === 'username' ? <Check size={15} /> : <Copy size={15} />}
+                </span>
               </div>
             )}
 
@@ -478,63 +550,62 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                   borderRadius: '14px',
                   backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.05))',
                   border: 'none',
-                  overflow: 'hidden',
+                  padding: '10px 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '10px',
+                  boxSizing: 'border-box',
                 }}
               >
-                <button
-                  type="button"
-                  onClick={() => handleCopyValue(resolvedId, 'id')}
-                  aria-label={t('profile.copy_id', 'Скопировать ID')}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '10px',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    outline: 'none',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    boxSizing: 'border-box',
-                    transition: 'background-color 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(128, 128, 128, 0.12)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-dim, #949ba4)' }}>
-                      {t('profile.account_id', 'ID аккаунта')}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: '12.5px',
-                        fontWeight: 500,
-                        color: 'var(--accent-color, #5865F2)',
-                        fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
-                        wordBreak: 'break-all',
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      {resolvedId}
-                    </span>
-                  </div>
-                  <span
+                <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-dim, #949ba4)' }}>
+                    {t('profile.account_id', 'ID аккаунта')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyValue(resolvedId, 'id')}
+                    aria-label={t('profile.copy_id', 'Скопировать ID')}
                     style={{
-                      flexShrink: 0,
-                      color: copiedField === 'id' ? 'var(--accent-color, #5865F2)' : 'var(--text-dim, #949ba4)',
-                      display: 'flex',
-                      alignItems: 'center',
+                      width: 'fit-content',
+                      maxWidth: '100%',
+                      padding: '2px 6px',
+                      margin: '-2px -6px',
+                      borderRadius: '6px',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      outline: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      fontSize: '12.5px',
+                      fontWeight: 500,
+                      color: 'var(--accent-color, #5865F2)',
+                      fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
+                      wordBreak: 'break-all',
+                      lineHeight: 1.35,
+                      transition: 'background-color 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(128, 128, 128, 0.16)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
                     }}
                   >
-                    {copiedField === 'id' ? <Check size={15} /> : <Copy size={15} />}
-                  </span>
-                </button>
+                    {resolvedId}
+                  </button>
+                </div>
+                <span
+                  style={{
+                    flexShrink: 0,
+                    color: copiedField === 'id' ? 'var(--accent-color, #5865F2)' : 'var(--text-dim, #949ba4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {copiedField === 'id' ? <Check size={15} /> : <Copy size={15} />}
+                </span>
               </div>
             )}
 
@@ -612,6 +683,59 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
             )}
         </div>
       </div>
+
+      {onOpenFullProfile && (
+        <div
+          style={{
+            padding: '12px 18px 18px 18px',
+            flexShrink: 0,
+            boxSizing: 'border-box',
+          }}
+        >
+          <button
+            type="button"
+            onClick={onOpenFullProfile}
+            aria-label={t('profile.show_full', 'Показать полностью')}
+            style={{
+              width: '100%',
+              padding: '10px 14px',
+              borderRadius: '14px',
+              border: 'none',
+              outline: 'none',
+              backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.06))',
+              color: 'var(--text-main, #ffffff)',
+              fontSize: '13.5px',
+              fontWeight: 600,
+              lineHeight: 1.3,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background-color 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(128, 128, 128, 0.16)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--surface-container-soft, rgba(255, 255, 255, 0.06))';
+            }}
+          >
+            {t('profile.show_full', 'Показать полностью')}
+          </button>
+        </div>
+      )}
     </aside>
+
+    {avatarViewerState.isOpen && (
+      <TelegramMediaViewer
+        isOpen={avatarViewerState.isOpen}
+        items={avatarViewerState.items}
+        initialIndex={avatarViewerState.initialIndex}
+        sharedSecret={effectiveChat.sharedSecret}
+        showCarouselAlways={true}
+        onClose={() => setAvatarViewerState((prev) => ({ ...prev, isOpen: false }))}
+      />
+    )}
+    </>
   );
 };

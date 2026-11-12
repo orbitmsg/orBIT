@@ -395,7 +395,7 @@ export const GlobalAudioPlayer = () => {
       <style>{`
         .global-audio-player {
           --player-bg: var(--chat-list-bg, #2b2d31);
-          --player-accent: var(--accent-light);
+          --player-accent: var(--accent-color);
           --player-progress: var(--accent-color);
           --player-track-bg: var(--surface-muted);
         }

@@ -8,25 +8,28 @@ export function getInviteLink(code: string): string {
   return `${BASE_INVITE_URL}/${encodeURIComponent(cleanCode)}`;
 }
 
+const EXPLICIT_GROUP_INVITE_RE =
+  /(?:^|\/)(?:g|group|groups|join|invite)(?:\/|$|\?)|#[a-zA-Z0-9_-]{6,64}|(?:^|[?&])(?:group|token)=|join_[a-zA-Z0-9_-]{6,32}|orbita:\/\/(?:group|groups|join|invite)/i;
+
 export function extractCodeFromInput(input: string): string {
   if (!input) return '';
   const trimmed = input.trim();
 
-  if (extractGroupCode(trimmed)) {
+  if (EXPLICIT_GROUP_INVITE_RE.test(trimmed) && extractGroupCode(trimmed)) {
     return '';
   }
 
-  const urlMatch = trimmed.match(/\/u\/([a-zA-Z0-9_-]{6,64})/i);
+  const urlMatch = trimmed.match(/\/u\/([a-zA-Z0-9_-]{2,64})/i);
   if (urlMatch && urlMatch[1]) {
     return urlMatch[1];
   }
 
-  const queryMatch = trimmed.match(/[?&](?:code|id)=([a-zA-Z0-9_-]{6,64})/i);
+  const queryMatch = trimmed.match(/[?&](?:code|id)=([a-zA-Z0-9_-]{2,64})/i);
   if (queryMatch && queryMatch[1]) {
     return queryMatch[1];
   }
 
-  const deepLinkMatch = trimmed.match(/orbita:\/\/(?:connect|u)?\/?(?:code=)?([a-zA-Z0-9_-]{6,64})/i);
+  const deepLinkMatch = trimmed.match(/orbita:\/\/(?:connect|u)?\/?(?:code=)?([a-zA-Z0-9_-]{2,64})/i);
   if (deepLinkMatch && deepLinkMatch[1]) {
     return deepLinkMatch[1];
   }

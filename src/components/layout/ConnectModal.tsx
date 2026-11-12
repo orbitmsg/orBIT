@@ -286,10 +286,18 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
         return;
       }
 
+      if (
+        (myCode && rawClean.toUpperCase() === myCode.toUpperCase()) ||
+        (myUserId && rawClean.toUpperCase() === myUserId.toUpperCase())
+      ) {
+        showTempWarning(t('discord.cannotAddSelf', 'Нельзя добавить самого себя'));
+        return;
+      }
+
       setIsLoading(true);
       setError(null);
 
-      if (/^[0-9a-fA-F-]{36}$/.test(rawClean)) {
+      if (/^[0-9a-zA-Z-]{36}$/.test(rawClean)) {
         onConnectRequest(rawClean.toUpperCase(), (ok, msg) => {
           setIsLoading(false);
           if (ok) {

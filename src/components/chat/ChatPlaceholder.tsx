@@ -166,7 +166,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
       return;
     }
 
-    if (/^[0-9a-fA-F-]{36}$/.test(rawClean)) {
+    if (/^[0-9a-zA-Z-]{36}$/.test(rawClean)) {
       sendRequestToCode(rawClean.toUpperCase());
       return;
     }

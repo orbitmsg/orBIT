@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pencil, Copy, Check, RefreshCw, Unlock, Lock, Clock } from 'lucide-react';
+import { Pencil, RefreshCw, Unlock, Lock, Clock } from 'lucide-react';
 import { buildGroupInviteLink } from '../../../lib/groupCrypto';
 import { groupService } from '../../../services/groupService';
 import { useChatStore, type Chat } from '../../../store/useChatStore';
@@ -14,7 +14,6 @@ interface ProfileInfoCardProps {
   isChannelOwner: boolean;
   profileId?: string;
   formattedProfileId?: string;
-  copiedKey: boolean;
   isResettingLink: boolean;
   setIsResettingLink: (val: boolean) => void;
   onCopyKey: (text?: string) => void;
@@ -30,7 +29,6 @@ export const ProfileInfoCard: React.FC<ProfileInfoCardProps> = ({
   isChannelOwner,
   profileId,
   formattedProfileId,
-  copiedKey,
   isResettingLink,
   setIsResettingLink,
   onCopyKey,
@@ -130,12 +128,6 @@ export const ProfileInfoCard: React.FC<ProfileInfoCardProps> = ({
                 {t('groupSettings.group_id', 'ID')}
               </span>
             </div>
-            <div
-              style={{ flexShrink: 0, color: copiedKey ? 'var(--accent-color, #9b7dd4)' : 'var(--text-dim, #8e8e93)', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-              onClick={() => onCopyKey(chat.id)}
-            >
-              {copiedKey ? <Check size={18} /> : <Copy size={18} />}
-            </div>
           </div>
 
           <div
@@ -196,15 +188,6 @@ export const ProfileInfoCard: React.FC<ProfileInfoCardProps> = ({
                     </span>
                   )}
                 </div>
-              </div>
-              <div
-                style={{ flexShrink: 0, color: copiedKey ? 'var(--accent-color, #9b7dd4)' : 'var(--text-dim, #8e8e93)', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-                onClick={() => {
-                  const link = buildGroupInviteLink(chat.inviteCode || chat.id, chat.name, chat.creatorNickname);
-                  onCopyKey(link);
-                }}
-              >
-                {copiedKey ? <Check size={18} /> : <Copy size={18} />}
               </div>
             </div>
 
@@ -390,12 +373,6 @@ export const ProfileInfoCard: React.FC<ProfileInfoCardProps> = ({
                   {t('profile.username', 'Имя пользователя')}
                 </span>
               </div>
-              <div
-                style={{ flexShrink: 0, color: copiedKey ? 'var(--accent-color, #9b7dd4)' : 'var(--text-dim, #8e8e93)', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-                onClick={() => onCopyKey(`@${chat.username}`)}
-              >
-                {copiedKey ? <Check size={18} /> : <Copy size={18} />}
-              </div>
             </div>
           )}
 
@@ -453,12 +430,6 @@ export const ProfileInfoCard: React.FC<ProfileInfoCardProps> = ({
                 <span style={{ fontSize: '11px', color: 'var(--text-dim, #8e8e93)', marginTop: '3px' }}>
                   {t('profile.account_id', 'ID аккаунта')}
                 </span>
-              </div>
-              <div
-                style={{ flexShrink: 0, color: copiedKey ? 'var(--accent-color, #9b7dd4)' : 'var(--text-dim, #8e8e93)', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-                onClick={() => onCopyKey(profileId)}
-              >
-                {copiedKey ? <Check size={18} /> : <Copy size={18} />}
               </div>
             </div>
           ) : null}

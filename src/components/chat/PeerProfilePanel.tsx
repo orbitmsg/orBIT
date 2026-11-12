@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Cake, Check, Copy } from 'lucide-react';
+import { Cake } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useChatStore, type Chat } from '../../store/useChatStore';
 import { useToastStore } from '../../store/useToastStore';
@@ -22,33 +22,17 @@ export interface PeerProfilePanelProps {
 
 export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpenFullProfile }) => {
   const { t, i18n } = useTranslation();
-  const [copiedField, setCopiedField] = useState<'username' | 'id' | null>(null);
   const [fetchedState, setFetchedState] = useState<{ chatId: string; data: Partial<Chat> } | null>(null);
   const [avatarViewerState, setAvatarViewerState] = useState<{
     isOpen: boolean;
     items: MediaViewerItem[];
     initialIndex: number;
   }>({ isOpen: false, items: [], initialIndex: 0 });
-  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const completedFetchKeysRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    setCopiedField(null);
     setAvatarViewerState({ isOpen: false, items: [], initialIndex: 0 });
-    if (copyTimerRef.current) {
-      clearTimeout(copyTimerRef.current);
-      copyTimerRef.current = null;
-    }
   }, [chat?.id]);
-
-  useEffect(() => {
-    return () => {
-      if (copyTimerRef.current) {
-        clearTimeout(copyTimerRef.current);
-        copyTimerRef.current = null;
-      }
-    };
-  }, []);
 
   const effectiveChat = useMemo<Chat>(() => {
     if (!chat) return chat;
@@ -180,7 +164,6 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
       try {
         await navigator.clipboard.writeText(value);
       } catch {}
-      setCopiedField(field);
       const toastText =
         field === 'id'
           ? t('profile.id_copied_share', 'ID скопирован в буфер обмена. Поделитесь им!')
@@ -189,13 +172,6 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
               defaultValue: `${value} скопирован в буфер обмена. Поделитесь им!`,
             });
       useToastStore.getState().showToast(toastText, 'image');
-      if (copyTimerRef.current) {
-        clearTimeout(copyTimerRef.current);
-      }
-      copyTimerRef.current = setTimeout(() => {
-        setCopiedField(null);
-        copyTimerRef.current = null;
-      }, 2000);
     },
     [t]
   );
@@ -449,21 +425,9 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px',
                   minWidth: 0,
                 }}
               >
-                {effectiveChat.online && (
-                  <span
-                    style={{
-                      width: '7px',
-                      height: '7px',
-                      borderRadius: '50%',
-                      flexShrink: 0,
-                      backgroundColor: 'var(--accent-text, var(--accent-color, #5865F2))',
-                    }}
-                  />
-                )}
                 <span
                   style={{
                     fontSize: '12.5px',
@@ -487,60 +451,46 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                   border: 'none',
                   padding: '10px 12px',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '10px',
+                  flexDirection: 'column',
+                  gap: '4px',
                   boxSizing: 'border-box',
                 }}
               >
-                <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-dim, #949ba4)' }}>
-                    {t('profile.username', 'Короткое имя')}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyValue(`@${cleanUsername}`, 'username')}
-                    aria-label={t('common.copy', 'Копировать')}
-                    style={{
-                      width: 'fit-content',
-                      maxWidth: '100%',
-                      padding: '2px 6px',
-                      margin: '-2px -6px',
-                      borderRadius: '6px',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      outline: 'none',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      fontSize: '13.5px',
-                      fontWeight: 500,
-                      color: 'var(--accent-text, var(--accent-color, #5865F2))',
-                      fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
-                      wordBreak: 'break-all',
-                      lineHeight: 1.35,
-                      transition: 'background-color 0.15s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(128, 128, 128, 0.14))';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }}
-                  >
-                    @{cleanUsername}
-                  </button>
-                </div>
-                <span
+                <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-dim, #949ba4)' }}>
+                  {t('profile.username', 'Короткое имя')}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleCopyValue(`@${cleanUsername}`, 'username')}
+                  aria-label={t('common.copy', 'Копировать')}
                   style={{
-                    flexShrink: 0,
-                    color: copiedField === 'username' ? 'var(--accent-text, var(--accent-color, #5865F2))' : 'var(--text-dim, #949ba4)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    pointerEvents: 'none',
+                    width: 'fit-content',
+                    maxWidth: '100%',
+                    padding: '2px 6px',
+                    margin: '-2px -6px',
+                    borderRadius: '6px',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    fontSize: '13.5px',
+                    fontWeight: 500,
+                    color: 'var(--accent-text, var(--accent-color, #5865F2))',
+                    fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
+                    wordBreak: 'break-all',
+                    lineHeight: 1.35,
+                    transition: 'background-color 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(128, 128, 128, 0.14))';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
                   }}
                 >
-                  {copiedField === 'username' ? <Check size={15} /> : <Copy size={15} />}
-                </span>
+                  @{cleanUsername}
+                </button>
               </div>
             )}
 
@@ -552,60 +502,46 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                   border: 'none',
                   padding: '10px 12px',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '10px',
+                  flexDirection: 'column',
+                  gap: '4px',
                   boxSizing: 'border-box',
                 }}
               >
-                <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-dim, #949ba4)' }}>
-                    {t('profile.account_id', 'ID аккаунта')}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyValue(resolvedId, 'id')}
-                    aria-label={t('profile.copy_id', 'Скопировать ID')}
-                    style={{
-                      width: 'fit-content',
-                      maxWidth: '100%',
-                      padding: '2px 6px',
-                      margin: '-2px -6px',
-                      borderRadius: '6px',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      outline: 'none',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      fontSize: '12.5px',
-                      fontWeight: 500,
-                      color: 'var(--accent-text, var(--accent-color, #5865F2))',
-                      fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
-                      wordBreak: 'break-all',
-                      lineHeight: 1.35,
-                      transition: 'background-color 0.15s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(128, 128, 128, 0.14))';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }}
-                  >
-                    {resolvedId}
-                  </button>
-                </div>
-                <span
+                <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-dim, #949ba4)' }}>
+                  {t('profile.account_id', 'ID аккаунта')}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleCopyValue(resolvedId, 'id')}
+                  aria-label={t('profile.copy_id', 'Скопировать ID')}
                   style={{
-                    flexShrink: 0,
-                    color: copiedField === 'id' ? 'var(--accent-text, var(--accent-color, #5865F2))' : 'var(--text-dim, #949ba4)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    pointerEvents: 'none',
+                    width: 'fit-content',
+                    maxWidth: '100%',
+                    padding: '2px 6px',
+                    margin: '-2px -6px',
+                    borderRadius: '6px',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    fontSize: '12.5px',
+                    fontWeight: 500,
+                    color: 'var(--accent-text, var(--accent-color, #5865F2))',
+                    fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
+                    wordBreak: 'break-all',
+                    lineHeight: 1.35,
+                    transition: 'background-color 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(128, 128, 128, 0.14))';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
                   }}
                 >
-                  {copiedField === 'id' ? <Check size={15} /> : <Copy size={15} />}
-                </span>
+                  {resolvedId}
+                </button>
               </div>
             )}
 

@@ -944,7 +944,6 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         isChannelOwner={isChannelOwner}
         profileId={profileId}
         formattedProfileId={formattedProfileId}
-        copiedKey={copiedKey}
         isResettingLink={isResettingLink}
         setIsResettingLink={setIsResettingLink}
         onCopyKey={(text) => handleCopyChannelKey(text)}

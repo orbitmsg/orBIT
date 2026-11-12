@@ -20,6 +20,8 @@ export interface OfflineHandshakeRecord {
   sender_nickname: string;
   sender_public_key: string;
   sender_avatar_url: string | null;
+  sender_username?: string | null;
+  sender_birthday?: string | null;
   created_at: string;
   consumed: boolean;
 }
@@ -34,6 +36,7 @@ export interface ProfileUpdateRecord {
   banner_url?: string | null;
   sender_code?: string | null;
   numeric_id?: string | null;
+  hide_profile_id?: boolean | null;
   bio?: string | null;
   username?: string | null;
   birthday?: string | null;

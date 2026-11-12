@@ -506,7 +506,9 @@ class SupabaseService {
     senderNickname: string,
     senderPublicKey: string,
     senderAvatarUrl: string | null,
-    senderCode: string
+    senderCode: string,
+    senderUsername?: string | null,
+    senderBirthday?: string | null
   ): Promise<void> {
     console.log('[Relay/Supabase] sendOfflineHandshake called:', { chatId, recipientCode, senderNickname });
 
@@ -518,19 +520,23 @@ class SupabaseService {
 
     let lastError: any = null;
 
+    const relayPayload: Record<string, any> = {
+      chatId,
+      recipientCode,
+      senderNickname,
+      senderPublicKey,
+      senderAvatarUrl,
+      senderCode,
+    };
+    if (senderUsername !== undefined) relayPayload.senderUsername = senderUsername;
+    if (senderBirthday !== undefined) relayPayload.senderBirthday = senderBirthday;
+
     for (const relay of allRelays) {
       try {
         const res = await fetch(`${relay.url}/relay/handshake`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chatId,
-            recipientCode,
-            senderNickname,
-            senderPublicKey,
-            senderAvatarUrl,
-            senderCode,
-          }),
+          body: JSON.stringify(relayPayload),
         });
 
         if (!res.ok) {
@@ -547,16 +553,29 @@ class SupabaseService {
     }
 
     if (this.client) {
-      const { error } = await this.client
+      const insertRow: Record<string, any> = {
+        chat_id: chatId,
+        recipient_code: recipientCode,
+        sender_nickname: senderNickname,
+        sender_public_key: senderPublicKey,
+        sender_avatar_url: senderAvatarUrl,
+        sender_code: senderCode,
+      };
+      if (senderUsername !== undefined) insertRow.sender_username = senderUsername;
+      if (senderBirthday !== undefined) insertRow.sender_birthday = senderBirthday;
+
+      let { error } = await this.client
         .from('handshakes')
-        .insert({
-          chat_id: chatId,
-          recipient_code: recipientCode,
-          sender_nickname: senderNickname,
-          sender_public_key: senderPublicKey,
-          sender_avatar_url: senderAvatarUrl,
-          sender_code: senderCode,
-        });
+        .insert(insertRow);
+
+      if (error && (error.code === 'PGRST204' || error.message?.includes('sender_username') || error.message?.includes('sender_birthday'))) {
+        delete insertRow.sender_username;
+        delete insertRow.sender_birthday;
+        const retryRes = await this.client
+          .from('handshakes')
+          .insert(insertRow);
+        error = retryRes.error;
+      }
 
       if (error) {
         console.error('[Supabase] Handshake insert error:', error);
@@ -645,6 +664,131 @@ class SupabaseService {
     }
   }
 
+  private normalizeUsername(username?: string | null): string | null | undefined {
+    if (username === undefined) return undefined;
+    if (username === null) return null;
+    const cleaned = username.replace(/^@+/, '').trim().toLowerCase();
+    return cleaned.length > 0 ? cleaned : null;
+  }
+
+  private stripMissingProfileColumns(payload: Record<string, any>, error: any): boolean {
+    const msg = String(error?.message || '');
+    const code = String(error?.code || '');
+    if (!msg && code !== 'PGRST204') return false;
+    let stripped = false;
+    for (const col of ['banner_url', 'birthday', 'username', 'hide_profile_id']) {
+      if (Object.prototype.hasOwnProperty.call(payload, col) && (msg.includes(col) || (code === 'PGRST204' && col === 'banner_url'))) {
+        delete payload[col];
+        stripped = true;
+      }
+    }
+    return stripped;
+  }
+
+  private coalesceProfileRecords(records: ProfileUpdateRecord[]): ProfileUpdateRecord | null {
+    if (!records || records.length === 0) return null;
+    const newest = records[0];
+    const newestSender = newest.sender_code ? newest.sender_code.toLowerCase() : null;
+    const ownerRecords = records.filter((r) => {
+      if (!newestSender) {
+        return !r.sender_code || (r.chat_id && newest.chat_id && r.chat_id.toLowerCase() === newest.chat_id.toLowerCase());
+      }
+      return !r.sender_code || r.sender_code.toLowerCase() === newestSender;
+    });
+    const pick = <K extends keyof ProfileUpdateRecord>(key: K): ProfileUpdateRecord[K] | null => {
+      for (const r of ownerRecords) {
+        const val = r[key];
+        if (val !== undefined && val !== null && val !== '') {
+          return val;
+        }
+      }
+      return null;
+    };
+    return {
+      ...newest,
+      nickname: pick('nickname'),
+      avatar_url: pick('avatar_url'),
+      banner_url: pick('banner_url'),
+      username: pick('username'),
+      bio: pick('bio'),
+      birthday: pick('birthday'),
+      sender_code: pick('sender_code'),
+      numeric_id: pick('numeric_id'),
+      hide_profile_id: ownerRecords.find((r) => r.hide_profile_id !== undefined && r.hide_profile_id !== null)?.hide_profile_id ?? null,
+    };
+  }
+
+  private async fetchProfileCandidates(chatId: string, excludeCode?: string): Promise<ProfileUpdateRecord[]> {
+    const nodes = relayRouter.getNodes();
+    const queryParam = excludeCode ? `&excludeCode=${encodeURIComponent(excludeCode)}` : '';
+    const ex = excludeCode ? excludeCode.toLowerCase() : null;
+    const candidates: ProfileUpdateRecord[] = [];
+
+    const relayResults = await Promise.allSettled(
+      nodes.map(async (relay) => {
+        const res = await networkManager.safeFetch(
+          `${relay.url}/relay/profile?chatId=${encodeURIComponent(chatId)}${queryParam}`,
+          undefined,
+          7000,
+          1
+        );
+        if (!res.ok) return null;
+        const data = (await res.json()) as { profile: ProfileUpdateRecord | null };
+        return data?.profile ? this.parseProfileRow(data.profile) : null;
+      })
+    );
+
+    for (const res of relayResults) {
+      if (res.status === 'fulfilled' && res.value) {
+        const p = res.value;
+        if (ex && p.sender_code && p.sender_code.toLowerCase() === ex) continue;
+        candidates.push(p);
+      }
+    }
+
+    if (this.client) {
+      const safeChatId = chatId.replace(/[,()]/g, '');
+      const { data, error } = await this.client
+        .from('profile_updates')
+        .select('*')
+        .or(`chat_id.eq.${safeChatId},sender_code.ilike.${safeChatId}`)
+        .order('updated_at', { ascending: false })
+        .limit(20);
+
+      if (error) {
+        console.error('[Supabase] Failed to fetch latest profile update:', error);
+      } else if (data && Array.isArray(data)) {
+        for (const row of data) {
+          const parsed = this.parseProfileRow(row);
+          if (!parsed) continue;
+          if (ex && parsed.sender_code && parsed.sender_code.toLowerCase() === ex) continue;
+          candidates.push(parsed);
+        }
+      }
+    }
+
+    if (candidates.length === 0) return [];
+
+    candidates.sort((a, b) => {
+      const tA = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+      const tB = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+      return tB - tA;
+    });
+
+    if (!ex) {
+      const targetLower = chatId.toLowerCase();
+      const directPublic = candidates.filter((c) =>
+        (c.sender_code && c.sender_code.toLowerCase() === targetLower) ||
+        (c.chat_id && c.chat_id.toLowerCase() === targetLower && !c.sender_code)
+      );
+      if (directPublic.length > 0) {
+        return directPublic;
+      }
+    }
+
+    return candidates;
+  }
+
   async saveProfileUpdate(
     chatId: string,
     nickname: string | null,
@@ -657,32 +801,109 @@ class SupabaseService {
   ): Promise<void> {
     if (!chatId || chatId === 'notes') return;
 
-    let cleanUsername = username !== undefined ? (username ? username.replace(/^@+/, '').trim().toLowerCase() : null) : undefined;
+    let cleanUsername = this.normalizeUsername(username);
     let cleanBirthday = birthday !== undefined ? (birthday || null) : undefined;
-    let cleanBannerUrl = bannerUrl !== undefined ? bannerUrl : undefined;
+    let cleanBannerUrl = bannerUrl !== undefined ? (bannerUrl || null) : undefined;
     let cleanBio = bio !== undefined ? (bio || null) : undefined;
+    let cleanNickname: string | null | undefined = nickname !== undefined ? nickname : undefined;
+    let cleanAvatarUrl: string | null | undefined = avatarUrl !== undefined ? avatarUrl : undefined;
 
-    if (this.client && senderCode && (cleanUsername === undefined || cleanBirthday === undefined || cleanBannerUrl === undefined || cleanBio === undefined)) {
+    if (typeof cleanBio === 'string') {
+      const bannerMatch = cleanBio.match(/<!--banner:(.*?)-->/);
+      if (bannerMatch && cleanBannerUrl === undefined) {
+        cleanBannerUrl = bannerMatch[1] || null;
+      }
+      cleanBio = cleanBio.replace(/<!--banner:.*?-->/g, '').trim() || null;
+    }
+
+    let existingSupabaseRows: any[] = [];
+    let existingMerged: ProfileUpdateRecord | null = null;
+    let previousUsername: string | null = null;
+
+    if (this.client) {
       try {
-        const { data: existing } = await this.client
+        let queryBuilder = this.client
           .from('profile_updates')
-          .select('username, birthday, banner_url, bio')
-          .eq('chat_id', chatId)
-          .eq('sender_code', senderCode)
-          .maybeSingle();
-        if (existing) {
-          if (cleanUsername === undefined) cleanUsername = existing.username || null;
-          if (cleanBirthday === undefined) cleanBirthday = existing.birthday || null;
-          if (cleanBannerUrl === undefined) cleanBannerUrl = existing.banner_url || null;
-          if (cleanBio === undefined && existing.bio) cleanBio = existing.bio;
+          .select('*')
+          .eq('chat_id', chatId);
+        if (senderCode) {
+          queryBuilder = queryBuilder.ilike('sender_code', senderCode);
+        } else {
+          queryBuilder = queryBuilder.is('sender_code', null);
+        }
+        const { data: rows } = await queryBuilder
+          .order('updated_at', { ascending: false })
+          .limit(10);
+
+        if (rows && rows.length > 0) {
+          existingSupabaseRows = rows;
+        } else if (senderCode && chatId.toLowerCase() === senderCode.toLowerCase()) {
+          const { data: legacyRows } = await this.client
+            .from('profile_updates')
+            .select('*')
+            .eq('chat_id', chatId)
+            .is('sender_code', null)
+            .order('updated_at', { ascending: false })
+            .limit(10);
+          if (legacyRows && legacyRows.length > 0) {
+            existingSupabaseRows = legacyRows;
+          }
+        }
+
+        if (existingSupabaseRows.length > 0) {
+          const parsedRows = existingSupabaseRows
+            .map((r) => this.parseProfileRow(r))
+            .filter((r): r is ProfileUpdateRecord => r !== null);
+          existingMerged = this.coalesceProfileRecords(parsedRows);
+          previousUsername = existingMerged?.username || null;
         }
       } catch {}
     }
 
+    const needsExistingFallback =
+      cleanUsername === undefined ||
+      cleanBirthday === undefined ||
+      cleanBannerUrl === undefined ||
+      cleanBio === undefined ||
+      cleanNickname === undefined ||
+      cleanNickname === null ||
+      cleanAvatarUrl === undefined;
+
+    if (needsExistingFallback && !existingMerged) {
+      try {
+        const lookupTarget = senderCode || chatId;
+        const candidates = await this.fetchProfileCandidates(lookupTarget);
+        const filtered = senderCode
+          ? candidates.filter((c) => !c.sender_code || c.sender_code.toLowerCase() === senderCode.toLowerCase())
+          : candidates;
+        if (filtered.length > 0) {
+          existingMerged = this.coalesceProfileRecords(filtered);
+          previousUsername = existingMerged?.username || null;
+        }
+      } catch {}
+    }
+
+    if (existingMerged) {
+      if (cleanUsername === undefined) cleanUsername = existingMerged.username ?? null;
+      if (cleanBirthday === undefined) cleanBirthday = existingMerged.birthday ?? null;
+      if (cleanBannerUrl === undefined) cleanBannerUrl = existingMerged.banner_url ?? null;
+      if (cleanBio === undefined) cleanBio = existingMerged.bio ?? null;
+      if (cleanNickname === undefined || (cleanNickname === null && existingMerged.nickname)) {
+        cleanNickname = existingMerged.nickname ?? null;
+      }
+      if (cleanAvatarUrl === undefined) cleanAvatarUrl = existingMerged.avatar_url ?? null;
+    }
+
     if (cleanUsername) {
-      const isAvailable = await this.isUsernameAvailable(cleanUsername, senderCode || chatId);
-      if (!isAvailable) {
-        throw new Error('USERNAME_TAKEN');
+      try {
+        const isAvailable = await this.isUsernameAvailable(cleanUsername, senderCode || chatId);
+        if (!isAvailable) {
+          throw new Error('USERNAME_TAKEN');
+        }
+      } catch (err: any) {
+        if (err?.message === 'USERNAME_TAKEN') {
+          throw err;
+        }
       }
     }
 
@@ -692,71 +913,120 @@ class SupabaseService {
       ...relayRouter.getNodes().filter((n) => n.url !== primaryRelay.url),
     ];
 
+    const relayBody: Record<string, any> = {
+      chatId,
+    };
+    if (cleanNickname !== undefined) relayBody.nickname = cleanNickname;
+    if (cleanAvatarUrl !== undefined) relayBody.avatarUrl = cleanAvatarUrl;
+    if (cleanBannerUrl !== undefined) relayBody.bannerUrl = cleanBannerUrl;
+    if (senderCode !== undefined) relayBody.senderCode = senderCode;
+    if (cleanBio !== undefined) relayBody.bio = cleanBio;
+    if (cleanUsername !== undefined) relayBody.username = cleanUsername;
+    if (cleanBirthday !== undefined) relayBody.birthday = cleanBirthday;
+
+    let relaySuccessCount = 0;
+    let lastRelayError: any = null;
+
     for (const relay of allRelays) {
       try {
         const res = await fetch(`${relay.url}/relay/profile`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chatId,
-            nickname,
-            avatarUrl,
-            bannerUrl: cleanBannerUrl !== undefined ? cleanBannerUrl : null,
-            senderCode,
-            bio: cleanBio !== undefined ? cleanBio : null,
-            username: cleanUsername !== undefined ? cleanUsername : null,
-            birthday: cleanBirthday !== undefined ? cleanBirthday : null,
-          }),
+          body: JSON.stringify(relayBody),
         });
         if (res.status === 409) {
           throw new Error('USERNAME_TAKEN');
         }
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({ error: res.statusText }));
+          throw new Error(errData?.error || `HTTP ${res.status}`);
+        }
+        relaySuccessCount++;
       } catch (err: any) {
         if (err?.message === 'USERNAME_TAKEN') {
           throw err;
         }
+        lastRelayError = err;
         console.warn(`[Relay] Failed to save profile update on ${relay.url}:`, err);
       }
     }
 
+    let supaError: any = null;
     if (this.client) {
-      try {
-        if (senderCode) {
-          await this.client.from('profile_updates').delete().eq('chat_id', chatId).eq('sender_code', senderCode);
-        }
-      } catch {}
       let effectiveBio = cleanBio || null;
       if (cleanBannerUrl) {
         effectiveBio = effectiveBio ? `${effectiveBio}\n<!--banner:${cleanBannerUrl}-->` : `<!--banner:${cleanBannerUrl}-->`;
       }
-      const insertPayload: Record<string, any> = {
+      const writePayload: Record<string, any> = {
         chat_id: chatId,
-        nickname,
-        avatar_url: avatarUrl,
+        nickname: cleanNickname !== undefined ? cleanNickname : null,
+        avatar_url: cleanAvatarUrl !== undefined ? cleanAvatarUrl : null,
         sender_code: senderCode || null,
         bio: effectiveBio,
         username: cleanUsername !== undefined ? cleanUsername : null,
         birthday: cleanBirthday !== undefined ? cleanBirthday : null,
         banner_url: cleanBannerUrl !== undefined ? cleanBannerUrl : null,
+        updated_at: new Date().toISOString(),
       };
 
-      let { error } = await this.client
-        .from('profile_updates')
-        .insert(insertPayload);
-
-      if (error && (error.message?.includes('banner_url') || error.message?.includes('birthday') || error.message?.includes('username') || error.code === 'PGRST204')) {
-        if (error.message?.includes('birthday')) delete insertPayload.birthday;
-        if (error.message?.includes('username')) delete insertPayload.username;
-        if (error.message?.includes('banner_url')) delete insertPayload.banner_url;
-        const retryRes = await this.client
+      if (existingSupabaseRows.length > 0 && existingSupabaseRows[0]?.id) {
+        const targetId = existingSupabaseRows[0].id;
+        const updateRes = await this.client
           .from('profile_updates')
-          .insert(insertPayload);
-        error = retryRes.error;
+          .update(writePayload)
+          .eq('id', targetId);
+        supaError = updateRes.error;
+
+        if (supaError && this.stripMissingProfileColumns(writePayload, supaError)) {
+          const retryRes = await this.client
+            .from('profile_updates')
+            .update(writePayload)
+            .eq('id', targetId);
+          supaError = retryRes.error;
+        }
+
+        if (!supaError && existingSupabaseRows.length > 1) {
+          const duplicateIds = existingSupabaseRows.slice(1).map((r) => r.id).filter(Boolean);
+          if (duplicateIds.length > 0) {
+            await this.client.from('profile_updates').delete().in('id', duplicateIds);
+          }
+        }
+      } else {
+        const insertRes = await this.client
+          .from('profile_updates')
+          .insert(writePayload);
+        supaError = insertRes.error;
+
+        if (supaError && this.stripMissingProfileColumns(writePayload, supaError)) {
+          const retryRes = await this.client
+            .from('profile_updates')
+            .insert(writePayload);
+          supaError = retryRes.error;
+        }
       }
 
-      if (error) {
-        console.error('[Supabase] Failed to save profile update:', error);
+      if (supaError) {
+        if (relaySuccessCount === 0) {
+          console.error('[Supabase] Failed to save profile update:', supaError);
+          throw new Error(`Failed to save profile update: ${supaError.message}`);
+        }
+        console.warn('[Supabase] Direct profile update failed after relay save:', supaError);
       }
+    } else if (relaySuccessCount === 0) {
+      throw lastRelayError || new Error('Failed to save profile update on all relay nodes');
+    }
+
+    networkManager.invalidateCache(`profile_update:${chatId}:`);
+    networkManager.invalidateCache(`public_profile:${chatId}`);
+    if (senderCode) {
+      networkManager.invalidateCache(`profile_update:${senderCode}:`);
+      networkManager.invalidateCache(`public_profile:${senderCode}`);
+    }
+    if (cleanUsername) {
+      networkManager.invalidateCache(`profile_username:${cleanUsername}`);
+    }
+    if (previousUsername && previousUsername !== cleanUsername) {
+      networkManager.invalidateCache(`profile_username:${previousUsername}`);
     }
   }
 
@@ -768,13 +1038,15 @@ class SupabaseService {
       const bannerMatch = bio.match(/<!--banner:(.*?)-->/);
       if (bannerMatch) {
         if (!bannerUrl) {
-          bannerUrl = bannerMatch[1];
+          bannerUrl = bannerMatch[1] || null;
         }
         bio = bio.replace(/<!--banner:.*?-->/g, '').trim() || null;
       }
     }
+    const normalizedUsername = this.normalizeUsername(row.username);
     return {
       ...row,
+      username: normalizedUsername === undefined ? null : normalizedUsername,
       banner_url: bannerUrl,
       bio,
     };
@@ -787,51 +1059,12 @@ class SupabaseService {
     if (cached) return cached;
 
     return networkManager.deduplicateRequest(cacheKey, async () => {
-      const nodes = relayRouter.getNodes();
-
-      for (const relay of nodes) {
-        try {
-          const queryParam = excludeCode ? `&excludeCode=${encodeURIComponent(excludeCode)}` : '';
-          const res = await networkManager.safeFetch(`${relay.url}/relay/profile?chatId=${encodeURIComponent(chatId)}${queryParam}`, undefined, 7000, 1);
-          if (res.ok) {
-            const data = (await res.json()) as { profile: ProfileUpdateRecord | null };
-            if (data?.profile) {
-              const parsed = this.parseProfileRow(data.profile);
-              if (parsed) networkManager.setCache(cacheKey, parsed, 60000);
-              return parsed;
-            }
-          }
-        } catch (err) {
-          console.warn(`[Relay] Failed to get profile update from ${relay.url}:`, err);
-        }
+      const candidates = await this.fetchProfileCandidates(chatId, excludeCode);
+      const coalesced = this.coalesceProfileRecords(candidates);
+      if (coalesced) {
+        networkManager.setCache(cacheKey, coalesced, 60000);
       }
-
-      if (this.client) {
-        let queryBuilder = this.client
-          .from('profile_updates')
-          .select('*')
-          .or(`chat_id.eq.${chatId},sender_code.eq.${chatId}`);
-
-        if (excludeCode) {
-          queryBuilder = queryBuilder.neq('sender_code', excludeCode);
-        }
-
-        const { data, error } = await queryBuilder
-          .order('updated_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (error) {
-          console.error('[Supabase] Failed to fetch latest profile update:', error);
-          return null;
-        }
-
-        const parsed = this.parseProfileRow(data);
-        if (parsed) networkManager.setCache(cacheKey, parsed, 60000);
-        return parsed;
-      }
-
-      return null;
+      return coalesced;
     });
   }
 
@@ -857,6 +1090,7 @@ class SupabaseService {
       await this.saveProfileUpdate(userCode, nickname, avatarUrl, userCode, bio, username, birthday, bannerUrl);
     } catch (e) {
       console.warn('[Directory] Failed to publish profile update:', e);
+      throw e;
     }
   }
 
@@ -869,11 +1103,11 @@ class SupabaseService {
     return networkManager.deduplicateRequest(cacheKey, async () => {
       try {
         const update = await this.getLatestProfileUpdate(userCode);
-        if (update && update.nickname) {
+        if (update && (update.nickname || update.username || update.birthday || update.avatar_url || update.bio || update.banner_url)) {
           const profile: UserDirectoryRecord = {
             user_code: userCode,
             numeric_id: update.numeric_id || null,
-            nickname: update.nickname,
+            nickname: update.nickname || '',
             avatar_url: update.avatar_url,
             banner_url: update.banner_url,
             username: update.username,
@@ -898,13 +1132,18 @@ class SupabaseService {
     if (cleanUsername === 'support') return false;
 
     const nodes = relayRouter.getNodes();
+    let hadSuccessfulCheck = false;
+
     for (const relay of nodes) {
       try {
         const param = excludeCode ? `&excludeCode=${encodeURIComponent(excludeCode)}` : '';
         const res = await fetch(`${relay.url}/relay/check-username?username=${encodeURIComponent(cleanUsername)}${param}`);
         if (res.ok) {
           const data = (await res.json()) as { available?: boolean };
-          if (typeof data.available === 'boolean') return data.available;
+          if (typeof data.available === 'boolean') {
+            hadSuccessfulCheck = true;
+            return data.available;
+          }
         }
       } catch {}
     }
@@ -917,16 +1156,24 @@ class SupabaseService {
           .ilike('username', cleanUsername);
 
         if (!error && data) {
+          hadSuccessfulCheck = true;
+          const ex = excludeCode ? excludeCode.toLowerCase() : null;
           const isTaken = data.some((row) => {
-            const owner = row.sender_code || row.chat_id;
-            return owner && excludeCode && owner !== excludeCode;
+            if (!ex) return true;
+            if (row.sender_code) return String(row.sender_code).toLowerCase() !== ex;
+            if (row.chat_id) return String(row.chat_id).toLowerCase() !== ex;
+            return true;
           });
           return !isTaken;
         }
       } catch {}
     }
 
-    return true;
+    if (!hadSuccessfulCheck) {
+      throw new Error('USERNAME_CHECK_FAILED');
+    }
+
+    return false;
   }
 
   async lookupProfileByUsername(username: string): Promise<UserDirectoryRecord | null> {
@@ -949,10 +1196,10 @@ class SupabaseService {
               const profile: UserDirectoryRecord = {
                 user_code: data.user.user_code || data.user.sender_code || data.user.chat_id,
                 numeric_id: data.user.numeric_id || null,
-                nickname: data.user.nickname,
+                nickname: data.user.nickname || '',
                 avatar_url: data.user.avatar_url,
                 banner_url: parsed?.banner_url || data.user.banner_url || null,
-                username: data.user.username,
+                username: parsed?.username || data.user.username,
                 bio: parsed?.bio || data.user.bio,
                 birthday: data.user.birthday,
                 updated_at: data.user.updated_at,
@@ -971,24 +1218,28 @@ class SupabaseService {
             .select('*')
             .ilike('username', cleanUsername)
             .order('updated_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+            .limit(10);
 
-          if (!error && data && data.nickname) {
-            const parsed = this.parseProfileRow(data);
-            const profile: UserDirectoryRecord = {
-              user_code: data.sender_code || data.chat_id,
-              numeric_id: data.numeric_id || null,
-              nickname: data.nickname,
-              avatar_url: data.avatar_url,
-              banner_url: parsed?.banner_url || data.banner_url || null,
-              username: data.username,
-              bio: parsed?.bio || data.bio,
-              birthday: data.birthday,
-              updated_at: data.updated_at,
-            };
-            networkManager.setCache(cacheKey, profile, 60000);
-            return profile;
+          if (!error && data && data.length > 0) {
+            const parsedRows = data
+              .map((r) => this.parseProfileRow(r))
+              .filter((r): r is ProfileUpdateRecord => r !== null);
+            const merged = this.coalesceProfileRecords(parsedRows);
+            if (merged && (merged.nickname || merged.username || merged.birthday || merged.avatar_url || merged.bio || merged.banner_url)) {
+              const profile: UserDirectoryRecord = {
+                user_code: merged.sender_code || merged.chat_id,
+                numeric_id: merged.numeric_id || null,
+                nickname: merged.nickname || '',
+                avatar_url: merged.avatar_url,
+                banner_url: merged.banner_url || null,
+                username: merged.username,
+                bio: merged.bio,
+                birthday: merged.birthday,
+                updated_at: merged.updated_at,
+              };
+              networkManager.setCache(cacheKey, profile, 60000);
+              return profile;
+            }
           }
         } catch (err) {
           console.warn('[Directory] Failed to lookup profile by username from Supabase:', err);

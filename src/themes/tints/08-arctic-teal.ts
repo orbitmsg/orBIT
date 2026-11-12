@@ -1,0 +1,36 @@
+import type { ThemeTintPreset } from '../tintTypes';
+
+export const themeTint: ThemeTintPreset = {
+  id: 'arctic-teal',
+  nameRu: 'Бирюза',
+  nameEn: 'Arctic Teal',
+  swatch: 'linear-gradient(135deg, #06b6d4 0%, #0e7490 100%)',
+  dark: {
+    bgPrimary: '#142328',
+    bgSecondary: '#101d22',
+    surfaceContainer: '#0a1317',
+    surfaceContainerStrong: '#0d181d',
+    borderColor: '#1a2e35',
+    titleBarBg: '#0d181d',
+    chatListBg: '#101d22',
+    accent: '#06b6d4',
+    accentLight: '#22d3ee',
+    accentDark: '#0891b2',
+    bubbleOwnBg: 'linear-gradient(135deg, #066577 0%, #087f93 100%)',
+    bubbleIncomingBg: '#1c3037',
+  },
+  light: {
+    bgPrimary: '#f3fbfc',
+    bgSecondary: '#e7f5f8',
+    surfaceContainer: '#dcf0f4',
+    surfaceContainerStrong: '#cfe8ee',
+    borderColor: '#c3e1e8',
+    titleBarBg: '#d8eef3',
+    chatListBg: '#eaf6f9',
+    accent: '#0891b2',
+    accentLight: '#06b6d4',
+    accentDark: '#0e7490',
+    bubbleOwnBg: 'linear-gradient(135deg, #06697c 0%, #088296 100%)',
+    bubbleIncomingBg: '#dff2f6',
+  },
+};

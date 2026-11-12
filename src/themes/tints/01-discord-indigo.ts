@@ -1,0 +1,36 @@
+import type { ThemeTintPreset } from '../tintTypes';
+
+export const themeTint: ThemeTintPreset = {
+  id: 'discord-indigo',
+  nameRu: 'Индиго',
+  nameEn: 'Discord Indigo',
+  swatch: 'linear-gradient(135deg, #5865F2 0%, #4752c4 100%)',
+  dark: {
+    bgPrimary: '#313338',
+    bgSecondary: '#2b2d31',
+    surfaceContainer: '#1e2026',
+    surfaceContainerStrong: '#23252c',
+    borderColor: '#202229',
+    titleBarBg: '#23252c',
+    chatListBg: '#2b2d31',
+    accent: '#5865F2',
+    accentLight: '#7289da',
+    accentDark: '#4752c4',
+    bubbleOwnBg: 'linear-gradient(135deg, #5865F2 0%, #4752c4 100%)',
+    bubbleIncomingBg: '#262830',
+  },
+  light: {
+    bgPrimary: '#f8f9fe',
+    bgSecondary: '#eef0fa',
+    surfaceContainer: '#e5e8f6',
+    surfaceContainerStrong: '#dadff2',
+    borderColor: '#dce0f0',
+    titleBarBg: '#e6e9f7',
+    chatListBg: '#eef0fa',
+    accent: '#5865F2',
+    accentLight: '#7983f5',
+    accentDark: '#414bc2',
+    bubbleOwnBg: 'linear-gradient(135deg, #5865F2 0%, #4752c4 100%)',
+    bubbleIncomingBg: '#e8ebf8',
+  },
+};

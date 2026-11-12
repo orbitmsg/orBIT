@@ -1,0 +1,36 @@
+import type { ThemeTintPreset } from '../tintTypes';
+
+export const themeTint: ThemeTintPreset = {
+  id: 'sakura-bloom',
+  nameRu: 'Сакура',
+  nameEn: 'Sakura Bloom',
+  swatch: 'linear-gradient(135deg, #f472b6 0%, #ec4899 55%, #db2777 100%)',
+  dark: {
+    bgPrimary: '#2a1e28',
+    bgSecondary: '#221720',
+    surfaceContainer: '#1b1219',
+    surfaceContainerStrong: '#20161e',
+    borderColor: '#3a2836',
+    titleBarBg: '#1c121a',
+    chatListBg: '#221720',
+    accent: '#ec4899',
+    accentLight: '#f472b6',
+    accentDark: '#db2777',
+    bubbleOwnBg: 'linear-gradient(135deg, #db2777 0%, #be185d 100%)',
+    bubbleIncomingBg: '#382835',
+  },
+  light: {
+    bgPrimary: '#fff9fb',
+    bgSecondary: '#fdf2f6',
+    surfaceContainer: '#fae7ef',
+    surfaceContainerStrong: '#f3d6e2',
+    borderColor: '#f1d5e1',
+    titleBarBg: '#f4dce6',
+    chatListBg: '#fcedf3',
+    accent: '#db2777',
+    accentLight: '#ec4899',
+    accentDark: '#be185d',
+    bubbleOwnBg: 'linear-gradient(135deg, #db2777 0%, #be185d 100%)',
+    bubbleIncomingBg: '#fae7ef',
+  },
+};

@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { runTelegramDisintegration } from '../utils/telegramDisintegration';
 import { persist } from 'zustand/middleware';
-import { ThemeId, DEFAULT_CHAT_COLOR, applyThemeToRoot } from '../theme';
+import { ThemeId, applyThemeToRoot, resolveThemeMode } from '../theme';
+import { DEFAULT_THEME_TINT_ID, getThemeTintById } from '../themes';
 import { generateChatId as genChatId, ensureValidUuid } from '../lib/crypto';
 import { mediaManager } from '../services/mediaManager';
 import { supabaseService } from '../services/supabaseService';
@@ -132,7 +133,8 @@ export const useChatStore = create<ChatState>()(
       deletingMessageIds: {},
       passcode: null,
       currentTheme: 'system',
-      chatColor: DEFAULT_CHAT_COLOR,
+      themeTintId: DEFAULT_THEME_TINT_ID,
+      chatColor: getThemeTintById(DEFAULT_THEME_TINT_ID)[resolveThemeMode('system')].bubbleOwnBg,
       currentView: 'chats',
       dotOverlay: true,
       blurProtection: false,
@@ -1292,16 +1294,33 @@ export const useChatStore = create<ChatState>()(
       },
       setPasscode: (code) => set({ passcode: code }),
       setTheme: (theme) => {
-        set({ currentTheme: theme });
-        applyThemeToRoot(theme, get().chatColor);
+        const state = get();
+        const tint = getThemeTintById(state.themeTintId);
+        const prevTintDefault = state.chatColor === tint.dark.bubbleOwnBg || state.chatColor === tint.light.bubbleOwnBg;
+        const nextMode = resolveThemeMode(theme);
+        const nextChatColor = prevTintDefault ? tint[nextMode].bubbleOwnBg : state.chatColor;
+        set({ currentTheme: theme, chatColor: nextChatColor });
+        applyThemeToRoot(theme, nextChatColor, tint.id);
+      },
+      setThemeTint: (tintId) => {
+        const state = get();
+        const tint = getThemeTintById(tintId);
+        const resolvedMode = resolveThemeMode(state.currentTheme);
+        const nextChatColor = tint[resolvedMode].bubbleOwnBg;
+        set({ themeTintId: tint.id, chatColor: nextChatColor });
+        applyThemeToRoot(state.currentTheme, nextChatColor, tint.id);
       },
       setChatColor: (color) => {
         set({ chatColor: color });
-        applyThemeToRoot(get().currentTheme, color);
+        applyThemeToRoot(get().currentTheme, color, get().themeTintId);
       },
       resetChatColor: () => {
-        set({ chatColor: DEFAULT_CHAT_COLOR });
-        applyThemeToRoot(get().currentTheme, DEFAULT_CHAT_COLOR);
+        const state = get();
+        const tint = getThemeTintById(state.themeTintId);
+        const resolvedMode = resolveThemeMode(state.currentTheme);
+        const nextChatColor = tint[resolvedMode].bubbleOwnBg;
+        set({ chatColor: nextChatColor });
+        applyThemeToRoot(state.currentTheme, nextChatColor, tint.id);
       },
       toggleDots: () => set((state) => ({ dotOverlay: !state.dotOverlay })),
       setCurrentView: (view) => set({ currentView: view }),
@@ -1468,7 +1487,9 @@ export const useChatStore = create<ChatState>()(
       },
       resetChats: () => {
         const defaultTheme: ThemeId = 'system';
-        applyThemeToRoot(defaultTheme, DEFAULT_CHAT_COLOR);
+        const defaultTint = getThemeTintById(DEFAULT_THEME_TINT_ID);
+        const defaultBubbleBg = defaultTint[resolveThemeMode(defaultTheme)].bubbleOwnBg;
+        applyThemeToRoot(defaultTheme, defaultBubbleBg, DEFAULT_THEME_TINT_ID);
         mediaManager.clearMemoryCache();
         set({
           chats: [],
@@ -1477,7 +1498,8 @@ export const useChatStore = create<ChatState>()(
           messagesByChatId: {},
           passcode: null,
           currentTheme: defaultTheme,
-          chatColor: DEFAULT_CHAT_COLOR,
+          themeTintId: DEFAULT_THEME_TINT_ID,
+          chatColor: defaultBubbleBg,
           currentView: 'chats',
           dotOverlay: true,
           blurProtection: false,

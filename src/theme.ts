@@ -1,5 +1,6 @@
 import { createTheme } from '@mui/material/styles';
 import { applyMd3DynamicTokens } from './md3Dynamic';
+import { DEFAULT_THEME_TINT_ID, getThemeTintById } from './themes';
 
 export type ThemeId = 'system' | 'light' | 'dark';
 
@@ -228,98 +229,139 @@ export const availableThemes = Object.fromEntries(
 ) as Record<ThemeId, { id: ThemeId; name: string; preview: ThemePreview }>;
 
 let systemThemeListenerAttached = false;
+let activeThemeTintId = DEFAULT_THEME_TINT_ID;
+let activeChatColor: string | undefined;
 
-export const applyThemeToRoot = (themeId: ThemeId, chatColor?: string) => {
-  let resolvedMode: 'light' | 'dark' = 'dark';
-  if (themeId === 'system') {
-    const isDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    resolvedMode = isDark ? 'dark' : 'light';
-    if (!systemThemeListenerAttached && typeof window !== 'undefined' && window.matchMedia) {
-      systemThemeListenerAttached = true;
-      try {
-        const mql = window.matchMedia('(prefers-color-scheme: dark)');
-        mql.addEventListener('change', () => {
-          const activeThemeSetting = document.documentElement.getAttribute('data-theme-setting');
-          if (activeThemeSetting === 'system' || !activeThemeSetting) {
-            applyThemeToRoot('system');
-          }
-        });
-      } catch (e) { }
-    }
-  } else if (themeId === 'light' || themeId === 'dark') {
-    resolvedMode = themeId;
+export const resolveThemeMode = (themeId: ThemeId): 'light' | 'dark' => {
+  if (themeId === 'light' || themeId === 'dark') {
+    return themeId;
   }
+  const isDark =
+    typeof window !== 'undefined' &&
+    window.matchMedia &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return isDark ? 'dark' : 'light';
+};
 
+export const resolveThemeVars = (themeId: ThemeId, chatColor?: string, themeTintId?: string) => {
+  const resolvedMode = resolveThemeMode(themeId);
   const theme = themePalettes[resolvedMode] || themePalettes.dark;
-  const root = document.documentElement;
+  const root = typeof document !== 'undefined' ? document.documentElement : null;
+  const resolvedTintId = themeTintId || root?.getAttribute('data-theme-tint') || activeThemeTintId || DEFAULT_THEME_TINT_ID;
+  const tint = getThemeTintById(resolvedTintId);
+  const tintTokens = tint[resolvedMode];
 
-  root.setAttribute('data-theme-setting', themeId);
-  root.setAttribute('data-theme', resolvedMode);
-  root.setAttribute('data-theme-light', resolvedMode === 'light' ? 'true' : 'false');
-  root.style.setProperty('--theme-id', themeId);
-
-  Object.entries(theme.vars).forEach(([key, value]) => {
-    root.style.setProperty(key, value);
-  });
-
-  const effectiveChatColor = chatColor || root.style.getPropertyValue('--chat-bubble-own-bg') || DEFAULT_CHAT_COLOR;
-  root.style.setProperty('--chat-bubble-own-bg', effectiveChatColor);
-  root.style.setProperty('--chat-bubble-incoming-bg', theme.vars['--surface-container'] || (resolvedMode === 'light' ? '#f0f0f0' : '#33363f'));
-  root.style.setProperty('--chat-bubble-incoming-text', resolvedMode === 'light' ? '#1b1b1b' : '#f6f6f6');
-
-  const solidAccent = effectiveChatColor.startsWith('linear-gradient')
-    ? (effectiveChatColor.match(/#[a-fA-F0-9]{6}/)?.[0] || DEFAULT_CHAT_COLOR)
+  const isCustomChatColor = Boolean(
+    chatColor &&
+    chatColor !== tint.dark.bubbleOwnBg &&
+    chatColor !== tint.light.bubbleOwnBg
+  );
+  const effectiveChatColor = isCustomChatColor && chatColor ? chatColor : tintTokens.bubbleOwnBg;
+  const customHex = effectiveChatColor.startsWith('linear-gradient')
+    ? (effectiveChatColor.match(/#[a-fA-F0-9]{6}/)?.[0] || tintTokens.accent)
     : effectiveChatColor;
 
-  root.style.setProperty('--accent-color', solidAccent);
-  if (resolvedMode === 'light') {
-    root.style.setProperty('--accent-light', solidAccent);
+  const accentColor = isCustomChatColor ? customHex : tintTokens.accent;
+  const accentLight = isCustomChatColor
+    ? (resolvedMode === 'light' ? customHex : tintTokens.accentLight)
+    : tintTokens.accentLight;
+  const accentDark = tintTokens.accentDark;
+
+  const vars: Record<string, string> = {
+    ...theme.vars,
+    '--bg-primary': tintTokens.bgPrimary,
+    '--bg-secondary': tintTokens.bgSecondary,
+    '--chat-list-bg': tintTokens.chatListBg,
+    '--surface-container': tintTokens.surfaceContainer,
+    '--surface-container-strong': tintTokens.surfaceContainerStrong,
+    '--border-color': tintTokens.borderColor,
+    '--surface-border': tintTokens.borderColor,
+    '--title-bar-bg': tintTokens.titleBarBg,
+    '--settings-bg': tintTokens.bgPrimary,
+    '--settings-surface': tintTokens.bgSecondary,
+    '--settings-surface-var': tintTokens.surfaceContainer,
+    '--settings-outline': tintTokens.borderColor,
+    '--chat-bubble-own-bg': effectiveChatColor,
+    '--chat-bubble-incoming-bg': tintTokens.bubbleIncomingBg,
+    '--chat-bubble-incoming-text': resolvedMode === 'light' ? '#1b1b1b' : '#f6f6f6',
+    '--accent-color': accentColor,
+    '--accent-light': accentLight,
+    '--accent-dark': accentDark,
+    '--accent-glow': `color-mix(in srgb, ${accentColor} 30%, transparent)`,
+    '--accent-glow-light': `color-mix(in srgb, ${accentColor} 15%, transparent)`,
+    '--selection-bg': `color-mix(in srgb, ${accentColor} 28%, transparent)`,
+    '--settings-primary': accentColor,
+    '--settings-primary-cont': accentDark,
+  };
+
+  const mdVars: Record<string, string> = {
+    '--md-bg': vars['--settings-bg'] || vars['--bg-secondary'],
+    '--md-surface': vars['--settings-surface'] || vars['--surface-container'],
+    '--md-surface-var': vars['--settings-surface-var'] || vars['--surface-container-strong'],
+    '--md-outline': vars['--settings-outline'] || vars['--border-color'],
+    '--md-outline-med': vars['--settings-outline-med'] || vars['--border-color'],
+    '--md-on-surface': vars['--settings-on-surface'] || vars['--text-main'],
+    '--md-on-surface-var': vars['--settings-on-surface-var'] || vars['--text-dim'],
+    '--md-primary': accentColor,
+    '--md-on-primary': '#ffffff',
+    '--md-primary-cont': accentColor,
+    '--md-error': vars['--settings-error'] || '#f44336',
+    '--md-error-cont': vars['--settings-error-cont'] || 'rgba(244,67,54,0.12)',
+  };
+
+  return {
+    resolvedMode,
+    isLight: theme.isLight,
+    tintId: tint.id,
+    accentColor,
+    effectiveChatColor,
+    vars: { ...vars, ...mdVars },
+  };
+};
+
+export const applyThemeToRoot = (themeId: ThemeId, chatColor?: string, themeTintId?: string) => {
+  if (themeId === 'system' && !systemThemeListenerAttached && typeof window !== 'undefined' && window.matchMedia) {
+    systemThemeListenerAttached = true;
+    try {
+      const mql = window.matchMedia('(prefers-color-scheme: dark)');
+      mql.addEventListener('change', () => {
+        const activeThemeSetting = document.documentElement.getAttribute('data-theme-setting');
+        if (activeThemeSetting === 'system' || !activeThemeSetting) {
+          const storedTintId = document.documentElement.getAttribute('data-theme-tint') || activeThemeTintId;
+          applyThemeToRoot('system', activeChatColor, storedTintId);
+        }
+      });
+    } catch (e) { }
   }
-  root.style.setProperty('--accent-glow', `color-mix(in srgb, ${solidAccent} 30%, transparent)`);
-  root.style.setProperty('--accent-glow-light', `color-mix(in srgb, ${solidAccent} 15%, transparent)`);
-  root.style.setProperty('--selection-bg', `color-mix(in srgb, ${solidAccent} 28%, transparent)`);
-  root.style.setProperty('--settings-primary', solidAccent);
 
-  root.style.setProperty('--surface-container', theme.vars['--surface-container'] || '#2e2e2e');
-  root.style.setProperty('--surface-container-strong', theme.vars['--surface-container-strong'] || '#343434');
-  root.style.setProperty('--surface-container-soft', theme.vars['--surface-container-soft'] || 'rgba(255,255,255,0.05)');
-  root.style.setProperty('--surface-border', theme.vars['--surface-border'] || '#2e2e2e');
-  root.style.setProperty('--chat-list-bg', theme.vars['--chat-list-bg'] || (resolvedMode === 'light' ? '#f5f5f5' : '#1e1e1e'));
-  root.style.setProperty('--switch-bg', theme.vars['--switch-bg'] || (resolvedMode === 'light' ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.16)'));
-  root.style.setProperty('--switch-border', theme.vars['--switch-border'] || (resolvedMode === 'light' ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.22)'));
+  const root = document.documentElement;
+  const resolved = resolveThemeVars(themeId, chatColor, themeTintId);
+  activeThemeTintId = resolved.tintId;
+  activeChatColor = chatColor;
 
-  root.style.setProperty('--md-bg', theme.vars['--settings-bg'] || theme.vars['--bg-secondary']);
-  root.style.setProperty('--md-surface', theme.vars['--settings-surface'] || theme.vars['--surface-container']);
-  root.style.setProperty('--md-surface-var', theme.vars['--settings-surface-var'] || theme.vars['--surface-container-strong']);
-  root.style.setProperty('--md-outline', theme.vars['--settings-outline'] || theme.vars['--border-color']);
-  root.style.setProperty('--md-outline-med', theme.vars['--settings-outline-med'] || theme.vars['--border-color']);
-  root.style.setProperty('--md-on-surface', theme.vars['--settings-on-surface'] || theme.vars['--text-main']);
-  root.style.setProperty('--md-on-surface-var', theme.vars['--settings-on-surface-var'] || theme.vars['--text-dim']);
-  root.style.setProperty('--md-primary', solidAccent);
-  root.style.setProperty('--md-on-primary', '#ffffff');
-  root.style.setProperty('--md-primary-cont', solidAccent);
-  root.style.setProperty('--md-error', theme.vars['--settings-error'] || '#f44336');
-  root.style.setProperty('--md-error-cont', theme.vars['--settings-error-cont'] || 'rgba(244,67,54,0.12)');
+  root.setAttribute('data-theme-setting', themeId);
+  root.setAttribute('data-theme', resolved.resolvedMode);
+  root.setAttribute('data-theme-light', resolved.isLight ? 'true' : 'false');
+  root.setAttribute('data-theme-tint', resolved.tintId);
+  root.style.setProperty('--theme-id', themeId);
+  root.style.setProperty('--theme-tint-id', resolved.tintId);
 
-  root.style.setProperty('--title-bar-bg', theme.vars['--title-bar-bg'] || (resolvedMode === 'light' ? '#e4e6eb' : '#232428'));
+  Object.entries(resolved.vars).forEach(([key, value]) => {
+    root.style.setProperty(key, value);
+  });
 
   try {
     applyMd3DynamicTokens(
       root,
-      solidAccent,
-      theme.vars['--bg-secondary'] || '#1b1b1b',
-      theme.isLight
+      resolved.accentColor,
+      resolved.vars['--bg-secondary'] || '#1b1b1b',
+      resolved.isLight
     );
   } catch (e) { }
 
   try {
     if (typeof window !== 'undefined' && (window as any).orbita?.setThemeForElectron) {
-      (window as any).orbita.setThemeForElectron(resolvedMode, {
-        ...theme.vars,
-        '--chat-bubble-own-bg': effectiveChatColor,
-        '--md-surface': theme.vars['--settings-surface'] || theme.vars['--surface-container'],
-        '--md-surface-var': theme.vars['--settings-surface-var'] || theme.vars['--surface-container-strong'],
-      });
+      (window as any).orbita.setThemeForElectron(resolved.resolvedMode, resolved.vars);
     }
   } catch (e) { }
 };

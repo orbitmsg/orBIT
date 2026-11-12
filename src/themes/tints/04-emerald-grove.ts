@@ -1,0 +1,36 @@
+import type { ThemeTintPreset } from '../tintTypes';
+
+export const themeTint: ThemeTintPreset = {
+  id: 'emerald-grove',
+  nameRu: 'Изумруд',
+  nameEn: 'Emerald Grove',
+  swatch: 'linear-gradient(135deg, #047857 0%, #10b981 55%, #34d399 100%)',
+  dark: {
+    bgPrimary: '#141e1a',
+    bgSecondary: '#101915',
+    surfaceContainer: '#0c1410',
+    surfaceContainerStrong: '#192620',
+    borderColor: '#21332b',
+    titleBarBg: '#0e1713',
+    chatListBg: '#101a16',
+    accent: '#10b981',
+    accentLight: '#34d399',
+    accentDark: '#059669',
+    bubbleOwnBg: 'linear-gradient(135deg, #047857 0%, #059669 100%)',
+    bubbleIncomingBg: '#1b2923',
+  },
+  light: {
+    bgPrimary: '#f4faf6',
+    bgSecondary: '#eaf4ee',
+    surfaceContainer: '#e2efe7',
+    surfaceContainerStrong: '#d5e8dc',
+    borderColor: '#cde0d4',
+    titleBarBg: '#e3f0e8',
+    chatListBg: '#ecf6f0',
+    accent: '#10b981',
+    accentLight: '#34d399',
+    accentDark: '#059669',
+    bubbleOwnBg: 'linear-gradient(135deg, #047857 0%, #0d9468 100%)',
+    bubbleIncomingBg: '#e4f1e9',
+  },
+};

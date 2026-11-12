@@ -1,0 +1,36 @@
+import type { ThemeTintPreset } from '../tintTypes';
+
+export const themeTint: ThemeTintPreset = {
+  id: 'sunset-amber',
+  nameRu: 'Янтарь',
+  nameEn: 'Sunset Amber',
+  swatch: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
+  dark: {
+    bgPrimary: '#281f19',
+    bgSecondary: '#1f1712',
+    surfaceContainer: '#17110d',
+    surfaceContainerStrong: '#241b15',
+    borderColor: '#2c2018',
+    titleBarBg: '#1b140f',
+    chatListBg: '#1f1712',
+    accent: '#f59e0b',
+    accentLight: '#fbbf24',
+    accentDark: '#d97706',
+    bubbleOwnBg: 'linear-gradient(135deg, #d97706 0%, #c2410c 100%)',
+    bubbleIncomingBg: '#33271f',
+  },
+  light: {
+    bgPrimary: '#fffcf7',
+    bgSecondary: '#faf3e8',
+    surfaceContainer: '#f3e7d5',
+    surfaceContainerStrong: '#ebd9c1',
+    borderColor: '#e5d3ba',
+    titleBarBg: '#f3e6d3',
+    chatListBg: '#f8efe2',
+    accent: '#d97706',
+    accentLight: '#f59e0b',
+    accentDark: '#b45309',
+    bubbleOwnBg: 'linear-gradient(135deg, #d97706 0%, #c2410c 100%)',
+    bubbleIncomingBg: '#f2e5d2',
+  },
+};

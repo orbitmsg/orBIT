@@ -62,10 +62,10 @@ import {
 import { broadcastProfileUpdate } from '../settings/broadcastProfileUpdate';
 import { PrivacySettingsScreen } from '../settings/PrivacySettingsScreen';
 import { PasswordSettingsScreen } from '../settings/PasswordSettingsScreen';
-import {  BubbleSlider,
+import {  BubbleSlider, ChatSettingsTab,
 } from '../settings/AppearanceSettings';
 import { CallsTab } from '../settings/tabs/CallsTab';
-import { LanguageTab, FontTab } from '../settings/tabs/LanguageFontTabs';
+import { LanguageTab } from '../settings/tabs/LanguageFontTabs';
 import { MyAccountTab } from '../settings/tabs/MyAccountTab';
 import { MainTab } from '../settings/tabs/MainTab';
 import { NotificationsTab } from '../settings/tabs/NotificationsTab';
@@ -84,7 +84,7 @@ export {
 
 export const SettingsScreen = () => {
   const { t } = useTranslation();
-  const {    fontFamily, setFontFamily,
+  const {
     language, setLanguage,
     notificationCount, setNotificationCount,
     notificationPosition, setNotificationPosition,
@@ -113,8 +113,6 @@ export const SettingsScreen = () => {
     hideMenuBar, setHideMenuBar,
     voiceCallsEnabled, setVoiceCallsEnabled,
   } = useChatStore(useShallow((s) => ({
-    setTheme: s.setTheme, currentTheme: s.currentTheme,
-    fontFamily: s.fontFamily, setFontFamily: s.setFontFamily,
     language: s.language, setLanguage: s.setLanguage,
     notificationCount: s.notificationCount, setNotificationCount: s.setNotificationCount,
     notificationPosition: s.notificationPosition, setNotificationPosition: s.setNotificationPosition,
@@ -627,9 +625,9 @@ export const SettingsScreen = () => {
     security:      t('settings.privacy'),
     password:      securityService.isPasswordSet() ? t('security.modal_title_change') : t('security.modal_title_set'),
     connection:    t('settings.connection'),
-    chats:         t('settings.appearance'),
+    chats:         t('settings.chat_settings', 'Настройка чатов'),
     calls:         t('settings.calls'),
-    font:          t('settings.font'),
+    font:          t('settings.chat_settings', 'Настройка чатов'),
     dataMemory:    t('settings.data_memory'),
     energy:        t('settings.energy_and_animations', 'Заряд батареи и анимации'),
     notifications: t('settings.notifications_and_sounds') || 'Уведомления и звуки',
@@ -665,29 +663,29 @@ export const SettingsScreen = () => {
   ];
 
   const FONT_OPTIONS: { value: FontFamily; label: string; native?: string }[] = [
-    { value: 'system', label: t('settings.default'), native: 'Default System' },
-    { value: 'Segoe UI', label: 'Segoe UI', native: 'Segoe UI' },
-    { value: 'Segoe UI Black', label: 'Segoe UI Black', native: 'Segoe UI Black' },
-    { value: 'Inter', label: 'Inter', native: 'Inter' },
-    { value: 'Roboto', label: 'Roboto', native: 'Roboto' },
-    { value: 'Open Sans', label: 'Open Sans', native: 'Open Sans' },
-    { value: 'Lato', label: 'Lato', native: 'Lato' },
-    { value: 'Montserrat', label: 'Montserrat', native: 'Montserrat' },
-    { value: 'Poppins', label: 'Poppins', native: 'Poppins' },
-    { value: 'Nunito', label: 'Nunito', native: 'Nunito' },
-    { value: 'Rubik', label: 'Rubik', native: 'Rubik' },
-    { value: 'Fira Sans', label: 'Fira Sans', native: 'Fira Sans' },
-    { value: 'Ubuntu', label: 'Ubuntu', native: 'Ubuntu' },
-    { value: 'Manrope', label: 'Manrope', native: 'Manrope' },
-    { value: 'Arial', label: 'Arial', native: 'Arial' },
-    { value: 'Arial Black', label: 'Arial Black', native: 'Arial Black' },
-    { value: 'Trebuchet MS', label: 'Trebuchet MS', native: 'Trebuchet MS' },
-    { value: 'Verdana', label: 'Verdana', native: 'Verdana' },
-    { value: 'Tahoma', label: 'Tahoma', native: 'Tahoma' },
-    { value: 'Georgia', label: 'Georgia', native: 'Georgia' },
-    { value: 'Times New Roman', label: 'Times New Roman', native: 'Times New Roman' },
-    { value: 'Merriweather', label: 'Merriweather', native: 'Merriweather' },
-    { value: 'Playfair Display', label: 'Playfair Display', native: 'Playfair Display' },
+    { value: 'system', label: t('settings.default') },
+    { value: 'Segoe UI', label: 'Segoe UI' },
+    { value: 'Segoe UI Black', label: 'Segoe UI Black' },
+    { value: 'Inter', label: 'Inter' },
+    { value: 'Roboto', label: 'Roboto' },
+    { value: 'Open Sans', label: 'Open Sans' },
+    { value: 'Lato', label: 'Lato' },
+    { value: 'Montserrat', label: 'Montserrat' },
+    { value: 'Poppins', label: 'Poppins' },
+    { value: 'Nunito', label: 'Nunito' },
+    { value: 'Rubik', label: 'Rubik' },
+    { value: 'Fira Sans', label: 'Fira Sans' },
+    { value: 'Ubuntu', label: 'Ubuntu' },
+    { value: 'Manrope', label: 'Manrope' },
+    { value: 'Arial', label: 'Arial' },
+    { value: 'Arial Black', label: 'Arial Black' },
+    { value: 'Trebuchet MS', label: 'Trebuchet MS' },
+    { value: 'Verdana', label: 'Verdana' },
+    { value: 'Tahoma', label: 'Tahoma' },
+    { value: 'Georgia', label: 'Georgia' },
+    { value: 'Times New Roman', label: 'Times New Roman' },
+    { value: 'Merriweather', label: 'Merriweather' },
+    { value: 'Playfair Display', label: 'Playfair Display' },
     { value: 'Fira Code', label: 'Fira Code', native: 'Monospace' },
     { value: 'JetBrains Mono', label: 'JetBrains Mono', native: 'Monospace' },
     { value: 'Consolas', label: 'Consolas', native: 'Monospace' },
@@ -741,14 +739,6 @@ export const SettingsScreen = () => {
       language={language}
       setLanguage={setLanguage}
       languageDisplayOptions={languageDisplayOptions}
-    />
-  );
-
-  const renderFont = () => (
-    <FontTab
-      fontFamily={fontFamily}
-      setFontFamily={setFontFamily}
-      fontOptions={FONT_OPTIONS}
     />
   );
 
@@ -832,7 +822,7 @@ export const SettingsScreen = () => {
         return <ConnectionSettingsScreen onBack={handleBack} />;
       case 'chats':
       case 'font':
-        return renderFont();
+        return <ChatSettingsTab fontOptions={FONT_OPTIONS} />;
       case 'folders':
         return <ChatFoldersSettings onBack={handleBack} />;
       case 'dataMemory':

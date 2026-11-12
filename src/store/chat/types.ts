@@ -367,6 +367,7 @@ export interface ChatState {
   deletingMessageIds?: Record<string, boolean>;
   passcode: string | null;
   currentTheme: ThemeId;
+  themeTintId: string;
   chatColor: string;
   currentView: 'chats' | 'settings';
   dotOverlay: boolean;
@@ -550,6 +551,7 @@ export interface ChatState {
   preloadRecentMessagesFromStorage: () => Promise<void>;
   setPasscode: (code: string | null) => void;
   setTheme: (theme: ThemeId) => void;
+  setThemeTint: (tintId: string) => void;
   setChatColor: (color: string) => void;
   resetChatColor: () => void;
   toggleDots: () => void;

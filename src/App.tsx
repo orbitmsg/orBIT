@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, Component, ReactNode } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
-import md3Theme, { applyThemeToRoot, themePalettes } from './theme';
+import md3Theme, { applyThemeToRoot, resolveThemeVars } from './theme';
 import { useAuthStore } from './store/useAuthStore';
 import { useChatStore } from './store/useChatStore';
 import { sqliteStorage } from './services/sqliteStorage';
@@ -268,15 +268,16 @@ function App() {
   }, []);
 
   const chatColor = useChatStore((state) => state.chatColor);
+  const themeTintId = useChatStore((state) => state.themeTintId);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.orbita?.setThemeForElectron) {
       try {
-        const themeDefinition = themePalettes[currentTheme] || themePalettes.dark;
-        window.orbita.setThemeForElectron(currentTheme, themeDefinition.vars || {});
+        const resolved = resolveThemeVars(currentTheme, chatColor, themeTintId);
+        window.orbita.setThemeForElectron(resolved.resolvedMode, resolved.vars);
       } catch (err) {}
     }
-  }, [currentTheme]);
+  }, [currentTheme, chatColor, themeTintId]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.orbita?.setAppIcon) {
@@ -384,8 +385,8 @@ function App() {
   }, [setLanguage, i18n, language, isHydrated]);
 
   useEffect(() => {
-    applyThemeToRoot(currentTheme, chatColor);
-  }, [currentTheme, chatColor]);
+    applyThemeToRoot(currentTheme, chatColor, themeTintId);
+  }, [currentTheme, chatColor, themeTintId]);
 
   useEffect(() => {
     if (!isHydrated) return;

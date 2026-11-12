@@ -1,9 +1,26 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { useChatStore } from '../../store/useChatStore';
-import { CHAT_COLOR_PRESETS, DEFAULT_CHAT_COLOR, type ThemeId } from '../../theme';
-import { MD3 } from './SettingsShared';
+import { Check } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
+import {
+  useChatStore,
+  FONT_MAP,
+  TEXT_SCALE_MIN,
+  TEXT_SCALE_MAX,
+  type FontFamily,
+} from '../../store/useChatStore';
+import {
+  CHAT_COLOR_PRESETS,
+  DEFAULT_CHAT_COLOR,
+  resolveThemeMode,
+  type ThemeId,
+} from '../../theme';
+import { THEME_TINT_PRESETS, getThemeTintById } from '../../themes';
+import { MD3, Block, SectionHeader } from './SettingsShared';
 import { MessageStatus } from '../MessageStatus';
+import { ChatBubblePreview, FontTab } from './tabs/LanguageFontTabs';
+
 export const SignalThemePicker: React.FC<{
   activeTheme?: ThemeId;
   onThemeChange?: (id: ThemeId) => void;
@@ -12,19 +29,17 @@ export const SignalThemePicker: React.FC<{
 
   const themeOptions: { id: ThemeId; label: string; icon: React.ReactNode }[] = [
     {
-      id: 'system',
-      label: t('settings.theme_system'),
+      id: 'dark',
+      label: t('settings.theme_night', 'Ночная'),
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect width="20" height="14" x="2" y="3" rx="2" />
-          <line x1="8" x2="16" y1="21" y2="21" />
-          <line x1="12" x2="12" y1="17" y2="21" />
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
         </svg>
       ),
     },
     {
       id: 'light',
-      label: t('settings.theme_light'),
+      label: t('settings.theme_day', 'Дневная'),
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="4" />
@@ -40,11 +55,13 @@ export const SignalThemePicker: React.FC<{
       ),
     },
     {
-      id: 'dark',
-      label: t('settings.theme_dark'),
+      id: 'system',
+      label: t('settings.theme_system', 'Системная'),
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+          <rect width="20" height="14" x="2" y="3" rx="2" />
+          <line x1="8" x2="16" y1="21" y2="21" />
+          <line x1="12" x2="12" y1="17" y2="21" />
         </svg>
       ),
     },
@@ -647,5 +664,335 @@ export const BubbleRadiusControl = () => {
       step={1}
       cssVar="--bubble-radius"
     />
+  );
+};
+
+export interface ChatSettingsTabProps {
+  fontOptions?: { value: string; label: string }[];
+}
+
+export const ChatSettingsTab: React.FC<ChatSettingsTabProps> = ({ fontOptions }) => {
+  const { t, i18n } = useTranslation();
+  const {
+    currentTheme,
+    setTheme,
+    themeTintId,
+    setThemeTint,
+    chatColor,
+    setChatColor,
+    resetChatColor,
+    fontFamily,
+    setFontFamily,
+    textScale,
+    setTextScale,
+    bubbleRadius,
+    setBubbleRadius,
+  } = useChatStore(
+    useShallow((s) => ({
+      currentTheme: s.currentTheme,
+      setTheme: s.setTheme,
+      themeTintId: s.themeTintId,
+      setThemeTint: s.setThemeTint,
+      chatColor: s.chatColor,
+      setChatColor: s.setChatColor,
+      resetChatColor: s.resetChatColor,
+      fontFamily: s.fontFamily,
+      setFontFamily: s.setFontFamily,
+      textScale: s.textScale,
+      setTextScale: s.setTextScale,
+      bubbleRadius: s.bubbleRadius,
+      setBubbleRadius: s.setBubbleRadius,
+    }))
+  );
+
+  const colorInputRef = useRef<HTMLInputElement>(null);
+  const isRu = (i18n.language || '').toLowerCase().startsWith('ru');
+  const resolvedMode = resolveThemeMode(currentTheme);
+  const activeTint = getThemeTintById(themeTintId);
+  const activeTintTokens = activeTint[resolvedMode];
+  const isCustomColor =
+    Boolean(chatColor) &&
+    chatColor !== activeTint.dark.bubbleOwnBg &&
+    chatColor !== activeTint.light.bubbleOwnBg;
+
+  const resolvedFontOptions = useMemo(() => {
+    if (fontOptions && fontOptions.length > 0) {
+      return fontOptions;
+    }
+    return (Object.keys(FONT_MAP) as FontFamily[]).map((key) => ({
+      value: key,
+      label: key === 'system' ? t('settings.default', 'По умолчанию') : key,
+    }));
+  }, [fontOptions, t]);
+
+  const handleCustomColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val) {
+      setChatColor(val);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.18 }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 18,
+        padding: '0 0 32px',
+      }}
+    >
+      <Block style={{ padding: '12px' }}>
+        <ChatBubblePreview
+          fontFamily={fontFamily}
+          textScale={textScale}
+          bubbleRadius={bubbleRadius}
+          chatColor={chatColor}
+          currentTheme={currentTheme}
+          themeTintId={themeTintId}
+        />
+      </Block>
+
+      <div>
+        <SectionHeader title={t('settings.theme_mode_title', 'Тема')} />
+        <Block style={{ padding: '10px 0 0' }}>
+          <SignalThemePicker activeTheme={currentTheme} onThemeChange={setTheme} />
+        </Block>
+      </div>
+
+      <div>
+        <SectionHeader title={t('settings.theme_tint_title', 'Цветовой оттенок')} />
+        <Block style={{ padding: '14px 14px 12px', gap: 12 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(108px, 1fr))',
+              gap: 8,
+            }}
+          >
+            {THEME_TINT_PRESETS.map((preset) => {
+              const isActive = themeTintId === preset.id;
+              const modeTokens = preset[resolvedMode];
+              const tintName = isRu ? preset.nameRu : preset.nameEn;
+
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => setThemeTint(preset.id)}
+                  aria-label={tintName}
+                  aria-pressed={isActive}
+                  style={{
+                    all: 'unset',
+                    boxSizing: 'border-box',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    padding: '10px 8px',
+                    borderRadius: 12,
+                    userSelect: 'none',
+                    backgroundColor: isActive
+                      ? 'color-mix(in srgb, var(--accent-color, #5865F2) 15%, var(--surface-container-strong, #232428))'
+                      : 'var(--surface-container-soft, rgba(255,255,255,0.04))',
+                    border: isActive
+                      ? '2px solid var(--accent-color, #5865F2)'
+                      : '2px solid var(--border-color, rgba(255,255,255,0.06))',
+                    color: isActive ? 'var(--text-heading, #ffffff)' : MD3.onSurface,
+                    transition: 'background-color 150ms ease, border-color 150ms ease, transform 150ms ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = 'var(--surface-muted, rgba(255,255,255,0.08))';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = 'var(--surface-container-soft, rgba(255,255,255,0.04))';
+                    }
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'relative',
+                      width: 34,
+                      height: 34,
+                      borderRadius: '50%',
+                      overflow: 'hidden',
+                      backgroundColor: modeTokens.bgPrimary,
+                      border: `1.5px solid ${isActive ? modeTokens.accent : 'rgba(255,255,255,0.18)'}`,
+                      boxShadow: isActive ? `0 0 0 2px color-mix(in srgb, ${modeTokens.accent} 35%, transparent)` : 'none',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: preset.swatch,
+                        clipPath: 'polygon(100% 0, 100% 100%, 0 100%)',
+                      }}
+                    />
+                    {isActive && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: 'rgba(0, 0, 0, 0.28)',
+                        }}
+                      >
+                        <Check size={15} strokeWidth={3} color="#ffffff" />
+                      </div>
+                    )}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      fontWeight: isActive ? 600 : 500,
+                      lineHeight: 1.2,
+                      textAlign: 'center',
+                      maxWidth: '100%',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      color: isActive ? 'var(--accent-color, #5865F2)' : MD3.onSurface,
+                    }}
+                  >
+                    {tintName}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              paddingTop: 10,
+              borderTop: '1px solid var(--border-color, rgba(255,255,255,0.08))',
+              flexWrap: 'wrap',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => colorInputRef.current?.click()}
+              aria-label={t('settings.custom_color', 'Свой цвет')}
+              style={{
+                all: 'unset',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '4px 8px 4px 4px',
+                borderRadius: 999,
+                fontSize: 12.5,
+                fontWeight: 500,
+                color: MD3.onSurface,
+                backgroundColor: isCustomColor
+                  ? 'color-mix(in srgb, var(--accent-color, #5865F2) 14%, transparent)'
+                  : 'transparent',
+                transition: 'background-color 150ms ease',
+              }}
+            >
+              <span
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: '50%',
+                  background: isCustomColor ? chatColor : activeTintTokens.bubbleOwnBg,
+                  border: '1.5px solid rgba(255,255,255,0.28)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                {isCustomColor && <Check size={12} strokeWidth={3} color="#ffffff" />}
+              </span>
+              <span>{t('settings.custom_color', 'Свой цвет')}</span>
+              <input
+                ref={colorInputRef}
+                type="color"
+                value={chatColor && chatColor.startsWith('#') ? chatColor : activeTintTokens.accent}
+                onChange={handleCustomColorChange}
+                aria-label={t('settings.custom_color', 'Свой цвет')}
+                style={{ display: 'none' }}
+              />
+            </button>
+
+            <button
+              type="button"
+              onClick={resetChatColor}
+              aria-label={t('settings.reset_all_chat_colors', 'Сбросить цвета всех чатов')}
+              style={{
+                all: 'unset',
+                cursor: 'pointer',
+                fontSize: 12.5,
+                fontWeight: 500,
+                color: 'var(--accent-color, #5865F2)',
+                padding: '4px 8px',
+                borderRadius: 8,
+                transition: 'opacity 150ms ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.75')}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+            >
+              {t('settings.reset_all_chat_colors', 'Сбросить цвета всех чатов')}
+            </button>
+          </div>
+        </Block>
+      </div>
+
+      <div>
+        <Block style={{ padding: '14px 0 4px', gap: 4 }}>
+          <BubbleSlider
+            label={t('settings.bubble_radius', 'Скругление сообщений')}
+            value={bubbleRadius}
+            onChange={setBubbleRadius}
+            onChangeCommitted={setBubbleRadius}
+            min={4}
+            max={16}
+            step={1}
+            valuePlacement="right"
+            formatValue={(v) => `${v}px`}
+            cssVar="--bubble-radius"
+            ariaLabel={t('settings.bubble_radius', 'Скругление сообщений')}
+          />
+          <BubbleSlider
+            label={t('settings.text_size', 'Размер текста')}
+            value={textScale}
+            onChange={setTextScale}
+            onChangeCommitted={setTextScale}
+            min={TEXT_SCALE_MIN}
+            max={TEXT_SCALE_MAX}
+            step={5}
+            valuePlacement="right"
+            formatValue={(v) => `${v}%`}
+            ariaLabel={t('settings.text_size', 'Размер текста')}
+          />
+        </Block>
+      </div>
+
+      <div>
+        <SectionHeader title={t('settings.fonts_title', 'Шрифт сообщений')} />
+        <FontTab
+          fontFamily={fontFamily}
+          setFontFamily={setFontFamily}
+          fontOptions={resolvedFontOptions}
+          hidePreview={true}
+          embedded={true}
+        />
+      </div>
+    </motion.div>
   );
 };

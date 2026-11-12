@@ -1,0 +1,36 @@
+import type { ThemeTintPreset } from '../tintTypes';
+
+export const themeTint: ThemeTintPreset = {
+  id: 'amethyst-dusk',
+  nameRu: 'Аметист',
+  nameEn: 'Amethyst Dusk',
+  swatch: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+  dark: {
+    bgPrimary: '#241d31',
+    bgSecondary: '#1d1729',
+    surfaceContainer: '#171221',
+    surfaceContainerStrong: '#2b223b',
+    borderColor: '#332847',
+    titleBarBg: '#191423',
+    chatListBg: '#1e182a',
+    accent: '#8b5cf6',
+    accentLight: '#a78bfa',
+    accentDark: '#6d28d9',
+    bubbleOwnBg: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+    bubbleIncomingBg: '#2f2640',
+  },
+  light: {
+    bgPrimary: '#faf8ff',
+    bgSecondary: '#f3efff',
+    surfaceContainer: '#ebe4fc',
+    surfaceContainerStrong: '#e1d6fa',
+    borderColor: '#dcd0f7',
+    titleBarBg: '#e8e0fa',
+    chatListBg: '#f2edfe',
+    accent: '#7c3aed',
+    accentLight: '#8b5cf6',
+    accentDark: '#5b21b6',
+    bubbleOwnBg: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+    bubbleIncomingBg: '#ebe3fc',
+  },
+};

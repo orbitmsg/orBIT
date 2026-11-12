@@ -1,0 +1,36 @@
+import type { ThemeTintPreset } from '../tintTypes';
+
+export const themeTint: ThemeTintPreset = {
+  id: 'cosmic-neon',
+  nameRu: 'Неон',
+  nameEn: 'Cosmic Neon',
+  swatch: 'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)',
+  dark: {
+    bgPrimary: '#151124',
+    bgSecondary: '#110d1e',
+    surfaceContainer: '#0c0916',
+    surfaceContainerStrong: '#1c1630',
+    borderColor: '#2c214a',
+    titleBarBg: '#0f0b1a',
+    chatListBg: '#130f21',
+    accent: '#a855f7',
+    accentLight: '#c084fc',
+    accentDark: '#7e22ce',
+    bubbleOwnBg: 'linear-gradient(135deg, #9333ea 0%, #db2777 100%)',
+    bubbleIncomingBg: '#211938',
+  },
+  light: {
+    bgPrimary: '#fbf8ff',
+    bgSecondary: '#f4edfe',
+    surfaceContainer: '#ede3fc',
+    surfaceContainerStrong: '#e4d5fa',
+    borderColor: '#dfd0f5',
+    titleBarBg: '#e9dcfb',
+    chatListBg: '#f6f0ff',
+    accent: '#9333ea',
+    accentLight: '#a855f7',
+    accentDark: '#7e22ce',
+    bubbleOwnBg: 'linear-gradient(135deg, #8b2cf5 0%, #d92677 100%)',
+    bubbleIncomingBg: '#efe6fd',
+  },
+};

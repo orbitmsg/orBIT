@@ -1,0 +1,36 @@
+import type { ThemeTintPreset } from '../tintTypes';
+
+export const themeTint: ThemeTintPreset = {
+  id: 'sapphire-abyss',
+  nameRu: 'Сапфир',
+  nameEn: 'Sapphire Abyss',
+  swatch: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 55%, #0ea5e9 100%)',
+  dark: {
+    bgPrimary: '#11192b',
+    bgSecondary: '#0d1424',
+    surfaceContainer: '#0c1220',
+    surfaceContainerStrong: '#162036',
+    borderColor: '#1c2942',
+    titleBarBg: '#0c1220',
+    chatListBg: '#0d1424',
+    accent: '#3b82f6',
+    accentLight: '#60a5fa',
+    accentDark: '#2563eb',
+    bubbleOwnBg: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+    bubbleIncomingBg: '#1a263e',
+  },
+  light: {
+    bgPrimary: '#f4f8ff',
+    bgSecondary: '#ebf2fe',
+    surfaceContainer: '#e4edfc',
+    surfaceContainerStrong: '#d8e5fa',
+    borderColor: '#cfe0f7',
+    titleBarBg: '#e2ecfc',
+    chatListBg: '#edf3fe',
+    accent: '#2563eb',
+    accentLight: '#3b82f6',
+    accentDark: '#1d4ed8',
+    bubbleOwnBg: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+    bubbleIncomingBg: '#e5eefc',
+  },
+};

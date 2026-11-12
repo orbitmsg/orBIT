@@ -1,6 +1,7 @@
 import { createJSONStorage, PersistOptions } from 'zustand/middleware';
 import { ipcStorage, pickBestRatchetState } from './storage';
 import { ChatState, Message, MAX_MESSAGES_PER_CHAT } from './types';
+import { DEFAULT_THEME_TINT_ID, getThemeTintById } from '../../themes';
 
 export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
   name: 'orbita-chat-storage',
@@ -19,6 +20,8 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
     ),
     passcode: state.passcode,
     currentTheme: state.currentTheme,
+    themeTintId: state.themeTintId,
+    chatColor: state.chatColor,
     dotOverlay: state.dotOverlay,
     blurProtection: state.blurProtection,
     hideOnBackground: state.hideOnBackground,
@@ -101,7 +104,7 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
     folders: state.folders || [],
     activeFolderId: state.activeFolderId,
   }),
-  version: 37,
+  version: 38,
   migrate: (persistedState: any, version: number) => {
     if (version < 33) {
       const state = persistedState;
@@ -135,10 +138,21 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
       }
       return persistedState;
     }
+    if (version < 38) {
+      persistedState.themeTintId = persistedState.themeTintId || DEFAULT_THEME_TINT_ID;
+      if (!persistedState.chatColor) {
+        const defaultTint = getThemeTintById(persistedState.themeTintId);
+        persistedState.chatColor = defaultTint.dark.bubbleOwnBg;
+      }
+      return persistedState;
+    }
     return persistedState;
   },
   onRehydrateStorage: () => (state) => {
     if (state) {
+      if (!state.themeTintId) {
+        state.themeTintId = DEFAULT_THEME_TINT_ID;
+      }
       state.setHasHydrated(true);
       state.preloadRecentMessagesFromStorage();
     }

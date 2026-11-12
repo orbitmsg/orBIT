@@ -1,0 +1,36 @@
+import type { ThemeTintPreset } from '../tintTypes';
+
+export const themeTint: ThemeTintPreset = {
+  id: 'monochrome-graphite',
+  nameRu: 'Графит',
+  nameEn: 'Graphite',
+  swatch: 'linear-gradient(135deg, #71717a 0%, #52525b 100%)',
+  dark: {
+    bgPrimary: '#1c1c1f',
+    bgSecondary: '#161618',
+    surfaceContainer: '#242428',
+    surfaceContainerStrong: '#2c2c31',
+    borderColor: '#2e2e33',
+    titleBarBg: '#131315',
+    chatListBg: '#18181b',
+    accent: '#71717a',
+    accentLight: '#a1a1aa',
+    accentDark: '#52525b',
+    bubbleOwnBg: 'linear-gradient(135deg, #52525b 0%, #3f3f46 100%)',
+    bubbleIncomingBg: '#27272a',
+  },
+  light: {
+    bgPrimary: '#f8f8f9',
+    bgSecondary: '#f1f1f3',
+    surfaceContainer: '#e9e9ec',
+    surfaceContainerStrong: '#e0e0e4',
+    borderColor: '#dcdce0',
+    titleBarBg: '#e6e6ea',
+    chatListBg: '#f2f2f4',
+    accent: '#52525b',
+    accentLight: '#71717a',
+    accentDark: '#3f3f46',
+    bubbleOwnBg: 'linear-gradient(135deg, #52525b 0%, #3f3f46 100%)',
+    bubbleIncomingBg: '#e7e7eb',
+  },
+};

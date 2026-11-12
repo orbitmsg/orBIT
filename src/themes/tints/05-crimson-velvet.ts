@@ -1,0 +1,36 @@
+import type { ThemeTintPreset } from '../tintTypes';
+
+export const themeTint: ThemeTintPreset = {
+  id: 'crimson-velvet',
+  nameRu: 'Рубин',
+  nameEn: 'Crimson Velvet',
+  swatch: 'linear-gradient(135deg, #e11d48 0%, #9f1239 100%)',
+  dark: {
+    bgPrimary: '#24161c',
+    bgSecondary: '#1d1116',
+    surfaceContainer: '#170d11',
+    surfaceContainerStrong: '#2c1b23',
+    borderColor: '#3a232d',
+    titleBarBg: '#190e13',
+    chatListBg: '#1e1217',
+    accent: '#e11d48',
+    accentLight: '#fb7185',
+    accentDark: '#be123c',
+    bubbleOwnBg: 'linear-gradient(135deg, #e11d48 0%, #9f1239 100%)',
+    bubbleIncomingBg: '#321f28',
+  },
+  light: {
+    bgPrimary: '#fff8fa',
+    bgSecondary: '#fdf0f4',
+    surfaceContainer: '#fae6ec',
+    surfaceContainerStrong: '#f5d8e2',
+    borderColor: '#efd0db',
+    titleBarBg: '#f7e0e8',
+    chatListBg: '#fcf2f5',
+    accent: '#e11d48',
+    accentLight: '#f43f5e',
+    accentDark: '#be123c',
+    bubbleOwnBg: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)',
+    bubbleIncomingBg: '#f8e4eb',
+  },
+};

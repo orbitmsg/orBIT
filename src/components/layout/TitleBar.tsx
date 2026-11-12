@@ -136,7 +136,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
   const RestoreIcon = () => (
     <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M2.5 0.75H8C8.69 0.75 9.25 1.31 9.25 2V7.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
-      <rect x="0.75" y="2.5" width="6.75" height="6.75" rx="1.5" stroke="currentColor" strokeWidth="1.1" fill="var(--title-bar-bg, var(--md-surface, #2a253b))" />
+      <rect x="0.75" y="2.5" width="6.75" height="6.75" rx="1.5" stroke="currentColor" strokeWidth="1.1" fill="none" />
     </svg>
   );
 
@@ -158,7 +158,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
       style={{
         height: '30px',
         width: '100%',
-        backgroundColor: 'var(--title-bar-bg, var(--md-surface, #2a253b))',
+        backgroundColor: 'var(--title-bar-bg, var(--md-surface, #232428))',
         padding: 0,
         margin: 0,
         WebkitAppRegion: 'drag',
@@ -248,7 +248,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
           outline: none;
           border-radius: 7px;
           background: transparent;
-          color: var(--text-dim, #9f96b3);
+          color: var(--titlebar-fg, #b0b0b0);
           cursor: pointer;
           padding: 0;
           margin: 0;
@@ -260,11 +260,11 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
           user-select: none;
         }
         .orbita-titlebar-btn:not(.hover-suppressed):hover {
-          background-color: rgba(255, 255, 255, 0.09);
-          color: var(--text-main, #ffffff);
+          background-color: var(--titlebar-hover-bg, rgba(255, 255, 255, 0.09));
+          color: var(--titlebar-hover-fg, #ffffff);
         }
         .orbita-titlebar-btn:not(.hover-suppressed):active {
-          background-color: rgba(255, 255, 255, 0.16);
+          background-color: var(--titlebar-active-bg, rgba(255, 255, 255, 0.16));
         }
         .orbita-titlebar-btn-close:not(.hover-suppressed):hover {
           background-color: rgba(239, 68, 68, 0.22);

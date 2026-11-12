@@ -13,7 +13,8 @@ import {
   getDirectChatId,
 } from '../../../lib/crypto';
 import { extractGroupCode, isValidGroupCode } from '../../../lib/groupCrypto';
-import { extractCodeFromInput } from '../../../utils/inviteLink';
+import { extractCodeFromInput, parseOrbitaLink } from '../../../utils/inviteLink';
+import { channelService } from '../../../services/channelService';
 import { DoubleRatchet } from '../../../lib/double-ratchet';
 import { revalidateDevelopersOnConnection } from '../../ui/DeveloperBadge';
 
@@ -340,6 +341,37 @@ export const useConnectRequestHandler = ({
   useEffect(() => {
     const handleDeepLinkUrl = async (url: string) => {
       if (!url) return;
+      const parsed = parseOrbitaLink(url);
+      if (parsed) {
+        if (parsed.kind === 'group') {
+          window.dispatchEvent(new CustomEvent('orbita:open-group-invite', { detail: { url } }));
+          return;
+        }
+        if (parsed.kind === 'channel') {
+          window.dispatchEvent(new CustomEvent('orbita:open-channel-invite', { detail: { url } }));
+          return;
+        }
+        if (parsed.kind === 'slug') {
+          try {
+            const ch = await channelService.getChannel(parsed.identifier);
+            if (ch) {
+              window.dispatchEvent(new CustomEvent('orbita:open-channel-invite', { detail: { url, channel: ch } }));
+              return;
+            }
+          } catch {}
+          try {
+            const user = await supabaseService.lookupProfileByUsername(parsed.identifier);
+            if (user?.user_code) {
+              handleConnectRequest(user.user_code, () => {});
+              return;
+            }
+          } catch {}
+        }
+        if (parsed.kind === 'user') {
+          handleConnectRequest(parsed.identifier, () => {});
+          return;
+        }
+      }
       const groupCode = extractGroupCode(url);
       if (groupCode && isValidGroupCode(groupCode)) {
         window.dispatchEvent(new CustomEvent('orbita:open-group-invite', { detail: { url } }));

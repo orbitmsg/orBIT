@@ -1,12 +1,42 @@
 {
   "translation": {
     "discord": {
+      "findOrStartConversation": "Найти или начать беседу",
+      "friends": "Друзья",
+      "nitro": "Nitro",
+      "shop": "Магазин",
+      "quests": "Задания",
+      "directMessages": "Личные сообщения",
+      "newBadge": "НОВОЕ",
       "online": "В сети",
-      "unmuteMicrophone": "Включить микрофон",
+      "all": "Все",
+      "pending": "В ожидании",
+      "blocked": "Заблокированные",
+      "addFriend": "Добавить в друзья",
+      "noFriendsOnline": "Сейчас никого из ваших друзей нет в сети. Зайдите позже!",
+      "activeContacts": "Активные контакты",
+      "quietForNow": "Пока что тут тихо...",
+      "quietForNowDesc": "Если ваш друг начнет чем-то заниматься — например, запустит игру или войдет в голосовой чат, — вы увидите это здесь!",
       "muteMicrophone": "Отключить микрофон",
-      "undeafenAudio": "Включить звук",
+      "unmuteMicrophone": "Включить микрофон",
       "deafenAudio": "Заглушить звук",
-      "userSettings": "Настройки пользователя"
+      "undeafenAudio": "Включить звук",
+      "userSettings": "Настройки пользователя",
+      "addServer": "Добавить сервер",
+      "exploreServers": "Публичные серверы",
+      "startGroupCall": "Начать голосовой звонок",
+      "inbox": "Почта",
+      "help": "Справка",
+      "addFriendDesc": "Вы можете добавить друзей по имени пользователя, коду или ссылке-приглашению.",
+      "addFriendPlaceholder": "Имя пользователя, @username, UUID или ссылка",
+      "sendFriendRequest": "Отправить запрос",
+      "sendingRequest": "Отправка...",
+      "addShort": "Добавить",
+      "searching": "Поиск пользователей...",
+      "cannotAddSelf": "Нельзя добавить самого себя",
+      "requestUnavailable": "Отправка заявки сейчас недоступна",
+      "blockedEmpty": "У вас нет заблокированных пользователей",
+      "allFriendsEmpty": "Список друзей пока пуст"
     },
     "confirmModal": {
       "clear_history_title": "Вы точно хотите удалить все сообщения, сохраненные в {{name}}?",
@@ -863,7 +893,6 @@
       "h": "ч",
       "app_icon": "Иконка приложения",
       "bubble_radius": "Скругление сообщений",
-      "edit_profile": "Редактировать профиль",
       "friend_code": "Код для друзей",
       "share": "Поделиться",
       "copy": "Копировать",
@@ -1698,48 +1727,28 @@
       "preparing_interface": "Подготовка интерфейса...",
       "starting": "Запуск..."
     },
-    "discord": {
-      "findOrStartConversation": "Найти или начать беседу",
-      "friends": "Друзья",
-      "nitro": "Nitro",
-      "shop": "Магазин",
-      "quests": "Задания",
-      "directMessages": "Личные сообщения",
-      "newBadge": "НОВОЕ",
-      "online": "В сети",
-      "all": "Все",
-      "pending": "В ожидании",
-      "blocked": "Заблокированные",
-      "addFriend": "Добавить в друзья",
-      "noFriendsOnline": "Сейчас никого из ваших друзей нет в сети. Зайдите позже!",
-      "activeContacts": "Активные контакты",
-      "quietForNow": "Пока что тут тихо...",
-      "quietForNowDesc": "Если ваш друг начнет чем-то заниматься — например, запустит игру или войдет в голосовой чат, — вы увидите это здесь!",
-      "muteMicrophone": "Отключить микрофон",
-      "unmuteMicrophone": "Включить микрофон",
-      "deafenAudio": "Заглушить звук",
-      "undeafenAudio": "Включить звук",
-      "userSettings": "Настройки пользователя",
-      "addServer": "Добавить сервер",
-      "exploreServers": "Публичные серверы",
-      "startGroupCall": "Начать голосовой звонок",
-      "inbox": "Почта",
-      "help": "Справка",
-      "addFriendDesc": "Вы можете добавить друзей по имени пользователя, коду или ссылке-приглашению.",
-      "addFriendPlaceholder": "Имя пользователя, @username, UUID или ссылка",
-      "sendFriendRequest": "Отправить запрос",
-      "sendingRequest": "Отправка...",
-      "addShort": "Добавить",
-      "searching": "Поиск пользователей...",
-      "cannotAddSelf": "Нельзя добавить самого себя",
-      "requestUnavailable": "Отправка заявки сейчас недоступна",
-      "blockedEmpty": "У вас нет заблокированных пользователей",
-      "allFriendsEmpty": "Список друзей пока пуст"
-    },
     "sidebar": {
       "find_or_create_group": "Найти или создать группу",
       "find_or_create_channel": "Найти или создать канал",
       "find_friend": "Найти друга"
+    },
+    "channelInvite": {
+      "channel": "Канал",
+      "loading": "Загрузка...",
+      "not_found": "Канал не найден",
+      "subscribers_count": "{{count}} подписчик(ов)",
+      "open_channel": "Перейти к каналу",
+      "join_channel": "Подписаться на канал",
+      "joining": "Подключение...",
+      "joined_success": "Вы подписались на канал"
+    },
+    "channelSettings": {
+      "invite_link": "Ссылка на канал",
+      "channel_id": "ID",
+      "username_optional": "Юзернейм (необязательно)",
+      "username_placeholder": "username",
+      "username_invalid": "От 3 до 32 символов: латиница, цифры и _",
+      "username_taken": "Этот юзернейм уже занят"
     }
   },
   "group": {
@@ -1752,5 +1761,23 @@
   "chatWindow": {
     "link_preview": "Предпросмотр ссылки",
     "send_as_file": "Отправить как файл"
+  },
+  "channelInvite": {
+    "channel": "Канал",
+    "loading": "Загрузка...",
+    "not_found": "Канал не найден",
+    "subscribers_count": "{{count}} подписчик(ов)",
+    "open_channel": "Перейти к каналу",
+    "join_channel": "Подписаться на канал",
+    "joining": "Подключение...",
+    "joined_success": "Вы подписались на канал"
+  },
+  "channelSettings": {
+    "invite_link": "Ссылка на канал",
+    "channel_id": "ID",
+    "username_optional": "Юзернейм (необязательно)",
+    "username_placeholder": "username",
+    "username_invalid": "От 3 до 32 символов: латиница, цифры и _",
+    "username_taken": "Этот юзернейм уже занят"
   }
 }

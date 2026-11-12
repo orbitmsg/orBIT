@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pencil, RefreshCw, Unlock, Lock, Clock } from 'lucide-react';
 import { buildGroupInviteLink } from '../../../lib/groupCrypto';
+import { buildChannelInviteLink } from '../../../utils/inviteLink';
 import { groupService } from '../../../services/groupService';
 import { useChatStore, type Chat } from '../../../store/useChatStore';
 import { formatBirthday } from '../../../utils/birthday';
@@ -298,42 +299,163 @@ export const ProfileInfoCard: React.FC<ProfileInfoCardProps> = ({
           </div>
         </>
       ) : isChannel ? (
-        chat.description ? (
+        <>
+          {chat.description ? (
+            <div
+              onClick={isChannelOwner ? onEditClick : undefined}
+              style={{
+                padding: '12px 20px',
+                borderBottom: 'none',
+                cursor: isChannelOwner ? 'pointer' : 'default',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <div style={{ fontSize: '14px', color: 'var(--text-main, #ffffff)', lineHeight: '1.35', wordBreak: 'break-word', userSelect: 'text' }}>
+                {chat.description}
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-dim, #8e8e93)', marginTop: '3px' }}>
+                {t('channel.description', 'Описание')}
+              </div>
+            </div>
+          ) : isChannelOwner ? (
+            <div
+              onClick={onEditClick}
+              style={{
+                padding: '12px 20px',
+                borderBottom: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span style={{ fontSize: '14px', color: 'var(--accent-color, #9b7dd4)' }}>
+                + {t('channel.add_description', 'Добавить описание')}
+              </span>
+              <Pencil size={14} style={{ color: 'var(--accent-color, #9b7dd4)' }} />
+            </div>
+          ) : null}
+
+          {chat.username && (
+            <div
+              style={{
+                padding: '12px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                borderBottom: 'none',
+              }}
+            >
+              <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <span
+                  onClick={() => onCopyKey(`@${chat.username}`)}
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: 'var(--accent-color, #9b7dd4)',
+                    wordBreak: 'break-all',
+                    lineHeight: 1.3,
+                    fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
+                    cursor: 'pointer',
+                    width: 'fit-content',
+                    borderRadius: '6px',
+                    padding: '2px 6px',
+                    margin: '-2px -6px',
+                    transition: 'background-color 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                >
+                  @{chat.username}
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--text-dim, #8e8e93)', marginTop: '3px' }}>
+                  {t('profile.username', 'Имя пользователя')}
+                </span>
+              </div>
+            </div>
+          )}
+
           <div
-            onClick={isChannelOwner ? onEditClick : undefined}
             style={{
               padding: '12px 20px',
-              borderBottom: 'none',
-              cursor: isChannelOwner ? 'pointer' : 'default',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            <div style={{ fontSize: '14px', color: 'var(--text-main, #ffffff)', lineHeight: '1.35', wordBreak: 'break-word', userSelect: 'text' }}>
-              {chat.description}
-            </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-dim, #8e8e93)', marginTop: '3px' }}>
-              {t('channel.description', 'Описание')}
-            </div>
-          </div>
-        ) : isChannelOwner ? (
-          <div
-            onClick={onEditClick}
-            style={{
-              padding: '12px 20px',
-              borderBottom: 'none',
-              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              gap: '12px',
+              borderBottom: 'none',
             }}
           >
-            <span style={{ fontSize: '14px', color: 'var(--accent-color, #9b7dd4)' }}>
-              + {t('channel.add_description', 'Добавить описание')}
-            </span>
-            <Pencil size={14} style={{ color: 'var(--accent-color, #9b7dd4)' }} />
+            <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <span
+                onClick={() => {
+                  const link = buildChannelInviteLink({ id: chat.id, username: chat.username });
+                  onCopyKey(link);
+                }}
+                style={{
+                  fontSize: '13.5px',
+                  fontWeight: 500,
+                  color: 'var(--accent-color, #9b7dd4)',
+                  wordBreak: 'break-all',
+                  lineHeight: 1.3,
+                  fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
+                  cursor: 'pointer',
+                  width: 'fit-content',
+                  borderRadius: '6px',
+                  padding: '2px 6px',
+                  margin: '-2px -6px',
+                  transition: 'background-color 0.15s ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+              >
+                {buildChannelInviteLink({ id: chat.id, username: chat.username })}
+              </span>
+              <span style={{ fontSize: '11px', color: 'var(--text-dim, #8e8e93)', marginTop: '3px' }}>
+                {t('channelSettings.invite_link', 'Ссылка на канал')}
+              </span>
+            </div>
           </div>
-        ) : null
+
+          <div
+            style={{
+              padding: '12px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              borderBottom: 'none',
+            }}
+          >
+            <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <span
+                onClick={() => onCopyKey(chat.id)}
+                style={{
+                  fontSize: '13.5px',
+                  fontWeight: 600,
+                  color: 'var(--accent-color, #9b7dd4)',
+                  wordBreak: 'break-all',
+                  lineHeight: 1.3,
+                  fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
+                  cursor: 'pointer',
+                  width: 'fit-content',
+                  borderRadius: '6px',
+                  padding: '2px 6px',
+                  margin: '-2px -6px',
+                  transition: 'background-color 0.15s ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+              >
+                {chat.id}
+              </span>
+              <span style={{ fontSize: '11px', color: 'var(--text-dim, #8e8e93)', marginTop: '3px' }}>
+                {t('channelSettings.channel_id', 'ID')}
+              </span>
+            </div>
+          </div>
+        </>
       ) : (
         <>
           {chat.username && (

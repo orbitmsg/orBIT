@@ -10,11 +10,17 @@ import { IncomingCallModal } from '../call/IncomingCallModal';
 import { CallWindow } from '../call/CallWindow';
 import { DevicePermissionModal } from '../common/DevicePermissionModal';
 import { GroupInviteModal } from '../chat/GroupInviteModal';
+import { ChannelInviteModal } from '../chat/ChannelInviteModal';
+import type { ChannelInfo } from '../../services/channelService';
 import { useChatStore, type IncomingFriendRequest } from '../../store/useChatStore';
 
 export interface MainLayoutModalsProps {
   groupInviteUrl?: string | null;
   setGroupInviteUrl?: (url: string | null) => void;
+  channelInviteUrl?: string | null;
+  setChannelInviteUrl?: (url: string | null) => void;
+  channelInviteData?: ChannelInfo | null;
+  setChannelInviteData?: (data: ChannelInfo | null) => void;
   connectModalConfig: { isOpen: boolean; type: 'friend' | 'group' | 'channel' };
   setConnectModalConfig: React.Dispatch<React.SetStateAction<{ isOpen: boolean; type: 'friend' | 'group' | 'channel' }>>;
   handleConnectRequest: (friendCode: string, callback: (success: boolean, error?: string) => void) => void;
@@ -88,6 +94,10 @@ export const MainLayoutModals: React.FC<MainLayoutModalsProps> = ({
   showCallModalsInWindow,
   groupInviteUrl,
   setGroupInviteUrl,
+  channelInviteUrl,
+  setChannelInviteUrl,
+  channelInviteData,
+  setChannelInviteData,
 }) => {
   return (
     <>
@@ -203,6 +213,16 @@ export const MainLayoutModals: React.FC<MainLayoutModalsProps> = ({
         <GroupInviteModal
           inviteUrl={groupInviteUrl}
           onClose={() => setGroupInviteUrl?.(null)}
+        />
+      )}
+      {(channelInviteUrl || channelInviteData) && (
+        <ChannelInviteModal
+          inviteUrl={channelInviteUrl || null}
+          initialChannel={channelInviteData || null}
+          onClose={() => {
+            setChannelInviteUrl?.(null);
+            setChannelInviteData?.(null);
+          }}
         />
       )}
     </>

@@ -536,6 +536,7 @@ export const useChatStore = create<ChatState>()(
           id: channel.id,
           type: 'channel',
           name: channel.name,
+          username: channel.username || null,
           lastMsg: channel.description || 'Канал создан',
           online: false,
           description: channel.description,

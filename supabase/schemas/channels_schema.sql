@@ -12,6 +12,7 @@ CREATE INDEX IF NOT EXISTS idx_profiles_username ON public.profiles (username);
 CREATE TABLE IF NOT EXISTS public.public_channels (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
+    username TEXT,
     description TEXT,
     avatar_url TEXT,
     creator_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -24,6 +25,7 @@ CREATE TABLE IF NOT EXISTS public.public_channels (
 
 CREATE INDEX IF NOT EXISTS idx_public_channels_id ON public.public_channels (id);
 CREATE INDEX IF NOT EXISTS idx_public_channels_creator_id ON public.public_channels (creator_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_public_channels_username_lower ON public.public_channels (LOWER(username)) WHERE username IS NOT NULL AND username <> '';
 
 CREATE TABLE IF NOT EXISTS public.channel_members (
     channel_id TEXT NOT NULL REFERENCES public.public_channels(id) ON DELETE CASCADE,

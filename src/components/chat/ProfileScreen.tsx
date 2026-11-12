@@ -348,6 +348,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
           updates.role = 'owner';
         }
         if (info.name) updates.name = info.name;
+        if (info.username !== undefined) updates.username = info.username;
         if (info.description !== undefined) updates.description = info.description;
         updates.avatarUrl = info.avatarUrl || undefined;
         if (info.updatedAt) updates.updatedAt = info.updatedAt;
@@ -482,6 +483,8 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
   const [isEditingChannel, setIsEditingChannel] = useState(false);
   const [editName, setEditName] = useState(chat?.name || '');
   const [editDescription, setEditDescription] = useState(chat?.description || '');
+  const [editUsername, setEditUsername] = useState(chat?.username ? chat.username.replace(/^@+/, '') : '');
+  const [editUsernameError, setEditUsernameError] = useState<string | null>(null);
   const [editAvatarUrl, setEditAvatarUrl] = useState<string | null>(chat?.avatarUrl || null);
   const [isSavingChannel, setIsSavingChannel] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -494,9 +497,11 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
     if (chat && !isEditingChannel) {
       setEditName(chat.name || '');
       setEditDescription(chat.description || '');
+      setEditUsername(chat.username ? chat.username.replace(/^@+/, '') : '');
+      setEditUsernameError(null);
       setEditAvatarUrl(chat.avatarUrl || null);
     }
-  }, [chat?.name, chat?.description, chat?.avatarUrl, isEditingChannel]);
+  }, [chat?.name, chat?.description, chat?.username, chat?.avatarUrl, isEditingChannel]);
 
   const handleAvatarFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -527,7 +532,28 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
     const newName = editName.trim();
     if (!newName) return;
     const newDesc = editDescription.trim();
+    const cleanUsername = editUsername.trim().replace(/^@+/, '').toLowerCase();
     const initialAvatar = editAvatarUrl;
+
+    if (chat.type === 'channel' && cleanUsername) {
+      if (!/^[a-z0-9_]{3,32}$/.test(cleanUsername)) {
+        setEditUsernameError(t('channelSettings.username_invalid', 'От 3 до 32 символов: латиница, цифры и _'));
+        return;
+      }
+      const originalUsername = (chat.username || '').replace(/^@+/, '').toLowerCase();
+      if (cleanUsername !== originalUsername) {
+        try {
+          const isAvailable = await channelService.checkChannelUsername(cleanUsername, chat.id);
+          if (!isAvailable) {
+            setEditUsernameError(t('channelSettings.username_taken', 'Этот юзернейм уже занят'));
+            return;
+          }
+        } catch {
+          setEditUsernameError(t('common.error', 'Ошибка проверки юзернейма'));
+          return;
+        }
+      }
+    }
 
     const originalName = (chat.name || '').trim();
     const originalDesc = (chat.description || '').trim();
@@ -580,6 +606,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
       updateChat(chat.id, {
         name: newName,
         description: newDesc,
+        username: chat.type === 'channel' ? (cleanUsername || null) : chat.username,
         avatarUrl: finalAvatarUrl || undefined,
         updatedAt: now,
       });
@@ -598,6 +625,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         await channelService.updateChannel(chat.id, {
           name: newName,
           description: newDesc,
+          username: cleanUsername || null,
           avatarUrl: finalAvatarUrl,
         }, currentUserId);
       }
@@ -609,7 +637,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
     } finally {
       setIsSavingChannel(false);
     }
-  }, [chat, isSavingChannel, editName, editDescription, editAvatarUrl, updateChat, myNickname]);
+  }, [chat, isSavingChannel, editName, editDescription, editUsername, editAvatarUrl, updateChat, myNickname, t]);
 
   const handleConfirmGroupAction = useCallback(async () => {
     if (!chat) return;
@@ -1436,6 +1464,10 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                     setEditName={setEditName}
                     editDescription={editDescription}
                     setEditDescription={setEditDescription}
+                    editUsername={editUsername}
+                    setEditUsername={setEditUsername}
+                    editUsernameError={editUsernameError}
+                    setEditUsernameError={setEditUsernameError}
                     editAvatarUrl={editAvatarUrl}
                     setEditAvatarUrl={setEditAvatarUrl}
                     fileInputRef={fileInputRef}

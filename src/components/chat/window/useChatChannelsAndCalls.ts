@@ -10,6 +10,7 @@ import { sqliteStorage } from '../../../services/sqliteStorage';
 import { getPusher, getGroupPusher } from '../../../utils/pusher';
 import { deriveChannelKey, decryptMessage, generateChatId, getDirectChatId, generateKeyPair } from '../../../lib/crypto';
 import { isValidGroupCode, extractGroupCode } from '../../../lib/groupCrypto';
+import { parseOrbitaLink } from '../../../utils/inviteLink';
 import { useDevicePermissionStore } from '../../../store/useDevicePermissionStore';
 import { mergeReactions } from './chatWindowHelpers';
 
@@ -76,101 +77,161 @@ export const useChatChannelsAndCalls = ({
 }: UseChatChannelsAndCallsProps): UseChatChannelsAndCallsReturn => {
   const [isSubscribing, setIsSubscribing] = useState(false);
 
-  const handleLinkClick = useCallback((url: string) => {
-    const cleanUrl = url.trim();
-    if (cleanUrl.startsWith('@')) {
-      const targetUsername = cleanUrl.replace(/^@+/, '').trim().toLowerCase();
-      if (!targetUsername) return;
+  const openUserByUsername = useCallback((rawTarget: string) => {
+    const targetUsername = rawTarget.replace(/^@+/, '').trim().toLowerCase();
+    if (!targetUsername) return;
 
-      const myUid = useAuthStore.getState().userId;
-      const myUserCode = useChatStore.getState().myCode;
-      const myUsername = useAuthStore.getState().username?.toLowerCase();
+    const myUid = useAuthStore.getState().userId;
+    const myUserCode = useChatStore.getState().myCode;
+    const myUsername = useAuthStore.getState().username?.toLowerCase();
 
-      if (targetUsername === myUsername || targetUsername === myUserCode?.toLowerCase() || targetUsername === myUid?.toLowerCase()) {
-        useChatStore.getState().setActiveChat('notes');
-        useChatStore.getState().setActiveProfileChatId('notes');
-        return;
-      }
-
-      const currentChats = useChatStore.getState().chats;
-      const existingChat = currentChats.find(
-        (c) =>
-          c.type === 'private' &&
-          ((c.username && c.username.toLowerCase() === targetUsername) ||
-            c.peerCode?.toLowerCase() === targetUsername ||
-            c.originalPeerCode?.toLowerCase() === targetUsername)
-      );
-
-      if (existingChat) {
-        useChatStore.getState().setActiveChat(existingChat.id);
-        useChatStore.getState().setActiveProfileChatId(existingChat.id);
-        return;
-      }
-
-      supabaseService.lookupProfileByUsername(targetUsername).then((user) => {
-        if (!user) {
-          useToastStore.getState().showToast(t('chatWindow.userNotFound'), 'text');
-          return;
-        }
-
-        const currentList = useChatStore.getState().chats;
-        const matched = currentList.find(
-          (c) =>
-            c.type === 'private' &&
-            (c.peerCode === user.user_code ||
-              c.originalPeerCode === user.user_code ||
-              (user.numeric_id && c.numericId === user.numeric_id) ||
-              (user.username && c.username && c.username.toLowerCase() === user.username.toLowerCase()))
-        );
-
-        if (matched) {
-          useChatStore.getState().setActiveChat(matched.id);
-          useChatStore.getState().setActiveProfileChatId(matched.id);
-          return;
-        }
-
-        const brokenChat = currentList.find((c) => c.id === user.user_code);
-        if (brokenChat) {
-          useChatStore.getState().deleteChat(user.user_code);
-        }
-
-        const myC = useChatStore.getState().myCode;
-        const newChatId = (myC && user.user_code && user.user_code.length === 36)
-          ? getDirectChatId(myC, user.user_code)
-          : generateChatId();
-        const draftChat = {
-          id: newChatId,
-          type: 'private' as const,
-          name: user.nickname || 'User',
-          avatarUrl: user.avatar_url || undefined,
-          bannerUrl: user.banner_url || undefined,
-          username: user.username || undefined,
-          numericId: user.numeric_id || getInitialNumericId(user.user_code),
-          description: user.bio || undefined,
-          birthday: user.birthday || undefined,
-          peerCode: user.user_code,
-          originalPeerCode: user.user_code,
-          lastMsg: '',
-          online: false,
-          unreadCount: 0,
-          createdAt: Date.now(),
-          notificationsEnabled: true,
-          isDraft: false,
-          isChatInitiator: true,
-          peerPublicKey: user.public_key || null,
-        };
-
-        useChatStore.getState().addChat(draftChat as any);
-        useChatStore.getState().setActiveChat(newChatId);
-        useChatStore.getState().setActiveProfileChatId(newChatId);
-      }).catch(() => {
-        useToastStore.getState().showToast(t('chatWindow.userNotFound'), 'text');
-      });
+    if (targetUsername === myUsername || targetUsername === myUserCode?.toLowerCase() || targetUsername === myUid?.toLowerCase()) {
+      useChatStore.getState().setActiveChat('notes');
+      useChatStore.getState().setActiveProfileChatId('notes');
       return;
     }
+
+    const currentChats = useChatStore.getState().chats;
+    const existingChat = currentChats.find(
+      (c) =>
+        c.type === 'private' &&
+        ((c.username && c.username.toLowerCase() === targetUsername) ||
+          c.peerCode?.toLowerCase() === targetUsername ||
+          c.originalPeerCode?.toLowerCase() === targetUsername)
+    );
+
+    if (existingChat) {
+      useChatStore.getState().setActiveChat(existingChat.id);
+      useChatStore.getState().setActiveProfileChatId(existingChat.id);
+      return;
+    }
+
+    supabaseService.lookupProfileByUsername(targetUsername).then((user) => {
+      if (!user) {
+        useToastStore.getState().showToast(t('chatWindow.userNotFound'), 'text');
+        return;
+      }
+
+      const currentList = useChatStore.getState().chats;
+      const matched = currentList.find(
+        (c) =>
+          c.type === 'private' &&
+          (c.peerCode === user.user_code ||
+            c.originalPeerCode === user.user_code ||
+            (user.numeric_id && c.numericId === user.numeric_id) ||
+            (user.username && c.username && c.username.toLowerCase() === user.username.toLowerCase()))
+      );
+
+      if (matched) {
+        useChatStore.getState().setActiveChat(matched.id);
+        useChatStore.getState().setActiveProfileChatId(matched.id);
+        return;
+      }
+
+      const brokenChat = currentList.find((c) => c.id === user.user_code);
+      if (brokenChat) {
+        useChatStore.getState().deleteChat(user.user_code);
+      }
+
+      const myC = useChatStore.getState().myCode;
+      const newChatId = (myC && user.user_code && user.user_code.length === 36)
+        ? getDirectChatId(myC, user.user_code)
+        : generateChatId();
+      const draftChat = {
+        id: newChatId,
+        type: 'private' as const,
+        name: user.nickname || 'User',
+        avatarUrl: user.avatar_url || undefined,
+        bannerUrl: user.banner_url || undefined,
+        username: user.username || undefined,
+        numericId: user.numeric_id || getInitialNumericId(user.user_code),
+        description: user.bio || undefined,
+        birthday: user.birthday || undefined,
+        peerCode: user.user_code,
+        originalPeerCode: user.user_code,
+        lastMsg: '',
+        online: false,
+        unreadCount: 0,
+        createdAt: Date.now(),
+        notificationsEnabled: true,
+        isDraft: false,
+        isChatInitiator: true,
+        peerPublicKey: user.public_key || null,
+      };
+
+      useChatStore.getState().addChat(draftChat as any);
+      useChatStore.getState().setActiveChat(newChatId);
+      useChatStore.getState().setActiveProfileChatId(newChatId);
+    }).catch(() => {
+      useToastStore.getState().showToast(t('chatWindow.userNotFound'), 'text');
+    });
+  }, [t]);
+
+  const handleLinkClick = useCallback((url: string) => {
+    const cleanUrl = url.trim();
+    const parsed = parseOrbitaLink(cleanUrl);
+
+    if (parsed) {
+      if (parsed.kind === 'group') {
+        window.dispatchEvent(new CustomEvent('orbita:open-group-invite', { detail: { url: cleanUrl } }));
+        return;
+      }
+      if (parsed.kind === 'channel') {
+        const existing = useChatStore.getState().chats.find((c) => c.type === 'channel' && c.id === parsed.identifier);
+        if (existing) {
+          useChatStore.getState().setActiveChat(existing.id);
+        } else {
+          window.dispatchEvent(new CustomEvent('orbita:open-channel-invite', { detail: { url: cleanUrl } }));
+        }
+        return;
+      }
+      if (parsed.kind === 'slug') {
+        const lowerSlug = parsed.identifier.toLowerCase();
+        const existingChannel = useChatStore.getState().chats.find(
+          (c) => c.type === 'channel' && ((c.username && c.username.toLowerCase() === lowerSlug) || c.id.toLowerCase() === lowerSlug)
+        );
+        if (existingChannel) {
+          useChatStore.getState().setActiveChat(existingChannel.id);
+          return;
+        }
+        const existingUser = useChatStore.getState().chats.find(
+          (c) =>
+            c.type === 'private' &&
+            ((c.username && c.username.toLowerCase() === lowerSlug) ||
+              c.peerCode?.toLowerCase() === lowerSlug ||
+              c.originalPeerCode?.toLowerCase() === lowerSlug)
+        );
+        if (existingUser) {
+          useChatStore.getState().setActiveChat(existingUser.id);
+          useChatStore.getState().setActiveProfileChatId(existingUser.id);
+          return;
+        }
+
+        channelService.getChannel(lowerSlug).then((ch) => {
+          if (ch) {
+            window.dispatchEvent(new CustomEvent('orbita:open-channel-invite', { detail: { url: cleanUrl, channel: ch } }));
+            return;
+          }
+          openUserByUsername(lowerSlug);
+        }).catch(() => {
+          openUserByUsername(lowerSlug);
+        });
+        return;
+      }
+      if (parsed.kind === 'user') {
+        openUserByUsername(parsed.identifier);
+        return;
+      }
+    }
+
+    if (cleanUrl.startsWith('@')) {
+      openUserByUsername(cleanUrl);
+      return;
+    }
+
     const groupCode = extractGroupCode(cleanUrl);
     if (groupCode && isValidGroupCode(groupCode)) {
-      window.dispatchEvent(new CustomEvent('orbita:deep-link', { detail: { url: cleanUrl } }));
+      window.dispatchEvent(new CustomEvent('orbita:open-group-invite', { detail: { url: cleanUrl } }));
       return;
     }
     const channelMatch = cleanUrl.match(/\/(?:c|channel)\/([A-Z0-9_-]{10,})/i);
@@ -180,34 +241,12 @@ export const useChatChannelsAndCalls = ({
       if (existing) {
         useChatStore.getState().setActiveChat(chId);
       } else {
-        channelService.getChannel(chId).then((info) => {
-          if (info) {
-            useChatStore.getState().addChat({
-              id: info.id,
-              type: 'channel',
-              name: info.name,
-              description: info.description || '',
-              lastMsg: '',
-              online: false,
-              creatorNickname: info.creatorNickname,
-              creatorId: info.creatorId || undefined,
-              avatarUrl: info.avatarUrl || undefined,
-              subscribersCount: info.subscribersCount || 1,
-              isOfficial: info.isOfficial,
-              createdAt: info.createdAt || Date.now(),
-              unreadCount: 0,
-              lastReadTimestamp: Date.now(),
-              muted: false,
-              notificationsEnabled: true,
-            });
-            useChatStore.getState().setActiveChat(info.id);
-          }
-        });
+        window.dispatchEvent(new CustomEvent('orbita:open-channel-invite', { detail: { url: cleanUrl } }));
       }
       return;
     }
     setUnsafeLinkData({ isOpen: true, url: cleanUrl });
-  }, [t, setUnsafeLinkData]);
+  }, [t, setUnsafeLinkData, openUserByUsername]);
 
   const handleOpenDirectChat = useCallback((senderId?: string, senderName?: string, memberObj?: any) => {
     const chatStore = useChatStore.getState();

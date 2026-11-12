@@ -632,6 +632,7 @@ export interface ChatState {
   addChannelChat: (channel: {
     id: string;
     name: string;
+    username?: string | null;
     description?: string;
     avatarUrl?: string | null;
     creatorNickname?: string;

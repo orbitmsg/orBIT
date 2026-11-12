@@ -1623,7 +1623,7 @@ export default {
 
       // 10. Public Channels (Сообщества / Публичные каналы)
       if (pathname === '/channels/featured' && request.method === 'GET') {
-        const supabase = getSupabaseClient(env);
+        const supabase = getChannelsSupabaseClient(env);
         let channels: any[] = [];
         if (supabase) {
           try {
@@ -1636,6 +1636,7 @@ export default {
               channels = data.map((c) => ({
                 id: c.id,
                 name: c.name,
+                username: c.username || null,
                 description: c.description || '',
                 avatarUrl: c.avatar_url || null,
                 creatorNickname: c.creator_nickname,
@@ -1649,30 +1650,64 @@ export default {
         return jsonResponse({ channels });
       }
 
+      if (pathname === '/channels/check-username') {
+        if (request.method !== 'GET') return errorResponse('Method not allowed', 405);
+        const rawUsername = url.searchParams.get('username') || '';
+        const excludeChannelId = url.searchParams.get('excludeChannelId') || '';
+        if (!rawUsername) return errorResponse('Missing username parameter', 400);
+        const normalizedUsername = rawUsername.replace(/^@+/, '').trim().toLowerCase();
+        if (!/^[a-z0-9_]{3,32}$/.test(normalizedUsername)) {
+          return errorResponse('Invalid username: must be 3-32 characters, only a-z, 0-9, _', 400);
+        }
+        if (normalizedUsername === 'support' || normalizedUsername === 'admin' || normalizedUsername === 'orbita') {
+          return jsonResponse({ available: false, username: normalizedUsername });
+        }
+        const supabase = getChannelsSupabaseClient(env);
+        if (!supabase) return errorResponse('Database unavailable', 503);
+        try {
+          let q = supabase.from('public_channels').select('id').ilike('username', normalizedUsername).limit(1);
+          if (excludeChannelId) q = q.neq('id', excludeChannelId);
+          const { data } = await q.maybeSingle();
+          return jsonResponse({ available: !data, username: normalizedUsername });
+        } catch (e: any) {
+          return errorResponse(e?.message || 'DB error', 500);
+        }
+      }
+
       if (pathname === '/channels/get' && request.method === 'GET') {
-        const channelId = url.searchParams.get('channelId');
+        const channelId = (url.searchParams.get('channelId') || '').trim().replace(/^@+/, '');
         if (!channelId) return errorResponse('Missing channelId parameter', 400);
 
-        const supabase = getSupabaseClient(env);
+        const supabase = getChannelsSupabaseClient(env);
         if (supabase) {
           try {
-            const { data, error } = await supabase
+            let { data, error } = await supabase
               .from('public_channels')
               .select('*')
               .eq('id', channelId)
               .maybeSingle();
+
+            if (!data) {
+              const byUsername = await supabase.from('public_channels').select('*').ilike('username', channelId).limit(1).maybeSingle();
+              if (byUsername.data) {
+                data = byUsername.data;
+                error = null;
+              }
+            }
 
             if (data && !error) {
               return jsonResponse({
                 channel: {
                   id: data.id,
                   name: data.name,
+                  username: data.username || null,
                   description: data.description || '',
                   avatarUrl: data.avatar_url || null,
                   creatorNickname: data.creator_nickname,
                   subscribersCount: data.subscribers_count || 1,
                   isOfficial: data.is_official || false,
                   createdAt: new Date(data.created_at).getTime(),
+                  updatedAt: data.updated_at ? new Date(data.updated_at).getTime() : new Date(data.created_at).getTime(),
                 },
               });
             }
@@ -1690,15 +1725,25 @@ export default {
           avatarUrl?: string | null;
           creatorNickname: string;
           creatorId?: string;
+          username?: string | null;
         };
 
         if (!body.name || !body.creatorNickname) {
           return errorResponse('Missing name or creatorNickname parameter', 400);
         }
 
+        let channelUsername: string | null = null;
+        if (body.username !== undefined) {
+          const rawU = typeof body.username === 'string' ? body.username.replace(/^@+/, '').trim().toLowerCase() : null;
+          if (rawU !== null && rawU !== '') {
+            if (!/^[a-z0-9_]{3,32}$/.test(rawU)) return errorResponse('Invalid username: must be 3-32 characters, only a-z, 0-9, _', 400);
+            channelUsername = rawU;
+          }
+        }
+
         const channelId = body.id || `ch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const creatorId = await toUuid(body.creatorId);
-        const supabase = getSupabaseClient(env);
+        const supabase = getChannelsSupabaseClient(env);
 
         if (supabase) {
           try {
@@ -1710,7 +1755,7 @@ export default {
                 updated_at: new Date().toISOString(),
               });
             }
-            const { error } = await supabase.from('public_channels').upsert({
+            const channelPayload: any = {
               id: channelId,
               name: body.name,
               description: body.description || '',
@@ -1720,7 +1765,9 @@ export default {
               subscribers_count: 1,
               is_official: false,
               created_at: new Date().toISOString(),
-            });
+            };
+            if (channelUsername !== null) channelPayload.username = channelUsername;
+            const { error } = await supabase.from('public_channels').upsert(channelPayload);
 
             if (creatorId) {
               await supabase.from('channel_members').upsert({
@@ -1740,6 +1787,7 @@ export default {
         const channelObj = {
           id: channelId,
           name: body.name,
+          username: channelUsername,
           description: body.description || '',
           avatarUrl: body.avatarUrl || null,
           creatorId: creatorId || undefined,
@@ -1760,12 +1808,13 @@ export default {
           name?: string;
           description?: string;
           avatarUrl?: string | null;
+          username?: string | null;
         };
 
         const channelId = body.channelId || body.id;
         if (!channelId) return errorResponse('Missing channelId parameter', 400);
 
-        const supabase = getSupabaseClient(env);
+        const supabase = getChannelsSupabaseClient(env);
         const userId = await toUuid(body.userId);
         if (supabase && userId) {
           try {
@@ -1784,10 +1833,22 @@ export default {
           } catch {}
         }
 
+        let channelUsername: string | null | undefined = undefined;
+        if (body.username !== undefined) {
+          const rawU = typeof body.username === 'string' ? body.username.replace(/^@+/, '').trim().toLowerCase() : null;
+          if (rawU !== null && rawU !== '') {
+            if (!/^[a-z0-9_]{3,32}$/.test(rawU)) return errorResponse('Invalid username: must be 3-32 characters, only a-z, 0-9, _', 400);
+            channelUsername = rawU;
+          } else {
+            channelUsername = null;
+          }
+        }
+
         const updateFields: any = {};
         if (body.name !== undefined) updateFields.name = body.name.trim();
         if (body.description !== undefined) updateFields.description = body.description.trim();
         if (body.avatarUrl !== undefined) updateFields.avatar_url = body.avatarUrl;
+        if (channelUsername !== undefined) updateFields.username = channelUsername;
 
         if (supabase) {
           try {
@@ -1802,6 +1863,7 @@ export default {
           name: body.name,
           description: body.description,
           avatarUrl: body.avatarUrl,
+          username: channelUsername,
         };
 
         await triggerPusherEvent(env, `public-channel-${channelId}`, 'channel-updated', eventPayload);
@@ -1813,7 +1875,7 @@ export default {
         const channelId = url.searchParams.get('channelId');
         if (!channelId) return errorResponse('Missing channelId parameter', 400);
 
-        const supabase = getSupabaseClient(env);
+        const supabase = getChannelsSupabaseClient(env);
         let posts: any[] = [];
         if (supabase) {
           try {
@@ -1876,7 +1938,7 @@ export default {
           return errorResponse('Missing channelId or senderNickname parameter', 400);
         }
 
-        const supabase = getSupabaseClient(env);
+        const supabase = getChannelsSupabaseClient(env);
         const senderId = await toUuid(body.senderId);
         if (supabase && senderId) {
           try {
@@ -1964,7 +2026,7 @@ export default {
         };
         if (!body.channelId || !body.postId) return errorResponse('Missing channelId or postId parameter', 400);
 
-        const supabase = getSupabaseClient(env);
+        const supabase = getChannelsSupabaseClient(env);
         const userId = await toUuid(body.userId);
         if (supabase && userId) {
           try {
@@ -2007,7 +2069,7 @@ export default {
 
         const channelId = body.channelId.trim();
         let newCount = 1;
-        const supabase = getSupabaseClient(env);
+        const supabase = getChannelsSupabaseClient(env);
         if (supabase) {
           try {
             const { data } = await supabase
@@ -2047,7 +2109,7 @@ export default {
 
         const channelId = body.channelId.trim();
         let newCount = 1;
-        const supabase = getSupabaseClient(env);
+        const supabase = getChannelsSupabaseClient(env);
         if (supabase) {
           try {
             const { data } = await supabase

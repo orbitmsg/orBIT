@@ -10,6 +10,10 @@ interface ProfileEditChannelProps {
   setEditName: React.Dispatch<React.SetStateAction<string>>;
   editDescription: string;
   setEditDescription: React.Dispatch<React.SetStateAction<string>>;
+  editUsername?: string;
+  setEditUsername?: React.Dispatch<React.SetStateAction<string>>;
+  editUsernameError?: string | null;
+  setEditUsernameError?: React.Dispatch<React.SetStateAction<string | null>>;
   editAvatarUrl: string | null;
   setEditAvatarUrl: React.Dispatch<React.SetStateAction<string | null>>;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
@@ -29,6 +33,10 @@ export const ProfileEditChannel: React.FC<ProfileEditChannelProps> = ({
   setEditName,
   editDescription,
   setEditDescription,
+  editUsername,
+  setEditUsername,
+  editUsernameError,
+  setEditUsernameError,
   editAvatarUrl,
   setEditAvatarUrl,
   fileInputRef,
@@ -171,6 +179,46 @@ export const ProfileEditChannel: React.FC<ProfileEditChannelProps> = ({
           }}
         />
       </div>
+
+      {!isGroup && setEditUsername && (
+        <div style={{ display: 'flex', flexDirection: 'column', marginTop: '20px', width: '100%' }}>
+          <span style={{ fontSize: '13px', color: 'var(--text-dim, #8e8e93)', marginBottom: '6px' }}>
+            {t('channelSettings.username_optional', 'Юзернейм (необязательно)')}
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid var(--surface-border, rgba(255, 255, 255, 0.15))', paddingBottom: '4px' }}>
+            <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--accent-color, #7C3AED)', marginRight: '4px', fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace' }}>
+              @
+            </span>
+            <input
+              type="text"
+              value={editUsername || ''}
+              onChange={(e) => {
+                const val = e.target.value.replace(/^@+/, '').replace(/[^a-zA-Z0-9_]/g, '').slice(0, 32);
+                setEditUsername(val);
+                if (setEditUsernameError) setEditUsernameError(null);
+              }}
+              placeholder={t('channelSettings.username_placeholder', 'username')}
+              aria-label={t('channelSettings.username_optional', 'Юзернейм (необязательно)')}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                color: 'var(--text-main, #ffffff)',
+                fontSize: '14px',
+                padding: '4px 0',
+                fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
+              }}
+            />
+          </div>
+          {editUsernameError && (
+            <span style={{ fontSize: '11.5px', color: '#ef4444', marginTop: '4px' }}>
+              {editUsernameError}
+            </span>
+          )}
+        </div>
+      )}
 
       <AvatarCropperModal
         isOpen={cropperModalOpen}

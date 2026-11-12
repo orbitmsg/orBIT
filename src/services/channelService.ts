@@ -12,6 +12,7 @@ import { getMediaInfoFromDataUrl } from '../utils/staticImageValidation';
 export interface ChannelInfo {
   id: string;
   name: string;
+  username?: string | null;
   description: string;
   avatarUrl: string | null;
   creatorId?: string;
@@ -76,6 +77,7 @@ class ChannelService {
           return data.map((c) => ({
             id: c.id,
             name: c.name,
+            username: c.username || null,
             description: c.description || '',
             avatarUrl: c.avatar_url || null,
             creatorId: c.creator_id || undefined,
@@ -92,11 +94,11 @@ class ChannelService {
   }
 
   async getChannel(channelId: string): Promise<ChannelInfo | null> {
-    const cleanId = channelId.trim();
+    const cleanId = channelId.trim().replace(/^@+/, '');
     if (!cleanId) return null;
 
     try {
-      const res = await fetch(`${CHANNELS_SUPABASE_URL}/rest/v1/public_channels?id=eq.${encodeURIComponent(cleanId)}&select=*`, {
+      const res = await fetch(`${CHANNELS_SUPABASE_URL}/rest/v1/public_channels?or=(id.eq.${encodeURIComponent(cleanId)},username.ilike.${encodeURIComponent(cleanId)})&select=*&limit=1`, {
         headers: {
           'apikey': CHANNELS_SUPABASE_KEY,
           'Authorization': `Bearer ${CHANNELS_SUPABASE_KEY}`,
@@ -109,6 +111,7 @@ class ChannelService {
           return {
             id: c.id,
             name: c.name,
+            username: c.username || null,
             description: c.description || '',
             avatarUrl: c.avatar_url || null,
             creatorId: c.creator_id || undefined,
@@ -119,7 +122,6 @@ class ChannelService {
             updatedAt: c.updated_at ? new Date(c.updated_at).getTime() : new Date(c.created_at).getTime(),
           };
         }
-        return null;
       }
     } catch {}
 
@@ -134,13 +136,45 @@ class ChannelService {
     return null;
   }
 
+  async checkChannelUsername(username: string, excludeChannelId?: string): Promise<boolean> {
+    const clean = username.replace(/^@+/, '').trim().toLowerCase();
+    if (!/^[a-z0-9_]{3,32}$/.test(clean)) return false;
+    if (clean === 'support' || clean === 'admin' || clean === 'orbita') return false;
+    try {
+      let url = `${CHANNELS_SUPABASE_URL}/rest/v1/public_channels?select=id&username=ilike.${encodeURIComponent(clean)}`;
+      if (excludeChannelId) {
+        url += `&id=neq.${encodeURIComponent(excludeChannelId)}`;
+      }
+      const res = await fetch(url, {
+        headers: {
+          'apikey': CHANNELS_SUPABASE_KEY,
+          'Authorization': `Bearer ${CHANNELS_SUPABASE_KEY}`,
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return Array.isArray(data) && data.length === 0;
+      }
+    } catch {}
+    try {
+      const q = excludeChannelId ? `&excludeChannelId=${encodeURIComponent(excludeChannelId)}` : '';
+      const res = await fetch(`${W}/channels/check-username?username=${encodeURIComponent(clean)}${q}`);
+      if (res.ok) {
+        const json = await res.json();
+        return Boolean(json.available);
+      }
+    } catch {}
+    return false;
+  }
+
   async createChannel(
     name: string,
     description: string,
     avatarUrl: string | null,
     creatorNickname: string,
     creatorId?: string,
-    customId?: string
+    customId?: string,
+    username?: string | null
   ): Promise<ChannelInfo | null> {
     const isChannelCode = (s?: string) => Boolean(s && /^[A-Z0-9]{30,50}$/i.test(s.trim()));
 
@@ -154,6 +188,7 @@ class ChannelService {
 
     const idToUse = actualCustomId || generateChannelId();
     const validCreatorId = actualCreatorId && actualCreatorId.length >= 8 ? actualCreatorId : null;
+    const cleanUsername = username ? username.replace(/^@+/, '').trim().toLowerCase() : null;
     let finalAvatarUrl = avatarUrl;
     if (avatarUrl && avatarUrl.startsWith('data:')) {
       const base64 = avatarUrl.includes(',') ? avatarUrl.split(',')[1] : avatarUrl;
@@ -176,6 +211,7 @@ class ChannelService {
     const createdInfo: ChannelInfo = {
       id: idToUse,
       name: name.trim(),
+      username: cleanUsername,
       description: description.trim(),
       avatarUrl: finalAvatarUrl || null,
       creatorId: validCreatorId || undefined,
@@ -193,6 +229,7 @@ class ChannelService {
         body: JSON.stringify({
           id: idToUse,
           name: name.trim(),
+          username: cleanUsername,
           description: description.trim(),
           avatarUrl: finalAvatarUrl || null,
           creatorNickname,
@@ -226,11 +263,14 @@ class ChannelService {
 
   async updateChannel(
     channelId: string,
-    data: { name?: string; description?: string; avatarUrl?: string | null },
+    data: { name?: string; description?: string; avatarUrl?: string | null; username?: string | null },
     userId?: string
   ): Promise<boolean> {
     const cleanId = channelId.trim();
     let finalAvatarUrl = data.avatarUrl;
+    const cleanUsername = data.username !== undefined
+      ? (typeof data.username === 'string' && data.username.trim() ? data.username.replace(/^@+/, '').trim().toLowerCase() : null)
+      : undefined;
     if (finalAvatarUrl && finalAvatarUrl.startsWith('data:')) {
       const base64 = finalAvatarUrl.includes(',') ? finalAvatarUrl.split(',')[1] : finalAvatarUrl;
       const { ext } = getMediaInfoFromDataUrl(finalAvatarUrl);
@@ -250,7 +290,7 @@ class ChannelService {
     }
 
     const now = Date.now();
-    const eventPayload = {
+    const eventPayload: any = {
       type: 'channel-updated',
       channelId: cleanId,
       name: data.name,
@@ -258,6 +298,7 @@ class ChannelService {
       avatarUrl: finalAvatarUrl,
       updatedAt: now,
     };
+    if (cleanUsername !== undefined) eventPayload.username = cleanUsername;
 
     try {
       ablyService.sendMessage(`public-channel-${cleanId}`, eventPayload).catch(() => {});
@@ -273,6 +314,7 @@ class ChannelService {
           name: data.name,
           description: data.description,
           avatarUrl: finalAvatarUrl,
+          username: cleanUsername,
         }),
       });
       if (res.ok) {

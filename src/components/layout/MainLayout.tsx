@@ -139,15 +139,27 @@ export const MainLayout = () => {
   const [showFriendRequestsModal, setShowFriendRequestsModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [groupInviteUrl, setGroupInviteUrl] = useState<string | null>(null);
+  const [channelInviteUrl, setChannelInviteUrl] = useState<string | null>(null);
+  const [channelInviteData, setChannelInviteData] = useState<any | null>(null);
 
   useEffect(() => {
     const handleOpenInvite = (e: any) => {
       const u = e?.detail?.url;
       if (u) setGroupInviteUrl(u);
     };
+    const handleOpenChannelInvite = (e: any) => {
+      const u = e?.detail?.url;
+      const ch = e?.detail?.channel;
+      if (u || ch) {
+        setChannelInviteUrl(u || null);
+        setChannelInviteData(ch || null);
+      }
+    };
     window.addEventListener('orbita:open-group-invite', handleOpenInvite);
+    window.addEventListener('orbita:open-channel-invite', handleOpenChannelInvite);
     return () => {
       window.removeEventListener('orbita:open-group-invite', handleOpenInvite);
+      window.removeEventListener('orbita:open-channel-invite', handleOpenChannelInvite);
     };
   }, []);
   const [isMobileView, setIsMobileView] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 680 : false);
@@ -1350,6 +1362,10 @@ export const MainLayout = () => {
         <MainLayoutModals
           groupInviteUrl={groupInviteUrl}
           setGroupInviteUrl={setGroupInviteUrl}
+          channelInviteUrl={channelInviteUrl}
+          setChannelInviteUrl={setChannelInviteUrl}
+          channelInviteData={channelInviteData}
+          setChannelInviteData={setChannelInviteData}
           connectModalConfig={connectModalConfig}
           setConnectModalConfig={setConnectModalConfig}
           handleConnectRequest={handleConnectRequest}

@@ -17,7 +17,7 @@ import { useChatStore, type Chat } from '../../store/useChatStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { channelService } from '../../services/channelService';
 import { groupService } from '../../services/groupService';
-import { extractCodeFromInput } from '../../utils/inviteLink';
+import { extractCodeFromInput, parseOrbitaLink } from '../../utils/inviteLink';
 import { extractGroupCode, isValidGroupCode } from '../../lib/groupCrypto';
 import { generateChannelId } from '../../lib/codes';
 import { useToastStore } from '../../store/useToastStore';
@@ -43,14 +43,17 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
   const activeType = type;
   const [inputValue, setInputValue] = useState('');
   const [descriptionValue, setDescriptionValue] = useState('');
+  const [channelUsername, setChannelUsername] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [isDescFocused, setIsDescFocused] = useState(false);
+  const [isUsernameFocused, setIsUsernameFocused] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [cropperModalOpen, setCropperModalOpen] = useState(false);
   const [cropperImageSrc, setCropperImageSrc] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tempWarning, setTempWarning] = useState<string | null>(null);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
   const [liveResults, setLiveResults] = useState<UserDirectoryRecord[]>([]);
   const [copiedContactField, setCopiedContactField] = useState<'username' | 'id' | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
@@ -60,8 +63,10 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
   useEffect(() => {
     setInputValue('');
     setDescriptionValue('');
+    setChannelUsername('');
     setError(null);
     setTempWarning(null);
+    setUsernameError(null);
     setLiveResults([]);
   }, [type]);
 
@@ -232,6 +237,33 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
     }
 
     if (activeType === 'friend') {
+      const parsed = parseOrbitaLink(trimmed);
+      if (parsed) {
+        if (parsed.kind === 'group') {
+          onClose();
+          window.dispatchEvent(new CustomEvent('orbita:open-group-invite', { detail: { url: trimmed } }));
+          return;
+        }
+        if (parsed.kind === 'channel') {
+          onClose();
+          window.dispatchEvent(new CustomEvent('orbita:open-channel-invite', { detail: { url: trimmed } }));
+          return;
+        }
+        if (parsed.kind === 'slug') {
+          setIsLoading(true);
+          try {
+            const channel = await channelService.getChannel(parsed.identifier);
+            if (channel) {
+              setIsLoading(false);
+              onClose();
+              window.dispatchEvent(new CustomEvent('orbita:open-channel-invite', { detail: { url: trimmed, channel } }));
+              return;
+            }
+          } catch {}
+          setIsLoading(false);
+        }
+      }
+
       const isExplicitGroup = trimmed.includes('group') || trimmed.includes('join') || trimmed.includes('#') || trimmed.startsWith('join_');
       const groupCode = isExplicitGroup ? extractGroupCode(trimmed) : '';
       if (groupCode && isValidGroupCode(groupCode)) {
@@ -242,41 +274,14 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
 
       const channelMatch = trimmed.match(/\/(?:c|channel)\/([A-Z0-9_-]{10,})/i);
       if (channelMatch && channelMatch[1]) {
-        setIsLoading(true);
-        channelService.getChannel(channelMatch[1]).then((info) => {
-          setIsLoading(false);
-          if (info) {
-            useChatStore.getState().addChat({
-              id: info.id,
-              type: 'channel',
-              name: info.name,
-              description: info.description || '',
-              lastMsg: '',
-              online: false,
-              creatorNickname: info.creatorNickname,
-              creatorId: info.creatorId || undefined,
-              avatarUrl: info.avatarUrl || undefined,
-              subscribersCount: info.subscribersCount || 1,
-              isOfficial: info.isOfficial,
-              createdAt: info.createdAt || Date.now(),
-              unreadCount: 0,
-              lastReadTimestamp: Date.now(),
-              muted: false,
-              notificationsEnabled: true,
-            });
-            setActiveChat(info.id);
-            onClose();
-          } else {
-            showTempWarning(t('createModal.invalid_content', 'Неверное содержимое'));
-          }
-        }).catch(() => {
-          setIsLoading(false);
-          showTempWarning(t('createModal.invalid_content', 'Неверное содержимое'));
-        });
+        onClose();
+        window.dispatchEvent(new CustomEvent('orbita:open-channel-invite', { detail: { url: trimmed } }));
         return;
       }
 
-      const cleanInput = extractCodeFromInput(trimmed).trim();
+      const cleanInput = (parsed && (parsed.kind === 'user' || parsed.kind === 'slug'))
+        ? parsed.identifier
+        : extractCodeFromInput(trimmed).trim();
       const rawClean = cleanInput.replace(/^@+/, '').trim();
       if (!rawClean) {
         showTempWarning(t('createModal.invalid_content', 'Неверное содержимое'));
@@ -418,22 +423,46 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
     }
 
     if (activeType === 'channel') {
+      const cleanUname = channelUsername.trim().replace(/^@+/, '').toLowerCase();
+      if (cleanUname) {
+        if (!/^[a-z0-9_]{3,32}$/.test(cleanUname)) {
+          setUsernameError(t('channelSettings.username_invalid', 'От 3 до 32 символов: латиница, цифры и _'));
+          return;
+        }
+        setIsLoading(true);
+        try {
+          const isAvailable = await channelService.checkChannelUsername(cleanUname);
+          if (!isAvailable) {
+            setIsLoading(false);
+            setUsernameError(t('channelSettings.username_taken', 'Этот юзернейм уже занят'));
+            return;
+          }
+        } catch {
+          setIsLoading(false);
+          setUsernameError(t('common.error', 'Ошибка проверки юзернейма'));
+          return;
+        }
+      }
+
       setIsLoading(true);
       setError(null);
       const channelId = generateChannelId();
-      channelService.createChannel(
-        trimmed,
-        descriptionValue.trim(),
-        avatarUrl,
-        myNickname,
-        myUserId,
-        channelId
-      ).then((channel) => {
+      try {
+        const channel = await channelService.createChannel(
+          trimmed,
+          descriptionValue.trim(),
+          avatarUrl,
+          myNickname,
+          myUserId,
+          channelId,
+          cleanUname || undefined
+        );
         setIsLoading(false);
         if (channel) {
           addChannelChat({
             id: channel.id || channelId,
             name: channel.name || trimmed,
+            username: channel.username || cleanUname || null,
             description: channel.description || descriptionValue.trim(),
             avatarUrl: channel.avatarUrl || avatarUrl || null,
             creatorNickname: myNickname,
@@ -445,13 +474,13 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
           setActiveChat(channel.id || channelId);
           onClose();
         }
-      }).catch((err) => {
+      } catch (err: any) {
         setIsLoading(false);
         useToastStore.getState().showToast(t('common.error', 'Ошибка создания сообщества') + (err?.message ? `: ${err.message}` : ''));
-      });
+      }
       return;
     }
-  }, [inputValue, descriptionValue, isLoading, activeType, onConnectRequest, myNickname, myCode, avatarUrl, addChannelChat, setActiveChat, onClose, t]);
+  }, [inputValue, descriptionValue, channelUsername, isLoading, activeType, onConnectRequest, myNickname, myCode, avatarUrl, addChannelChat, setActiveChat, onClose, t]);
 
   const label =
     activeType === 'friend'
@@ -969,6 +998,67 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                     }}
                   />
                 </div>
+
+                {activeType === 'channel' && (
+                  <div className="mt-3">
+                    <div
+                      className="flex items-center gap-2 transition-all"
+                      style={{
+                        backgroundColor: 'var(--surface-container)',
+                        borderRadius: '14px',
+                        padding: '0 14px',
+                        boxShadow: usernameError
+                          ? '0 0 0 2px rgba(239, 68, 68, 0.5)'
+                          : isUsernameFocused
+                          ? '0 0 0 2px color-mix(in srgb, var(--accent-color, #7C3AED) 45%, transparent)'
+                          : 'none',
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          color: 'var(--accent-text, var(--accent-color, #7C3AED))',
+                          fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
+                        }}
+                      >
+                        @
+                      </span>
+                      <input
+                        type="text"
+                        value={channelUsername}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/^@+/, '').replace(/[^a-zA-Z0-9_]/g, '').slice(0, 32);
+                          setChannelUsername(val);
+                          if (usernameError) setUsernameError(null);
+                        }}
+                        onFocus={() => setIsUsernameFocused(true)}
+                        onBlur={() => setIsUsernameFocused(false)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleSubmit();
+                          } else if (e.key === 'Escape') {
+                            onClose();
+                          }
+                        }}
+                        placeholder={t('channelSettings.username_optional', 'Юзернейм (необязательно)')}
+                        aria-label={t('channelSettings.username_optional', 'Юзернейм (необязательно)')}
+                        className="w-full outline-none text-[13.5px] py-2.5 bg-transparent border-none"
+                        style={{
+                          color: 'var(--text-main)',
+                          border: 'none',
+                          outline: 'none',
+                        }}
+                      />
+                    </div>
+                    {usernameError && (
+                      <div className="mt-1.5 px-1 text-[11.5px] font-medium" style={{ color: '#ef4444' }}>
+                        {usernameError}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-2 mt-3.5">

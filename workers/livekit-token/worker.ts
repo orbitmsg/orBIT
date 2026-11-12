@@ -1659,9 +1659,6 @@ export default {
         if (!/^[a-z0-9_]{3,32}$/.test(normalizedUsername)) {
           return errorResponse('Invalid username: must be 3-32 characters, only a-z, 0-9, _', 400);
         }
-        if (normalizedUsername === 'support' || normalizedUsername === 'admin' || normalizedUsername === 'orbita') {
-          return jsonResponse({ available: false, username: normalizedUsername });
-        }
         const supabase = getChannelsSupabaseClient(env);
         if (!supabase) return errorResponse('Database unavailable', 503);
         try {

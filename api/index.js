@@ -1906,9 +1906,6 @@ module.exports = async function handler(req, res) {
       if (!/^[a-z0-9_]{3,32}$/.test(normalizedUsername)) {
         return sendError(res, 'Invalid username: must be 3-32 characters, only a-z, 0-9, _', 400);
       }
-      if (normalizedUsername === 'support' || normalizedUsername === 'admin' || normalizedUsername === 'orbita') {
-        return sendJson(res, { available: false, username: normalizedUsername });
-      }
       const supabase = getChannelsSupabaseClient();
       if (!supabase) return sendError(res, 'Database unavailable', 503);
       try {

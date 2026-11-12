@@ -139,7 +139,6 @@ class ChannelService {
   async checkChannelUsername(username: string, excludeChannelId?: string): Promise<boolean> {
     const clean = username.replace(/^@+/, '').trim().toLowerCase();
     if (!/^[a-z0-9_]{3,32}$/.test(clean)) return false;
-    if (clean === 'support' || clean === 'admin' || clean === 'orbita') return false;
     try {
       let url = `${CHANNELS_SUPABASE_URL}/rest/v1/public_channels?select=id&username=ilike.${encodeURIComponent(clean)}`;
       if (excludeChannelId) {

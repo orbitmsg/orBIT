@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { securityService } from '../../services/securityService';
 
 import { OrbitaKeySettings } from '../settings/OrbitaKeySettings';
+import { DiscordSettingsSidebar } from '../settings/DiscordSettingsSidebar';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   useChatStore,
@@ -49,7 +50,6 @@ import {
   MD3,
   GLOBAL_CSS,
   Block,
-  SettingsRow,
   M3Switch,
   type TabId,
 } from '../settings/SettingsShared';
@@ -167,7 +167,16 @@ export const SettingsScreen = () => {
   const activeProxy = proxies.find((p) => p.id === activeProxyId);
   const folders = useChatStore((s) => s.folders || []);
   const initialSettingsTab = useChatStore((s) => s.initialSettingsTab) as TabId | undefined;
-  const [tabStack, setTabStack] = useState<TabId[]>(() => [initialSettingsTab || 'main']);
+  const [isMobileWidth, setIsMobileWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 700 : false
+  );
+  const [tabStack, setTabStack] = useState<TabId[]>(() => {
+    const mobile = typeof window !== 'undefined' ? window.innerWidth < 700 : false;
+    if (!mobile && (!initialSettingsTab || initialSettingsTab === 'main')) {
+      return ['myAccount'];
+    }
+    return [initialSettingsTab || 'main'];
+  });
   const activeTab = tabStack[tabStack.length - 1];
 
   useEffect(() => {
@@ -260,61 +269,32 @@ export const SettingsScreen = () => {
     }
   };
 
-  const [isMobileWidth, setIsMobileWidth] = useState(() => 
-    typeof window !== 'undefined' ? window.innerWidth < 650 : false
-  );
-
   useEffect(() => {
-    const handleResize = () => setIsMobileWidth(window.innerWidth < 650);
+    const handleResize = () => {
+      const mobile = window.innerWidth < 700;
+      setIsMobileWidth(mobile);
+      if (!mobile) {
+        setTabStack((prev) => (prev[prev.length - 1] === 'main' ? ['myAccount'] : prev));
+      }
+    };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
     if (initialSettingsTab) {
-      setTabStack([initialSettingsTab]);
+      if (!isMobileWidth && initialSettingsTab === 'main') {
+        setTabStack(['myAccount']);
+      } else {
+        setTabStack([initialSettingsTab]);
+      }
     }
-  }, [initialSettingsTab]);
+  }, [initialSettingsTab, isMobileWidth]);
 
   const pushTab = (tab: TabId) => setTabStack(prev => [...prev, tab]);
   const popTab = () => setTabStack(prev => prev.length > 1 ? prev.slice(0, -1) : prev);
 
   const innerContentRef = useRef<HTMLDivElement>(null);
-  const [targetHeight, setTargetHeight] = useState<number | null>(() => {
-    if (typeof window !== 'undefined') {
-      return Math.min(window.innerHeight * 0.85, 720);
-    }
-    return 720;
-  });
-
-  useEffect(() => {
-    if (isMobileWidth) return;
-
-    const measure = () => {
-      if (innerContentRef.current) {
-        const contentH = innerContentRef.current.offsetHeight || innerContentRef.current.scrollHeight;
-        const measured = Math.ceil(contentH) + 68;
-        if (measured > 0) {
-          setTargetHeight((prev) => (prev !== null && Math.abs(prev - measured) < 2 ? prev : measured));
-        }
-      }
-    };
-
-    const rafId = requestAnimationFrame(measure);
-    const timer = setTimeout(measure, 30);
-
-    let ro: ResizeObserver | null = null;
-    if (innerContentRef.current) {
-      ro = new ResizeObserver(measure);
-      ro.observe(innerContentRef.current);
-    }
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      clearTimeout(timer);
-      ro?.disconnect();
-    };
-  }, [activeTab, isMobileWidth]);
 
   const settingsScrollRef = useRef<HTMLDivElement>(null);
   const [settingsThumb, setSettingsThumb] = useState<{ top: number; height: number } | null>(null);
@@ -833,7 +813,7 @@ export const SettingsScreen = () => {
           />
         );
       case 'orbitaKey':
-        return <OrbitaKeySettings onBack={handleBack} />;
+        return <OrbitaKeySettings onBack={isMobileWidth || tabStack.length > 1 ? handleBack : undefined} />;
       case 'backup':
         return (
           <AccountBackupScreen
@@ -859,15 +839,6 @@ export const SettingsScreen = () => {
         return renderDataMemory();
       case 'energy':
         return <EnergySettingsScreen />;
-        return (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }}>
-            <Block style={{ marginBottom: 8 }}>
-              <SettingsRow label={t('settings.battery_saver')} right={<M3Switch checked={false} onChange={() => {}} />} />
-              <SettingsRow label={t('settings.background_usage')} right={<M3Switch checked={true} onChange={() => {}} />} />
-              <SettingsRow label={t('settings.auto_dark')} right={<M3Switch checked={false} onChange={() => {}} />} />
-            </Block>
-          </motion.div>
-        );
       case 'notifications':
         return (
           <NotificationsTab
@@ -939,6 +910,45 @@ export const SettingsScreen = () => {
     return tabTitles[activeTab] ?? '';
   };
   const handleBack = () => popTab();
+  const handleSelectSidebarTab = (tab: TabId) => {
+    setTabStack([tab]);
+    if (settingsScrollRef.current) {
+      settingsScrollRef.current.scrollTop = 0;
+    }
+  };
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (
+        nicknameEditOpen ||
+        nameEditOpen ||
+        usernameEditOpen ||
+        birthdayEditOpen ||
+        emojiModalOpen ||
+        cropperModalOpen ||
+        deleteModalOpen ||
+        avatarMenuOpen
+      ) {
+        return;
+      }
+      setCurrentView('chats');
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [
+    nicknameEditOpen,
+    nameEditOpen,
+    usernameEditOpen,
+    birthdayEditOpen,
+    emojiModalOpen,
+    cropperModalOpen,
+    deleteModalOpen,
+    avatarMenuOpen,
+    setCurrentView,
+  ]);
+
+  const showBackButton = isMobileWidth ? activeTab !== 'main' : tabStack.length > 1;
 
   return (
     <>
@@ -954,14 +964,15 @@ export const SettingsScreen = () => {
           inset: 0,
           zIndex: 200,
           display: isMobileWidth ? 'block' : 'flex',
-          alignItems: isMobileWidth ? 'stretch' : 'flex-start',
+          alignItems: isMobileWidth ? 'stretch' : 'center',
           justifyContent: isMobileWidth ? 'stretch' : 'center',
-          backgroundColor: 'rgba(0, 0, 0, 0.55)',
+          backgroundColor: 'rgba(0, 0, 0, 0.58)',
           backdropFilter: 'none',
           WebkitBackdropFilter: 'none',
           border: 'none',
-          padding: isMobileWidth ? '0' : 'min(7.5vh, 64px) 16px 16px',
+          padding: isMobileWidth ? '0' : '44px 24px 20px',
           userSelect: 'none',
+          boxSizing: 'border-box',
         }}
         onClick={() => setCurrentView('chats')}
       >
@@ -970,220 +981,260 @@ export const SettingsScreen = () => {
           animate={{
             opacity: 1,
             scale: 1,
-            height: isMobileWidth
-              ? 'calc(100vh - 30px)'
-              : targetHeight !== null
-              ? Math.min(targetHeight, typeof window !== 'undefined' ? Math.min(window.innerHeight * 0.9, 900) : 900)
-              : (typeof window !== 'undefined' ? Math.min(window.innerHeight * 0.9, 900) : 900),
           }}
           transition={{
-            height: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
-            opacity: { duration: 0 },
+            opacity: { duration: 0.14 },
             scale: { duration: 0 },
           }}
           onClick={e => e.stopPropagation()}
           style={{
             position: 'relative',
             width: '100%',
-            maxWidth: isMobileWidth ? '100vw' : '400px',
-            maxHeight: isMobileWidth ? 'calc(100vh - 30px)' : 'min(90vh, 900px)',
+            maxWidth: isMobileWidth ? '100vw' : '940px',
+            height: isMobileWidth ? 'calc(100vh - 30px)' : 'min(84vh, 720px)',
+            minHeight: isMobileWidth ? undefined : '500px',
+            maxHeight: isMobileWidth ? 'calc(100vh - 30px)' : 'calc(100vh - 64px)',
             display: 'flex',
-            flexDirection: 'column',
-            margin: isMobileWidth ? '0' : '0 16px',
+            flexDirection: isMobileWidth ? 'column' : 'row',
+            margin: 0,
             marginTop: isMobileWidth ? '30px' : '0',
             backgroundColor: MD3.bg,
-            borderRadius: isMobileWidth ? 0 : 20,
+            borderRadius: isMobileWidth ? 0 : 16,
+            border: isMobileWidth ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
             color: MD3.onSurface,
-            boxShadow: isMobileWidth ? 'none' : '0 20px 60px rgba(0,0,0,0.5)',
+            boxShadow: isMobileWidth ? 'none' : '0 24px 64px rgba(0, 0, 0, 0.55)',
             overflow: 'hidden',
           }}
         >
-          <div
-            style={{
-              position: 'sticky',
-              top: 0,
-              zIndex: 10,
-              padding: '16px 20px',
-              backgroundColor: MD3.bg,
-              flexShrink: 0,
-              userSelect: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              width: '100%',
-              boxSizing: 'border-box',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-              {activeTab !== 'main' && (
-                <button
-                  type="button"
-                  onClick={handleBack}
-                  aria-label={t('common.back', 'Назад')}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    borderRadius: '12px',
-                    color: MD3.onSurfaceVar,
-                    cursor: 'pointer',
-                    padding: '6px',
-                    transition: 'color 150ms, background-color 150ms',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    outline: 'none',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = MD3.primary;
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = MD3.onSurfaceVar;
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M16 22L6 12L16 2l1.775 1.775L9.55 12l8.225 8.225z" />
-                  </svg>
-                </button>
-              )}
-              <h2
-                style={{
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: MD3.onSurface,
-                  margin: 0,
-                  userSelect: 'none',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {getHeaderTitle()}
-              </h2>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {activeTab === 'main' && (
-                <button
-                  type="button"
-                  onClick={() => setNicknameEditOpen(true)}
-                  aria-label={t('settings.edit_nickname_title', 'Изменить имя')}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    borderRadius: '12px',
-                    color: MD3.onSurfaceVar,
-                    cursor: 'pointer',
-                    padding: '6px',
-                    transition: 'color 150ms, background-color 150ms',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    outline: 'none',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = MD3.primary;
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = MD3.onSurfaceVar;
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 64 64" fill="currentColor">
-                    <path d="M61.2 13c-3.2-3.4-6.6-6.8-10-10.1c-.7-.7-1.5-1.1-2.4-1.1s-1.8.3-2.4 1L8.7 40.2c-.6.6-1 1.3-1.3 2L1.9 59c-.3.8-.1 1.6.3 2.2c.5.6 1.2 1 2.1 1h.4l17.1-5.7c.8-.3 1.5-.7 2-1.3l37.5-37.4c.6-.6 1-1.5 1-2.4s-.4-1.7-1.1-2.4M20.6 52.1c-.1.1-.2.1-.3.2L7.4 56.6l4.3-12.9c0-.1.1-.2.2-.3L39.4 16l8.7 8.7zm30.6-30.6l-8.7-8.7l6.1-6.1c2.9 2.8 5.8 5.8 8.6 8.7z" />
-                  </svg>
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setCurrentView('chats')}
-                aria-label={t('common.close', 'Закрыть')}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  borderRadius: '12px',
-                  color: MD3.onSurfaceVar,
-                  cursor: 'pointer',
-                  padding: '6px',
-                  transition: 'color 150ms, background-color 150ms',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  outline: 'none',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = MD3.primary;
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = MD3.onSurfaceVar;
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">
-                  <path fill="currentColor" d="M6.225 4.811a1 1 0 0 0-1.414 1.414L10.586 12L4.81 17.775a1 1 0 1 0 1.414 1.414L12 13.414l5.775 5.775a1 1 0 0 0 1.414-1.414L13.414 12l5.775-5.775a1 1 0 0 0-1.414-1.414L12 10.586z" />
-                </svg>
-              </button>
-            </div>
-          </div>
-          
+          {!isMobileWidth && (
+            <DiscordSettingsSidebar
+              activeTab={activeTab}
+              avatarUrl={avatarUrl}
+              nickname={nickname}
+              userId={userId}
+              myCode={myCode}
+              appVersion={appVersion}
+              proxyEnabled={proxyEnabled}
+              activeProxy={activeProxy}
+              foldersCount={folders.length}
+              language={language}
+              onSelectTab={handleSelectSidebarTab}
+              onDeleteAccount={() => setDeleteModalOpen(true)}
+              onTriggerDevToast={triggerDevToast}
+            />
+          )}
+
           <div
             style={{
               flex: 1,
+              minWidth: 0,
               minHeight: 0,
-              position: 'relative',
               display: 'flex',
               flexDirection: 'column',
-              overflow: 'hidden',
+              position: 'relative',
+              backgroundColor: MD3.bg,
             }}
-            onMouseMove={triggerSettingsActive}
-            onMouseEnter={triggerSettingsActive}
-            onMouseLeave={handleSettingsMouseLeave}
           >
             <div
-              ref={settingsScrollRef}
-              onScroll={triggerSettingsActive}
               style={{
-                flex: 1,
-                minHeight: 0,
-                overflowY: 'auto',
-                overflowX: 'hidden',
-                padding: '0 0 8px',
+                position: 'sticky',
+                top: 0,
+                zIndex: 10,
+                height: isMobileWidth ? undefined : '52px',
+                padding: isMobileWidth ? '16px 20px' : '0 22px',
+                backgroundColor: MD3.bg,
+                borderBottom: isMobileWidth ? 'none' : '1px solid rgba(255, 255, 255, 0.06)',
+                flexShrink: 0,
+                userSelect: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                width: '100%',
+                boxSizing: 'border-box',
               }}
-              className="chat-list-scrollbar"
             >
-              <div ref={innerContentRef} style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
-                <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }}>
-                  {renderContent()}
-                </motion.div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+                {showBackButton && (
+                  <button
+                    type="button"
+                    onClick={handleBack}
+                    aria-label={t('common.back', 'Назад')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      borderRadius: isMobileWidth ? '12px' : '8px',
+                      color: MD3.onSurfaceVar,
+                      cursor: 'pointer',
+                      padding: '6px',
+                      transition: 'color 150ms, background-color 150ms',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      outline: 'none',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = MD3.onSurface;
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = MD3.onSurfaceVar;
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M16 22L6 12L16 2l1.775 1.775L9.55 12l8.225 8.225z" />
+                    </svg>
+                  </button>
+                )}
+                <h2
+                  style={{
+                    fontSize: isMobileWidth ? 18 : 16,
+                    fontWeight: 700,
+                    color: MD3.onSurface,
+                    margin: 0,
+                    userSelect: 'none',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {getHeaderTitle()}
+                </h2>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {(activeTab === 'main' || activeTab === 'myAccount') && (
+                  <button
+                    type="button"
+                    onClick={() => setNicknameEditOpen(true)}
+                    aria-label={t('settings.edit_nickname_title', 'Изменить имя')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      borderRadius: isMobileWidth ? '12px' : '8px',
+                      color: MD3.onSurfaceVar,
+                      cursor: 'pointer',
+                      padding: '6px',
+                      transition: 'color 150ms, background-color 150ms',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      outline: 'none',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = MD3.onSurface;
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = MD3.onSurfaceVar;
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 64 64" fill="currentColor">
+                      <path d="M61.2 13c-3.2-3.4-6.6-6.8-10-10.1c-.7-.7-1.5-1.1-2.4-1.1s-1.8.3-2.4 1L8.7 40.2c-.6.6-1 1.3-1.3 2L1.9 59c-.3.8-.1 1.6.3 2.2c.5.6 1.2 1 2.1 1h.4l17.1-5.7c.8-.3 1.5-.7 2-1.3l37.5-37.4c.6-.6 1-1.5 1-2.4s-.4-1.7-1.1-2.4M20.6 52.1c-.1.1-.2.1-.3.2L7.4 56.6l4.3-12.9c0-.1.1-.2.2-.3L39.4 16l8.7 8.7zm30.6-30.6l-8.7-8.7l6.1-6.1c2.9 2.8 5.8 5.8 8.6 8.7z" />
+                    </svg>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setCurrentView('chats')}
+                  aria-label={t('common.close', 'Закрыть')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    borderRadius: isMobileWidth ? '12px' : '8px',
+                    color: MD3.onSurfaceVar,
+                    cursor: 'pointer',
+                    padding: '6px',
+                    transition: 'color 150ms, background-color 150ms',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    outline: 'none',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = MD3.onSurface;
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = MD3.onSurfaceVar;
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="currentColor" d="M6.225 4.811a1 1 0 0 0-1.414 1.414L10.586 12L4.81 17.775a1 1 0 1 0 1.414 1.414L12 13.414l5.775 5.775a1 1 0 0 0 1.414-1.414L13.414 12l5.775-5.775a1 1 0 0 0-1.414-1.414L12 10.586z" />
+                  </svg>
+                </button>
               </div>
             </div>
 
-            {settingsThumb && (
-              <>
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+              }}
+              onMouseMove={triggerSettingsActive}
+              onMouseEnter={triggerSettingsActive}
+              onMouseLeave={handleSettingsMouseLeave}
+            >
+              <div
+                ref={settingsScrollRef}
+                onScroll={triggerSettingsActive}
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: 'auto',
+                  overflowX: 'hidden',
+                  padding: '0 0 8px',
+                }}
+                className="chat-list-scrollbar"
+              >
                 <div
-                  className="overlay-scroll-track"
-                  onMouseDown={(e) => handleScrollbarTrackMouseDown(e, settingsScrollRef.current)}
+                  ref={innerContentRef}
                   style={{
-                    top: '6px',
-                    bottom: '6px',
-                    opacity: isSettingsActive ? 1 : 0,
+                    width: '100%',
+                    maxWidth: isMobileWidth ? '100%' : '620px',
+                    margin: isMobileWidth ? 0 : '0 auto',
+                    padding: isMobileWidth ? 0 : '16px 16px 24px',
+                    boxSizing: 'border-box',
+                    display: 'flex',
+                    flexDirection: 'column',
                   }}
-                />
-                <div
-                  className="overlay-scroll-thumb"
-                  onMouseDown={(e) => handleScrollbarThumbMouseDown(e, settingsScrollRef.current)}
-                  style={{
-                    top: settingsThumb.top + 6,
-                    height: settingsThumb.height,
-                    opacity: isSettingsActive ? 1 : 0,
-                  }}
-                />
-              </>
-            )}
-          </div>
+                >
+                  <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.16 }}>
+                    {renderContent()}
+                  </motion.div>
+                </div>
+              </div>
 
-          <DeveloperToast isOpen={devToastOpen} nickname={nickname || 'User'} />
-          <LinkCopiedToast isOpen={copyToastOpen} />
+              {settingsThumb && (
+                <>
+                  <div
+                    className="overlay-scroll-track"
+                    onMouseDown={(e) => handleScrollbarTrackMouseDown(e, settingsScrollRef.current)}
+                    style={{
+                      top: '6px',
+                      bottom: '6px',
+                      opacity: isSettingsActive ? 1 : 0,
+                    }}
+                  />
+                  <div
+                    className="overlay-scroll-thumb"
+                    onMouseDown={(e) => handleScrollbarThumbMouseDown(e, settingsScrollRef.current)}
+                    style={{
+                      top: settingsThumb.top + 6,
+                      height: settingsThumb.height,
+                      opacity: isSettingsActive ? 1 : 0,
+                    }}
+                  />
+                </>
+              )}
+            </div>
+
+            <DeveloperToast isOpen={devToastOpen} nickname={nickname || 'User'} />
+            <LinkCopiedToast isOpen={copyToastOpen} />
+          </div>
         </motion.div>
       </motion.div>
       </AnimatePresence>

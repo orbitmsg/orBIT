@@ -4,8 +4,6 @@ import {
   Camera,
   Loader2,
   X,
-  UserPlus,
-  Users,
   Megaphone,
   Search,
   Copy,
@@ -42,7 +40,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
   onConnectRequest,
 }) => {
   const { t } = useTranslation();
-  const [activeType, setActiveType] = useState<CreateModalType>(type);
+  const activeType = type;
   const [inputValue, setInputValue] = useState('');
   const [descriptionValue, setDescriptionValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -60,7 +58,6 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
   const copyContactTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setActiveType(type);
     setInputValue('');
     setDescriptionValue('');
     setError(null);
@@ -484,21 +481,6 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
       ? t('createModal.create_channel_btn', 'Создать канал')
       : t('createModal.create_group_btn', 'Создать группу');
 
-  const switchMode = useCallback((nextType: CreateModalType) => {
-    setActiveType(nextType);
-    setTempWarning(null);
-    setError(null);
-    setInputValue('');
-    setDescriptionValue('');
-    setLiveResults([]);
-  }, []);
-
-  const modeTabs: Array<{ id: CreateModalType; label: string; icon: React.ReactNode }> = [
-    { id: 'friend', label: t('createModal.tab_friend', 'Друг'), icon: <UserPlus size={14} /> },
-    { id: 'group', label: t('createModal.tab_group', 'Группа'), icon: <Users size={14} /> },
-    { id: 'channel', label: t('createModal.tab_channel', 'Канал'), icon: <Megaphone size={14} /> },
-  ];
-
   return (
     <AnimatePresence>
       <motion.div
@@ -536,37 +518,20 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <div
-              className="inline-flex items-center p-1 gap-1"
-              style={{
-                backgroundColor: 'var(--surface-container-soft)',
-                borderRadius: '14px',
-                border: 'none',
-              }}
-            >
-              {modeTabs.map((tab) => {
-                const isActive = activeType === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => switchMode(tab.id)}
-                    aria-label={tab.label}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-[12.5px] font-semibold cursor-pointer transition-all border-none outline-none"
-                    style={{
-                      borderRadius: '10px',
-                      border: 'none',
-                      outline: 'none',
-                      background: isActive ? 'var(--accent-color, #5865F2)' : 'transparent',
-                      color: isActive ? 'var(--accent-on-color, #ffffff)' : 'var(--text-dim)',
-                    }}
-                  >
-                    {tab.icon}
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div className="min-w-0">
+              <h2
+                className="m-0 text-[20px] font-bold leading-tight tracking-[-0.01em]"
+                style={{ color: 'var(--text-heading, var(--text-main))' }}
+              >
+                {modalTitle}
+              </h2>
+              <p
+                className="m-0 mt-1.5 text-[13px] leading-[1.45]"
+                style={{ color: 'var(--text-dim)' }}
+              >
+                {modalSubtitle}
+              </p>
             </div>
 
             <button
@@ -592,21 +557,6 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
             >
               <X size={16} />
             </button>
-          </div>
-
-          <div className="mb-4">
-            <h2
-              className="m-0 text-[20px] font-bold leading-tight tracking-[-0.01em]"
-              style={{ color: 'var(--text-heading, var(--text-main))' }}
-            >
-              {modalTitle}
-            </h2>
-            <p
-              className="m-0 mt-1.5 text-[13px] leading-[1.45]"
-              style={{ color: 'var(--text-dim)' }}
-            >
-              {modalSubtitle}
-            </p>
           </div>
 
           {activeType === 'friend' ? (

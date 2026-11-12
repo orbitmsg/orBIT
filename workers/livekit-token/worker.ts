@@ -170,18 +170,33 @@ function stripMissingProfileColumns(payload: Record<string, any>, error: any): b
 
 function getSupabaseClient(env: Env): SupabaseClient | null {
   const url = env.SUPABASE_URL || 'https://majmrtymawymomliowbz.supabase.co';
-  const key = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key, {
+  const primaryKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || 'sb_publishable_Kv7hH8mnCrLw9tNIveeOGQ_P8DPw0Ba';
+  const fallbackKey = env.SUPABASE_ANON_KEY || 'sb_publishable_Kv7hH8mnCrLw9tNIveeOGQ_P8DPw0Ba';
+  if (!url || !primaryKey) return null;
+  const applyKeyHeaders = (headers: Headers, key: string) => {
+    headers.set('apikey', key);
+    if (key.startsWith('sb_secret_') || key.startsWith('sb_publishable_')) {
+      headers.delete('Authorization');
+    } else {
+      headers.set('Authorization', `Bearer ${key}`);
+    }
+  };
+  return createClient(url, primaryKey, {
     auth: { persistSession: false },
     global: {
-      fetch: (input, init = {}) => {
+      fetch: async (input, init = {}) => {
         const headers = new Headers(init.headers);
-        if (key.startsWith('sb_secret_') || key.startsWith('sb_publishable_')) {
-          headers.delete('Authorization');
-          headers.set('apikey', key);
+        applyKeyHeaders(headers, primaryKey);
+        const res = await fetch(input, { ...init, headers });
+        if (res.status === 401 && fallbackKey && fallbackKey !== primaryKey) {
+          const bodyText = await res.clone().text().catch(() => '');
+          if (bodyText.includes('JWT')) {
+            const retryHeaders = new Headers(init.headers);
+            applyKeyHeaders(retryHeaders, fallbackKey);
+            return fetch(input, { ...init, headers: retryHeaders });
+          }
         }
-        return fetch(input, { ...init, headers });
+        return res;
       },
     },
   });

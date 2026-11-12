@@ -34,8 +34,35 @@ const CLOUDINARY_CLOUD_NAME = Deno.env.get('CLOUDINARY_CLOUD_NAME') || '';
 
 function getSupabaseClient() {
   const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_ANON_KEY') || '';
-  return createClient(supabaseUrl, supabaseKey);
+  const fallbackKey = Deno.env.get('SUPABASE_ANON_KEY') || 'sb_publishable_Kv7hH8mnCrLw9tNIveeOGQ_P8DPw0Ba';
+  const primaryKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || fallbackKey;
+  const applyKeyHeaders = (headers: Headers, key: string) => {
+    headers.set('apikey', key);
+    if (key.startsWith('sb_secret_') || key.startsWith('sb_publishable_')) {
+      headers.delete('Authorization');
+    } else {
+      headers.set('Authorization', `Bearer ${key}`);
+    }
+  };
+  return createClient(supabaseUrl, primaryKey, {
+    auth: { persistSession: false },
+    global: {
+      fetch: async (input, init = {}) => {
+        const headers = new Headers(init.headers);
+        applyKeyHeaders(headers, primaryKey);
+        const res = await fetch(input, { ...init, headers });
+        if (res.status === 401 && fallbackKey && fallbackKey !== primaryKey) {
+          const bodyText = await res.clone().text().catch(() => '');
+          if (bodyText.includes('JWT')) {
+            const retryHeaders = new Headers(init.headers);
+            applyKeyHeaders(retryHeaders, fallbackKey);
+            return fetch(input, { ...init, headers: retryHeaders });
+          }
+        }
+        return res;
+      },
+    },
+  });
 }
 
 function normalizeUsernameInput(value: any): string | null | undefined {

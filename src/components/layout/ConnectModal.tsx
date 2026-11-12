@@ -1,6 +1,19 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Loader2 } from 'lucide-react';
+import {
+  Camera,
+  Loader2,
+  X,
+  UserPlus,
+  Users,
+  Megaphone,
+  Search,
+  Copy,
+  Check,
+  Shield,
+  Link2,
+} from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, type Chat } from '../../store/useChatStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -29,6 +42,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
   onConnectRequest,
 }) => {
   const { t } = useTranslation();
+  const [activeType, setActiveType] = useState<CreateModalType>(type);
   const [inputValue, setInputValue] = useState('');
   const [descriptionValue, setDescriptionValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -40,10 +54,21 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [tempWarning, setTempWarning] = useState<string | null>(null);
   const [liveResults, setLiveResults] = useState<UserDirectoryRecord[]>([]);
+  const [copiedContactField, setCopiedContactField] = useState<'username' | 'id' | null>(null);
   const tempWarningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copyContactTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (type !== 'friend') {
+    setActiveType(type);
+    setInputValue('');
+    setDescriptionValue('');
+    setError(null);
+    setTempWarning(null);
+    setLiveResults([]);
+  }, [type]);
+
+  useEffect(() => {
+    if (activeType !== 'friend') {
       setLiveResults([]);
       return;
     }
@@ -69,16 +94,45 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [inputValue, type]);
+  }, [inputValue, activeType]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const myNickname = useAuthStore((s) => s.nickname) || 'YOU';
+  const myUsername = useAuthStore((s) => s.username) || '';
   const myUserId = useAuthStore((s) => s.userId);
   const myCode = useChatStore((s) => s.myCode);
   const addChannelChat = useChatStore((s) => s.addChannelChat);
   const setActiveChat = useChatStore((s) => s.setActiveChat);
+
+  const cleanMyUsername = myUsername.replace(/^@+/, '').trim();
+
+  const handleCopyContact = useCallback(
+    async (value: string, field: 'username' | 'id') => {
+      if (!value) return;
+      try {
+        await navigator.clipboard.writeText(value);
+      } catch {}
+      setCopiedContactField(field);
+      const toastText =
+        field === 'id'
+          ? t('profile.id_copied_share', 'ID скопирован в буфер обмена. Поделитесь им!')
+          : t('profile.username_copied_share', {
+              username: value,
+              defaultValue: `${value} скопирован в буфер обмена. Поделитесь им!`,
+            });
+      useToastStore.getState().showToast(toastText, 'image');
+      if (copyContactTimerRef.current) {
+        clearTimeout(copyContactTimerRef.current);
+      }
+      copyContactTimerRef.current = setTimeout(() => {
+        setCopiedContactField(null);
+        copyContactTimerRef.current = null;
+      }, 2000);
+    },
+    [t]
+  );
 
   const showTempWarning = useCallback((msg: string) => {
     if (tempWarningTimerRef.current) {
@@ -96,6 +150,9 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
     return () => {
       if (tempWarningTimerRef.current) {
         clearTimeout(tempWarningTimerRef.current);
+      }
+      if (copyContactTimerRef.current) {
+        clearTimeout(copyContactTimerRef.current);
       }
     };
   }, []);
@@ -143,9 +200,9 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
     const trimmed = inputValue.trim();
 
     if (!trimmed) {
-      if (type === 'friend') {
+      if (activeType === 'friend') {
         showTempWarning(t('createModal.specify_friend_id', 'Укажите ID вашего друга'));
-      } else if (type === 'channel') {
+      } else if (activeType === 'channel') {
         showTempWarning(t('createModal.specify_channel_name', 'Укажите название канала'));
       } else {
         showTempWarning(t('createModal.specify_group_name', 'Укажите название группы'));
@@ -153,7 +210,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
       return;
     }
 
-    if (type === 'friend') {
+    if (activeType === 'friend') {
       const isExplicitGroup = trimmed.includes('group') || trimmed.includes('join') || trimmed.includes('#') || trimmed.startsWith('join_');
       const groupCode = isExplicitGroup ? extractGroupCode(trimmed) : '';
       if (groupCode && isValidGroupCode(groupCode)) {
@@ -262,7 +319,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
       return;
     }
 
-    if (type === 'group') {
+    if (activeType === 'group') {
       setIsLoading(true);
       setError(null);
       const myUserId = useAuthStore.getState().userId;
@@ -331,7 +388,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
       return;
     }
 
-    if (type === 'channel') {
+    if (activeType === 'channel') {
       setIsLoading(true);
       setError(null);
       const channelId = generateChannelId();
@@ -365,14 +422,50 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
       });
       return;
     }
-  }, [inputValue, descriptionValue, isLoading, type, onConnectRequest, myNickname, myCode, avatarUrl, addChannelChat, setActiveChat, onClose, t]);
+  }, [inputValue, descriptionValue, isLoading, activeType, onConnectRequest, myNickname, myCode, avatarUrl, addChannelChat, setActiveChat, onClose, t]);
 
   const label =
-    type === 'friend'
-      ? t('createModal.friend_id', 'ID аккаунта друга')
-      : type === 'channel'
+    activeType === 'friend'
+      ? t('createModal.friend_id', 'Имя пользователя или ID друга')
+      : activeType === 'channel'
       ? t('createModal.channel_name', 'Название канала')
       : t('createModal.group_name', 'Название группы');
+
+  const modalTitle =
+    activeType === 'friend'
+      ? t('createModal.add_friend_title', 'Добавить в друзья')
+      : activeType === 'channel'
+      ? t('createModal.create_channel_title', 'Создать канал')
+      : t('createModal.create_group_title', 'Создать группу');
+
+  const modalSubtitle =
+    activeType === 'friend'
+      ? t('createModal.add_friend_subtitle', 'Найдите человека по @username, ID аккаунта или вставьте ссылку-приглашение')
+      : activeType === 'channel'
+      ? t('createModal.create_channel_subtitle', 'Публикации, новости и объявления для неограниченной аудитории')
+      : t('createModal.create_group_subtitle', 'Приватное пространство со сквозным шифрованием для друзей и команды');
+
+  const submitLabel =
+    activeType === 'friend'
+      ? t('createModal.send_request', 'Добавить')
+      : activeType === 'channel'
+      ? t('createModal.create_channel_btn', 'Создать канал')
+      : t('createModal.create_group_btn', 'Создать группу');
+
+  const switchMode = useCallback((nextType: CreateModalType) => {
+    setActiveType(nextType);
+    setTempWarning(null);
+    setError(null);
+    setInputValue('');
+    setDescriptionValue('');
+    setLiveResults([]);
+  }, []);
+
+  const modeTabs: Array<{ id: CreateModalType; label: string; icon: React.ReactNode }> = [
+    { id: 'friend', label: t('createModal.tab_friend', 'Друг'), icon: <UserPlus size={14} /> },
+    { id: 'group', label: t('createModal.tab_group', 'Группа'), icon: <Users size={14} /> },
+    { id: 'channel', label: t('createModal.tab_channel', 'Канал'), icon: <Megaphone size={14} /> },
+  ];
 
   return (
     <AnimatePresence>
@@ -384,7 +477,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
         transition={{ duration: 0.15 }}
         className="fixed inset-0 z-[500] flex items-center justify-center p-4 select-none"
         style={{
-          backgroundColor: 'rgba(0, 0, 0, 0.55)',
+          backgroundColor: 'rgba(0, 0, 0, 0.58)',
           backdropFilter: 'none',
           WebkitBackdropFilter: 'none',
           border: 'none',
@@ -393,226 +486,609 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
         onClick={onClose}
       >
         <motion.div
-          initial={{ scale: 0.94, opacity: 0 }}
+          initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.94, opacity: 0 }}
-          transition={{ duration: 0.15, ease: 'easeOut' }}
-          className="w-full max-w-[360px] rounded-2xl p-5 shadow-2xl overflow-hidden relative"
+          exit={{ scale: 0.95, opacity: 0 }}
+          transition={{ duration: 0.16, ease: 'easeOut' }}
+          className="w-full overflow-hidden relative"
           style={{
+            maxWidth: activeType === 'friend' ? '480px' : '440px',
             backgroundColor: 'var(--settings-bg, var(--bg-secondary, #1e1b2e))',
             color: 'var(--text-main)',
-            borderRadius: '16px',
+            borderRadius: '24px',
+            padding: '22px',
             border: 'none',
             outline: 'none',
-            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.35)',
+            boxShadow: '0 24px 64px rgba(0, 0, 0, 0.42)',
+            boxSizing: 'border-box',
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center gap-3.5 mt-1">
-            {type !== 'friend' && (
-              <div className="flex-shrink-0 self-end pb-0.5">
-                <button
-                  type="button"
-                  onClick={handleAvatarClick}
-                  aria-label={t('createModal.choose_photo', 'Выбрать фото')}
-                  className="w-14 h-14 rounded-full bg-[var(--accent-color,#3B82F6)] flex items-center justify-center cursor-pointer overflow-hidden relative border-none outline-none hover:opacity-90 transition-opacity"
-                  style={{ border: 'none', outline: 'none' }}
-                >
-                  {avatarUrl ? (
-                    <Avatar src={avatarUrl} style={{ width: '100%', height: '100%' }} />
-                  ) : (
-                    <Camera size={24} style={{ color: 'var(--accent-on-color, #ffffff)' }} />
-                  )}
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
-                  className="hidden"
-                  style={{ display: 'none' }}
-                  onChange={handleFileChange}
-                />
-              </div>
-            )}
-
-            <div className="relative flex-1 flex flex-col min-w-0">
-              <label
-                htmlFor="connect-modal-main-input"
-                className="text-[12px] font-medium mb-1.5 px-0.5 truncate transition-colors"
-                style={{
-                  color: tempWarning
-                    ? '#ef4444'
-                    : isFocused
-                    ? 'var(--accent-text, var(--accent-color, #7C3AED))'
-                    : 'var(--text-dim, #9ca3af)',
-                }}
-              >
-                {tempWarning || label}
-              </label>
-              <input
-                id="connect-modal-main-input"
-                ref={inputRef}
-                type="text"
-                value={inputValue}
-                placeholder={label}
-                aria-label={label}
-                onChange={(e) => {
-                  setInputValue(e.target.value);
-                  if (tempWarning) setTempWarning(null);
-                  if (error) setError(null);
-                }}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSubmit();
-                  } else if (e.key === 'Escape') {
-                    onClose();
-                  }
-                }}
-                className="w-full outline-none text-[14.5px] transition-all"
-                style={{
-                  color: 'var(--text-main)',
-                  backgroundColor: 'var(--surface-container)',
-                  border: 'none',
-                  outline: 'none',
-                  borderRadius: '14px',
-                  padding: '10px 14px',
-                  boxSizing: 'border-box',
-                  boxShadow: tempWarning
-                    ? '0 0 0 2px rgba(239, 68, 68, 0.45)'
-                    : isFocused
-                    ? '0 0 0 2px color-mix(in srgb, var(--accent-color, #7C3AED) 45%, transparent)'
-                    : 'none',
-                }}
-                autoFocus
-              />
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div
+              className="inline-flex items-center p-1 gap-1"
+              style={{
+                backgroundColor: 'var(--surface-container-soft)',
+                borderRadius: '14px',
+                border: 'none',
+              }}
+            >
+              {modeTabs.map((tab) => {
+                const isActive = activeType === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => switchMode(tab.id)}
+                    aria-label={tab.label}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-[12.5px] font-semibold cursor-pointer transition-all border-none outline-none"
+                    style={{
+                      borderRadius: '10px',
+                      border: 'none',
+                      outline: 'none',
+                      background: isActive ? 'var(--accent-color, #5865F2)' : 'transparent',
+                      color: isActive ? 'var(--accent-on-color, #ffffff)' : 'var(--text-dim)',
+                    }}
+                  >
+                    {tab.icon}
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
             </div>
-          </div>
 
-          {type === 'friend' && liveResults.length > 0 && (
-            <div className="mt-3 flex flex-col gap-1 max-h-[160px] overflow-y-auto custom-scrollbar">
-              {liveResults.map((u) => (
-                <button
-                  type="button"
-                  key={u.user_code}
-                  onClick={() => {
-                    if (isLoading) return;
-                    setIsLoading(true);
-                    onConnectRequest(u.user_code, (ok, msg) => {
-                      setIsLoading(false);
-                      if (ok) {
-                        onClose();
-                      } else {
-                        showTempWarning(msg || t('createModal.invalid_content', 'Неверное содержимое'));
-                      }
-                    });
-                  }}
-                  className="w-full text-left flex items-center gap-2.5 p-2 rounded-xl bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer transition-colors"
-                  style={{ border: 'none', outline: 'none' }}
-                >
-                  <Avatar src={u.avatar_url} alt={u.nickname} className="w-8 h-8 rounded-full flex-shrink-0" />
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="text-[13px] font-medium text-[var(--text-main)] truncate leading-tight">
-                      {u.nickname}
-                    </span>
-                    {u.username && (
-                      <span className="text-[11px] text-[var(--accent-text,var(--accent-color,#7C3AED))] truncate leading-normal">
-                        @{u.username}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {(type === 'channel' || type === 'group') && (
-            <div className="relative w-full flex flex-col pt-3">
-              <input
-                type="text"
-                value={descriptionValue}
-                onChange={(e) => setDescriptionValue(e.target.value)}
-                onFocus={() => setIsDescFocused(true)}
-                onBlur={() => setIsDescFocused(false)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSubmit();
-                  } else if (e.key === 'Escape') {
-                    onClose();
-                  }
-                }}
-                placeholder={type === 'group' ? t('groupSettings.group_desc', 'Описание группы') : t('channel.description_optional', 'Описание (необязательно)')}
-                aria-label={type === 'group' ? t('groupSettings.group_desc', 'Описание группы') : t('channel.description_optional', 'Описание (необязательно)')}
-                className="w-full outline-none text-[13.5px] transition-all"
-                style={{
-                  color: 'var(--text-main)',
-                  backgroundColor: 'var(--surface-container)',
-                  border: 'none',
-                  outline: 'none',
-                  borderRadius: '14px',
-                  padding: '10px 14px',
-                  boxSizing: 'border-box',
-                  boxShadow: isDescFocused
-                    ? '0 0 0 2px color-mix(in srgb, var(--accent-color, #7C3AED) 45%, transparent)'
-                    : 'none',
-                }}
-              />
-            </div>
-          )}
-
-          {error && (
-            <div className="text-[12px] text-red-400 mt-2 px-1">
-              {error}
-            </div>
-          )}
-
-          <div className="flex justify-end items-center gap-2 mt-5">
             <button
               type="button"
               onClick={onClose}
-              aria-label={t('common.cancel', 'Отмена')}
-              className="px-4 py-2 rounded-xl text-[14px] font-medium transition-colors cursor-pointer"
+              aria-label={t('common.close', 'Закрыть')}
+              className="w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer transition-colors border-none outline-none shrink-0"
               style={{
-                backgroundColor: 'transparent',
-                color: 'var(--accent-text, var(--accent-color, #7C3AED))',
-                border: 'none',
-                outline: 'none',
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor =
-                  'color-mix(in srgb, var(--accent-color, #7C3AED) 12%, transparent)')
-              }
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-            >
-              {t('common.cancel', 'Отмена')}
-            </button>
-
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={handleSubmit}
-              disabled={isLoading}
-              aria-label={t('common.next', 'Далее')}
-              className="px-4 py-2 rounded-xl text-[14px] font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
-              style={{
-                backgroundColor: 'transparent',
-                color: 'var(--accent-text, var(--accent-color, #7C3AED))',
+                backgroundColor: 'var(--surface-container-soft)',
+                color: 'var(--text-dim)',
+                borderRadius: '12px',
                 border: 'none',
                 outline: 'none',
               }}
               onMouseEnter={(e) => {
-                if (!isLoading) {
-                  e.currentTarget.style.backgroundColor =
-                    'color-mix(in srgb, var(--accent-color, #7C3AED) 12%, transparent)';
-                }
+                e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                e.currentTarget.style.color = 'var(--text-main)';
               }}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--surface-container-soft)';
+                e.currentTarget.style.color = 'var(--text-dim)';
+              }}
             >
-              {isLoading && <Loader2 size={14} className="animate-spin" />}
-              {t('common.next', 'Далее')}
+              <X size={16} />
             </button>
           </div>
+
+          <div className="mb-4">
+            <h2
+              className="m-0 text-[20px] font-bold leading-tight tracking-[-0.01em]"
+              style={{ color: 'var(--text-heading, var(--text-main))' }}
+            >
+              {modalTitle}
+            </h2>
+            <p
+              className="m-0 mt-1.5 text-[13px] leading-[1.45]"
+              style={{ color: 'var(--text-dim)' }}
+            >
+              {modalSubtitle}
+            </p>
+          </div>
+
+          {activeType === 'friend' ? (
+            <>
+              <div
+                className="flex items-center gap-2 transition-all"
+                style={{
+                  backgroundColor: 'var(--surface-container)',
+                  borderRadius: '16px',
+                  padding: '6px 6px 6px 14px',
+                  border: 'none',
+                  boxShadow: tempWarning
+                    ? '0 0 0 2px rgba(239, 68, 68, 0.5)'
+                    : isFocused
+                    ? '0 0 0 2px color-mix(in srgb, var(--accent-color, #5865F2) 48%, transparent)'
+                    : 'none',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <Search size={16} style={{ color: isFocused ? 'var(--accent-text, var(--accent-color))' : 'var(--text-dim)', flexShrink: 0 }} />
+                <input
+                  id="connect-modal-main-input"
+                  ref={inputRef}
+                  type="text"
+                  value={inputValue}
+                  placeholder={label}
+                  aria-label={label}
+                  onChange={(e) => {
+                    setInputValue(e.target.value);
+                    if (tempWarning) setTempWarning(null);
+                    if (error) setError(null);
+                  }}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSubmit();
+                    } else if (e.key === 'Escape') {
+                      onClose();
+                    }
+                  }}
+                  className="flex-1 min-w-0 bg-transparent border-none outline-none text-[14px]"
+                  style={{
+                    color: 'var(--text-main)',
+                    border: 'none',
+                    outline: 'none',
+                    padding: '6px 4px',
+                  }}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                  aria-label={submitLabel}
+                  className="shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-semibold cursor-pointer transition-opacity disabled:opacity-50 disabled:cursor-not-allowed border-none outline-none"
+                  style={{
+                    background: 'var(--accent-gradient, var(--accent-color, #5865F2))',
+                    color: 'var(--accent-on-color, #ffffff)',
+                    borderRadius: '12px',
+                    border: 'none',
+                    outline: 'none',
+                  }}
+                >
+                  {isLoading && <Loader2 size={14} className="animate-spin" />}
+                  <span>{submitLabel}</span>
+                </button>
+              </div>
+
+              {tempWarning && (
+                <div className="mt-2 px-1 text-[12px] font-medium" style={{ color: '#ef4444' }}>
+                  {tempWarning}
+                </div>
+              )}
+
+              {liveResults.length > 0 && (
+                <div
+                  className="mt-3 p-1.5 flex flex-col gap-1 max-h-[168px] overflow-y-auto custom-scrollbar"
+                  style={{
+                    backgroundColor: 'var(--surface-container-soft)',
+                    borderRadius: '16px',
+                    border: 'none',
+                  }}
+                >
+                  {liveResults.map((u) => (
+                    <button
+                      type="button"
+                      key={u.user_code}
+                      onClick={() => {
+                        if (isLoading) return;
+                        setIsLoading(true);
+                        onConnectRequest(u.user_code, (ok, msg) => {
+                          setIsLoading(false);
+                          if (ok) {
+                            onClose();
+                          } else {
+                            showTempWarning(msg || t('createModal.invalid_content', 'Неверное содержимое'));
+                          }
+                        });
+                      }}
+                      className="w-full text-left flex items-center gap-2.5 p-2 rounded-[12px] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer transition-colors border-none outline-none"
+                      style={{ border: 'none', outline: 'none' }}
+                    >
+                      <Avatar src={u.avatar_url} alt={u.nickname} className="w-9 h-9 rounded-full flex-shrink-0" />
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="text-[13.5px] font-semibold text-[var(--text-main)] truncate leading-tight">
+                          {u.nickname}
+                        </span>
+                        {u.username && (
+                          <span className="text-[11.5px] text-[var(--accent-text,var(--accent-color,#7C3AED))] truncate leading-normal">
+                            @{u.username}
+                          </span>
+                        )}
+                      </div>
+                      <span
+                        className="shrink-0 px-2.5 py-1 text-[11.5px] font-semibold"
+                        style={{
+                          borderRadius: '10px',
+                          backgroundColor: 'color-mix(in srgb, var(--accent-color, #5865F2) 16%, transparent)',
+                          color: 'var(--accent-text, var(--accent-color, #5865F2))',
+                        }}
+                      >
+                        {submitLabel}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {(myCode || cleanMyUsername) && (
+                <div
+                  className="mt-4"
+                  style={{
+                    backgroundColor: 'var(--surface-container-soft)',
+                    borderRadius: '20px',
+                    padding: '16px',
+                    border: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <div
+                    className="text-[13.5px] font-bold leading-snug"
+                    style={{ color: 'var(--text-heading, var(--text-main))' }}
+                  >
+                    {t('createModal.share_contacts_title', 'Поделиться своими контактами')}
+                  </div>
+                  <div
+                    className="mt-0.5 text-[12px] leading-[1.4]"
+                    style={{ color: 'var(--text-dim)' }}
+                  >
+                    {t('createModal.share_contacts_desc', 'Отправьте свой код или покажите QR-код другу, чтобы он сразу нашёл вас')}
+                  </div>
+
+                  <div className="mt-3.5 flex flex-col sm:flex-row items-center sm:items-stretch gap-3.5">
+                    {myCode && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopyContact(myCode, 'id')}
+                        aria-label={t('profile.copy_id', 'Скопировать ID')}
+                        className="shrink-0 flex items-center justify-center p-2.5 cursor-pointer transition-transform hover:scale-[1.03] active:scale-[0.98] border-none outline-none"
+                        style={{
+                          backgroundColor: '#ffffff',
+                          borderRadius: '16px',
+                          border: 'none',
+                          outline: 'none',
+                        }}
+                      >
+                        <QRCodeSVG value={myCode} size={96} bgColor="#ffffff" fgColor="#111318" level="M" />
+                      </button>
+                    )}
+
+                    <div className="flex-1 w-full min-w-0 flex flex-col justify-center gap-2">
+                      <button
+                        type="button"
+                        disabled={!cleanMyUsername}
+                        onClick={() => cleanMyUsername && handleCopyContact(`@${cleanMyUsername}`, 'username')}
+                        aria-label={t('createModal.your_username', 'Ваш @username')}
+                        className="w-full text-left flex items-center justify-between gap-2.5 px-3 py-2.5 transition-colors border-none outline-none disabled:opacity-60 disabled:cursor-default cursor-pointer"
+                        style={{
+                          backgroundColor: 'var(--surface-container)',
+                          borderRadius: '14px',
+                          border: 'none',
+                          outline: 'none',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (cleanMyUsername) e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'var(--surface-container)';
+                        }}
+                      >
+                        <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+                          <span className="text-[11px] font-medium" style={{ color: 'var(--text-dim)' }}>
+                            {t('createModal.your_username', 'Ваш @username')}
+                          </span>
+                          <span
+                            className="text-[13px] font-semibold truncate"
+                            style={{
+                              color: cleanMyUsername
+                                ? 'var(--accent-text, var(--accent-color, #5865F2))'
+                                : 'var(--text-dim)',
+                              fontFamily: cleanMyUsername ? '"JetBrains Mono", Consolas, Menlo, monospace' : 'inherit',
+                            }}
+                          >
+                            {cleanMyUsername ? `@${cleanMyUsername}` : t('createModal.not_set', 'Не указан')}
+                          </span>
+                        </div>
+                        {cleanMyUsername && (
+                          <span
+                            className="shrink-0 flex items-center"
+                            style={{
+                              color:
+                                copiedContactField === 'username'
+                                  ? 'var(--accent-text, var(--accent-color))'
+                                  : 'var(--text-dim)',
+                            }}
+                          >
+                            {copiedContactField === 'username' ? <Check size={15} /> : <Copy size={15} />}
+                          </span>
+                        )}
+                      </button>
+
+                      {myCode && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopyContact(myCode, 'id')}
+                          aria-label={t('createModal.your_id', 'Ваш ID')}
+                          className="w-full text-left flex items-center justify-between gap-2.5 px-3 py-2.5 transition-colors border-none outline-none cursor-pointer"
+                          style={{
+                            backgroundColor: 'var(--surface-container)',
+                            borderRadius: '14px',
+                            border: 'none',
+                            outline: 'none',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--surface-container)';
+                          }}
+                        >
+                          <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+                            <span className="text-[11px] font-medium" style={{ color: 'var(--text-dim)' }}>
+                              {t('createModal.your_id', 'Ваш ID')}
+                            </span>
+                            <span
+                              className="text-[12.5px] font-medium truncate"
+                              style={{
+                                color: 'var(--text-main)',
+                                fontFamily: '"JetBrains Mono", Consolas, Menlo, monospace',
+                              }}
+                            >
+                              {myCode}
+                            </span>
+                          </div>
+                          <span
+                            className="shrink-0 flex items-center"
+                            style={{
+                              color:
+                                copiedContactField === 'id'
+                                  ? 'var(--accent-text, var(--accent-color))'
+                                  : 'var(--text-dim)',
+                            }}
+                          >
+                            {copiedContactField === 'id' ? <Check size={15} /> : <Copy size={15} />}
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div
+                style={{
+                  backgroundColor: 'var(--surface-container-soft)',
+                  borderRadius: '20px',
+                  padding: '16px',
+                  border: 'none',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="shrink-0 relative">
+                    <button
+                      type="button"
+                      onClick={handleAvatarClick}
+                      aria-label={t('createModal.choose_photo', 'Выбрать фото')}
+                      className="w-16 h-16 rounded-full flex items-center justify-center cursor-pointer overflow-hidden relative border-none outline-none transition-transform hover:scale-[1.04] active:scale-[0.97]"
+                      style={{
+                        border: 'none',
+                        outline: 'none',
+                        background: 'var(--accent-gradient, var(--accent-color, #5865F2))',
+                      }}
+                    >
+                      {avatarUrl ? (
+                        <Avatar src={avatarUrl} style={{ width: '100%', height: '100%' }} />
+                      ) : (
+                        <Camera size={24} style={{ color: 'var(--accent-on-color, #ffffff)' }} />
+                      )}
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
+                      className="hidden"
+                      style={{ display: 'none' }}
+                      onChange={handleFileChange}
+                    />
+                  </div>
+
+                  <div className="flex-1 min-w-0 flex flex-col">
+                    <label
+                      htmlFor="connect-modal-main-input"
+                      className="text-[11.5px] font-semibold mb-1.5 px-0.5 truncate transition-colors"
+                      style={{
+                        color: tempWarning
+                          ? '#ef4444'
+                          : isFocused
+                          ? 'var(--accent-text, var(--accent-color, #7C3AED))'
+                          : 'var(--text-dim)',
+                      }}
+                    >
+                      {tempWarning || label}
+                    </label>
+                    <input
+                      id="connect-modal-main-input"
+                      ref={inputRef}
+                      type="text"
+                      value={inputValue}
+                      placeholder={label}
+                      aria-label={label}
+                      onChange={(e) => {
+                        setInputValue(e.target.value);
+                        if (tempWarning) setTempWarning(null);
+                        if (error) setError(null);
+                      }}
+                      onFocus={() => setIsFocused(true)}
+                      onBlur={() => setIsFocused(false)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSubmit();
+                        } else if (e.key === 'Escape') {
+                          onClose();
+                        }
+                      }}
+                      className="w-full outline-none text-[14.5px] transition-all"
+                      style={{
+                        color: 'var(--text-main)',
+                        backgroundColor: 'var(--surface-container)',
+                        border: 'none',
+                        outline: 'none',
+                        borderRadius: '14px',
+                        padding: '10px 14px',
+                        boxSizing: 'border-box',
+                        boxShadow: tempWarning
+                          ? '0 0 0 2px rgba(239, 68, 68, 0.5)'
+                          : isFocused
+                          ? '0 0 0 2px color-mix(in srgb, var(--accent-color, #7C3AED) 45%, transparent)'
+                          : 'none',
+                      }}
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-3">
+                  <input
+                    type="text"
+                    value={descriptionValue}
+                    onChange={(e) => setDescriptionValue(e.target.value)}
+                    onFocus={() => setIsDescFocused(true)}
+                    onBlur={() => setIsDescFocused(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSubmit();
+                      } else if (e.key === 'Escape') {
+                        onClose();
+                      }
+                    }}
+                    placeholder={
+                      activeType === 'group'
+                        ? t('groupSettings.group_desc', 'Описание группы')
+                        : t('channel.description_optional', 'Описание (необязательно)')
+                    }
+                    aria-label={
+                      activeType === 'group'
+                        ? t('groupSettings.group_desc', 'Описание группы')
+                        : t('channel.description_optional', 'Описание (необязательно)')
+                    }
+                    className="w-full outline-none text-[13.5px] transition-all"
+                    style={{
+                      color: 'var(--text-main)',
+                      backgroundColor: 'var(--surface-container)',
+                      border: 'none',
+                      outline: 'none',
+                      borderRadius: '14px',
+                      padding: '10px 14px',
+                      boxSizing: 'border-box',
+                      boxShadow: isDescFocused
+                        ? '0 0 0 2px color-mix(in srgb, var(--accent-color, #7C3AED) 45%, transparent)'
+                        : 'none',
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 mt-3.5">
+                {activeType === 'group' ? (
+                  <>
+                    <span
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-medium"
+                      style={{
+                        borderRadius: '999px',
+                        backgroundColor: 'var(--surface-container-soft)',
+                        color: 'var(--text-dim)',
+                      }}
+                    >
+                      <Shield size={13} style={{ color: 'var(--accent-text, var(--accent-color))' }} />
+                      {t('createModal.feature_e2ee', 'E2EE шифрование')}
+                    </span>
+                    <span
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-medium"
+                      style={{
+                        borderRadius: '999px',
+                        backgroundColor: 'var(--surface-container-soft)',
+                        color: 'var(--text-dim)',
+                      }}
+                    >
+                      <Link2 size={13} style={{ color: 'var(--accent-text, var(--accent-color))' }} />
+                      {t('createModal.feature_instant_invite', 'Приглашения по ссылке')}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-medium"
+                      style={{
+                        borderRadius: '999px',
+                        backgroundColor: 'var(--surface-container-soft)',
+                        color: 'var(--text-dim)',
+                      }}
+                    >
+                      <Megaphone size={13} style={{ color: 'var(--accent-text, var(--accent-color))' }} />
+                      {t('createModal.feature_broadcast', 'Лента публикаций')}
+                    </span>
+                    <span
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-medium"
+                      style={{
+                        borderRadius: '999px',
+                        backgroundColor: 'var(--surface-container-soft)',
+                        color: 'var(--text-dim)',
+                      }}
+                    >
+                      <Link2 size={13} style={{ color: 'var(--accent-text, var(--accent-color))' }} />
+                      {t('createModal.feature_channel_link', 'Быстрый доступ по ID')}
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {error && (
+                <div className="text-[12px] mt-2 px-1" style={{ color: '#ef4444' }}>
+                  {error}
+                </div>
+              )}
+
+              <div className="flex justify-end items-center gap-2.5 mt-5">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label={t('common.cancel', 'Отмена')}
+                  className="px-4 py-2.5 text-[13.5px] font-semibold transition-colors cursor-pointer border-none outline-none"
+                  style={{
+                    borderRadius: '14px',
+                    backgroundColor: 'var(--surface-container-soft)',
+                    color: 'var(--text-main)',
+                    border: 'none',
+                    outline: 'none',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--surface-container-soft)';
+                  }}
+                >
+                  {t('common.cancel', 'Отмена')}
+                </button>
+
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                  aria-label={submitLabel}
+                  className="px-5 py-2.5 text-[13.5px] font-semibold transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 border-none outline-none"
+                  style={{
+                    borderRadius: '14px',
+                    background: 'var(--accent-gradient, var(--accent-color, #5865F2))',
+                    color: 'var(--accent-on-color, #ffffff)',
+                    border: 'none',
+                    outline: 'none',
+                  }}
+                >
+                  {isLoading && <Loader2 size={14} className="animate-spin" />}
+                  <span>{submitLabel}</span>
+                </button>
+              </div>
+            </>
+          )}
         </motion.div>
       </motion.div>
 

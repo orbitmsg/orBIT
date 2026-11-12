@@ -880,7 +880,7 @@ export const ChatSettingsTab: React.FC<ChatSettingsTabProps> = ({ fontOptions })
               justifyContent: 'space-between',
               gap: 12,
               paddingTop: 10,
-              borderTop: '1px solid var(--border-color)',
+              borderTop: 'none',
               flexWrap: 'wrap',
             }}
           >

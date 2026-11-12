@@ -79,8 +79,6 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
 
       {hasFolders && (
         <>
-          <div className="w-8 h-[2px] rounded-full my-1" style={{ backgroundColor: 'var(--border-color, #35363c)' }} />
-
           <div className="flex-1 w-full flex flex-col items-center overflow-y-auto no-scrollbar pt-1 space-y-2">
             {(folders || []).map((folder) => {
               const isFolderActive = activeFolderId === folder.id && currentView === 'chats';

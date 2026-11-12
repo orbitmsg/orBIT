@@ -7,6 +7,9 @@ import {
   WifiOff,
   ChevronUp,
   ChevronRight,
+  Users,
+  Megaphone,
+  UserPlus,
 } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
 import { OnlineIndicator } from '../../common/OnlineIndicator';
@@ -177,14 +180,17 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           {[
             {
               label: t('sidebar.find_or_create_group', 'Найти или создать группу'),
+              icon: <Users size={15} />,
               onClick: onOpenCreateGroup,
             },
             {
               label: t('sidebar.find_or_create_channel', 'Найти или создать канал'),
+              icon: <Megaphone size={15} />,
               onClick: onOpenCreateChannel,
             },
             {
               label: t('sidebar.find_friend', 'Найти друга'),
+              icon: <UserPlus size={15} />,
               onClick: onOpenAddFriend,
             },
           ].map((item) => (
@@ -193,10 +199,10 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
               type="button"
               onClick={() => item.onClick?.()}
               aria-label={item.label}
-              className="w-full flex items-center justify-between gap-2 px-3.5 py-2 rounded-2xl outline-none cursor-pointer transition-colors text-left"
+              className="group w-full flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-[14px] outline-none cursor-pointer transition-colors text-left"
               style={{
                 borderRadius: '14px',
-                border: '1px solid var(--border-color, transparent)',
+                border: 'none',
                 backgroundColor: surfaceTint,
                 color: 'var(--text-main)',
               }}
@@ -207,10 +213,22 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                 e.currentTarget.style.backgroundColor = surfaceTint;
               }}
             >
-              <span className="text-[12.5px] font-medium truncate flex-1 min-w-0">
+              <span
+                className="flex items-center justify-center shrink-0 transition-transform duration-150 group-hover:scale-105"
+                style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '10px',
+                  backgroundColor: 'color-mix(in srgb, var(--accent-color, #5865F2) 16%, transparent)',
+                  color: 'var(--accent-text, var(--accent-color, #5865F2))',
+                }}
+              >
+                {item.icon}
+              </span>
+              <span className="text-[12.5px] font-semibold truncate flex-1 min-w-0">
                 {item.label}
               </span>
-              <ChevronRight size={14} className="shrink-0 text-[var(--text-dim)] opacity-60" />
+              <ChevronRight size={14} className="shrink-0 text-[var(--text-dim)] opacity-45 group-hover:opacity-90 transition-opacity" />
             </button>
           ))}
         </div>
@@ -227,7 +245,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
             className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl hover:opacity-90 transition-opacity text-xs font-medium cursor-pointer shadow-none select-none"
             style={{
               borderRadius: '14px',
-              border: '1px solid var(--border-color, transparent)',
+              border: 'none',
               backgroundColor: surfaceTint,
               color: 'var(--text-main)',
             }}
@@ -708,7 +726,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
             backgroundColor: 'var(--surface-container-strong, var(--surface-container, #33363f))',
             color: 'var(--text-main)',
             boxShadow: isLightTheme ? '0 4px 14px rgba(0, 0, 0, 0.12)' : '0 4px 14px rgba(0, 0, 0, 0.28)',
-            border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
+            border: 'none',
             outline: 'none',
             cursor: 'pointer',
             display: 'flex',

@@ -227,18 +227,17 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
       style={{ backgroundColor: 'transparent' }}
     >
       <div
-        className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden rounded-[18px] border border-[var(--border-color)]"
+        className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden rounded-[18px]"
         style={{ backgroundColor: 'var(--bg-primary, #313338)' }}
       >
-        <div className="h-14 px-5 flex items-center justify-between shrink-0 border-b border-[var(--border-color)]">
+        <div className="h-14 px-5 flex items-center justify-between shrink-0">
         <div className="flex items-center min-w-0 gap-2">
           <div className="flex items-center text-[var(--text-dim)] shrink-0">
             <Users size={20} />
           </div>
-          <span className="font-bold text-[var(--text-heading,var(--text-main))] text-[15px] mr-1 whitespace-nowrap">
+          <span className="font-bold text-[var(--text-heading,var(--text-main))] text-[15px] mr-2 whitespace-nowrap">
             {t('discord.friends', 'Друзья')}
           </span>
-          <div className="w-[2px] h-4 rounded-full bg-[var(--border-color)] mx-1.5 shrink-0" />
 
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
             <button
@@ -325,7 +324,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
           {activeTab === 'online' &&
             (onlineFriends.length === 0 ? (
               <div className="flex-1 flex items-center justify-center p-6 text-center">
-                <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl px-6 py-5 max-w-[380px]">
+                <div className="bg-[var(--bg-secondary)] rounded-2xl px-6 py-5 max-w-[380px]">
                   <span className="text-[var(--text-dim)] text-[14px]">
                     {t('discord.noFriendsOnline', 'Сейчас никого из ваших друзей нет в сети. Зайдите позже!')}
                   </span>
@@ -342,7 +341,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                     onClick={() => setActiveChat(friend.id)}
                     onMouseEnter={() => setHoveredFriendId(friend.id)}
                     onMouseLeave={() => setHoveredFriendId(null)}
-                    className="flex items-center justify-between p-2.5 rounded-xl border border-transparent hover:border-[var(--border-color)] hover:bg-[var(--surface-container-strong)] cursor-pointer group transition-colors"
+                    className="flex items-center justify-between p-2.5 rounded-xl hover:bg-[var(--surface-container-strong)] cursor-pointer group transition-colors"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative shrink-0">
@@ -371,7 +370,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                           setActiveChat(friend.id);
                         }}
                         aria-label={friend.name}
-                        className="w-9 h-9 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-color)] hover:bg-[var(--surface-container)] text-[var(--text-dim)] hover:text-[var(--text-heading,var(--text-main))] flex items-center justify-center transition-colors outline-none cursor-pointer"
+                        className="w-9 h-9 rounded-full bg-[var(--bg-secondary)] hover:bg-[var(--surface-container)] text-[var(--text-dim)] hover:text-[var(--text-heading,var(--text-main))] flex items-center justify-center transition-colors outline-none cursor-pointer"
                       >
                         <MessageSquare size={18} />
                       </button>
@@ -384,7 +383,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
           {activeTab === 'all' &&
             (privateChats.length === 0 ? (
               <div className="flex-1 flex items-center justify-center p-6 text-center">
-                <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl px-6 py-5 max-w-[380px]">
+                <div className="bg-[var(--bg-secondary)] rounded-2xl px-6 py-5 max-w-[380px]">
                   <span className="text-[var(--text-dim)] text-[14px]">
                     {t('discord.allFriendsEmpty', 'Список друзей пока пуст')}
                   </span>
@@ -401,7 +400,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                     onClick={() => setActiveChat(friend.id)}
                     onMouseEnter={() => setHoveredFriendId(friend.id)}
                     onMouseLeave={() => setHoveredFriendId(null)}
-                    className="flex items-center justify-between p-2.5 rounded-xl border border-transparent hover:border-[var(--border-color)] hover:bg-[var(--surface-container-strong)] cursor-pointer group transition-colors"
+                    className="flex items-center justify-between p-2.5 rounded-xl hover:bg-[var(--surface-container-strong)] cursor-pointer group transition-colors"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative shrink-0">
@@ -430,7 +429,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                           setActiveChat(friend.id);
                         }}
                         aria-label={friend.name}
-                        className="w-9 h-9 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-color)] hover:bg-[var(--surface-container)] text-[var(--text-dim)] hover:text-[var(--text-heading,var(--text-main))] flex items-center justify-center transition-colors outline-none cursor-pointer"
+                        className="w-9 h-9 rounded-full bg-[var(--bg-secondary)] hover:bg-[var(--surface-container)] text-[var(--text-dim)] hover:text-[var(--text-heading,var(--text-main))] flex items-center justify-center transition-colors outline-none cursor-pointer"
                       >
                         <MessageSquare size={18} />
                       </button>
@@ -443,7 +442,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
           {activeTab === 'pending' &&
             (incomingFriendRequests.length === 0 ? (
               <div className="flex-1 flex items-center justify-center p-6 text-center">
-                <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl px-6 py-5 max-w-[380px]">
+                <div className="bg-[var(--bg-secondary)] rounded-2xl px-6 py-5 max-w-[380px]">
                   <span className="text-[var(--text-dim)] text-[14px]">
                     {t('friendRequests.empty', 'Нет новых запросов')}
                   </span>
@@ -459,7 +458,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                   return (
                     <div
                       key={req.id}
-                      className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] hover:bg-[var(--surface-container-strong)] transition-colors"
+                      className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--surface-container-strong)] transition-colors"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <Avatar
@@ -492,7 +491,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                           disabled={isBusy}
                           onClick={() => handleReject(req)}
                           aria-label={t('common.decline', 'Отклонить')}
-                          className="px-3.5 py-1.5 rounded-xl bg-[var(--surface-container)] border border-[var(--border-color)] hover:bg-[var(--surface-container-strong)] disabled:opacity-50 disabled:cursor-not-allowed text-[var(--text-main)] text-xs font-semibold flex items-center gap-1.5 transition-colors outline-none cursor-pointer"
+                          className="px-3.5 py-1.5 rounded-xl bg-[var(--surface-container)] hover:bg-[var(--surface-container-strong)] disabled:opacity-50 disabled:cursor-not-allowed text-[var(--text-main)] text-xs font-semibold flex items-center gap-1.5 transition-colors outline-none cursor-pointer"
                         >
                           <X size={15} />
                           <span>{t('common.decline', 'Отклонить')}</span>
@@ -507,7 +506,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
           {activeTab === 'blocked' &&
             (blockedUsers.length === 0 ? (
               <div className="flex-1 flex items-center justify-center p-6 text-center">
-                <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl px-6 py-5 max-w-[380px]">
+                <div className="bg-[var(--bg-secondary)] rounded-2xl px-6 py-5 max-w-[380px]">
                   <span className="text-[var(--text-dim)] text-[14px]">
                     {t('discord.blockedEmpty', 'У вас нет заблокированных пользователей')}
                   </span>
@@ -536,7 +535,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                       type="button"
                       onClick={() => toggleChatBlocked(user.id)}
                       aria-label={t('profile.unblock', 'Разблокировать')}
-                      className="px-3.5 py-1.5 rounded-xl bg-[var(--surface-container)] border border-[var(--border-color)] hover:bg-[var(--surface-container-strong)] text-[var(--text-main)] text-xs font-semibold flex items-center gap-1.5 transition-colors outline-none cursor-pointer shrink-0"
+                      className="px-3.5 py-1.5 rounded-xl bg-[var(--surface-container)] hover:bg-[var(--surface-container-strong)] text-[var(--text-main)] text-xs font-semibold flex items-center gap-1.5 transition-colors outline-none cursor-pointer shrink-0"
                     >
                       <ShieldOff size={14} />
                       <span>{t('profile.unblock', 'Разблокировать')}</span>
@@ -558,7 +557,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                 )}
               </p>
 
-              <div className="flex items-center gap-2 bg-[var(--surface-container)] border border-[var(--border-color)] rounded-2xl p-2 pl-4 focus-within:border-[var(--accent-color)] focus-within:ring-1 focus-within:ring-[var(--accent-color)] transition-all">
+              <div className="flex items-center gap-2 bg-[var(--surface-container)] rounded-2xl p-2 pl-4 focus-within:ring-2 focus-within:ring-[color-mix(in_srgb,var(--accent-color)_45%,transparent)] transition-all">
                 <input
                   type="text"
                   value={query}
@@ -620,7 +619,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
               )}
 
               {(isSearching || liveResults.length > 0) && (
-                <div className="mt-4 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl p-2 flex flex-col gap-1">
+                <div className="mt-4 bg-[var(--bg-secondary)] rounded-2xl p-2 flex flex-col gap-1">
                   {isSearching && liveResults.length === 0 ? (
                     <div className="px-3 py-3 text-xs text-[var(--text-dim)]">
                       {t('discord.searching', 'Поиск пользователей...')}
@@ -629,7 +628,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                     liveResults.map((user) => (
                       <div
                         key={user.user_code}
-                        className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-transparent hover:border-[var(--border-color)] hover:bg-[var(--surface-container-strong)] transition-colors"
+                        className="flex items-center justify-between gap-3 p-2.5 rounded-xl hover:bg-[var(--surface-container-strong)] transition-colors"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <Avatar
@@ -671,14 +670,14 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
       </div>
 
       <div
-        className="w-[340px] p-4 flex flex-col shrink-0 select-none hidden lg:flex rounded-[18px] overflow-hidden border border-[var(--border-color)]"
+        className="w-[340px] p-4 flex flex-col shrink-0 select-none hidden lg:flex rounded-[18px] overflow-hidden"
         style={{ backgroundColor: 'var(--bg-primary, #313338)' }}
       >
         <h2 className="text-[18px] font-bold text-[var(--text-heading,var(--text-main))] mb-4 px-1">
             {t('discord.activeContacts', 'Активные контакты')}
           </h2>
           {onlineFriends.length === 0 ? (
-            <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl p-5 text-center">
+            <div className="bg-[var(--bg-secondary)] rounded-2xl p-5 text-center">
               <h3 className="font-bold text-[var(--text-heading,var(--text-main))] text-[15px] mb-2">
                 {t('discord.quietForNow', 'Пока что тут тихо...')}
               </h3>
@@ -697,7 +696,7 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = ({
                   onClick={() => setActiveChat(friend.id)}
                   onMouseEnter={() => setHoveredActiveId(friend.id)}
                   onMouseLeave={() => setHoveredActiveId(null)}
-                  className="bg-[var(--bg-secondary)] border border-[var(--border-color)] hover:bg-[var(--surface-container-strong)] rounded-2xl p-3.5 flex items-center gap-3 cursor-pointer transition-colors"
+                  className="bg-[var(--bg-secondary)] hover:bg-[var(--surface-container-strong)] rounded-2xl p-3.5 flex items-center gap-3 cursor-pointer transition-colors"
                 >
                   <div className="relative shrink-0">
                     <Avatar src={friend.avatarUrl} alt={friend.name} className="w-10 h-10 rounded-full" />

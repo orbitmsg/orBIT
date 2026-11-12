@@ -363,7 +363,7 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
             padding: '0 10px',
             borderRadius: 8,
             backgroundColor: 'var(--surface-container, #1e1f22)',
-            border: '1px solid var(--border-color)',
+            border: 'none',
             boxSizing: 'border-box',
           }}
         >
@@ -439,8 +439,8 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 2,
-                paddingTop: groupIdx > 0 ? 10 : 0,
-                borderTop: groupIdx > 0 ? '1px solid var(--border-color)' : 'none',
+                paddingTop: groupIdx > 0 ? 8 : 0,
+                borderTop: 'none',
               }}
             >
               <div
@@ -524,7 +524,7 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
                         style={{
                           marginLeft: 18,
                           paddingLeft: 10,
-                          borderLeft: '2px solid var(--border-color)',
+                          borderLeft: 'none',
                           display: 'flex',
                           flexDirection: 'column',
                           gap: 2,
@@ -589,8 +589,8 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
               display: 'flex',
               flexDirection: 'column',
               gap: 2,
-              paddingTop: 10,
-              borderTop: '1px solid var(--border-color)',
+              paddingTop: 6,
+              borderTop: 'none',
             }}
           >
             <button
@@ -676,7 +676,7 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
           paddingTop: 8,
           paddingLeft: 10,
           paddingRight: 10,
-          borderTop: '1px solid var(--border-color)',
+          borderTop: 'none',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',

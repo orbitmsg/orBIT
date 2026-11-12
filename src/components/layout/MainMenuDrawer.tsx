@@ -134,8 +134,7 @@ export const MainMenuDrawer: React.FC<MainMenuDrawerProps> = ({
           width: '260px',
           maxWidth: '85vw',
           backgroundColor: 'var(--bg-secondary)',
-          borderRight: '1px solid var(--border-color)',
-          borderTop: '1px solid var(--border-color)',
+          border: 'none',
           transform: isOpen && isAnimating ? 'translate3d(0, 0, 0)' : 'translate3d(-100%, 0, 0)',
           transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
           willChange: 'transform',
@@ -493,7 +492,7 @@ export const MainMenuDrawer: React.FC<MainMenuDrawerProps> = ({
           </button>
         </div>
 
-        <div className="px-4 py-2.5 mt-auto border-t border-[var(--border-color)] flex flex-col gap-0.5 select-none shrink-0">
+        <div className="px-4 py-2.5 mt-auto flex flex-col gap-0.5 select-none shrink-0">
           <span className="text-[12px] font-medium text-[var(--text-main)] opacity-80">
             Orbita Desktop
           </span>

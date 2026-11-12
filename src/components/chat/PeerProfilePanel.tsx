@@ -299,7 +299,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
           minHeight: 0,
           borderRadius: '18px',
           backgroundColor: 'var(--chat-list-bg, #2b2d31)',
-          border: '1px solid var(--border-color)',
+          border: 'none',
           outline: 'none',
           boxShadow: 'none',
           overflow: 'hidden',
@@ -484,7 +484,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                 style={{
                   borderRadius: '14px',
                   backgroundColor: 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))',
-                  border: '1px solid var(--border-color)',
+                  border: 'none',
                   padding: '10px 12px',
                   display: 'flex',
                   alignItems: 'center',
@@ -549,7 +549,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                 style={{
                   borderRadius: '14px',
                   backgroundColor: 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))',
-                  border: '1px solid var(--border-color)',
+                  border: 'none',
                   padding: '10px 12px',
                   display: 'flex',
                   alignItems: 'center',
@@ -614,7 +614,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                 style={{
                   borderRadius: '14px',
                   backgroundColor: 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))',
-                  border: '1px solid var(--border-color)',
+                  border: 'none',
                   padding: '10px 12px',
                   display: 'flex',
                   flexDirection: 'column',
@@ -647,7 +647,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                 style={{
                   borderRadius: '14px',
                   backgroundColor: 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))',
-                  border: '1px solid var(--border-color)',
+                  border: 'none',
                   padding: '10px 12px',
                   display: 'flex',
                   flexDirection: 'column',
@@ -688,7 +688,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
         <div
           style={{
             padding: '12px 18px 18px 18px',
-            borderTop: '1px solid var(--border-color)',
+            borderTop: 'none',
             flexShrink: 0,
             boxSizing: 'border-box',
           }}
@@ -701,7 +701,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
               width: '100%',
               padding: '10px 14px',
               borderRadius: '14px',
-              border: '1px solid var(--border-color)',
+              border: 'none',
               outline: 'none',
               backgroundColor: 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))',
               color: 'var(--text-main)',

@@ -33,7 +33,7 @@ export const SelectionPanel: React.FC<SelectionPanelProps> = ({
         justifyContent: 'space-between',
         padding: '0 16px',
         backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
-        borderBottom: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
+        borderBottom: 'none',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -71,9 +71,9 @@ export const SelectionPanel: React.FC<SelectionPanelProps> = ({
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              background: 'rgba(255, 255, 255, 0.1)',
+              background: 'var(--surface-container-strong)',
               color: 'var(--text-main)',
-              border: '1px solid var(--border-color, rgba(255, 255, 255, 0.15))',
+              border: 'none',
               borderRadius: '10px',
               padding: '6px 14px',
               fontSize: '13px',

@@ -1033,7 +1033,7 @@ export const SettingsScreen = () => {
                 height: isMobileWidth ? undefined : '52px',
                 padding: isMobileWidth ? '16px 20px' : '0 22px',
                 backgroundColor: MD3.bg,
-                borderBottom: isMobileWidth ? 'none' : '1px solid var(--border-color)',
+                borderBottom: 'none',
                 flexShrink: 0,
                 userSelect: 'none',
                 display: 'flex',

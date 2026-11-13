@@ -568,7 +568,7 @@ a:hover {
   position: absolute;
   top: 6px;
   bottom: 6px;
-  right: -1.5px;
+  right: -5.5px;
   width: 3.5px;
   border-radius: 9999px;
   background-color: rgba(255, 255, 255, 0.08);
@@ -580,7 +580,7 @@ a:hover {
 
 .overlay-scroll-thumb {
   position: absolute;
-  right: -1.5px;
+  right: -5.5px;
   width: 3.5px;
   border-radius: 9999px;
   background-color: var(--scroll-thumb-color, rgba(255, 255, 255, 0.45));

@@ -171,7 +171,7 @@ export const ChatListItem = React.memo(({
             </span>
           )}
         </div>
-        <div className="flex flex-col min-w-0 flex-1" style={{ transform: 'translateY(-2px)' }}>
+        <div className="flex flex-col min-w-0 flex-1" style={{ transform: 'translateY(-6px)' }}>
           <div className="flex items-center gap-1.5 mb-0.5 min-w-0">
             <div className="flex items-center gap-1 min-w-0 flex-1">
               {chat.type === 'channel' && (
@@ -403,7 +403,7 @@ export const ArchiveListItem = React.memo(({
             <Archive size={20} strokeWidth={2.2} />
           </div>
         </div>
-        <div className="flex flex-col min-w-0 flex-1" style={{ transform: 'translateY(-2px)' }}>
+        <div className="flex flex-col min-w-0 flex-1" style={{ transform: 'translateY(-6px)' }}>
           <div className="flex items-center gap-1.5 mb-0.5 min-w-0">
             <span
               className="text-[14px] font-bold truncate whitespace-nowrap overflow-hidden text-ellipsis min-w-0"

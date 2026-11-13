@@ -503,7 +503,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                       alt={searchChannelResult.name}
                       className="w-12 h-12 rounded-full flex-shrink-0"
                     />
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0" style={{ transform: 'translateY(-6px)' }}>
                       <div className="flex items-center gap-1.5">
                         <span className="font-semibold text-[14px] text-[var(--text-main)] truncate">
                           {searchChannelResult.name}
@@ -584,7 +584,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                           alt={user.nickname}
                           className="w-12 h-12 rounded-full flex-shrink-0"
                         />
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0" style={{ transform: 'translateY(-6px)' }}>
                           <div className="flex items-center gap-1.5">
                             <span className="font-semibold text-[14px] text-[var(--text-main)] truncate">
                               {user.nickname}

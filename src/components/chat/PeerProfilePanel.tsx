@@ -288,30 +288,33 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
       <aside
         aria-label={t('common.profile', 'Профиль')}
         style={{
-          width: '340px',
+          width: '320px',
           flexShrink: 0,
-          height: '100%',
-          minHeight: 0,
-          borderRadius: 0,
-          backgroundColor: 'transparent',
-          borderLeft: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
-          borderRight: 'none',
-          borderTop: 'none',
-          borderBottom: 'none',
+          height: 'fit-content',
+          maxHeight: 'calc(100% - 24px)',
+          alignSelf: 'flex-start',
+          margin: '12px 12px 12px 0',
+          borderRadius: '16px',
+          backgroundColor: 'var(--title-bar-bg, #17181c)',
+          border: 'none',
           outline: 'none',
-          boxShadow: 'none',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           userSelect: 'none',
           WebkitUserSelect: 'none',
           boxSizing: 'border-box',
+          zIndex: 10,
         }}
       >
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden chat-list-scrollbar">
+        <div
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden chat-list-scrollbar"
+          style={{ maxHeight: '100%' }}
+        >
           <div
             style={{
-              padding: '18px 18px 0 18px',
+              padding: '16px 16px 0 16px',
               display: 'flex',
               alignItems: 'center',
             }}
@@ -381,7 +384,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                 online={Boolean(effectiveChat.online)}
                 showOffline={false}
                 size="lg"
-                ringColor="var(--bg-primary, #313338)"
+                ringColor="var(--title-bar-bg, #17181c)"
                 ariaLabel={effectiveChat.online ? t('userStatus.online', 'в сети') : undefined}
               />
             </div>
@@ -389,10 +392,10 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
 
         <div
           style={{
-            padding: '14px 18px 18px 18px',
+            padding: '12px 16px 16px 16px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '12px',
+            gap: '10px',
             boxSizing: 'border-box',
           }}
         >
@@ -639,50 +642,42 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                 </div>
               </div>
             )}
+
+            {onOpenFullProfile && (
+              <button
+                type="button"
+                onClick={onOpenFullProfile}
+                aria-label={t('profile.show_full', 'Показать полностью')}
+                style={{
+                  width: '100%',
+                  marginTop: '4px',
+                  padding: '9px 14px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  outline: 'none',
+                  backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.05))',
+                  color: 'var(--text-main)',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  lineHeight: 1.3,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background-color 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--surface-active, color-mix(in srgb, var(--accent-color, #5865F2) 16%, var(--surface-container-strong)))';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--surface-container-soft, rgba(255, 255, 255, 0.05))';
+                }}
+              >
+                {t('profile.show_full', 'Показать полностью')}
+              </button>
+            )}
         </div>
       </div>
-
-      {onOpenFullProfile && (
-        <div
-          style={{
-            padding: '12px 18px 18px 18px',
-            borderTop: 'none',
-            flexShrink: 0,
-            boxSizing: 'border-box',
-          }}
-        >
-          <button
-            type="button"
-            onClick={onOpenFullProfile}
-            aria-label={t('profile.show_full', 'Показать полностью')}
-            style={{
-              width: '100%',
-              padding: '10px 14px',
-              borderRadius: '14px',
-              border: 'none',
-              outline: 'none',
-              backgroundColor: 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))',
-              color: 'var(--text-main)',
-              fontSize: '13.5px',
-              fontWeight: 600,
-              lineHeight: 1.3,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'background-color 0.15s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--surface-active, color-mix(in srgb, var(--accent-color, #5865F2) 16%, var(--surface-container-strong)))';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))';
-            }}
-          >
-            {t('profile.show_full', 'Показать полностью')}
-          </button>
-        </div>
-      )}
     </aside>
 
     {avatarViewerState.isOpen && (

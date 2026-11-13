@@ -231,6 +231,7 @@ declare global {
       sendMediaAction?: (action: any) => void;
       onMediaAction?: (callback: (action: any) => void) => () => void;
       notifyAppReady?: () => void;
+      relaunchApp?: () => Promise<{ success: boolean; error?: string }>;
     };
   }
 

@@ -110,7 +110,7 @@ export const ChatListItem = React.memo(({
       className="group relative cursor-pointer"
       style={{
         borderRadius: '16px',
-        margin: '3px 8px',
+        margin: '0.5px 8px',
         width: 'calc(100% - 16px)',
         backgroundColor: rowBg,
         border: 'none',
@@ -119,7 +119,7 @@ export const ChatListItem = React.memo(({
         minHeight: 60,
         boxSizing: 'border-box',
         contentVisibility: 'auto',
-        containIntrinsicSize: '72px',
+        containIntrinsicSize: '62px',
         willChange: 'transform',
         transition: 'background-color 0.12s ease',
       }}
@@ -226,7 +226,7 @@ export const ChatListItem = React.memo(({
                 </span>
               )}
             </div>
-            <div className="ml-auto flex items-center flex-shrink-0" style={{ gap: 4 }}>
+            <div className="ml-auto flex items-center flex-shrink-0" style={{ gap: 4, transform: 'translateY(2px)' }}>
               {status && (
                 <div style={{ display: 'flex', alignItems: 'center', transform: 'translateY(-1.5px)' }}>
                   <MessageStatus
@@ -373,7 +373,7 @@ export const ArchiveListItem = React.memo(({
       className="group relative cursor-pointer"
       style={{
         borderRadius: '16px',
-        margin: '3px 8px',
+        margin: '0.5px 8px',
         width: 'calc(100% - 16px)',
         backgroundColor: isHovered
           ? 'var(--surface-hover, rgba(128, 128, 128, 0.08))'

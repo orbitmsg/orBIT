@@ -1,5 +1,6 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
 import { MD3, Block } from '../SettingsShared';
@@ -14,6 +15,146 @@ import { useShallow } from 'zustand/react/shallow';
 import { DEFAULT_CHAT_COLOR, resolveThemeMode, type ThemeId } from '../../../theme';
 import { getThemeTintById } from '../../../themes';
 
+interface SettingsRestartModalProps {
+  isOpen: boolean;
+  mode: 'language' | 'font';
+  currentLang?: string;
+  targetLang?: string;
+  onClose: () => void;
+  onConfirm: () => void;
+}
+
+const SettingsRestartModal: React.FC<SettingsRestartModalProps> = ({
+  isOpen,
+  mode,
+  currentLang = 'ru',
+  targetLang = 'ru',
+  onClose,
+  onConfirm,
+}) => {
+  const { t, i18n } = useTranslation();
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      } else if (e.key === 'Enter') {
+        onConfirm();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, onConfirm]);
+
+  if (!isOpen) return null;
+
+  const topText = mode === 'language'
+    ? (i18n.t('settings.restart_for_language', { lng: currentLang }) || 'Orbita will restart in order to change the language')
+    : t('settings.restart_for_settings', 'Для применения некоторых настроек требуется перезапуск. Перезапустить сейчас?');
+
+  const bottomText = mode === 'language'
+    ? (i18n.t('settings.restart_for_language', { lng: targetLang }) || 'Для смены языка приложение перезапустится')
+    : null;
+
+  const confirmText = mode === 'language'
+    ? t('settings.ok', 'OK')
+    : t('settings.restart_button', 'Перезапустить');
+
+  const modalContent = (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.15 }}
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          onClick={(e) => e.stopPropagation()}
+          className="w-full max-w-[390px] rounded-[16px] shadow-2xl p-6"
+          style={{
+            backgroundColor: 'var(--surface-container-high, #24272c)',
+            border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
+            color: 'var(--text-main, #ffffff)',
+          }}
+        >
+          <div className="text-left select-none">
+            <p
+              className="text-[15px] font-semibold leading-snug"
+              style={{ color: 'var(--text-main, #ffffff)', margin: 0 }}
+            >
+              {topText}
+            </p>
+            {bottomText && (
+              <p
+                className="text-[14px] font-medium leading-snug"
+                style={{ color: 'var(--text-dim, #a1a1aa)', margin: '12px 0 0' }}
+              >
+                {bottomText}
+              </p>
+            )}
+          </div>
+
+          <div className="flex justify-end items-center gap-2 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t('common.cancel', 'Отмена')}
+              className="px-4 py-2 rounded-lg text-[14px] font-semibold transition-colors cursor-pointer"
+              style={{
+                backgroundColor: 'transparent',
+                color: 'var(--accent-text, var(--accent-color, #7C3AED))',
+                border: 'none',
+                outline: 'none',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--accent-color, #7C3AED) 12%, transparent)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            >
+              {t('common.cancel', 'Отмена')}
+            </button>
+
+            <button
+              type="button"
+              onClick={onConfirm}
+              aria-label={confirmText}
+              className="px-4 py-2 rounded-lg text-[14px] font-semibold transition-colors cursor-pointer"
+              style={{
+                backgroundColor: 'transparent',
+                color: 'var(--accent-text, var(--accent-color, #7C3AED))',
+                border: 'none',
+                outline: 'none',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--accent-color, #7C3AED) 12%, transparent)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            >
+              {confirmText}
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+
+  if (typeof document !== 'undefined') {
+    return createPortal(modalContent, document.body);
+  }
+  return modalContent;
+};
+
 interface LanguageTabProps {
   language: Language | null;
   setLanguage: (lang: Language) => void;
@@ -21,6 +162,28 @@ interface LanguageTabProps {
 }
 
 export const LanguageTab = ({ language, setLanguage, languageDisplayOptions }: LanguageTabProps) => {
+  const { i18n } = useTranslation();
+  const [pendingLanguage, setPendingLanguage] = useState<Language | null>(null);
+
+  const handleConfirmLanguage = async () => {
+    const target = pendingLanguage;
+    setPendingLanguage(null);
+    if (!target) return;
+    setLanguage(target);
+    try {
+      await i18n.changeLanguage(target);
+    } catch {}
+    if (typeof window !== 'undefined' && window.orbita?.relaunchApp) {
+      try {
+        await window.orbita.relaunchApp();
+        return;
+      } catch {}
+    }
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -34,7 +197,11 @@ export const LanguageTab = ({ language, setLanguage, languageDisplayOptions }: L
           return (
             <div
               key={opt.value}
-              onClick={() => setLanguage(opt.value as Language)}
+              onClick={() => {
+                if (opt.value !== language) {
+                  setPendingLanguage(opt.value as Language);
+                }
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -96,6 +263,14 @@ export const LanguageTab = ({ language, setLanguage, languageDisplayOptions }: L
           );
         })}
       </Block>
+      <SettingsRestartModal
+        isOpen={Boolean(pendingLanguage)}
+        mode="language"
+        currentLang={language || i18n.language || 'ru'}
+        targetLang={pendingLanguage || 'ru'}
+        onClose={() => setPendingLanguage(null)}
+        onConfirm={handleConfirmLanguage}
+      />
     </motion.div>
   );
 };
@@ -293,6 +468,24 @@ export const FontTab = ({
   hidePreview = false,
   embedded = false,
 }: FontTabProps) => {
+  const [pendingFont, setPendingFont] = useState<FontFamily | null>(null);
+
+  const handleConfirmFont = async () => {
+    const target = pendingFont;
+    setPendingFont(null);
+    if (!target) return;
+    setFontFamily(target);
+    if (typeof window !== 'undefined' && window.orbita?.relaunchApp) {
+      try {
+        await window.orbita.relaunchApp();
+        return;
+      } catch {}
+    }
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
+  };
+
   const { textScale, bubbleRadius, chatColor, currentTheme, themeTintId } = useChatStore(
     useShallow((s) => ({
       textScale: s.textScale,
@@ -319,7 +512,11 @@ export const FontTab = ({
             <button
               key={opt.value}
               type="button"
-              onClick={() => setFontFamily(opt.value as FontFamily)}
+              onClick={() => {
+                if (opt.value !== fontFamily) {
+                  setPendingFont(opt.value as FontFamily);
+                }
+              }}
               aria-label={opt.label}
               aria-pressed={isSelected}
               style={{
@@ -401,6 +598,12 @@ export const FontTab = ({
           </Block>
         )}
         {gridBlock}
+        <SettingsRestartModal
+          isOpen={Boolean(pendingFont)}
+          mode="font"
+          onClose={() => setPendingFont(null)}
+          onConfirm={handleConfirmFont}
+        />
       </div>
     );
   }
@@ -425,6 +628,12 @@ export const FontTab = ({
         </Block>
       )}
       {gridBlock}
+      <SettingsRestartModal
+        isOpen={Boolean(pendingFont)}
+        mode="font"
+        onClose={() => setPendingFont(null)}
+        onConfirm={handleConfirmFont}
+      />
     </motion.div>
   );
 };

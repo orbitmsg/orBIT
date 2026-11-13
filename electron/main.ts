@@ -4657,6 +4657,20 @@ ipcMain.on('window:double-click', (event) => {
   }
 });
 
+ipcMain.handle('app:relaunch', () => {
+  try {
+    isQuitting = true;
+    app.relaunch();
+    app.exit(0);
+    return { success: true };
+  } catch (err) {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.reload();
+    }
+    return { success: false, error: String(err) };
+  }
+});
+
 // -----------------------------------------------------------------------------
 // 9. Sync Server
 // -----------------------------------------------------------------------------

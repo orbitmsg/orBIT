@@ -868,7 +868,11 @@
       "two_weeks": "2 weeks",
       "one_month": "1 month",
       "two_months": "2 months",
-      "three_months": "3 months"
+      "three_months": "3 months",
+      "restart_for_language": "Dili değiştirmek için Orbita yeniden başlatılacak",
+      "restart_for_settings": "You need to restart for applying some of the new settings. Restart now?",
+      "restart_button": "Restart",
+      "ok": "OK"
     },
     "groupSettings": {
       "title": "Grup ayarları",

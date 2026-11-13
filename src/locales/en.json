@@ -682,6 +682,10 @@
       "allow": "Allow"
     },
     "settings": {
+      "restart_for_language": "Orbita will restart in order to change the language",
+      "restart_for_settings": "You need to restart for applying some of the new settings. Restart now?",
+      "restart_button": "Restart",
+      "ok": "OK",
       "my_account": "My Account",
       "banner": "Banner",
       "set_banner": "Set",

@@ -868,7 +868,11 @@
       "two_weeks": "2 недели",
       "one_month": "1 месяц",
       "two_months": "2 месяца",
-      "three_months": "3 месяца"
+      "three_months": "3 месяца",
+      "restart_for_language": "Для зміни мови програма перезапуститься",
+      "restart_for_settings": "Для применения некоторых настроек требуется перезапуск. Перезапустить сейчас?",
+      "restart_button": "Перезапустить",
+      "ok": "ОК"
     },
     "groupSettings": {
       "title": "Налаштування групи",

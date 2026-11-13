@@ -250,6 +250,10 @@ contextBridge.exposeInMainWorld('orbita', {
     ipcRenderer.send('orbita:tray-menu-action', 'quit');
   },
 
+  relaunchApp: () => {
+    return ipcRenderer.invoke('app:relaunch');
+  },
+
   notificationsEnabled: () => {
     return ipcRenderer.invoke('orbita:notifications-enabled');
   },

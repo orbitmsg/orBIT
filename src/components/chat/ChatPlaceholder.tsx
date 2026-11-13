@@ -33,20 +33,17 @@ export const ChatPlaceholder: React.FC<ChatPlaceholderProps> = () => {
       <div
         className="flex flex-col items-center justify-center text-center"
         style={{
-          maxWidth: '440px',
-          padding: '32px 28px',
-          borderRadius: '24px',
-          backgroundColor: 'color-mix(in srgb, var(--surface-container, rgba(255, 255, 255, 0.04)) 40%, transparent)',
+          maxWidth: '460px',
           boxSizing: 'border-box',
-          gap: '16px',
+          gap: '18px',
         }}
       >
         <div
           className="flex items-center justify-center"
           style={{
-            width: '88px',
-            height: '64px',
-            color: 'var(--accent-color, #5865F2)',
+            width: '84px',
+            height: '60px',
+            color: '#BCC0C3',
           }}
         >
           <svg

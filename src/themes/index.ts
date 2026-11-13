@@ -27,10 +27,6 @@ export const THEME_TINT_PRESETS: ThemeTintPreset[] = [
   monochromeGraphite,
 ];
 
-export function getThemeTintById(id?: string | null): ThemeTintPreset {
-  if (id) {
-    const found = THEME_TINT_PRESETS.find((preset) => preset.id === id);
-    if (found) return found;
-  }
+export function getThemeTintById(_id?: string | null): ThemeTintPreset {
   return THEME_TINT_PRESETS[0];
 }

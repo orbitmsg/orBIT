@@ -62,165 +62,77 @@ export const AVAILABLE_FONTS = {
 
 export const DEFAULT_FONT = "var(--main-font), 'Apple Color Emoji', sans-serif";
 
+const standardThemeVars: Record<string, string> = {
+  '--bg-primary': '#070708',
+  '--bg-secondary': '#121212',
+  '--accent-color': '#AFAFAF',
+  '--accent-light': '#D4D4D8',
+  '--accent-dark': '#71717A',
+  '--accent-glow': 'rgba(175,175,175,0.20)',
+  '--accent-glow-light': 'rgba(175,175,175,0.10)',
+  '--text-main': '#FFFFFF',
+  '--text-dim': '#8e8e93',
+  '--text-offline': '#71717A',
+  '--text-heading': '#ffffff',
+  '--surface-container': '#18181a',
+  '--surface-container-strong': '#1e1e21',
+  '--surface-container-soft': 'rgba(255,255,255,0.05)',
+  '--surface-muted': 'rgba(255,255,255,0.06)',
+  '--surface-muted-strong': 'rgba(255,255,255,0.12)',
+  '--surface-subtle': 'rgba(255,255,255,0.03)',
+  '--border-color': 'rgba(255,255,255,0.08)',
+  '--chat-list-bg': '#121212',
+  '--surface-border': 'rgba(255,255,255,0.08)',
+  '--online-color': '#23a55a',
+  '--offline-color': '#80848e',
+  '--switch-bg': 'rgba(255,255,255,0.16)',
+  '--switch-border': 'rgba(255,255,255,0.22)',
+  '--selection-bg': 'rgba(255,255,255,0.10)',
+  '--logo-type': 'classic',
+  '--title-bar-bg': '#121212',
+  '--settings-bg': '#070708',
+  '--settings-surface': '#121212',
+  '--settings-surface-var': '#18181a',
+  '--settings-outline': 'rgba(255,255,255,0.08)',
+  '--settings-outline-med': 'rgba(255,255,255,0.14)',
+  '--settings-on-surface': '#FFFFFF',
+  '--settings-on-surface-var': '#8e8e93',
+  '--settings-primary': '#AFAFAF',
+  '--settings-on-primary': '#070708',
+  '--settings-primary-cont': '#2a2a2e',
+  '--settings-error': '#f23f43',
+  '--settings-error-cont': 'rgba(242,63,67,0.12)',
+};
+
+const standardPreview: ThemePreview = {
+  bg: '#070708',
+  surface: '#121212',
+  accent: '#AFAFAF',
+  accentSecondary: '#D4D4D8',
+  text: '#FFFFFF',
+};
+
 export const themePalettes: Record<ThemeId, ThemeDefinition> = {
   system: {
     id: 'system',
-    name: 'System',
+    name: 'Default Dark',
     isLight: false,
-    preview: {
-      bg: '#0d0b14',
-      surface: '#14111d',
-      accent: '#5865F2',
-      accentSecondary: '#7289da',
-      text: '#dbdee1',
-    },
-    vars: {
-      '--bg-primary': '#0d0b14',
-      '--bg-secondary': '#14111d',
-      '--accent-color': '#5865F2',
-      '--accent-light': '#7289da',
-      '--accent-dark': '#4752c4',
-      '--accent-glow': 'rgba(88,101,242,0.30)',
-      '--accent-glow-light': 'rgba(88,101,242,0.15)',
-      '--text-main': '#dbdee1',
-      '--text-dim': '#949ba4',
-      '--text-offline': '#80848e',
-      '--text-heading': '#ffffff',
-      '--surface-container': '#1c1829',
-      '--surface-container-strong': '#241e35',
-      '--surface-container-soft': 'rgba(255,255,255,0.05)',
-      '--surface-muted': 'rgba(255,255,255,0.08)',
-      '--surface-muted-strong': 'rgba(255,255,255,0.14)',
-      '--surface-subtle': 'rgba(255,255,255,0.03)',
-      '--border-color': 'rgba(255,255,255,0.08)',
-      '--chat-list-bg': '#14111d',
-      '--surface-border': 'rgba(255,255,255,0.08)',
-      '--online-color': '#23a55a',
-      '--offline-color': '#80848e',
-      '--switch-bg': 'rgba(255,255,255,0.16)',
-      '--switch-border': 'rgba(255,255,255,0.22)',
-      '--selection-bg': 'rgba(88,101,242,0.28)',
-      '--logo-type': 'classic',
-      '--title-bar-bg': '#14111d',
-      '--settings-bg': '#0d0b14',
-      '--settings-surface': '#14111d',
-      '--settings-surface-var': '#1c1829',
-      '--settings-outline': 'rgba(255,255,255,0.08)',
-      '--settings-outline-med': 'rgba(255,255,255,0.16)',
-      '--settings-on-surface': '#dbdee1',
-      '--settings-on-surface-var': '#949ba4',
-      '--settings-primary': '#5865F2',
-      '--settings-on-primary': '#ffffff',
-      '--settings-primary-cont': '#4752c4',
-      '--settings-error': '#f23f43',
-      '--settings-error-cont': 'rgba(242,63,67,0.12)',
-    },
+    preview: standardPreview,
+    vars: standardThemeVars,
   },
   light: {
     id: 'light',
-    name: 'Daylight',
-    isLight: true,
-    preview: {
-      bg: '#ffffff',
-      surface: '#f5f5f5',
-      accent: '#2c6bed',
-      accentSecondary: '#548bf5',
-      text: '#1b1b1b',
-    },
-    vars: {
-      '--bg-primary': '#ffffff',
-      '--bg-secondary': '#f7f7f8',
-      '--accent-color': '#2c6bed',
-      '--accent-light': '#548bf5',
-      '--accent-dark': '#1f4bb6',
-      '--accent-glow': 'rgba(44,107,237,0.25)',
-      '--accent-glow-light': 'rgba(44,107,237,0.10)',
-      '--text-main': '#1b1b1b',
-      '--text-dim': '#6e6e73',
-      '--text-offline': '#8e8e93',
-      '--text-heading': '#000000',
-      '--surface-container': '#f0f0f0',
-      '--surface-container-strong': '#e5e5e7',
-      '--surface-container-soft': 'rgba(0,0,0,0.04)',
-      '--surface-muted': 'rgba(0,0,0,0.06)',
-      '--surface-muted-strong': 'rgba(0,0,0,0.10)',
-      '--surface-subtle': 'rgba(0,0,0,0.02)',
-      '--border-color': '#e5e5e7',
-      '--chat-list-bg': '#f5f5f5',
-      '--surface-border': '#e0e0e0',
-      '--online-color': '#4caf50',
-      '--offline-color': '#f44336',
-      '--switch-bg': 'rgba(0,0,0,0.12)',
-      '--switch-border': 'rgba(0,0,0,0.18)',
-      '--selection-bg': 'rgba(44,107,237,0.20)',
-      '--logo-type': 'classic',
-      '--title-bar-bg': '#e4e6eb',
-      '--settings-bg': '#f7f7f8',
-      '--settings-surface': '#ffffff',
-      '--settings-surface-var': '#f0f0f0',
-      '--settings-outline': '#e5e5e7',
-      '--settings-outline-med': '#d1d1d6',
-      '--settings-on-surface': '#1b1b1b',
-      '--settings-on-surface-var': '#6e6e73',
-      '--settings-primary': '#2c6bed',
-      '--settings-on-primary': '#ffffff',
-      '--settings-primary-cont': '#d9e6fd',
-      '--settings-error': '#f44336',
-      '--settings-error-cont': 'rgba(244,67,54,0.10)',
-    },
+    name: 'Default Dark',
+    isLight: false,
+    preview: standardPreview,
+    vars: standardThemeVars,
   },
   dark: {
     id: 'dark',
-    name: 'Night Sky',
+    name: 'Default Dark',
     isLight: false,
-    preview: {
-      bg: '#0d0b14',
-      surface: '#14111d',
-      accent: '#5865F2',
-      accentSecondary: '#7289da',
-      text: '#dbdee1',
-    },
-    vars: {
-      '--bg-primary': '#0d0b14',
-      '--bg-secondary': '#14111d',
-      '--accent-color': '#5865F2',
-      '--accent-light': '#7289da',
-      '--accent-dark': '#4752c4',
-      '--accent-glow': 'rgba(88,101,242,0.30)',
-      '--accent-glow-light': 'rgba(88,101,242,0.15)',
-      '--text-main': '#dbdee1',
-      '--text-dim': '#949ba4',
-      '--text-offline': '#80848e',
-      '--text-heading': '#ffffff',
-      '--surface-container': '#1c1829',
-      '--surface-container-strong': '#241e35',
-      '--surface-container-soft': 'rgba(255,255,255,0.05)',
-      '--surface-muted': 'rgba(255,255,255,0.08)',
-      '--surface-muted-strong': 'rgba(255,255,255,0.14)',
-      '--surface-subtle': 'rgba(255,255,255,0.03)',
-      '--border-color': 'rgba(255,255,255,0.08)',
-      '--chat-list-bg': '#14111d',
-      '--surface-border': 'rgba(255,255,255,0.08)',
-      '--online-color': '#23a55a',
-      '--offline-color': '#80848e',
-      '--switch-bg': 'rgba(255,255,255,0.16)',
-      '--switch-border': 'rgba(255,255,255,0.22)',
-      '--selection-bg': 'rgba(88,101,242,0.28)',
-      '--logo-type': 'classic',
-      '--title-bar-bg': '#14111d',
-      '--settings-bg': '#0d0b14',
-      '--settings-surface': '#14111d',
-      '--settings-surface-var': '#1c1829',
-      '--settings-outline': 'rgba(255,255,255,0.08)',
-      '--settings-outline-med': 'rgba(255,255,255,0.16)',
-      '--settings-on-surface': '#dbdee1',
-      '--settings-on-surface-var': '#949ba4',
-      '--settings-primary': '#5865F2',
-      '--settings-on-primary': '#ffffff',
-      '--settings-primary-cont': '#4752c4',
-      '--settings-error': '#f23f43',
-      '--settings-error-cont': 'rgba(242,63,67,0.12)',
-    },
+    preview: standardPreview,
+    vars: standardThemeVars,
   },
 };
 
@@ -243,7 +155,7 @@ const parseFirstHexRgb = (color: string): [number, number, number] | null => {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 };
 
-const getHexBrightness = (color: string): number => {
+export const getHexBrightness = (color: string): number => {
   const rgb = parseFirstHexRgb(color);
   if (!rgb) return 0;
   return (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
@@ -267,99 +179,74 @@ export const resolveThemeMode = (themeId: ThemeId): 'light' | 'dark' => {
   return isDark ? 'dark' : 'light';
 };
 
-export const resolveThemeVars = (themeId: ThemeId, chatColor?: string, themeTintId?: string) => {
-  const resolvedMode = resolveThemeMode(themeId);
-  const isLight = resolvedMode === 'light';
-  const theme = themePalettes[resolvedMode] || themePalettes.dark;
-  const root = typeof document !== 'undefined' ? document.documentElement : null;
-  const resolvedTintId = themeTintId || root?.getAttribute('data-theme-tint') || activeThemeTintId || DEFAULT_THEME_TINT_ID;
-  const tint = getThemeTintById(resolvedTintId);
-  const tintTokens = tint[resolvedMode];
+export const resolveThemeVars = (_themeId: ThemeId, _chatColor?: string, _themeTintId?: string) => {
+  const resolvedMode = 'dark';
+  const theme = themePalettes.dark;
+  const tint = getThemeTintById(DEFAULT_THEME_TINT_ID);
 
-  const isCustomChatColor = Boolean(
-    chatColor &&
-    chatColor !== tint.dark.bubbleOwnBg &&
-    chatColor !== tint.light.bubbleOwnBg
-  );
-  const effectiveChatColor = isCustomChatColor && chatColor ? chatColor : tintTokens.bubbleOwnBg;
-  const customHex = effectiveChatColor.startsWith('linear-gradient')
-    ? (effectiveChatColor.match(/#[a-fA-F0-9]{6}/)?.[0] || tintTokens.accent)
-    : effectiveChatColor;
+  const accentColor = '#AFAFAF';
+  const accentLight = '#D4D4D8';
+  const accentDark = '#71717A';
+  const effectiveChatColor = '#222226';
+  const accentOnColor = '#FFFFFF';
+  const bubbleOwnText = '#FFFFFF';
+  const accentText = '#FFFFFF';
 
-  const accentColor = isCustomChatColor ? customHex : tintTokens.accent;
-  const accentLight = isCustomChatColor
-    ? (isLight ? customHex : tintTokens.accentLight)
-    : tintTokens.accentLight;
-  const accentDark = tintTokens.accentDark;
+  const textMain = '#FFFFFF';
+  const textHeading = '#FFFFFF';
+  const textDim = '#8e8e93';
 
-  const accentOnColor = getContrastTextColor(accentColor);
-  const bubbleOwnText = getContrastTextColor(effectiveChatColor);
-  const accentBrightness = getHexBrightness(accentColor);
-  const accentText = isLight
-    ? isCustomChatColor
-      ? (accentBrightness > 0.42 ? `color-mix(in srgb, ${accentColor} 78%, #0b0d12)` : accentColor)
-      : (accentBrightness > 0.42 ? `color-mix(in srgb, ${accentDark} 82%, #0b0d12)` : accentDark)
-    : accentLight;
-
-  const textMain = isLight
-    ? '#181b22'
-    : `color-mix(in srgb, ${accentColor} 4%, #eceff4)`;
-  const textHeading = isLight ? '#0e1117' : '#f8fafc';
-  const textDim = isLight
-    ? '#5c6370'
-    : `color-mix(in srgb, ${accentColor} 8%, #9aa3b2)`;
-
-  const surfaceHover = 'color-mix(in srgb, var(--text-main) 6%, transparent)';
-  const surfaceActive = `color-mix(in srgb, ${accentColor} 16%, ${tintTokens.surfaceContainerStrong})`;
-  const scrollThumbColor = isLight ? 'rgba(15, 23, 42, 0.24)' : 'rgba(255, 255, 255, 0.28)';
-  const mdOutlineMed = `color-mix(in srgb, ${tintTokens.borderColor} 76%, ${textMain})`;
+  const surfaceHover = 'rgba(255, 255, 255, 0.05)';
+  const surfaceActive = 'rgba(255, 255, 255, 0.09)';
+  const scrollThumbColor = 'rgba(255, 255, 255, 0.28)';
+  const mdOutlineMed = 'rgba(255, 255, 255, 0.14)';
 
   const vars: Record<string, string> = {
     ...theme.vars,
-    '--bg-primary': tintTokens.bgPrimary,
-    '--bg-secondary': tintTokens.bgSecondary,
-    '--chat-list-bg': tintTokens.chatListBg,
-    '--surface-container': tintTokens.surfaceContainer,
-    '--surface-container-strong': tintTokens.surfaceContainerStrong,
-    '--surface-container-soft': `color-mix(in srgb, ${accentColor} 7%, ${isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)'})`,
+    '--bg-primary': '#070708',
+    '--bg-secondary': '#121212',
+    '--chat-list-bg': '#121212',
+    '--surface-container': '#18181a',
+    '--surface-container-strong': '#1e1e21',
+    '--surface-container-soft': 'rgba(255, 255, 255, 0.05)',
     '--surface-hover': surfaceHover,
     '--surface-active': surfaceActive,
-    '--border-color': tintTokens.borderColor,
-    '--surface-border': tintTokens.borderColor,
-    '--title-bar-bg': tintTokens.titleBarBg,
-    '--titlebar-fg': isLight ? '#525252' : '#b0b0b0',
-    '--titlebar-hover-fg': isLight ? '#111111' : '#ffffff',
-    '--titlebar-hover-bg': isLight ? 'rgba(0, 0, 0, 0.07)' : 'rgba(255, 255, 255, 0.09)',
-    '--titlebar-active-bg': isLight ? 'rgba(0, 0, 0, 0.13)' : 'rgba(255, 255, 255, 0.16)',
+    '--border-color': 'rgba(255, 255, 255, 0.08)',
+    '--surface-border': 'rgba(255, 255, 255, 0.08)',
+    '--title-bar-bg': '#121212',
+    '--titlebar-fg': '#b0b0b0',
+    '--titlebar-hover-fg': '#ffffff',
+    '--titlebar-hover-bg': 'rgba(255, 255, 255, 0.09)',
+    '--titlebar-active-bg': 'rgba(255, 255, 255, 0.16)',
     '--scroll-thumb-color': scrollThumbColor,
     '--text-main': textMain,
     '--text-heading': textHeading,
     '--text-dim': textDim,
-    '--settings-bg': tintTokens.bgPrimary,
-    '--settings-surface': tintTokens.bgSecondary,
-    '--settings-surface-var': tintTokens.surfaceContainer,
-    '--settings-outline': tintTokens.borderColor,
+    '--settings-bg': '#070708',
+    '--settings-surface': '#121212',
+    '--settings-surface-var': '#18181a',
+    '--settings-outline': 'rgba(255, 255, 255, 0.08)',
     '--settings-outline-med': mdOutlineMed,
     '--settings-on-surface': textMain,
     '--settings-on-surface-var': textDim,
     '--chat-bubble-own-bg': effectiveChatColor,
     '--bubble-own-text': bubbleOwnText,
-    '--chat-bubble-incoming-bg': tintTokens.bubbleIncomingBg,
-    '--chat-bubble-incoming-text': isLight ? '#181b22' : '#eceff4',
+    '--chat-bubble-incoming-bg': '#141416',
+    '--chat-bubble-incoming-text': '#FFFFFF',
     '--accent-color': accentColor,
     '--accent-light': accentLight,
     '--accent-dark': accentDark,
-    '--accent-hover': `color-mix(in srgb, ${accentColor} 84%, black)`,
-    '--accent-gradient': effectiveChatColor.startsWith('linear-gradient') ? effectiveChatColor : `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 100%)`,
+    '--accent-hover': '#949499',
+    '--accent-gradient': 'linear-gradient(135deg, #2a2a2e 0%, #1c1c1f 100%)',
     '--accent-on-color': accentOnColor,
     '--accent-text': accentText,
-    '--accent-glow': `color-mix(in srgb, ${accentColor} 30%, transparent)`,
-    '--accent-glow-light': `color-mix(in srgb, ${accentColor} 15%, transparent)`,
-    '--selection-bg': `color-mix(in srgb, ${accentColor} 28%, transparent)`,
+    '--accent-glow': 'rgba(175, 175, 175, 0.20)',
+    '--accent-glow-light': 'rgba(175, 175, 175, 0.10)',
+    '--selection-bg': 'rgba(255, 255, 255, 0.10)',
     '--md-sys-color-primary': accentColor,
     '--settings-primary': accentColor,
-    '--settings-on-primary': accentOnColor,
-    '--settings-primary-cont': accentDark,
+    '--settings-on-primary': '#070708',
+    '--settings-primary-cont': '#2a2a2e',
   };
 
   const mdVars: Record<string, string> = {
@@ -379,7 +266,7 @@ export const resolveThemeVars = (themeId: ThemeId, chatColor?: string, themeTint
 
   return {
     resolvedMode,
-    isLight: theme.isLight,
+    isLight: false,
     tintId: tint.id,
     accentColor,
     effectiveChatColor,

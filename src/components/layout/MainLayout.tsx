@@ -1122,7 +1122,6 @@ export const MainLayout = () => {
     );
   }, [pinnedChatsSet, handleSelectChat, handleChatContextMenu, nickname, myCode, t, isLightTheme]);
 
-  const hasActiveChat = Boolean(activeChatId && chats.some(c => c.id === activeChatId));
   const activeChatObj = useMemo(
     () => (activeChatId ? chats.find((c) => c.id === activeChatId) || null : null),
     [activeChatId, chats]
@@ -1258,7 +1257,7 @@ export const MainLayout = () => {
             className="flex-1 flex min-h-0 min-w-0 flex-row overflow-hidden"
             style={{
               gap: 0,
-              backgroundColor: hasActiveChat ? 'var(--bg-primary)' : 'transparent',
+              backgroundColor: 'var(--bg-primary)',
               borderRadius: isMobileView ? 0 : '18px',
             }}
           >

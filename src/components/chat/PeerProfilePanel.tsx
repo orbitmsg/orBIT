@@ -295,7 +295,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
           alignSelf: 'flex-start',
           margin: '12px 12px 12px 0',
           borderRadius: '16px',
-          backgroundColor: 'var(--title-bar-bg, #14111d)',
+          backgroundColor: 'var(--title-bar-bg, #121212)',
           border: 'none',
           outline: 'none',
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',

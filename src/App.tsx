@@ -95,7 +95,7 @@ const AuthFlowOverlay: React.FC<{ isElectron: boolean; isOpen: boolean }> = ({ i
         right: 0,
         bottom: 0,
         zIndex: 500,
-        backgroundColor: 'var(--bg-primary, #14111d)',
+        backgroundColor: 'var(--bg-primary, #070708)',
         transform: isSlidIn ? 'translate3d(0, 0, 0)' : 'translate3d(100%, 0, 0)',
         transition: 'transform 0.24s cubic-bezier(0.2, 0, 0, 1)',
         willChange: 'transform',
@@ -482,7 +482,7 @@ function App() {
     return (
       <ThemeProvider theme={md3Theme}>
         <CssBaseline />
-        <div className="h-screen w-screen bg-[var(--title-bar-bg,#14111d)]" style={{ paddingTop: isElectron ? '30px' : '0px', boxSizing: 'border-box' }}>
+        <div className="h-screen w-screen bg-[var(--title-bar-bg,#121212)]" style={{ paddingTop: isElectron ? '30px' : '0px', boxSizing: 'border-box' }}>
           {isElectron && (
             <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999999 }}>
               <TitleBar />
@@ -499,7 +499,7 @@ function App() {
   return (
     <ThemeProvider theme={md3Theme}>
       <CssBaseline />
-      <div className="h-screen w-screen overflow-hidden bg-[var(--title-bar-bg,#14111d)]" style={{ paddingTop: isElectron ? '30px' : '0px', boxSizing: 'border-box' }}>
+      <div className="h-screen w-screen overflow-hidden bg-[var(--title-bar-bg,#121212)]" style={{ paddingTop: isElectron ? '30px' : '0px', boxSizing: 'border-box' }}>
         {isElectron && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999999 }}>
             <TitleBar />

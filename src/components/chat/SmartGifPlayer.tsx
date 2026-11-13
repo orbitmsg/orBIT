@@ -138,6 +138,8 @@ export const SmartGifPlayer = memo(({
 
   const containerWidth = msgWidth && msgWidth > 0 ? `${Math.min(msgWidth, 440)}px` : '320px';
 
+  const gifRadius = typeof bubbleRadius === 'number' ? `${Math.max(bubbleRadius, 20)}px` : (bubbleRadius || '20px');
+
   return (
     <div
       ref={containerRef}
@@ -152,12 +154,14 @@ export const SmartGifPlayer = memo(({
         minWidth: '220px',
         aspectRatio: `${clampedAspect}`,
         maxHeight: '380px',
-        borderRadius: typeof bubbleRadius === 'number' ? `${Math.max(bubbleRadius, 20)}px` : '20px',
+        borderRadius: gifRadius,
+        clipPath: `inset(0 round ${gifRadius})`,
         position: 'relative',
         overflow: 'hidden',
-        backgroundColor: 'var(--surface-container, rgba(255,255,255,0.06))',
+        backgroundColor: (blobUrl || posterUrl) ? 'transparent' : 'var(--surface-container, rgba(255,255,255,0.06))',
         cursor: 'pointer',
         userSelect: 'none',
+        transform: 'translateZ(0)',
       }}
     >
       {shouldAnimate ? (
@@ -168,16 +172,16 @@ export const SmartGifPlayer = memo(({
             loop
             muted
             playsInline
-            className="w-full h-full object-contain"
-            style={{ display: 'block', pointerEvents: 'none' }}
+            className="w-full h-full object-cover"
+            style={{ display: 'block', pointerEvents: 'none', borderRadius: gifRadius, clipPath: `inset(0 round ${gifRadius})` }}
           />
         ) : (
           <img
             src={blobUrl!}
             alt="GIF"
-            className="w-full h-full object-contain"
+            className="w-full h-full object-cover"
             draggable={false}
-            style={{ display: 'block' }}
+            style={{ display: 'block', borderRadius: gifRadius, clipPath: `inset(0 round ${gifRadius})` }}
           />
         )
       ) : isVideo ? (
@@ -185,16 +189,16 @@ export const SmartGifPlayer = memo(({
           src={blobUrl || undefined}
           muted
           playsInline
-          className="w-full h-full object-contain"
-          style={{ display: 'block', pointerEvents: 'none' }}
+          className="w-full h-full object-cover"
+          style={{ display: 'block', pointerEvents: 'none', borderRadius: gifRadius, clipPath: `inset(0 round ${gifRadius})` }}
         />
       ) : (
         <img
           src={posterUrl || blobUrl || undefined}
           alt="GIF"
-          className="w-full h-full object-contain"
+          className="w-full h-full object-cover"
           draggable={false}
-          style={{ display: 'block', opacity: (posterUrl || blobUrl) ? 1 : 0, transition: 'opacity 0.15s' }}
+          style={{ display: 'block', opacity: (posterUrl || blobUrl) ? 1 : 0, transition: 'opacity 0.15s', borderRadius: gifRadius, clipPath: `inset(0 round ${gifRadius})` }}
         />
       )}
 

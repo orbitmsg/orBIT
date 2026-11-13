@@ -59,6 +59,7 @@ export const EncryptedMedia = memo(({
   const autoLoad = useChatStore((state) => state.shouldAutoLoadMedia(type === 'image' ? 'photo' : 'video', fileSize, isOwn));
   const { blobUrl, load, cancel, isLoading, progress } = useDecryptedMedia(url, sharedSecret, undefined, undefined, chatId, messageId, autoLoad);
   const effectiveBubbleRadius = bubbleRadiusProp ?? useChatStore.getState().bubbleRadius;
+  const formattedRadius = typeof effectiveBubbleRadius === 'number' ? `${effectiveBubbleRadius}px` : (effectiveBubbleRadius || '18px');
   const { t } = useTranslation();
   const timeColor = isOwn ? 'rgba(255, 255, 255, 0.9)' : 'var(--text-dim)';
 
@@ -361,14 +362,13 @@ export const EncryptedMedia = memo(({
         maxWidth: '100%',
         aspectRatio: `${mediaSize.width} / ${mediaSize.height}`,
         maxHeight: `${mediaSize.height}px`,
-        borderRadius: effectiveBubbleRadius || (typeof effectiveBubbleRadius === 'number' ? `${effectiveBubbleRadius}px` : '18px'),
+        borderRadius: formattedRadius,
+        clipPath: `inset(0 round ${formattedRadius})`,
         position: 'relative',
         overflow: 'hidden',
-        backgroundColor: 'var(--surface-container, rgba(255,255,255,0.06))',
+        backgroundColor: (type === 'video' ? Boolean(blobUrl) : Boolean(blobUrl || activeImageSrc)) ? 'transparent' : 'var(--surface-container, rgba(255,255,255,0.06))',
         overflowAnchor: 'none',
         transform: 'translateZ(0)',
-        WebkitMaskImage: '-webkit-radial-gradient(white, black)',
-        isolation: 'isolate',
       }}
     >
       {((type === 'video' ? !blobUrl : (!blobUrl && !activeImageSrc)) || effectiveIsUploading) && (
@@ -467,9 +467,16 @@ export const EncryptedMedia = memo(({
         <img
           src={activeImageSrc || undefined}
           alt=""
-          className="w-full h-full object-contain cursor-pointer"
+          className="w-full h-full object-cover cursor-pointer"
           draggable={false}
-          style={{ userSelect: 'none', display: 'block', opacity: activeImageSrc ? 1 : 0, transition: 'opacity 0.2s', borderRadius: 'inherit' }}
+          style={{
+            userSelect: 'none',
+            display: 'block',
+            opacity: activeImageSrc ? 1 : 0,
+            transition: 'opacity 0.2s',
+            borderRadius: formattedRadius,
+            clipPath: `inset(0 round ${formattedRadius})`,
+          }}
           onClick={onClick}
           onContextMenu={(e) => {
             e.preventDefault();
@@ -479,7 +486,7 @@ export const EncryptedMedia = memo(({
       ) : (
         <div
           className="w-full h-full relative cursor-pointer group"
-          style={{ borderRadius: 'inherit' }}
+          style={{ borderRadius: formattedRadius, clipPath: `inset(0 round ${formattedRadius})` }}
           onClick={() => {
             onClick?.();
           }}
@@ -492,13 +499,19 @@ export const EncryptedMedia = memo(({
             ref={videoRef}
             src={blobUrl || undefined}
             poster={isFullRes ? fullResSrc : undefined}
-            className="w-full h-full object-contain pointer-events-none"
+            className="w-full h-full object-cover pointer-events-none"
             preload="auto"
             autoPlay
             loop
             muted={isMuted}
             playsInline
-            style={{ display: 'block', opacity: blobUrl ? 1 : 0, transition: 'opacity 0.2s', borderRadius: 'inherit' }}
+            style={{
+              display: 'block',
+              opacity: blobUrl ? 1 : 0,
+              transition: 'opacity 0.2s',
+              borderRadius: formattedRadius,
+              clipPath: `inset(0 round ${formattedRadius})`,
+            }}
             onSeeked={handleSeeked}
             onLoadedMetadata={(e) => {
               if (e.currentTarget.duration && isFinite(e.currentTarget.duration)) {

@@ -801,6 +801,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   className="relative"
                   style={bubbleStyle(isOwn, {
                     borderRadius: isPhotoGroup ? photoRadius : customRadius,
+                    clipPath: isPhotoGroup ? `inset(0 round ${photoRadius})` : undefined,
                     padding: isPhotoGroup ? (hasCaption ? '2px 2px 4px 2px' : '0px') : (isAudioGroup ? '0px' : '1px 1px 4px 1px'),
                     background: (isPhotoGroup && !hasCaption) ? 'transparent' : undefined,
                     border: (isPhotoGroup && !hasCaption) ? 'none' : undefined,
@@ -808,6 +809,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     width: isPhotoGroup ? groupBubbleWidth : 'fit-content',
                     maxWidth: 'min(440px, 75%)',
                     boxSizing: 'border-box',
+                    transform: isPhotoGroup ? 'translateZ(0)' : undefined,
                   })}
                 >
                   {msg.forwardedFrom && (
@@ -1081,9 +1083,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     ? `${Math.min(440, (msg.width / msg.height) < 1 ? Math.round(380 * Math.max(0.6, msg.width / msg.height)) : msg.width)}px`
                     : 'min(440px, 75vw)',
                   borderRadius: customRadius || bubbleRadius,
+                  clipPath: `inset(0 round ${customRadius || bubbleRadius})`,
                   transform: 'translateZ(0)',
-                  WebkitMaskImage: '-webkit-radial-gradient(white, black)',
-                  isolation: 'isolate',
                 }}
               >
                 <EncryptedMedia
@@ -1123,9 +1124,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     ? `${Math.min(440, (msg.width / msg.height) < 1 ? Math.round(380 * Math.max(0.6, msg.width / msg.height)) : msg.width)}px`
                     : 'min(440px, 75vw)',
                   borderRadius: customRadius || bubbleRadius,
+                  clipPath: `inset(0 round ${customRadius || bubbleRadius})`,
                   transform: 'translateZ(0)',
-                  WebkitMaskImage: '-webkit-radial-gradient(white, black)',
-                  isolation: 'isolate',
                 }}
               >
                 <EncryptedMedia

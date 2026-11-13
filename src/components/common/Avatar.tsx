@@ -191,8 +191,6 @@ export const Avatar = ({ src, alt = '', className = '', style }: AvatarProps) =>
           lineHeight: 1,
           borderRadius: '50%',
           clipPath: 'circle(50% at 50% 50%)',
-          WebkitMaskImage: '-webkit-radial-gradient(white, black)',
-          isolation: 'isolate',
           border: 'none',
           outline: 'none',
           overflow: 'hidden',
@@ -234,8 +232,6 @@ export const Avatar = ({ src, alt = '', className = '', style }: AvatarProps) =>
         style={{
           borderRadius: '50%',
           clipPath: 'circle(50% at 50% 50%)',
-          WebkitMaskImage: '-webkit-radial-gradient(white, black)',
-          isolation: 'isolate',
           border: 'none',
           outline: 'none',
           overflow: 'hidden',
@@ -261,8 +257,6 @@ export const Avatar = ({ src, alt = '', className = '', style }: AvatarProps) =>
       style={{
         borderRadius: '50%',
         clipPath: 'circle(50% at 50% 50%)',
-        WebkitMaskImage: '-webkit-radial-gradient(white, black)',
-        isolation: 'isolate',
         border: 'none',
         outline: 'none',
         overflow: 'hidden',

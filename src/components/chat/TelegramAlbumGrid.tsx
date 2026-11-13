@@ -365,45 +365,46 @@ const AlbumTile = memo(({
         console.log('[AlbumTile] Clicked tile:', { itemIdx, url: item.url, type: item.type, isVideo, hasBlobUrl: Boolean(blobUrl), isUploading });
         onClick();
       }}
-      className="relative overflow-hidden cursor-pointer bg-[var(--surface-muted,rgba(0,0,0,0.2))] group"
+      className={`relative overflow-hidden cursor-pointer group ${isLoaded && mediaSrc ? 'bg-transparent' : 'bg-[var(--surface-muted,rgba(0,0,0,0.2))]'}`}
       style={{
         ...style,
         position: 'relative',
         transform: 'translateZ(0)',
-        WebkitMaskImage: '-webkit-radial-gradient(white, black)',
-        isolation: 'isolate',
+        clipPath: style?.borderRadius ? `inset(0 round ${style.borderRadius})` : undefined,
       }}
     >
-      {posterSrc ? (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: `url(${posterSrc})`,
-            backgroundSize: isSingle ? 'contain' : 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-          }}
-        />
-      ) : blurSrc ? (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: `url(${blurSrc})`,
-            backgroundSize: isSingle ? 'contain' : 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            filter: 'blur(20px)',
-            transform: 'scale(1.15)',
-          }}
-        />
-      ) : (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--accent-color, #5865F2) 22%, transparent), transparent 70%), radial-gradient(circle at 70% 70%, color-mix(in srgb, var(--accent-light, #7289da) 18%, transparent), transparent 70%), var(--surface-container-soft, rgba(255, 255, 255, 0.05))',
-            backdropFilter: 'none',
-          }}
-        />
+      {(!isLoaded || !mediaSrc) && (
+        posterSrc ? (
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage: `url(${posterSrc})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+            }}
+          />
+        ) : blurSrc ? (
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage: `url(${blurSrc})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              filter: 'blur(20px)',
+              transform: 'scale(1.15)',
+            }}
+          />
+        ) : (
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: 'radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--accent-color, #5865F2) 22%, transparent), transparent 70%), radial-gradient(circle at 70% 70%, color-mix(in srgb, var(--accent-light, #7289da) 18%, transparent), transparent 70%), var(--surface-container-soft, rgba(255, 255, 255, 0.05))',
+              backdropFilter: 'none',
+            }}
+          />
+        )
       )}
 
       {mediaSrc && (
@@ -413,8 +414,13 @@ const AlbumTile = memo(({
               <img
                 src={mediaSrc}
                 alt={item.name || ''}
-                className={`w-full h-full pointer-events-none relative z-[1] transition-opacity duration-200 ${isSingle ? 'object-contain' : 'object-cover'}`}
-                style={{ opacity: isLoaded ? 1 : 0 }}
+                className="w-full h-full pointer-events-none relative z-[1] transition-opacity duration-200 object-cover"
+                style={{
+                  opacity: isLoaded ? 1 : 0,
+                  borderRadius: style?.borderRadius || 'inherit',
+                  clipPath: style?.borderRadius ? `inset(0 round ${style.borderRadius})` : undefined,
+                  display: 'block',
+                }}
                 onLoad={(e) => {
                   setIsLoaded(true);
                   const nw = e.currentTarget.naturalWidth;
@@ -430,8 +436,13 @@ const AlbumTile = memo(({
               <video
                 ref={videoRef}
                 src={mediaSrc}
-                className={`w-full h-full pointer-events-none relative z-[1] transition-opacity duration-200 ${isSingle ? 'object-contain' : 'object-cover'}`}
-                style={{ opacity: isLoaded ? 1 : 0 }}
+                className="w-full h-full pointer-events-none relative z-[1] transition-opacity duration-200 object-cover"
+                style={{
+                  opacity: isLoaded ? 1 : 0,
+                  borderRadius: style?.borderRadius || 'inherit',
+                  clipPath: style?.borderRadius ? `inset(0 round ${style.borderRadius})` : undefined,
+                  display: 'block',
+                }}
                 onLoadedMetadata={(e) => {
                   setIsLoaded(true);
                   const vw = e.currentTarget.videoWidth;
@@ -460,8 +471,13 @@ const AlbumTile = memo(({
               ref={videoRef}
               src={mediaSrc}
               poster={posterSrc || undefined}
-              className={`w-full h-full pointer-events-none relative z-[1] transition-opacity duration-200 ${isSingle ? 'object-contain' : 'object-cover'}`}
-              style={{ opacity: isLoaded ? 1 : 0 }}
+              className="w-full h-full pointer-events-none relative z-[1] transition-opacity duration-200 object-cover"
+              style={{
+                opacity: isLoaded ? 1 : 0,
+                borderRadius: style?.borderRadius || 'inherit',
+                clipPath: style?.borderRadius ? `inset(0 round ${style.borderRadius})` : undefined,
+                display: 'block',
+              }}
               onSeeked={handleSeeked}
               onLoadedMetadata={(e) => {
                 setIsLoaded(true);
@@ -490,8 +506,13 @@ const AlbumTile = memo(({
           <img
             src={mediaSrc}
             alt={item.name || ''}
-            className={`w-full h-full pointer-events-none relative z-[1] transition-opacity duration-200 ${isSingle ? 'object-contain' : 'object-cover'}`}
-            style={{ opacity: isLoaded ? 1 : 0 }}
+            className="w-full h-full pointer-events-none relative z-[1] transition-opacity duration-200 object-cover"
+            style={{
+              opacity: isLoaded ? 1 : 0,
+              borderRadius: style?.borderRadius || 'inherit',
+              clipPath: style?.borderRadius ? `inset(0 round ${style.borderRadius})` : undefined,
+              display: 'block',
+            }}
             onError={() => setIsLoaded(false)}
             onLoad={(e) => {
               setIsLoaded(true);
@@ -809,9 +830,11 @@ export const TelegramAlbumGrid = memo(({
         width: containerWidth,
         maxWidth: `${maxWidth}px`,
         borderRadius: photoBorderRadius,
+        clipPath: `inset(0 round ${photoBorderRadius})`,
         userSelect: 'none',
         WebkitUserSelect: 'none',
         boxSizing: 'border-box',
+        transform: 'translateZ(0)',
       }}
     >
       <div
@@ -820,6 +843,7 @@ export const TelegramAlbumGrid = memo(({
           width: '100%',
           gap: '2px',
           borderRadius: photoBorderRadius,
+          clipPath: `inset(0 round ${photoBorderRadius})`,
         }}
       >
         {rows.map((rowIndices, rIdx) => {
@@ -874,7 +898,9 @@ export const TelegramAlbumGrid = memo(({
                       height: '100%',
                       minWidth: 0,
                       borderRadius: tileRadius,
+                      clipPath: `inset(0 round ${tileRadius})`,
                       overflow: 'hidden',
+                      transform: 'translateZ(0)',
                     }}
                   >
                     <AlbumTile

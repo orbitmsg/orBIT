@@ -485,9 +485,9 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                     style={{
                       borderRadius: '14px',
                       border: 'none',
-                      margin: '2.5px 10px 2.5px 6px',
-                      width: 'calc(100% - 16px)',
-                      padding: '8px 4px 8px 5px',
+                      margin: '2.5px 6px 2.5px 6px',
+                      width: 'calc(100% - 12px)',
+                      padding: '8px 4px 8px 6px',
                       boxSizing: 'border-box',
                       backgroundColor: 'transparent',
                     }}
@@ -565,9 +565,9 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                         style={{
                           borderRadius: '16px',
                           border: 'none',
-                          margin: '2.5px 10px 2.5px 6px',
-                          width: 'calc(100% - 16px)',
-                          padding: '10px 4px 10px 5px',
+                          margin: '2.5px 6px 2.5px 6px',
+                          width: 'calc(100% - 12px)',
+                          padding: '10px 4px 10px 6px',
                           minHeight: 60,
                           boxSizing: 'border-box',
                           backgroundColor: 'transparent',
@@ -727,7 +727,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           <div
             className="shrink-0 w-full z-20 select-none pointer-events-auto"
             style={{
-              padding: '0 10px 8px 6px',
+              padding: '0 6px 8px 6px',
               boxSizing: 'border-box',
             }}
           >

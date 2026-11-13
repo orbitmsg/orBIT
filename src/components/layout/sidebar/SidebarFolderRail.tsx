@@ -1,4 +1,5 @@
 import React, { useId, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, Compass } from 'lucide-react';
 import { useChatStore, type ChatFolder } from '../../../store/useChatStore';
@@ -15,39 +16,11 @@ export interface SidebarFolderRailProps {
   onOpenExplore?: () => void;
 }
 
-const RailTooltip: React.FC<{ label: string; isVisible: boolean }> = ({ label, isVisible }) => {
-  if (!isVisible) return null;
-  return (
-    <div
-      className="absolute left-[calc(100%+14px)] top-1/2 -translate-y-1/2 pointer-events-none select-none z-50 whitespace-nowrap transition-all duration-150"
-      style={{
-        backgroundColor: '#111214',
-        color: '#ffffff',
-        fontSize: '13.5px',
-        fontWeight: 600,
-        padding: '7px 12px',
-        borderRadius: '8px',
-        boxShadow: '0 4px 14px rgba(0, 0, 0, 0.45)',
-        lineHeight: 1.2,
-      }}
-    >
-      <div
-        style={{
-          position: 'absolute',
-          left: '-5px',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          width: 0,
-          height: 0,
-          borderTop: '5px solid transparent',
-          borderBottom: '5px solid transparent',
-          borderRight: '5px solid #111214',
-        }}
-      />
-      {label}
-    </div>
-  );
-};
+interface HoveredTooltipInfo {
+  id: string;
+  rect: DOMRect;
+  label: string;
+}
 
 export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
   activeFolderId,
@@ -62,7 +35,7 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
 }) => {
   const { t } = useTranslation();
   const planetSvgId = useId().replace(/:/g, '');
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [hoveredInfo, setHoveredInfo] = useState<HoveredTooltipInfo | null>(null);
   const activeChatId = useChatStore((s) => s.activeChatId);
   const setActiveChat = useChatStore((s) => s.setActiveChat);
 
@@ -72,6 +45,15 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
     setActiveFolderId(null);
     setActiveChat(null);
     if (currentView !== 'chats') setCurrentView('chats');
+  };
+
+  const showTooltip = (e: React.MouseEvent<HTMLElement>, id: string, label: string) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setHoveredInfo({ id, rect, label });
+  };
+
+  const hideTooltip = () => {
+    setHoveredInfo(null);
   };
 
   return (
@@ -84,7 +66,6 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
         border: 'none',
         height: '100%',
         boxSizing: 'border-box',
-        overflow: 'visible',
         zIndex: 30,
       }}
     >
@@ -93,27 +74,27 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
           className="absolute left-0 w-1 rounded-r-full transition-all duration-200"
           style={{
             backgroundColor: '#ffffff',
-            height: isHomeActive ? '40px' : hoveredItem === 'home' ? '20px' : '0px',
+            height: isHomeActive ? '40px' : hoveredInfo?.id === 'home' ? '20px' : '0px',
           }}
         />
         <button
           type="button"
           onClick={handleHomeClick}
-          onMouseEnter={() => setHoveredItem('home')}
-          onMouseLeave={() => setHoveredItem(null)}
+          onMouseEnter={(e) => showTooltip(e, 'home', t('sidebar.direct_messages', 'Личные сообщения'))}
+          onMouseLeave={hideTooltip}
           aria-label={t('sidebar.direct_messages', 'Личные сообщения')}
-          className="w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 outline-none border-none"
+          className="w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 outline-none border-none select-none"
           style={{
-            borderRadius: isHomeActive || hoveredItem === 'home' ? '16px' : '24px',
-            backgroundColor: '#5865F2',
-            color: '#ffffff',
+            borderRadius: '16px',
+            backgroundColor: isHomeActive || hoveredInfo?.id === 'home' ? '#5865F2' : 'var(--surface-container, #18181a)',
+            color: isHomeActive || hoveredInfo?.id === 'home' ? '#ffffff' : 'var(--text-dim, #8e8e93)',
           }}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="60 160 680 480"
-            width="28"
-            height="20"
+            width="34"
+            height="24"
             className="shrink-0"
             style={{ overflow: 'visible', display: 'block' }}
             aria-hidden="true"
@@ -139,18 +120,17 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
             </defs>
             <g mask={`url(#${planetSvgId}-back-ring-mask)`}>
               <g transform="translate(400, 400) rotate(-26)">
-                <ellipse cx="0" cy="0" rx="360" ry="105" fill="#ffffff" mask={`url(#${planetSvgId}-ring-hole)`} />
+                <ellipse cx="0" cy="0" rx="360" ry="105" fill="currentColor" mask={`url(#${planetSvgId}-ring-hole)`} />
               </g>
             </g>
-            <circle cx="400" cy="400" r="175" fill="#ffffff" mask={`url(#${planetSvgId}-planet-mask)`} />
+            <circle cx="400" cy="400" r="175" fill="currentColor" mask={`url(#${planetSvgId}-planet-mask)`} />
             <g transform="translate(400, 400) rotate(-26)">
               <g clipPath={`url(#${planetSvgId}-front-clip)`}>
-                <ellipse cx="0" cy="0" rx="360" ry="105" fill="#ffffff" mask={`url(#${planetSvgId}-ring-hole)`} />
+                <ellipse cx="0" cy="0" rx="360" ry="105" fill="currentColor" mask={`url(#${planetSvgId}-ring-hole)`} />
               </g>
             </g>
           </svg>
         </button>
-        <RailTooltip label={t('sidebar.direct_messages', 'Личные сообщения')} isVisible={hoveredItem === 'home'} />
       </div>
 
       <div
@@ -158,13 +138,10 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
         style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
       />
 
-      <div
-        className="flex-1 w-full flex flex-col items-center overflow-y-auto no-scrollbar py-1 space-y-2"
-        style={{ overflowX: 'visible' }}
-      >
+      <div className="flex-1 w-full flex flex-col items-center overflow-y-auto no-scrollbar py-1 space-y-2">
         {(folders || []).map((folder) => {
           const isFolderActive = activeFolderId === folder.id && currentView === 'chats';
-          const isHovered = hoveredItem === folder.id;
+          const isHovered = hoveredInfo?.id === folder.id;
           const unreadCount = getFolderUnreadCount(folder);
 
           return (
@@ -182,18 +159,14 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
                   setActiveFolderId(folder.id);
                   if (currentView !== 'chats') setCurrentView('chats');
                 }}
-                onMouseEnter={() => setHoveredItem(folder.id)}
-                onMouseLeave={() => setHoveredItem(null)}
+                onMouseEnter={(e) => showTooltip(e, folder.id, folder.name)}
+                onMouseLeave={hideTooltip}
                 aria-label={folder.name}
                 className="relative w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 outline-none border-none font-semibold text-sm select-none"
                 style={{
-                  borderRadius: isFolderActive || isHovered ? '16px' : '24px',
-                  background: isFolderActive
-                    ? 'var(--accent-gradient, var(--accent-color, #5865F2))'
-                    : isHovered
-                    ? 'var(--accent-color, #5865F2)'
-                    : 'var(--bg-primary, #313338)',
-                  color: isFolderActive || isHovered ? 'var(--accent-on-color, #ffffff)' : 'var(--text-main)',
+                  borderRadius: '16px',
+                  backgroundColor: isFolderActive || isHovered ? '#5865F2' : 'var(--surface-container, #18181a)',
+                  color: isFolderActive || isHovered ? '#ffffff' : 'var(--text-dim, #8e8e93)',
                 }}
               >
                 <span>{folder.name.slice(0, 2).toUpperCase()}</span>
@@ -209,63 +182,97 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
                   </span>
                 )}
               </button>
-              <RailTooltip label={folder.name} isVisible={isHovered} />
             </div>
           );
         })}
+      </div>
 
-        <div className="relative w-full flex items-center justify-center pt-1">
+      <div className="w-full flex flex-col items-center gap-2 pt-2 shrink-0">
+        <div className="relative w-full flex items-center justify-center">
           <div
             className="absolute left-0 w-1 rounded-r-full transition-all duration-200"
             style={{
               backgroundColor: '#23a55a',
-              height: hoveredItem === 'add-lobby' ? '20px' : '0px',
+              height: hoveredInfo?.id === 'add-lobby' ? '20px' : '0px',
             }}
           />
           <button
             type="button"
             onClick={() => onOpenCreateLobby?.()}
-            onMouseEnter={() => setHoveredItem('add-lobby')}
-            onMouseLeave={() => setHoveredItem(null)}
+            onMouseEnter={(e) => showTooltip(e, 'add-lobby', t('sidebar.add_lobby', 'Добавить лобби'))}
+            onMouseLeave={hideTooltip}
             aria-label={t('sidebar.add_lobby', 'Добавить лобби')}
             className="w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 outline-none border-none select-none"
             style={{
-              borderRadius: hoveredItem === 'add-lobby' ? '16px' : '24px',
-              backgroundColor: hoveredItem === 'add-lobby' ? '#23a55a' : 'var(--surface-container, #18181a)',
-              color: hoveredItem === 'add-lobby' ? '#ffffff' : '#23a55a',
+              borderRadius: '16px',
+              backgroundColor: hoveredInfo?.id === 'add-lobby' ? '#23a55a' : 'var(--surface-container, #18181a)',
+              color: hoveredInfo?.id === 'add-lobby' ? '#ffffff' : 'var(--text-dim, #8e8e93)',
             }}
           >
-            <Plus size={22} strokeWidth={2.4} />
+            <Plus size={24} strokeWidth={2.4} />
           </button>
-          <RailTooltip label={t('sidebar.add_lobby', 'Добавить лобби')} isVisible={hoveredItem === 'add-lobby'} />
         </div>
 
-        <div className="relative w-full flex items-center justify-center pt-1">
+        <div className="relative w-full flex items-center justify-center">
           <div
             className="absolute left-0 w-1 rounded-r-full transition-all duration-200"
             style={{
               backgroundColor: '#23a55a',
-              height: hoveredItem === 'explore' ? '20px' : '0px',
+              height: hoveredInfo?.id === 'explore' ? '20px' : '0px',
             }}
           />
           <button
             type="button"
             onClick={() => onOpenExplore?.()}
-            onMouseEnter={() => setHoveredItem('explore')}
-            onMouseLeave={() => setHoveredItem(null)}
+            onMouseEnter={(e) => showTooltip(e, 'explore', t('sidebar.explore_treasures', 'В поисках сокровищ'))}
+            onMouseLeave={hideTooltip}
             aria-label={t('sidebar.explore_treasures', 'В поисках сокровищ')}
             className="w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 outline-none border-none select-none"
             style={{
-              borderRadius: hoveredItem === 'explore' ? '16px' : '24px',
-              backgroundColor: hoveredItem === 'explore' ? '#23a55a' : 'var(--surface-container, #18181a)',
-              color: hoveredItem === 'explore' ? '#ffffff' : 'var(--text-main, #dbdee1)',
+              borderRadius: '16px',
+              backgroundColor: hoveredInfo?.id === 'explore' ? '#23a55a' : 'var(--surface-container, #18181a)',
+              color: hoveredInfo?.id === 'explore' ? '#ffffff' : 'var(--text-dim, #8e8e93)',
             }}
           >
-            <Compass size={22} strokeWidth={2} />
+            <Compass size={24} strokeWidth={2} />
           </button>
-          <RailTooltip label={t('sidebar.explore_treasures', 'В поисках сокровищ')} isVisible={hoveredItem === 'explore'} />
         </div>
       </div>
+
+      {hoveredInfo && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed pointer-events-none select-none z-[999999] whitespace-nowrap"
+          style={{
+            top: hoveredInfo.rect.top + hoveredInfo.rect.height / 2,
+            left: hoveredInfo.rect.right + 12,
+            transform: 'translateY(-50%)',
+            backgroundColor: '#111214',
+            color: '#ffffff',
+            fontSize: '13.5px',
+            fontWeight: 600,
+            padding: '7px 12px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.5)',
+            lineHeight: 1.2,
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              left: '-5px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 0,
+              height: 0,
+              borderTop: '5px solid transparent',
+              borderBottom: '5px solid transparent',
+              borderRight: '5px solid #111214',
+            }}
+          />
+          {hoveredInfo.label}
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

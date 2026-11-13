@@ -25,7 +25,7 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
   const [isDeafened, setIsDeafened] = useState(false);
 
   return (
-    <div className="shrink-0 w-full z-20 select-none pointer-events-auto rounded-[18px] overflow-hidden">
+    <div className="shrink-0 w-full z-20 select-none pointer-events-auto rounded-[16px]">
       <style>{`
         .orbita-dock-panel .dock-profile-btn:hover,
         .orbita-dock-panel .dock-btn:hover {
@@ -47,14 +47,17 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
         }
       `}</style>
       <div
-        className="orbita-dock-panel flex items-center justify-between px-2.5 py-2"
+        className="orbita-dock-panel flex items-center justify-between px-2.5 py-1.5"
         style={{
-          background: 'var(--accent-gradient, linear-gradient(135deg, #2a2a2e 0%, #1c1c1f 100%))',
+          minHeight: '60px',
+          height: '60px',
+          background: 'linear-gradient(135deg, #1c1c1f 0%, #151518 100%)',
           borderRadius: '16px',
           border: 'none',
           outline: 'none',
-          boxShadow: 'none',
+          boxShadow: '0 6px 20px rgba(0, 0, 0, 0.45)',
           color: 'var(--accent-on-color, #ffffff)',
+          boxSizing: 'border-box',
         }}
       >
         <button
@@ -81,25 +84,25 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
             <Avatar
               src={avatarUrl}
               alt={nickname || 'Saizzi'}
-              className="w-8 h-8 rounded-full"
+              className="w-10 h-10 rounded-full"
             />
             <OnlineIndicator
               online={isServerConnected}
               showOffline={true}
               size="xs"
-              ringColor="var(--accent-dark, var(--accent-color, #5865F2))"
+              ringColor="#151518"
               ariaLabel={isServerConnected ? t('discord.online', 'В сети') : t('common.network_connecting_title', 'Соединение...')}
             />
           </div>
           <div className="flex flex-col min-w-0 flex-1 leading-none">
             <span
-              className="text-[13.5px] font-bold truncate leading-tight"
+              className="text-[14px] font-bold truncate leading-tight"
               style={{ color: 'var(--accent-on-color, #ffffff)' }}
             >
               {nickname || 'Saizzi'}
             </span>
             <span
-              className="text-[11px] truncate mt-0.5"
+              className="text-[12px] truncate mt-0.5"
               style={{ color: 'color-mix(in srgb, var(--accent-on-color, #ffffff) 80%, transparent)' }}
             >
               {isServerConnected ? t('discord.online', 'В сети') : t('common.network_connecting_title', 'Соединение...')}
@@ -123,8 +126,9 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
             className="dock-btn flex items-center justify-center m-0 bg-transparent transition-colors duration-150 border-none outline-none select-none cursor-pointer"
             style={{
               WebkitTapHighlightColor: 'transparent',
-              padding: '5px',
-              borderRadius: '5px',
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
               outline: 'none',
               boxShadow: 'none',
               border: 'none',
@@ -151,8 +155,9 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
             className="dock-btn flex items-center justify-center m-0 bg-transparent transition-colors duration-150 border-none outline-none select-none cursor-pointer"
             style={{
               WebkitTapHighlightColor: 'transparent',
-              padding: '5px',
-              borderRadius: '5px',
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
               outline: 'none',
               boxShadow: 'none',
               border: 'none',
@@ -176,8 +181,9 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
             className="dock-btn flex items-center justify-center m-0 bg-transparent transition-colors duration-150 border-none outline-none select-none cursor-pointer"
             style={{
               WebkitTapHighlightColor: 'transparent',
-              padding: '5px',
-              borderRadius: '5px',
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
               outline: 'none',
               boxShadow: 'none',
               border: 'none',

@@ -1171,7 +1171,7 @@ export const MainLayout = () => {
     <div
       className="flex flex-1 h-full overflow-hidden"
       style={{
-        backgroundColor: 'var(--title-bar-bg, #1e1f22)',
+        backgroundColor: 'var(--bg-primary, #070708)',
         padding: isMobileView ? 0 : '4px 8px 8px 8px',
         gap: isMobileView ? 0 : '8px',
         boxSizing: 'border-box',

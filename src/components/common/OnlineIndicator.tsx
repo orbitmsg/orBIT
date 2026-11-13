@@ -41,7 +41,7 @@ export const OnlineIndicator = ({
       role={ariaLabel ? 'status' : undefined}
       aria-label={ariaLabel || (online ? 'В сети' : 'Не в сети')}
       aria-hidden={ariaLabel ? undefined : true}
-      className={`absolute bottom-0 right-0 rounded-full pointer-events-none shrink-0 ${className}`.trim()}
+      className={`online-status-indicator absolute bottom-0 right-0 rounded-full pointer-events-none shrink-0 ${className}`.trim()}
       style={{
         width: dimension,
         height: dimension,

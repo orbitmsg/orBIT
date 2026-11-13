@@ -839,14 +839,19 @@ textarea,
   -webkit-user-select: text;
 }
 
-.select-none,
-.select-none *,
-.message-time-badge,
 .date-badge-pill {
   border: none !important;
   outline: none !important;
 }
 
+.online-status-indicator {
+  border-style: solid !important;
+  border-width: 2px !important;
+}
+
+.select-none,
+.select-none *,
+.message-time-badge,
 .message-time-badge *,
 .date-badge,
 .date-badge *,

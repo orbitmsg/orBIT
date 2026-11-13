@@ -51,11 +51,11 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
         style={{
           minHeight: '60px',
           height: '60px',
-          background: 'linear-gradient(135deg, #1c1c1f 0%, #151518 100%)',
+          background: 'var(--accent-gradient, linear-gradient(135deg, var(--accent-color, #5865F2) 0%, var(--accent-dark, #4752c4) 100%))',
           borderRadius: '16px',
           border: 'none',
           outline: 'none',
-          boxShadow: '0 6px 20px rgba(0, 0, 0, 0.45)',
+          boxShadow: 'none',
           color: 'var(--accent-on-color, #ffffff)',
           boxSizing: 'border-box',
         }}
@@ -90,7 +90,7 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
               online={isServerConnected}
               showOffline={true}
               size="xs"
-              ringColor="#151518"
+              ringColor="var(--accent-dark, #4752c4)"
               ariaLabel={isServerConnected ? t('discord.online', 'В сети') : t('common.network_connecting_title', 'Соединение...')}
             />
           </div>

@@ -41,7 +41,6 @@ import { ChatListItem } from './sidebar/ChatListItems';
 import { SidebarFolderRail } from './sidebar/SidebarFolderRail';
 import { ChatContextMenuOverlay } from './sidebar/ChatContextMenuOverlay';
 import { SidebarContent } from './sidebar/SidebarContent';
-import { UserDockPanel } from './sidebar/UserDockPanel';
 import { useGroupSubscriptions } from './hooks/useGroupSubscriptions';
 import { usePrivateChatSubscriptions } from './hooks/usePrivateChatSubscriptions';
 import { useHandshakeListeners } from './hooks/useHandshakeListeners';
@@ -1171,7 +1170,7 @@ export const MainLayout = () => {
     <div
       className="flex flex-1 h-full overflow-hidden"
       style={{
-        backgroundColor: 'var(--bg-primary, #070708)',
+        backgroundColor: 'var(--title-bar-bg, #121212)',
         padding: isMobileView ? 0 : '4px 8px 8px 8px',
         gap: isMobileView ? 0 : '8px',
         boxSizing: 'border-box',
@@ -1199,50 +1198,41 @@ export const MainLayout = () => {
                 onOpenExplore={() => setConnectModalConfig({ isOpen: true, type: 'channel' })}
               />
             )}
-            <div className="flex-1 flex flex-col min-w-0 h-full" style={{ gap: '8px' }}>
-              <div className="flex-1 min-h-0 min-w-0 w-full">
-                <SidebarContent
-                  isMobileView={isMobileView}
-                  hideDock={true}
-                  isViewingArchive={isViewingArchive}
-                  setIsViewingArchive={setIsViewingArchive}
-                  archivedChats={archivedChats}
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  setShowFriendRequestsModal={setShowFriendRequestsModal}
-                  incomingFriendRequests={incomingFriendRequests}
-                  isNetworkOnline={isNetworkOnline}
-                  handleBannerReconnect={handleBannerReconnect}
-                  chatListScrollRef={chatListScrollRef}
-                  handleChatListScroll={handleChatListScroll}
-                  showChatScrollbar={showChatScrollbar}
-                  handleChatListMouseLeave={handleChatListMouseLeave}
-                  chatTrackRef={chatTrackRef}
-                  chatThumbRef={chatThumbRef}
-                  handleScrollbarTrackMouseDown={handleScrollbarTrackMouseDown}
-                  handleScrollbarThumbMouseDown={handleScrollbarThumbMouseDown}
-                  visibleChats={visibleChats}
-                  renderChat={renderChat}
-                  searchChannelResult={searchChannelResult}
-                  handleSelectFoundChannel={handleSelectFoundChannel}
-                  globalFoundUsers={globalFoundUsers}
-                  handleSelectFoundUser={handleSelectFoundUser}
-                  handleSelectFoundSupport={handleSelectFoundSupport}
-                  isLightTheme={isLightTheme}
-                  onOpenCreateGroup={() => setConnectModalConfig({ isOpen: true, type: 'group' })}
-                  onOpenCreateChannel={() => setConnectModalConfig({ isOpen: true, type: 'channel' })}
-                  onOpenAddFriend={() => setConnectModalConfig({ isOpen: true, type: 'friend' })}
-                  onOpenSettings={handleOpenSettings}
-                  onOpenProfile={() => setIsMyProfileOpen(true)}
-                />
-              </div>
-
-              {!isMobileView && (
-                <UserDockPanel
-                  onOpenProfile={() => setIsMyProfileOpen(true)}
-                  onOpenSettings={handleOpenSettings}
-                />
-              )}
+            <div className="flex-1 min-w-0 h-full">
+              <SidebarContent
+                isMobileView={isMobileView}
+                hideDock={false}
+                isViewingArchive={isViewingArchive}
+                setIsViewingArchive={setIsViewingArchive}
+                archivedChats={archivedChats}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                setShowFriendRequestsModal={setShowFriendRequestsModal}
+                incomingFriendRequests={incomingFriendRequests}
+                isNetworkOnline={isNetworkOnline}
+                handleBannerReconnect={handleBannerReconnect}
+                chatListScrollRef={chatListScrollRef}
+                handleChatListScroll={handleChatListScroll}
+                showChatScrollbar={showChatScrollbar}
+                handleChatListMouseLeave={handleChatListMouseLeave}
+                chatTrackRef={chatTrackRef}
+                chatThumbRef={chatThumbRef}
+                handleScrollbarTrackMouseDown={handleScrollbarTrackMouseDown}
+                handleScrollbarThumbMouseDown={handleScrollbarThumbMouseDown}
+                visibleChats={visibleChats}
+                renderChat={renderChat}
+                searchChannelResult={searchChannelResult}
+                handleSelectFoundChannel={handleSelectFoundChannel}
+                globalFoundUsers={globalFoundUsers}
+                handleSelectFoundUser={handleSelectFoundUser}
+                handleSelectFoundSupport={handleSelectFoundSupport}
+                isLightTheme={isLightTheme}
+                onOpenCreateGroup={() => setConnectModalConfig({ isOpen: true, type: 'group' })}
+                onOpenCreateChannel={() => setConnectModalConfig({ isOpen: true, type: 'channel' })}
+                onOpenAddFriend={() => setConnectModalConfig({ isOpen: true, type: 'friend' })}
+                onOpenSettings={handleOpenSettings}
+                onOpenProfile={() => setIsMyProfileOpen(true)}
+              />
             </div>
           </div>
         </ResizableSidebar>

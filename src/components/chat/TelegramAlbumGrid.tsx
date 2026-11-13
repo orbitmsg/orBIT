@@ -369,8 +369,7 @@ const AlbumTile = memo(({
       style={{
         ...style,
         position: 'relative',
-        transform: 'translateZ(0)',
-        clipPath: style?.borderRadius ? `inset(0 round ${style.borderRadius})` : undefined,
+        WebkitMaskImage: '-webkit-radial-gradient(white, black)',
       }}
     >
       {(!isLoaded || !mediaSrc) && (
@@ -418,7 +417,7 @@ const AlbumTile = memo(({
                 style={{
                   opacity: isLoaded ? 1 : 0,
                   borderRadius: style?.borderRadius || 'inherit',
-                  clipPath: style?.borderRadius ? `inset(0 round ${style.borderRadius})` : undefined,
+                  WebkitMaskImage: '-webkit-radial-gradient(white, black)',
                   display: 'block',
                 }}
                 onLoad={(e) => {
@@ -440,7 +439,7 @@ const AlbumTile = memo(({
                 style={{
                   opacity: isLoaded ? 1 : 0,
                   borderRadius: style?.borderRadius || 'inherit',
-                  clipPath: style?.borderRadius ? `inset(0 round ${style.borderRadius})` : undefined,
+                  WebkitMaskImage: '-webkit-radial-gradient(white, black)',
                   display: 'block',
                 }}
                 onLoadedMetadata={(e) => {
@@ -475,7 +474,7 @@ const AlbumTile = memo(({
               style={{
                 opacity: isLoaded ? 1 : 0,
                 borderRadius: style?.borderRadius || 'inherit',
-                clipPath: style?.borderRadius ? `inset(0 round ${style.borderRadius})` : undefined,
+                WebkitMaskImage: '-webkit-radial-gradient(white, black)',
                 display: 'block',
               }}
               onSeeked={handleSeeked}
@@ -510,7 +509,7 @@ const AlbumTile = memo(({
             style={{
               opacity: isLoaded ? 1 : 0,
               borderRadius: style?.borderRadius || 'inherit',
-              clipPath: style?.borderRadius ? `inset(0 round ${style.borderRadius})` : undefined,
+              WebkitMaskImage: '-webkit-radial-gradient(white, black)',
               display: 'block',
             }}
             onError={() => setIsLoaded(false)}
@@ -825,25 +824,25 @@ export const TelegramAlbumGrid = memo(({
 
   return (
     <div
-      className="flex flex-col overflow-hidden w-full select-none"
+      className="flex flex-col w-full select-none"
       style={{
         width: containerWidth,
         maxWidth: `${maxWidth}px`,
         borderRadius: photoBorderRadius,
-        clipPath: `inset(0 round ${photoBorderRadius})`,
+        overflow: items.length > 1 ? 'hidden' : 'visible',
+        WebkitMaskImage: items.length > 1 ? '-webkit-radial-gradient(white, black)' : undefined,
         userSelect: 'none',
         WebkitUserSelect: 'none',
         boxSizing: 'border-box',
-        transform: 'translateZ(0)',
       }}
     >
       <div
-        className="flex flex-col w-full overflow-hidden"
+        className="flex flex-col w-full"
         style={{
           width: '100%',
           gap: '2px',
           borderRadius: photoBorderRadius,
-          clipPath: `inset(0 round ${photoBorderRadius})`,
+          overflow: items.length > 1 ? 'hidden' : 'visible',
         }}
       >
         {rows.map((rowIndices, rIdx) => {
@@ -897,10 +896,6 @@ export const TelegramAlbumGrid = memo(({
                       flex: 1,
                       height: '100%',
                       minWidth: 0,
-                      borderRadius: tileRadius,
-                      clipPath: `inset(0 round ${tileRadius})`,
-                      overflow: 'hidden',
-                      transform: 'translateZ(0)',
                     }}
                   >
                     <AlbumTile

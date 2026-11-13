@@ -236,7 +236,7 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
       <span
         className="emoji-font"
         style={{
-          fontSize: '15px',
+          fontSize: '16px',
           lineHeight: 1,
           display: 'inline-flex',
           alignItems: 'center',
@@ -253,9 +253,10 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
               key={user.id + idx}
               src={user.avatarUrl}
               alt={user.name}
+              className="w-[24px] h-[24px]"
               style={{
-                width: 18,
-                height: 18,
+                width: 24,
+                height: 24,
                 borderRadius: '50%',
                 flexShrink: 0,
                 marginLeft: idx > 0 ? -8 : 0,

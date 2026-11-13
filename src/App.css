@@ -899,10 +899,10 @@ textarea::selection,
   border: none !important;
   outline: none !important;
   cursor: pointer;
-  height: 28px;
-  min-height: 28px;
-  padding: 0 8px;
-  gap: 5px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 9px;
+  gap: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;

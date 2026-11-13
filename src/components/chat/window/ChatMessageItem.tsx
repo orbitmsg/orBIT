@@ -460,12 +460,12 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     );
   }, [sharedSecret, isMessagePinned, timeBadge, myCode, myNickname, activeChat, activeChatId]);
 
-  const renderReactionBadges = useCallback((m: Message, idx: number) => {
+  const renderReactionBadges = useCallback((m: Message, idx: number, topOffset = 0) => {
     const isShort = !m.text || m.text.length < 35;
     const mIsOwn = isMessageOutgoing(m, myCode, myNickname, activeChat, myUserId);
     const isChannel = activeChat?.type === 'channel';
     return (
-      <div style={{ display: 'flex', width: '100%', justifyContent: mIsOwn ? 'flex-end' : 'flex-start' }}>
+      <div style={{ display: 'flex', width: '100%', justifyContent: mIsOwn ? 'flex-end' : 'flex-start', marginTop: topOffset ? `${topOffset}px` : undefined }}>
         <MessageReactions
           reactions={m.reactions}
           onToggleReaction={(emoji) => triggerReactionMessage(m.id || idx, emoji)}
@@ -801,15 +801,13 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   className="relative"
                   style={bubbleStyle(isOwn, {
                     borderRadius: isPhotoGroup ? photoRadius : customRadius,
-                    clipPath: isPhotoGroup ? `inset(0 round ${photoRadius})` : undefined,
                     padding: isPhotoGroup ? (hasCaption ? '2px 2px 4px 2px' : '0px') : (isAudioGroup ? '0px' : '1px 1px 4px 1px'),
                     background: (isPhotoGroup && !hasCaption) ? 'transparent' : undefined,
                     border: (isPhotoGroup && !hasCaption) ? 'none' : undefined,
-                    overflow: 'hidden',
+                    overflow: (isPhotoGroup && !hasCaption) ? 'visible' : 'hidden',
                     width: isPhotoGroup ? groupBubbleWidth : 'fit-content',
                     maxWidth: 'min(440px, 75%)',
                     boxSizing: 'border-box',
-                    transform: isPhotoGroup ? 'translateZ(0)' : undefined,
                   })}
                 >
                   {msg.forwardedFrom && (
@@ -819,7 +817,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   )}
                   {renderMediaGroup(msg, index, isPhotoGroup ? photoRadius : customRadius, effectiveMediaItems)}
                 </div>
-                {renderReactionBadges(msg, index)}
+                {renderReactionBadges(msg, index, 5)}
               </div>
             </div>
           )}
@@ -1083,8 +1081,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     ? `${Math.min(440, (msg.width / msg.height) < 1 ? Math.round(380 * Math.max(0.6, msg.width / msg.height)) : msg.width)}px`
                     : 'min(440px, 75vw)',
                   borderRadius: customRadius || bubbleRadius,
-                  clipPath: `inset(0 round ${customRadius || bubbleRadius})`,
-                  transform: 'translateZ(0)',
+                  overflow: 'hidden',
+                  WebkitMaskImage: '-webkit-radial-gradient(white, black)',
                 }}
               >
                 <EncryptedMedia
@@ -1124,8 +1122,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     ? `${Math.min(440, (msg.width / msg.height) < 1 ? Math.round(380 * Math.max(0.6, msg.width / msg.height)) : msg.width)}px`
                     : 'min(440px, 75vw)',
                   borderRadius: customRadius || bubbleRadius,
-                  clipPath: `inset(0 round ${customRadius || bubbleRadius})`,
-                  transform: 'translateZ(0)',
+                  overflow: 'hidden',
+                  WebkitMaskImage: '-webkit-radial-gradient(white, black)',
                 }}
               >
                 <EncryptedMedia

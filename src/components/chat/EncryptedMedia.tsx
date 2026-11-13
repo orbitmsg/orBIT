@@ -363,12 +363,11 @@ export const EncryptedMedia = memo(({
         aspectRatio: `${mediaSize.width} / ${mediaSize.height}`,
         maxHeight: `${mediaSize.height}px`,
         borderRadius: formattedRadius,
-        clipPath: `inset(0 round ${formattedRadius})`,
-        position: 'relative',
         overflow: 'hidden',
+        WebkitMaskImage: '-webkit-radial-gradient(white, black)',
+        position: 'relative',
         backgroundColor: (type === 'video' ? Boolean(blobUrl) : Boolean(blobUrl || activeImageSrc)) ? 'transparent' : 'var(--surface-container, rgba(255,255,255,0.06))',
         overflowAnchor: 'none',
-        transform: 'translateZ(0)',
       }}
     >
       {((type === 'video' ? !blobUrl : (!blobUrl && !activeImageSrc)) || effectiveIsUploading) && (
@@ -474,8 +473,8 @@ export const EncryptedMedia = memo(({
             display: 'block',
             opacity: activeImageSrc ? 1 : 0,
             transition: 'opacity 0.2s',
-            borderRadius: formattedRadius,
-            clipPath: `inset(0 round ${formattedRadius})`,
+            borderRadius: 'inherit',
+            WebkitMaskImage: '-webkit-radial-gradient(white, black)',
           }}
           onClick={onClick}
           onContextMenu={(e) => {
@@ -486,7 +485,7 @@ export const EncryptedMedia = memo(({
       ) : (
         <div
           className="w-full h-full relative cursor-pointer group"
-          style={{ borderRadius: formattedRadius, clipPath: `inset(0 round ${formattedRadius})` }}
+          style={{ borderRadius: 'inherit', overflow: 'hidden', WebkitMaskImage: '-webkit-radial-gradient(white, black)' }}
           onClick={() => {
             onClick?.();
           }}
@@ -509,8 +508,8 @@ export const EncryptedMedia = memo(({
               display: 'block',
               opacity: blobUrl ? 1 : 0,
               transition: 'opacity 0.2s',
-              borderRadius: formattedRadius,
-              clipPath: `inset(0 round ${formattedRadius})`,
+              borderRadius: 'inherit',
+              WebkitMaskImage: '-webkit-radial-gradient(white, black)',
             }}
             onSeeked={handleSeeked}
             onLoadedMetadata={(e) => {

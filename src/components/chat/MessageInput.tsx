@@ -895,7 +895,7 @@ export const MessageInput = memo<MessageInputProps>(({
                 outline: 'none',
                 boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
                 color: 'var(--accent-color, #7C3AED)',
-                borderRadius: '5px',
+                borderRadius: '9999px',
                 width: '34px',
                 height: '34px',
                 display: 'flex',
@@ -949,7 +949,7 @@ export const MessageInput = memo<MessageInputProps>(({
             style={{
               flex: 1,
               backgroundColor: 'var(--surface-container, #33363f)',
-              borderRadius: '5px',
+              borderRadius: '20px',
               padding: '0 14px',
               minHeight: '34px',
               maxHeight: '120px',

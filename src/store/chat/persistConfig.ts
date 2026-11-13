@@ -153,8 +153,8 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
       if (!state.themeTintId) {
         state.themeTintId = DEFAULT_THEME_TINT_ID;
       }
-      if (state.bubbleRadius === 16 || !state.bubbleRadius) {
-        state.bubbleRadius = 5;
+      if (state.bubbleRadius === 5 || !state.bubbleRadius) {
+        state.bubbleRadius = 16;
       }
       state.setHasHydrated(true);
       state.preloadRecentMessagesFromStorage();

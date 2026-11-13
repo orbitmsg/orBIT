@@ -222,7 +222,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
               className="select-none tabular-nums opacity-0 group-hover:opacity-100 transition-opacity duration-150 mt-1 message-time-badge"
               style={{
                 backgroundColor: '#18191d',
-                borderRadius: '5px',
+                borderRadius: '9999px',
                 padding: '3px 8px',
                 color: 'rgba(255, 255, 255, 0.95)',
                 fontSize: '11px',
@@ -414,7 +414,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                     style={{
                       padding: '5px 10px',
                       backgroundColor: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 15%, transparent)' : 'color-mix(in srgb, var(--accent-color) 12%, transparent)',
-                      borderRadius: '0 5px 5px 0',
+                      borderRadius: '0 6px 6px 0',
                       borderLeft: isOwn ? '3px solid var(--bubble-own-text, #ffffff)' : '3px solid var(--accent-text, var(--accent-color))',
                     }}
                   >
@@ -478,7 +478,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                   style={{
                     padding: '8px 12px',
                     backgroundColor: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 12%, transparent)' : 'color-mix(in srgb, var(--accent-color) 10%, var(--surface-container-soft, transparent))',
-                    borderRadius: '0 5px 5px 0',
+                    borderRadius: '0 8px 8px 0',
                     borderLeft: isOwn ? '3px solid color-mix(in srgb, var(--bubble-own-text, #ffffff) 75%, transparent)' : '3px solid var(--accent-text, var(--accent-color))',
                   }}
                 >
@@ -514,7 +514,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                       alt=""
                       decoding="async"
                       loading="lazy"
-                      className="w-full max-h-72 object-cover rounded-[5px] mt-1"
+                      className="w-full max-h-72 object-cover rounded-md mt-1"
                       onError={(e) => (e.currentTarget.style.display = 'none')}
                     />
                   )}

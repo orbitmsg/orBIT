@@ -895,7 +895,7 @@ textarea::selection,
 
 .reaction-badge-btn {
   --reaction-badge-bg: #383a42;
-  border-radius: 5px !important;
+  border-radius: 9999px !important;
   border: none !important;
   outline: none !important;
   cursor: pointer;

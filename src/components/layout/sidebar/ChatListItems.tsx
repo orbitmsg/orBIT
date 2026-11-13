@@ -109,7 +109,7 @@ export const ChatListItem = React.memo(({
       onMouseLeave={() => setIsHovered(false)}
       className="group relative cursor-pointer"
       style={{
-        borderRadius: '16px',
+        borderRadius: '5px',
         margin: '2.5px 6px 2.5px 6px',
         width: 'calc(100% - 12px)',
         backgroundColor: rowBg,
@@ -171,7 +171,7 @@ export const ChatListItem = React.memo(({
             </span>
           )}
         </div>
-        <div className="flex flex-col min-w-0 flex-1">
+        <div className="flex flex-col min-w-0 flex-1" style={{ transform: 'translateY(-2px)' }}>
           <div className="flex items-center gap-1.5 mb-0.5 min-w-0">
             <div className="flex items-center gap-1 min-w-0 flex-1">
               {chat.type === 'channel' && (
@@ -226,7 +226,7 @@ export const ChatListItem = React.memo(({
                 </span>
               )}
             </div>
-            <div className="ml-auto flex items-center flex-shrink-0" style={{ gap: 4, transform: 'translateY(2px)' }}>
+            <div className="ml-auto flex items-center flex-shrink-0" style={{ gap: 4 }}>
               {status && (
                 <div style={{ display: 'flex', alignItems: 'center', transform: 'translateY(-1.5px)' }}>
                   <MessageStatus
@@ -372,7 +372,7 @@ export const ArchiveListItem = React.memo(({
       onMouseLeave={() => setIsHovered(false)}
       className="group relative cursor-pointer"
       style={{
-        borderRadius: '16px',
+        borderRadius: '5px',
         margin: '2.5px 6px 2.5px 6px',
         width: 'calc(100% - 12px)',
         backgroundColor: isHovered
@@ -403,7 +403,7 @@ export const ArchiveListItem = React.memo(({
             <Archive size={20} strokeWidth={2.2} />
           </div>
         </div>
-        <div className="flex flex-col min-w-0 flex-1">
+        <div className="flex flex-col min-w-0 flex-1" style={{ transform: 'translateY(-2px)' }}>
           <div className="flex items-center gap-1.5 mb-0.5 min-w-0">
             <span
               className="text-[14px] font-bold truncate whitespace-nowrap overflow-hidden text-ellipsis min-w-0"

@@ -256,8 +256,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
       )}
 
       <div
-        className="relative flex-1 min-h-0 overflow-hidden flex flex-col rounded-[18px]"
-        style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}
+        className="relative flex-1 min-h-0 flex flex-col rounded-[18px]"
+        style={{ backgroundColor: 'var(--chat-list-bg, #121212)' }}
         onMouseEnter={showChatScrollbar}
         onMouseLeave={handleChatListMouseLeave}
       >
@@ -483,7 +483,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                     onClick={() => handleSelectFoundChannel(searchChannelResult)}
                     className="flex items-center gap-3 cursor-pointer transition-colors rounded-2xl"
                     style={{
-                      borderRadius: '14px',
+                      borderRadius: '5px',
                       border: 'none',
                       margin: '2.5px 6px 2.5px 6px',
                       width: 'calc(100% - 12px)',
@@ -563,7 +563,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                         onClick={() => handleSelectFoundUser(user)}
                         className="flex items-center gap-3 cursor-pointer transition-colors rounded-2xl"
                         style={{
-                          borderRadius: '16px',
+                          borderRadius: '5px',
                           border: 'none',
                           margin: '2.5px 6px 2.5px 6px',
                           width: 'calc(100% - 12px)',

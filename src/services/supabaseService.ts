@@ -656,10 +656,10 @@ class SupabaseService {
     if (this.client) {
       await this.client
         .from('handshakes')
-        .update({ consumed: true })
+        .delete()
         .eq('id', handshakeId)
         .then(({ error }) => {
-          if (error) console.error('[Supabase] Direct fallback mark consumed error:', error);
+          if (error) console.error('[Supabase] Direct delete handshake error:', error);
         });
     }
   }

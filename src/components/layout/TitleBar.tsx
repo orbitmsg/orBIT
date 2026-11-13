@@ -26,6 +26,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
   const planetSvgId = useId().replace(/:/g, '');
   const [isMaximized, setIsMaximized] = useState(false);
   const [isHoverSuppressed, setIsHoverSuppressed] = useState(false);
+  const [isHelpHovered, setIsHelpHovered] = useState(false);
   const activeChatId = useChatStore((s) => s.activeChatId);
   const chats = useChatStore((s) => s.chats);
   const currentView = useChatStore((s) => s.currentView);
@@ -285,10 +286,82 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
           ['WebkitAppRegion' as any]: 'no-drag',
         }}
       >
+        <div className="relative flex items-center justify-center">
+          <button
+            type="button"
+            className={btnClass}
+            onMouseEnter={() => setIsHelpHovered(true)}
+            onMouseLeave={() => setIsHelpHovered(false)}
+            aria-label={t('titleBar.help', 'Помощь')}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 48 48"
+              width="15"
+              height="15"
+              aria-hidden="true"
+            >
+              <defs>
+                <mask id="yesicon-icon-park-solid-help-SVGKI5kpbjS">
+                  <g fill="none">
+                    <path fill="#fff" stroke="#fff" strokeLinejoin="round" strokeWidth="4" d="M24 44a19.94 19.94 0 0 0 14.142-5.858A19.94 19.94 0 0 0 44 24a19.94 19.94 0 0 0-5.858-14.142A19.94 19.94 0 0 0 24 4A19.94 19.94 0 0 0 9.858 9.858A19.94 19.94 0 0 0 4 24a19.94 19.94 0 0 0 5.858 14.142A19.94 19.94 0 0 0 24 44Z" />
+                    <path stroke="#000" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M24 28.625v-4a6 6 0 1 0-6-6" />
+                    <path fill="#000" fillRule="evenodd" d="M24 37.625a2.5 2.5 0 1 0 0-5a2.5 2.5 0 0 0 0 5" clipRule="evenodd" />
+                  </g>
+                </mask>
+              </defs>
+              <path fill="currentColor" d="M0 0h48v48H0z" mask="url(#yesicon-icon-park-solid-help-SVGKI5kpbjS)" />
+            </svg>
+          </button>
+          {isHelpHovered && (
+            <div
+              className="absolute pointer-events-none select-none z-50 whitespace-nowrap"
+              style={{
+                top: 'calc(100% + 7px)',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                backgroundColor: '#111214',
+                color: '#ffffff',
+                fontSize: '13px',
+                fontWeight: 600,
+                padding: '5px 10px',
+                borderRadius: '8px',
+                boxShadow: '0 4px 14px rgba(0, 0, 0, 0.45)',
+                lineHeight: 1.2,
+              }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '-5px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: 0,
+                  height: 0,
+                  borderLeft: '5px solid transparent',
+                  borderRight: '5px solid transparent',
+                  borderBottom: '5px solid #111214',
+                }}
+              />
+              {t('titleBar.help', 'Помощь')}
+            </div>
+          )}
+        </div>
+
+        <div
+          style={{
+            width: '1px',
+            height: '14px',
+            backgroundColor: 'rgba(255, 255, 255, 0.16)',
+            margin: '0 6px 0 3px',
+            flexShrink: 0,
+          }}
+        />
+
         <button
           onClick={handleMinimize}
           className={btnClass}
-          aria-label="Minimize"
+          aria-label={t('titleBar.minimize', 'Свернуть')}
         >
           <MinimizeIcon />
         </button>
@@ -296,7 +369,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
         <button
           onClick={handleMaximize}
           className={btnClass}
-          aria-label="Maximize"
+          aria-label={isMaximized ? t('titleBar.restore', 'Восстановить') : t('titleBar.maximize', 'Развернуть')}
         >
           {isMaximized ? <RestoreIcon /> : <MaximizeIcon />}
         </button>
@@ -304,7 +377,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
         <button
           onClick={handleClose}
           className={`${btnClass} orbita-titlebar-btn-close`}
-          aria-label="Close"
+          aria-label={t('titleBar.close', 'Закрыть')}
         >
           <CloseIcon />
         </button>

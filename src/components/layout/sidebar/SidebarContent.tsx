@@ -7,8 +7,6 @@ import {
   WifiOff,
   ChevronUp,
   ChevronRight,
-  Users,
-  Megaphone,
   UserPlus,
 } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
@@ -92,8 +90,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   handleSelectFoundUser,
   handleSelectFoundSupport,
   isLightTheme,
-  onOpenCreateGroup,
-  onOpenCreateChannel,
+  onOpenCreateGroup: _onOpenCreateGroup,
+  onOpenCreateChannel: _onOpenCreateChannel,
   onOpenAddFriend,
   onOpenSettings,
   onOpenProfile,
@@ -180,16 +178,6 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}
         >
           {[
-            {
-              label: t('sidebar.find_or_create_group', 'Найти или создать группу'),
-              icon: <Users size={15} />,
-              onClick: onOpenCreateGroup,
-            },
-            {
-              label: t('sidebar.find_or_create_channel', 'Найти или создать канал'),
-              icon: <Megaphone size={15} />,
-              onClick: onOpenCreateChannel,
-            },
             {
               label: t('sidebar.find_friend', 'Найти друга'),
               icon: <UserPlus size={15} />,

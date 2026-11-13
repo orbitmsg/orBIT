@@ -258,7 +258,8 @@
       "close": "Close",
       "direct_messages": "Direct Messages",
       "community": "Community",
-      "group_chat": "Group Chat"
+      "group_chat": "Lobby",
+      "help": "Help"
     },
     "welcome": {
       "title": "Orbita Desktop",
@@ -1739,9 +1740,12 @@
       "starting": "Starting..."
     },
     "sidebar": {
-      "find_or_create_group": "Find or create group",
+      "find_or_create_group": "Find or create lobby",
       "find_or_create_channel": "Find or create channel",
-      "find_friend": "Find friend"
+      "find_friend": "Find friend",
+      "direct_messages": "Direct Messages",
+      "add_lobby": "Add Lobby",
+      "explore_treasures": "In Search of Treasures"
     },
     "channelInvite": {
       "channel": "Channel",

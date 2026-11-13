@@ -8,6 +8,7 @@ interface ResizableSidebarProps {
   maxWidth?: number;
   className?: string;
   onWidthChange?: (width: number) => void;
+  resizable?: boolean;
 }
 
 const RESIZE_HANDLE_WIDTH = 6;
@@ -22,6 +23,7 @@ export const ResizableSidebar: React.FC<ResizableSidebarProps> = ({
   maxWidth: propMaxWidth,
   className = '',
   onWidthChange,
+  resizable = true,
 }) => {
   const [width, setWidth] = useState(defaultWidth);
   const [isResizing, setIsResizing] = useState(false);
@@ -147,7 +149,7 @@ export const ResizableSidebar: React.FC<ResizableSidebarProps> = ({
       style={sidebarStyle}
     >
       {children}
-      {!isMobile && (
+      {!isMobile && resizable && (
         <div
           className="absolute top-0 right-0 h-full z-10 rounded-full"
           style={{

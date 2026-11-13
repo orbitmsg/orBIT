@@ -258,7 +258,8 @@
       "close": "Закрыть",
       "direct_messages": "Личные сообщения",
       "community": "Сообщество",
-      "group_chat": "Групповой чат"
+      "group_chat": "Лобби",
+      "help": "Помощь"
     },
     "welcome": {
       "title": "Orbita Desktop",
@@ -1739,9 +1740,12 @@
       "starting": "Запуск..."
     },
     "sidebar": {
-      "find_or_create_group": "Найти или создать группу",
+      "find_or_create_group": "Найти или создать лобби",
       "find_or_create_channel": "Найти или создать канал",
-      "find_friend": "Найти друга"
+      "find_friend": "Найти друга",
+      "direct_messages": "Личные сообщения",
+      "add_lobby": "Добавить лобби",
+      "explore_treasures": "В поисках сокровищ"
     },
     "channelInvite": {
       "channel": "Канал",

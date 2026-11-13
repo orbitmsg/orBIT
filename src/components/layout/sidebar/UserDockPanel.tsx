@@ -50,7 +50,10 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
         className="orbita-dock-panel flex items-center justify-between px-2.5 py-2"
         style={{
           background: 'var(--accent-gradient, linear-gradient(135deg, #2a2a2e 0%, #1c1c1f 100%))',
-          border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
+          borderRadius: '16px',
+          border: 'none',
+          outline: 'none',
+          boxShadow: 'none',
           color: 'var(--accent-on-color, #ffffff)',
         }}
       >

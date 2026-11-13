@@ -989,7 +989,7 @@ export const MainLayout = () => {
   }, [searchedChats.length, showChatScrollbar]);
 
   const CHAT_MIN_WIDTH = 300;
-  const SIDEBAR_MIN_WIDTH = 300;
+  const SIDEBAR_MIN_WIDTH = 350;
 
   const isCallMinimized = useCallStore((state) => state.isMinimized && !!state.activeCall);
   const showCallModalsInWindow = !((window as any).orbita?.openCallWindow);
@@ -1179,28 +1179,31 @@ export const MainLayout = () => {
     >
       {(!isMobileView || !activeChatId) && (
         <ResizableSidebar
-          defaultWidth={isMobileView ? undefined : 332}
+          defaultWidth={isMobileView ? undefined : 422}
           minWidth={isMobileView ? 0 : SIDEBAR_MIN_WIDTH + 72}
           maxWidth={isMobileView ? undefined : (maxSidebarWidth ? maxSidebarWidth + 72 : undefined)}
           className="md:flex-none"
+          resizable={false}
         >
-          <div className="flex flex-col h-full w-full select-none" style={{ gap: '8px' }}>
-            <div className="flex flex-1 min-h-0 w-full" style={{ gap: '8px' }}>
-              {!isMobileView && (
-                <SidebarFolderRail
-                  activeFolderId={activeFolderId}
-                  setActiveFolderId={setActiveFolderId}
-                  currentView={currentView}
-                  setCurrentView={setCurrentView}
-                  folders={folders}
-                  getFolderUnreadCount={getFolderUnreadCount}
-                  isLightTheme={isLightTheme}
-                />
-              )}
-              <div className="flex-1 min-w-0 h-full">
+          <div className="flex h-full w-full select-none" style={{ gap: '8px' }}>
+            {!isMobileView && (
+              <SidebarFolderRail
+                activeFolderId={activeFolderId}
+                setActiveFolderId={setActiveFolderId}
+                currentView={currentView}
+                setCurrentView={setCurrentView}
+                folders={folders}
+                getFolderUnreadCount={getFolderUnreadCount}
+                isLightTheme={isLightTheme}
+                onOpenCreateLobby={() => setConnectModalConfig({ isOpen: true, type: 'group' })}
+                onOpenExplore={() => setConnectModalConfig({ isOpen: true, type: 'channel' })}
+              />
+            )}
+            <div className="flex-1 flex flex-col min-w-0 h-full" style={{ gap: '8px' }}>
+              <div className="flex-1 min-h-0 min-w-0 w-full">
                 <SidebarContent
                   isMobileView={isMobileView}
-                  hideDock={!isMobileView}
+                  hideDock={true}
                   isViewingArchive={isViewingArchive}
                   setIsViewingArchive={setIsViewingArchive}
                   archivedChats={archivedChats}
@@ -1233,14 +1236,14 @@ export const MainLayout = () => {
                   onOpenProfile={() => setIsMyProfileOpen(true)}
                 />
               </div>
-            </div>
 
-            {!isMobileView && (
-              <UserDockPanel
-                onOpenProfile={() => setIsMyProfileOpen(true)}
-                onOpenSettings={handleOpenSettings}
-              />
-            )}
+              {!isMobileView && (
+                <UserDockPanel
+                  onOpenProfile={() => setIsMyProfileOpen(true)}
+                  onOpenSettings={handleOpenSettings}
+                />
+              )}
+            </div>
           </div>
         </ResizableSidebar>
       )}

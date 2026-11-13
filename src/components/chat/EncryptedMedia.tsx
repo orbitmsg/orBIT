@@ -29,6 +29,7 @@ interface EncryptedMediaProps {
   thumbnail?: string;
   isUploading?: boolean;
   onCancelUpload?: () => void;
+  bubbleRadius?: number | string;
 }
 
 export const EncryptedMedia = memo(({
@@ -51,12 +52,13 @@ export const EncryptedMedia = memo(({
   thumbnail,
   isUploading,
   onCancelUpload,
+  bubbleRadius: bubbleRadiusProp,
 }: EncryptedMediaProps) => {
   const liveUploadProgress = useUploadProgressStore((s) => (messageId ? s.progressByKey[messageId]?.fraction ?? 0 : 0));
   const effectiveIsUploading = Boolean(isUploading);
   const autoLoad = useChatStore((state) => state.shouldAutoLoadMedia(type === 'image' ? 'photo' : 'video', fileSize, isOwn));
   const { blobUrl, load, cancel, isLoading, progress } = useDecryptedMedia(url, sharedSecret, undefined, undefined, chatId, messageId, autoLoad);
-  const bubbleRadius = useChatStore.getState().bubbleRadius;
+  const effectiveBubbleRadius = bubbleRadiusProp ?? useChatStore.getState().bubbleRadius;
   const { t } = useTranslation();
   const timeColor = isOwn ? 'rgba(255, 255, 255, 0.9)' : 'var(--text-dim)';
 
@@ -343,7 +345,7 @@ export const EncryptedMedia = memo(({
         width={msgWidth}
         height={msgHeight}
         clampedAspect={mediaSize.aspectRatio}
-        bubbleRadius={bubbleRadius}
+        bubbleRadius={effectiveBubbleRadius}
         timeNode={timeNode}
         onClick={onClick}
         onContextMenu={onContextMenu}
@@ -359,11 +361,14 @@ export const EncryptedMedia = memo(({
         maxWidth: '100%',
         aspectRatio: `${mediaSize.width} / ${mediaSize.height}`,
         maxHeight: `${mediaSize.height}px`,
-        borderRadius: typeof bubbleRadius === 'number' ? `${Math.max(bubbleRadius, 20)}px` : '20px',
+        borderRadius: effectiveBubbleRadius || (typeof effectiveBubbleRadius === 'number' ? `${effectiveBubbleRadius}px` : '18px'),
         position: 'relative',
         overflow: 'hidden',
         backgroundColor: 'var(--surface-container, rgba(255,255,255,0.06))',
         overflowAnchor: 'none',
+        transform: 'translateZ(0)',
+        WebkitMaskImage: '-webkit-radial-gradient(white, black)',
+        isolation: 'isolate',
       }}
     >
       {((type === 'video' ? !blobUrl : (!blobUrl && !activeImageSrc)) || effectiveIsUploading) && (
@@ -414,7 +419,7 @@ export const EncryptedMedia = memo(({
               state={effectiveIsUploading ? 'uploading' : (isLoading ? 'downloading' : 'download')}
               progress={effectiveIsUploading ? liveUploadProgress : (isLoading ? progress : undefined)}
               isOwn={isOwn}
-              customBg="rgba(15, 17, 26, 0.75)"
+              customBg="rgba(0, 0, 0, 0.45)"
               onClick={() => {
                 if (effectiveIsUploading) onCancelUpload?.();
                 else if (isLoading) cancel();
@@ -464,7 +469,7 @@ export const EncryptedMedia = memo(({
           alt=""
           className="w-full h-full object-contain cursor-pointer"
           draggable={false}
-          style={{ userSelect: 'none', display: 'block', opacity: activeImageSrc ? 1 : 0, transition: 'opacity 0.2s' }}
+          style={{ userSelect: 'none', display: 'block', opacity: activeImageSrc ? 1 : 0, transition: 'opacity 0.2s', borderRadius: 'inherit' }}
           onClick={onClick}
           onContextMenu={(e) => {
             e.preventDefault();
@@ -474,6 +479,7 @@ export const EncryptedMedia = memo(({
       ) : (
         <div
           className="w-full h-full relative cursor-pointer group"
+          style={{ borderRadius: 'inherit' }}
           onClick={() => {
             onClick?.();
           }}
@@ -492,7 +498,7 @@ export const EncryptedMedia = memo(({
             loop
             muted={isMuted}
             playsInline
-            style={{ display: 'block', opacity: blobUrl ? 1 : 0, transition: 'opacity 0.2s' }}
+            style={{ display: 'block', opacity: blobUrl ? 1 : 0, transition: 'opacity 0.2s', borderRadius: 'inherit' }}
             onSeeked={handleSeeked}
             onLoadedMetadata={(e) => {
               if (e.currentTarget.duration && isFinite(e.currentTarget.duration)) {

@@ -101,7 +101,7 @@ export const themePalettes: Record<ThemeId, ThemeDefinition> = {
       '--switch-border': 'rgba(255,255,255,0.22)',
       '--selection-bg': 'rgba(88,101,242,0.28)',
       '--logo-type': 'classic',
-      '--title-bar-bg': '#1e1f22',
+      '--title-bar-bg': '#232428',
       '--settings-bg': '#313338',
       '--settings-surface': '#2b2d31',
       '--settings-surface-var': '#1e1f22',
@@ -207,7 +207,7 @@ export const themePalettes: Record<ThemeId, ThemeDefinition> = {
       '--switch-border': 'rgba(255,255,255,0.22)',
       '--selection-bg': 'rgba(88,101,242,0.28)',
       '--logo-type': 'classic',
-      '--title-bar-bg': '#1e1f22',
+      '--title-bar-bg': '#232428',
       '--settings-bg': '#313338',
       '--settings-surface': '#2b2d31',
       '--settings-surface-var': '#1e1f22',
@@ -303,15 +303,15 @@ export const resolveThemeVars = (themeId: ThemeId, chatColor?: string, themeTint
 
   const textMain = isLight
     ? '#181b22'
-    : (tint.id === 'discord-indigo' ? '#dbdee1' : `color-mix(in srgb, ${accentColor} 4%, #eceff4)`);
-  const textHeading = isLight ? '#0e1117' : (tint.id === 'discord-indigo' ? '#ffffff' : '#f8fafc');
+    : `color-mix(in srgb, ${accentColor} 4%, #eceff4)`;
+  const textHeading = isLight ? '#0e1117' : '#f8fafc';
   const textDim = isLight
     ? '#5c6370'
-    : (tint.id === 'discord-indigo' ? '#949ba4' : `color-mix(in srgb, ${accentColor} 8%, #9aa3b2)`);
+    : `color-mix(in srgb, ${accentColor} 8%, #9aa3b2)`;
 
-  const surfaceHover = tint.id === 'discord-indigo' && !isLight ? '#35373c' : 'color-mix(in srgb, var(--text-main) 6%, transparent)';
-  const surfaceActive = tint.id === 'discord-indigo' && !isLight ? '#404249' : `color-mix(in srgb, ${accentColor} 16%, ${tintTokens.surfaceContainerStrong})`;
-  const scrollThumbColor = isLight ? 'rgba(15, 23, 42, 0.24)' : (tint.id === 'discord-indigo' ? '#1a1b1e' : 'rgba(255, 255, 255, 0.28)');
+  const surfaceHover = 'color-mix(in srgb, var(--text-main) 6%, transparent)';
+  const surfaceActive = `color-mix(in srgb, ${accentColor} 16%, ${tintTokens.surfaceContainerStrong})`;
+  const scrollThumbColor = isLight ? 'rgba(15, 23, 42, 0.24)' : 'rgba(255, 255, 255, 0.28)';
   const mdOutlineMed = `color-mix(in srgb, ${tintTokens.borderColor} 76%, ${textMain})`;
 
   const vars: Record<string, string> = {
@@ -350,7 +350,7 @@ export const resolveThemeVars = (themeId: ThemeId, chatColor?: string, themeTint
     '--accent-light': accentLight,
     '--accent-dark': accentDark,
     '--accent-hover': `color-mix(in srgb, ${accentColor} 84%, black)`,
-    '--accent-gradient': effectiveChatColor.startsWith('linear-gradient') ? effectiveChatColor : (tint.id === 'discord-indigo' ? accentColor : `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 100%)`),
+    '--accent-gradient': effectiveChatColor.startsWith('linear-gradient') ? effectiveChatColor : `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 100%)`,
     '--accent-on-color': accentOnColor,
     '--accent-text': accentText,
     '--accent-glow': `color-mix(in srgb, ${accentColor} 30%, transparent)`,

@@ -1073,7 +1073,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
 
             {media.type === 'image' && (
               <div
-                className="max-w-[min(440px, 75%)] relative rounded-xl overflow-hidden shadow-lg cursor-pointer"
+                className="max-w-[min(440px, 75%)] relative overflow-hidden shadow-lg cursor-pointer"
                 style={{
                   border: 'none',
                   maxWidth: 'min(440px, 75%)',
@@ -1081,6 +1081,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     ? `${Math.min(440, (msg.width / msg.height) < 1 ? Math.round(380 * Math.max(0.6, msg.width / msg.height)) : msg.width)}px`
                     : 'min(440px, 75vw)',
                   borderRadius: customRadius || bubbleRadius,
+                  transform: 'translateZ(0)',
+                  WebkitMaskImage: '-webkit-radial-gradient(white, black)',
+                  isolation: 'isolate',
                 }}
               >
                 <EncryptedMedia
@@ -1089,6 +1092,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   sharedSecret={msg.mediaKey || sharedSecret || undefined}
                   chatId={activeChatId || undefined}
                   messageId={msg.id}
+                  bubbleRadius={customRadius || bubbleRadius}
                   width={msg.width}
                   height={msg.height}
                   duration={msg.duration || (msg as any).audioMetadata?.duration}
@@ -1111,7 +1115,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
 
             {media.type === 'video' && (
               <div
-                className="max-w-[min(440px, 75%)] relative rounded-xl overflow-hidden shadow-lg cursor-pointer"
+                className="max-w-[min(440px, 75%)] relative overflow-hidden shadow-lg cursor-pointer"
                 style={{
                   border: 'none',
                   maxWidth: 'min(440px, 75%)',
@@ -1119,6 +1123,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     ? `${Math.min(440, (msg.width / msg.height) < 1 ? Math.round(380 * Math.max(0.6, msg.width / msg.height)) : msg.width)}px`
                     : 'min(440px, 75vw)',
                   borderRadius: customRadius || bubbleRadius,
+                  transform: 'translateZ(0)',
+                  WebkitMaskImage: '-webkit-radial-gradient(white, black)',
+                  isolation: 'isolate',
                 }}
               >
                 <EncryptedMedia
@@ -1127,6 +1134,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   sharedSecret={msg.mediaKey || sharedSecret || undefined}
                   chatId={activeChatId || undefined}
                   messageId={msg.id}
+                  bubbleRadius={customRadius || bubbleRadius}
                   width={msg.width}
                   height={msg.height}
                   duration={msg.duration || (msg as any).audioMetadata?.duration}

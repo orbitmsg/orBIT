@@ -14,7 +14,9 @@ interface MessageStatusProps {
 export const MessageStatus: React.FC<MessageStatusProps> = ({ status, className = '', isOwn = false, color, onRetry }) => {
   const { t } = useTranslation();
   const statusStyle: React.CSSProperties = {
-    transform: 'translateY(-2.5px)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    verticalAlign: 'middle',
     flexShrink: 0,
   };
 
@@ -36,7 +38,6 @@ export const MessageStatus: React.FC<MessageStatusProps> = ({ status, className 
           justifyContent: 'center',
           cursor: onRetry ? 'pointer' : 'default',
           flexShrink: 0,
-          transform: 'translateY(-2.5px)',
         }}
         aria-label={t('common.not_delivered', 'Не доставлено')}
       >

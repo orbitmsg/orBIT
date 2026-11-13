@@ -13,6 +13,7 @@ import { OnlineIndicator } from '../../common/OnlineIndicator';
 import { VerifiedBadge } from '../../common/VerifiedBadge';
 import { MessageStatus } from '../../MessageStatus';
 import { useChatStore, isMessageOutgoing, type Chat } from '../../../store/useChatStore';
+import { useAuthStore } from '../../../store/useAuthStore';
 import { getLastMsgDisplay } from './getLastMsgDisplay';
 
 export const formatUnreadCount = (count: number): string => {
@@ -73,7 +74,8 @@ export const ChatListItem = React.memo(({
   const timeStr = lastMsgTime
     ? `${lastMsgTime.getHours().toString().padStart(2, '0')}:${lastMsgTime.getMinutes().toString().padStart(2, '0')}`
     : '';
-  const isOwn = isMessageOutgoing(lastMsg, myCode, nickname, chat);
+  const myUserId = useAuthStore((s) => s.userId);
+  const isOwn = isMessageOutgoing(lastMsg, myCode, nickname, chat, myUserId);
   const status = isOwn && (lastMsg?.status || lastMsg?.read) ? ((lastMsg?.status === 'read' || lastMsg?.read) ? 'read' : lastMsg?.status) : undefined;
 
   const rawDraft = useChatStore(
@@ -107,36 +109,36 @@ export const ChatListItem = React.memo(({
       onMouseLeave={() => setIsHovered(false)}
       className="group relative cursor-pointer"
       style={{
-        borderRadius: '4px',
-        margin: '1px 8px',
+        borderRadius: '16px',
+        margin: '3px 8px',
         width: 'calc(100% - 16px)',
         backgroundColor: rowBg,
         border: 'none',
         outline: 'none',
-        padding: '6px 8px',
-        minHeight: 44,
+        padding: '10px 12px',
+        minHeight: 60,
         boxSizing: 'border-box',
         contentVisibility: 'auto',
-        containIntrinsicSize: '44px',
+        containIntrinsicSize: '72px',
         willChange: 'transform',
         transition: 'background-color 0.12s ease',
       }}
     >
       <div className="flex justify-between items-center min-w-0">
-        <div style={{ width: 32, height: 32, marginRight: 10, flexShrink: 0, position: 'relative' }}>
+        <div style={{ width: 46, height: 46, marginRight: 12, flexShrink: 0, position: 'relative' }}>
           {chat.id === 'notes' ? (
-            <NotesAvatar className="w-8 h-8" />
+            <NotesAvatar className="w-[46px] h-[46px]" />
           ) : (chat.avatarUrl || chat.id === 'system_support') ? (
-            <Avatar src={chat.avatarUrl || SUPPORT_AVATAR_URL} alt={chat.name} className="w-8 h-8 rounded-full" />
+            <Avatar src={chat.avatarUrl || SUPPORT_AVATAR_URL} alt={chat.name} className="w-[46px] h-[46px]" style={{ borderRadius: '50%' }} />
           ) : chat.type === 'bot' ? (
-            <BotAvatar className="w-8 h-8" />
+            <BotAvatar className="w-[46px] h-[46px]" />
           ) : (
-            <Avatar src={chat.avatarUrl} alt={chat.name} className="w-8 h-8 rounded-full" />
+            <Avatar src={chat.avatarUrl} alt={chat.name} className="w-[46px] h-[46px]" style={{ borderRadius: '50%' }} />
           )}
           {chat.type === 'private' && chat.id !== 'notes' && (
             <OnlineIndicator
               online={chat.online}
-              size="xs"
+              size="sm"
               ringColor={ringColor}
               className="z-[2]"
               ariaLabel={t('common.online', 'В сети')}
@@ -193,9 +195,9 @@ export const ChatListItem = React.memo(({
                 />
               )}
               <span
-                className="text-[14px] font-medium truncate whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
+                className="text-[14px] font-bold truncate whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
                 style={{
-                  color: isActive ? '#ffffff' : (isHovered ? 'var(--text-main, #dbdee1)' : 'var(--text-dim, #949ba4)'),
+                  color: isActive ? 'var(--text-heading, var(--text-main))' : 'var(--text-main)',
                   fontFamily: 'inherit'
                 }}
               >
@@ -224,9 +226,9 @@ export const ChatListItem = React.memo(({
                 </span>
               )}
             </div>
-            <div className="ml-auto flex items-center flex-shrink-0" style={{ gap: 3 }}>
+            <div className="ml-auto flex items-center flex-shrink-0" style={{ gap: 4 }}>
               {status && (
-                <div style={{ display: 'flex', alignItems: 'center', transform: 'translateY(-2.5px)' }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
                   <MessageStatus
                     status={status}
                     isOwn={true}
@@ -236,7 +238,7 @@ export const ChatListItem = React.memo(({
               )}
               {timeStr && (
                 <span
-                  className="text-[12px] font-medium tabular-nums whitespace-nowrap"
+                  className="text-[12px] font-medium tabular-nums whitespace-nowrap leading-none flex items-center"
                   style={{
                     color: 'var(--text-dim, #808080)',
                   }}
@@ -370,26 +372,26 @@ export const ArchiveListItem = React.memo(({
       onMouseLeave={() => setIsHovered(false)}
       className="group relative cursor-pointer"
       style={{
-        borderRadius: '14px',
-        margin: '2px 8px',
+        borderRadius: '16px',
+        margin: '3px 8px',
         width: 'calc(100% - 16px)',
         backgroundColor: isHovered
           ? 'var(--surface-hover, rgba(128, 128, 128, 0.08))'
           : 'transparent',
         border: 'none',
         outline: 'none',
-        padding: '8px 10px',
-        minHeight: 52,
+        padding: '10px 12px',
+        minHeight: 60,
         boxSizing: 'border-box',
         transition: 'background-color 0.12s ease',
       }}
     >
       <div className="flex justify-between items-center min-w-0">
-        <div style={{ width: 40, height: 40, marginRight: 10, flexShrink: 0, position: 'relative' }}>
+        <div style={{ width: 46, height: 46, marginRight: 12, flexShrink: 0, position: 'relative' }}>
           <div
             style={{
-              width: 40,
-              height: 40,
+              width: 46,
+              height: 46,
               borderRadius: '50%',
               backgroundColor: 'var(--surface-container-strong, rgba(128, 128, 128, 0.16))',
               display: 'flex',

@@ -82,18 +82,18 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       ref={headerRef as any}
       className="sticky top-0 z-20 w-full select-none"
       style={{
-        backgroundColor: 'var(--bg-primary, #313338)',
+        backgroundColor: 'var(--bg-primary)',
         overflow: 'visible',
         userSelect: 'none',
         WebkitUserSelect: 'none',
       }}
     >
       <header
-        className="flex items-center justify-between w-full select-none relative z-10 h-12 px-4 border-b border-[var(--border-color,#1f2023)] shadow-[0_1px_2px_rgba(0,0,0,0.2)]"
+        className="flex justify-center w-full select-none relative z-10"
         style={{
+          padding: '10px 16px',
           userSelect: 'none',
           WebkitUserSelect: 'none',
-          boxSizing: 'border-box',
         }}
       >
         <div
@@ -286,7 +286,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             
             <button
               type="button"
-              className="p-1.5 rounded-[4px] transition-colors duration-150 text-[var(--text-dim,#949ba4)] hover:text-[var(--text-main,#dbdee1)] hover:bg-[var(--surface-hover,#35373c)] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
+              className="p-2 rounded-xl transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
               onClick={(e) => {
                 e.stopPropagation();
                 useChatStore.getState().openInChatSearch('this_chat');
@@ -300,7 +300,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             {activeChatId !== 'notes' && activeChat?.type !== 'channel' && voiceCallsEnabled && (
               <button
                 type="button"
-                className="p-1.5 rounded-[4px] transition-colors duration-150 text-[var(--text-dim,#949ba4)] hover:text-[var(--text-main,#dbdee1)] hover:bg-[var(--surface-hover,#35373c)] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
+                className="p-2 rounded-xl transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
                 onClick={(e) => {
                   e.stopPropagation();
                   onAudioCallPress();

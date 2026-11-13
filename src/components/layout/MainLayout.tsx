@@ -988,7 +988,7 @@ export const MainLayout = () => {
   }, [searchedChats.length, showChatScrollbar]);
 
   const CHAT_MIN_WIDTH = 300;
-  const SIDEBAR_MIN_WIDTH = 240;
+  const SIDEBAR_MIN_WIDTH = 300;
 
   const isCallMinimized = useCallStore((state) => state.isMinimized && !!state.activeCall);
   const showCallModalsInWindow = !((window as any).orbita?.openCallWindow);
@@ -1121,6 +1121,7 @@ export const MainLayout = () => {
     );
   }, [pinnedChatsSet, handleSelectChat, handleChatContextMenu, nickname, myCode, t, isLightTheme]);
 
+  const hasActiveChat = Boolean(activeChatId && chats.some(c => c.id === activeChatId));
   const activeChatObj = useMemo(
     () => (activeChatId ? chats.find((c) => c.id === activeChatId) || null : null),
     [activeChatId, chats]
@@ -1171,8 +1172,8 @@ export const MainLayout = () => {
       className="flex flex-1 h-full overflow-hidden"
       style={{
         backgroundColor: 'var(--title-bar-bg, #1e1f22)',
-        padding: 0,
-        gap: 0,
+        padding: isMobileView ? 0 : '4px 8px 8px 8px',
+        gap: isMobileView ? 0 : '8px',
         boxSizing: 'border-box',
       }}
     >
@@ -1190,7 +1191,7 @@ export const MainLayout = () => {
 
       {(!isMobileView || !activeChatId) && (
         <ResizableSidebar
-          defaultWidth={240}
+          defaultWidth={260}
           minWidth={SIDEBAR_MIN_WIDTH}
           maxWidth={maxSidebarWidth}
           className="md:flex-none"
@@ -1234,20 +1235,20 @@ export const MainLayout = () => {
       <div
         ref={workspaceRef}
         className="flex flex-1 min-w-0 relative flex-col"
-        style={{ backgroundColor: 'var(--bg-primary, #313338)', gap: 0 }}
+        style={{ backgroundColor: 'transparent', gap: isMobileView ? 0 : '8px' }}
       >
         {!(isMobileView && !activeChatId) && (isCallMinimized ? <CallMiniPlayer /> : <GlobalAudioPlayer />)}
 
         {(!isMobileView || activeChatId) && (
           <div
             className="flex-1 flex min-h-0 min-w-0 flex-row"
-            style={{ gap: 0 }}
+            style={{ gap: isMobileView ? 0 : '8px' }}
           >
             <main
               className="flex-1 flex flex-col overflow-hidden"
               style={{
-                backgroundColor: 'var(--bg-primary, #313338)',
-                borderRadius: 0,
+                backgroundColor: hasActiveChat ? 'var(--bg-primary)' : 'transparent',
+                borderRadius: isMobileView ? 0 : '18px',
                 minWidth: isMobileView ? 0 : CHAT_MIN_WIDTH,
               }}
             >

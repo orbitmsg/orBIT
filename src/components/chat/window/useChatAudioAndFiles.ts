@@ -273,20 +273,31 @@ export const useChatAudioAndFiles = ({
     fileType: AttachedFile['fileType']
   ): Promise<{ width?: number; height?: number; duration?: number; blurPreview?: string; preview?: string }> => {
     if (fileType === 'photo') {
-      if (window.orbita?.rustReadFileFast && window.orbita?.generateBlurPreview) {
-        try {
+      try {
+        if (window.orbita?.rustReadFileFast) {
           const raw = await window.orbita.rustReadFileFast(filePath);
           if (raw) {
-            const blurPreview = await window.orbita.generateBlurPreview(raw, 32);
-            if (window.orbita.compressImageNative) {
-              const comp = await window.orbita.compressImageNative(raw, 2560, 2560, 85);
-              if (comp) {
-                return { width: comp.width, height: comp.height, blurPreview: blurPreview || undefined };
+            const blob = new Blob([raw]);
+            const bmp = await createImageBitmap(blob);
+            const w = bmp.width;
+            const h = bmp.height;
+            let blurPreview: string | undefined = undefined;
+            try {
+              const canvas = document.createElement('canvas');
+              const scale = Math.min(24 / w, 24 / h, 1);
+              canvas.width = Math.max(1, Math.round(w * scale));
+              canvas.height = Math.max(1, Math.round(h * scale));
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+                blurPreview = canvas.toDataURL('image/jpeg', 0.4);
               }
-            }
+            } catch {}
+            bmp.close();
+            return { width: w, height: h, blurPreview };
           }
-        } catch {}
-      }
+        }
+      } catch {}
       const dataUrl = await window.orbita?.readFileAsDataURL(filePath);
       if (!dataUrl) return {};
       return new Promise((resolve) => {
@@ -295,13 +306,13 @@ export const useChatAudioAndFiles = ({
           let blurPreview: string | undefined = undefined;
           try {
             const canvas = document.createElement('canvas');
-            const scale = Math.min(32 / img.naturalWidth, 32 / img.naturalHeight, 1);
+            const scale = Math.min(24 / img.naturalWidth, 24 / img.naturalHeight, 1);
             canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
             canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
             const ctx = canvas.getContext('2d');
             if (ctx) {
               ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-              blurPreview = canvas.toDataURL('image/jpeg', 0.5);
+              blurPreview = canvas.toDataURL('image/jpeg', 0.4);
             }
           } catch {}
           resolve({ width: img.naturalWidth, height: img.naturalHeight, blurPreview });
@@ -457,28 +468,24 @@ export const useChatAudioAndFiles = ({
         let preview: string | null = null;
         let sizeMb = 0;
         try {
+          const sizeBytes = await window.orbita?.getFileSize(filePath);
+          if (typeof sizeBytes === 'number' && sizeBytes > 0) {
+            sizeMb = sizeBytes / (1024 * 1024);
+          }
           if (fileType === 'photo') {
             const dataUrl = await window.orbita?.readFileAsDataURL(filePath);
             if (dataUrl) {
               preview = dataUrl;
-              const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
-              const binary = atob(base64);
-              const fileArrayBuffer = new ArrayBuffer(binary.length);
-              const view = new Uint8Array(fileArrayBuffer);
-              for (let i = 0; i < binary.length; i++) view[i] = binary.charCodeAt(i);
-              sizeMb = fileArrayBuffer.byteLength / (1024 * 1024);
-            }
-          } else {
-            const sizeBytes = await window.orbita?.getFileSize(filePath);
-            if (sizeBytes) {
-              sizeMb = sizeBytes / (1024 * 1024);
-            } else {
-              const dataUrl = await window.orbita?.readFileAsDataURL(filePath);
-              if (dataUrl) {
+              if (!sizeMb) {
                 const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
-                const binary = atob(base64);
-                sizeMb = binary.length / (1024 * 1024);
+                sizeMb = (base64.length * 0.75) / (1024 * 1024);
               }
+            }
+          } else if (!sizeMb) {
+            const dataUrl = await window.orbita?.readFileAsDataURL(filePath);
+            if (dataUrl) {
+              const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+              sizeMb = (base64.length * 0.75) / (1024 * 1024);
             }
           }
         } catch {}
@@ -654,25 +661,28 @@ export const useChatAudioAndFiles = ({
             if (binary) {
               let processBinary = binary;
               if (!asFile && file.fileType === 'photo') {
-                if (window.orbita?.compressImageNative) {
-                  try {
-                    const comp = await window.orbita.compressImageNative(binary, 2048, 2048, 85);
-                    if (comp && comp.data) {
-                      processBinary = comp.data;
-                      if (comp.width && comp.height) {
-                        file.width = comp.width;
-                        file.height = comp.height;
+                const isUnderThreshold = binary.byteLength <= 1.2 * 1024 * 1024;
+                if (!isUnderThreshold) {
+                  if (window.orbita?.compressImageNative) {
+                    try {
+                      const comp = await window.orbita.compressImageNative(binary, 2048, 2048, 80);
+                      if (comp && comp.data && comp.data.length < binary.length) {
+                        processBinary = comp.data;
+                        if (comp.width && comp.height) {
+                          file.width = comp.width;
+                          file.height = comp.height;
+                        }
                       }
+                    } catch (e) {
+                      console.warn('[Rust] Image compressImageNative failed, falling back:', e);
                     }
-                  } catch (e) {
-                    console.warn('[Rust] Image compressImageNative failed, falling back:', e);
-                  }
-                } else if (window.orbita?.rustResizeImage) {
-                  try {
-                    const resized = await window.orbita.rustResizeImage(binary, 1920, 1920, 85);
-                    if (resized) processBinary = resized;
-                  } catch (e) {
-                    console.warn('[Rust] Image resize failed, falling back to original:', e);
+                  } else if (window.orbita?.rustResizeImage) {
+                    try {
+                      const resized = await window.orbita.rustResizeImage(binary, 1920, 1920, 80);
+                      if (resized && resized.length < binary.length) processBinary = resized;
+                    } catch (e) {
+                      console.warn('[Rust] Image resize failed, falling back to original:', e);
+                    }
                   }
                 }
               }
@@ -756,9 +766,11 @@ export const useChatAudioAndFiles = ({
 
         let result = await window.orbita?.uploadToCloudinary(tempPath, publicId);
         if (!result || !result.success || !result.secure_url) {
-          await new Promise((r) => setTimeout(r, 600));
-          if (!uploadMsgId || !cancelledUploadMessageIds.has(uploadMsgId)) {
+          for (let rAttempt = 0; rAttempt < 2; rAttempt++) {
+            if (uploadMsgId && cancelledUploadMessageIds.has(uploadMsgId)) break;
+            await new Promise((r) => setTimeout(r, 500 * (rAttempt + 1)));
             result = await window.orbita?.uploadToCloudinary(tempPath, publicId);
+            if (result && result.success && result.secure_url) break;
           }
         }
         unsub?.();

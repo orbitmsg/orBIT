@@ -369,6 +369,9 @@ const AlbumTile = memo(({
       style={{
         ...style,
         position: 'relative',
+        transform: 'translateZ(0)',
+        WebkitMaskImage: '-webkit-radial-gradient(white, black)',
+        isolation: 'isolate',
       }}
     >
       {posterSrc ? (
@@ -536,7 +539,7 @@ const AlbumTile = memo(({
               state={isFailed ? 'download' : (isUploading ? 'uploading' : (isDownloading ? 'downloading' : 'download'))}
               progress={isUploading ? uploadProgress : progress}
               isOwn={isOwn}
-              customBg="rgba(15, 17, 26, 0.75)"
+              customBg="rgba(0, 0, 0, 0.45)"
               onClick={() => {
                 if (isUploading) handleCancelUpload();
                 else if (isDownloading) handleCancelDownload();

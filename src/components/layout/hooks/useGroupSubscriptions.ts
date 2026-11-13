@@ -923,10 +923,13 @@ export const useGroupSubscriptions = ({
       if (isOwnerById && !post.senderId) {
         post.senderId = myUserId;
       }
+      const myNick = nickname || useAuthStore.getState().nickname;
       const isMine = Boolean(
         existingMatch?.isOutgoing ||
         (myUserId && (post.senderUserId === myUserId || post.userId === myUserId || post.senderId === myUserId)) ||
-        (myCode && (post.senderCode === myCode || post.senderId === myCode))
+        (myCode && (post.senderCode === myCode || post.senderId === myCode)) ||
+        (myNick && ((post.sender && post.sender.trim().toLowerCase() === myNick.trim().toLowerCase()) || (post.senderNickname && post.senderNickname.trim().toLowerCase() === myNick.trim().toLowerCase()))) ||
+        (isOwnerById && (!post.senderId || post.senderId === myUserId))
       );
 
       const newMsg: Message = {

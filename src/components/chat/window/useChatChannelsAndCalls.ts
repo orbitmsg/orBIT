@@ -541,7 +541,11 @@ export const useChatChannelsAndCalls = ({
                 messagesByChatId: {
                   ...state.messagesByChatId,
                   [activeChatId]: cachedPosts.map((post) => {
-                    const isMine = (myUserId && post.senderId) ? post.senderId === myUserId : (myNick ? post.sender === myNick : false);
+                    const isMine = Boolean(
+                      (myUserId && post.senderId && post.senderId === myUserId) ||
+                      (myCode && post.senderId && post.senderId === myCode) ||
+                      (myNick && post.sender && post.sender.trim().toLowerCase() === myNick.trim().toLowerCase())
+                    );
                     return {
                       id: post.id,
                       sender: post.sender,
@@ -619,7 +623,8 @@ export const useChatChannelsAndCalls = ({
                 p.id === m.id ||
                 (m.isOutgoing &&
                   ((m.senderId && p.senderId && m.senderId === p.senderId) ||
-                    (myUserId && m.senderId === myUserId && !p.senderId)) &&
+                    (myUserId && m.senderId === myUserId) ||
+                    (myNickname && p.sender && m.sender && p.sender.trim().toLowerCase() === m.sender.trim().toLowerCase())) &&
                   ((p.text && m.text === p.text) || (p.mediaUrl && m.mediaUrl === p.mediaUrl) || (p.mediaName && m.mediaName === p.mediaName)) &&
                   Math.abs(m.time - (p.time || 0)) < 60000)
             );
@@ -627,7 +632,11 @@ export const useChatChannelsAndCalls = ({
               existingIds.add(fetched.id);
               const effectiveSenderId = fetched.senderId || (isOwnerOfActiveChannel && myUserId ? myUserId : m.senderId);
               const isMine = Boolean(
-                myUserId && effectiveSenderId && effectiveSenderId === myUserId
+                m.isOutgoing ||
+                (myUserId && effectiveSenderId && effectiveSenderId === myUserId) ||
+                (myCode && effectiveSenderId && effectiveSenderId === myCode) ||
+                (myNickname && ((fetched.sender && fetched.sender.trim().toLowerCase() === myNickname.trim().toLowerCase()) || (m.sender && m.sender.trim().toLowerCase() === myNickname.trim().toLowerCase()))) ||
+                (isOwnerOfActiveChannel && (!fetched.senderId || fetched.senderId === myUserId))
               );
               return {
                 ...m,
@@ -649,7 +658,10 @@ export const useChatChannelsAndCalls = ({
             if (!existingIds.has(post.id)) {
               const effectiveSenderId = post.senderId || (isOwnerOfActiveChannel && myUserId ? myUserId : undefined);
               const isMine = Boolean(
-                myUserId && effectiveSenderId && effectiveSenderId === myUserId
+                (myUserId && effectiveSenderId && effectiveSenderId === myUserId) ||
+                (myCode && effectiveSenderId && effectiveSenderId === myCode) ||
+                (myNickname && post.sender && post.sender.trim().toLowerCase() === myNickname.trim().toLowerCase()) ||
+                (isOwnerOfActiveChannel && (!post.senderId || post.senderId === myUserId))
               );
               const safeTime = (typeof post.time === 'number' && !isNaN(post.time) && post.time > 0) ? post.time : Date.now();
               newItems.push({

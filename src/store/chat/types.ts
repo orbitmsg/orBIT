@@ -213,12 +213,15 @@ export interface UserProfile {
 export function isMessageOutgoing(
   msg: Message | null | undefined,
   myCode?: string | null,
-  _myNickname?: string | null,
+  myNickname?: string | null,
   chat?: Chat | null,
   myUserId?: string | null
 ): boolean {
   if (!msg) return false;
   if (chat && chat.id === 'notes') {
+    return true;
+  }
+  if (typeof msg.isOutgoing === 'boolean' && msg.isOutgoing) {
     return true;
   }
   if (myUserId) {
@@ -231,19 +234,37 @@ export function isMessageOutgoing(
     if ((msg as any).senderUserId && (msg as any).senderUserId === myUserId) {
       return true;
     }
-    if (chat && chat.type === 'channel') {
-      const isOwnerById = (chat.creatorId && chat.creatorId === myUserId) ||
-                          (chat.isOwner && (!chat.creatorId || chat.creatorId === myUserId));
-      if (isOwnerById) {
-        if (msg.senderId && msg.senderId !== myUserId) {
-          return false;
-        }
-        return true;
-      }
-    }
   }
   if (myCode && (msg.senderId === myCode || (msg as any).senderCode === myCode)) {
     return true;
+  }
+  if (myNickname) {
+    const cleanNick = myNickname.trim().toLowerCase();
+    if (msg.sender && msg.sender.trim().toLowerCase() === cleanNick) {
+      return true;
+    }
+    if ((msg as any).senderNickname && (msg as any).senderNickname.trim().toLowerCase() === cleanNick) {
+      return true;
+    }
+  }
+  if (chat && chat.type === 'channel') {
+    const isOwner = Boolean(
+      chat.isOwner ||
+      chat.role === 'owner' ||
+      (myUserId && chat.creatorId === myUserId) ||
+      (myNickname && chat.creatorNickname && chat.creatorNickname.trim().toLowerCase() === myNickname.trim().toLowerCase())
+    );
+    if (isOwner) {
+      if (myNickname && msg.sender && msg.sender.trim().toLowerCase() === myNickname.trim().toLowerCase()) {
+        return true;
+      }
+      if (myUserId && msg.senderId && msg.senderId === myUserId) {
+        return true;
+      }
+      if (typeof msg.isOutgoing === 'boolean') {
+        return msg.isOutgoing;
+      }
+    }
   }
   if (typeof msg.isOutgoing === 'boolean') {
     return msg.isOutgoing;

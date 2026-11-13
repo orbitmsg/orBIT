@@ -33,7 +33,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
   customIconColor,
 }) => {
   const iconSize = Math.round(size * 0.46);
-  const strokeW = size >= 48 ? 3.5 : (size >= 40 ? 3 : 2.5);
+  const strokeW = size >= 48 ? 2.2 : (size >= 40 ? 2.0 : 1.8);
   const radius = Math.max(2, size / 2 - 4);
   const circumference = 2 * Math.PI * radius;
   const clampedProgress = Math.max(0, Math.min(1, typeof progress === 'number' && isFinite(progress) ? progress : 0));
@@ -81,7 +81,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke={customBg ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.2)'}
+              stroke="rgba(255, 255, 255, 0.08)"
               strokeWidth={strokeW}
             />
             <circle
@@ -89,10 +89,10 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke={customBg ? '#ffffff' : '#ffffff'}
+              stroke="#ffffff"
               strokeWidth={strokeW}
               strokeLinecap="round"
-              strokeDasharray={isDeterminate ? circumference : `${circumference * 0.28} ${circumference * 0.72}`}
+              strokeDasharray={isDeterminate ? circumference : `${circumference * 0.22} ${circumference * 0.78}`}
               strokeDashoffset={isDeterminate ? dashOffset : 0}
               style={{
                 willChange: 'stroke-dashoffset',
@@ -110,7 +110,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               pointerEvents: 'none',
             }}
           >
-            <svg viewBox="0 0 24 24" width={Math.round(size * 0.56)} height={Math.round(size * 0.56)} fill="none" stroke="#ffffff" strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 24 24" width={Math.round(size * 0.42)} height={Math.round(size * 0.42)} fill="none" stroke="#ffffff" strokeWidth="2.0" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </div>
@@ -141,7 +141,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke={customBg ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.2)'}
+              stroke="rgba(255, 255, 255, 0.08)"
               strokeWidth={strokeW}
             />
             <circle
@@ -149,10 +149,10 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke={customBg ? '#ffffff' : '#ffffff'}
+              stroke="#ffffff"
               strokeWidth={strokeW}
               strokeLinecap="round"
-              strokeDasharray={isDeterminate ? circumference : `${circumference * 0.28} ${circumference * 0.72}`}
+              strokeDasharray={isDeterminate ? circumference : `${circumference * 0.22} ${circumference * 0.78}`}
               strokeDashoffset={isDeterminate ? dashOffset : 0}
               style={{
                 willChange: 'stroke-dashoffset',
@@ -170,7 +170,7 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
               pointerEvents: 'none',
             }}
           >
-            <svg viewBox="0 0 24 24" width={Math.round(size * 0.56)} height={Math.round(size * 0.56)} fill="none" stroke="#ffffff" strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 24 24" width={Math.round(size * 0.42)} height={Math.round(size * 0.42)} fill="none" stroke="#ffffff" strokeWidth="2.0" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </div>
@@ -260,8 +260,8 @@ export const AudioCoverWithPlay: React.FC<AudioCoverWithPlayProps> = ({
         overflow: 'hidden',
         position: 'relative',
         flexShrink: 0,
-        backgroundColor: cover ? 'transparent' : (customBg || (state === 'done' ? 'rgba(0, 184, 148, 0.15)' : ((state === 'uploading' || state === 'downloading') ? 'rgba(15, 17, 26, 0.78)' : (isOwn ? 'rgba(255, 255, 255, 0.2)' : 'rgba(45, 48, 62, 0.9)')))),
-        backdropFilter: (state === 'uploading' || state === 'downloading') ? 'blur(8px)' : undefined,
+        backgroundColor: cover ? 'transparent' : (customBg || (state === 'done' ? 'rgba(0, 184, 148, 0.15)' : ((state === 'uploading' || state === 'downloading') ? 'rgba(0, 0, 0, 0.45)' : (isOwn ? 'rgba(255, 255, 255, 0.2)' : 'rgba(45, 48, 62, 0.9)')))),
+        backdropFilter: (state === 'uploading' || state === 'downloading') ? 'blur(6px)' : undefined,
         border: 'none',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
         cursor: 'pointer',

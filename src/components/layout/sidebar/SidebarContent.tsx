@@ -6,7 +6,9 @@ import {
   RotateCw,
   WifiOff,
   ChevronUp,
+  ChevronRight,
   Users,
+  Megaphone,
   UserPlus,
 } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
@@ -69,7 +71,6 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   setIsViewingArchive,
   archivedChats,
   searchQuery,
-  setSearchQuery,
   setShowFriendRequestsModal,
   incomingFriendRequests,
   isNetworkOnline,
@@ -90,8 +91,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   handleSelectFoundUser,
   handleSelectFoundSupport,
   isLightTheme,
-  onOpenCreateGroup: _onOpenCreateGroup,
-  onOpenCreateChannel: _onOpenCreateChannel,
+  onOpenCreateGroup,
+  onOpenCreateChannel,
   onOpenAddFriend,
   onOpenSettings,
   onOpenProfile,
@@ -114,10 +115,13 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   const [isDeafened, setIsDeafened] = React.useState(false);
   const isInChatSearch = Boolean(inChatSearch?.isOpen);
 
+  const surfaceTint = 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))';
+  const surfaceHoverTint = 'var(--surface-hover, rgba(128, 128, 128, 0.14))';
+
   if (isInChatSearch) {
     return (
       <div
-        className="flex flex-col h-full overflow-hidden"
+        className="flex flex-col h-full rounded-[18px] overflow-hidden"
         style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}
       >
         <InChatSidebarSearch
@@ -130,35 +134,12 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden select-none" style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}>
+    <div className={isMobileView ? 'flex flex-col h-full gap-2 p-2' : 'flex flex-col h-full gap-2'}>
       {isMobileView && !activeChatId && (isCallMinimized ? <CallMiniPlayer /> : <GlobalAudioPlayer />)}
-
-      <div className="h-[48px] px-2.5 flex items-center border-b border-[var(--border-color,#1f2023)] shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
-        <div className="relative w-full flex items-center">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('discord.findOrStartConversation', 'Найти или начать беседу')}
-            aria-label={t('discord.findOrStartConversation', 'Найти или начать беседу')}
-            className="w-full h-7 px-2 rounded-[4px] bg-[var(--surface-container,#1e1f22)] text-[var(--text-main,#dbdee1)] placeholder-[var(--text-dim,#949ba4)] text-[13px] border-none outline-none transition-colors"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              aria-label={t('common.clear', 'Очистить')}
-              className="absolute right-1.5 text-[var(--text-dim)] hover:text-[var(--text-main)] bg-transparent border-none outline-none p-0 cursor-pointer"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
-      </div>
 
       {isViewingArchive ? (
         <div
-          className="px-3 py-2 select-none shrink-0 border-b border-[var(--border-color,#1f2023)]"
+          className="px-3 py-2 select-none shrink-0 rounded-[18px] overflow-hidden"
           style={{
             backgroundColor: 'var(--chat-list-bg, #2b2d31)',
             display: 'flex',
@@ -170,20 +151,20 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
             type="button"
             onClick={() => setIsViewingArchive(false)}
             aria-label={t('common.back', 'Назад')}
-            className="flex items-center justify-center cursor-pointer transition-all active:scale-95 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-hover)] rounded-full shrink-0"
+            className="flex items-center justify-center cursor-pointer transition-all active:scale-95 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-container)] rounded-full shrink-0"
             style={{
-              width: '32px',
-              height: '32px',
+              width: '36px',
+              height: '36px',
               border: 'none',
               background: 'transparent',
               outline: 'none',
               padding: 0,
             }}
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft size={20} />
           </button>
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <span className="font-semibold text-[15px] text-[var(--text-heading,#ffffff)]">
+            <span className="font-bold text-[16px] text-[var(--text-main)]">
               {t('common.archive', 'Архив')}
             </span>
             <span className="text-xs text-[var(--text-dim)]">
@@ -191,61 +172,107 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
             </span>
           </div>
         </div>
-      ) : !searchQuery.trim() ? (
-        <div className="px-2 pt-2 pb-0.5 shrink-0 flex flex-col gap-0.5">
-          <button
-            type="button"
-            onClick={() => {
-              useChatStore.getState().setActiveChat(null);
-            }}
-            aria-label={t('discord.friends', 'Друзья')}
-            className={`w-full h-[42px] px-3 rounded-[4px] flex items-center justify-between cursor-pointer border-none outline-none transition-colors ${
-              !activeChatId && !isViewingArchive
-                ? 'bg-[var(--surface-hover,#35373c)] text-[var(--text-heading,#ffffff)] font-medium'
-                : 'text-[var(--text-dim,#949ba4)] hover:bg-[var(--surface-hover,#35373c)]/60 hover:text-[var(--text-main,#dbdee1)] bg-transparent'
-            }`}
-          >
-            <div className="flex items-center gap-3.5 min-w-0">
-              <Users size={20} className="shrink-0" />
-              <span className="text-[15px] font-medium truncate">{t('discord.friends', 'Друзья')}</span>
-            </div>
-            {incomingFriendRequests.length > 0 && (
+      ) : (
+        <div
+          className="shrink-0 rounded-[18px] overflow-hidden p-2 flex flex-col gap-1.5 select-none"
+          style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}
+        >
+          {[
+            {
+              label: t('sidebar.find_or_create_group', 'Найти или создать группу'),
+              icon: <Users size={15} />,
+              onClick: onOpenCreateGroup,
+            },
+            {
+              label: t('sidebar.find_or_create_channel', 'Найти или создать канал'),
+              icon: <Megaphone size={15} />,
+              onClick: onOpenCreateChannel,
+            },
+            {
+              label: t('sidebar.find_friend', 'Найти друга'),
+              icon: <UserPlus size={15} />,
+              onClick: onOpenAddFriend,
+            },
+          ].map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => item.onClick?.()}
+              aria-label={item.label}
+              className="group w-full flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-[14px] outline-none cursor-pointer transition-colors text-left"
+              style={{
+                borderRadius: '14px',
+                border: 'none',
+                backgroundColor: surfaceTint,
+                color: 'var(--text-main)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = surfaceHoverTint;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = surfaceTint;
+              }}
+            >
               <span
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowFriendRequestsModal(true);
-                }}
-                className="px-1.5 py-0.2 rounded-full font-bold text-[11px]"
+                className="flex items-center justify-center shrink-0 transition-transform duration-150 group-hover:scale-105"
                 style={{
-                  backgroundColor: '#e11d48',
-                  color: '#ffffff',
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '10px',
+                  backgroundColor: 'color-mix(in srgb, var(--accent-color, #5865F2) 16%, transparent)',
+                  color: 'var(--accent-text, var(--accent-color, #5865F2))',
                 }}
               >
-                {incomingFriendRequests.length}
+                {item.icon}
               </span>
-            )}
-          </button>
-
-          <div className="flex items-center justify-between px-2 pt-3 pb-1 text-[11px] font-bold text-[var(--text-dim,#949ba4)] uppercase tracking-wider select-none">
-            <span className="truncate">{t('discord.directMessages', 'Личные сообщения')}</span>
-            <button
-              type="button"
-              onClick={onOpenAddFriend}
-              aria-label={t('discord.addFriend', 'Добавить в друзья')}
-              className="text-[var(--text-dim,#949ba4)] hover:text-[var(--text-main,#dbdee1)] bg-transparent border-none outline-none cursor-pointer p-0.5 transition-colors"
-            >
-              <UserPlus size={15} />
+              <span className="text-[12.5px] font-semibold truncate flex-1 min-w-0">
+                {item.label}
+              </span>
+              <ChevronRight size={14} className="shrink-0 text-[var(--text-dim)] opacity-45 group-hover:opacity-90 transition-opacity" />
             </button>
-          </div>
+          ))}
         </div>
-      ) : null}
+      )}
+
+      {incomingFriendRequests.length > 0 && (
+        <div
+          className="shrink-0 rounded-[18px] overflow-hidden p-2"
+          style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}
+        >
+          <button
+            type="button"
+            onClick={() => setShowFriendRequestsModal(true)}
+            className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl hover:opacity-90 transition-opacity text-xs font-medium cursor-pointer shadow-none select-none"
+            style={{
+              borderRadius: '14px',
+              border: 'none',
+              backgroundColor: surfaceTint,
+              color: 'var(--text-main)',
+            }}
+          >
+            <span className="font-semibold text-xs text-[var(--text-main)]">
+              {t('friendRequests.pending_banner', 'Запросы на переписку')}
+            </span>
+            <span
+              className="px-2 py-0.5 rounded-full font-bold text-[11px]"
+              style={{
+                borderRadius: '9999px',
+                backgroundColor: 'var(--accent-color, #7C3AED)',
+                color: 'var(--accent-on-color, #ffffff)',
+              }}
+            >
+              {incomingFriendRequests.length}
+            </span>
+          </button>
+        </div>
+      )}
 
       {isMobileView && !activeChatId && (
         <ActiveCallBar />
       )}
 
       <div
-        className="relative flex-1 min-h-0 overflow-hidden flex flex-col"
+        className="relative flex-1 min-h-0 overflow-hidden flex flex-col rounded-[18px]"
         style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}
         onMouseEnter={showChatScrollbar}
         onMouseLeave={handleChatListMouseLeave}
@@ -552,11 +579,12 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                         onClick={() => handleSelectFoundUser(user)}
                         className="flex items-center gap-3 cursor-pointer transition-colors rounded-2xl"
                         style={{
-                          borderRadius: '14px',
+                          borderRadius: '16px',
                           border: 'none',
-                          margin: '2px 8px',
+                          margin: '3px 8px',
                           width: 'calc(100% - 16px)',
-                          padding: '8px 10px',
+                          padding: '10px 12px',
+                          minHeight: 60,
                           boxSizing: 'border-box',
                           backgroundColor: 'transparent',
                         }}
@@ -712,115 +740,166 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
         </button>
       </div>
 
-      <div className="shrink-0 w-full h-[52px] z-20 select-none pointer-events-auto" style={{ backgroundColor: 'var(--surface-container-strong, #232428)' }}>
+      <div className="shrink-0 w-full z-20 select-none pointer-events-auto rounded-[18px] overflow-hidden">
         <style>{`
-          .orbita-dock-panel .dock-profile-btn:hover {
-            background-color: rgba(255, 255, 255, 0.07);
-          }
+          .orbita-dock-panel .dock-profile-btn:hover,
           .orbita-dock-panel .dock-btn:hover {
-            background-color: rgba(255, 255, 255, 0.08);
+            background-color: color-mix(in srgb, var(--accent-on-color, #ffffff) 14%, transparent);
           }
-          .orbita-dock-panel .dock-btn:hover svg {
-            color: var(--text-main, #dbdee1);
+          .orbita-dock-panel .dock-profile-btn:active,
+          .orbita-dock-panel .dock-btn:active {
+            background-color: color-mix(in srgb, var(--accent-on-color, #ffffff) 22%, transparent);
+          }
+          .orbita-dock-panel .pdi-gear-wrap,
+          .orbita-dock-panel .pdi-mic-unmuted,
+          .orbita-dock-panel .pdi-hp-unmuted {
+            color: color-mix(in srgb, var(--accent-on-color, #ffffff) 82%, transparent);
+          }
+          .orbita-dock-panel .dock-btn:hover .pdi-gear-wrap,
+          .orbita-dock-panel .dock-btn:hover .pdi-mic-unmuted,
+          .orbita-dock-panel .dock-btn:hover .pdi-hp-unmuted {
+            color: var(--accent-on-color, #ffffff);
           }
         `}</style>
         <div
-          className="orbita-dock-panel flex items-center justify-between px-2 h-full"
+          className="orbita-dock-panel flex items-center justify-between px-2.5 py-2"
           style={{
-            backgroundColor: 'var(--surface-container-strong, #232428)',
+            background: 'var(--accent-gradient, linear-gradient(135deg, var(--accent-color, #5865F2) 0%, var(--accent-dark, #4752c4) 100%))',
+            borderRadius: '18px',
             border: 'none',
-            color: 'var(--text-main, #dbdee1)',
+            color: 'var(--accent-on-color, #ffffff)',
           }}
         >
-          <button
-            type="button"
-            onClick={() => {
-              if (onOpenProfile) {
-                onOpenProfile();
-              } else {
-                useChatStore.getState().openSettings('profile');
-              }
-            }}
-            aria-label={t('mainMenu.my_profile', 'Мой профиль')}
-            className="dock-profile-btn flex items-center gap-2 min-w-0 flex-1 rounded-[4px] transition-colors bg-transparent border-none outline-none cursor-pointer text-left p-1"
-          >
-            <div className="relative shrink-0">
-              <Avatar
-                src={avatarUrl}
-                alt={nickname || 'Saizzi'}
-                className="w-8 h-8 rounded-full"
-              />
-              <OnlineIndicator
-                online={isServerConnected}
-                showOffline={true}
-                size="xs"
-                ringColor="var(--surface-container-strong, #232428)"
-                ariaLabel={isServerConnected ? t('discord.online', 'В сети') : t('common.network_connecting_title', 'Соединение...')}
-              />
-            </div>
-            <div className="flex flex-col min-w-0 flex-1 leading-none">
-              <span className="text-[14px] font-semibold text-[var(--text-heading,#ffffff)] truncate leading-tight">
-                {nickname || 'Saizzi'}
-              </span>
-              <span className="text-[11px] text-[var(--text-dim,#949ba4)] truncate mt-0.5">
-                {isServerConnected ? t('discord.online', 'В сети') : t('common.network_connecting_title', 'Соединение...')}
-              </span>
-            </div>
-          </button>
-
-          <div className="flex items-center gap-0.5 shrink-0">
             <button
               type="button"
-              onClick={(e) => {
-                e.currentTarget.blur();
-                const next = !isMicMuted;
-                setIsMicMuted(next);
-                if (!next && isDeafened) {
-                  setIsDeafened(false);
-                }
-                callSoundService.play(next ? 'mute' : 'unmute');
-              }}
-              aria-label={isMicMuted ? t('discord.unmuteMicrophone', 'Включить микрофон') : t('discord.muteMicrophone', 'Отключить микрофон')}
-              className="dock-btn w-8 h-8 flex items-center justify-center rounded-[4px] bg-transparent text-[var(--text-dim,#949ba4)] transition-colors border-none outline-none cursor-pointer"
-            >
-              <MicToggleIcon muted={isMicMuted} />
-            </button>
-
-            <button
-              type="button"
-              onClick={(e) => {
-                e.currentTarget.blur();
-                const next = !isDeafened;
-                setIsDeafened(next);
-                if (next) {
-                  setIsMicMuted(true);
+              onClick={() => {
+                if (onOpenProfile) {
+                  onOpenProfile();
                 } else {
-                  setIsMicMuted(false);
+                  useChatStore.getState().openSettings('profile');
                 }
-                callSoundService.play(next ? 'mute' : 'unmute');
               }}
-              aria-label={isDeafened ? t('discord.undeafenAudio', 'Включить звук') : t('discord.deafenAudio', 'Заглушить звук')}
-              className="dock-btn w-8 h-8 flex items-center justify-center rounded-[4px] bg-transparent text-[var(--text-dim,#949ba4)] transition-colors border-none outline-none cursor-pointer"
+              aria-label={t('mainMenu.my_profile', 'Мой профиль')}
+              className="dock-profile-btn flex items-center gap-2.5 min-w-0 flex-1 rounded-xl transition-colors bg-transparent border-none outline-none cursor-pointer text-left p-1"
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                borderRadius: '12px',
+                outline: 'none',
+                boxShadow: 'none',
+                border: 'none',
+                color: 'var(--accent-on-color, #ffffff)',
+              }}
             >
-              <HeadphonesToggleIcon muted={isDeafened} />
+              <div className="relative shrink-0">
+                <Avatar
+                  src={avatarUrl}
+                  alt={nickname || 'Saizzi'}
+                  className="w-8 h-8 rounded-full"
+                />
+                <OnlineIndicator
+                  online={isServerConnected}
+                  showOffline={true}
+                  size="xs"
+                  ringColor="var(--accent-dark, var(--accent-color, #5865F2))"
+                  ariaLabel={isServerConnected ? t('discord.online', 'В сети') : t('common.network_connecting_title', 'Соединение...')}
+                />
+              </div>
+              <div className="flex flex-col min-w-0 flex-1 leading-none">
+                <span
+                  className="text-[13.5px] font-bold truncate leading-tight"
+                  style={{ color: 'var(--accent-on-color, #ffffff)' }}
+                >
+                  {nickname || 'Saizzi'}
+                </span>
+                <span
+                  className="text-[11px] truncate mt-0.5"
+                  style={{ color: 'color-mix(in srgb, var(--accent-on-color, #ffffff) 80%, transparent)' }}
+                >
+                  {isServerConnected ? t('discord.online', 'В сети') : t('common.network_connecting_title', 'Соединение...')}
+                </span>
+              </div>
             </button>
 
-            <button
-              type="button"
-              onClick={(e) => {
-                e.currentTarget.blur();
-                if (onOpenSettings) {
-                  onOpenSettings();
-                } else {
-                  useChatStore.getState().openSettings('main');
-                }
-              }}
-              aria-label={t('discord.userSettings', 'Настройки пользователя')}
-              className="dock-btn w-8 h-8 flex items-center justify-center rounded-[4px] bg-transparent text-[var(--text-dim,#949ba4)] transition-colors border-none outline-none cursor-pointer"
-            >
-              <GearIcon />
-            </button>
-          </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.currentTarget.blur();
+                  const next = !isMicMuted;
+                  setIsMicMuted(next);
+                  if (!next && isDeafened) {
+                    setIsDeafened(false);
+                  }
+                  callSoundService.play(next ? 'mute' : 'unmute');
+                }}
+                aria-label={isMicMuted ? t('discord.unmuteMicrophone', 'Включить микрофон') : t('discord.muteMicrophone', 'Отключить микрофон')}
+                className="dock-btn flex items-center justify-center m-0 bg-transparent transition-colors duration-150 border-none outline-none select-none cursor-pointer"
+                style={{
+                  WebkitTapHighlightColor: 'transparent',
+                  padding: '5px',
+                  borderRadius: '5px',
+                  outline: 'none',
+                  boxShadow: 'none',
+                  border: 'none',
+                  color: 'var(--accent-on-color, #ffffff)',
+                }}
+              >
+                <MicToggleIcon muted={isMicMuted} />
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.currentTarget.blur();
+                  const next = !isDeafened;
+                  setIsDeafened(next);
+                  if (next) {
+                    setIsMicMuted(true);
+                  } else {
+                    setIsMicMuted(false);
+                  }
+                  callSoundService.play(next ? 'mute' : 'unmute');
+                }}
+                aria-label={isDeafened ? t('discord.undeafenAudio', 'Включить звук') : t('discord.deafenAudio', 'Заглушить звук')}
+                className="dock-btn flex items-center justify-center m-0 bg-transparent transition-colors duration-150 border-none outline-none select-none cursor-pointer"
+                style={{
+                  WebkitTapHighlightColor: 'transparent',
+                  padding: '5px',
+                  borderRadius: '5px',
+                  outline: 'none',
+                  boxShadow: 'none',
+                  border: 'none',
+                  color: 'var(--accent-on-color, #ffffff)',
+                }}
+              >
+                <HeadphonesToggleIcon muted={isDeafened} />
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.currentTarget.blur();
+                  if (onOpenSettings) {
+                    onOpenSettings();
+                  } else {
+                    useChatStore.getState().openSettings('main');
+                  }
+                }}
+                aria-label={t('discord.userSettings', 'Настройки пользователя')}
+                className="dock-btn flex items-center justify-center m-0 bg-transparent transition-colors duration-150 border-none outline-none select-none cursor-pointer"
+                style={{
+                  WebkitTapHighlightColor: 'transparent',
+                  padding: '5px',
+                  borderRadius: '5px',
+                  outline: 'none',
+                  boxShadow: 'none',
+                  border: 'none',
+                  color: 'var(--accent-on-color, #ffffff)',
+                }}
+              >
+                <GearIcon />
+              </button>
+            </div>
         </div>
       </div>
     </div>

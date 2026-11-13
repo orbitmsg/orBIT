@@ -411,7 +411,7 @@ export const useChatMessageSend = ({
                 const currentMsgs = state.messagesByChatId[targetChannelId] || [];
                 const updated = currentMsgs.map((m) =>
                   m.id === optimisticId || m.id === post.id
-                    ? { ...m, id: post.id, time: validPostTime, status: 'read' as const, senderId: m.senderId || effectiveSenderUuid }
+                    ? { ...m, id: post.id, time: validPostTime, status: 'read' as const, senderId: m.senderId || effectiveSenderUuid, isOutgoing: true }
                     : m
                 );
                 const saved = updated.find((m) => m.id === post.id);
@@ -461,7 +461,7 @@ export const useChatMessageSend = ({
             const currentMsgs = state.messagesByChatId[targetChannelId] || [];
             const updated = currentMsgs.map((m) =>
               m.id === optimisticId || m.id === post.id
-                ? { ...m, id: post.id, time: validPostTime, status: 'read' as const, senderId: m.senderId || effectiveSenderUuid }
+                ? { ...m, id: post.id, time: validPostTime, status: 'read' as const, senderId: m.senderId || effectiveSenderUuid, isOutgoing: true }
                 : m
             );
             const saved = updated.find((m) => m.id === post.id);

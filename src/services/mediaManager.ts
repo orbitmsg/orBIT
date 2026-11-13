@@ -121,7 +121,7 @@ class MediaManager {
   private pendingRequests = new Map<string, Promise<DecryptedMedia>>();
   private downloadQueue: QueuedItem[] = [];
   private activeDownloads = 0;
-  private maxConcurrentDownloads = 3;
+  private maxConcurrentDownloads = 6;
   private processing = false;
   private fetchAbortControllers = new Map<string, AbortController>();
   private progressListeners = new Map<string, Set<(loaded: number, total: number) => void>>();
@@ -311,7 +311,8 @@ class MediaManager {
     while (this.downloadQueue.length > 0 && this.activeDownloads < this.maxConcurrentDownloads) {
       const item = this.downloadQueue.shift()!;
       this.activeDownloads++;
-      this.processItem(item).finally(() => {
+      const timeoutPromise = new Promise((_, rej) => setTimeout(() => rej(new Error('Process item timeout')), 60000));
+      Promise.race([this.processItem(item), timeoutPromise]).finally(() => {
         this.activeDownloads--;
         this.processing = false;
         this.processQueue();
@@ -596,7 +597,44 @@ class MediaManager {
       }
 
       console.log('[MediaManager] Disk cache MISS. Fetching from network:', url);
-      let response = await fetch(url, { signal: this.getAbortSignal(cacheKey) });
+      const mainSignal = this.getAbortSignal(cacheKey);
+      let response: Response | null = null;
+      let lastFetchErr: any = null;
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (mainSignal?.aborted) throw new Error('Aborted');
+        try {
+          const timeoutCtrl = new AbortController();
+          const timer = setTimeout(() => timeoutCtrl.abort(), 25000);
+          const abortHandler = () => timeoutCtrl.abort();
+          mainSignal?.addEventListener('abort', abortHandler, { once: true });
+          try {
+            const res = await fetch(url, { signal: timeoutCtrl.signal });
+            clearTimeout(timer);
+            mainSignal?.removeEventListener('abort', abortHandler);
+            response = res;
+            if (res.ok || res.status === 404) break;
+          } catch (fetchErr) {
+            clearTimeout(timer);
+            mainSignal?.removeEventListener('abort', abortHandler);
+            throw fetchErr;
+          }
+        } catch (err) {
+          lastFetchErr = err;
+          if (mainSignal?.aborted) throw err;
+          if (attempt < 2) {
+            await new Promise((r) => setTimeout(r, 450 * (attempt + 1)));
+          }
+        }
+      }
+
+      if (!response && lastFetchErr) {
+        throw lastFetchErr;
+      }
+      if (!response) {
+        throw new Error('Network fetch failed');
+      }
+
       if (!response.ok && response.status === 404) {
         const candidates = [];
         const strippedExt = url.replace(/\.[a-zA-Z0-9]+$/, '');

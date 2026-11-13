@@ -2363,7 +2363,7 @@ function registerStorageIpcHandlers() {
 }
 
 const activeUploadRequests = new Map<string, http.ClientRequest>();
-const cloudinaryHttpsAgent = new https.Agent({ keepAlive: false });
+const cloudinaryHttpsAgent = new https.Agent({ keepAlive: true, keepAliveMsecs: 15000, maxSockets: 8 });
 
 function uploadToCloudinaryWithProgress(
   filePath: string,
@@ -2450,6 +2450,12 @@ function uploadToCloudinaryWithProgress(
         onProgress(fileLength, fileLength);
         resolve({ statusCode: res.statusCode || 200, body: respBody });
       });
+    });
+
+    req.setTimeout(60000, () => {
+      cleanup();
+      try { req.destroy(new Error('Upload timeout')); } catch {}
+      reject(new Error('Upload timeout'));
     });
 
     if (publicId) activeUploadRequests.set(publicId, req);
@@ -2548,7 +2554,7 @@ async function cloudinaryUploadWithProgress(event: Electron.IpcMainInvokeEvent, 
   }
 
   let lastErr: any = null;
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const { statusCode, body } = await uploadToCloudinaryWithProgress(
         filePath,
@@ -2583,8 +2589,8 @@ async function cloudinaryUploadWithProgress(event: Electron.IpcMainInvokeEvent, 
     } catch (err: any) {
       lastErr = err?.message || String(err);
     }
-    if (attempt === 0) {
-      await new Promise((r) => setTimeout(r, 600));
+    if (attempt < 2) {
+      await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
     }
   }
   return { success: false, error: String(lastErr) };

@@ -110,7 +110,7 @@ export const ChatListItem = React.memo(({
       className="group relative cursor-pointer"
       style={{
         borderRadius: '16px',
-        margin: '3.5px 8px',
+        margin: '2.5px 8px',
         width: 'calc(100% - 16px)',
         backgroundColor: rowBg,
         border: 'none',
@@ -195,7 +195,7 @@ export const ChatListItem = React.memo(({
                 />
               )}
               <span
-                className="text-[14px] font-bold truncate whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
+                className="text-[13.5px] font-semibold truncate whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
                 style={{
                   color: isActive ? 'var(--text-heading, var(--text-main))' : 'var(--text-main)',
                   fontFamily: 'inherit'
@@ -373,7 +373,7 @@ export const ArchiveListItem = React.memo(({
       className="group relative cursor-pointer"
       style={{
         borderRadius: '16px',
-        margin: '3.5px 8px',
+        margin: '2.5px 8px',
         width: 'calc(100% - 16px)',
         backgroundColor: isHovered
           ? 'var(--surface-hover, rgba(128, 128, 128, 0.08))'

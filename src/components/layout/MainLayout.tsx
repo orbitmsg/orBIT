@@ -41,6 +41,7 @@ import { ChatListItem } from './sidebar/ChatListItems';
 import { SidebarFolderRail } from './sidebar/SidebarFolderRail';
 import { ChatContextMenuOverlay } from './sidebar/ChatContextMenuOverlay';
 import { SidebarContent } from './sidebar/SidebarContent';
+import { UserDockPanel } from './sidebar/UserDockPanel';
 import { useGroupSubscriptions } from './hooks/useGroupSubscriptions';
 import { usePrivateChatSubscriptions } from './hooks/usePrivateChatSubscriptions';
 import { useHandshakeListeners } from './hooks/useHandshakeListeners';
@@ -1177,58 +1178,71 @@ export const MainLayout = () => {
         boxSizing: 'border-box',
       }}
     >
-      {!isMobileView && (
-        <SidebarFolderRail
-          activeFolderId={activeFolderId}
-          setActiveFolderId={setActiveFolderId}
-          currentView={currentView}
-          setCurrentView={setCurrentView}
-          folders={folders}
-          getFolderUnreadCount={getFolderUnreadCount}
-          isLightTheme={isLightTheme}
-        />
-      )}
-
       {(!isMobileView || !activeChatId) && (
         <ResizableSidebar
-          defaultWidth={260}
-          minWidth={SIDEBAR_MIN_WIDTH}
-          maxWidth={maxSidebarWidth}
+          defaultWidth={isMobileView ? undefined : 332}
+          minWidth={isMobileView ? 0 : SIDEBAR_MIN_WIDTH + 72}
+          maxWidth={isMobileView ? undefined : (maxSidebarWidth ? maxSidebarWidth + 72 : undefined)}
           className="md:flex-none"
         >
-          <SidebarContent
-            isMobileView={isMobileView}
-            isViewingArchive={isViewingArchive}
-            setIsViewingArchive={setIsViewingArchive}
-            archivedChats={archivedChats}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            setShowFriendRequestsModal={setShowFriendRequestsModal}
-            incomingFriendRequests={incomingFriendRequests}
-            isNetworkOnline={isNetworkOnline}
-            handleBannerReconnect={handleBannerReconnect}
-            chatListScrollRef={chatListScrollRef}
-            handleChatListScroll={handleChatListScroll}
-            showChatScrollbar={showChatScrollbar}
-            handleChatListMouseLeave={handleChatListMouseLeave}
-            chatTrackRef={chatTrackRef}
-            chatThumbRef={chatThumbRef}
-            handleScrollbarTrackMouseDown={handleScrollbarTrackMouseDown}
-            handleScrollbarThumbMouseDown={handleScrollbarThumbMouseDown}
-            visibleChats={visibleChats}
-            renderChat={renderChat}
-            searchChannelResult={searchChannelResult}
-            handleSelectFoundChannel={handleSelectFoundChannel}
-            globalFoundUsers={globalFoundUsers}
-            handleSelectFoundUser={handleSelectFoundUser}
-            handleSelectFoundSupport={handleSelectFoundSupport}
-            isLightTheme={isLightTheme}
-            onOpenCreateGroup={() => setConnectModalConfig({ isOpen: true, type: 'group' })}
-            onOpenCreateChannel={() => setConnectModalConfig({ isOpen: true, type: 'channel' })}
-            onOpenAddFriend={() => setConnectModalConfig({ isOpen: true, type: 'friend' })}
-            onOpenSettings={handleOpenSettings}
-            onOpenProfile={() => setIsMyProfileOpen(true)}
-          />
+          <div className="flex flex-col h-full w-full select-none" style={{ gap: '8px' }}>
+            <div className="flex flex-1 min-h-0 w-full" style={{ gap: '8px' }}>
+              {!isMobileView && (
+                <SidebarFolderRail
+                  activeFolderId={activeFolderId}
+                  setActiveFolderId={setActiveFolderId}
+                  currentView={currentView}
+                  setCurrentView={setCurrentView}
+                  folders={folders}
+                  getFolderUnreadCount={getFolderUnreadCount}
+                  isLightTheme={isLightTheme}
+                />
+              )}
+              <div className="flex-1 min-w-0 h-full">
+                <SidebarContent
+                  isMobileView={isMobileView}
+                  hideDock={!isMobileView}
+                  isViewingArchive={isViewingArchive}
+                  setIsViewingArchive={setIsViewingArchive}
+                  archivedChats={archivedChats}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  setShowFriendRequestsModal={setShowFriendRequestsModal}
+                  incomingFriendRequests={incomingFriendRequests}
+                  isNetworkOnline={isNetworkOnline}
+                  handleBannerReconnect={handleBannerReconnect}
+                  chatListScrollRef={chatListScrollRef}
+                  handleChatListScroll={handleChatListScroll}
+                  showChatScrollbar={showChatScrollbar}
+                  handleChatListMouseLeave={handleChatListMouseLeave}
+                  chatTrackRef={chatTrackRef}
+                  chatThumbRef={chatThumbRef}
+                  handleScrollbarTrackMouseDown={handleScrollbarTrackMouseDown}
+                  handleScrollbarThumbMouseDown={handleScrollbarThumbMouseDown}
+                  visibleChats={visibleChats}
+                  renderChat={renderChat}
+                  searchChannelResult={searchChannelResult}
+                  handleSelectFoundChannel={handleSelectFoundChannel}
+                  globalFoundUsers={globalFoundUsers}
+                  handleSelectFoundUser={handleSelectFoundUser}
+                  handleSelectFoundSupport={handleSelectFoundSupport}
+                  isLightTheme={isLightTheme}
+                  onOpenCreateGroup={() => setConnectModalConfig({ isOpen: true, type: 'group' })}
+                  onOpenCreateChannel={() => setConnectModalConfig({ isOpen: true, type: 'channel' })}
+                  onOpenAddFriend={() => setConnectModalConfig({ isOpen: true, type: 'friend' })}
+                  onOpenSettings={handleOpenSettings}
+                  onOpenProfile={() => setIsMyProfileOpen(true)}
+                />
+              </div>
+            </div>
+
+            {!isMobileView && (
+              <UserDockPanel
+                onOpenProfile={() => setIsMyProfileOpen(true)}
+                onOpenSettings={handleOpenSettings}
+              />
+            )}
+          </div>
         </ResizableSidebar>
       )}
 

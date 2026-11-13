@@ -169,9 +169,11 @@ export const ExploreLobbiesView: React.FC = () => {
             <h2 className="text-lg font-bold text-white tracking-tight">
               {t('lobby.recommended')}
             </h2>
-            <span className="text-[12px] text-[var(--text-dim)]">
-              {lobbies.length} {t('lobby.members_count')}
-            </span>
+            {lobbies.length > 0 && (
+              <span className="text-[12px] text-[var(--text-dim)]">
+                {lobbies.length} {t('lobby.lobbies_count')}
+              </span>
+            )}
           </div>
 
           {isLoading ? (
@@ -185,12 +187,15 @@ export const ExploreLobbiesView: React.FC = () => {
               ))}
             </div>
           ) : lobbies.length === 0 ? (
-            <div className="w-full py-16 flex flex-col items-center justify-center text-center gap-3">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center bg-white/5 text-[var(--text-dim)]">
+            <div className="w-full py-20 flex flex-col items-center justify-center text-center gap-2">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-white/5 text-[var(--text-dim)] mb-2">
                 <Globe2 size={32} />
               </div>
-              <div className="text-[15px] font-medium text-[var(--text-dim)]">
-                {t('lobby.no_lobbies_found')}
+              <div className="text-[16px] font-semibold text-white">
+                {t('lobby.no_lobbies_title')}
+              </div>
+              <div className="text-[13px] text-[var(--text-dim)] max-w-sm">
+                {t('lobby.no_lobbies_desc')}
               </div>
             </div>
           ) : (
@@ -263,7 +268,7 @@ export const ExploreLobbiesView: React.FC = () => {
                             backgroundColor: isMember ? 'rgba(255,255,255,0.1)' : '#5865F2',
                           }}
                         >
-                          {isMember ? 'Открыть' : t('lobby.enter_lobby')}
+                          {isMember ? t('lobby.open_lobby') : t('lobby.enter_lobby')}
                         </button>
                       </div>
                     </div>

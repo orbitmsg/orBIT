@@ -21,7 +21,7 @@ import uk from './locales/uk.json';
 import zh from './locales/zh.json';
 import zhHant from './locales/zh-Hant.json';
 
-const resources = {
+const rawResources: Record<string, any> = {
   be,
   de,
   en,
@@ -41,6 +41,21 @@ const resources = {
   zh,
   'zh-Hant': zhHant,
 };
+
+const resources: Record<string, any> = {};
+for (const lang of Object.keys(rawResources)) {
+  const item = { ...rawResources[lang] };
+  if (item && item.translation) {
+    const translationCopy = { ...item.translation };
+    for (const key of Object.keys(item)) {
+      if (key !== 'translation' && !(key in translationCopy)) {
+        translationCopy[key] = item[key];
+      }
+    }
+    item.translation = translationCopy;
+  }
+  resources[lang] = item;
+}
 
 let initialLang: string | undefined = undefined;
 if (typeof window !== 'undefined') {

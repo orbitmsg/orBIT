@@ -1251,7 +1251,7 @@ export const MainLayout = () => {
             style={{
               gap: 0,
               backgroundColor: 'var(--bg-primary)',
-              borderRadius: isMobileView ? 0 : '5px',
+              borderRadius: isMobileView ? 0 : '18px',
             }}
           >
             <main

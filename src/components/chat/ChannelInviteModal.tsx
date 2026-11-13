@@ -198,7 +198,7 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
           style={{
             maxWidth: '400px',
             backgroundColor: 'var(--settings-bg, var(--bg-primary, #0f0f13))',
-            borderRadius: '5px',
+            borderRadius: '16px',
             boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
             border: 'none',
             outline: 'none',
@@ -283,11 +283,10 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
                   type="button"
                   aria-label={t('channelInvite.open_channel', 'Перейти к каналу')}
                   onClick={handleOpenExisting}
-                  className="w-full h-11 rounded-[5px] text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+                  className="w-full h-11 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2"
                   style={{
                     backgroundColor: 'var(--accent-color, #9b7dd4)',
                     color: '#ffffff',
-                    borderRadius: '5px',
                     border: 'none',
                     cursor: 'pointer',
                   }}
@@ -301,11 +300,10 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
                   aria-label={t('channelInvite.join_channel', 'Подписаться на канал')}
                   disabled={isLoading || isJoining || !channelInfo}
                   onClick={handleJoin}
-                  className="w-full h-11 rounded-[5px] text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+                  className="w-full h-11 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2"
                   style={{
                     backgroundColor: 'var(--accent-color, #9b7dd4)',
                     color: '#ffffff',
-                    borderRadius: '5px',
                     border: 'none',
                     opacity: isLoading || isJoining || !channelInfo ? 0.6 : 1,
                     cursor: isLoading || isJoining || !channelInfo ? 'not-allowed' : 'pointer',
@@ -323,11 +321,10 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
                 type="button"
                 aria-label={t('common.cancel', 'Отмена')}
                 onClick={onClose}
-                className="w-full h-11 rounded-[5px] text-sm font-semibold transition-all duration-200 flex items-center justify-center"
+                className="w-full h-11 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-center"
                 style={{
                   backgroundColor: 'rgba(255, 255, 255, 0.05)',
                   color: 'var(--text-dim, #8e8e93)',
-                  borderRadius: '5px',
                   border: 'none',
                   cursor: 'pointer',
                 }}

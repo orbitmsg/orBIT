@@ -294,7 +294,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
           maxHeight: 'calc(100% - 24px)',
           alignSelf: 'flex-start',
           margin: '12px 12px 12px 0',
-          borderRadius: '5px',
+          borderRadius: '16px',
           backgroundColor: 'var(--title-bar-bg, #121212)',
           border: 'none',
           outline: 'none',
@@ -471,7 +471,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
             {cleanUsername && (
               <div
                 style={{
-                  borderRadius: '5px',
+                  borderRadius: '14px',
                   backgroundColor: 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))',
                   border: 'none',
                   padding: '10px 12px',
@@ -493,7 +493,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                     maxWidth: '100%',
                     padding: '2px 6px',
                     margin: '-2px -6px',
-                    borderRadius: '5px',
+                    borderRadius: '6px',
                     backgroundColor: 'transparent',
                     border: 'none',
                     outline: 'none',
@@ -522,7 +522,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
             {resolvedId && (
               <div
                 style={{
-                  borderRadius: '5px',
+                  borderRadius: '14px',
                   backgroundColor: 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))',
                   border: 'none',
                   padding: '10px 12px',
@@ -544,7 +544,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                     maxWidth: '100%',
                     padding: '2px 6px',
                     margin: '-2px -6px',
-                    borderRadius: '5px',
+                    borderRadius: '6px',
                     backgroundColor: 'transparent',
                     border: 'none',
                     outline: 'none',
@@ -573,7 +573,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
             {bioText && (
               <div
                 style={{
-                  borderRadius: '5px',
+                  borderRadius: '14px',
                   backgroundColor: 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))',
                   border: 'none',
                   padding: '10px 12px',
@@ -606,7 +606,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
             {formattedBirthday && (
               <div
                 style={{
-                  borderRadius: '5px',
+                  borderRadius: '14px',
                   backgroundColor: 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))',
                   border: 'none',
                   padding: '10px 12px',
@@ -652,7 +652,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                   width: '100%',
                   marginTop: '4px',
                   padding: '9px 14px',
-                  borderRadius: '5px',
+                  borderRadius: '12px',
                   border: 'none',
                   outline: 'none',
                   backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.05))',

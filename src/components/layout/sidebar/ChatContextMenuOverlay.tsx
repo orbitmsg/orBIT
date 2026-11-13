@@ -50,7 +50,7 @@ export const ChatContextMenuOverlay = ({
               top: Math.min(chatContextMenu.y, (typeof window !== 'undefined' ? window.innerHeight : 600) - 170),
               transformOrigin: 'top left',
               backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
-              borderRadius: '5px',
+              borderRadius: '16px',
               border: 'none',
               boxShadow: '0 8px 30px rgba(0, 0, 0, 0.45)',
             }}
@@ -59,7 +59,7 @@ export const ChatContextMenuOverlay = ({
             {(() => {
               const iconColor = 'var(--text-main)';
               const baseBtnClass =
-                "w-full flex items-center gap-2.5 px-3 py-2 text-[13px] font-normal normal-case transition-colors hover:bg-[var(--surface-container-strong)] rounded-[5px] text-left select-none";
+                "w-full flex items-center gap-2.5 px-3 py-2 text-[13px] font-normal normal-case transition-colors hover:bg-[var(--surface-container-strong)] rounded-xl text-left select-none";
               const isNotes = chatContextMenu.chatId === 'notes';
               const targetChat = chats.find(c => c.id === chatContextMenu.chatId);
               const isChannel = targetChat?.type === 'channel';

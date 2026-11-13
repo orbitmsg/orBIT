@@ -35,10 +35,9 @@ export const DeleteGroupModal = ({ isOpen, onClose, onConfirm, mode = 'delete' }
           initial={{ scale: 0.95 }}
           animate={{ scale: 1 }}
           exit={{ scale: 0.95 }}
-          className="w-full max-w-sm rounded-[5px] p-6"
+          className="w-full max-w-sm rounded-2xl p-6"
           style={{
             backgroundColor: 'var(--bg-secondary)',
-            borderRadius: '5px',
             border: 'none',
             boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
           }}
@@ -59,11 +58,10 @@ export const DeleteGroupModal = ({ isOpen, onClose, onConfirm, mode = 'delete' }
                 type="button"
                 onClick={onClose}
                 aria-label={t('common.cancel')}
-                className="px-6 py-2 rounded-[5px] text-sm font-medium transition-colors"
+                className="px-6 py-2 rounded-full text-sm font-medium transition-colors"
                 style={{
                   backgroundColor: 'var(--surface-muted)',
                   color: 'var(--text-main)',
-                  borderRadius: '5px',
                   border: 'none',
                   cursor: 'pointer',
                 }}
@@ -76,11 +74,10 @@ export const DeleteGroupModal = ({ isOpen, onClose, onConfirm, mode = 'delete' }
                 type="button"
                 onClick={onConfirm}
                 aria-label={isDelete ? t('common.delete') : t('groupSettings.leave_group')}
-                className="px-6 py-2 rounded-[5px] text-sm font-bold transition-colors"
+                className="px-6 py-2 rounded-full text-sm font-bold transition-colors"
                 style={{
                   backgroundColor: 'var(--accent-color)',
                   color: '#fff',
-                  borderRadius: '5px',
                   border: 'none',
                   cursor: 'pointer',
                 }}

@@ -192,7 +192,7 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
           height: `${PICKER_HEIGHT}px`,
           zIndex: 99999,
           backgroundColor: 'var(--surface-container-strong, #1f1b2e)',
-          borderRadius: '5px',
+          borderRadius: '16px',
           boxShadow: '0 12px 40px rgba(0, 0, 0, 0.6)',
           border: '1px solid rgba(255, 255, 255, 0.12)',
           userSelect: 'none',
@@ -202,8 +202,9 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
           overflow: 'hidden',
         }}
       >
+        {/* Поисковая строка */}
         <div className="px-2.5 pt-2 pb-1 flex-shrink-0 flex flex-col gap-1.5">
-          <div className="relative flex items-center bg-white/10 rounded-[5px] px-2.5 py-1 border border-white/5" style={{ borderRadius: '5px' }}>
+          <div className="relative flex items-center bg-white/10 rounded-full px-2.5 py-1 border border-white/5">
             <Search size={14} className="text-white/40 mr-1.5 flex-shrink-0" />
             <input
               ref={searchInputRef}
@@ -217,6 +218,7 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
           </div>
         </div>
 
+        {/* Область виртуализации реакций */}
         <div className="flex-1 overflow-hidden px-1 py-1" style={{ overflowX: 'hidden' }}>
           {groupedRows.length === 0 ? (
             <div className="flex items-center justify-center py-4 text-white/40 text-xs">

@@ -113,7 +113,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   if (isInChatSearch) {
     return (
       <div
-        className="flex flex-col h-full rounded-[5px] overflow-hidden"
+        className="flex flex-col h-full rounded-[18px] overflow-hidden"
         style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}
       >
         <InChatSidebarSearch
@@ -131,7 +131,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
 
       {isViewingArchive ? (
         <div
-          className="px-3 py-2 select-none shrink-0 rounded-[5px] overflow-hidden"
+          className="px-3 py-2 select-none shrink-0 rounded-[18px] overflow-hidden"
           style={{
             backgroundColor: 'var(--chat-list-bg, #2b2d31)',
             display: 'flex',
@@ -143,7 +143,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
             type="button"
             onClick={() => setIsViewingArchive(false)}
             aria-label={t('common.back', 'Назад')}
-            className="flex items-center justify-center cursor-pointer transition-all active:scale-95 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-container)] rounded-[5px] shrink-0"
+            className="flex items-center justify-center cursor-pointer transition-all active:scale-95 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-container)] rounded-full shrink-0"
             style={{
               width: '36px',
               height: '36px',
@@ -166,7 +166,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
         </div>
       ) : (
         <div
-          className="shrink-0 rounded-[5px] overflow-hidden p-2 flex flex-col gap-1.5 select-none"
+          className="shrink-0 rounded-[18px] overflow-hidden p-2 flex flex-col gap-1.5 select-none"
           style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}
         >
           {[
@@ -181,9 +181,9 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
               type="button"
               onClick={() => item.onClick?.()}
               aria-label={item.label}
-              className="group w-full flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-[5px] outline-none cursor-pointer transition-colors text-left"
+              className="group w-full flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-[14px] outline-none cursor-pointer transition-colors text-left"
               style={{
-                borderRadius: '5px',
+                borderRadius: '14px',
                 border: 'none',
                 backgroundColor: surfaceTint,
                 color: 'var(--text-main)',
@@ -200,7 +200,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                 style={{
                   width: '28px',
                   height: '28px',
-                  borderRadius: '5px',
+                  borderRadius: '10px',
                   backgroundColor: 'color-mix(in srgb, var(--accent-color, #5865F2) 16%, transparent)',
                   color: 'var(--accent-text, var(--accent-color, #5865F2))',
                 }}
@@ -218,15 +218,15 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
 
       {incomingFriendRequests.length > 0 && (
         <div
-          className="shrink-0 rounded-[5px] overflow-hidden p-2"
+          className="shrink-0 rounded-[18px] overflow-hidden p-2"
           style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}
         >
           <button
             type="button"
             onClick={() => setShowFriendRequestsModal(true)}
-            className="w-full flex items-center justify-between px-3.5 py-2 rounded-[5px] hover:opacity-90 transition-opacity text-xs font-medium cursor-pointer shadow-none select-none"
+            className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl hover:opacity-90 transition-opacity text-xs font-medium cursor-pointer shadow-none select-none"
             style={{
-              borderRadius: '5px',
+              borderRadius: '14px',
               border: 'none',
               backgroundColor: surfaceTint,
               color: 'var(--text-main)',
@@ -236,9 +236,9 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
               {t('friendRequests.pending_banner', 'Запросы на переписку')}
             </span>
             <span
-              className="px-2 py-0.5 rounded-[5px] font-bold text-[11px]"
+              className="px-2 py-0.5 rounded-full font-bold text-[11px]"
               style={{
-                borderRadius: '5px',
+                borderRadius: '9999px',
                 backgroundColor: 'var(--accent-color, #7C3AED)',
                 color: 'var(--accent-on-color, #ffffff)',
               }}
@@ -254,7 +254,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
       )}
 
       <div
-        className="relative flex-1 min-h-0 flex flex-col rounded-[5px]"
+        className="relative flex-1 min-h-0 flex flex-col rounded-[18px]"
         style={{ backgroundColor: 'var(--chat-list-bg, #121212)' }}
         onMouseEnter={showChatScrollbar}
         onMouseLeave={handleChatListMouseLeave}
@@ -504,7 +504,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                         </span>
                         {searchChannelResult.isOfficial && (
                           <span
-                            className="px-2 py-0.5 rounded-[5px] text-[10px] font-bold"
+                            className="px-2 py-0.5 rounded-full text-[10px] font-bold"
                             style={{
                               backgroundColor: 'color-mix(in srgb, var(--accent-color, #5865F2) 16%, transparent)',
                               color: 'var(--accent-text, var(--accent-color))',
@@ -525,8 +525,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                         handleSelectFoundChannel(searchChannelResult);
                       }}
                       aria-label={chats.some(c => c.id === searchChannelResult.id) ? t('common.open', 'Открыть') : t('common.join', 'Вступить')}
-                      className="px-3 py-1.5 rounded-[5px] bg-[var(--accent-color)] text-xs font-semibold hover:opacity-90 transition-opacity border-none outline-none cursor-pointer flex-shrink-0"
-                      style={{ borderRadius: '5px', border: 'none', color: 'var(--accent-on-color, #ffffff)' }}
+                      className="px-3 py-1.5 rounded-xl bg-[var(--accent-color)] text-xs font-semibold hover:opacity-90 transition-opacity border-none outline-none cursor-pointer flex-shrink-0"
+                      style={{ borderRadius: '12px', border: 'none', color: 'var(--accent-on-color, #ffffff)' }}
                     >
                       {chats.some(c => c.id === searchChannelResult.id)
                         ? t('common.open', 'Открыть')
@@ -587,7 +587,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                               <>
                                 <VerifiedBadge size={15} className="flex-shrink-0" />
                                 <span
-                                  className="px-2 py-0.5 rounded-[5px] text-[10px] font-bold"
+                                  className="px-2 py-0.5 rounded-full text-[10px] font-bold"
                                   style={{
                                     backgroundColor: 'color-mix(in srgb, var(--accent-color, #5865F2) 16%, transparent)',
                                     color: 'var(--accent-text, var(--accent-color))',
@@ -599,8 +599,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                             )}
                             {isMe && (
                               <span
-                                className="px-2 py-0.5 rounded-[5px] bg-[var(--accent-color)] text-[10px] font-bold"
-                                style={{ color: 'var(--accent-on-color, #ffffff)', borderRadius: '5px' }}
+                                className="px-2 py-0.5 rounded-full bg-[var(--accent-color)] text-[10px] font-bold"
+                                style={{ color: 'var(--accent-on-color, #ffffff)' }}
                               >
                                 {t('common.this_is_you', 'Это вы')}
                               </span>
@@ -630,8 +630,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                               handleSelectFoundSupport();
                             }}
                             aria-label={t('common.open', 'Открыть')}
-                            className="px-3 py-1.5 rounded-[5px] bg-[var(--accent-color)] text-xs font-semibold hover:opacity-90 transition-opacity border-none outline-none cursor-pointer flex-shrink-0"
-                            style={{ borderRadius: '5px', border: 'none', color: 'var(--accent-on-color, #ffffff)' }}
+                            className="px-3 py-1.5 rounded-xl bg-[var(--accent-color)] text-xs font-semibold hover:opacity-90 transition-opacity border-none outline-none cursor-pointer flex-shrink-0"
+                            style={{ borderRadius: '12px', border: 'none', color: 'var(--accent-on-color, #ffffff)' }}
                           >
                             {t('common.open', 'Открыть')}
                           </button>

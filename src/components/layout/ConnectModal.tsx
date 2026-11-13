@@ -538,7 +538,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
             maxWidth: activeType === 'friend' ? '480px' : '440px',
             backgroundColor: 'var(--settings-bg, var(--bg-secondary, #1e1b2e))',
             color: 'var(--text-main)',
-            borderRadius: '5px',
+            borderRadius: '24px',
             padding: '22px',
             border: 'none',
             outline: 'none',
@@ -567,11 +567,11 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
               type="button"
               onClick={onClose}
               aria-label={t('common.close', 'Закрыть')}
-              className="w-8 h-8 flex items-center justify-center rounded-[5px] cursor-pointer transition-colors border-none outline-none shrink-0"
+              className="w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer transition-colors border-none outline-none shrink-0"
               style={{
                 backgroundColor: 'var(--surface-container-soft)',
                 color: 'var(--text-dim)',
-                borderRadius: '5px',
+                borderRadius: '12px',
                 border: 'none',
                 outline: 'none',
               }}
@@ -594,7 +594,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                 className="flex items-center gap-2 transition-all"
                 style={{
                   backgroundColor: 'var(--surface-container)',
-                  borderRadius: '5px',
+                  borderRadius: '16px',
                   padding: '6px 6px 6px 14px',
                   border: 'none',
                   boxShadow: tempWarning
@@ -646,7 +646,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                   style={{
                     background: 'var(--accent-gradient, var(--accent-color, #5865F2))',
                     color: 'var(--accent-on-color, #ffffff)',
-                    borderRadius: '5px',
+                    borderRadius: '12px',
                     border: 'none',
                     outline: 'none',
                   }}
@@ -667,7 +667,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                   className="mt-3 p-1.5 flex flex-col gap-1 max-h-[168px] overflow-y-auto custom-scrollbar"
                   style={{
                     backgroundColor: 'var(--surface-container-soft)',
-                    borderRadius: '5px',
+                    borderRadius: '16px',
                     border: 'none',
                   }}
                 >
@@ -687,8 +687,8 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                           }
                         });
                       }}
-                      className="w-full text-left flex items-center gap-2.5 p-2 rounded-[5px] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer transition-colors border-none outline-none"
-                      style={{ border: 'none', outline: 'none', borderRadius: '5px' }}
+                      className="w-full text-left flex items-center gap-2.5 p-2 rounded-[12px] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer transition-colors border-none outline-none"
+                      style={{ border: 'none', outline: 'none' }}
                     >
                       <Avatar src={u.avatar_url} alt={u.nickname} className="w-9 h-9 rounded-full flex-shrink-0" />
                       <div className="flex flex-col min-w-0 flex-1">
@@ -704,7 +704,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                       <span
                         className="shrink-0 px-2.5 py-1 text-[11.5px] font-semibold"
                         style={{
-                          borderRadius: '5px',
+                          borderRadius: '10px',
                           backgroundColor: 'color-mix(in srgb, var(--accent-color, #5865F2) 16%, transparent)',
                           color: 'var(--accent-text, var(--accent-color, #5865F2))',
                         }}
@@ -721,7 +721,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                   className="mt-4"
                   style={{
                     backgroundColor: 'var(--surface-container-soft)',
-                    borderRadius: '5px',
+                    borderRadius: '20px',
                     padding: '16px',
                     border: 'none',
                     boxSizing: 'border-box',
@@ -749,7 +749,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                         className="shrink-0 flex items-center justify-center p-2.5 cursor-pointer transition-transform hover:scale-[1.03] active:scale-[0.98] border-none outline-none"
                         style={{
                           backgroundColor: '#ffffff',
-                          borderRadius: '5px',
+                          borderRadius: '16px',
                           border: 'none',
                           outline: 'none',
                         }}
@@ -757,7 +757,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                         <img
                           src={qrDataUrl}
                           alt={myCode}
-                          style={{ width: '96px', height: '96px', display: 'block', borderRadius: '5px' }}
+                          style={{ width: '96px', height: '96px', display: 'block', borderRadius: '6px' }}
                         />
                       </button>
                     )}
@@ -771,7 +771,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                         className="w-full text-left flex items-center justify-between gap-2.5 px-3 py-2.5 transition-colors border-none outline-none disabled:opacity-60 disabled:cursor-default cursor-pointer"
                         style={{
                           backgroundColor: 'var(--surface-container)',
-                          borderRadius: '5px',
+                          borderRadius: '14px',
                           border: 'none',
                           outline: 'none',
                         }}
@@ -821,7 +821,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                           className="w-full text-left flex items-center justify-between gap-2.5 px-3 py-2.5 transition-colors border-none outline-none cursor-pointer"
                           style={{
                             backgroundColor: 'var(--surface-container)',
-                            borderRadius: '5px',
+                            borderRadius: '14px',
                             border: 'none',
                             outline: 'none',
                           }}
@@ -869,7 +869,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
               <div
                 style={{
                   backgroundColor: 'var(--surface-container-soft)',
-                  borderRadius: '5px',
+                  borderRadius: '20px',
                   padding: '16px',
                   border: 'none',
                   boxSizing: 'border-box',
@@ -945,7 +945,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                         backgroundColor: 'var(--surface-container)',
                         border: 'none',
                         outline: 'none',
-                        borderRadius: '5px',
+                        borderRadius: '14px',
                         padding: '10px 14px',
                         boxSizing: 'border-box',
                         boxShadow: tempWarning
@@ -989,7 +989,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                       backgroundColor: 'var(--surface-container)',
                       border: 'none',
                       outline: 'none',
-                      borderRadius: '5px',
+                      borderRadius: '14px',
                       padding: '10px 14px',
                       boxSizing: 'border-box',
                       boxShadow: isDescFocused
@@ -1005,7 +1005,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                       className="flex items-center gap-2 transition-all"
                       style={{
                         backgroundColor: 'var(--surface-container)',
-                        borderRadius: '5px',
+                        borderRadius: '14px',
                         padding: '0 14px',
                         boxShadow: usernameError
                           ? '0 0 0 2px rgba(239, 68, 68, 0.5)'
@@ -1067,7 +1067,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                     <span
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-medium"
                       style={{
-                        borderRadius: '5px',
+                        borderRadius: '999px',
                         backgroundColor: 'var(--surface-container-soft)',
                         color: 'var(--text-dim)',
                       }}
@@ -1078,7 +1078,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                     <span
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-medium"
                       style={{
-                        borderRadius: '5px',
+                        borderRadius: '999px',
                         backgroundColor: 'var(--surface-container-soft)',
                         color: 'var(--text-dim)',
                       }}
@@ -1092,7 +1092,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                     <span
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-medium"
                       style={{
-                        borderRadius: '5px',
+                        borderRadius: '999px',
                         backgroundColor: 'var(--surface-container-soft)',
                         color: 'var(--text-dim)',
                       }}
@@ -1103,7 +1103,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                     <span
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-medium"
                       style={{
-                        borderRadius: '5px',
+                        borderRadius: '999px',
                         backgroundColor: 'var(--surface-container-soft)',
                         color: 'var(--text-dim)',
                       }}
@@ -1128,7 +1128,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                   aria-label={t('common.cancel', 'Отмена')}
                   className="px-4 py-2.5 text-[13.5px] font-semibold transition-colors cursor-pointer border-none outline-none"
                   style={{
-                    borderRadius: '5px',
+                    borderRadius: '14px',
                     backgroundColor: 'var(--surface-container-soft)',
                     color: 'var(--text-main)',
                     border: 'none',
@@ -1152,7 +1152,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                   aria-label={submitLabel}
                   className="px-5 py-2.5 text-[13.5px] font-semibold transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 border-none outline-none"
                   style={{
-                    borderRadius: '5px',
+                    borderRadius: '14px',
                     background: 'var(--accent-gradient, var(--accent-color, #5865F2))',
                     color: 'var(--accent-on-color, #ffffff)',
                     border: 'none',

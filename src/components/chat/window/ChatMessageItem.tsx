@@ -381,8 +381,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         {mediaItems.map((file, fIdx) => (
           <div
             key={fIdx}
-            className="flex items-center gap-2.5 p-1.5 rounded-[5px] transition-colors cursor-pointer select-none"
-            style={{ borderRadius: '5px' }}
+            className="flex items-center gap-2.5 p-1.5 rounded-lg transition-colors cursor-pointer select-none"
             onClick={async () => {
               try {
                 let arrayBuffer: ArrayBuffer | null = null;
@@ -590,6 +589,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           justifyContent: 'center',
           boxShadow: 'none',
           border: 'none',
+          outline: 'none',
           filter: 'none',
           backdropFilter: 'none',
           WebkitBackdropFilter: 'none',
@@ -679,6 +679,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
               justifyContent: 'center',
               boxShadow: 'none',
               border: 'none',
+              outline: 'none',
               filter: 'none',
               backdropFilter: 'none',
               WebkitBackdropFilter: 'none',

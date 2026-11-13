@@ -258,7 +258,7 @@ export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
               style={{
                 width: '120px',
                 height: '120px',
-                borderRadius: '5px',
+                borderRadius: '28px',
                 backgroundColor: 'var(--surface-container-strong, rgba(255,255,255,0.08))',
                 border: '2px dashed var(--accent-color, #7C3AED)',
                 display: 'flex',

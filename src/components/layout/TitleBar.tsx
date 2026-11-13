@@ -247,7 +247,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
           height: 24px;
           border: none;
           outline: none;
-          border-radius: 5px;
+          border-radius: 7px;
           background: transparent;
           color: var(--titlebar-fg, #b0b0b0);
           cursor: pointer;
@@ -325,7 +325,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
                 fontSize: '13px',
                 fontWeight: 600,
                 padding: '5px 10px',
-                borderRadius: '5px',
+                borderRadius: '8px',
                 boxShadow: '0 4px 14px rgba(0, 0, 0, 0.45)',
                 lineHeight: 1.2,
               }}

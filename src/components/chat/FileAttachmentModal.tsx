@@ -220,7 +220,7 @@ export const FileAttachmentModal = ({
             onClick={(e) => e.stopPropagation()}
             style={{
               backgroundColor: 'var(--bg-secondary, #211b2b)',
-              borderRadius: '5px',
+              borderRadius: '10px',
               border: 'none',
               padding: '16px 20px',
               boxShadow: '0 12px 36px rgba(0,0,0,0.65)',
@@ -233,7 +233,7 @@ export const FileAttachmentModal = ({
               <div className="flex items-center gap-1 text-[var(--text-dim)]">
                 <button
                   type="button"
-                  className="hover:text-[var(--text-main)] transition-colors p-1 rounded-[5px]"
+                  className="hover:text-[var(--text-main)] transition-colors p-1 rounded-md"
                 >
                   <MoreVertical size={18} />
                 </button>
@@ -243,14 +243,14 @@ export const FileAttachmentModal = ({
             <div className="overflow-y-auto max-h-[340px] custom-scrollbar flex flex-col py-1">
               {showVisualMediaPreview ? (
                 isSingleMedia ? (
-                  <div className="relative w-full max-h-[280px] rounded-[5px] overflow-hidden flex items-center justify-center bg-[var(--surface-muted,rgba(0,0,0,0.3))]">
+                  <div className="relative w-full max-h-[280px] rounded-lg overflow-hidden flex items-center justify-center bg-[var(--surface-muted,rgba(0,0,0,0.3))]">
                     {firstFile.preview || firstFile.blurPreview ? (
                       firstFile.fileType === 'video' ? (
                         <div className="relative w-full h-full max-h-[280px] flex items-center justify-center">
                           <img
                             src={firstFile.preview || firstFile.blurPreview || undefined}
                             alt={firstFile.name}
-                            className="w-full h-full max-h-[280px] object-contain rounded-[5px]"
+                            className="w-full h-full max-h-[280px] object-contain rounded-lg"
                           />
                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
                             <div className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white shadow-lg">
@@ -258,7 +258,7 @@ export const FileAttachmentModal = ({
                             </div>
                           </div>
                           {firstFile.duration ? (
-                            <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm text-white px-2 py-0.5 rounded-[5px] text-[12px] font-medium pointer-events-none">
+                            <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[12px] font-medium pointer-events-none">
                               {formatDuration(firstFile.duration)}
                             </div>
                           ) : null}
@@ -267,7 +267,7 @@ export const FileAttachmentModal = ({
                         <img
                           src={firstFile.preview || firstFile.blurPreview || undefined}
                           alt={firstFile.name}
-                          className="w-full h-full max-h-[280px] object-contain rounded-[5px]"
+                          className="w-full h-full max-h-[280px] object-contain rounded-lg"
                         />
                       )
                     ) : (
@@ -307,14 +307,14 @@ export const FileAttachmentModal = ({
                       return (
                         <div
                           key={idx}
-                          className="relative rounded-[5px] overflow-hidden group bg-[var(--surface-muted,rgba(0,0,0,0.3))]"
+                          className="relative rounded-lg overflow-hidden group bg-[var(--surface-muted,rgba(0,0,0,0.3))]"
                           style={{ height: tileHeight }}
                         >
                           {file.preview || file.blurPreview ? (
                             <img
                               src={file.preview || file.blurPreview || undefined}
                               alt={file.name}
-                              className="w-full h-full object-cover rounded-[5px]"
+                              className="w-full h-full object-cover rounded-lg"
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
@@ -323,7 +323,7 @@ export const FileAttachmentModal = ({
                           )}
 
                           {file.fileType === 'video' && (
-                            <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 bg-black/60 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-[5px] text-[11px] font-medium">
+                            <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 bg-black/60 backdrop-blur-sm text-white px-1.5 py-0.5 rounded text-[11px] font-medium">
                               <SmoothPlayPauseIcon isPlaying={false} size={11} fill="white" />
                               {file.duration ? formatDuration(file.duration) : ''}
                             </div>
@@ -362,7 +362,7 @@ export const FileAttachmentModal = ({
                             <img
                               src={file.preview}
                               alt={file.name}
-                              className="w-full h-full object-cover rounded-[5px]"
+                              className="w-full h-full object-cover rounded-md"
                             />
                           ) : (
                             <FileText size={22} className="text-[var(--accent-light)]" />
@@ -414,7 +414,7 @@ export const FileAttachmentModal = ({
                     style={{
                       width: '18px',
                       height: '18px',
-                      borderRadius: '5px',
+                      borderRadius: '4px',
                       backgroundColor: asFile ? 'var(--accent-light, #a995ec)' : 'transparent',
                       border: asFile ? 'none' : '2px solid var(--border-color, rgba(255,255,255,0.3))',
                       display: 'flex',
@@ -444,7 +444,7 @@ export const FileAttachmentModal = ({
                     style={{
                       width: '18px',
                       height: '18px',
-                      borderRadius: '5px',
+                      borderRadius: '4px',
                       backgroundColor: rememberChoice ? 'var(--accent-light, #a995ec)' : 'transparent',
                       border: rememberChoice ? 'none' : '2px solid var(--border-color, rgba(255,255,255,0.3))',
                       display: 'flex',
@@ -474,7 +474,7 @@ export const FileAttachmentModal = ({
                     style={{
                       width: '18px',
                       height: '18px',
-                      borderRadius: '5px',
+                      borderRadius: '4px',
                       backgroundColor: group ? 'var(--accent-light, #a995ec)' : 'transparent',
                       border: group ? 'none' : '2px solid var(--border-color, rgba(255,255,255,0.3))',
                       display: 'flex',
@@ -523,8 +523,7 @@ export const FileAttachmentModal = ({
                   ref={emojiBtnRef}
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className="text-[var(--text-dim)] hover:text-[var(--accent-light)] transition-colors p-1 rounded-[5px] flex-shrink-0"
-                  style={{ borderRadius: '5px' }}
+                  className="text-[var(--text-dim)] hover:text-[var(--accent-light)] transition-colors p-1 rounded-full flex-shrink-0"
                 >
                   <Smile size={20} />
                 </button>
@@ -532,8 +531,7 @@ export const FileAttachmentModal = ({
 
               {showEmojiPicker && (
                 <div
-                  className="absolute right-0 bottom-12 z-50 shadow-2xl rounded-[5px] overflow-hidden"
-                  style={{ borderRadius: '5px' }}
+                  className="absolute right-0 bottom-12 z-50 shadow-2xl rounded-xl overflow-hidden"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <EmojiPicker

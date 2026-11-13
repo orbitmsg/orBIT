@@ -39,7 +39,7 @@ export const CenterToast: React.FC = () => {
               WebkitBackdropFilter: 'blur(16px)',
               color: 'var(--text-main, #ffffff)',
               padding: '8px 18px',
-              borderRadius: '5px',
+              borderRadius: '8px',
               border: '1px solid rgba(255, 255, 255, 0.08)',
               outline: 'none',
               display: 'flex',

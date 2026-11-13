@@ -31,7 +31,7 @@ export const LinkCopiedToast: React.FC<{ isOpen: boolean }> = ({ isOpen }) => {
               WebkitBackdropFilter: 'blur(16px)',
               color: '#ffffff',
               padding: '2px 14px',
-              borderRadius: '5px',
+              borderRadius: '8px',
               border: '1px solid rgba(255, 255, 255, 0.08)',
               outline: 'none',
               display: 'flex',

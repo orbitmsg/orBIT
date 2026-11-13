@@ -363,12 +363,11 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                   </span>
                   {isSenderOwner && (
                     <span
-                      className="ml-1.5 px-2 py-0.5 rounded-[5px] text-[11px] font-medium flex-shrink-0 select-none inline-flex items-center"
+                      className="ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0 select-none inline-flex items-center"
                       style={{
                         backgroundColor: 'color-mix(in srgb, var(--accent-color, #7C3AED) 16%, transparent)',
                         color: 'var(--accent-text, var(--accent-color, #9b7dd4))',
                         lineHeight: 1.2,
-                        borderRadius: '5px',
                         userSelect: 'none',
                         WebkitUserSelect: 'none',
                       }}
@@ -378,12 +377,11 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                   )}
                   {isSenderAdmin && (
                     <span
-                      className="ml-1.5 px-2 py-0.5 rounded-[5px] text-[11px] font-medium flex-shrink-0 select-none inline-flex items-center"
+                      className="ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0 select-none inline-flex items-center"
                       style={{
                         backgroundColor: 'rgba(22, 163, 74, 0.16)',
                         color: '#16a34a',
                         lineHeight: 1.2,
-                        borderRadius: '5px',
                         userSelect: 'none',
                         WebkitUserSelect: 'none',
                       }}
@@ -583,11 +581,10 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                       onButtonClick?.(btn);
                     }}
                     aria-label={btn.text}
-                    className="w-full flex items-center justify-center px-3.5 py-2 rounded-[5px] text-[13px] font-semibold transition-all cursor-pointer shadow-sm active:scale-[0.98]"
+                    className="w-full flex items-center justify-center px-3.5 py-2 rounded-xl text-[13px] font-semibold transition-all cursor-pointer shadow-sm active:scale-[0.98]"
                     style={{
                       backgroundColor: 'color-mix(in srgb, var(--surface-container) 82%, var(--accent-color) 18%)',
                       color: 'var(--text-main)',
-                      borderRadius: '5px',
                       border: '1px solid var(--border-color)',
                       outline: 'none',
                       backdropFilter: 'blur(8px)',

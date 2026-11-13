@@ -59,13 +59,13 @@
   --color-text-tertiary: #6b7280;
   --color-text-danger: #ef4444;
   --color-text-success: #22c55e;
-  --border-radius-md: 5px;
+  --border-radius-md: 8px;
   --title-bar-bg: #232428;
   --titlebar-fg: #b0b0b0;
   --titlebar-hover-fg: #ffffff;
   --titlebar-hover-bg: rgba(255, 255, 255, 0.09);
   --titlebar-active-bg: rgba(255, 255, 255, 0.16);
-  --border-radius-lg: 5px;
+  --border-radius-lg: 16px;
 }
 
 /* ===== @font-face для Apple Color Emoji ===== */
@@ -842,6 +842,11 @@ textarea,
 .select-none,
 .select-none *,
 .message-time-badge,
+.date-badge-pill {
+  border: none !important;
+  outline: none !important;
+}
+
 .message-time-badge *,
 .date-badge,
 .date-badge *,

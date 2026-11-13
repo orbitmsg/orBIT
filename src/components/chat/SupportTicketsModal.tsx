@@ -89,7 +89,7 @@ export const SupportTicketsModal: React.FC<SupportTicketsModalProps> = ({ isOpen
             margin: isMobileWidth ? '0' : '0 16px',
             marginTop: isMobileWidth ? '30px' : '0',
             backgroundColor: 'var(--md-bg, #211d2f)',
-            borderRadius: isMobileWidth ? 0 : 5,
+            borderRadius: isMobileWidth ? 0 : 10,
             border: 'none',
             outline: 'none',
             color: 'var(--md-on-surface, #e8e0f0)',
@@ -119,7 +119,7 @@ export const SupportTicketsModal: React.FC<SupportTicketsModalProps> = ({ isOpen
                 style={{
                   width: 34,
                   height: 34,
-                  borderRadius: 5,
+                  borderRadius: 10,
                   backgroundColor: 'color-mix(in srgb, var(--accent-color, #7C3AED) 18%, transparent)',
                   display: 'flex',
                   alignItems: 'center',
@@ -287,7 +287,7 @@ export const SupportTicketsModal: React.FC<SupportTicketsModalProps> = ({ isOpen
                               fontSize: 10,
                               fontWeight: 600,
                               padding: '2px 6px',
-                              borderRadius: 5,
+                              borderRadius: 4,
                               backgroundColor: isAnswered ? 'rgba(34, 197, 94, 0.15)' : 'color-mix(in srgb, var(--accent-color, #7C3AED) 18%, transparent)',
                               color: isAnswered ? '#4ade80' : 'var(--accent-color, #9b7dd4)',
                             }}
@@ -308,7 +308,7 @@ export const SupportTicketsModal: React.FC<SupportTicketsModalProps> = ({ isOpen
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              borderRadius: 5,
+                              borderRadius: 4,
                               transition: 'color 120ms',
                             }}
                             onMouseEnter={(e) => (e.currentTarget.style.color = '#ff595a')}

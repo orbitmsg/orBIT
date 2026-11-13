@@ -1185,6 +1185,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
                   justifyContent: 'center',
                   boxShadow: 'none',
                   border: 'none',
+                  outline: 'none',
                   filter: 'none',
                   backdropFilter: 'none',
                   WebkitBackdropFilter: 'none',

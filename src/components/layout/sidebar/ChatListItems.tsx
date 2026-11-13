@@ -228,7 +228,7 @@ export const ChatListItem = React.memo(({
             </div>
             <div className="ml-auto flex items-center flex-shrink-0" style={{ gap: 4 }}>
               {status && (
-                <div style={{ display: 'flex', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', transform: 'translateY(-1.5px)' }}>
                   <MessageStatus
                     status={status}
                     isOwn={true}

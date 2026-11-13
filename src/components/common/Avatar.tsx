@@ -1,30 +1,32 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 
-export const AVATAR_GRADIENTS = [
-  'linear-gradient(135deg, #06b6d4, #3b82f6)',
-  'linear-gradient(135deg, #10b981, #06b6d4)',
-  'linear-gradient(135deg, #84cc16, #10b981)',
-  'linear-gradient(135deg, #fbbf24, #f97316)',
-  'linear-gradient(135deg, #f87171, #ef4444)',
-  'linear-gradient(135deg, #ec4899, #f43f5e)',
-  'linear-gradient(135deg, #a855f7, #ec4899)',
-  'linear-gradient(135deg, #6366f1, #a855f7)',
-  'linear-gradient(135deg, #3b82f6, #6366f1)',
-  'linear-gradient(135deg, #475569, #1e293b)',
+export const AVATAR_COLORS = [
+  '#5865F2',
+  '#10B981',
+  '#3B82F6',
+  '#F97316',
+  '#EF4444',
+  '#EC4899',
+  '#8B5CF6',
+  '#06B6D4',
+  '#14B8A6',
+  '#6366F1',
 ];
+
+export const AVATAR_GRADIENTS = AVATAR_COLORS;
 
 export const getAvatarGradient = (seed?: string | null): string => {
   if (!seed || !seed.trim()) {
-    const randomIndex = Math.floor(Math.random() * AVATAR_GRADIENTS.length);
-    return AVATAR_GRADIENTS[randomIndex];
+    const randomIndex = Math.floor(Math.random() * AVATAR_COLORS.length);
+    return AVATAR_COLORS[randomIndex];
   }
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
     hash = (hash << 5) - hash + seed.charCodeAt(i);
     hash |= 0;
   }
-  const index = Math.abs(hash) % AVATAR_GRADIENTS.length;
-  return AVATAR_GRADIENTS[index];
+  const index = Math.abs(hash) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[index];
 };
 
 interface AvatarProps {
@@ -137,11 +139,22 @@ export const Avatar = ({ src, alt = '', className = '', style }: AvatarProps) =>
 
   const computedFontSize = useMemo(() => {
     if (style?.fontSize) return style.fontSize;
+    const pxMatch = className.match(/w-\[(\d+)px\]/);
+    if (pxMatch) {
+      const size = parseInt(pxMatch[1], 10);
+      return `${Math.round(size * 0.46)}px`;
+    }
     if (className.includes('w-24') || className.includes('w-[100px]') || className.includes('w-28') || className.includes('w-32') || className.includes('w-full')) {
       return '44px';
     }
-    if (className.includes('w-16') || className.includes('w-20')) {
+    if (className.includes('w-20')) {
+      return '34px';
+    }
+    if (className.includes('w-16')) {
       return '28px';
+    }
+    if (className.includes('w-14')) {
+      return '24px';
     }
     if (className.includes('w-12')) {
       return '22px';
@@ -149,19 +162,19 @@ export const Avatar = ({ src, alt = '', className = '', style }: AvatarProps) =>
     if (className.includes('w-10')) {
       return '19px';
     }
-    if (className.includes('w-[20px]') || className.includes('w-5')) {
-      return '8.5px';
-    }
-    if (className.includes('w-6') || className.includes('w-[24px]')) {
-      return '10px';
-    }
     if (className.includes('w-[34px]') || className.includes('w-9')) {
-      return '14.5px';
+      return '16.5px';
     }
     if (className.includes('w-8') || className.includes('w-7')) {
-      return '12px';
+      return '15px';
     }
-    return '14px';
+    if (className.includes('w-6') || className.includes('w-[24px]')) {
+      return '11px';
+    }
+    if (className.includes('w-[20px]') || className.includes('w-5')) {
+      return '9px';
+    }
+    return '20px';
   }, [className, style?.fontSize]);
 
   const noDragStyle: React.CSSProperties = {

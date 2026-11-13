@@ -416,7 +416,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
           style={{
             maxWidth: '400px',
             backgroundColor: 'var(--settings-bg, var(--bg-primary, #0f0f13))',
-            borderRadius: '16px',
+            borderRadius: '5px',
             boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
             border: 'none',
             padding: isExpiredOrRevoked ? '36px 24px 36px' : '32px 24px 24px',
@@ -483,7 +483,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
                   style={{
                     width: '100%',
                     height: '44px',
-                    borderRadius: '9999px',
+                    borderRadius: '5px',
                     backgroundColor: 'var(--accent-color, #7C3AED)',
                     color: '#ffffff',
                     border: 'none',
@@ -507,7 +507,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
                   style={{
                     width: '100%',
                     height: '44px',
-                    borderRadius: '9999px',
+                    borderRadius: '5px',
                     backgroundColor: 'var(--accent-color, #7C3AED)',
                     color: '#ffffff',
                     border: 'none',
@@ -532,7 +532,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
                 style={{
                   width: '100%',
                   height: '44px',
-                  borderRadius: '9999px',
+                  borderRadius: '5px',
                   backgroundColor: 'var(--surface-container, rgba(255, 255, 255, 0.08))',
                   color: 'var(--text-main, #ffffff)',
                   border: 'none',

@@ -151,12 +151,12 @@ export const ResizableSidebar: React.FC<ResizableSidebarProps> = ({
       {children}
       {!isMobile && resizable && (
         <div
-          className="absolute top-0 right-0 h-full z-10 rounded-full"
+          className="absolute top-0 right-0 h-full z-10 rounded-[5px]"
           style={{
             width: RESIZE_HANDLE_WIDTH,
             transform: 'translateX(50%)',
             cursor: 'col-resize',
-            background: isResizing ? 'rgba(255, 255, 255, 0.14)' : 'transparent', border: 'none', outline: 'none', borderRadius: '9999px',
+            background: isResizing ? 'rgba(255, 255, 255, 0.14)' : 'transparent', border: 'none', outline: 'none', borderRadius: '5px',
           }}
           onMouseDown={handleMouseDown}
         />

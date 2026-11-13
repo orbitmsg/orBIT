@@ -180,7 +180,7 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
       initial={false}
       animate={{
         height: isExpanded ? expandedHeight : 40,
-        borderRadius: '16px',
+        borderRadius: '5px',
       }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       className="relative backdrop-blur-xl select-none overflow-hidden flex flex-col"
@@ -188,6 +188,7 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
         width: '256px',
         backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
         border: 'none',
+        borderRadius: '5px',
         boxShadow: '0 8px 30px rgba(0, 0, 0, 0.38)',
         marginBottom: isExpanded ? '0px' : '8px',
         willChange: 'height',
@@ -224,7 +225,7 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
                       background: 'transparent',
                       padding: 0,
                       userSelect: 'none',
-                      borderRadius: '10px',
+                      borderRadius: '5px',
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.1))';
@@ -244,10 +245,11 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 6 }}
                 transition={{ duration: 0.24 }}
-                className="relative flex-1 flex items-center rounded-full px-2.5 py-1"
+                className="relative flex-1 flex items-center rounded-[5px] px-2.5 py-1"
                 style={{
                   backgroundColor: 'var(--surface-container, rgba(128,128,128,0.15))',
                   border: 'none',
+                  borderRadius: '5px',
                   height: '28px',
                 }}
               >
@@ -277,11 +279,12 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
             setIsExpanded(!isExpanded);
           }}
           aria-label={isExpanded ? t('common.collapse', 'Свернуть') : t('common.expand', 'Развернуть')}
-          className="w-7 h-7 rounded-full active:scale-95 transition-all flex items-center justify-center flex-shrink-0 cursor-pointer ml-auto"
+          className="w-7 h-7 rounded-[5px] active:scale-95 transition-all flex items-center justify-center flex-shrink-0 cursor-pointer ml-auto"
           style={{
             backgroundColor: 'var(--surface-container, rgba(128,128,128,0.15))',
             color: 'var(--text-main, #ffffff)',
             border: 'none',
+            borderRadius: '5px',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.18))';
@@ -316,7 +319,7 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
                   key={emoji.id}
                   type="button"
                   onClick={() => handleSelect(emoji.char)}
-                  className="emoji-font flex items-center justify-center active:scale-95 cursor-pointer rounded-xl transition-colors"
+                  className="emoji-font flex items-center justify-center active:scale-95 cursor-pointer rounded-[5px] transition-colors"
                   style={{
                     width: 36,
                     height: 36,
@@ -324,7 +327,7 @@ export const QuickReactionHeader: React.FC<QuickReactionHeaderProps> = ({
                     border: 'none',
                     background: 'transparent',
                     padding: 0,
-                    borderRadius: '10px',
+                    borderRadius: '5px',
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = 'var(--surface-container-strong, rgba(255, 255, 255, 0.1))';
@@ -412,10 +415,10 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
 
   const iconColor = 'var(--text-main)';
   const baseBtnClass =
-    'w-full flex items-center gap-2.5 px-3 py-2 text-[13px] font-normal normal-case transition-colors cursor-pointer select-none rounded-xl';
+    'w-full flex items-center gap-2.5 px-3 py-2 text-[13px] font-normal normal-case transition-colors cursor-pointer select-none rounded-[5px]';
   const baseBtnStyle: React.CSSProperties = {
     color: 'var(--text-main)',
-    borderRadius: '12px',
+    borderRadius: '5px',
     border: 'none',
     backgroundColor: 'transparent',
   };
@@ -549,11 +552,11 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
           pointerEvents: isExpanded ? 'none' : 'auto',
         }}
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-        className="backdrop-blur-xl select-none overflow-hidden absolute top-[48px] left-0 z-[1] rounded-2xl"
+        className="backdrop-blur-xl select-none overflow-hidden absolute top-[48px] left-0 z-[1] rounded-[5px]"
         style={{
           width: '256px',
           backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
-          borderRadius: '16px',
+          borderRadius: '5px',
           border: 'none',
           boxShadow: '0 8px 30px rgba(0, 0, 0, 0.38)',
           padding: '6px',

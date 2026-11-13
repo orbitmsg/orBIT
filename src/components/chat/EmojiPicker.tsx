@@ -60,7 +60,7 @@ const StickerGridButton: React.FC<{
       onClick={() => onSelect(sticker)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="relative aspect-square flex items-center justify-center p-1.5 rounded-lg hover:bg-[var(--surface-hover)] active:scale-95 transition-colors cursor-pointer bg-transparent border-0"
+      className="relative aspect-square flex items-center justify-center p-1.5 rounded-[5px] hover:bg-[var(--surface-hover)] active:scale-95 transition-colors cursor-pointer bg-transparent border-0"
       aria-label={sticker.name}
     >
       {isTgs ? (
@@ -222,8 +222,8 @@ export const EmojiPicker = ({
         right: 0,
         width: '100%',
         height: Math.min(MOBILE_HEIGHT, windowDimensions.height * 0.7),
-        borderTopLeftRadius: 10,
-        borderTopRightRadius: 10,
+        borderTopLeftRadius: 5,
+        borderTopRightRadius: 5,
         borderBottomLeftRadius: 0,
         borderBottomRightRadius: 0,
       };
@@ -596,7 +596,7 @@ export const EmojiPicker = ({
       <div
         className="w-full h-full border-none overflow-hidden flex flex-col"
         style={{
-          borderRadius: 10,
+          borderRadius: 5,
           backgroundColor: 'var(--settings-bg, var(--bg-secondary, #211d2f))',
           boxShadow: 'none',
           backdropFilter: 'none',
@@ -624,7 +624,7 @@ export const EmojiPicker = ({
                     {tab.label}
                     {isActive && (
                       <div
-                        className="absolute bottom-[-5px] left-0 right-0 h-[2.5px] rounded-full"
+                        className="absolute bottom-[-5px] left-0 right-0 h-[2.5px] rounded-[5px]"
                         style={{ backgroundColor: 'var(--accent-color, #7C3AED)' }}
                       />
                     )}
@@ -633,7 +633,7 @@ export const EmojiPicker = ({
               })}
             </div>
 
-            <div className="relative flex items-center rounded-full px-3 py-1.5 mx-[10px]" style={{ backgroundColor: 'var(--surface-container)' }}>
+            <div className="relative flex items-center rounded-[5px] px-3 py-1.5 mx-[10px]" style={{ backgroundColor: 'var(--surface-container)', borderRadius: 5 }}>
               <Search size={16} className="text-[var(--text-dim)] mr-2 flex-shrink-0" />
               <input
                 ref={searchInputRef}
@@ -825,8 +825,8 @@ export const EmojiPicker = ({
                           key={gif.id}
                           type="button"
                           onClick={() => handleSelectGifItem(gif)}
-                          className="relative flex-1 rounded-lg overflow-hidden bg-[var(--surface-container)] active:opacity-70 cursor-pointer"
-                          style={{ minHeight: '100px', maxHeight: '140px' }}
+                          className="relative flex-1 rounded-[5px] overflow-hidden bg-[var(--surface-container)] active:opacity-70 cursor-pointer"
+                          style={{ minHeight: '100px', maxHeight: '140px', borderRadius: 5 }}
                         >
                           <img
                             src={gif.previewUrl}
@@ -859,7 +859,7 @@ export const EmojiPicker = ({
                           stickersScrollRef.current.scrollTo({ top: targetOffset, behavior: 'smooth' });
                         }
                       }}
-                      className="w-7 h-7 rounded-md overflow-hidden p-0.5 hover:bg-[var(--surface-hover)] active:scale-95 transition-all flex items-center justify-center flex-shrink-0 bg-transparent border-0 cursor-pointer text-[var(--text-dim)] hover:text-[var(--text-main)]"
+                      className="w-7 h-7 rounded-[5px] overflow-hidden p-0.5 hover:bg-[var(--surface-hover)] active:scale-95 transition-all flex items-center justify-center flex-shrink-0 bg-transparent border-0 cursor-pointer text-[var(--text-dim)] hover:text-[var(--text-main)]"
                       aria-label={t('emojiPicker.recent', 'Недавние')}
                     >
                       <Clock size={16} />
@@ -875,7 +875,7 @@ export const EmojiPicker = ({
                           stickersScrollRef.current.scrollTo({ top: targetOffset, behavior: 'smooth' });
                         }
                       }}
-                      className="w-7 h-7 rounded-md overflow-hidden p-0.5 hover:bg-[var(--surface-hover)] active:scale-95 transition-all flex items-center justify-center flex-shrink-0 bg-transparent border-0 cursor-pointer"
+                      className="w-7 h-7 rounded-[5px] overflow-hidden p-0.5 hover:bg-[var(--surface-hover)] active:scale-95 transition-all flex items-center justify-center flex-shrink-0 bg-transparent border-0 cursor-pointer"
                       aria-label={pack.title}
                     >
                       {pack.avatarUrl.endsWith('.tgs') ? (
@@ -907,7 +907,7 @@ export const EmojiPicker = ({
                           setActiveGifReaction(r.key);
                           setSearchQuery('');
                         }}
-                        className={`text-sm px-1.5 py-0.5 rounded transition-all flex-shrink-0 ${isSelected ? 'bg-[var(--surface-active)] scale-110' : 'opacity-60 hover:opacity-100'
+                        className={`text-sm px-1.5 py-0.5 rounded-[5px] transition-all flex-shrink-0 ${isSelected ? 'bg-[var(--surface-active)] scale-110' : 'opacity-60 hover:opacity-100'
                           }`}
                         aria-label={r.label}
                       >

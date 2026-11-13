@@ -60,7 +60,7 @@ export const SendAsTxtModal: React.FC<SendAsTxtModalProps> = ({
               width: '100%',
               maxWidth: '440px',
               backgroundColor: 'var(--bg-secondary, #252836)',
-              borderRadius: '8px',
+              borderRadius: '5px',
               border: 'none',
               outline: 'none',
               boxShadow: '0 12px 36px rgba(0, 0, 0, 0.35)',
@@ -112,7 +112,7 @@ export const SendAsTxtModal: React.FC<SendAsTxtModalProps> = ({
                   gap: '14px',
                   backgroundColor: 'var(--surface-container)',
                   padding: '12px 16px',
-                  borderRadius: '14px',
+                  borderRadius: '5px',
                 }}
               >
                 {/* Purple file icon badge */}
@@ -220,6 +220,7 @@ export const SendAsTxtModal: React.FC<SendAsTxtModalProps> = ({
                   fontWeight: 600,
                   cursor: 'pointer',
                   padding: '8px 12px',
+                  borderRadius: '5px',
                 }}
               >
                 Добавить
@@ -235,6 +236,7 @@ export const SendAsTxtModal: React.FC<SendAsTxtModalProps> = ({
                   fontWeight: 600,
                   cursor: 'pointer',
                   padding: '8px 12px',
+                  borderRadius: '5px',
                 }}
               >
                 Отмена
@@ -250,6 +252,7 @@ export const SendAsTxtModal: React.FC<SendAsTxtModalProps> = ({
                   fontWeight: 700,
                   cursor: 'pointer',
                   padding: '8px 12px',
+                  borderRadius: '5px',
                 }}
               >
                 Отправить

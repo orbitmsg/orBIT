@@ -117,7 +117,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   onBack();
                 }}
                 aria-label={t('chatWindow.back')}
-                className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-main)] transition-colors hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] border-none outline-none bg-transparent cursor-pointer"
+                className="flex h-9 w-9 items-center justify-center rounded-[5px] text-[var(--text-main)] transition-colors hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] border-none outline-none bg-transparent cursor-pointer"
               >
                 <ArrowLeft size={20} />
               </button>
@@ -166,8 +166,9 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 />
                 {activeChat?.type === 'channel' && activeChat.isOfficial && (
                   <span
-                    className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider flex-shrink-0"
+                    className="px-2 py-0.5 rounded-[5px] text-[10px] font-bold uppercase tracking-wider flex-shrink-0"
                     style={{
+                      borderRadius: '5px',
                       backgroundColor: 'color-mix(in srgb, var(--accent-color) 16%, transparent)',
                       color: 'var(--accent-text, var(--accent-color))',
                     }}
@@ -268,7 +269,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             {activeChatId === 'system_support' && supportService.isAdmin && (
               <button
                 type="button"
-                className="p-2 rounded-xl transition-colors duration-200 text-[var(--accent-text,var(--accent-color,#7C3AED))] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center relative"
+                className="p-2 rounded-[5px] transition-colors duration-200 text-[var(--accent-text,var(--accent-color,#7C3AED))] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center relative"
                 onClick={(e) => {
                   e.stopPropagation();
                   onOpenSupportTickets();
@@ -286,7 +287,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             
             <button
               type="button"
-              className="p-2 rounded-xl transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
+              className="p-2 rounded-[5px] transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
               onClick={(e) => {
                 e.stopPropagation();
                 useChatStore.getState().openInChatSearch('this_chat');
@@ -300,7 +301,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             {activeChatId !== 'notes' && activeChat?.type !== 'channel' && voiceCallsEnabled && (
               <button
                 type="button"
-                className="p-2 rounded-xl transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
+                className="p-2 rounded-[5px] transition-colors duration-200 text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
                 onClick={(e) => {
                   e.stopPropagation();
                   onAudioCallPress();

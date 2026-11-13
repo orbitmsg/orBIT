@@ -895,7 +895,7 @@ export const MessageInput = memo<MessageInputProps>(({
                 outline: 'none',
                 boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
                 color: 'var(--accent-color, #7C3AED)',
-                borderRadius: '9999px',
+                borderRadius: '5px',
                 width: '34px',
                 height: '34px',
                 display: 'flex',
@@ -949,7 +949,7 @@ export const MessageInput = memo<MessageInputProps>(({
             style={{
               flex: 1,
               backgroundColor: 'var(--surface-container, #33363f)',
-              borderRadius: '20px',
+              borderRadius: '5px',
               padding: '0 14px',
               minHeight: '34px',
               maxHeight: '120px',
@@ -1141,7 +1141,7 @@ export const MessageInput = memo<MessageInputProps>(({
           <div
             style={{
               backgroundColor: 'var(--bg-secondary, #252836)',
-              borderRadius: '18px',
+              borderRadius: '5px',
               border: 'none',
               padding: '20px',
               width: '320px',
@@ -1164,7 +1164,7 @@ export const MessageInput = memo<MessageInputProps>(({
                 style={{
                   background: 'var(--surface-container, rgba(255,255,255,0.06))',
                   border: 'none',
-                  borderRadius: '12px',
+                  borderRadius: '5px',
                   color: 'var(--text-main)',
                   padding: '10px 12px',
                   outline: 'none',
@@ -1183,7 +1183,7 @@ export const MessageInput = memo<MessageInputProps>(({
                 style={{
                   background: 'var(--surface-container, rgba(255,255,255,0.06))',
                   border: 'none',
-                  borderRadius: '12px',
+                  borderRadius: '5px',
                   color: 'var(--text-main)',
                   padding: '10px 12px',
                   outline: 'none',
@@ -1202,7 +1202,7 @@ export const MessageInput = memo<MessageInputProps>(({
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '4px' }}>
               <button
                 onClick={() => setLinkModalData({ ...linkModalData, open: false })}
-                style={{ color: 'var(--text-dim)', background: 'var(--surface-container, rgba(255,255,255,0.06))', border: 'none', borderRadius: '12px', fontSize: '14px', cursor: 'pointer', padding: '8px 14px' }}
+                style={{ color: 'var(--text-dim)', background: 'var(--surface-container, rgba(255,255,255,0.06))', border: 'none', borderRadius: '5px', fontSize: '14px', cursor: 'pointer', padding: '8px 14px' }}
                 className="hover:opacity-80 transition-opacity"
               >
                 {t('inputContextMenu.cancel')}
@@ -1237,7 +1237,7 @@ export const MessageInput = memo<MessageInputProps>(({
                     }
                   }
                 }}
-                style={{ color: '#ffffff', background: 'var(--accent-color, #7C3AED)', border: 'none', borderRadius: '12px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', padding: '8px 16px' }}
+                style={{ color: '#ffffff', background: 'var(--accent-color, #7C3AED)', border: 'none', borderRadius: '5px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', padding: '8px 16px' }}
                 className="hover:opacity-90 transition-opacity"
               >
                 {t('inputContextMenu.add')}

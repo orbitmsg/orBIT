@@ -258,7 +258,7 @@ export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
               style={{
                 width: '120px',
                 height: '120px',
-                borderRadius: '28px',
+                borderRadius: '5px',
                 backgroundColor: 'var(--surface-container-strong, rgba(255,255,255,0.08))',
                 border: '2px dashed var(--accent-color, #7C3AED)',
                 display: 'flex',
@@ -390,7 +390,7 @@ export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
 
         .input-container {
           position: relative;
-          border-radius: 9999px;
+          border-radius: 5px;
         }
         .comet-canvas {
           position: absolute;
@@ -399,7 +399,7 @@ export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
         .input-box {
           position: relative;
           z-index: 1;
-          border-radius: 9999px;
+          border-radius: 5px;
           padding: 8px 12px;
         }
 

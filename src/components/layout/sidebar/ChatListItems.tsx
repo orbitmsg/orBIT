@@ -217,8 +217,9 @@ export const ChatListItem = React.memo(({
               />
               {chat.type === 'channel' && chat.isOfficial && (
                 <span
-                  className="px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase flex-shrink-0 leading-none"
+                  className="px-1.5 py-0.5 rounded-[5px] text-[9px] font-extrabold uppercase flex-shrink-0 leading-none"
                   style={{
+                    borderRadius: '5px',
                     backgroundColor: 'color-mix(in srgb, var(--accent-color, #5865F2) 16%, transparent)',
                     color: 'var(--accent-text, var(--accent-color))',
                   }}
@@ -309,14 +310,14 @@ export const ChatListItem = React.memo(({
                 )}
                 {(chat.unreadCount ?? 0) > 0 && (
                   <span
-                    className="text-[12px] font-bold rounded-full flex-shrink-0"
+                    className="text-[12px] font-bold rounded-[5px] flex-shrink-0"
                     style={{
                       backgroundColor: 'var(--accent-color, #7C3AED)',
                       color: 'var(--accent-on-color, #ffffff)',
                       padding: '1px 7px',
                       minWidth: '22px',
                       lineHeight: '1.3',
-                      borderRadius: '9999px',
+                      borderRadius: '5px',
                       textAlign: 'center',
                     }}
                   >
@@ -418,14 +419,14 @@ export const ArchiveListItem = React.memo(({
             {totalUnread > 0 && (
               <div className="ml-auto flex items-center flex-shrink-0">
                 <span
-                  className="text-[12px] font-bold rounded-full flex-shrink-0"
+                  className="text-[12px] font-bold rounded-[5px] flex-shrink-0"
                   style={{
                     backgroundColor: 'var(--accent-color, #7C3AED)',
                     color: 'var(--accent-on-color, #ffffff)',
                     padding: '1px 7px',
                     minWidth: '22px',
                     lineHeight: '1.3',
-                    borderRadius: '9999px',
+                    borderRadius: '5px',
                     textAlign: 'center',
                   }}
                 >

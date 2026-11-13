@@ -76,10 +76,10 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
           onMouseEnter={() => setIsProfileHovered(true)}
           onMouseLeave={() => setIsProfileHovered(false)}
           aria-label={t('mainMenu.my_profile', 'Мой профиль')}
-          className="dock-profile-btn flex items-center gap-2.5 min-w-0 flex-1 rounded-xl transition-colors bg-transparent border-none outline-none cursor-pointer text-left p-1"
+          className="dock-profile-btn flex items-center gap-2.5 min-w-0 flex-1 rounded-[5px] transition-colors bg-transparent border-none outline-none cursor-pointer text-left p-1"
           style={{
             WebkitTapHighlightColor: 'transparent',
-            borderRadius: '4px',
+            borderRadius: '5px',
             outline: 'none',
             boxShadow: 'none',
             border: 'none',
@@ -134,7 +134,7 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
               WebkitTapHighlightColor: 'transparent',
               width: '32px',
               height: '32px',
-              borderRadius: '4px',
+              borderRadius: '5px',
               outline: 'none',
               boxShadow: 'none',
               border: 'none',
@@ -163,7 +163,7 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
               WebkitTapHighlightColor: 'transparent',
               width: '32px',
               height: '32px',
-              borderRadius: '4px',
+              borderRadius: '5px',
               outline: 'none',
               boxShadow: 'none',
               border: 'none',
@@ -189,7 +189,7 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
               WebkitTapHighlightColor: 'transparent',
               width: '32px',
               height: '32px',
-              borderRadius: '4px',
+              borderRadius: '5px',
               outline: 'none',
               boxShadow: 'none',
               border: 'none',

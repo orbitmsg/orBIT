@@ -285,7 +285,7 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
             style={{
               width: '100%',
               height: '36px',
-              borderRadius: '999px',
+              borderRadius: '5px',
               border: 'none',
               outline: 'none',
               boxShadow: 'none',
@@ -338,7 +338,7 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
           <button
             type="button"
             onClick={() => setIsScopeMenuOpen((prev) => !prev)}
-            className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer text-left"
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-[5px] hover:bg-white/5 transition-colors cursor-pointer text-left"
             style={{ border: 'none', background: 'transparent' }}
           >
             {scope === 'this_chat' ? (
@@ -374,11 +374,12 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
 
           {isScopeMenuOpen && (
             <div
-              className="absolute left-0 top-[38px] z-50 min-w-[170px] p-1.5 rounded-2xl backdrop-blur-xl flex flex-col gap-0.5"
+              className="absolute left-0 top-[38px] z-50 min-w-[170px] p-1.5 rounded-[5px] backdrop-blur-xl flex flex-col gap-0.5"
               style={{
                 backgroundColor: 'var(--settings-bg, var(--bg-secondary, #1e2932))',
                 border: 'none',
                 boxShadow: '0 8px 30px rgba(0, 0, 0, 0.45)',
+                borderRadius: '5px',
               }}
             >
               <button
@@ -387,7 +388,7 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
                   setInChatSearchScope('this_chat');
                   setIsScopeMenuOpen(false);
                 }}
-                className="w-full flex items-center justify-between px-3 py-2 text-[13px] rounded-xl transition-colors hover:bg-white/5 text-left cursor-pointer"
+                className="w-full flex items-center justify-between px-3 py-2 text-[13px] rounded-[5px] transition-colors hover:bg-white/5 text-left cursor-pointer"
                 style={{ border: 'none', background: 'transparent' }}
               >
                 <div className="flex items-center gap-2 min-w-0">
@@ -415,7 +416,7 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
                   setInChatSearchScope('all_chats');
                   setIsScopeMenuOpen(false);
                 }}
-                className="w-full flex items-center justify-between px-3 py-2 text-[13px] rounded-xl transition-colors hover:bg-white/5 text-left cursor-pointer"
+                className="w-full flex items-center justify-between px-3 py-2 text-[13px] rounded-[5px] transition-colors hover:bg-white/5 text-left cursor-pointer"
                 style={{ border: 'none', background: 'transparent' }}
               >
                 <div className="flex items-center gap-2 min-w-0">
@@ -446,7 +447,7 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
           type="button"
           onClick={onClose}
           aria-label={t('common.close', 'Закрыть')}
-          className="p-1.5 rounded-full hover:bg-white/10 text-[var(--text-dim)] hover:text-[var(--text-main)] transition-colors cursor-pointer"
+          className="p-1.5 rounded-[5px] hover:bg-white/10 text-[var(--text-dim)] hover:text-[var(--text-main)] transition-colors cursor-pointer"
           style={{ border: 'none', background: 'transparent' }}
         >
           <X size={16} />
@@ -506,7 +507,7 @@ export const InChatSidebarSearch: React.FC<InChatSidebarSearchProps> = ({
                 <div
                   key={`${res.chatId}_${res.message.id || res.message.time}_${idx}`}
                   onClick={() => handleResultClick(res)}
-                  className="px-2.5 py-2 rounded-xl flex items-center gap-3 cursor-pointer hover:bg-white/5 transition-colors select-none group"
+                  className="px-2.5 py-2 rounded-[5px] flex items-center gap-3 cursor-pointer hover:bg-white/5 transition-colors select-none group"
                 >
                   {res.isNotes ? (
                     <NotesAvatar className="w-10 h-10 rounded-full flex-shrink-0" />

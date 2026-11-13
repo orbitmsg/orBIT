@@ -149,10 +149,10 @@ export const ActionConfirmModal: React.FC<ActionConfirmModalProps> = ({
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.94, opacity: 0 }}
           transition={{ duration: 0.15, ease: 'easeOut' }}
-          className="w-full max-w-[340px] rounded-[20px] p-5 shadow-2xl overflow-hidden"
+          className="w-full max-w-[340px] rounded-[5px] p-5 shadow-2xl overflow-hidden"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 96%, #000)',
-            borderRadius: '20px',
+            borderRadius: '5px',
             border: 'none',
             outline: 'none',
             boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
@@ -203,10 +203,11 @@ export const ActionConfirmModal: React.FC<ActionConfirmModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-full text-[14px] font-medium transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-[5px] text-[14px] font-medium transition-colors cursor-pointer"
               style={{
                 backgroundColor: 'transparent',
                 color: 'var(--accent-color, #7C3AED)',
+                borderRadius: '5px',
                 border: 'none',
                 outline: 'none',
               }}
@@ -225,10 +226,11 @@ export const ActionConfirmModal: React.FC<ActionConfirmModalProps> = ({
                 onConfirm();
                 onClose();
               }}
-              className="px-4 py-2 rounded-full text-[14px] font-medium transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-[5px] text-[14px] font-medium transition-colors cursor-pointer"
               style={{
                 backgroundColor: 'transparent',
                 color: isDestructive ? '#ef4444' : 'var(--accent-color, #7C3AED)',
+                borderRadius: '5px',
                 border: 'none',
                 outline: 'none',
               }}

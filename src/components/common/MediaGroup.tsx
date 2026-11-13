@@ -54,7 +54,7 @@ class MediaLayoutEngine {
   private readonly ABSOLUTE_MIN_WIDTH = 30;
   private readonly MAX_HEIGHT = 380;
   private readonly GAP = 4;
-  private readonly RADIUS_OUTER = 12;
+  private readonly RADIUS_OUTER = 5;
   private readonly RADIUS_INNER = 0;
 
   private static compositionCache = new Map<number, number[][]>();

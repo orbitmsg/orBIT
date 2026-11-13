@@ -222,7 +222,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
               className="select-none tabular-nums opacity-0 group-hover:opacity-100 transition-opacity duration-150 mt-1 message-time-badge"
               style={{
                 backgroundColor: '#18191d',
-                borderRadius: '9999px',
+                borderRadius: '5px',
                 padding: '3px 8px',
                 color: 'rgba(255, 255, 255, 0.95)',
                 fontSize: '11px',
@@ -363,11 +363,12 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                   </span>
                   {isSenderOwner && (
                     <span
-                      className="ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0 select-none inline-flex items-center"
+                      className="ml-1.5 px-2 py-0.5 rounded-[5px] text-[11px] font-medium flex-shrink-0 select-none inline-flex items-center"
                       style={{
                         backgroundColor: 'color-mix(in srgb, var(--accent-color, #7C3AED) 16%, transparent)',
                         color: 'var(--accent-text, var(--accent-color, #9b7dd4))',
                         lineHeight: 1.2,
+                        borderRadius: '5px',
                         userSelect: 'none',
                         WebkitUserSelect: 'none',
                       }}
@@ -377,11 +378,12 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                   )}
                   {isSenderAdmin && (
                     <span
-                      className="ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0 select-none inline-flex items-center"
+                      className="ml-1.5 px-2 py-0.5 rounded-[5px] text-[11px] font-medium flex-shrink-0 select-none inline-flex items-center"
                       style={{
                         backgroundColor: 'rgba(22, 163, 74, 0.16)',
                         color: '#16a34a',
                         lineHeight: 1.2,
+                        borderRadius: '5px',
                         userSelect: 'none',
                         WebkitUserSelect: 'none',
                       }}
@@ -412,7 +414,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                     style={{
                       padding: '5px 10px',
                       backgroundColor: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 15%, transparent)' : 'color-mix(in srgb, var(--accent-color) 12%, transparent)',
-                      borderRadius: '0 6px 6px 0',
+                      borderRadius: '0 5px 5px 0',
                       borderLeft: isOwn ? '3px solid var(--bubble-own-text, #ffffff)' : '3px solid var(--accent-text, var(--accent-color))',
                     }}
                   >
@@ -476,7 +478,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                   style={{
                     padding: '8px 12px',
                     backgroundColor: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 12%, transparent)' : 'color-mix(in srgb, var(--accent-color) 10%, var(--surface-container-soft, transparent))',
-                    borderRadius: '0 8px 8px 0',
+                    borderRadius: '0 5px 5px 0',
                     borderLeft: isOwn ? '3px solid color-mix(in srgb, var(--bubble-own-text, #ffffff) 75%, transparent)' : '3px solid var(--accent-text, var(--accent-color))',
                   }}
                 >
@@ -512,7 +514,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                       alt=""
                       decoding="async"
                       loading="lazy"
-                      className="w-full max-h-72 object-cover rounded-md mt-1"
+                      className="w-full max-h-72 object-cover rounded-[5px] mt-1"
                       onError={(e) => (e.currentTarget.style.display = 'none')}
                     />
                   )}
@@ -581,10 +583,11 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                       onButtonClick?.(btn);
                     }}
                     aria-label={btn.text}
-                    className="w-full flex items-center justify-center px-3.5 py-2 rounded-xl text-[13px] font-semibold transition-all cursor-pointer shadow-sm active:scale-[0.98]"
+                    className="w-full flex items-center justify-center px-3.5 py-2 rounded-[5px] text-[13px] font-semibold transition-all cursor-pointer shadow-sm active:scale-[0.98]"
                     style={{
                       backgroundColor: 'color-mix(in srgb, var(--surface-container) 82%, var(--accent-color) 18%)',
                       color: 'var(--text-main)',
+                      borderRadius: '5px',
                       border: '1px solid var(--border-color)',
                       outline: 'none',
                       backdropFilter: 'blur(8px)',

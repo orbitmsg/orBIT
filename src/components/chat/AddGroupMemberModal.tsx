@@ -196,10 +196,11 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.94, y: 10 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
-          className="w-full max-w-[440px] flex flex-col rounded-2xl shadow-2xl overflow-hidden relative max-h-[85vh] border-none"
+          className="w-full max-w-[440px] flex flex-col rounded-[5px] shadow-2xl overflow-hidden relative max-h-[85vh] border-none"
           style={{
             backgroundColor: 'var(--settings-bg, var(--bg-secondary, #1e1b2e))',
             color: 'var(--text-main, #ffffff)',
+            borderRadius: '5px',
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -214,7 +215,8 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
               type="button"
               onClick={onClose}
               aria-label={t('common.close', 'Закрыть')}
-              className="p-1.5 rounded-full text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-white/10 transition-colors"
+              className="p-1.5 rounded-[5px] text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-white/10 transition-colors"
+              style={{ borderRadius: '5px' }}
             >
               <X size={19} />
             </button>
@@ -222,9 +224,10 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
 
           <div className="p-4 flex flex-col gap-3 overflow-y-auto chat-list-scrollbar flex-1 min-h-0">
             <div
-              className="p-3.5 rounded-2xl flex flex-col gap-2"
+              className="p-3.5 rounded-[5px] flex flex-col gap-2"
               style={{
                 backgroundColor: 'var(--surface-container, rgba(255,255,255,0.04))',
+                borderRadius: '5px',
                 border: 'none',
               }}
             >
@@ -239,10 +242,11 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
                   type="button"
                   onClick={handleCopyLink}
                   aria-label={t('groupSettings.copy_link', 'Скопировать ссылку')}
-                  className="flex-shrink-0 px-3 py-1.5 rounded-xl text-[12px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer border-none"
+                  className="flex-shrink-0 px-3 py-1.5 rounded-[5px] text-[12px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer border-none"
                   style={{
                     backgroundColor: copiedLink ? 'rgba(34, 197, 94, 0.15)' : 'var(--accent-color)',
                     color: copiedLink ? '#4ade80' : '#ffffff',
+                    borderRadius: '5px',
                   }}
                 >
                   {copiedLink ? <Check size={14} /> : <Copy size={14} />}
@@ -252,9 +256,10 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
             </div>
 
             <div
-              className="p-3.5 rounded-2xl flex flex-col gap-2"
+              className="p-3.5 rounded-[5px] flex flex-col gap-2"
               style={{
                 backgroundColor: 'var(--surface-container, rgba(255,255,255,0.04))',
+                borderRadius: '5px',
                 border: 'none',
               }}
             >
@@ -269,7 +274,8 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
                   type="button"
                   onClick={handleCopyCode}
                   aria-label={t('common.copy', 'Копировать')}
-                  className="flex-shrink-0 px-3 py-1.5 rounded-xl text-[12px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer text-[var(--text-dim)] hover:text-white bg-white/5 hover:bg-white/10 border-none"
+                  className="flex-shrink-0 px-3 py-1.5 rounded-[5px] text-[12px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer text-[var(--text-dim)] hover:text-white bg-white/5 hover:bg-white/10 border-none"
+                  style={{ borderRadius: '5px' }}
                 >
                   {copiedCode ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
                   <span>{copiedCode ? t('profile.copied', 'Скопирован') : t('common.copy', 'Копировать')}</span>
@@ -294,12 +300,13 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('groupSettings.search_contacts', 'Поиск среди контактов...')}
                 aria-label={t('groupSettings.search_contacts', 'Поиск среди контактов...')}
-                className="w-full bg-white/5 outline-none rounded-xl pl-10 pr-3.5 py-2.5 text-[13.5px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] transition-all border-none focus:ring-2 focus:ring-[var(--accent-color)]/40"
+                className="w-full bg-white/5 outline-none rounded-[5px] pl-10 pr-3.5 py-2.5 text-[13.5px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] transition-all border-none focus:ring-2 focus:ring-[var(--accent-color)]/40"
+                style={{ borderRadius: '5px' }}
               />
             </div>
 
             {isGroupFull && (
-              <div className="p-2.5 rounded-xl bg-amber-500/15 border-none text-amber-300 text-[12.5px] font-medium text-center">
+              <div className="p-2.5 rounded-[5px] bg-amber-500/15 border-none text-amber-300 text-[12.5px] font-medium text-center" style={{ borderRadius: '5px' }}>
                 {t('groupSettings.max_members_reached', 'Группа заполнена (макс. 10 участников)')}
               </div>
             )}
@@ -320,7 +327,8 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
                   return (
                     <div
                       key={contact.id}
-                      className="flex items-center justify-between p-2 rounded-xl hover:bg-white/5 transition-colors"
+                      className="flex items-center justify-between p-2 rounded-[5px] hover:bg-white/5 transition-colors"
+                      style={{ borderRadius: '5px' }}
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div className="relative flex-shrink-0">
@@ -349,7 +357,7 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
 
                       <div className="flex-shrink-0 ml-2">
                         {alreadyMember || isAdded ? (
-                          <span className="px-2.5 py-1 rounded-full text-[12px] font-medium text-green-400 bg-green-500/10 flex items-center gap-1">
+                          <span className="px-2.5 py-1 rounded-[5px] text-[12px] font-medium text-green-400 bg-green-500/10 flex items-center gap-1" style={{ borderRadius: '5px' }}>
                             <Check size={14} />
                             <span>{t('groupSettings.already_member', 'Уже в группе')}</span>
                           </span>
@@ -359,7 +367,8 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
                             disabled={isGroupFull || isAdding}
                             onClick={() => handleAddContact(contact)}
                             aria-label={t('groupSettings.add_to_group', 'Добавить в группу')}
-                            className="px-3 py-1.5 rounded-xl text-[12.5px] font-medium text-white bg-[var(--accent-color)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1.5 cursor-pointer border-none"
+                            className="px-3 py-1.5 rounded-[5px] text-[12.5px] font-medium text-white bg-[var(--accent-color)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1.5 cursor-pointer border-none"
+                            style={{ borderRadius: '5px' }}
                           >
                             <UserPlus size={14} />
                             <span>{isAdding ? '...' : t('common.add', 'Добавить')}</span>

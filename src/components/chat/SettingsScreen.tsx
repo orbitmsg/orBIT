@@ -989,7 +989,7 @@ export const SettingsScreen = () => {
             margin: 0,
             marginTop: isMobileWidth ? '30px' : '0',
             backgroundColor: MD3.bg,
-            borderRadius: isMobileWidth ? 0 : 16,
+            borderRadius: isMobileWidth ? 0 : 5,
             border: 'none',
             color: MD3.onSurface,
             boxShadow: isMobileWidth ? 'none' : '0 24px 64px rgba(0, 0, 0, 0.55)',
@@ -1052,7 +1052,7 @@ export const SettingsScreen = () => {
                     style={{
                       background: 'none',
                       border: 'none',
-                      borderRadius: isMobileWidth ? '12px' : '8px',
+                      borderRadius: isMobileWidth ? '5px' : '5px',
                       color: MD3.onSurfaceVar,
                       cursor: 'pointer',
                       padding: '6px',
@@ -1098,7 +1098,7 @@ export const SettingsScreen = () => {
                     style={{
                       background: 'none',
                       border: 'none',
-                      borderRadius: isMobileWidth ? '12px' : '8px',
+                      borderRadius: isMobileWidth ? '5px' : '5px',
                       color: MD3.onSurfaceVar,
                       cursor: 'pointer',
                       padding: '6px',
@@ -1129,7 +1129,7 @@ export const SettingsScreen = () => {
                   style={{
                     background: 'none',
                     border: 'none',
-                    borderRadius: isMobileWidth ? '12px' : '8px',
+                    borderRadius: isMobileWidth ? '5px' : '5px',
                     color: MD3.onSurfaceVar,
                     cursor: 'pointer',
                     padding: '6px',

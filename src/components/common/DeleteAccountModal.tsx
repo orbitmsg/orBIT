@@ -32,9 +32,10 @@ export const DeleteAccountModal = ({ isOpen, onClose, onConfirm }: DeleteAccount
           initial={{ scale: 0.95 }}
           animate={{ scale: 1 }}
           exit={{ scale: 0.95 }}
-          className="w-full max-w-sm rounded-[20px] p-6"
+          className="w-full max-w-sm rounded-[5px] p-6"
           style={{
             backgroundColor: 'var(--bg-secondary)',
+            borderRadius: '5px',
             border: 'none',
             outline: 'none',
             boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
@@ -54,10 +55,11 @@ export const DeleteAccountModal = ({ isOpen, onClose, onConfirm }: DeleteAccount
             <div className="flex gap-3 justify-center">
               <button
                 onClick={onClose}
-                className="px-6 py-2 rounded-full text-sm font-medium transition-colors cursor-pointer"
+                className="px-6 py-2 rounded-[5px] text-sm font-medium transition-colors cursor-pointer"
                 style={{
                   backgroundColor: 'var(--surface-muted)',
                   color: 'var(--text-main)',
+                  borderRadius: '5px',
                   border: 'none',
                   outline: 'none',
                 }}
@@ -68,10 +70,11 @@ export const DeleteAccountModal = ({ isOpen, onClose, onConfirm }: DeleteAccount
               </button>
               <button
                 onClick={onConfirm}
-                className="px-6 py-2 rounded-full text-sm font-bold transition-colors cursor-pointer"
+                className="px-6 py-2 rounded-[5px] text-sm font-bold transition-colors cursor-pointer"
                 style={{
                   backgroundColor: 'var(--accent-color)',
                   color: '#fff',
+                  borderRadius: '5px',
                   border: 'none',
                   outline: 'none',
                 }}

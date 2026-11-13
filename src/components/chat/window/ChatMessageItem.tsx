@@ -161,7 +161,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   const topGap = (index === 0 || !prevMsg) ? '4px' : (isPrevSameSenderGroup ? '2px' : '6px');
 
   const baseRadius = typeof bubbleRadius === 'number' ? `${bubbleRadius}px` : bubbleRadius;
-  const smallRadius = '8px';
+  const smallRadius = typeof bubbleRadius === 'number' ? `${Math.min(bubbleRadius, 3)}px` : '3px';
 
   let customRadius: string;
   if (isOwn) {
@@ -381,7 +381,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         {mediaItems.map((file, fIdx) => (
           <div
             key={fIdx}
-            className="flex items-center gap-2.5 p-1.5 rounded-lg transition-colors cursor-pointer select-none"
+            className="flex items-center gap-2.5 p-1.5 rounded-[5px] transition-colors cursor-pointer select-none"
+            style={{ borderRadius: '5px' }}
             onClick={async () => {
               try {
                 let arrayBuffer: ArrayBuffer | null = null;
@@ -583,7 +584,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           fontSize: '12px',
           fontWeight: 500,
           padding: '3px 12px',
-          borderRadius: '9999px',
+          borderRadius: '5px',
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -671,7 +672,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
               fontSize: '12px',
               fontWeight: 500,
               padding: '3px 6px 3px 12px',
-              borderRadius: '9999px',
+              borderRadius: '5px',
               display: 'inline-flex',
               flexDirection: 'row',
               alignItems: 'center',
@@ -697,7 +698,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 color: 'var(--text-dim)',
                 backgroundColor: 'var(--surface-container-soft)',
                 padding: '1px 7px',
-                borderRadius: '9999px',
+                borderRadius: '5px',
                 lineHeight: 1.35,
                 flexShrink: 0,
                 boxShadow: 'none',
@@ -754,14 +755,14 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
 
       let photoRadius = customRadius;
       if (isPhotoGroup) {
-        const pR = Math.max(parseFloat(baseRadius) || 16, 20);
+        const pR = Math.max(parseFloat(baseRadius) || 5, 5);
         if (isOwn) {
-          const rTopRight = isPrevSameSenderGroup ? 8 : pR;
-          const rBottomRight = isNextSameSenderGroup ? 8 : pR;
+          const rTopRight = isPrevSameSenderGroup ? 3 : pR;
+          const rBottomRight = isNextSameSenderGroup ? 3 : pR;
           photoRadius = `${pR}px ${rTopRight}px ${rBottomRight}px ${pR}px`;
         } else {
-          const rTopLeft = isPrevSameSenderGroup ? 8 : pR;
-          const rBottomLeft = isNextSameSenderGroup ? 8 : pR;
+          const rTopLeft = isPrevSameSenderGroup ? 3 : pR;
+          const rBottomLeft = isNextSameSenderGroup ? 3 : pR;
           photoRadius = `${rTopLeft}px ${pR}px ${pR}px ${rBottomLeft}px`;
         }
       }
@@ -1033,7 +1034,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     className="absolute bottom-0.5 right-0.5 select-none tabular-nums opacity-0 group-hover:opacity-100 transition-opacity duration-150 message-time-badge"
                     style={{
                       backgroundColor: '#18191d',
-                      borderRadius: '9999px',
+                      borderRadius: '5px',
                       padding: '3px 8px',
                       color: 'rgba(255, 255, 255, 0.95)',
                       fontSize: '11px',
@@ -1198,7 +1199,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                         style={{
                           padding: '5px 10px',
                           backgroundColor: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 15%, transparent)' : 'color-mix(in srgb, var(--accent-color) 12%, transparent)',
-                          borderRadius: '0 6px 6px 0',
+                          borderRadius: '0 5px 5px 0',
                           borderLeft: isOwn ? '3px solid var(--bubble-own-text, #ffffff)' : '3px solid var(--accent-text, var(--accent-color))',
                         }}
                       >

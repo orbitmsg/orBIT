@@ -49,8 +49,8 @@ export const SoundSettingsModal = ({ chatId, onClose, position, isMobileView = f
         backgroundColor: 'transparent',
       }}
       onClick={(e) => {
-        e.stopPropagation(); // предотвращаем всплытие до профиля
-        onClose(); // закрываем только модальное окно
+        e.stopPropagation();
+        onClose();
       }}
     >
       <motion.div
@@ -60,7 +60,7 @@ export const SoundSettingsModal = ({ chatId, onClose, position, isMobileView = f
         style={{
           ...contentStyle,
           backgroundColor: 'var(--bg-secondary, #1a1a1a)',
-          borderRadius: '16px',
+          borderRadius: '5px',
           padding: '16px 20px',
           color: 'var(--text-main, #fff)',
           boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
@@ -69,7 +69,7 @@ export const SoundSettingsModal = ({ chatId, onClose, position, isMobileView = f
           flexDirection: 'column',
           gap: '12px',
         }}
-        onClick={(e) => e.stopPropagation()} // предотвращаем закрытие при клике внутри
+        onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div

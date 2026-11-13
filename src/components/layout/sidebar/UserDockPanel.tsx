@@ -25,7 +25,7 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
   const [isDeafened, setIsDeafened] = useState(false);
 
   return (
-    <div className="shrink-0 w-full z-20 select-none pointer-events-auto rounded-[16px]">
+    <div className="shrink-0 w-full z-20 select-none pointer-events-auto rounded-[5px]">
       <style>{`
         .orbita-dock-panel .dock-profile-btn:hover,
         .orbita-dock-panel .dock-btn:hover {
@@ -52,10 +52,10 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
           minHeight: '60px',
           height: '60px',
           background: 'var(--accent-gradient, linear-gradient(135deg, var(--accent-color, #5865F2) 0%, var(--accent-dark, #4752c4) 100%))',
-          borderRadius: '16px',
+          borderRadius: '5px',
           border: 'none',
           outline: 'none',
-          boxShadow: 'none',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.45)',
           color: 'var(--accent-on-color, #ffffff)',
           boxSizing: 'border-box',
         }}
@@ -73,7 +73,7 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
           className="dock-profile-btn flex items-center gap-2.5 min-w-0 flex-1 rounded-xl transition-colors bg-transparent border-none outline-none cursor-pointer text-left p-1"
           style={{
             WebkitTapHighlightColor: 'transparent',
-            borderRadius: '12px',
+            borderRadius: '4px',
             outline: 'none',
             boxShadow: 'none',
             border: 'none',
@@ -128,7 +128,7 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
               WebkitTapHighlightColor: 'transparent',
               width: '32px',
               height: '32px',
-              borderRadius: '8px',
+              borderRadius: '4px',
               outline: 'none',
               boxShadow: 'none',
               border: 'none',
@@ -157,7 +157,7 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
               WebkitTapHighlightColor: 'transparent',
               width: '32px',
               height: '32px',
-              borderRadius: '8px',
+              borderRadius: '4px',
               outline: 'none',
               boxShadow: 'none',
               border: 'none',
@@ -183,7 +183,7 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
               WebkitTapHighlightColor: 'transparent',
               width: '32px',
               height: '32px',
-              borderRadius: '8px',
+              borderRadius: '4px',
               outline: 'none',
               boxShadow: 'none',
               border: 'none',

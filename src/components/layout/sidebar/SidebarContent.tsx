@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   RotateCw,
   WifiOff,
-  ChevronUp,
   ChevronRight,
   UserPlus,
 } from 'lucide-react';
@@ -96,7 +95,6 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   hideDock,
 }) => {
   const { t } = useTranslation();
-  const [showScrollTop, setShowScrollTop] = React.useState(false);
   const activeChatId = useChatStore((s) => s.activeChatId);
   const inChatSearch = useChatStore((s) => s.inChatSearch);
   const closeInChatSearch = useChatStore((s) => s.closeInChatSearch);
@@ -263,16 +261,12 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
       >
         <div
           ref={chatListScrollRef}
-          onScroll={(e) => {
-            handleChatListScroll(e);
-            const el = e.currentTarget;
-            setShowScrollTop(el.scrollTop > 180);
-          }}
+          onScroll={handleChatListScroll}
           className="flex-1 chat-list-scrollbar select-none"
           style={{
             marginTop: 0,
             paddingTop: '8px',
-            paddingBottom: '8px',
+            paddingBottom: '74px',
             overflowY: 'scroll',
             overflowX: 'hidden',
           }}
@@ -691,45 +685,9 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           }}
         />
 
-        <button
-          type="button"
-          className={`scroll-btn ${showScrollTop ? 'visible' : ''}`}
-          onClick={() => {
-            if (chatListScrollRef.current) {
-              chatListScrollRef.current.scrollTop = 0;
-            }
-            setShowScrollTop(false);
-          }}
-          aria-label={t('chatWindow.scroll_up', 'Прокрутить наверх')}
-          style={{
-            position: 'absolute',
-            right: '16px',
-            bottom: '76px',
-            width: '44px',
-            height: '44px',
-            borderRadius: '50%',
-            backgroundColor: 'var(--surface-container-strong, var(--surface-container, #33363f))',
-            color: 'var(--text-main)',
-            boxShadow: isLightTheme ? '0 4px 14px rgba(0, 0, 0, 0.12)' : '0 4px 14px rgba(0, 0, 0, 0.28)',
-            border: 'none',
-            outline: 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 30,
-          }}
-        >
-          <ChevronUp size={24} strokeWidth={2.4} style={{ color: 'var(--text-main)' }} />
-        </button>
-
         {!hideDock && (
           <div
-            className="shrink-0 w-full z-20 select-none pointer-events-auto"
-            style={{
-              padding: '0 6px 8px 6px',
-              boxSizing: 'border-box',
-            }}
+            className="absolute left-[6px] right-[6px] bottom-[6px] z-20 select-none pointer-events-auto"
           >
             <UserDockPanel
               onOpenProfile={onOpenProfile}

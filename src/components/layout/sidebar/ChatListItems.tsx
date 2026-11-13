@@ -110,30 +110,30 @@ export const ChatListItem = React.memo(({
       className="group relative cursor-pointer"
       style={{
         borderRadius: '16px',
-        margin: '0.5px 8px',
+        margin: '3.5px 8px',
         width: 'calc(100% - 16px)',
         backgroundColor: rowBg,
         border: 'none',
         outline: 'none',
-        padding: '10px 12px',
+        padding: '8px 12px 8px 5px',
         minHeight: 60,
         boxSizing: 'border-box',
         contentVisibility: 'auto',
-        containIntrinsicSize: '62px',
+        containIntrinsicSize: '72px',
         willChange: 'transform',
         transition: 'background-color 0.12s ease',
       }}
     >
       <div className="flex justify-between items-center min-w-0">
-        <div style={{ width: 46, height: 46, marginRight: 12, flexShrink: 0, position: 'relative' }}>
+        <div style={{ width: 49, height: 49, marginRight: 12, flexShrink: 0, position: 'relative' }}>
           {chat.id === 'notes' ? (
-            <NotesAvatar className="w-[46px] h-[46px]" />
+            <NotesAvatar className="w-[49px] h-[49px]" />
           ) : (chat.avatarUrl || chat.id === 'system_support') ? (
-            <Avatar src={chat.avatarUrl || SUPPORT_AVATAR_URL} alt={chat.name} className="w-[46px] h-[46px]" style={{ borderRadius: '50%' }} />
+            <Avatar src={chat.avatarUrl || SUPPORT_AVATAR_URL} alt={chat.name} className="w-[49px] h-[49px]" style={{ borderRadius: '50%' }} />
           ) : chat.type === 'bot' ? (
-            <BotAvatar className="w-[46px] h-[46px]" />
+            <BotAvatar className="w-[49px] h-[49px]" />
           ) : (
-            <Avatar src={chat.avatarUrl} alt={chat.name} className="w-[46px] h-[46px]" style={{ borderRadius: '50%' }} />
+            <Avatar src={chat.avatarUrl} alt={chat.name} className="w-[49px] h-[49px]" style={{ borderRadius: '50%' }} />
           )}
           {chat.type === 'private' && chat.id !== 'notes' && (
             <OnlineIndicator
@@ -373,25 +373,25 @@ export const ArchiveListItem = React.memo(({
       className="group relative cursor-pointer"
       style={{
         borderRadius: '16px',
-        margin: '0.5px 8px',
+        margin: '3.5px 8px',
         width: 'calc(100% - 16px)',
         backgroundColor: isHovered
           ? 'var(--surface-hover, rgba(128, 128, 128, 0.08))'
           : 'transparent',
         border: 'none',
         outline: 'none',
-        padding: '10px 12px',
+        padding: '8px 12px 8px 5px',
         minHeight: 60,
         boxSizing: 'border-box',
         transition: 'background-color 0.12s ease',
       }}
     >
       <div className="flex justify-between items-center min-w-0">
-        <div style={{ width: 46, height: 46, marginRight: 12, flexShrink: 0, position: 'relative' }}>
+        <div style={{ width: 49, height: 49, marginRight: 12, flexShrink: 0, position: 'relative' }}>
           <div
             style={{
-              width: 46,
-              height: 46,
+              width: 49,
+              height: 49,
               borderRadius: '50%',
               backgroundColor: 'var(--surface-container-strong, rgba(128, 128, 128, 0.16))',
               display: 'flex',

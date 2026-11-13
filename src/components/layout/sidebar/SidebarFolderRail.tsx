@@ -164,7 +164,7 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
             className="absolute left-0 w-1 rounded-r-full transition-all duration-200"
             style={{
               backgroundColor: '#23a55a',
-              height: hoveredInfo?.id === 'explore' ? '20px' : '0px',
+              height: currentView === 'explore' ? '40px' : hoveredInfo?.id === 'explore' ? '20px' : '0px',
             }}
           />
           <button
@@ -176,8 +176,8 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
             className="w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 outline-none border-none select-none"
             style={{
               borderRadius: '16px',
-              backgroundColor: hoveredInfo?.id === 'explore' ? '#23a55a' : 'var(--surface-container, #18181a)',
-              color: hoveredInfo?.id === 'explore' ? '#ffffff' : 'var(--text-dim, #8e8e93)',
+              backgroundColor: currentView === 'explore' || hoveredInfo?.id === 'explore' ? '#23a55a' : 'var(--surface-container, #18181a)',
+              color: currentView === 'explore' || hoveredInfo?.id === 'explore' ? '#ffffff' : 'var(--text-dim, #8e8e93)',
             }}
           >
             <Compass size={24} strokeWidth={2} />

@@ -390,7 +390,7 @@ export interface ChatState {
   currentTheme: ThemeId;
   themeTintId: string;
   chatColor: string;
-  currentView: 'chats' | 'settings';
+  currentView: 'chats' | 'settings' | 'explore';
   dotOverlay: boolean;
   blurProtection: boolean;
   hideOnBackground: boolean;
@@ -576,7 +576,7 @@ export interface ChatState {
   setChatColor: (color: string) => void;
   resetChatColor: () => void;
   toggleDots: () => void;
-  setCurrentView: (view: 'chats' | 'settings') => void;
+  setCurrentView: (view: 'chats' | 'settings' | 'explore') => void;
   initialSettingsTab?: string;
   openSettings: (tab?: string) => void;
   setBlurProtection: (type: 'hideOnBackground' | 'hideFromScreenCapture' | 'main', val: boolean) => void;

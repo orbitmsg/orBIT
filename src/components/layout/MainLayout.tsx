@@ -46,6 +46,8 @@ import { usePrivateChatSubscriptions } from './hooks/usePrivateChatSubscriptions
 import { useHandshakeListeners } from './hooks/useHandshakeListeners';
 import { useMainLayoutSync } from './hooks/useMainLayoutSync';
 import { useConnectRequestHandler } from './hooks/useConnectRequestHandler';
+import { CreateLobbyModal } from '../lobby/CreateLobbyModal';
+import { ExploreLobbiesView } from '../lobby/ExploreLobbiesView';
 import { supportService, SUPPORT_AVATAR_URL } from '../../services/supportService';
 
 interface ChatContextMenu {
@@ -133,6 +135,7 @@ export const MainLayout = () => {
     isOpen: boolean;
     type: 'group' | 'channel' | 'friend';
   }>({ isOpen: false, type: 'friend' });
+  const [isCreateLobbyOpen, setIsCreateLobbyOpen] = useState(false);
   const [searchChannelResult, setSearchChannelResult] = useState<ChannelInfo | null>(null);
   const [isMyProfileOpen, setIsMyProfileOpen] = useState(false);
   const [showCallsModal, setShowCallsModal] = useState(false);
@@ -1005,6 +1008,9 @@ export const MainLayout = () => {
   }, []);
 
   const handleSelectChat = useCallback((chatId: string) => {
+    if (useChatStore.getState().currentView !== 'chats') {
+      setCurrentView('chats');
+    }
     if (chatId === useChatStore.getState().activeChatId) return;
     if (useChatStore.getState().isRecordingVoice) {
       setPendingSwitchChatId(chatId);
@@ -1194,8 +1200,11 @@ export const MainLayout = () => {
                 folders={folders}
                 getFolderUnreadCount={getFolderUnreadCount}
                 isLightTheme={isLightTheme}
-                onOpenCreateLobby={() => setConnectModalConfig({ isOpen: true, type: 'group' })}
-                onOpenExplore={() => setConnectModalConfig({ isOpen: true, type: 'channel' })}
+                onOpenCreateLobby={() => setIsCreateLobbyOpen(true)}
+                onOpenExplore={() => {
+                  setCurrentView('explore');
+                  setActiveChat(null);
+                }}
               />
             )}
             <div className="flex-1 min-w-0 h-full">
@@ -1264,7 +1273,9 @@ export const MainLayout = () => {
             >
               <div className="flex flex-col h-full relative">
                 <div className="relative flex flex-col flex-1 min-h-0">
-                  {activeChatId && chats.some(c => c.id === activeChatId) ? (
+                  {currentView === 'explore' ? (
+                    <ExploreLobbiesView />
+                  ) : activeChatId && chats.some(c => c.id === activeChatId) ? (
                     <ChatWindow
                       isMobileView={isMobileView}
                       onBack={handleChatWindowBack}
@@ -1368,6 +1379,11 @@ export const MainLayout = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <CreateLobbyModal
+          isOpen={isCreateLobbyOpen}
+          onClose={() => setIsCreateLobbyOpen(false)}
+        />
 
         <MainLayoutModals
           groupInviteUrl={groupInviteUrl}

@@ -503,8 +503,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                     style={{
                       borderRadius: '14px',
                       border: 'none',
-                      margin: '2px 8px',
-                      width: 'calc(100% - 16px)',
+                      margin: '2.5px 12px 2.5px 6px',
+                      width: 'calc(100% - 18px)',
                       padding: '8px 10px',
                       boxSizing: 'border-box',
                       backgroundColor: 'transparent',
@@ -583,8 +583,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                         style={{
                           borderRadius: '16px',
                           border: 'none',
-                          margin: '3px 8px',
-                          width: 'calc(100% - 16px)',
+                          margin: '2.5px 12px 2.5px 6px',
+                          width: 'calc(100% - 18px)',
                           padding: '10px 12px',
                           minHeight: 60,
                           boxSizing: 'border-box',

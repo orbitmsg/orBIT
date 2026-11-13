@@ -295,7 +295,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
           alignSelf: 'flex-start',
           margin: '12px 12px 12px 0',
           borderRadius: '16px',
-          backgroundColor: 'var(--title-bar-bg, #111015)',
+          backgroundColor: 'var(--title-bar-bg, #14111d)',
           border: 'none',
           outline: 'none',
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
@@ -384,7 +384,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                 online={Boolean(effectiveChat.online)}
                 showOffline={false}
                 size="lg"
-                ringColor="var(--title-bar-bg, #111015)"
+                ringColor="var(--title-bar-bg, #14111d)"
                 ariaLabel={effectiveChat.online ? t('userStatus.online', 'в сети') : undefined}
               />
             </div>

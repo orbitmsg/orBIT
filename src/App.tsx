@@ -482,7 +482,7 @@ function App() {
     return (
       <ThemeProvider theme={md3Theme}>
         <CssBaseline />
-        <div className="h-screen w-screen bg-[var(--title-bar-bg,#111015)]" style={{ paddingTop: isElectron ? '30px' : '0px', boxSizing: 'border-box' }}>
+        <div className="h-screen w-screen bg-[var(--title-bar-bg,#14111d)]" style={{ paddingTop: isElectron ? '30px' : '0px', boxSizing: 'border-box' }}>
           {isElectron && (
             <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999999 }}>
               <TitleBar />
@@ -499,7 +499,7 @@ function App() {
   return (
     <ThemeProvider theme={md3Theme}>
       <CssBaseline />
-      <div className="h-screen w-screen overflow-hidden bg-[var(--title-bar-bg,#111015)]" style={{ paddingTop: isElectron ? '30px' : '0px', boxSizing: 'border-box' }}>
+      <div className="h-screen w-screen overflow-hidden bg-[var(--title-bar-bg,#14111d)]" style={{ paddingTop: isElectron ? '30px' : '0px', boxSizing: 'border-box' }}>
         {isElectron && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999999 }}>
             <TitleBar />

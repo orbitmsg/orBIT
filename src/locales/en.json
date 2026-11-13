@@ -452,6 +452,13 @@
     "chatPlaceholder": {
       "title": "Select a chat or start a new one",
       "welcome": "Welcome to Orbita",
+      "phrase_0": "Who are we chatting with today?",
+      "phrase_1": "Shall we start a conversation?",
+      "phrase_2": "Select a chat to start messaging",
+      "phrase_3": "It's quiet here... Pick a chat on the left",
+      "phrase_4": "Time to send a new message!",
+      "phrase_5": "Orbita is ready. Pick a contact",
+      "phrase_6": "Start a chat or find new friends",
       "seeWhatsNewPrefix": "See ",
       "whatsNew": "what's new",
       "seeWhatsNewSuffix": " in this update",

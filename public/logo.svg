@@ -1,13 +1,81 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="90 140 330 230" width="100%" height="100%">
-  <clipPath id="clip-left-tip">
-    <rect x="0" y="0" width="230" height="512" />
-  </clipPath>
-  <rect x="200" y="220" width="200" height="130" rx="65" fill="none" stroke="#9c78ff" stroke-width="10" clip-path="url(#clip-left-tip)"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="100%" height="100%">
+  <defs>
+    <linearGradient id="ringFill" x1="75%" y1="15%" x2="20%" y2="85%">
+      <stop offset="0%" stop-color="#6B67F8" />
+      <stop offset="50%" stop-color="#514AE6" />
+      <stop offset="100%" stop-color="#3C33C4" />
+    </linearGradient>
 
-  <rect x="110" y="160" width="180" height="120" rx="60" fill="none" stroke="#b2acff" stroke-width="10"/>
+    <linearGradient id="ringStroke" x1="80%" y1="10%" x2="20%" y2="90%">
+      <stop offset="0%" stop-color="#9A98FF" stop-opacity="0.85" />
+      <stop offset="50%" stop-color="#6C67F5" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#554EE0" stop-opacity="0.7" />
+    </linearGradient>
 
-  <clipPath id="clip-rest-of-right">
-    <rect x="230" y="0" width="282" height="512" />
-  </clipPath>
-  <rect x="200" y="220" width="200" height="130" rx="65" fill="none" stroke="#9c78ff" stroke-width="10" clip-path="url(#clip-rest-of-right)"/>
+    <linearGradient id="sq1Grad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4A43DB" />
+      <stop offset="100%" stop-color="#5B55EE" />
+    </linearGradient>
+
+    <linearGradient id="sq2Grad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#5B55EE" />
+      <stop offset="100%" stop-color="#7673FF" />
+    </linearGradient>
+
+    <radialGradient id="sq3Grad" cx="50%" cy="50%" r="55%" fx="50%" fy="50%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="28%" stop-color="#E5E6FF" />
+      <stop offset="65%" stop-color="#8C8AFF" />
+      <stop offset="100%" stop-color="#6864F7" />
+    </radialGradient>
+
+    <filter id="ambientGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="32" result="blur" />
+      <feComponentTransfer in="blur" result="dimBlur">
+        <feFuncA type="linear" slope="0.45" />
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode in="dimBlur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <filter id="topPixelGlow" x="-150%" y="-150%" width="400%" height="400%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="14" result="blur1" />
+      <feGaussianBlur in="SourceGraphic" stdDeviation="38" result="blur2" />
+      <feGaussianBlur in="SourceGraphic" stdDeviation="70" result="blur3" />
+      <feMerge>
+        <feMergeNode in="blur3" />
+        <feMergeNode in="blur2" />
+        <feMergeNode in="blur1" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1000" height="1000" fill="#0B0B0E" />
+
+  <circle cx="535" cy="525" r="340" fill="#4E46E5" opacity="0.14" filter="url(#ambientGlow)" />
+
+  <g filter="url(#ambientGlow)">
+    <path d="M 678.5 239.0
+             A 340 340 0 1 0 816.0 376.5
+             L 780.7 411.8
+             A 290 290 0 1 1 643.2 274.3
+             Z" fill="url(#ringFill)" stroke="url(#ringStroke)" stroke-width="3.5" stroke-linejoin="round" />
+
+    <path d="M 603.7 313.8
+             A 240 240 0 1 0 741.2 451.3
+             L 705.2 487.3
+             A 190 190 0 1 1 567.7 349.8
+             Z" fill="url(#ringFill)" stroke="url(#ringStroke)" stroke-width="3.5" stroke-linejoin="round" />
+
+    <rect x="605" y="355" width="85" height="85" fill="url(#sq1Grad)" stroke="#726DFF" stroke-width="1.5" stroke-opacity="0.5" />
+
+    <rect x="690" y="270" width="85" height="85" fill="url(#sq2Grad)" stroke="#8E8AFF" stroke-width="1.5" stroke-opacity="0.6" />
+  </g>
+
+  <g filter="url(#topPixelGlow)">
+    <rect x="775" y="185" width="85" height="85" fill="url(#sq3Grad)" stroke="#D0D0FF" stroke-width="2" />
+  </g>
 </svg>

@@ -10,6 +10,7 @@ import { accountSyncService } from '../../services/accountSyncService';
 import { restoreAccountBackup } from '../../services/accountBackupService';
 import { useAccountStore } from '../../services/accountManager';
 import packageJson from '../../../package.json';
+import { OrbitIcon, OrbitWordmark } from '../common/OrbitBrand';
 
 type StepType = 'menu' | 'register' | 'restore_id' | 'restore_backup_file' | 'restore_backup_phrase';
 
@@ -17,7 +18,6 @@ export const WelcomeScreen: React.FC = () => {
   const { t } = useTranslation();
   const setStep = useAuthStore((state) => state.setStep);
   const setNicknameStore = useAuthStore((state) => state.setNickname);
-  const currentTheme = useChatStore((state) => state.currentTheme);
   const activeAccountId = useAccountStore((state) => state.activeAccountId);
   const isAddingSecondAccount = useAccountStore((state) => state.isAddingSecondAccount);
   const cancelAddSecondAccount = useAccountStore((state) => state.cancelAddSecondAccount);
@@ -43,29 +43,6 @@ export const WelcomeScreen: React.FC = () => {
   useEffect(() => {
     isFirstMountRef.current = false;
   }, []);
-
-  const [isLight, setIsLight] = useState(() => {
-    if (typeof document !== 'undefined') {
-      return document.documentElement.getAttribute('data-theme') === 'light' ||
-             document.documentElement.getAttribute('data-theme-light') === 'true';
-    }
-    return false;
-  });
-
-  useEffect(() => {
-    const updateTheme = () => {
-      const isLightMode = document.documentElement.getAttribute('data-theme') === 'light' ||
-                          document.documentElement.getAttribute('data-theme-light') === 'true';
-      setIsLight(isLightMode);
-    };
-    updateTheme();
-    const observer = new MutationObserver(updateTheme);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme', 'data-theme-light', 'style'],
-    });
-    return () => observer.disconnect();
-  }, [currentTheme]);
 
   const navigateTo = useCallback((nextStep: StepType) => {
     setErrorMessage(null);
@@ -254,8 +231,6 @@ export const WelcomeScreen: React.FC = () => {
     }),
   };
 
-  const logoColor = isLight ? '#5c54e5' : '#BCC0C3';
-
   return (
     <div
       style={{
@@ -390,53 +365,25 @@ export const WelcomeScreen: React.FC = () => {
                   marginBottom: '20px',
                 }}
               >
-                <svg viewBox="0 0 800 800" width="100%" height="100%" style={{ overflow: 'visible' }}>
-                  <defs>
-                    <clipPath id="welcome-front-clip">
-                      <rect x="-600" y="0" width="1200" height="600" />
-                    </clipPath>
-                    <mask id="welcome-back-ring-mask">
-                      <rect x="0" y="0" width="800" height="800" fill="white" />
-                      <circle cx="400" cy="400" r="192" fill="black" />
-                    </mask>
-                    <mask id="welcome-planet-mask">
-                      <rect x="0" y="0" width="800" height="800" fill="white" />
-                      <g transform="translate(400, 400) rotate(-26)">
-                        <path d="M 224 0 A 224 59 0 0 1 -224 0 L -376 0 A 376 121 0 0 0 376 0 Z" fill="black" />
-                      </g>
-                    </mask>
-                    <mask id="welcome-ring-hole">
-                      <rect x="-600" y="-600" width="1200" height="1200" fill="white" />
-                      <ellipse cx="0" cy="0" rx="240" ry="75" fill="black" />
-                    </mask>
-                  </defs>
-                  <g mask="url(#welcome-back-ring-mask)">
-                    <g transform="translate(400, 400) rotate(-26)">
-                      <ellipse cx="0" cy="0" rx="360" ry="105" fill={logoColor} mask="url(#welcome-ring-hole)" />
-                    </g>
-                  </g>
-                  <circle cx="400" cy="400" r="175" fill={logoColor} mask="url(#welcome-planet-mask)" />
-                  <g transform="translate(400, 400) rotate(-26)">
-                    <g clipPath="url(#welcome-front-clip)">
-                      <ellipse cx="0" cy="0" rx="360" ry="105" fill={logoColor} mask="url(#welcome-ring-hole)" />
-                    </g>
-                  </g>
-                </svg>
+                <OrbitIcon size={140} />
               </div>
 
-              <h1
+              <div
                 style={{
                   margin: '0 0 30px 0',
-                  fontSize: '32px',
-                  fontWeight: 800,
-                  letterSpacing: '-0.025em',
-                  color: 'var(--text-main, #ffffff)',
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  justifyContent: 'center',
+                  gap: '8px',
                   lineHeight: 1.15,
                   whiteSpace: 'nowrap',
                 }}
               >
-                {t('welcome.title', 'Orbita Desktop')}
-              </h1>
+                <OrbitWordmark fontSize="36px" />
+                <span style={{ fontSize: '26px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.7)' }}>
+                  Desktop
+                </span>
+              </div>
 
               <div
                 style={{
@@ -1147,7 +1094,7 @@ export const WelcomeScreen: React.FC = () => {
             fontWeight: 500,
           }}
         >
-          {`Orbita Desktop v${packageJson.version} x64`}
+          {`orBIT Desktop v${packageJson.version} x64`}
         </span>
       </div>
     </div>

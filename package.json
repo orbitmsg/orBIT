@@ -15,8 +15,8 @@
     "save": "backup.bat"
   },
   "build": {
-    "appId": "com.saizzi.orbita",
-    "productName": "Orbita Desktop",
+    "appId": "com.saizzi.orbit",
+    "productName": "orBIT Desktop",
     "directories": {
       "output": "release"
     },

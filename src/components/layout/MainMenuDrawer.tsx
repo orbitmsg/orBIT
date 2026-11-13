@@ -20,6 +20,7 @@ import { Avatar } from '../common/Avatar';
 import { PillToggle } from '../common/PillToggle';
 import { themePalettes } from '../../theme';
 import { DeveloperBadge } from '../ui/DeveloperBadge';
+import { OrbitWordmark } from '../common/OrbitBrand';
 
 interface MainMenuDrawerProps {
   isOpen: boolean;
@@ -493,9 +494,12 @@ export const MainMenuDrawer: React.FC<MainMenuDrawerProps> = ({
         </div>
 
         <div className="px-4 py-2.5 mt-auto flex flex-col gap-0.5 select-none shrink-0">
-          <span className="text-[12px] font-medium text-[var(--text-main)] opacity-80">
-            Orbita Desktop
-          </span>
+          <div className="flex items-baseline gap-1">
+            <OrbitWordmark fontSize="13px" />
+            <span className="text-[12px] font-medium text-[var(--text-main)] opacity-70">
+              Desktop
+            </span>
+          </div>
           <span className="text-[11px] text-[var(--text-dim)] opacity-60">
             {t('mainMenu.version', 'Версия')} 2.0.2 x64
           </span>

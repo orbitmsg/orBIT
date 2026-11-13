@@ -1,7 +1,8 @@
-import React, { useEffect, useId, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, flushStorageSet } from '../../store/useChatStore';
 import { DiscordSettingsIcon } from './sidebar/ProfileDockIcons';
+import { OrbitIcon } from '../common/OrbitBrand';
 
 export const isElectronApp = (): boolean => {
   if (typeof window === 'undefined') return false;
@@ -23,7 +24,6 @@ export interface TitleBarProps {
 export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, style, className }) => {
   const { t } = useTranslation();
   const isElectron = isElectronApp();
-  const planetSvgId = useId().replace(/:/g, '');
   const [isMaximized, setIsMaximized] = useState(false);
   const [isHoverSuppressed, setIsHoverSuppressed] = useState(false);
   const [isHelpHovered, setIsHelpHovered] = useState(false);
@@ -188,46 +188,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
               <path fill="currentColor" d="M10 9a3 3 0 1 0 0-6a3 3 0 0 0 0 6M6 8a2 2 0 1 1-4 0a2 2 0 0 1 4 0m-4.51 7.326a.78.78 0 0 1-.358-.442a3 3 0 0 1 4.308-3.516a6.48 6.48 0 0 0-1.905 3.959q-.034.335.025.654a5 5 0 0 1-2.07-.655m14.95.654a5 5 0 0 0 2.07-.654a.78.78 0 0 0 .357-.442a3 3 0 0 0-4.308-3.517a6.48 6.48 0 0 1 1.907 3.96a2.3 2.3 0 0 1-.026.654M18 8a2 2 0 1 1-4 0a2 2 0 0 1 4 0M5.304 16.19a.84.84 0 0 1-.277-.71a5 5 0 0 1 9.947 0a.84.84 0 0 1-.277.71A6.98 6.98 0 0 1 10 18a6.97 6.97 0 0 1-4.696-1.81" />
             </svg>
           ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="60 160 680 480"
-              width="18"
-              height="13"
-              className="shrink-0"
-              style={{ overflow: 'visible', display: 'block' }}
-              aria-hidden="true"
-            >
-              <defs>
-                <clipPath id={`${planetSvgId}-front-clip`}>
-                  <rect x="-600" y="0" width="1200" height="600" />
-                </clipPath>
-                <mask id={`${planetSvgId}-back-ring-mask`}>
-                  <rect x="0" y="0" width="800" height="800" fill="white" />
-                  <circle cx="400" cy="400" r="192" fill="black" />
-                </mask>
-                <mask id={`${planetSvgId}-planet-mask`}>
-                  <rect x="0" y="0" width="800" height="800" fill="white" />
-                  <g transform="translate(400, 400) rotate(-26)">
-                    <path d="M 224 0 A 224 59 0 0 1 -224 0 L -376 0 A 376 121 0 0 0 376 0 Z" fill="black" />
-                  </g>
-                </mask>
-                <mask id={`${planetSvgId}-ring-hole`}>
-                  <rect x="-600" y="-600" width="1200" height="1200" fill="white" />
-                  <ellipse cx="0" cy="0" rx="240" ry="75" fill="black" />
-                </mask>
-              </defs>
-              <g mask={`url(#${planetSvgId}-back-ring-mask)`}>
-                <g transform="translate(400, 400) rotate(-26)">
-                  <ellipse cx="0" cy="0" rx="360" ry="105" fill="currentColor" mask={`url(#${planetSvgId}-ring-hole)`} />
-                </g>
-              </g>
-              <circle cx="400" cy="400" r="175" fill="currentColor" mask={`url(#${planetSvgId}-planet-mask)`} />
-              <g transform="translate(400, 400) rotate(-26)">
-                <g clipPath={`url(#${planetSvgId}-front-clip)`}>
-                  <ellipse cx="0" cy="0" rx="360" ry="105" fill="currentColor" mask={`url(#${planetSvgId}-ring-hole)`} />
-                </g>
-              </g>
-            </svg>
+            <OrbitIcon size={14} />
           )
         ) : (
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#949ba4] shrink-0" aria-hidden="true">

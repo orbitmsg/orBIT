@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Search,
-  Compass,
   Sparkles,
   Gamepad2,
   Music,
@@ -14,6 +13,7 @@ import {
 import { lobbyService, type Lobby } from '../../services/lobbyService';
 import { useChatStore } from '../../store/useChatStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import { OrbitIcon } from '../common/OrbitBrand';
 
 export const ExploreLobbiesView: React.FC = () => {
   const { t } = useTranslation();
@@ -149,8 +149,8 @@ export const ExploreLobbiesView: React.FC = () => {
             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.35)',
           }}
         >
-          <div className="absolute -right-8 -bottom-12 opacity-15 pointer-events-none text-white">
-            <Compass size={280} strokeWidth={1} />
+          <div className="absolute -right-8 -bottom-10 opacity-20 pointer-events-none">
+            <OrbitIcon size={300} />
           </div>
 
           <div className="relative z-10 max-w-[620px] flex flex-col gap-2">

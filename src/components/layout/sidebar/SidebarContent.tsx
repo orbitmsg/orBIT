@@ -510,7 +510,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                               color: 'var(--accent-text, var(--accent-color))',
                             }}
                           >
-                            Orbita
+                            orBIT
                           </span>
                         )}
                       </div>

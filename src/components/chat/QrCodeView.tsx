@@ -99,52 +99,22 @@ function buildGrad(
 const logoImageCache = new Map<string, HTMLImageElement>();
 
 function getOrbitaLogoSvg(colors: string[], idSuffix: string = ''): string {
-  let stops = '';
-  if (colors.length === 2) {
-    stops = `<stop offset="0%" stop-color="${colors[0]}" /><stop offset="100%" stop-color="${colors[1]}" />`;
-  } else {
-    stops = `<stop offset="0%" stop-color="${colors[0]}" /><stop offset="50%" stop-color="${colors[1]}" /><stop offset="100%" stop-color="${colors[2]}" />`;
-  }
-
+  const c1 = colors[0] || '#6B67F8';
+  const c2 = colors[1] || '#514AE6';
   const gId = `qr-grad-${idSuffix}`;
-  const fClip = `f-clip-${idSuffix}`;
-  const bRingMask = `b-mask-${idSuffix}`;
-  const pMask = `p-mask-${idSuffix}`;
-  const rHole = `r-hole-${idSuffix}`;
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="100 100 800 800" width="800" height="800">
   <defs>
-    <clipPath id="${fClip}">
-      <rect x="-600" y="0" width="1200" height="600" />
-    </clipPath>
-    <mask id="${bRingMask}">
-      <rect x="0" y="0" width="800" height="800" fill="white" />
-      <circle cx="400" cy="400" r="192" fill="black" />
-    </mask>
-    <mask id="${pMask}">
-      <rect x="0" y="0" width="800" height="800" fill="white" />
-      <g transform="translate(400, 400) rotate(-26)">
-        <path d="M 224 0 A 224 59 0 0 1 -224 0 L -376 0 A 376 121 0 0 0 376 0 Z" fill="black" />
-      </g>
-    </mask>
-    <mask id="${rHole}">
-      <rect x="-600" y="-600" width="1200" height="1200" fill="white" />
-      <ellipse cx="0" cy="0" rx="240" ry="75" fill="black" />
-    </mask>
-    <linearGradient id="${gId}" x1="0%" y1="0%" x2="100%" y2="100%">
-      ${stops}
+    <linearGradient id="${gId}" x1="75%" y1="15%" x2="20%" y2="85%">
+      <stop offset="0%" stop-color="${c1}" />
+      <stop offset="100%" stop-color="${c2}" />
     </linearGradient>
   </defs>
-  <g mask="url(#${bRingMask})">
-    <g transform="translate(400, 400) rotate(-26)">
-      <ellipse cx="0" cy="0" rx="360" ry="105" fill="url(#${gId})" mask="url(#${rHole})" />
-    </g>
-  </g>
-  <circle cx="400" cy="400" r="175" fill="url(#${gId})" mask="url(#${pMask})" />
-  <g transform="translate(400, 400) rotate(-26)">
-    <g clip-path="url(#${fClip})">
-      <ellipse cx="0" cy="0" rx="360" ry="105" fill="url(#${gId})" mask="url(#${rHole})" />
-    </g>
+  <g>
+    <path d="M 678.5 239.0 A 340 340 0 1 0 816.0 376.5 L 780.7 411.8 A 290 290 0 1 1 643.2 274.3 Z" fill="url(#${gId})" />
+    <path d="M 603.7 313.8 A 240 240 0 1 0 741.2 451.3 L 705.2 487.3 A 190 190 0 1 1 567.7 349.8 Z" fill="url(#${gId})" />
+    <rect x="605" y="355" width="85" height="85" fill="${c1}" />
+    <rect x="690" y="270" width="85" height="85" fill="${c2}" />
+    <rect x="775" y="185" width="85" height="85" fill="#FFFFFF" />
   </g>
 </svg>`;
 }

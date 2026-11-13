@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { channelService } from '../../services/channelService';
 import { groupService } from '../../services/groupService';
+import { lobbyService } from '../../services/lobbyService';
 import { supabaseService } from '../../services/supabaseService';
 import { deriveGroupKey } from '../../lib/groupCrypto';
 import { ArrowLeft, Check, Pencil } from 'lucide-react';
@@ -619,6 +620,15 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         if (Object.keys(groupUpdate).length > 0) {
           const secret = chat.sharedSecret || (chat.inviteCode ? deriveGroupKey(chat.inviteCode) : deriveGroupKey(chat.id));
           await groupService.updateGroup(chat.id, secret, groupUpdate, myNickname);
+          try {
+            await lobbyService.updateLobby(chat.id, {
+              name: newName,
+              description: newDesc,
+              avatarUrl: finalAvatarUrl,
+            });
+          } catch (lobErr) {
+            console.error('Failed to update lobby in supabase:', lobErr);
+          }
         }
       } else {
         const currentUserId = useAuthStore.getState().userId || useChatStore.getState().myCode;
@@ -648,8 +658,20 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
     const myCode = useChatStore.getState().myCode;
     if (currentMode === 'delete') {
       await groupService.deleteGroup(targetChatId);
-    } else if (chat.sharedSecret) {
-      await groupService.leaveGroup(targetChatId, chat.sharedSecret, myNickname, myCode, myUserId);
+      try {
+        await lobbyService.deleteLobby(targetChatId);
+      } catch (delErr) {
+        console.error('Failed to delete lobby in supabase:', delErr);
+      }
+    } else {
+      if (chat.sharedSecret) {
+        await groupService.leaveGroup(targetChatId, chat.sharedSecret, myNickname, myCode, myUserId);
+      }
+      try {
+        await lobbyService.leaveLobby(targetChatId, myCode);
+      } catch (leaveErr) {
+        console.error('Failed to leave lobby in supabase:', leaveErr);
+      }
     }
     useChatStore.getState().deleteChat(targetChatId);
   }, [chat, groupModalMode, onClose, myNickname, myUserId]);
@@ -1188,7 +1210,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
               </button>
 
               <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-main)' }}>
-                {isGroup ? t('groupSettings.edit_group', 'Редактировать группу') : t('channel.edit_channel', 'Редактировать канал')}
+                {isGroup ? t('groupSettings.edit_group', 'Редактировать лобби') : t('channel.edit_channel', 'Редактировать канал')}
               </span>
 
               <button
@@ -1350,7 +1372,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                   <button
                     type="button"
                     onClick={() => setIsEditingChannel(true)}
-                    aria-label={isGroup ? t('groupSettings.edit_group', 'Редактировать группу') : t('channel.edit_channel', 'Редактировать канал')}
+                    aria-label={isGroup ? t('groupSettings.edit_group', 'Редактировать лобби') : t('channel.edit_channel', 'Редактировать канал')}
                     style={{
                       background: (effectiveBannerUrl && scrollOffset < 160) ? 'rgba(0, 0, 0, 0.45)' : 'none',
                       backdropFilter: (effectiveBannerUrl && scrollOffset < 160) ? 'blur(8px)' : 'none',

@@ -616,19 +616,19 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         const act = msg.actorNickname || '';
         const trg = msg.targetNickname || '';
         if (msg.systemType === 'create') {
-          displayedText = act ? t('system.group_created', { actor: act, defaultValue: `${act} создал(а) группу` }) : t('system.group_created_generic', { defaultValue: 'Группа создана' });
+          displayedText = act ? t('system.group_created', { actor: act, defaultValue: `${act} создал(а) лобби` }) : t('system.group_created_generic', { defaultValue: 'Лобби создано' });
         } else if (msg.systemType === 'invite' && act) {
-          displayedText = t('system.member_invited', { actor: act, target: trg, defaultValue: `${act} пригласил(а) ${trg} в группу` });
+          displayedText = t('system.member_invited', { actor: act, target: trg, defaultValue: `${act} пригласил(а) ${trg} в лобби` });
         } else if (msg.systemType === 'join') {
-          displayedText = act ? t('system.member_joined', { actor: act, defaultValue: `${act} вступил(а) в группу` }) : t('system.member_joined_generic', { defaultValue: 'Участник вступил в группу' });
+          displayedText = act ? t('system.member_joined', { actor: act, defaultValue: `${act} вступил(а) в лобби` }) : t('system.member_joined_generic', { defaultValue: 'Участник вступил в лобби' });
         } else if (msg.systemType === 'join_link') {
-          displayedText = act ? t('system.member_joined_link', { actor: act, defaultValue: `${act} вступил(а) в группу по ссылке-приглашению` }) : t('system.member_joined_link_generic', { defaultValue: 'Участник вступил в группу по ссылке-приглашению' });
+          displayedText = act ? t('system.member_joined_link', { actor: act, defaultValue: `${act} вступил(а) в лобби по ссылке-приглашению` }) : t('system.member_joined_link_generic', { defaultValue: 'Участник вступил в лобби по ссылке-приглашению' });
         } else if (msg.systemType === 'pin') {
           displayedText = act ? t('system.message_pinned', { actor: act, defaultValue: `${act} закрепил(а) сообщение` }) : t('system.message_pinned_generic', { defaultValue: 'Сообщение закреплено' });
         } else if (msg.systemType === 'title' && act) {
-          displayedText = t('system.title_changed', { actor: act, defaultValue: `${act} изменил(а) имя группы` });
+          displayedText = t('system.title_changed', { actor: act, defaultValue: `${act} изменил(а) имя лобби` });
         } else if (msg.systemType === 'avatar' && act) {
-          displayedText = t('system.avatar_changed', { actor: act, defaultValue: `${act} изменил(а) аватарку группы` });
+          displayedText = t('system.avatar_changed', { actor: act, defaultValue: `${act} изменил(а) аватарку лобби` });
         } else if (msg.systemType === 'admin' && act) {
           displayedText = t('system.promoted_admin', { actor: act, target: trg, defaultValue: `${act} назначил(а) ${trg} администратором` });
         } else if (msg.systemType === 'unadmin' && act) {
@@ -638,7 +638,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         } else if (msg.systemType === 'call_ended') {
           displayedText = t('system.call_ended', { defaultValue: 'Голосовой звонок завершен' });
         } else if (msg.systemType === 'kick' && act) {
-          displayedText = t('system.member_removed', { actor: act, target: trg, defaultValue: `${act} удалил(а) ${trg} из группы` });
+          displayedText = t('system.member_removed', { actor: act, target: trg, defaultValue: `${act} удалил(а) ${trg} из лобби` });
         }
       }
       if (!displayedText || displayedText === '[ENCRYPTED MESSAGE]') {

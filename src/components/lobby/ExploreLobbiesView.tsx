@@ -47,6 +47,15 @@ export const ExploreLobbiesView: React.FC = () => {
 
   useEffect(() => {
     loadLobbies();
+    const unsubscribe = lobbyService.subscribeToPublicLobbies(() => {
+      loadLobbies();
+    });
+    const handleFocus = () => loadLobbies();
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [loadLobbies]);
 
   const handleJoinLobby = async (lobby: Lobby) => {

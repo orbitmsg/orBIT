@@ -95,15 +95,15 @@ export const ProfileEditChannel: React.FC<ProfileEditChannelProps> = ({
 
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
           <span style={{ fontSize: '12px', color: 'var(--accent-color, #7C3AED)', fontWeight: 500, marginBottom: '2px' }}>
-            {isGroup ? t('groupSettings.group_name', 'Название группы') : t('channel.channel_name', 'Название канала')}
+            {isGroup ? t('groupSettings.group_name', 'Название лобби') : t('channel.channel_name', 'Название канала')}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', borderBottom: '2px solid var(--accent-color, #7C3AED)', paddingBottom: '4px' }}>
             <input
               type="text"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              placeholder={isGroup ? t('groupSettings.group_name', 'Название группы') : t('channel.channel_name_placeholder', 'Название')}
-              aria-label={isGroup ? t('groupSettings.group_name', 'Название группы') : t('channel.channel_name', 'Название канала')}
+              placeholder={isGroup ? t('groupSettings.group_name', 'Название лобби') : t('channel.channel_name_placeholder', 'Название')}
+              aria-label={isGroup ? t('groupSettings.group_name', 'Название лобби') : t('channel.channel_name', 'Название канала')}
               style={{
                 flex: 1,
                 minWidth: 0,
@@ -156,13 +156,13 @@ export const ProfileEditChannel: React.FC<ProfileEditChannelProps> = ({
 
       <div style={{ display: 'flex', flexDirection: 'column', marginTop: '28px', width: '100%' }}>
         <span style={{ fontSize: '13px', color: 'var(--text-dim, #8e8e93)', marginBottom: '6px' }}>
-          {isGroup ? t('groupSettings.group_desc', 'Описание группы') : t('channel.description_optional', 'Описание (необязательно)')}
+          {isGroup ? t('groupSettings.group_desc', 'Описание лобби') : t('channel.description_optional', 'Описание (необязательно)')}
         </span>
         <textarea
           value={editDescription}
           onChange={(e) => setEditDescription(e.target.value)}
-          placeholder={isGroup ? t('groupSettings.group_desc', 'Описание группы') : t('channel.description_optional', 'Описание (необязательно)')}
-          aria-label={isGroup ? t('groupSettings.group_desc', 'Описание группы') : t('channel.description_optional', 'Описание (необязательно)')}
+          placeholder={isGroup ? t('groupSettings.group_desc', 'Описание лобби') : t('channel.description_optional', 'Описание (необязательно)')}
+          aria-label={isGroup ? t('groupSettings.group_desc', 'Описание лобби') : t('channel.description_optional', 'Описание (необязательно)')}
           rows={3}
           style={{
             width: '100%',

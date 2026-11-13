@@ -362,7 +362,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
         : err?.message === 'INVITE_REVOKED'
         ? t('group.link_revoked', t('groupSettings.link_revoked', 'Доступ закрыт'))
         : err?.message === 'GROUP_FULL'
-        ? t('group.max_members_reached', t('groupSettings.max_members_reached', 'Группа заполнена'))
+        ? t('group.max_members_reached', t('groupSettings.max_members_reached', 'Лобби заполнено'))
         : t('common.error', 'Ошибка');
       useToastStore.getState().showToast(msg, 'text');
     }
@@ -371,10 +371,10 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
   if (!inviteUrl) return null;
 
   const groupAvatarUrl = groupInfo?.avatarUrl || existingChat?.avatarUrl || null;
-  const displayName = groupInfo?.name || existingChat?.name || (isLoading ? '...' : t('chatWindow.group', 'Группа'));
-  const invitationText = t('group.group_invitation', t('groupSettings.group_invitation', 'Приглашение в группу'));
+  const displayName = groupInfo?.name || existingChat?.name || (isLoading ? '...' : t('chatWindow.group', 'Лобби'));
+  const invitationText = t('group.group_invitation', t('groupSettings.group_invitation', 'Приглашение в лобби'));
   const linkExpiredText = t('group.link_expired_or_revoked', t('groupSettings.link_expired_or_revoked', 'Ссылка устарела или закрыта'));
-  const alreadyMemberText = t('group.already_member', t('groupSettings.already_member', 'Вы уже состоите в этой группе'));
+  const alreadyMemberText = t('group.already_member', t('groupSettings.already_member', 'Вы уже состоите в этом лобби'));
   const openChatText = t('group.open_chat', 'Перейти к чату');
   const joinText = t('group.join', t('groupSettings.join', 'Присоединиться'));
   const cancelText = t('group.cancel', t('common.cancel', 'Отменить'));

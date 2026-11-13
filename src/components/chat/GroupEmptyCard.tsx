@@ -61,7 +61,7 @@ export const GroupEmptyCard: React.FC<GroupEmptyCardProps> = ({ chat }) => {
           </h3>
 
           <div className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--text-dim)] mb-3">
-            <span>{t('groupSettings.empty_invite_title', 'Пригласите друзей в группу')}</span>
+            <span>{t('groupSettings.empty_invite_title', 'Пригласите друзей в лобби')}</span>
           </div>
 
           {chat.description ? (
@@ -73,7 +73,7 @@ export const GroupEmptyCard: React.FC<GroupEmptyCardProps> = ({ chat }) => {
             </div>
           ) : (
             <p className="text-[12px] text-[var(--text-dim)] leading-relaxed px-2 mb-4">
-              {t('groupSettings.empty_invite_desc', 'В группе может быть до 10 человек. Обменивайтесь сообщениями, медиа и звоните со сквозным шифрованием.')}
+              {t('groupSettings.empty_invite_desc', 'Создавайте топики, общайтесь в голосовых каналах и делитесь файлами со сквозным шифрованием.')}
             </p>
           )}
 

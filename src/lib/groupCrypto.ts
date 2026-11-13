@@ -56,27 +56,27 @@ export function extractGroupCode(input: string): string {
     return directJoinMatch[1];
   }
 
-  const slashMatch = trimmed.match(/orbita\/(join_[a-zA-Z0-9_-]{6,32})/i);
+  const slashMatch = trimmed.match(/(?:orbita|orbit)\/(join_[a-zA-Z0-9_-]{6,32})/i);
   if (slashMatch && slashMatch[1]) {
     return slashMatch[1];
   }
 
-  const urlMatch = trimmed.match(/\/(?:g|group|groups|join|invite)(?:\/group)?\/([a-zA-Z0-9_-]{6,64})/i);
+  const urlMatch = trimmed.match(/\/(?:g|group|groups|join|invite|lobby|lobbies)(?:\/(?:group|lobby))?\/([a-zA-Z0-9_-]{6,64})/i);
   if (urlMatch && urlMatch[1]) {
     return urlMatch[1];
   }
 
-  const queryMatch = trimmed.match(/[?&](?:group|code|token)=([a-zA-Z0-9_-]{6,64})/i);
+  const queryMatch = trimmed.match(/[?&](?:group|lobby|code|token)=([a-zA-Z0-9_-]{6,64})/i);
   if (queryMatch && queryMatch[1]) {
     return queryMatch[1];
   }
 
-  const deepLinkMatch = trimmed.match(/orbita:\/\/(?:group|groups|join|invite)(?:\/group)?\/([a-zA-Z0-9_-]{6,64})/i);
+  const deepLinkMatch = trimmed.match(/(?:orbita|orbit):\/\/(?:group|groups|join|invite|lobby|lobbies)(?:\/(?:group|lobby))?\/([a-zA-Z0-9_-]{6,64})/i);
   if (deepLinkMatch && deepLinkMatch[1]) {
     return deepLinkMatch[1];
   }
 
-  const deepLinkParamMatch = trimmed.match(/orbita:\/\/(?:group|groups|join|invite)(?:\/group)?\?(?:code|token|group)=([a-zA-Z0-9_-]{6,64})/i);
+  const deepLinkParamMatch = trimmed.match(/(?:orbita|orbit):\/\/(?:group|groups|join|invite|lobby|lobbies)(?:\/(?:group|lobby))?\?(?:code|token|group|lobby)=([a-zA-Z0-9_-]{6,64})/i);
   if (deepLinkParamMatch && deepLinkParamMatch[1]) {
     return deepLinkParamMatch[1];
   }
@@ -99,7 +99,15 @@ export function buildGroupInviteLink(
 ): string {
   if (!groupCode) return '';
   const cleanCode = groupCode.trim();
-  return `https://orbitachat.vercel.app/groups/#${encodeURIComponent(cleanCode)}`;
+  return `https://orbitachat.vercel.app/lobby/#${encodeURIComponent(cleanCode)}`;
+}
+
+export function buildLobbyInviteLink(
+  lobbyCode: string,
+  name?: string,
+  creator?: string
+): string {
+  return buildGroupInviteLink(lobbyCode, name, creator);
 }
 
 export function extractGroupMetadata(input: string): {
@@ -129,5 +137,13 @@ export function getGroupInviteLink(
   creator?: string
 ): string {
   return buildGroupInviteLink(groupCode, name, creator);
+}
+
+export function getLobbyInviteLink(
+  lobbyCode: string,
+  name?: string,
+  creator?: string
+): string {
+  return buildGroupInviteLink(lobbyCode, name, creator);
 }
 

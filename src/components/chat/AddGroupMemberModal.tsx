@@ -259,7 +259,7 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
               }}
             >
               <span className="text-[11.5px] font-medium text-[var(--text-dim)]">
-                {t('groupSettings.group_code', 'Код группы')}
+                {t('groupSettings.group_code', 'Код лобби')}
               </span>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[14px] font-bold font-mono tracking-wider select-all">
@@ -300,7 +300,7 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
 
             {isGroupFull && (
               <div className="p-2.5 rounded-xl bg-amber-500/15 border-none text-amber-300 text-[12.5px] font-medium text-center">
-                {t('groupSettings.max_members_reached', 'Группа заполнена (макс. 10 участников)')}
+                {t('groupSettings.max_members_reached', 'Лобби заполнено (макс. 10 участников)')}
               </div>
             )}
 
@@ -351,14 +351,14 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
                         {alreadyMember || isAdded ? (
                           <span className="px-2.5 py-1 rounded-full text-[12px] font-medium text-green-400 bg-green-500/10 flex items-center gap-1">
                             <Check size={14} />
-                            <span>{t('groupSettings.already_member', 'Уже в группе')}</span>
+                            <span>{t('groupSettings.already_member', 'Уже в лобби')}</span>
                           </span>
                         ) : (
                           <button
                             type="button"
                             disabled={isGroupFull || isAdding}
                             onClick={() => handleAddContact(contact)}
-                            aria-label={t('groupSettings.add_to_group', 'Добавить в группу')}
+                            aria-label={t('groupSettings.add_to_group', 'Пригласить в лобби')}
                             className="px-3 py-1.5 rounded-xl text-[12.5px] font-medium text-white bg-[var(--accent-color)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1.5 cursor-pointer border-none"
                           >
                             <UserPlus size={14} />

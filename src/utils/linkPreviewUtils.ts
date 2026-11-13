@@ -7,8 +7,11 @@ export function isOrbitaInviteUrl(url: string | null | undefined): boolean {
   const lower = url.toLowerCase();
   return (
     lower.includes('orbitachat.vercel.app') ||
+    lower.includes('orbitchat.vercel.app') ||
     lower.includes('orbitad.vercel.app') ||
     lower.includes('orbita.workers.dev') ||
+    lower.includes('/lobby/#') ||
+    lower.includes('/lobby/') ||
     lower.includes('/groups/#') ||
     lower.includes('/groups/') ||
     lower.includes('localhost') ||

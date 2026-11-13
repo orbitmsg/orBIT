@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Hash } from 'lucide-react';
 import { useChatStore, type Chat, type ChatAction, type ChatTypingUser } from '../../store/useChatStore';
 import { Avatar } from '../common/Avatar';
 import { NotesAvatar } from '../common/NotesAvatar';
@@ -18,6 +18,7 @@ interface ChatHeaderProps {
   headerRef: React.RefObject<HTMLDivElement | null>;
   activeChatId: string | null;
   activeChat: Chat | null | undefined;
+  activeChannelName?: string;
   isMobileView?: boolean;
   onBack?: () => void;
   isOnline: boolean;
@@ -63,6 +64,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   headerRef,
   activeChatId,
   activeChat,
+  activeChannelName,
   isMobileView,
   onBack,
   isOnline,
@@ -149,10 +151,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   <ChannelMegaphoneIcon size={16} className="flex-shrink-0 text-[var(--accent-text,var(--accent-color))]" style={{ marginRight: 2 }} />
                 )}
                 {activeChat?.type === 'group' && (
-                  <GroupUsersIcon size={16} className="flex-shrink-0 text-[var(--accent-text,var(--accent-color))]" style={{ marginRight: 2 }} />
+                  activeChannelName ? (
+                    <Hash size={18} className="flex-shrink-0 text-[#80848e]" style={{ marginRight: 2 }} />
+                  ) : (
+                    <GroupUsersIcon size={16} className="flex-shrink-0 text-[var(--accent-text,var(--accent-color))]" style={{ marginRight: 2 }} />
+                  )
                 )}
                 <h2 className="font-bold text-[14px] truncate select-none m-0" style={{ color: 'var(--text-heading, var(--text-main))', userSelect: 'none', WebkitUserSelect: 'none' }}>
-                  {activeChatId === 'notes' ? t('connectModal.notes') : activeChat?.name}
+                  {activeChatId === 'notes' ? t('connectModal.notes') : activeChannelName ? `#${activeChannelName}` : activeChat?.name}
                 </h2>
                 {(activeChat?.isOfficial || activeChatId === 'system_support') && (
                   <VerifiedBadge size={18} className="flex-shrink-0" />

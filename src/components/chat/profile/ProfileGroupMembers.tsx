@@ -379,7 +379,7 @@ export const ProfileGroupMembers: React.FC<ProfileGroupMembersProps> = ({
           <button
             type="button"
             onClick={onOpenDeleteGroup}
-            aria-label={t('groupSettings.delete_group', 'Удалить группу')}
+            aria-label={t('groupSettings.delete_group', 'Удалить лобби')}
             style={{
               width: '100%',
               padding: '12px 16px',
@@ -399,7 +399,7 @@ export const ProfileGroupMembers: React.FC<ProfileGroupMembersProps> = ({
             className="hover:bg-red-500/20"
           >
             <Trash2 size={16} />
-            <span>{t('groupSettings.delete_group', 'Удалить группу')}</span>
+            <span>{t('groupSettings.delete_group', 'Удалить лобби')}</span>
           </button>
         </div>
       )}

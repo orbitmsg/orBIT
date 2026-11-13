@@ -47,7 +47,7 @@ export function parseOrbitaLink(input: string): ParsedOrbitaLink | null {
   );
   if (slugMatch && slugMatch[1]) {
     const slug = slugMatch[1].toLowerCase();
-    const reserved = ['group', 'groups', 'channel', 'channels', 'c', 'u', 'join', 'invite', 'connect', 'api', 'health'];
+    const reserved = ['group', 'groups', 'lobby', 'lobbies', 'channel', 'channels', 'c', 'u', 'join', 'invite', 'connect', 'api', 'health'];
     if (!reserved.includes(slug)) {
       return { kind: 'slug', identifier: slug, raw: trimmed };
     }
@@ -56,7 +56,7 @@ export function parseOrbitaLink(input: string): ParsedOrbitaLink | null {
   const orbitaSchemeSlug = trimmed.match(/^orbita:\/\/@?([a-zA-Z0-9_]{3,32})\/?(?:\?.*)?$/i);
   if (orbitaSchemeSlug && orbitaSchemeSlug[1]) {
     const slug = orbitaSchemeSlug[1].toLowerCase();
-    const reserved = ['group', 'groups', 'channel', 'channels', 'c', 'u', 'join', 'invite', 'connect', 'api', 'health'];
+    const reserved = ['group', 'groups', 'lobby', 'lobbies', 'channel', 'channels', 'c', 'u', 'join', 'invite', 'connect', 'api', 'health'];
     if (!reserved.includes(slug)) {
       return { kind: 'slug', identifier: slug, raw: trimmed };
     }

@@ -1437,12 +1437,12 @@ export const useChatStore = create<ChatState>()(
       },
       joinGroupByCode: async (inviteCode, callback) => {
         const normalized = inviteCode.trim().toLowerCase();
-        if (!normalized) { callback(false, 'Введите код группы'); return; }
+        if (!normalized) { callback(false, 'Введите код лобби'); return; }
         const authStore = (window as any).__ORBITA_AUTH_STORE__?.getState?.() || {};
         const nickname = authStore.nickname || 'Unknown';
         const userId = authStore.userId || 'user';
         const existing = get().chats.find(c => c.type === 'group' && c.inviteCode === normalized);
-        if (existing) { callback(false, 'Вы уже в этой группе'); return; }
+        if (existing) { callback(false, 'Вы уже в этом лобби'); return; }
         try {
           const groupRegistry = await sqliteStorage.getJson<Record<string, any>>('orbita-group-registry', {});
           const groupData = groupRegistry[normalized];
@@ -1455,7 +1455,7 @@ export const useChatStore = create<ChatState>()(
               id: groupData.chatId,
               type: 'group',
               name: groupData.name,
-              lastMsg: 'Вы присоединились к группе',
+              lastMsg: 'Вы присоединились к лобби',
               online: false,
               sharedSecret: groupData.sharedSecret,
               role: 'member',

@@ -58,6 +58,15 @@ export interface Lobby {
   updatedAt: number;
 }
 
+export interface LobbyChannel {
+  id: string;
+  lobbyId: string;
+  name: string;
+  type: 'text' | 'voice';
+  position: number;
+  createdAt: number;
+}
+
 export interface LobbyMember {
   id: string;
   lobbyId: string;
@@ -72,6 +81,7 @@ export interface LobbyMember {
 export interface LobbyMessage {
   id: string;
   lobbyId: string;
+  channelId?: string | null;
   senderCode: string;
   senderNickname: string;
   senderAvatarUrl: string | null;
@@ -151,6 +161,29 @@ export class LobbyService {
       joined_at: nowIso,
       last_seen: nowIso,
     });
+
+    try {
+      await this.client.from('lobby_channels').insert([
+        {
+          id: `ch_${Date.now()}_main`,
+          lobby_id: lobbyId,
+          name: 'основной',
+          type: 'text',
+          position: 0,
+          created_at: nowIso,
+        },
+        {
+          id: `ch_${Date.now() + 1}_voice`,
+          lobby_id: lobbyId,
+          name: 'Голосовой 1',
+          type: 'voice',
+          position: 1,
+          created_at: nowIso,
+        },
+      ]);
+    } catch (chErr) {
+      console.error('Failed to create default channels:', chErr);
+    }
 
     return this.mapLobbyRow(lobbyRow);
   }
@@ -249,6 +282,180 @@ export class LobbyService {
       .eq('id', lobbyId);
   }
 
+  async updateLobby(
+    lobbyId: string,
+    updates: {
+      name?: string;
+      description?: string;
+      avatarUrl?: string | null;
+      bannerUrl?: string | null;
+      isPublic?: boolean;
+      category?: string;
+    }
+  ): Promise<void> {
+    const patch: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (updates.name !== undefined) patch.name = updates.name.trim();
+    if (updates.description !== undefined) patch.description = updates.description.trim();
+    if (updates.avatarUrl !== undefined) patch.avatar_url = updates.avatarUrl;
+    if (updates.bannerUrl !== undefined) patch.banner_url = updates.bannerUrl;
+    if (updates.isPublic !== undefined) patch.is_public = updates.isPublic;
+    if (updates.category !== undefined) patch.category = updates.category;
+
+    const { error } = await this.client
+      .from('lobbies')
+      .update(patch)
+      .eq('id', lobbyId);
+
+    if (error) {
+      console.error('Failed to update lobby:', error);
+    }
+  }
+
+  async deleteLobby(lobbyId: string): Promise<void> {
+    try {
+      await this.client.from('lobby_messages').delete().eq('lobby_id', lobbyId);
+      await this.client.from('lobby_members').delete().eq('lobby_id', lobbyId);
+      await this.client.from('lobby_channels').delete().eq('lobby_id', lobbyId);
+      await this.client.from('lobbies').delete().eq('id', lobbyId);
+    } catch (e) {
+      console.error('Failed to delete lobby:', e);
+    }
+  }
+
+  subscribeToPublicLobbies(onChange: () => void): () => void {
+    const channel = this.client
+      .channel('public:lobbies')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'lobbies' },
+        () => {
+          onChange();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      this.client.removeChannel(channel);
+    };
+  }
+
+  async getLobbyChannels(lobbyId: string): Promise<LobbyChannel[]> {
+    const { data, error } = await this.client
+      .from('lobby_channels')
+      .select('*')
+      .eq('lobby_id', lobbyId)
+      .order('position', { ascending: true })
+      .order('created_at', { ascending: true });
+
+    if (error || !data) return [];
+    if (data.length === 0) {
+      const nowIso = new Date().toISOString();
+      const defaultChannels = [
+        {
+          id: `ch_${Date.now()}_main`,
+          lobby_id: lobbyId,
+          name: 'основной',
+          type: 'text',
+          position: 0,
+          created_at: nowIso,
+        },
+        {
+          id: `ch_${Date.now() + 1}_voice`,
+          lobby_id: lobbyId,
+          name: 'Голосовой 1',
+          type: 'voice',
+          position: 1,
+          created_at: nowIso,
+        },
+      ];
+      try {
+        await this.client.from('lobby_channels').insert(defaultChannels);
+        return defaultChannels.map((r) => ({
+          id: r.id,
+          lobbyId: r.lobby_id,
+          name: r.name,
+          type: r.type as 'text' | 'voice',
+          position: r.position,
+          createdAt: new Date(r.created_at).getTime(),
+        }));
+      } catch {
+        return [];
+      }
+    }
+
+    return data.map((r: any) => ({
+      id: r.id,
+      lobbyId: r.lobby_id,
+      name: r.name,
+      type: r.type || 'text',
+      position: r.position ?? 0,
+      createdAt: new Date(r.created_at).getTime(),
+    }));
+  }
+
+  async createLobbyChannel(
+    lobbyId: string,
+    name: string,
+    type: 'text' | 'voice' = 'text'
+  ): Promise<LobbyChannel> {
+    const id = `ch_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const nowIso = new Date().toISOString();
+    const cleanName = name.trim().toLowerCase().replace(/\s+/g, '-');
+    const { data, error } = await this.client
+      .from('lobby_channels')
+      .insert({
+        id,
+        lobby_id: lobbyId,
+        name: cleanName,
+        type,
+        position: Date.now(),
+        created_at: nowIso,
+      })
+      .select('*')
+      .single();
+
+    if (error || !data) {
+      throw new Error(error?.message || 'Failed to create channel');
+    }
+
+    return {
+      id: data.id,
+      lobbyId: data.lobby_id,
+      name: data.name,
+      type: data.type || 'text',
+      position: data.position ?? 0,
+      createdAt: new Date(data.created_at).getTime(),
+    };
+  }
+
+  async deleteLobbyChannel(channelId: string): Promise<void> {
+    try {
+      await this.client.from('lobby_messages').delete().eq('channel_id', channelId);
+      await this.client.from('lobby_channels').delete().eq('id', channelId);
+    } catch (e) {
+      console.error('Failed to delete channel:', e);
+    }
+  }
+
+  subscribeToLobbyChannels(lobbyId: string, onChange: () => void): () => void {
+    const channel = this.client
+      .channel(`channels:${lobbyId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'lobby_channels', filter: `lobby_id=eq.${lobbyId}` },
+        () => {
+          onChange();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      this.client.removeChannel(channel);
+    };
+  }
+
   async getLobbyMembers(lobbyId: string): Promise<LobbyMember[]> {
     const { data, error } = await this.client
       .from('lobby_members')
@@ -271,6 +478,7 @@ export class LobbyService {
 
   async sendLobbyMessage(params: {
     lobbyId: string;
+    channelId?: string | null;
     senderCode: string;
     senderNickname: string;
     senderAvatarUrl?: string | null;
@@ -302,6 +510,7 @@ export class LobbyService {
       .insert({
         id: msgId,
         lobby_id: params.lobbyId,
+        channel_id: params.channelId || null,
         sender_code: params.senderCode,
         sender_nickname: params.senderNickname,
         sender_avatar_url: params.senderAvatarUrl || null,
@@ -309,8 +518,8 @@ export class LobbyService {
         ciphertext: ciphertext,
         media_type: params.mediaType || null,
         media_url: params.mediaUrl || null,
-        media_name: params.mediaName || null,
-        media_size: params.mediaSize || null,
+        mediaName: params.mediaName || null,
+        mediaSize: params.mediaSize || null,
         reply_to_id: params.replyToId || null,
         created_at: nowIso,
       })
@@ -324,6 +533,7 @@ export class LobbyService {
     return {
       id: data.id,
       lobbyId: data.lobby_id,
+      channelId: data.channel_id,
       senderCode: data.sender_code,
       senderNickname: data.sender_nickname,
       senderAvatarUrl: data.sender_avatar_url,
@@ -340,11 +550,22 @@ export class LobbyService {
     };
   }
 
-  async getLobbyMessages(lobbyId: string, sharedSecret?: string | null, limit = 50): Promise<LobbyMessage[]> {
-    const { data, error } = await this.client
+  async getLobbyMessages(
+    lobbyId: string,
+    sharedSecret?: string | null,
+    limit = 50,
+    channelId?: string | null
+  ): Promise<LobbyMessage[]> {
+    let query = this.client
       .from('lobby_messages')
       .select('*')
-      .eq('lobby_id', lobbyId)
+      .eq('lobby_id', lobbyId);
+
+    if (channelId) {
+      query = query.eq('channel_id', channelId);
+    }
+
+    const { data, error } = await query
       .order('created_at', { ascending: false })
       .limit(limit);
 
@@ -363,6 +584,7 @@ export class LobbyService {
         return {
           id: r.id,
           lobbyId: r.lobby_id,
+          channelId: r.channel_id,
           senderCode: r.sender_code,
           senderNickname: r.sender_nickname,
           senderAvatarUrl: r.sender_avatar_url,
@@ -398,6 +620,7 @@ export class LobbyService {
           onMessage({
             id: r.id,
             lobbyId: r.lobby_id,
+            channelId: r.channel_id,
             senderCode: r.sender_code,
             senderNickname: r.sender_nickname,
             senderAvatarUrl: r.sender_avatar_url,

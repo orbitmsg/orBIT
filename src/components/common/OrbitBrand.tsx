@@ -4,14 +4,45 @@ interface OrbitIconProps {
   size?: number | string;
   className?: string;
   withBackground?: boolean;
+  monochrome?: boolean;
+  color?: string;
 }
 
 export const OrbitIcon: React.FC<OrbitIconProps> = ({
   size = 32,
   className = '',
   withBackground = false,
+  monochrome = false,
+  color,
 }) => {
   const uid = useId().replace(/:/g, '');
+  const finalColor = color || (monochrome ? '#ffffff' : undefined);
+
+  if (finalColor) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="100 100 800 800"
+        width={size}
+        height={size}
+        className={`shrink-0 select-none ${className}`}
+        aria-hidden="true"
+      >
+        <path
+          d="M 678.5 239.0 A 340 340 0 1 0 816.0 376.5 L 780.7 411.8 A 290 290 0 1 1 643.2 274.3 Z"
+          fill={finalColor}
+        />
+        <path
+          d="M 603.7 313.8 A 240 240 0 1 0 741.2 451.3 L 705.2 487.3 A 190 190 0 1 1 567.7 349.8 Z"
+          fill={finalColor}
+        />
+        <rect x="605" y="355" width="85" height="85" fill={finalColor} />
+        <rect x="690" y="270" width="85" height="85" fill={finalColor} />
+        <rect x="775" y="185" width="85" height="85" fill={finalColor} />
+      </svg>
+    );
+  }
+
   const ringFill = `ringFill-${uid}`;
   const ringStroke = `ringStroke-${uid}`;
   const sq1Grad = `sq1Grad-${uid}`;

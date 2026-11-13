@@ -38,6 +38,8 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
   const [hoveredInfo, setHoveredInfo] = useState<HoveredTooltipInfo | null>(null);
   const activeChatId = useChatStore((s) => s.activeChatId);
   const setActiveChat = useChatStore((s) => s.setActiveChat);
+  const chats = useChatStore((s) => s.chats);
+  const lobbies = chats.filter((c) => c.type === 'group');
 
   const isHomeActive = activeFolderId === null && !activeChatId && currentView === 'chats';
 
@@ -91,7 +93,7 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
               color: isHomeActive || hoveredInfo?.id === 'home' ? '#ffffff' : 'var(--text-dim, #8e8e93)',
             }}
           >
-            <OrbitIcon size={28} />
+            <OrbitIcon size={26} monochrome />
           </button>
         </div>
 
@@ -152,6 +154,57 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
       />
 
       <div className="flex-1 w-full flex flex-col items-center overflow-y-auto no-scrollbar py-1 space-y-2">
+        {lobbies.map((lobby) => {
+          const isLobbyActive = activeChatId === lobby.id && currentView === 'chats';
+          const isHovered = hoveredInfo?.id === lobby.id;
+          const unreadCount = lobby.unreadCount || 0;
+
+          return (
+            <div key={lobby.id} className="relative w-full flex items-center justify-center">
+              <div
+                className="absolute left-0 w-1 rounded-r-full transition-all duration-200"
+                style={{
+                  backgroundColor: '#ffffff',
+                  height: isLobbyActive ? '40px' : isHovered ? '20px' : '0px',
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveChat(lobby.id);
+                  if (currentView !== 'chats') setCurrentView('chats');
+                }}
+                onMouseEnter={(e) => showTooltip(e, lobby.id, lobby.name)}
+                onMouseLeave={hideTooltip}
+                aria-label={lobby.name}
+                className="relative w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 outline-none border-none font-semibold text-sm select-none overflow-hidden"
+                style={{
+                  borderRadius: isLobbyActive || isHovered ? '16px' : '24px',
+                  backgroundColor: isLobbyActive || isHovered ? '#5865F2' : 'var(--surface-container, #18181a)',
+                  color: isLobbyActive || isHovered ? '#ffffff' : 'var(--text-dim, #8e8e93)',
+                }}
+              >
+                {lobby.avatarUrl ? (
+                  <img src={lobby.avatarUrl} alt={lobby.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span>{lobby.name.slice(0, 2).toUpperCase()}</span>
+                )}
+                {unreadCount > 0 && (
+                  <span
+                    className="absolute -top-1 -right-1 text-[11px] font-bold px-1.5 py-0.5 rounded-full border-none leading-tight shadow-sm"
+                    style={{
+                      backgroundColor: '#e11d48',
+                      color: '#ffffff',
+                    }}
+                  >
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+            </div>
+          );
+        })}
+
         {(folders || []).map((folder) => {
           const isFolderActive = activeFolderId === folder.id && currentView === 'chats';
           const isHovered = hoveredInfo?.id === folder.id;

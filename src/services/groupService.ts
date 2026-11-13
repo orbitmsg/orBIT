@@ -860,19 +860,19 @@ class GroupService {
   ): Promise<Message> {
     const actor = actorNickname || useAuthStore.getState().nickname || 'Участник';
     const textMap: Record<string, string> = {
-      create: `${actor} создал(а) группу`,
-      invite: `${actor} пригласил(а) ${targetNickname || ''} в группу`,
-      join: `${actor} вступил(а) в группу`,
-      join_link: `${actor} вступил(а) в группу по ссылке-приглашению`,
+      create: `${actor} создал(а) лобби`,
+      invite: `${actor} пригласил(а) ${targetNickname || ''} в лобби`,
+      join: `${actor} вступил(а) в лобби`,
+      join_link: `${actor} вступил(а) в лобби по ссылке-приглашению`,
       pin: `${actor} закрепил(а) сообщение`,
-      leave: `${actor} покинул(а) группу`,
-      title: `${actor} изменил(а) имя группы`,
-      avatar: `${actor} изменил(а) аватарку группы`,
+      leave: `${actor} покинул(а) лобби`,
+      title: `${actor} изменил(а) имя лобби`,
+      avatar: `${actor} изменил(а) аватарку лобби`,
       admin: `${actor} назначил(а) ${targetNickname || ''} администратором`,
       unadmin: `${actor} снял(а) ${targetNickname || ''} с администратора`,
       call: `${actor} начал(а) голосовой чат`,
       call_ended: 'Голосовой звонок завершен',
-      kick: `${actor} удалил(а) ${targetNickname || ''} из группы`,
+      kick: `${actor} удалил(а) ${targetNickname || ''} из лобби`,
     };
     const text = textMap[eventType] || eventType;
     const msgId = `sys_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;

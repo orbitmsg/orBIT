@@ -23,6 +23,10 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
   const isServerConnected = useConnectionStore((s) => s.isServerConnected);
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isDeafened, setIsDeafened] = useState(false);
+  const [isProfileHovered, setIsProfileHovered] = useState(false);
+  const dockRingColor = isProfileHovered
+    ? 'color-mix(in srgb, var(--accent-on-color, #ffffff) 14%, #28282c)'
+    : '#28282c';
 
   return (
     <div className="shrink-0 w-full z-20 select-none pointer-events-auto rounded-[5px]">
@@ -69,6 +73,8 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
               useChatStore.getState().openSettings('profile');
             }
           }}
+          onMouseEnter={() => setIsProfileHovered(true)}
+          onMouseLeave={() => setIsProfileHovered(false)}
           aria-label={t('mainMenu.my_profile', 'Мой профиль')}
           className="dock-profile-btn flex items-center gap-2.5 min-w-0 flex-1 rounded-xl transition-colors bg-transparent border-none outline-none cursor-pointer text-left p-1"
           style={{
@@ -90,7 +96,7 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
               online={isServerConnected}
               showOffline={true}
               size="xs"
-              ringColor="var(--accent-dark, #4752c4)"
+              ringColor={dockRingColor}
               ariaLabel={isServerConnected ? t('discord.online', 'В сети') : t('common.network_connecting_title', 'Соединение...')}
             />
           </div>

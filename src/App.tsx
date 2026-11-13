@@ -372,6 +372,10 @@ function App() {
   useEffect(() => {
     if (language) {
       i18n.changeLanguage(language);
+      try { localStorage.setItem('orbita_app_language', language); } catch {}
+      if (window.orbita?.setCurrentLanguage) {
+        window.orbita.setCurrentLanguage(language);
+      }
     }
   }, [language, i18n]);
 

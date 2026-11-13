@@ -1,4 +1,3 @@
-// src/i18n.ts
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
@@ -43,11 +42,35 @@ const resources = {
   'zh-Hant': zhHant,
 };
 
+let initialLang: string | undefined = undefined;
+if (typeof window !== 'undefined') {
+  try {
+    const searchParams = new URLSearchParams(window.location.search);
+    const urlLang = searchParams.get('lang');
+    if (urlLang) {
+      initialLang = urlLang;
+    } else {
+      const explicit = localStorage.getItem('orbita_app_language');
+      if (explicit) {
+        initialLang = explicit;
+      } else {
+        const raw = localStorage.getItem('orbita-chat-storage');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const l = parsed?.state?.language || parsed?.language;
+          if (l) initialLang = l;
+        }
+      }
+    }
+  } catch {}
+}
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources,
+    lng: initialLang,
     fallbackLng: 'en',
     detection: {
       order: ['navigator', 'htmlTag'],
@@ -57,5 +80,13 @@ i18n
       escapeValue: false,
     },
   });
+
+i18n.on('languageChanged', (lng) => {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem('orbita_app_language', lng);
+    } catch {}
+  }
+});
 
 export default i18n;

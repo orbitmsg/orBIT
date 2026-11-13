@@ -254,6 +254,20 @@ contextBridge.exposeInMainWorld('orbita', {
     return ipcRenderer.invoke('app:relaunch');
   },
 
+  getCurrentLanguage: () => {
+    return ipcRenderer.invoke('orbita:get-current-language');
+  },
+
+  setCurrentLanguage: (lang: string) => {
+    ipcRenderer.send('orbita:set-current-language', lang);
+  },
+
+  onLanguageChanged: (callback: (lang: string) => void) => {
+    const handler = (_event: unknown, lang: string) => callback(lang);
+    ipcRenderer.on('orbita:language-changed', handler);
+    return () => ipcRenderer.removeListener('orbita:language-changed', handler);
+  },
+
   notificationsEnabled: () => {
     return ipcRenderer.invoke('orbita:notifications-enabled');
   },

@@ -232,6 +232,9 @@ declare global {
       onMediaAction?: (callback: (action: any) => void) => () => void;
       notifyAppReady?: () => void;
       relaunchApp?: () => Promise<{ success: boolean; error?: string }>;
+      getCurrentLanguage?: () => Promise<string>;
+      setCurrentLanguage?: (lang: string) => void;
+      onLanguageChanged?: (callback: (lang: string) => void) => () => void;
     };
   }
 

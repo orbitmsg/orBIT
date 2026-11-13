@@ -3645,6 +3645,22 @@ ipcMain.on('orbita:set-current-font', (_event, font: string) => {
 
 ipcMain.handle('orbita:get-current-font', () => currentFontFamily);
 
+let currentLanguage = 'ru';
+
+ipcMain.handle('orbita:get-current-language', () => currentLanguage);
+
+ipcMain.on('orbita:set-current-language', (_event, lang: string) => {
+  if (!lang) return;
+  currentLanguage = lang;
+  setKvValue('selected-language', lang).catch(() => {});
+  if (callWindow && !callWindow.isDestroyed()) {
+    callWindow.webContents.send('orbita:language-changed', lang);
+  }
+  if (mediaWindow && !mediaWindow.isDestroyed()) {
+    mediaWindow.webContents.send('orbita:language-changed', lang);
+  }
+});
+
 
 
 let currentAppIconName = 'icon';
@@ -4093,6 +4109,7 @@ function buildCallUrlQuery(payload?: any): string {
     if (payload.myNickname) params.set('myNickname', payload.myNickname);
   }
   if (currentFontFamily) params.set('font', currentFontFamily);
+  if (currentLanguage) params.set('lang', currentLanguage);
   return params.toString();
 }
 
@@ -4455,9 +4472,9 @@ function initOrGetMediaWindow(initialPayload?: any): BrowserWindow {
 
   const isMaxParam = state.isMaximized ? '1' : '0';
   if (isPackaged) {
-    mediaWindow.loadFile(path.join(__dirname, '../dist/media.html'), { query: { maximized: isMaxParam } });
+    mediaWindow.loadFile(path.join(__dirname, '../dist/media.html'), { query: { maximized: isMaxParam, lang: currentLanguage } });
   } else {
-    mediaWindow.loadURL(`http://127.0.0.1:5173/media.html?maximized=${isMaxParam}`);
+    mediaWindow.loadURL(`http://127.0.0.1:5173/media.html?maximized=${isMaxParam}&lang=${currentLanguage}`);
   }
 
   return mediaWindow;
@@ -5538,6 +5555,9 @@ app.whenReady().then(async () => {
         const parsed = JSON.parse(rawStorage);
         if (parsed?.state?.fontFamily) {
           currentFontFamily = parsed.state.fontFamily;
+        }
+        if (parsed?.state?.language) {
+          currentLanguage = parsed.state.language;
         }
       }
     }

@@ -62,7 +62,7 @@ import { CallDualStreamView } from './CallDualStreamView';
 import { CallWindowControls } from './CallWindowControls';
 
 export const CallWindowView = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [callData, setCallData] = useState<CallStatePayload | null>(() => {
     try {
       const searchParams = new URLSearchParams(window.location.search);
@@ -174,6 +174,33 @@ export const CallWindowView = () => {
 
     const unsubFontChanged = orbita?.onFontChanged?.((font: string) => {
       if (font) applyFont(font);
+    });
+
+    const applyLang = (l: string) => {
+      if (l && i18n.language !== l) {
+        i18n.changeLanguage(l);
+      }
+    };
+
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const lp = searchParams.get('lang');
+      if (lp) {
+        applyLang(lp);
+      } else {
+        const savedExplicit = localStorage.getItem('orbita_app_language');
+        if (savedExplicit) applyLang(savedExplicit);
+      }
+    } catch {}
+
+    if (orbita?.getCurrentLanguage) {
+      orbita.getCurrentLanguage().then((l: string) => {
+        if (l) applyLang(l);
+      }).catch(() => {});
+    }
+
+    const unsubLangChanged = orbita?.onLanguageChanged?.((l: string) => {
+      if (l) applyLang(l);
     });
 
     if (orbita?.getCurrentTheme) {
@@ -310,6 +337,7 @@ export const CallWindowView = () => {
 
     return () => {
       unsubFontChanged?.();
+      unsubLangChanged?.();
       unsubThemeChanged?.();
       unsubState?.();
       unsubCallAction?.();

@@ -6,7 +6,7 @@ import { useChatStore, FONT_MAP, FontFamily } from './store/useChatStore';
 import { useAuthStore } from './store/useAuthStore';
 import { sqliteStorage } from './services/sqliteStorage';
 import './App.css';
-import './i18n';
+import i18n from './i18n';
 
 export const MediaWindowView: React.FC = () => {
   const initialMaximized = typeof window !== 'undefined'
@@ -66,6 +66,33 @@ export const MediaWindowView: React.FC = () => {
       if (font) {
         applyFont(font);
       }
+    });
+
+    const applyLang = (l: string) => {
+      if (l && i18n.language !== l) {
+        i18n.changeLanguage(l);
+      }
+    };
+
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const lp = searchParams.get('lang');
+      if (lp) {
+        applyLang(lp);
+      } else {
+        const savedExplicit = localStorage.getItem('orbita_app_language');
+        if (savedExplicit) applyLang(savedExplicit);
+      }
+    } catch {}
+
+    if (orbita?.getCurrentLanguage) {
+      orbita.getCurrentLanguage().then((l: string) => {
+        if (l) applyLang(l);
+      });
+    }
+
+    const unsubLang = orbita?.onLanguageChanged?.((l: string) => {
+      if (l) applyLang(l);
     });
 
     const syncUsers = (users?: Record<string, any>, myUid?: string, myNick?: string) => {
@@ -152,6 +179,7 @@ export const MediaWindowView: React.FC = () => {
     return () => {
       unsubTheme?.();
       unsubFont?.();
+      unsubLang?.();
       unsubPayload?.();
       unsubMax?.();
       bc?.close();

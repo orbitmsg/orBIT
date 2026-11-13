@@ -1241,14 +1241,18 @@ export const MainLayout = () => {
 
         {(!isMobileView || activeChatId) && (
           <div
-            className="flex-1 flex min-h-0 min-w-0 flex-row"
-            style={{ gap: isMobileView ? 0 : '8px' }}
+            className="flex-1 flex min-h-0 min-w-0 flex-row overflow-hidden"
+            style={{
+              gap: 0,
+              backgroundColor: hasActiveChat ? 'var(--bg-primary)' : 'transparent',
+              borderRadius: isMobileView ? 0 : '18px',
+            }}
           >
             <main
-              className="flex-1 flex flex-col overflow-hidden"
+              className="flex-1 flex flex-col min-w-0 overflow-hidden"
               style={{
-                backgroundColor: hasActiveChat ? 'var(--bg-primary)' : 'transparent',
-                borderRadius: isMobileView ? 0 : '18px',
+                backgroundColor: 'transparent',
+                borderRadius: 0,
                 minWidth: isMobileView ? 0 : CHAT_MIN_WIDTH,
               }}
             >

@@ -292,9 +292,12 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
           flexShrink: 0,
           height: '100%',
           minHeight: 0,
-          borderRadius: '18px',
-          backgroundColor: 'var(--chat-list-bg, #2b2d31)',
-          border: 'none',
+          borderRadius: 0,
+          backgroundColor: 'transparent',
+          borderLeft: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
+          borderRight: 'none',
+          borderTop: 'none',
+          borderBottom: 'none',
           outline: 'none',
           boxShadow: 'none',
           overflow: 'hidden',
@@ -320,7 +323,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                 height: '80px',
                 borderRadius: '50%',
                 flexShrink: 0,
-                backgroundColor: 'var(--chat-list-bg, #2b2d31)',
+                backgroundColor: 'transparent',
               }}
             >
               {hasAvatar ? (
@@ -378,7 +381,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                 online={Boolean(effectiveChat.online)}
                 showOffline={false}
                 size="lg"
-                ringColor="var(--chat-list-bg, #2b2d31)"
+                ringColor="var(--bg-primary, #313338)"
                 ariaLabel={effectiveChat.online ? t('userStatus.online', 'в сети') : undefined}
               />
             </div>

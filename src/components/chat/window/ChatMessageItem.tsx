@@ -1013,11 +1013,14 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
               <div
                 data-bubble="true"
                 className={`relative w-fit flex flex-col ${isOwn ? 'items-end' : 'items-start'} group select-none`}
-                style={{ padding: '0px', overflowAnchor: 'none' }}
+                style={{ padding: '0px', overflowAnchor: 'none', overflow: 'visible' }}
                 onClick={(e) => handleMessageClick(e, msg.id!)}
                 onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}
               >
-                <div className="relative w-[180px] h-[180px] max-w-[min(180px,70vw)] max-h-[min(180px,70vw)] flex items-center justify-center">
+                <div
+                  className="relative w-[180px] h-[180px] max-w-[min(180px,70vw)] max-h-[min(180px,70vw)] flex items-center justify-center"
+                  style={{ overflow: 'visible' }}
+                >
                   {media.url && media.url.toLowerCase().endsWith('.tgs') ? (
                     <TgsPlayer
                       src={media.url}
@@ -1039,8 +1042,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     style={{
                       position: 'absolute',
                       bottom: '15px',
-                      left: isOwn ? '-25px' : undefined,
-                      right: !isOwn ? '-25px' : undefined,
+                      left: isOwn ? '-105px' : undefined,
+                      right: !isOwn ? '-105px' : undefined,
                       backgroundColor: '#18191d',
                       borderRadius: '9999px',
                       padding: '3px 8px',

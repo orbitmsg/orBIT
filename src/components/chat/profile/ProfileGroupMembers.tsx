@@ -336,7 +336,7 @@ export const ProfileGroupMembers: React.FC<ProfileGroupMembersProps> = ({
                           e.stopPropagation();
                           if (window.confirm(`${t('groupSettings.kick', 'Исключить')} ${member.nickname}?`)) {
                             if (chat.id.startsWith('lobby_')) {
-                              await lobbyService.leaveLobby(chat.id, memberCode || member.userId || '');
+                              await lobbyService.leaveLobby(chat.id, memberCode || '', (member as any).id || member.userId);
                             } else {
                               await groupService.kickMember(chat.id, chat.sharedSecret!, member.nickname, myNickname || '', memberCode, member.userId);
                             }

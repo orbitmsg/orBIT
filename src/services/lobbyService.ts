@@ -274,23 +274,46 @@ export class LobbyService {
     return lobby;
   }
 
-  async leaveLobby(lobbyId: string, userCode: string): Promise<void> {
-    if (!lobbyId || !userCode) return;
-    await this.client
-      .from('lobby_members')
-      .delete()
-      .eq('lobby_id', lobbyId)
-      .or(`user_code.eq.${userCode},id.eq.${userCode}`);
+  async leaveLobby(lobbyId: string, userCode: string, memberId?: string): Promise<void> {
+    if (!lobbyId || (!userCode && !memberId)) return;
+    const isCodeUuid = Boolean(userCode && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userCode));
+    const isIdUuid = Boolean(memberId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(memberId));
 
-    const { count } = await this.client
-      .from('lobby_members')
-      .select('id', { count: 'exact', head: true })
-      .eq('lobby_id', lobbyId);
+    const uuidTarget = isIdUuid ? memberId : (isCodeUuid ? userCode : null);
+    const textTarget = !isCodeUuid ? userCode : (!isIdUuid ? memberId : null);
 
-    await this.client
-      .from('lobbies')
-      .update({ members_count: Math.max(0, count || 0) })
-      .eq('id', lobbyId);
+    try {
+      if (uuidTarget) {
+        await this.client
+          .from('lobby_members')
+          .delete()
+          .eq('lobby_id', lobbyId)
+          .eq('id', uuidTarget);
+      }
+      if (textTarget) {
+        await this.client
+          .from('lobby_members')
+          .delete()
+          .eq('lobby_id', lobbyId)
+          .or(`user_code.eq.${textTarget},nickname.eq.${textTarget}`);
+      }
+    } catch (e) {
+      console.error('Failed to remove lobby member:', e);
+    }
+
+    try {
+      const { count } = await this.client
+        .from('lobby_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('lobby_id', lobbyId);
+
+      await this.client
+        .from('lobbies')
+        .update({ members_count: Math.max(0, count || 0) })
+        .eq('id', lobbyId);
+    } catch (e) {
+      console.error('Failed to update lobby members_count:', e);
+    }
   }
 
   async updateLobby(

@@ -77,10 +77,18 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
         members: validMembers,
         membersCount: validMembers.length,
       });
+
+      const currentMyCode = useChatStore.getState().myCode;
+      const currentMyUid = useAuthStore.getState().userId;
+      const myIds = [currentMyCode, currentMyUid].filter(Boolean);
+      const isOwner = list.some((m) => myIds.includes(m.userCode) && m.role === 'owner') || activeChatObj?.creatorCode === currentMyCode;
+      if (!isOwner && list.length > 0 && !list.some((m) => myIds.includes(m.userCode) || (m.id && myIds.includes(m.id)))) {
+        useChatStore.getState().deleteChat(lobbyId);
+      }
     } catch (e) {
       console.error('Failed to load lobby members:', e);
     }
-  }, [lobbyId]);
+  }, [lobbyId, activeChatObj?.creatorCode]);
 
   const handleMemberClick = useCallback((m: LobbyMember) => {
     const currentMyCode = useChatStore.getState().myCode;
@@ -126,7 +134,7 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
     e.stopPropagation();
     if (window.confirm(`${t('groupSettings.kick', 'Исключить')} ${m.nickname}?`)) {
       try {
-        await lobbyService.leaveLobby(lobbyId, m.userCode || m.id);
+        await lobbyService.leaveLobby(lobbyId, m.userCode || '', m.id);
         const remaining = members.filter((mem) => mem.userCode !== m.userCode && mem.id !== m.id);
         setMembers(remaining);
         useChatStore.getState().updateChat(lobbyId, {

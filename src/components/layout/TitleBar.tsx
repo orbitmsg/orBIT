@@ -174,12 +174,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
       <div
         className="flex items-center gap-1.5 pl-3 select-none pointer-events-none"
         style={{ ['WebkitAppRegion' as any]: 'drag' }}
-      >
-        <OrbitIcon size={14} monochrome />
-        <span className="text-[12px] font-bold text-white tracking-tight">
-          or<span style={{ color: '#5865F2' }}>BIT</span>
-        </span>
-      </div>
+      />
 
       {!hideTitle && (
         <div

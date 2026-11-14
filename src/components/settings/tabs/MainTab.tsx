@@ -304,7 +304,7 @@ export const MainTab = ({
 
       <div style={{ padding: '0px 20px 16px', textAlign: 'center', color: MD3.onSurfaceVar, fontSize: 12, userSelect: 'none', backgroundColor: 'transparent', marginTop: '8px' }}>
         <div style={{ fontWeight: 700, fontSize: 17, letterSpacing: '0.1em', color: MD3.onSurface, marginBottom: 4 }}>
-          ORBITA MESSENGER
+          orBIT MESSENGER
         </div>
         <div style={{ fontSize: 13, opacity: 0.7 }}>
           {t('common.version', { version: appVersion || '0.1.996' })}

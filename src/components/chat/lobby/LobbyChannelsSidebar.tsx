@@ -110,7 +110,7 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
   return (
     <aside
       aria-label={t('lobby.channels_sidebar', 'Каналы лобби')}
-      className="w-60 shrink-0 h-full flex flex-col select-none"
+      className="w-full flex-1 min-w-0 h-full flex flex-col select-none"
       style={{
         backgroundColor: 'var(--title-bar-bg, #121212)',
       }}
@@ -321,7 +321,7 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
         </div>
       )}
 
-      <div className="shrink-0 p-1 border-t border-white/5" style={{ backgroundColor: 'var(--title-bar-bg, #121212)' }}>
+      <div className="shrink-0 p-1.5" style={{ backgroundColor: 'var(--title-bar-bg, #121212)' }}>
         <UserDockPanel onOpenProfile={onOpenProfile} onOpenSettings={onOpenSettings} />
       </div>
 

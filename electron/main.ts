@@ -3870,14 +3870,41 @@ const TRAY_LOCALES: Record<string, {
 
 function getValidIcoPath(iconName?: string): string {
   const name = iconName || currentAppIconName || 'icon';
+  const targetDir = path.join(app.getPath('userData'), 'icons');
+  const targetIco = path.join(targetDir, `${name}.ico`);
+
+  try {
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+  } catch {}
+
   const resolved = resolveIconPath(name, 'ico') || resolveIconFile(`${name}.ico`);
   if (resolved && fs.existsSync(resolved)) {
-    return path.resolve(resolved);
+    try {
+      const data = fs.readFileSync(resolved);
+      fs.writeFileSync(targetIco, data);
+      return path.resolve(targetIco);
+    } catch {
+      return path.resolve(resolved);
+    }
   }
+
   const defaultResolved = resolveIconPath('icon', 'ico') || resolveIconFile('icon.ico');
   if (defaultResolved && fs.existsSync(defaultResolved)) {
-    return path.resolve(defaultResolved);
+    try {
+      const data = fs.readFileSync(defaultResolved);
+      fs.writeFileSync(targetIco, data);
+      return path.resolve(targetIco);
+    } catch {
+      return path.resolve(defaultResolved);
+    }
   }
+
+  if (fs.existsSync(targetIco)) {
+    return path.resolve(targetIco);
+  }
+
   if (app.isPackaged) {
     return process.execPath;
   }
@@ -3894,7 +3921,7 @@ function updateWindowsShortcutsAndTaskbar(iconName: string): void {
     const icoPath = getValidIcoPath(iconName);
     if (!icoPath || !fs.existsSync(icoPath)) return;
     const absIcoPath = path.resolve(icoPath);
-    const dynamicAppId = iconName === 'orbita1' || iconName === 'default' ? 'com.saizzi.orbit' : `com.saizzi.orbit.${iconName}`;
+    const appId = 'com.saizzi.orbit';
 
     const shortcutDirs = [
       path.join(app.getPath('appData'), 'Microsoft', 'Internet Explorer', 'Quick Launch', 'User Pinned', 'TaskBar'),
@@ -3915,7 +3942,7 @@ function updateWindowsShortcutsAndTaskbar(iconName: string): void {
               updated = shell.writeShortcutLink(lnkPath, 'update', {
                 icon: absIcoPath,
                 iconIndex: 0,
-                appUserModelId: dynamicAppId,
+                appUserModelId: appId,
               });
             } catch {}
             if (!updated) {
@@ -4064,7 +4091,7 @@ ipcMain.on('orbita:set-app-icon', (_event, iconName: string) => {
 
   const icoPath = getValidIcoPath(effectiveName);
   const absIcoPath = icoPath ? path.resolve(icoPath) : '';
-  const dynamicAppId = effectiveName === 'orbita1' ? 'com.saizzi.orbit' : `com.saizzi.orbit.${effectiveName}`;
+  const appId = 'com.saizzi.orbit';
 
   if (mainWindow && !mainWindow.isDestroyed()) {
     const icon = loadNativeAppIcon(effectiveName);
@@ -4074,7 +4101,7 @@ ipcMain.on('orbita:set-app-icon', (_event, iconName: string) => {
     if (process.platform === 'win32') {
       try {
         mainWindow.setAppDetails({
-          appId: dynamicAppId,
+          appId,
           appIconPath: absIcoPath || undefined,
           appIconIndex: 0,
         });
@@ -5145,10 +5172,9 @@ function createMainWindow() {
   if (process.platform === 'win32') {
     const icoPath = getValidIcoPath(currentAppIconName);
     if (icoPath) {
-      const dynamicAppId = currentAppIconName === 'orbita1' ? 'com.saizzi.orbit' : `com.saizzi.orbit.${currentAppIconName}`;
       try {
         mainWindow.setAppDetails({
-          appId: dynamicAppId,
+          appId: 'com.saizzi.orbit',
           appIconPath: icoPath,
           appIconIndex: 0,
         });
@@ -5660,13 +5686,13 @@ function registerWindowsAppIdentity(): void {
   try {
     const targetIco = getValidIcoPath(currentAppIconName);
     const programsPath = app.getPath('programs');
-    const dynamicAppId = currentAppIconName === 'orbita1' ? 'com.saizzi.orbit' : `com.saizzi.orbit.${currentAppIconName}`;
+    const appId = 'com.saizzi.orbit';
 
     const shortcutDetails = {
       target: process.execPath,
       args: app.isPackaged ? '' : `"${path.resolve(__dirname, '..')}"`,
       description: 'orBIT',
-      appUserModelId: dynamicAppId,
+      appUserModelId: appId,
       icon: targetIco,
       iconIndex: 0,
       cwd: app.isPackaged ? path.dirname(process.execPath) : path.resolve(__dirname, '..'),
@@ -5690,7 +5716,6 @@ function registerWindowsAppIdentity(): void {
     const regCommands = [
       `reg delete "HKCU\\Software\\Classes\\AppUserModelId\\orBIT" /f`,
       `reg delete "HKCU\\Software\\Classes\\AppUserModelId\\com.saizzi.orbita" /f`,
-      `reg delete "HKCU\\Software\\Classes\\AppUserModelId\\com.saizzi.orbit" /f`,
       `reg add "HKCU\\Software\\Classes\\Applications\\electron.exe" /v FriendlyAppName /d "orBIT" /f`,
       `reg add "HKCU\\Software\\Classes\\Applications\\electron.exe" /v ApplicationCompany /d "orBIT" /f`,
       `reg add "HKCU\\Software\\Classes\\Applications\\electron.exe\\DefaultIcon" /ve /d "${targetIco},0" /f`,

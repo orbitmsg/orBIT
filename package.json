@@ -38,7 +38,8 @@
     "asar": true,
     "asarUnpack": [
       "**/index.node",
-      "**/*.ttf"
+      "**/*.ttf",
+      "**/*.ico"
     ],
     "win": {
       "icon": "public/icons/icon.ico",

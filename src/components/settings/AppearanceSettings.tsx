@@ -688,6 +688,8 @@ export const ChatSettingsTab: React.FC<ChatSettingsTabProps> = ({ fontOptions })
     setTextScale,
     bubbleRadius,
     setBubbleRadius,
+    appIcon,
+    setAppIcon,
   } = useChatStore(
     useShallow((s) => ({
       currentTheme: s.currentTheme,
@@ -703,6 +705,8 @@ export const ChatSettingsTab: React.FC<ChatSettingsTabProps> = ({ fontOptions })
       setTextScale: s.setTextScale,
       bubbleRadius: s.bubbleRadius,
       setBubbleRadius: s.setBubbleRadius,
+      appIcon: s.appIcon,
+      setAppIcon: s.setAppIcon,
     }))
   );
 
@@ -732,6 +736,27 @@ export const ChatSettingsTab: React.FC<ChatSettingsTabProps> = ({ fontOptions })
       setChatColor(val);
     }
   };
+
+  const appIcons = useMemo(
+    () => [
+      {
+        id: 'orbita1' as const,
+        name: t('settings.app_icon_main', 'Основная'),
+        src: './icons/256x256.png',
+      },
+      {
+        id: 'pride' as const,
+        name: t('settings.app_icon_pride', 'Гордость'),
+        src: './icons/pride.png',
+      },
+      {
+        id: 'apple' as const,
+        name: t('settings.app_icon_apple', 'Яблоко'),
+        src: './icons/apple.png',
+      },
+    ],
+    [t]
+  );
 
   return (
     <motion.div
@@ -950,6 +975,118 @@ export const ChatSettingsTab: React.FC<ChatSettingsTabProps> = ({ fontOptions })
             >
               {t('settings.reset_all_chat_colors', 'Сбросить цвета всех чатов')}
             </button>
+          </div>
+        </Block>
+      </div>
+
+      <div>
+        <SectionHeader title={t('settings.app_icon_title', 'Иконка приложения')} />
+        <Block style={{ padding: '14px 14px 12px', gap: 12 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 8,
+            }}
+          >
+            {appIcons.map((item) => {
+              const isActive = (item.id === 'orbita1' && (!appIcon || appIcon === 'orbita1' || appIcon === 'default')) || appIcon === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setAppIcon(item.id)}
+                  aria-label={item.name}
+                  aria-pressed={isActive}
+                  style={{
+                    all: 'unset',
+                    boxSizing: 'border-box',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    padding: '12px 8px',
+                    borderRadius: 12,
+                    userSelect: 'none',
+                    backgroundColor: isActive
+                      ? 'var(--surface-active, color-mix(in srgb, var(--accent-color, #5865F2) 15%, var(--surface-container-strong)))'
+                      : 'var(--surface-container-soft)',
+                    border: isActive
+                      ? '2px solid var(--accent-color, #5865F2)'
+                      : '2px solid var(--border-color)',
+                    color: isActive ? 'var(--text-heading, var(--text-main))' : MD3.onSurface,
+                    transition: 'background-color 150ms ease, border-color 150ms ease, transform 150ms ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = 'var(--surface-container-soft)';
+                    }
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'relative',
+                      width: 48,
+                      height: 48,
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <img
+                      src={item.src}
+                      alt={item.name}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                        pointerEvents: 'none',
+                      }}
+                    />
+                    {isActive && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: 'rgba(0, 0, 0, 0.32)',
+                          borderRadius: 12,
+                        }}
+                      >
+                        <Check size={18} strokeWidth={3} color="#ffffff" />
+                      </div>
+                    )}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 12.5,
+                      fontWeight: isActive ? 600 : 500,
+                      lineHeight: 1.2,
+                      textAlign: 'center',
+                      maxWidth: '100%',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      color: isActive ? 'var(--accent-text, var(--accent-color, #5865F2))' : MD3.onSurface,
+                    }}
+                  >
+                    {item.name}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </Block>
       </div>

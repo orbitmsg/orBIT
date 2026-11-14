@@ -3998,35 +3998,30 @@ function updateTrayIcon() {
 let activeAppliedAppIcon = '';
 
 ipcMain.on('orbita:set-app-icon', (_event, iconName: string) => {
-  if (activeAppliedAppIcon === iconName) return;
-  activeAppliedAppIcon = iconName;
-  console.log('[Icon] Setting app icon to:', iconName);
-  currentAppIconName = iconName;
+  if (!iconName) return;
+  const effectiveName = iconName === 'default' ? 'orbita1' : iconName;
+  if (activeAppliedAppIcon === effectiveName) return;
+  activeAppliedAppIcon = effectiveName;
+  currentAppIconName = effectiveName;
+  saveWindowSettings();
   if (mainWindow && !mainWindow.isDestroyed()) {
-    const icon = loadNativeAppIcon(iconName);
-    if (icon) {
+    const icon = loadNativeAppIcon(effectiveName);
+    if (icon && !icon.isEmpty()) {
       mainWindow.setIcon(icon);
       if (process.platform === 'win32') {
-        const origTitle = mainWindow.getTitle();
-        mainWindow.setSkipTaskbar(true);
-        mainWindow.setTitle(origTitle + ' ');
-        setTimeout(() => {
-          if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.setIcon(icon);
-            mainWindow.setTitle(origTitle);
-            mainWindow.setSkipTaskbar(false);
-            mainWindow.flashFrame(true);
-            setTimeout(() => {
-              if (mainWindow && !mainWindow.isDestroyed()) {
-                mainWindow.flashFrame(false);
-              }
-            }, 300);
-          }
-        }, 250);
+        const icoPath = resolveIconPath(effectiveName, 'ico') || resolveIconFile(`${effectiveName}.ico`);
+        if (icoPath) {
+          try {
+            mainWindow.setAppDetails({
+              appId: 'com.saizzi.orbit',
+              appIconPath: icoPath,
+              appIconIndex: 0,
+            });
+          } catch {}
+        }
       }
     }
   }
-  updateTrayIcon();
 });
 
 ipcMain.on('orbita:set-notification-icon', (_event, iconName: string) => {
@@ -4082,6 +4077,7 @@ function loadWindowSettings() {
         if (data.themeVars && typeof data.themeVars === 'object') currentThemeVars = data.themeVars;
         if (typeof data.themeId === 'string') currentThemeId = data.themeId;
         if (typeof data.language === 'string') currentLanguage = data.language;
+        if (typeof data.appIcon === 'string') currentAppIconName = data.appIcon;
       }
     }
   } catch {}
@@ -4097,6 +4093,7 @@ function saveWindowSettings() {
       themeVars: currentThemeVars,
       themeId: currentThemeId,
       language: currentLanguage,
+      appIcon: currentAppIconName,
     };
     fs.writeFileSync(WINDOW_SETTINGS_FILE, JSON.stringify(data), 'utf8');
   } catch {}
@@ -5065,14 +5062,14 @@ function createMainWindow() {
     backgroundColor: '#000000',
     autoHideMenuBar: true,
     show: false,
-    icon: loadNativeAppIcon(),
+    icon: loadNativeAppIcon(currentAppIconName),
   });
 
-  const icon = loadNativeAppIcon();
+  const icon = loadNativeAppIcon(currentAppIconName);
   if (icon && !icon.isEmpty()) mainWindow.setIcon(icon);
 
   if (process.platform === 'win32') {
-    const icoPath = getValidIcoPath();
+    const icoPath = resolveIconPath(currentAppIconName, 'ico') || getValidIcoPath();
     if (icoPath) {
       try {
         mainWindow.setAppDetails({

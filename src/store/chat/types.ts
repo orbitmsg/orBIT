@@ -80,7 +80,7 @@ export type Language =
 export type HeaderTitleOption = 'orbita' | 'nickname' | 'all_chats';
 export type NotificationPosition = 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-right';
 export type NotificationPreviewTheme = 'dark' | 'light';
-export type IconOption = 'orbita1' | 'orbita4';
+export type IconOption = 'orbita1' | 'default' | 'pride' | 'apple' | 'orbita4';
 export type ChatAction = 'typing' | 'sticker' | 'voice';
 
 export interface ChatTypingUser {

@@ -25,8 +25,8 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
   const [isDeafened, setIsDeafened] = useState(false);
   const [isProfileHovered, setIsProfileHovered] = useState(false);
   const dockRingColor = isProfileHovered
-    ? 'color-mix(in srgb, var(--accent-on-color, #ffffff) 14%, #28282c)'
-    : '#28282c';
+    ? 'color-mix(in srgb, var(--accent-on-color, #ffffff) 14%, #232428)'
+    : '#232428';
 
   return (
     <div className="shrink-0 w-full z-20 select-none pointer-events-auto rounded-[5px]">
@@ -55,7 +55,7 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
         style={{
           minHeight: '52px',
           height: '52px',
-          backgroundColor: 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))',
+          backgroundColor: '#232428',
           borderRadius: '14px',
           border: 'none',
           outline: 'none',

@@ -107,8 +107,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   const isCallMinimized = useCallStore((s) => s.isMinimized);
   const isInChatSearch = Boolean(inChatSearch?.isOpen);
 
-  const surfaceTint = 'var(--surface-container-soft, rgba(128, 128, 128, 0.08))';
-  const surfaceHoverTint = 'var(--surface-hover, rgba(128, 128, 128, 0.14))';
+  const surfaceTint = '#232428';
+  const surfaceHoverTint = '#2b2d31';
 
   if (isInChatSearch) {
     return (
@@ -687,7 +687,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
 
         {!hideDock && (
           <div
-            className="absolute left-[6px] right-[6px] bottom-[6px] z-20 select-none pointer-events-auto"
+            className="absolute left-0 right-0 bottom-0 p-1.5 z-20 select-none pointer-events-auto"
+            style={{ backgroundColor: 'var(--title-bar-bg, #121212)' }}
           >
             <UserDockPanel
               onOpenProfile={onOpenProfile}

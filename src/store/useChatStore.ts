@@ -406,7 +406,7 @@ export const useChatStore = create<ChatState>()(
           peerPublicKey: newChat.peerPublicKey || null,
         };
         set((state) => {
-          if (chatEntry.type === 'group' && state.deletedChatIds?.includes(chatEntry.id) && !(newChat as any).isExplicitJoin) {
+          if (chatEntry.type === 'group' && state.deletedChatIds?.includes(chatEntry.id) && !(newChat as any).isExplicitJoin && !chatEntry.id.startsWith('lobby_')) {
             return state;
           }
           if (chatEntry.type === 'private' && chatEntry.peerCode && chatEntry.peerCode.length === 64) {

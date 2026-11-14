@@ -385,7 +385,31 @@
       }
     }
 
+    function getOrbitaLogoSvg() {
+      return `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="100 100 800 800" width="58" height="58" style="width:100%;height:100%;display:block;">
+          <defs>
+            <linearGradient id="orbNotifLogoGrad" x1="75%" y1="15%" x2="20%" y2="85%">
+              <stop offset="0%" stop-color="#a894d1" />
+              <stop offset="50%" stop-color="#917bbd" />
+              <stop offset="100%" stop-color="#755f9f" />
+            </linearGradient>
+          </defs>
+          <g>
+            <path d="M 678.5 239.0 A 340 340 0 1 0 816.0 376.5 L 780.7 411.8 A 290 290 0 1 1 643.2 274.3 Z" fill="url(#orbNotifLogoGrad)" />
+            <path d="M 603.7 313.8 A 240 240 0 1 0 741.2 451.3 L 705.2 487.3 A 190 190 0 1 1 567.7 349.8 Z" fill="url(#orbNotifLogoGrad)" />
+            <rect x="605" y="355" width="85" height="85" fill="#FFFFFF" />
+            <rect x="690" y="270" width="85" height="85" fill="#FFFFFF" />
+            <rect x="775" y="185" width="85" height="85" fill="#FFFFFF" />
+          </g>
+        </svg>
+      `;
+    }
+
     function getLetterAvatar(name, accentColor = '#9b7dd4') {
+      if (!name || String(name).toLowerCase().includes('orbita')) {
+        return getOrbitaLogoSvg();
+      }
       const initial = (name && String(name).trim().length > 0) ? String(name).trim().charAt(0).toUpperCase() : 'O';
       return `
         <div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg, ${accentColor}, #3c2468);display:flex;align-items:center;justify-content:center;color:#ffffff;font-size:23px;font-weight:600;user-select:none;">
@@ -468,8 +492,9 @@
       }
 
       let avatarHtml;
-      if (isHidden) {
-        avatarHtml = `<img src="./icons/128x128.png" alt="Orbita" style="width:58px;height:58px;object-fit:contain;display:block;" onerror="this.onerror=null;this.src='/icons/128x128.png';" />`;
+      const isOrbitaTitle = !finalTitle || String(finalTitle).toLowerCase().includes('orbita');
+      if (isHidden || (isOrbitaTitle && (!avatarUrl || avatarUrl.trim() === ''))) {
+        avatarHtml = getOrbitaLogoSvg();
       } else if (avatarUrl && typeof avatarUrl === 'string' && avatarUrl.trim() !== '') {
         const cleanUrl = avatarUrl.split('?')[0];
         const ext = cleanUrl.split('.').pop().toLowerCase();

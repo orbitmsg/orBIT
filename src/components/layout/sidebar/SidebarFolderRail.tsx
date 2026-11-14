@@ -154,7 +154,7 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
 
       <div className="flex-1 w-full flex flex-col items-center overflow-y-auto no-scrollbar py-1 space-y-2">
         {lobbies.map((lobby) => {
-          const isLobbyActive = activeChatId === lobby.id && currentView === 'chats';
+          const isLobbyActive = activeChatId === lobby.id && (currentView === 'chats' || currentView === 'settings');
           const isHovered = hoveredInfo?.id === lobby.id;
           const unreadCount = lobby.unreadCount || 0;
 

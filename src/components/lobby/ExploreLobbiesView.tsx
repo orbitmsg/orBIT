@@ -77,6 +77,10 @@ export const ExploreLobbiesView: React.FC = () => {
         lastSeen: m.lastSeen || Date.now(),
       }));
 
+      useChatStore.setState((s) => ({
+        deletedChatIds: (s.deletedChatIds || []).filter((id) => id !== lobby.id),
+      }));
+
       const existingChat = chats.find((c) => c.id === lobby.id);
       if (!existingChat) {
         addChat({
@@ -94,7 +98,8 @@ export const ExploreLobbiesView: React.FC = () => {
           unreadCount: 0,
           membersCount: Math.max(lobby.membersCount, chatMembers.length),
           members: chatMembers,
-        });
+          isExplicitJoin: true,
+        } as any);
       } else {
         useChatStore.getState().updateChat(lobby.id, {
           members: chatMembers,

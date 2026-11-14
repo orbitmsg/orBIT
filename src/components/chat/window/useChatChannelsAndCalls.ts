@@ -305,9 +305,10 @@ export const useChatChannelsAndCalls = ({
     }
     myIds.forEach((myId) => candidateCodes.delete(myId));
 
+    const isHyphenatedUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
     const candidateArray = Array.from(candidateCodes);
-    const target36 = candidateArray.find((c) => c.length === 36);
-    const targetCode = target36 || candidateArray.find((c) => c.length !== 64) || candidateArray[0];
+    const nonUuid = candidateArray.find((c) => !isHyphenatedUuid(c) && c.length !== 64);
+    const targetCode = nonUuid || candidateArray.find((c) => c.length !== 64) || candidateArray[0];
     if (!targetCode) return;
 
     const directChatIds = new Set<string>();

@@ -265,30 +265,30 @@ export const ProfileGroupMembers: React.FC<ProfileGroupMembersProps> = ({
                   {isMemberOwner ? (
                     <span
                       style={{
-                        fontSize: '11px',
-                        fontWeight: 500,
+                        fontSize: '10px',
+                        fontWeight: 600,
                         padding: '2px 8px',
                         borderRadius: '9999px',
-                        backgroundColor: 'var(--accent-glow-light, rgba(88, 101, 242, 0.18))',
-                        color: 'var(--accent-color, #9b7dd4)',
+                        backgroundColor: 'var(--accent-color, #7C3AED)',
+                        color: '#ffffff',
                         userSelect: 'none',
                       }}
                     >
-                      {t('groupSettings.owner', 'владелец').toLowerCase()}
+                      {t('lobby.role_owner', 'Владелец')}
                     </span>
                   ) : isMemberAdmin ? (
                     <span
                       style={{
-                        fontSize: '11px',
-                        fontWeight: 500,
+                        fontSize: '10px',
+                        fontWeight: 600,
                         padding: '2px 8px',
                         borderRadius: '9999px',
-                        backgroundColor: 'rgba(59, 130, 246, 0.18)',
-                        color: '#60a5fa',
+                        backgroundColor: '#4a4d57',
+                        color: '#ffffff',
                         userSelect: 'none',
                       }}
                     >
-                      {t('groupSettings.admin', 'админ').toLowerCase()}
+                      {t('lobby.role_admin', 'Админ')}
                     </span>
                   ) : null}
 

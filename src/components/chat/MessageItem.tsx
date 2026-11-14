@@ -344,7 +344,7 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                   <span
                     onClick={(e) => {
                       e.stopPropagation();
-                      onSenderClick?.(msg.senderId, sDisplayName);
+                      onSenderClick?.((msg as any).senderCode || (sMember as any)?.userCode || (sMember as any)?.user_code || msg.senderId, sDisplayName);
                     }}
                     className="font-semibold select-none message-sender-name hover:underline cursor-pointer"
                     style={{
@@ -363,30 +363,30 @@ export const MessageItem: React.FC<MessageItemProps> = React.memo(
                   </span>
                   {isSenderOwner && (
                     <span
-                      className="ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0 select-none inline-flex items-center"
+                      className="ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold flex-shrink-0 select-none inline-flex items-center"
                       style={{
-                        backgroundColor: 'color-mix(in srgb, var(--accent-color, #7C3AED) 16%, transparent)',
-                        color: 'var(--accent-text, var(--accent-color, #9b7dd4))',
+                        backgroundColor: 'var(--accent-color, #7C3AED)',
+                        color: '#ffffff',
                         lineHeight: 1.2,
                         userSelect: 'none',
                         WebkitUserSelect: 'none',
                       }}
                     >
-                      {(sMember as any)?.customTitle || (sMember as any)?.roleTitle || t('groupSettings.owner', 'владелец').toLowerCase()}
+                      {(sMember as any)?.customTitle || (sMember as any)?.roleTitle || t('lobby.role_owner', 'Владелец')}
                     </span>
                   )}
                   {isSenderAdmin && (
                     <span
-                      className="ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0 select-none inline-flex items-center"
+                      className="ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold flex-shrink-0 select-none inline-flex items-center"
                       style={{
-                        backgroundColor: 'rgba(22, 163, 74, 0.16)',
-                        color: '#16a34a',
+                        backgroundColor: '#4a4d57',
+                        color: '#ffffff',
                         lineHeight: 1.2,
                         userSelect: 'none',
                         WebkitUserSelect: 'none',
                       }}
                     >
-                      {(sMember as any)?.customTitle || (sMember as any)?.roleTitle || t('groupSettings.admin_badge', 'администратор').toLowerCase()}
+                      {(sMember as any)?.customTitle || (sMember as any)?.roleTitle || t('lobby.role_admin', 'Админ')}
                     </span>
                   )}
                 </div>

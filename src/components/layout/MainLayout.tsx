@@ -1188,7 +1188,7 @@ export const MainLayout = () => {
               />
             )}
             <div className="flex-1 min-w-0 h-full">
-              {activeChatObj && activeChatObj.type === 'group' && currentView === 'chats' ? (
+              {activeChatObj && activeChatObj.type === 'group' && (currentView === 'chats' || currentView === 'settings') ? (
                 <LobbyChannelsSidebar
                   lobbyId={activeChatObj.id}
                   lobbyName={activeChatObj.name}

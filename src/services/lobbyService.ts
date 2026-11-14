@@ -275,11 +275,12 @@ export class LobbyService {
   }
 
   async leaveLobby(lobbyId: string, userCode: string): Promise<void> {
+    if (!lobbyId || !userCode) return;
     await this.client
       .from('lobby_members')
       .delete()
       .eq('lobby_id', lobbyId)
-      .eq('user_code', userCode);
+      .or(`user_code.eq.${userCode},id.eq.${userCode}`);
 
     const { count } = await this.client
       .from('lobby_members')

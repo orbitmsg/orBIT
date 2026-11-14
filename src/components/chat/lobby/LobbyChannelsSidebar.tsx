@@ -6,8 +6,6 @@ import {
   Trash2,
   PhoneOff,
   ChevronDown,
-  ShieldCheck,
-  Users,
   Search,
 } from 'lucide-react';
 import { lobbyService, type LobbyChannel, type LobbyMember } from '../../../services/lobbyService';
@@ -232,12 +230,9 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
         }}
       >
         <div className="flex flex-col min-w-0 pr-2">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="font-bold text-[15px] text-white truncate">
-              {lobbyName}
-            </span>
-            <ShieldCheck size={14} className="text-[#949ba4] shrink-0" />
-          </div>
+          <span className="font-bold text-[15px] text-white truncate">
+            {lobbyName}
+          </span>
           <span className="text-[11.5px] text-[#949ba4] font-medium truncate mt-0.5">
             {onlineMembersCount} {t('lobby.online_count', 'в сети')}, {totalMembersCount} {t('lobby.members_count', 'участников')}
           </span>
@@ -313,8 +308,7 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
 
         <div className="flex flex-col gap-1 mt-1 pt-2 border-t border-white/5">
           <div className="px-2 py-1 flex items-center justify-between">
-            <span className="text-[12px] font-bold text-[#949ba4] flex items-center gap-1.5">
-              <Users size={13} className="text-[#949ba4]" />
+            <span className="text-[12px] font-bold text-[#949ba4]">
               {t('lobby.members_list_title', 'Список участников')}
             </span>
           </div>
@@ -361,7 +355,7 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
                   </span>
                   {isOwner && (
                     <span
-                      className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0"
+                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0"
                       style={{
                         backgroundColor: 'var(--accent-color, #7C3AED)',
                         color: '#ffffff',
@@ -372,7 +366,7 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
                   )}
                   {isAdmin && (
                     <span
-                      className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0"
+                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0"
                       style={{
                         backgroundColor: '#4a4d57',
                         color: '#ffffff',

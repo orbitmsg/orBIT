@@ -689,7 +689,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
     const currentMode = groupModalMode;
     setIsDeleteGroupModalOpen(false);
     onClose();
-    const myCode = useChatStore.getState().myCode;
+    const myCode = useChatStore.getState().myCode || '';
     if (currentMode === 'delete') {
       await groupService.deleteGroup(targetChatId);
       try {

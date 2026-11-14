@@ -134,10 +134,17 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
 
   const isSameSender = (m1: Message | null, m2: Message | null) => {
     if (!m1 || !m2) return false;
-    if (m1.senderId && m2.senderId) return m1.senderId === m2.senderId;
-    if (m1.sender && m2.sender) return m1.sender === m2.sender;
+    const c1 = (m1 as any).senderCode || m1.senderId || m1.sender;
+    const c2 = (m2 as any).senderCode || m2.senderId || m2.sender;
+    if (c1 && c2 && c1 === c2) return true;
+    if (m1.senderId && m2.senderId && m1.senderId === m2.senderId) return true;
+    if (m1.sender && m2.sender && m1.sender === m2.sender) return true;
     return false;
   };
+
+  const tPrev = prevMsg ? (typeof prevMsg.time === 'number' ? prevMsg.time : new Date(prevMsg.time).getTime()) : 0;
+  const tCur = typeof msg.time === 'number' ? msg.time : new Date(msg.time).getTime();
+  const tNext = nextMsg ? (typeof nextMsg.time === 'number' ? nextMsg.time : new Date(nextMsg.time).getTime()) : 0;
 
   const prevIsOwn = prevMsg ? isMessageOutgoing(prevMsg, myCode, myNickname, activeChat, myUserId) : false;
   const isPrevSameSenderGroup = !!(
@@ -145,8 +152,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     prevMsg.mediaType !== 'system' &&
     prevIsOwn === isOwn &&
     isSameSender(prevMsg, msg) &&
-    Math.abs(msg.time - prevMsg.time) <= 15 * 60 * 1000 &&
-    isSameDay(prevMsg.time, msg.time)
+    Math.abs(tCur - tPrev) <= 15 * 60 * 1000 &&
+    isSameDay(tPrev, tCur)
   );
   const nextIsOwn = nextMsg ? isMessageOutgoing(nextMsg, myCode, myNickname, activeChat, myUserId) : false;
   const isNextSameSenderGroup = !!(
@@ -154,8 +161,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     nextMsg.mediaType !== 'system' &&
     nextIsOwn === isOwn &&
     isSameSender(nextMsg, msg) &&
-    Math.abs(nextMsg.time - msg.time) <= 15 * 60 * 1000 &&
-    isSameDay(nextMsg.time, msg.time)
+    Math.abs(tNext - tCur) <= 15 * 60 * 1000 &&
+    isSameDay(tNext, tCur)
   );
 
   const topGap = (index === 0 || !prevMsg) ? '4px' : (isPrevSameSenderGroup ? '2px' : '6px');
@@ -504,7 +511,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             <div
               onClick={(e) => {
                 e.stopPropagation();
-                handleOpenDirectChat(msg.senderId || (msg as any).senderCode, senderNickname, senderMember);
+                handleOpenDirectChat((msg as any).senderCode || (senderMember as any)?.userCode || (senderMember as any)?.user_code || msg.senderId, senderNickname, senderMember);
               }}
               className="cursor-pointer flex-shrink-0"
             >
@@ -861,7 +868,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
               isPrevSameSender={isPrevSameSenderGroup}
               onLinkClick={handleLinkClick}
               onButtonClick={handleMessageButtonClick}
-              onSenderClick={(sId, sName) => handleOpenDirectChat(sId || msg.senderId || (msg as any).senderCode, sName || senderNickname, senderMember)}
+              onSenderClick={(sId, sName) => handleOpenDirectChat((msg as any).senderCode || (senderMember as any)?.userCode || (senderMember as any)?.user_code || sId || msg.senderId, sName || senderNickname, senderMember)}
               activeChat={activeChat}
               onRetry={handleRetryMessage ? () => handleRetryMessage(msg.id || index) : undefined}
             />

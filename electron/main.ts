@@ -3868,7 +3868,16 @@ const TRAY_LOCALES: Record<string, {
   },
 };
 
-function getValidIcoPath(): string {
+function getValidIcoPath(iconName?: string): string {
+  const name = iconName || currentAppIconName || 'icon';
+  const resolved = resolveIconPath(name, 'ico') || resolveIconFile(`${name}.ico`);
+  if (resolved && fs.existsSync(resolved)) {
+    return path.resolve(resolved);
+  }
+  const defaultResolved = resolveIconPath('icon', 'ico') || resolveIconFile('icon.ico');
+  if (defaultResolved && fs.existsSync(defaultResolved)) {
+    return path.resolve(defaultResolved);
+  }
   if (app.isPackaged) {
     return process.execPath;
   }
@@ -3877,6 +3886,55 @@ function getValidIcoPath(): string {
   const devFavicon = path.resolve(__dirname, '../public/favicon.ico');
   if (fs.existsSync(devFavicon)) return devFavicon;
   return process.execPath;
+}
+
+function updateWindowsShortcutsAndTaskbar(iconName: string): void {
+  if (process.platform !== 'win32') return;
+  try {
+    const icoPath = getValidIcoPath(iconName);
+    if (!icoPath || !fs.existsSync(icoPath)) return;
+    const absIcoPath = path.resolve(icoPath);
+    const dynamicAppId = iconName === 'orbita1' || iconName === 'default' ? 'com.saizzi.orbit' : `com.saizzi.orbit.${iconName}`;
+
+    const shortcutDirs = [
+      path.join(app.getPath('appData'), 'Microsoft', 'Internet Explorer', 'Quick Launch', 'User Pinned', 'TaskBar'),
+      app.getPath('programs'),
+      app.getPath('desktop'),
+    ];
+
+    for (const dir of shortcutDirs) {
+      if (!fs.existsSync(dir)) continue;
+      try {
+        const files = fs.readdirSync(dir);
+        for (const file of files) {
+          if (!file.toLowerCase().endsWith('.lnk')) continue;
+          if (file.toLowerCase().includes('orbit')) {
+            const lnkPath = path.join(dir, file);
+            let updated = false;
+            try {
+              updated = shell.writeShortcutLink(lnkPath, 'update', {
+                icon: absIcoPath,
+                iconIndex: 0,
+                appUserModelId: dynamicAppId,
+              });
+            } catch {}
+            if (!updated) {
+              try {
+                const escapedLnk = lnkPath.replace(/'/g, "''");
+                const escapedIco = absIcoPath.replace(/'/g, "''");
+                const psCmd = `$s=(New-Object -ComObject WScript.Shell).CreateShortcut('${escapedLnk}');$s.IconLocation='${escapedIco},0';$s.Save()`;
+                spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-Command', psCmd], { windowsHide: true, stdio: 'ignore' });
+              } catch {}
+            }
+          }
+        }
+      } catch {}
+    }
+
+    try {
+      spawn('ie4uinit.exe', ['-show'], { windowsHide: true, detached: true, stdio: 'ignore' });
+    } catch {}
+  } catch {}
 }
 
 function showTrayContextMenu() {
@@ -4000,27 +4058,43 @@ let activeAppliedAppIcon = '';
 ipcMain.on('orbita:set-app-icon', (_event, iconName: string) => {
   if (!iconName) return;
   const effectiveName = iconName === 'default' ? 'orbita1' : iconName;
-  if (activeAppliedAppIcon === effectiveName) return;
   activeAppliedAppIcon = effectiveName;
   currentAppIconName = effectiveName;
   saveWindowSettings();
+
+  const icoPath = getValidIcoPath(effectiveName);
+  const absIcoPath = icoPath ? path.resolve(icoPath) : '';
+  const dynamicAppId = effectiveName === 'orbita1' ? 'com.saizzi.orbit' : `com.saizzi.orbit.${effectiveName}`;
+
   if (mainWindow && !mainWindow.isDestroyed()) {
     const icon = loadNativeAppIcon(effectiveName);
     if (icon && !icon.isEmpty()) {
       mainWindow.setIcon(icon);
-      if (process.platform === 'win32') {
-        const icoPath = resolveIconPath(effectiveName, 'ico') || resolveIconFile(`${effectiveName}.ico`);
-        if (icoPath) {
-          try {
-            mainWindow.setAppDetails({
-              appId: 'com.saizzi.orbit',
-              appIconPath: icoPath,
-              appIconIndex: 0,
-            });
-          } catch {}
-        }
-      }
     }
+    if (process.platform === 'win32') {
+      try {
+        mainWindow.setAppDetails({
+          appId: dynamicAppId,
+          appIconPath: absIcoPath || undefined,
+          appIconIndex: 0,
+        });
+      } catch {}
+      try {
+        mainWindow.setSkipTaskbar(true);
+        setTimeout(() => {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.setSkipTaskbar(false);
+            if (icon && !icon.isEmpty()) {
+              mainWindow.setIcon(icon);
+            }
+          }
+        }, 50);
+      } catch {}
+    }
+  }
+
+  if (process.platform === 'win32') {
+    updateWindowsShortcutsAndTaskbar(effectiveName);
   }
 });
 
@@ -5069,11 +5143,12 @@ function createMainWindow() {
   if (icon && !icon.isEmpty()) mainWindow.setIcon(icon);
 
   if (process.platform === 'win32') {
-    const icoPath = resolveIconPath(currentAppIconName, 'ico') || getValidIcoPath();
+    const icoPath = getValidIcoPath(currentAppIconName);
     if (icoPath) {
+      const dynamicAppId = currentAppIconName === 'orbita1' ? 'com.saizzi.orbit' : `com.saizzi.orbit.${currentAppIconName}`;
       try {
         mainWindow.setAppDetails({
-          appId: 'com.saizzi.orbit',
+          appId: dynamicAppId,
           appIconPath: icoPath,
           appIconIndex: 0,
         });
@@ -5583,15 +5658,16 @@ function setupAutoUpdater() {
 function registerWindowsAppIdentity(): void {
   if (process.platform !== 'win32') return;
   try {
-    const targetIco = getValidIcoPath();
+    const targetIco = getValidIcoPath(currentAppIconName);
     const programsPath = app.getPath('programs');
+    const dynamicAppId = currentAppIconName === 'orbita1' ? 'com.saizzi.orbit' : `com.saizzi.orbit.${currentAppIconName}`;
 
     const shortcutDetails = {
       target: process.execPath,
       args: app.isPackaged ? '' : `"${path.resolve(__dirname, '..')}"`,
       description: 'orBIT',
-      appUserModelId: 'orBIT',
-      icon: app.isPackaged ? process.execPath : targetIco,
+      appUserModelId: dynamicAppId,
+      icon: targetIco,
       iconIndex: 0,
       cwd: app.isPackaged ? path.dirname(process.execPath) : path.resolve(__dirname, '..'),
     };
@@ -5627,8 +5703,11 @@ function registerWindowsAppIdentity(): void {
 }
 
 app.whenReady().then(async () => {
-  registerWindowsAppIdentity();
   loadWindowSettings();
+  registerWindowsAppIdentity();
+  if (process.platform === 'win32' && currentAppIconName) {
+    updateWindowsShortcutsAndTaskbar(currentAppIconName);
+  }
   if (!app.requestSingleInstanceLock()) {
     app.quit();
     return;
@@ -5784,7 +5863,7 @@ app.whenReady().then(async () => {
     appReadyHandled = true;
     updateSplashStatus(statusStarting);
     if (mainWindow && !mainWindow.isDestroyed()) {
-      const icon = loadNativeAppIcon();
+      const icon = loadNativeAppIcon(currentAppIconName);
       if (icon && !icon.isEmpty()) {
         mainWindow.setIcon(icon);
       }

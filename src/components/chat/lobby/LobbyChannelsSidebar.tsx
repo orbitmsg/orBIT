@@ -169,7 +169,7 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
       setChannels(textOnly.length > 0 ? textOnly : list);
       if (!activeChannelId && list.length > 0) {
         const firstText = list.find((c) => c.type === 'text') || list[0];
-        onSelectChannel(firstText);
+        onSelectChannel({ ...firstText, name: firstText.name === 'основной' ? 'Основной чат' : firstText.name });
       }
     } catch (e) {
       console.error('Failed to load lobby channels:', e);
@@ -248,8 +248,8 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
       <div className="flex-1 overflow-y-auto no-scrollbar px-2 py-3 flex flex-col gap-4">
         <div className="flex flex-col gap-0.5">
           <div className="px-2 py-1 flex items-center justify-between group">
-            <span className="text-[11.5px] font-bold text-[#949ba4] uppercase tracking-wider">
-              {t('lobby.sections_title', 'Разделы')}
+            <span className="text-[12px] font-bold text-[#949ba4]">
+              {t('lobby.text_channels_title', 'Текстовые каналы')}
             </span>
             {isOwnerOrAdmin && (
               <button
@@ -265,10 +265,11 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
 
           {textChannels.map((ch) => {
             const isActive = activeChannelId === ch.id;
+            const displayName = ch.name === 'основной' ? 'Основной чат' : ch.name;
             return (
               <div
                 key={ch.id}
-                onClick={() => onSelectChannel(ch)}
+                onClick={() => onSelectChannel({ ...ch, name: displayName })}
                 className="group relative flex items-center justify-between px-2.5 py-1.5 rounded-md cursor-pointer transition-colors"
                 style={{
                   backgroundColor: isActive ? '#404249' : 'transparent',
@@ -290,7 +291,7 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
                 <div className="flex items-center gap-2 min-w-0">
                   <Hash size={18} className="shrink-0 text-[#80848e]" />
                   <span className="text-[13.5px] font-medium truncate">
-                    {ch.name}
+                    {displayName}
                   </span>
                 </div>
 
@@ -312,9 +313,9 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
 
         <div className="flex flex-col gap-1 mt-1 pt-2 border-t border-white/5">
           <div className="px-2 py-1 flex items-center justify-between">
-            <span className="text-[11.5px] font-bold text-[#949ba4] uppercase tracking-wider flex items-center gap-1.5">
+            <span className="text-[12px] font-bold text-[#949ba4] flex items-center gap-1.5">
               <Users size={13} className="text-[#949ba4]" />
-              {t('lobby.members_section', 'Участники')} ({members.length})
+              {t('lobby.members_list_title', 'Список участников')}
             </span>
           </div>
 
@@ -324,7 +325,7 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
                 type="text"
                 value={memberSearch}
                 onChange={(e) => setMemberSearch(e.target.value)}
-                placeholder={t('lobby.search_members', 'Поиск участников...')}
+                placeholder={t('lobby.search_short', 'Поиск')}
                 className="w-full pl-8 pr-3 py-1.5 rounded-lg text-[12.5px] font-medium border-none outline-none"
                 style={{
                   backgroundColor: 'var(--surface-container, #111214)',
@@ -359,13 +360,25 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
                     {m.nickname}
                   </span>
                   {isOwner && (
-                    <span className="text-[10px] font-semibold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded shrink-0">
-                      {t('lobby.role_owner', 'Создатель')}
+                    <span
+                      className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0"
+                      style={{
+                        backgroundColor: 'var(--accent-color, #7C3AED)',
+                        color: '#ffffff',
+                      }}
+                    >
+                      {t('lobby.role_owner', 'Владелец')}
                     </span>
                   )}
                   {isAdmin && (
-                    <span className="text-[10px] font-semibold text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded shrink-0">
-                      {t('lobby.role_admin', 'Модератор')}
+                    <span
+                      className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0"
+                      style={{
+                        backgroundColor: '#4a4d57',
+                        color: '#ffffff',
+                      }}
+                    >
+                      {t('lobby.role_admin', 'Админ')}
                     </span>
                   )}
                   {canKick && (

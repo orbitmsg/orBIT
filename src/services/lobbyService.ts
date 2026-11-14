@@ -172,7 +172,7 @@ export class LobbyService {
         {
           id: `ch_${Date.now()}_main`,
           lobby_id: lobbyId,
-          name: 'основной',
+          name: 'Основной чат',
           type: 'text',
           position: 0,
           created_at: nowIso,
@@ -367,7 +367,7 @@ export class LobbyService {
         {
           id: `ch_${Date.now()}_main`,
           lobby_id: lobbyId,
-          name: 'основной',
+          name: 'Основной чат',
           type: 'text',
           position: 0,
           created_at: nowIso,
@@ -386,7 +386,7 @@ export class LobbyService {
         return defaultChannels.map((r) => ({
           id: r.id,
           lobbyId: r.lobby_id,
-          name: r.name,
+          name: r.name === 'основной' ? 'Основной чат' : r.name,
           type: r.type as 'text' | 'voice',
           position: r.position,
           createdAt: new Date(r.created_at).getTime(),
@@ -399,7 +399,7 @@ export class LobbyService {
     return data.map((r: any) => ({
       id: r.id,
       lobbyId: r.lobby_id,
-      name: r.name,
+      name: r.name === 'основной' ? 'Основной чат' : r.name,
       type: r.type || 'text',
       position: r.position ?? 0,
       createdAt: new Date(r.created_at).getTime(),

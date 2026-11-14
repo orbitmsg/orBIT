@@ -33,7 +33,13 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
   const chats = useChatStore((s) => s.chats);
   const currentView = useChatStore((s) => s.currentView);
 
-  const activeChat = activeChatId ? chats.find((c) => c.id === activeChatId) : null;
+  const baseActiveChatId = activeChatId?.includes(':') ? activeChatId.split(':')[0] : activeChatId;
+  const activeChat = baseActiveChatId ? chats.find((c) => c.id === baseActiveChatId || c.id === activeChatId) : null;
+  const isLobby = Boolean(activeChat?.id?.startsWith('lobby_') || (activeChat as any)?.isLobby);
+  const cleanChannelName = activeChannelName
+    ? (activeChannelName.replace(/^#+/, '').trim() === 'основной' ? 'Основной чат' : activeChannelName.replace(/^#+/, '').trim())
+    : 'Основной чат';
+
   const resolvedTitle = title
     ? title
     : currentView === 'settings'
@@ -41,11 +47,13 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
       : currentView === 'explore'
         ? t('sidebar.explore_treasures', 'Лобби')
         : activeChat
-          ? activeChat.type === 'group'
-            ? activeChannelName
-              ? `${activeChat.name} — #${activeChannelName.replace(/^#+/, '')}`
-              : activeChat.name || 'Лобби'
-            : activeChat.name || (activeChat.type === 'channel' ? t('titleBar.community', 'Сообщество') : t('titleBar.direct_messages', 'Личные сообщения'))
+          ? isLobby
+            ? `${cleanChannelName} (${activeChat.name || 'Лобби'})`
+            : activeChat.type === 'group'
+              ? activeChannelName
+                ? `${cleanChannelName} (${activeChat.name})`
+                : activeChat.name || 'Группа'
+              : activeChat.name || (activeChat.type === 'channel' ? t('titleBar.community', 'Сообщество') : t('titleBar.direct_messages', 'Личные сообщения'))
           : t('discord.friends', 'Друзья');
 
   useEffect(() => {

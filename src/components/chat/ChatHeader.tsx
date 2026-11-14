@@ -75,6 +75,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   onProfileClick,
 }) => {
   const { t } = useTranslation();
+  const isLobby = Boolean(activeChatId?.startsWith('lobby_') || activeChat?.id?.startsWith('lobby_') || (activeChat as any)?.isLobby);
+  const cleanChannel = activeChannelName
+    ? (activeChannelName.replace(/^#+/, '').trim() === 'основной' ? 'Основной чат' : activeChannelName.replace(/^#+/, '').trim())
+    : activeChat?.name;
 
   return (
     <div
@@ -159,7 +163,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   )
                 )}
                 <h2 className="font-bold text-[14px] truncate select-none m-0" style={{ color: 'var(--text-heading, var(--text-main))', userSelect: 'none', WebkitUserSelect: 'none' }}>
-                  {activeChatId === 'notes' ? t('connectModal.notes') : activeChannelName ? activeChannelName.replace(/^#+/, '') : activeChat?.name}
+                  {activeChatId === 'notes' ? t('connectModal.notes') : cleanChannel}
                 </h2>
                 {(activeChat?.isOfficial || activeChatId === 'system_support') && (
                   <VerifiedBadge size={18} className="flex-shrink-0" />
@@ -222,7 +226,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                       </span>
                       <ActionIcon action={groupTypingUsers[0].action} />
                     </span>
-                  ) : (
+                  ) : isLobby ? null : (
                     <span className="text-[11px] font-medium text-[var(--text-dim)]">
                       {activeChat.onlineCount && activeChat.onlineCount > 0
                         ? t('groupSettings.members_and_online', {

@@ -321,7 +321,7 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
         </div>
       )}
 
-      <div className="shrink-0 p-1.5" style={{ backgroundColor: 'var(--title-bar-bg, #121212)' }}>
+      <div className="shrink-0 p-1.5">
         <UserDockPanel onOpenProfile={onOpenProfile} onOpenSettings={onOpenSettings} />
       </div>
 

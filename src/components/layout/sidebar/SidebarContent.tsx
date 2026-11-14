@@ -5,8 +5,6 @@ import {
   ArrowLeft,
   RotateCw,
   WifiOff,
-  ChevronRight,
-  UserPlus,
 } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
 import { VerifiedBadge } from '../../common/VerifiedBadge';
@@ -172,7 +170,21 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           {[
             {
               label: t('sidebar.find_friend', 'Найти друга'),
-              icon: <UserPlus size={15} />,
+              icon: (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  aria-hidden="true"
+                >
+                  <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+                    <path d="M2 21a8 8 0 0 1 13.292-6" />
+                    <circle cx="10" cy="8" r="5" />
+                    <path d="M19 16v6m3-3h-6" />
+                  </g>
+                </svg>
+              ),
               onClick: onOpenAddFriend,
             },
           ].map((item) => (
@@ -181,7 +193,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
               type="button"
               onClick={() => item.onClick?.()}
               aria-label={item.label}
-              className="group w-full flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-[14px] outline-none cursor-pointer transition-colors text-left"
+              className="group w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[14px] outline-none cursor-pointer transition-colors text-left"
               style={{
                 borderRadius: '14px',
                 border: 'none',
@@ -210,7 +222,6 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
               <span className="text-[12.5px] font-semibold truncate flex-1 min-w-0">
                 {item.label}
               </span>
-              <ChevronRight size={14} className="shrink-0 text-[var(--text-dim)] opacity-45 group-hover:opacity-90 transition-opacity" />
             </button>
           ))}
         </div>
@@ -687,8 +698,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
 
         {!hideDock && (
           <div
-            className="absolute left-0 right-0 bottom-0 p-1.5 z-20 select-none pointer-events-auto"
-            style={{ backgroundColor: 'var(--title-bar-bg, #121212)' }}
+            className="absolute left-[6px] right-[6px] bottom-[6px] z-20 select-none pointer-events-auto"
           >
             <UserDockPanel
               onOpenProfile={onOpenProfile}

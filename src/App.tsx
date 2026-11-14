@@ -125,9 +125,9 @@ function App() {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).orbita?.setSplashStatus) {
-      (window as any).orbita.setSplashStatus(t('splash.initializing_data', 'Инициализация данных...')).catch(() => {});
+      (window as any).orbita.setSplashStatus('Initializing data').catch(() => {});
     }
-  }, [t]);
+  }, []);
 
   useEffect(() => {
     if (isHydrated) return;
@@ -157,7 +157,7 @@ function App() {
     const preloadAvatarsAndReady = async () => {
       try {
         if (orbita?.setSplashStatus) {
-          orbita.setSplashStatus(t('splash.loading_avatars', 'Загрузка аватарок и профилей...')).catch(() => {});
+          orbita.setSplashStatus('Loading avatars and profiles').catch(() => {});
         }
 
         const myAvatar = useAuthStore.getState().avatarUrl;
@@ -198,7 +198,7 @@ function App() {
 
       try {
         if (orbita?.setSplashStatus) {
-          await orbita.setSplashStatus(t('splash.starting', 'Запуск...')).catch(() => {});
+          await orbita.setSplashStatus('Starting').catch(() => {});
         }
       } catch {}
 

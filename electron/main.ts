@@ -5556,26 +5556,10 @@ app.whenReady().then(async () => {
     }
   } catch {}
 
-  const isRu = app.getLocale().toLowerCase().startsWith('ru');
-  let statusChecking = isRu ? 'Проверка обновлений...' : 'Checking for updates...';
-  let statusLoading = isRu ? 'Загрузка компонентов...' : 'Loading components...';
-  let statusPreparing = isRu ? 'Подготовка интерфейса...' : 'Preparing interface...';
-  let statusStarting = isRu ? 'Запуск...' : 'Starting...';
-
-  try {
-    const savedLang = await getKvValue('language');
-    if (savedLang === 'en') {
-      statusChecking = 'Checking for updates...';
-      statusLoading = 'Loading components...';
-      statusPreparing = 'Preparing interface...';
-      statusStarting = 'Starting...';
-    } else if (savedLang === 'ru') {
-      statusChecking = 'Проверка обновлений...';
-      statusLoading = 'Загрузка компонентов...';
-      statusPreparing = 'Подготовка интерфейса...';
-      statusStarting = 'Запуск...';
-    }
-  } catch {}
+  const statusChecking = 'Checking for updates';
+  const statusLoading = 'Loading components';
+  const statusPreparing = 'Preparing interface';
+  const statusStarting = 'Starting';
 
   try {
     const flag = await getKvValue('migrated_from_localstorage');

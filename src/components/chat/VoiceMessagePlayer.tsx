@@ -6,6 +6,7 @@ import { useUploadProgressStore } from '../../store/useUploadProgressStore';
 import { useDecryptedMedia } from '../../lib/media-utils';
 import { mediaManager } from '../../services/mediaManager';
 import { AudioCoverWithPlay, AudioCoverState } from '../audio/AudioCoverWithPlay';
+import { MessageReactions } from './ReactionBadge';
 import { appVisibility } from '../../utils/appVisibility';
 
 export const formatVoiceTime = (seconds: number) => {
@@ -233,6 +234,8 @@ interface VoiceMessagePlayerProps {
   isOwn?: boolean;
   customRadius?: string;
   onCancelUpload?: () => void;
+  reactions?: Record<string, string[]>;
+  onToggleReaction?: (emoji: string) => void;
 }
 
 export const VoiceMessagePlayer = memo(({
@@ -247,6 +250,8 @@ export const VoiceMessagePlayer = memo(({
   isOwn = false,
   customRadius,
   onCancelUpload,
+  reactions,
+  onToggleReaction,
 }: VoiceMessagePlayerProps) => {
   const { t } = useTranslation();
   const bubbleRadius = useChatStore((state) => state.bubbleRadius);
@@ -629,6 +634,13 @@ export const VoiceMessagePlayer = memo(({
     };
   }, [isPlaying, isCurrentTrack, effectiveDuration, dragProgressRatio, isUploading, isLoaded, liveProgress, msg?.uploadedMb, msg?.fileSize, itemTotalSize, savedPosition, bars, chatElementAnimations, isOwn]);
 
+  const hasReactions = Boolean(
+    reactions &&
+      Object.keys(reactions).some(
+        (k) => !k.startsWith('_') && Array.isArray(reactions[k]) && reactions[k]!.length > 0
+      )
+  );
+
   const displayCurrentTime = dragProgressRatio !== null ? dragProgressRatio * effectiveDuration : savedPosition;
   const coverState: AudioCoverState = isUploading
     ? 'uploading'
@@ -638,7 +650,7 @@ export const VoiceMessagePlayer = memo(({
 
   return (
     <div
-      className="flex items-center gap-2.5 select-none flex-shrink-0"
+      className="flex flex-col select-none flex-shrink-0"
       style={{
         background: isOwn
           ? 'var(--chat-bubble-own-bg, #2c6bed)'
@@ -647,122 +659,160 @@ export const VoiceMessagePlayer = memo(({
         border: 'none',
         borderRadius: customRadius || bubbleRadius,
         width: '280px',
-        height: '64px',
+        height: hasReactions ? 'auto' : '64px',
+        minHeight: '64px',
         boxSizing: 'border-box',
-        overflow: 'hidden',
+        overflow: hasReactions ? 'visible' : 'hidden',
         position: 'relative',
       }}
       onContextMenu={(e) => e.preventDefault()}
     >
-      <div className="relative flex-shrink-0 flex items-center justify-center" style={{ width: 48, height: 48 }}>
-        <canvas
-          ref={waveCanvasRef}
-          style={{
-            position: 'absolute',
-            width: '76px',
-            height: '76px',
-            top: '-14px',
-            left: '-14px',
-            pointerEvents: 'none',
-            zIndex: 0,
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            width: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            background: isOwn
-              ? 'var(--chat-bubble-own-bg, #2c6bed)'
-              : 'var(--chat-bubble-incoming-bg, var(--surface-container))',
-            zIndex: 1,
-            pointerEvents: 'none',
-          }}
-        />
-        <div style={{ position: 'relative', zIndex: 2 }}>
-          <AudioCoverWithPlay
-            cover={null}
-            isPlayingTrack={isPlaying}
-            state={coverState}
-            size={48}
-            progress={isUploading ? uploadFraction : (isDownloading || mediaLoading ? downloadProgress : undefined)}
-            onClick={handleAction}
-            onCancel={isUploading ? onCancelUpload : undefined}
-            isOwn={isOwn}
-          />
-        </div>
-      </div>
-
-      <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-        <div
-          ref={waveformRef}
-          onMouseDown={handleMouseDown}
-          className="relative flex items-center cursor-pointer select-none"
-          style={{ height: '22px', width: '198px', userSelect: 'none' }}
-        >
+      <div className="flex items-center gap-2.5 w-full">
+        <div className="relative flex-shrink-0 flex items-center justify-center" style={{ width: 48, height: 48 }}>
           <canvas
-            ref={waveformCanvasRef}
+            ref={waveCanvasRef}
             style={{
-              width: '198px',
-              height: '22px',
-              display: 'block',
+              position: 'absolute',
+              width: '76px',
+              height: '76px',
+              top: '-14px',
+              left: '-14px',
+              pointerEvents: 'none',
+              zIndex: 0,
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              background: isOwn
+                ? 'var(--chat-bubble-own-bg, #2c6bed)'
+                : 'var(--chat-bubble-incoming-bg, var(--surface-container))',
+              zIndex: 1,
               pointerEvents: 'none',
             }}
           />
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <AudioCoverWithPlay
+              cover={null}
+              isPlayingTrack={isPlaying}
+              state={coverState}
+              size={48}
+              progress={isUploading ? uploadFraction : (isDownloading || mediaLoading ? downloadProgress : undefined)}
+              onClick={handleAction}
+              onCancel={isUploading ? onCancelUpload : undefined}
+              isOwn={isOwn}
+            />
+          </div>
         </div>
 
-        <div
-          className="flex items-center justify-between"
-          style={{
-            fontSize: '10.5px',
-            color: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 78%, transparent)' : 'var(--text-dim)',
-            marginTop: '1px',
-          }}
-        >
-          <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-            <span ref={timeDisplayRef} className="tabular-nums">
-              {isUploading
-                ? `${Math.round((liveProgress ? liveProgress.uploadedBytes : ((msg?.uploadedMb || 0) * 1024 * 1024)) / 1024)} / ${Math.round((liveProgress && liveProgress.totalBytes > 0 ? liveProgress.totalBytes : (itemTotalSize > 0 ? itemTotalSize : 34816)) / 1024)} KB`
-                : (!isLoaded
-                    ? `${formatVoiceTime(effectiveDuration)}, ${formatFileSize(msg?.fileSize || (itemTotalSize > 0 ? itemTotalSize : (effectiveDuration ? Math.round(effectiveDuration * 2200) : 18500)))}`
-                    : (isPlaying || displayCurrentTime > 0
-                        ? `${formatVoiceTime(displayCurrentTime)} / ${formatVoiceTime(effectiveDuration)}`
-                        : formatVoiceTime(effectiveDuration)))}
-            </span>
-            {isUnplayed && (
-              <span
-                aria-hidden="true"
-                style={{
-                  display: 'inline-block',
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  backgroundColor: isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--accent-text, var(--accent-color, #7C3AED))',
-                  marginLeft: '5px',
-                  flexShrink: 0,
-                }}
-              />
-            )}
+        <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+          <div
+            ref={waveformRef}
+            onMouseDown={handleMouseDown}
+            className="relative flex items-center cursor-pointer select-none"
+            style={{ height: '22px', width: '198px', userSelect: 'none' }}
+          >
+            <canvas
+              ref={waveformCanvasRef}
+              style={{
+                width: '198px',
+                height: '22px',
+                display: 'block',
+                pointerEvents: 'none',
+              }}
+            />
+          </div>
+
+          <div
+            className="flex items-center justify-between"
+            style={{
+              fontSize: '10.5px',
+              color: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 78%, transparent)' : 'var(--text-dim)',
+              marginTop: '1px',
+            }}
+          >
+            <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+              <span ref={timeDisplayRef} className="tabular-nums">
+                {isUploading
+                  ? `${Math.round((liveProgress ? liveProgress.uploadedBytes : ((msg?.uploadedMb || 0) * 1024 * 1024)) / 1024)} / ${Math.round((liveProgress && liveProgress.totalBytes > 0 ? liveProgress.totalBytes : (itemTotalSize > 0 ? itemTotalSize : 34816)) / 1024)} KB`
+                  : (!isLoaded
+                      ? `${formatVoiceTime(effectiveDuration)}, ${formatFileSize(msg?.fileSize || (itemTotalSize > 0 ? itemTotalSize : (effectiveDuration ? Math.round(effectiveDuration * 2200) : 18500)))}`
+                      : (isPlaying || displayCurrentTime > 0
+                          ? `${formatVoiceTime(displayCurrentTime)} / ${formatVoiceTime(effectiveDuration)}`
+                          : formatVoiceTime(effectiveDuration)))}
+              </span>
+              {isUnplayed && (
+                <span
+                  aria-hidden="true"
+                  style={{
+                    display: 'inline-block',
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--accent-text, var(--accent-color, #7C3AED))',
+                    marginLeft: '5px',
+                    flexShrink: 0,
+                  }}
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      <div
-        style={{
-          position: 'absolute',
-          bottom: isOwn ? '2px' : '5px',
-          right: isOwn ? '3px' : '10px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '2px',
-          pointerEvents: 'none',
-          userSelect: 'none',
-          lineHeight: 1,
-        }}
-      >
-        {timeNode}
-      </div>
+      {hasReactions && (
+        <div
+          className="flex items-end justify-between mt-1.5 w-full select-none"
+          style={{
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            gap: '10px',
+            flexWrap: 'nowrap',
+            paddingTop: '2px',
+          }}
+        >
+          <MessageReactions
+            reactions={reactions}
+            onToggleReaction={(emoji) => onToggleReaction?.(emoji)}
+            isOwn={isOwn}
+            activeChatId={chatId}
+          />
+          <div
+            className="flex-shrink-0 select-none message-time-badge ml-auto"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+              lineHeight: 1,
+              alignSelf: 'flex-end',
+            }}
+          >
+            {timeNode}
+          </div>
+        </div>
+      )}
+
+      {!hasReactions && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: isOwn ? '2px' : '5px',
+            right: isOwn ? '3px' : '10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2px',
+            pointerEvents: 'none',
+            userSelect: 'none',
+            lineHeight: 1,
+          }}
+        >
+          {timeNode}
+        </div>
+      )}
     </div>
   );
 });

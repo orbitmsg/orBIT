@@ -932,7 +932,7 @@ textarea::selection,
 }
 
 .reaction-badge-btn {
-  --reaction-badge-bg: #383a42;
+  --reaction-badge-bg: #4a4d57;
   border-radius: 9999px !important;
   border: none !important;
   outline: none !important;
@@ -951,8 +951,8 @@ textarea::selection,
 }
 
 .reaction-badge-btn.is-incoming.is-inactive {
-  --reaction-badge-bg: #383a42;
-  background-color: #383a42 !important;
+  --reaction-badge-bg: #4a4d57;
+  background-color: #4a4d57 !important;
   color: #ffffff !important;
 }
 
@@ -969,15 +969,16 @@ textarea::selection,
 }
 
 .reaction-badge-btn.is-own.is-inactive {
-  --reaction-badge-bg: color-mix(in srgb, var(--accent-color, #5865F2) 72%, #000000 28%);
-  background-color: rgba(0, 0, 0, 0.3) !important;
-  color: var(--bubble-own-text, #ffffff) !important;
+  --reaction-badge-bg: #4a4d57;
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
 }
 
 .reaction-badge-btn.is-own.is-active {
-  --reaction-badge-bg: var(--accent-on-color, #ffffff);
-  background-color: var(--accent-on-color, #ffffff) !important;
-  color: var(--accent-text, var(--accent-color, #7C3AED)) !important;
+  --reaction-badge-bg: var(--accent-color, #7C3AED);
+  background-color: var(--accent-color, #7C3AED) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
 }
 
 html.app-paused *,

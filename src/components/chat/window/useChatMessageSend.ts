@@ -665,6 +665,7 @@ export const useChatMessageSend = ({
             lobbyId: targetChatId,
             channelId: activeChannelId,
             senderCode: myCode,
+            senderId: effectiveSenderUuid || myUserId || myCode,
             senderNickname: myNickname,
             senderAvatarUrl: currentAvatar,
             text,
@@ -673,6 +674,7 @@ export const useChatMessageSend = ({
             mediaUrl: mediaPayload?.url,
             mediaName: mediaPayload?.name,
             mediaSize: mediaPayload?.size,
+            mediaKey: mediaPayload?.key || (mediaPayload as any)?.mediaKey || (sanitizedMediaItems && sanitizedMediaItems[0]?.key) || null,
             replyToId: replyingTo?.id,
           }).then(() => {
             useChatStore.getState().updateMessageStatus(targetChatKey, messageId, 'sent');

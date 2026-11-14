@@ -5,6 +5,7 @@ import { ablyService } from '../../../services/ablyService';
 import { supabaseService } from '../../../services/supabaseService';
 import { channelService } from '../../../services/channelService';
 import { groupService } from '../../../services/groupService';
+import { lobbyService } from '../../../services/lobbyService';
 import { mediaManager } from '../../../services/mediaManager';
 import { getPusher, getGroupPusher, CLIENT_SESSION_ID } from '../../../utils/pusher';
 import { DoubleRatchet } from '../../../lib/double-ratchet';
@@ -253,14 +254,25 @@ export const useChatMessageActions = ({
       return;
     }
 
+    const isLobby = activeChatId.startsWith('lobby_');
+    const currentActiveChannelId = useChatStore.getState().activeChannelId;
+    const effectiveChatKey = (isLobby && currentActiveChannelId) ? `${activeChatId}:${currentActiveChannelId}` : activeChatId;
+
     if (targetMsgId) {
       useChatStore.getState().deleteMessage(activeChatId, targetMsgId);
+      if (effectiveChatKey !== activeChatId) {
+        useChatStore.getState().deleteMessage(effectiveChatKey, targetMsgId);
+      }
+      try {
+        (window as any).orbita?.storageDeleteMessage?.(targetMsgId);
+      } catch {}
     } else {
       const updatedMessages = messages.filter((m, i) => targetMsgId ? m.id !== targetMsgId : i !== resolvedIndex);
       useChatStore.setState((state) => ({
         messagesByChatId: {
           ...state.messagesByChatId,
           [activeChatId]: updatedMessages,
+          ...(effectiveChatKey !== activeChatId ? { [effectiveChatKey]: updatedMessages } : {}),
         },
       }));
       updateChat(activeChatId, { lastMsg: updatedMessages.length > 0 ? updatedMessages[updatedMessages.length - 1].text : t('common.history_cleared') });
@@ -278,7 +290,7 @@ export const useChatMessageActions = ({
 
     ablyService.sendMessage(activeChatId, payload).catch(() => {});
 
-    const isGroup = activeChat?.type === 'group';
+    const isGroup = activeChat?.type === 'group' || isLobby;
     const pusher = isGroup ? getGroupPusher() : getPusher();
     const chanName = activeChat?.type === 'channel'
       ? `public-channel-${activeChatId}`
@@ -292,7 +304,11 @@ export const useChatMessageActions = ({
     };
     if (channel.subscribed) send(); else channel.bind('pusher:subscription_succeeded', send);
 
-    if (activeChat?.type === 'channel') {
+    if (isLobby) {
+      if (targetMsgId) {
+        lobbyService.deleteLobbyMessage(activeChatId, targetMsgId);
+      }
+    } else if (activeChat?.type === 'channel') {
       if (targetMsgId) {
         channelService.deletePost(activeChatId, targetMsgId, myUserId);
       }
@@ -494,8 +510,23 @@ export const useChatMessageActions = ({
       if (confirmModal.selectedIds && confirmModal.selectedIds.length > 0) {
         const ids = confirmModal.selectedIds.slice(0, 200);
         if (activeChatId) {
+          const isLobby = activeChatId.startsWith('lobby_');
+          const currentActiveChannelId = useChatStore.getState().activeChannelId;
+          const effectiveChatKey = (isLobby && currentActiveChannelId) ? `${activeChatId}:${currentActiveChannelId}` : activeChatId;
           useChatStore.getState().deleteMessages(activeChatId, ids);
-          if (activeChat?.type === 'channel') {
+          if (effectiveChatKey !== activeChatId) {
+            useChatStore.getState().deleteMessages(effectiveChatKey, ids);
+          }
+          for (const id of ids) {
+            try {
+              (window as any).orbita?.storageDeleteMessage?.(id);
+            } catch {}
+          }
+          if (isLobby) {
+            for (const id of ids) {
+              lobbyService.deleteLobbyMessage(activeChatId, id);
+            }
+          } else if (activeChat?.type === 'channel') {
             for (const id of ids) {
               channelService.deletePost(activeChatId, id, myUserId);
             }

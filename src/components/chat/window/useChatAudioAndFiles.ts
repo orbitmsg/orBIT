@@ -553,9 +553,12 @@ export const useChatAudioAndFiles = ({
     const chat = useChatStore.getState().chats.find((c) => c.id === targetChatId);
     if (!chat) return;
 
+    const isLobby = Boolean(targetChatId.startsWith('lobby_'));
     const isChannel = chat.type === 'channel';
     const isBotChat = targetChatId === 'system_support';
-    const isGroup = chat.type === 'group';
+    const isGroup = chat.type === 'group' || isLobby;
+    const currentActiveChannelId = useChatStore.getState().activeChannelId;
+    const effectiveChatKey = (isLobby && currentActiveChannelId) ? `${targetChatId}:${currentActiveChannelId}` : targetChatId;
     const canPostInChannel = isChannelOwner || Boolean(chat.isOwner) || chat.role === 'owner' || Boolean(myNickname && chat.creatorNickname && chat.creatorNickname.toLowerCase() === myNickname.toLowerCase());
     if (isChannel) {
       if (!canPostInChannel) return;
@@ -730,7 +733,7 @@ export const useChatAudioAndFiles = ({
         let fileKey: string | undefined = undefined;
         let tempPath: string | null = null;
         let uploadTotalBytes = cleanedBuffer.byteLength;
-        const isPublic = isChannel || isBotChat;
+        const isPublic = isChannel || isBotChat || isLobby;
         const ext = isTranscodedTemp ? 'mp4' : (file.name?.match(/\.([^.]+)$/) || [])[1]?.toLowerCase();
 
         if (isPublic) {
@@ -864,7 +867,10 @@ export const useChatAudioAndFiles = ({
           mediaItems: initialMediaItems,
           chatId: targetChatId,
         };
-        addMessage(targetChatId, localMessage);
+        addMessage(effectiveChatKey, localMessage);
+        if (effectiveChatKey !== targetChatId) {
+          addMessage(targetChatId, { ...localMessage, chatId: targetChatId });
+        }
         updateChat(targetChatId, { lastMsg: chunkCaption || '[MediaGroup]' });
 
         for (let fIdx = 0; fIdx < chunkFiles.length; fIdx++) {
@@ -890,14 +896,20 @@ export const useChatAudioAndFiles = ({
               useUploadProgressStore.getState().clearProgress(`${messageId}_${fIdx}`);
               useUploadProgressStore.getState().clearProgress(messageId);
               useChatStore.getState().setIsUploadingMedia(false);
-              const isStillPresent = useChatStore.getState().messagesByChatId[targetChatId]?.some((m) => m.id === messageId);
+              const isStillPresent = useChatStore.getState().messagesByChatId[effectiveChatKey]?.some((m) => m.id === messageId)
+                || useChatStore.getState().messagesByChatId[targetChatId]?.some((m) => m.id === messageId);
               if (!isStillPresent) return;
               useChatStore.setState((state) => ({
                 messagesByChatId: {
                   ...state.messagesByChatId,
-                  [targetChatId]: (state.messagesByChatId[targetChatId] || []).map((m) =>
+                  [effectiveChatKey]: (state.messagesByChatId[effectiveChatKey] || []).map((m) =>
                     m.id === messageId ? { ...m, status: 'error' as const, uploading: false } : m
                   ),
+                  ...(effectiveChatKey !== targetChatId ? {
+                    [targetChatId]: (state.messagesByChatId[targetChatId] || []).map((m) =>
+                      m.id === messageId ? { ...m, status: 'error' as const, uploading: false } : m
+                    ),
+                  } : {}),
                 },
               }));
               showToast(t('chatWindow.upload_failed'));
@@ -915,7 +927,8 @@ export const useChatAudioAndFiles = ({
             });
           }
 
-          const isPresent = useChatStore.getState().messagesByChatId[targetChatId]?.some((m) => m.id === messageId);
+          const isPresent = useChatStore.getState().messagesByChatId[effectiveChatKey]?.some((m) => m.id === messageId)
+            || useChatStore.getState().messagesByChatId[targetChatId]?.some((m) => m.id === messageId);
           if (!isPresent) {
             useUploadProgressStore.getState().clearProgress(messageId);
             useChatStore.getState().setIsUploadingMedia(false);
@@ -972,7 +985,10 @@ export const useChatAudioAndFiles = ({
           blurPreview: file.blurPreview,
           thumbnail: file.preview || (file as any).thumbnail || file.blurPreview,
         };
-        addMessage(targetChatId, localMessage);
+        addMessage(effectiveChatKey, localMessage);
+        if (effectiveChatKey !== targetChatId) {
+          addMessage(targetChatId, { ...localMessage, chatId: targetChatId });
+        }
         updateChat(targetChatId, { lastMsg: postCaption || file.name || `[${itemType}]` });
         useUploadProgressStore.getState().setProgress(messageId, 0, fileSizeBytes || 1);
 
@@ -989,14 +1005,20 @@ export const useChatAudioAndFiles = ({
           if (!uploaded) {
             useUploadProgressStore.getState().clearProgress(messageId);
             useChatStore.getState().setIsUploadingMedia(false);
-            const isStillPresent = useChatStore.getState().messagesByChatId[targetChatId]?.some((m) => m.id === messageId);
+            const isStillPresent = useChatStore.getState().messagesByChatId[effectiveChatKey]?.some((m) => m.id === messageId)
+              || useChatStore.getState().messagesByChatId[targetChatId]?.some((m) => m.id === messageId);
             if (!isStillPresent) return;
             useChatStore.setState((state) => ({
               messagesByChatId: {
                 ...state.messagesByChatId,
-                [targetChatId]: (state.messagesByChatId[targetChatId] || []).map((m) =>
+                [effectiveChatKey]: (state.messagesByChatId[effectiveChatKey] || []).map((m) =>
                   m.id === messageId ? { ...m, status: 'error' as const, uploading: false } : m
                 ),
+                ...(effectiveChatKey !== targetChatId ? {
+                  [targetChatId]: (state.messagesByChatId[targetChatId] || []).map((m) =>
+                    m.id === messageId ? { ...m, status: 'error' as const, uploading: false } : m
+                  ),
+                } : {}),
               },
             }));
             showToast(t('chatWindow.upload_failed'));
@@ -1006,7 +1028,8 @@ export const useChatAudioAndFiles = ({
           useUploadProgressStore.getState().setProgress(messageId, uploaded.size || 1, uploaded.size || 1);
           await new Promise((r) => setTimeout(r, 220));
 
-          const isPresent = useChatStore.getState().messagesByChatId[targetChatId]?.some((m) => m.id === messageId);
+          const isPresent = useChatStore.getState().messagesByChatId[effectiveChatKey]?.some((m) => m.id === messageId)
+            || useChatStore.getState().messagesByChatId[targetChatId]?.some((m) => m.id === messageId);
           if (!isPresent) {
             useUploadProgressStore.getState().clearProgress(messageId);
             useChatStore.getState().setIsUploadingMedia(false);

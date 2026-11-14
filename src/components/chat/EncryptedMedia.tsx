@@ -617,8 +617,9 @@ export const EncryptedMedia = memo(({
           className="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
           style={{
             position: 'absolute',
-            bottom: '10px',
-            right: '8px',
+            bottom: '15px',
+            left: isOwn ? '15px' : undefined,
+            right: !isOwn ? '15px' : undefined,
             borderRadius: '9999px',
             backgroundColor: 'rgba(24, 25, 29, 0.75)',
             padding: '3px 8px',

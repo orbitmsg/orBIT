@@ -308,6 +308,9 @@ export const useChatRealtime = ({
                 chatId: targetKey,
                 sender: lm.senderNickname,
                 senderCode: lm.senderCode,
+                senderId: lm.senderId || lm.senderCode,
+                avatarUrl: lm.senderAvatarUrl || undefined,
+                senderAvatar: lm.senderAvatarUrl || undefined,
                 text: lm.text,
                 time: lm.createdAt,
                 isOutgoing: lm.senderCode === myCode,
@@ -316,6 +319,7 @@ export const useChatRealtime = ({
                 mediaUrl: lm.mediaUrl || undefined,
                 mediaName: lm.mediaName || undefined,
                 fileSize: lm.mediaSize || undefined,
+                mediaKey: lm.mediaKey || undefined,
               }));
             if (newOnes.length > 0) {
               useChatStore.setState((state) => ({
@@ -341,6 +345,9 @@ export const useChatRealtime = ({
               chatId: msgTargetKey,
               sender: msg.senderNickname,
               senderCode: msg.senderCode,
+              senderId: msg.senderId || msg.senderCode,
+              avatarUrl: msg.senderAvatarUrl || undefined,
+              senderAvatar: msg.senderAvatarUrl || undefined,
               text: msg.text,
               time: msg.createdAt,
               isOutgoing: false,
@@ -349,6 +356,7 @@ export const useChatRealtime = ({
               mediaUrl: msg.mediaUrl || undefined,
               mediaName: msg.mediaName || undefined,
               fileSize: msg.mediaSize || undefined,
+              mediaKey: msg.mediaKey || undefined,
             };
             useChatStore.getState().addMessage(msgTargetKey, newMsg);
             if (msgTargetKey !== targetLobbyId) {
@@ -359,7 +367,25 @@ export const useChatRealtime = ({
             } catch {}
           },
           undefined,
-          secret
+          secret,
+          (deletedMsgId) => {
+            useChatStore.setState((state) => {
+              const currentChannelMsgs = state.messagesByChatId[targetKey] || [];
+              const updatedChannelMsgs = currentChannelMsgs.filter((m) => m.id !== deletedMsgId);
+              const currentLobbyMsgs = state.messagesByChatId[targetLobbyId] || [];
+              const updatedLobbyMsgs = currentLobbyMsgs.filter((m) => m.id !== deletedMsgId);
+              return {
+                messagesByChatId: {
+                  ...state.messagesByChatId,
+                  [targetKey]: updatedChannelMsgs,
+                  ...(targetKey !== targetLobbyId ? { [targetLobbyId]: updatedLobbyMsgs } : {}),
+                },
+              };
+            });
+            try {
+              (window as any).orbita?.storageDeleteMessage?.(deletedMsgId);
+            } catch {}
+          }
         );
       };
 

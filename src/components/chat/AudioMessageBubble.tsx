@@ -5,6 +5,7 @@ import { useUploadProgressStore } from '../../store/useUploadProgressStore';
 import { useDecryptedMedia } from '../../lib/media-utils';
 import { useAudioStore } from '../../store/useAudioStore';
 import { AudioCoverWithPlay } from '../audio/AudioCoverWithPlay';
+import { MessageReactions } from './ReactionBadge';
 
 const orbitFs = (px: number) => `calc(${px}px * var(--text-scale, 1))`;
 
@@ -17,6 +18,8 @@ interface AudioMessageBubbleProps {
   timeNode?: React.ReactNode;
   isOwn?: boolean;
   onCancelUpload?: () => void;
+  reactions?: Record<string, string[]>;
+  onToggleReaction?: (emoji: string) => void;
 }
 
 export const AudioMessageBubble = memo(({
@@ -28,6 +31,8 @@ export const AudioMessageBubble = memo(({
   timeNode,
   isOwn = false,
   onCancelUpload,
+  reactions,
+  onToggleReaction,
 }: AudioMessageBubbleProps) => {
   const { t } = useTranslation();
   const [cover, setCover] = useState<string | null>(msg.audioMetadata?.cover || null);
@@ -201,6 +206,13 @@ export const AudioMessageBubble = memo(({
       ? (isDownloading ? 'downloading' : 'download')
       : (showPause ? 'pause' : 'play'));
 
+  const hasReactions = Boolean(
+    reactions &&
+      Object.keys(reactions).some(
+        (k) => !k.startsWith('_') && Array.isArray(reactions[k]) && reactions[k]!.length > 0
+      )
+  );
+
   return (
     <div
       className="group relative flex flex-col cursor-pointer select-none"
@@ -214,9 +226,10 @@ export const AudioMessageBubble = memo(({
         position: 'relative',
         width: '330px',
         maxWidth: '100%',
-        height: '64px',
+        height: hasReactions ? 'auto' : '64px',
+        minHeight: '64px',
         boxSizing: 'border-box',
-        overflow: 'hidden',
+        overflow: hasReactions ? 'visible' : 'hidden',
       }}
       onContextMenu={onContextMenu}
     >
@@ -258,32 +271,78 @@ export const AudioMessageBubble = memo(({
         </div>
       </div>
 
-      <div
-        style={{
-          position: 'absolute',
-          bottom: isOwn ? '2px' : '5px',
-          right: isOwn ? '3px' : '10px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '2px',
-          pointerEvents: 'none',
-          userSelect: 'none',
-          lineHeight: 1,
-        }}
-      >
-        {timeNode ? (
-          timeNode
-        ) : (
-          <span
+      {hasReactions && (
+        <div
+          className="flex items-end justify-between mt-1.5 w-full select-none"
+          style={{
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            gap: '10px',
+            flexWrap: 'nowrap',
+            paddingTop: '2px',
+          }}
+        >
+          <MessageReactions
+            reactions={reactions}
+            onToggleReaction={(emoji) => onToggleReaction?.(emoji)}
+            isOwn={isOwn}
+            activeChatId={chatId}
+          />
+          <div
+            className="flex-shrink-0 select-none message-time-badge ml-auto"
             style={{
-              fontSize: orbitFs(11),
-              color: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 90%, transparent)' : 'var(--text-dim)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+              lineHeight: 1,
+              alignSelf: 'flex-end',
             }}
           >
-            {formatTimeOfDay(msg.time)}
-          </span>
-        )}
-      </div>
+            {timeNode ? (
+              timeNode
+            ) : (
+              <span
+                style={{
+                  fontSize: orbitFs(11),
+                  color: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 90%, transparent)' : 'var(--text-dim)',
+                }}
+              >
+                {formatTimeOfDay(msg.time)}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!hasReactions && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: isOwn ? '2px' : '5px',
+            right: isOwn ? '3px' : '10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2px',
+            pointerEvents: 'none',
+            userSelect: 'none',
+            lineHeight: 1,
+          }}
+        >
+          {timeNode ? (
+            timeNode
+          ) : (
+            <span
+              style={{
+                fontSize: orbitFs(11),
+                color: isOwn ? 'color-mix(in srgb, var(--bubble-own-text, #ffffff) 90%, transparent)' : 'var(--text-dim)',
+              }}
+            >
+              {formatTimeOfDay(msg.time)}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 });

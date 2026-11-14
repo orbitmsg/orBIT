@@ -918,8 +918,12 @@ export const TelegramAlbumGrid = memo(({
         })}
         {!hasCaption && timeNode && (
           <div
-            className="absolute bottom-2.5 right-2 flex items-center justify-center z-[4] pointer-events-none select-none opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+            className="flex items-center justify-center z-[4] pointer-events-none select-none opacity-0 group-hover:opacity-100 transition-opacity duration-150"
             style={{
+              position: 'absolute',
+              bottom: '15px',
+              left: isOwn ? '15px' : undefined,
+              right: !isOwn ? '15px' : undefined,
               padding: '3px 8px',
               height: '22px',
               boxSizing: 'border-box',

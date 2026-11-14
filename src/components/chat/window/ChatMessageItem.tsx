@@ -186,7 +186,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
       (m.userId && m.userId === msg.senderId) ||
       (m.userCode && m.userCode === msg.senderId) ||
       ((m as any).user_code && (m as any).user_code === msg.senderId) ||
-      ((m as any).user_id && (m as any).user_id === msg.senderId)
+      ((m as any).user_id && (m as any).user_id === msg.senderId) ||
+      (m.userCode && (msg as any).senderCode && m.userCode === (msg as any).senderCode) ||
+      (m.nickname && msg.sender && m.nickname === msg.sender)
   ) || null;
   const senderNickname = senderMember?.nickname || msg.sender || '';
   const senderAvatar = (() => {
@@ -194,7 +196,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     if ((senderMember as any)?.avatar_url) return (senderMember as any).avatar_url;
     if ((msg as any).senderAvatar) return (msg as any).senderAvatar;
     if ((msg as any).avatarUrl) return (msg as any).avatarUrl;
+    if ((msg as any).senderAvatarUrl) return (msg as any).senderAvatarUrl;
     if (msg.senderId && memberAvatars[msg.senderId]) return memberAvatars[msg.senderId];
+    if ((msg as any).senderCode && memberAvatars[(msg as any).senderCode]) return memberAvatars[(msg as any).senderCode];
     if (senderMember?.userId && memberAvatars[senderMember.userId]) return memberAvatars[senderMember.userId];
     if ((senderMember as any)?.userCode && memberAvatars[(senderMember as any).userCode]) return memberAvatars[(senderMember as any).userCode];
     return null;
@@ -500,9 +504,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             <div
               onClick={(e) => {
                 e.stopPropagation();
-                handleOpenDirectChat(msg.senderId, senderNickname, senderMember);
+                handleOpenDirectChat(msg.senderId || (msg as any).senderCode, senderNickname, senderMember);
               }}
-              className="cursor-pointer transition-transform duration-150 active:scale-95 hover:opacity-90 flex-shrink-0"
+              className="cursor-pointer flex-shrink-0"
             >
               <Avatar
                 src={senderAvatar}
@@ -857,7 +861,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
               isPrevSameSender={isPrevSameSenderGroup}
               onLinkClick={handleLinkClick}
               onButtonClick={handleMessageButtonClick}
-              onSenderClick={(sId, sName) => handleOpenDirectChat(sId, sName, senderMember)}
+              onSenderClick={(sId, sName) => handleOpenDirectChat(sId || msg.senderId || (msg as any).senderCode, sName || senderNickname, senderMember)}
               activeChat={activeChat}
               onRetry={handleRetryMessage ? () => handleRetryMessage(msg.id || index) : undefined}
             />
@@ -1031,8 +1035,12 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     />
                   )}
                   <div
-                    className="absolute bottom-0.5 right-0.5 select-none tabular-nums opacity-0 group-hover:opacity-100 transition-opacity duration-150 message-time-badge"
+                    className="absolute select-none tabular-nums opacity-0 group-hover:opacity-100 transition-opacity duration-150 message-time-badge"
                     style={{
+                      position: 'absolute',
+                      bottom: '15px',
+                      left: isOwn ? '15px' : undefined,
+                      right: !isOwn ? '15px' : undefined,
                       backgroundColor: '#18191d',
                       borderRadius: '9999px',
                       padding: '3px 8px',
@@ -1230,6 +1238,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 onContextMenu={(e) => handleContextMenu(e, msg, isOwn)}
                 timeNode={timeBadge(msg, isMessagePinned(msg))}
                 isOwn={isOwn}
+                reactions={msg.reactions}
+                onToggleReaction={(emoji) => triggerReactionMessage(msg.id || index, emoji)}
                 onCancelUpload={msg.uploading ? () => {
                   cancelActiveMediaUpload(activeChatId, msg.id);
                 } : undefined}
@@ -1250,6 +1260,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   timeNode={timeBadge(msg, isMessagePinned(msg))}
                   isOwn={isOwn}
                   customRadius={customRadius}
+                  reactions={msg.reactions}
+                  onToggleReaction={(emoji) => triggerReactionMessage(msg.id || index, emoji)}
                   onCancelUpload={msg.uploading ? () => {
                     cancelActiveMediaUpload(activeChatId, msg.id);
                   } : undefined}
@@ -1279,7 +1291,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 <CallMessage msg={msg} chatId={activeChatId!} onCall={handleCallPress} isOwn={isOwn} customRadius={customRadius} />
               </div>
             )}
-            {renderReactionBadges(msg, index)}
+            {media.type !== 'voice' && media.type !== 'music' && renderReactionBadges(msg, index)}
           </div>
         </div>
         )}

@@ -5,6 +5,7 @@ import { useToastStore } from '../../../store/useToastStore';
 import { ablyService } from '../../../services/ablyService';
 import { supabaseService } from '../../../services/supabaseService';
 import { channelService, type ChannelPost } from '../../../services/channelService';
+import { lobbyService } from '../../../services/lobbyService';
 import { supportService } from '../../../services/supportService';
 import { sqliteStorage } from '../../../services/sqliteStorage';
 import { getPusher, getGroupPusher } from '../../../utils/pusher';
@@ -258,10 +259,12 @@ export const useChatChannelsAndCalls = ({
       m.userId === senderId ||
       m.userCode === senderId ||
       (m as any).user_id === senderId ||
-      (m as any).user_code === senderId
-    ) : null);
+      (m as any).user_code === senderId ||
+      (m.nickname && senderName && m.nickname === senderName)
+    ) : (senderName ? activeChat?.members?.find((m: any) => m.nickname === senderName) : null));
 
     const candidateCodes = new Set<string>();
+    if (senderId) candidateCodes.add(senderId);
     if (resolvedMember?.userCode) candidateCodes.add(resolvedMember.userCode);
     if ((resolvedMember as any)?.user_code) candidateCodes.add((resolvedMember as any).user_code);
     if (resolvedMember?.userId) candidateCodes.add(resolvedMember.userId);
@@ -404,7 +407,16 @@ export const useChatChannelsAndCalls = ({
   const handleMediaDeleteMessage = useCallback((msgId: string) => {
     if (activeChat?.type === 'channel' && !isChannelOwner) return;
     if (activeChatId) {
+      const isLobby = activeChatId.startsWith('lobby_');
+      const currentActiveChannelId = useChatStore.getState().activeChannelId;
+      const effectiveChatKey = (isLobby && currentActiveChannelId) ? `${activeChatId}:${currentActiveChannelId}` : activeChatId;
       useChatStore.getState().deleteMessage(activeChatId, msgId);
+      if (effectiveChatKey !== activeChatId) {
+        useChatStore.getState().deleteMessage(effectiveChatKey, msgId);
+      }
+      try {
+        (window as any).orbita?.storageDeleteMessage?.(msgId);
+      } catch {}
       const payload = {
         sender: myNickname,
         text: '',
@@ -412,7 +424,7 @@ export const useChatChannelsAndCalls = ({
         targetMessageId: msgId,
       };
       ablyService.sendMessage(activeChatId, payload).catch(() => {});
-      const isGroup = activeChat?.type === 'group';
+      const isGroup = activeChat?.type === 'group' || isLobby;
       const pusher = isGroup ? getGroupPusher() : getPusher();
       const channel = pusher.subscribe(
         activeChat?.type === 'channel'
@@ -427,7 +439,9 @@ export const useChatChannelsAndCalls = ({
         } catch {}
       };
       if (channel.subscribed) send(); else channel.bind('pusher:subscription_succeeded', send);
-      if (activeChat?.type === 'channel') {
+      if (isLobby) {
+        lobbyService.deleteLobbyMessage(activeChatId, msgId);
+      } else if (activeChat?.type === 'channel') {
         channelService.deletePost(activeChatId, msgId, myUserId);
       } else {
         const recipientTargets = Array.from(new Set([

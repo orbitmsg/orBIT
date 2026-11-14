@@ -85,6 +85,7 @@ export interface LobbyMessage {
   lobbyId: string;
   channelId?: string | null;
   senderCode: string;
+  senderId?: string | null;
   senderNickname: string;
   senderAvatarUrl: string | null;
   text: string;
@@ -92,6 +93,7 @@ export interface LobbyMessage {
   mediaUrl?: string | null;
   mediaName?: string | null;
   mediaSize?: number | null;
+  mediaKey?: string | null;
   replyToId?: string | null;
   reactions?: Record<string, string[]>;
   pinned?: boolean;
@@ -508,6 +510,7 @@ export class LobbyService {
     lobbyId: string;
     channelId?: string | null;
     senderCode: string;
+    senderId?: string | null;
     senderNickname: string;
     senderAvatarUrl?: string | null;
     text: string;
@@ -516,6 +519,7 @@ export class LobbyService {
     mediaUrl?: string | null;
     mediaName?: string | null;
     mediaSize?: number | null;
+    mediaKey?: string | null;
     replyToId?: string | null;
   }): Promise<LobbyMessage> {
     const msgId = `lmsg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -540,6 +544,7 @@ export class LobbyService {
         lobby_id: params.lobbyId,
         channel_id: params.channelId || null,
         sender_code: params.senderCode,
+        sender_id: params.senderId || params.senderCode,
         sender_nickname: params.senderNickname,
         sender_avatar_url: params.senderAvatarUrl || null,
         text: storedText,
@@ -548,6 +553,7 @@ export class LobbyService {
         media_url: params.mediaUrl || null,
         media_name: params.mediaName || null,
         media_size: params.mediaSize || null,
+        media_key: params.mediaKey || null,
         reply_to_id: params.replyToId || null,
         created_at: nowIso,
       })
@@ -563,6 +569,7 @@ export class LobbyService {
       lobbyId: data.lobby_id,
       channelId: data.channel_id,
       senderCode: data.sender_code,
+      senderId: data.sender_id || data.sender_code,
       senderNickname: data.sender_nickname,
       senderAvatarUrl: data.sender_avatar_url,
       text: params.text,
@@ -570,6 +577,7 @@ export class LobbyService {
       mediaUrl: data.media_url,
       mediaName: data.media_name,
       mediaSize: data.media_size,
+      mediaKey: data.media_key,
       replyToId: data.reply_to_id,
       reactions: data.reactions || {},
       pinned: data.pinned || false,
@@ -614,6 +622,7 @@ export class LobbyService {
           lobbyId: r.lobby_id,
           channelId: r.channel_id,
           senderCode: r.sender_code,
+          senderId: r.sender_id || r.sender_code,
           senderNickname: r.sender_nickname,
           senderAvatarUrl: r.sender_avatar_url,
           text,
@@ -621,6 +630,7 @@ export class LobbyService {
           mediaUrl: r.media_url,
           mediaName: r.media_name,
           mediaSize: r.media_size,
+          mediaKey: r.media_key,
           replyToId: r.reply_to_id,
           reactions: r.reactions || {},
           pinned: r.pinned || false,
@@ -633,11 +643,30 @@ export class LobbyService {
     return messages;
   }
 
+  async deleteLobbyMessage(lobbyId: string, messageId: string): Promise<boolean> {
+    try {
+      const { error } = await this.client
+        .from('lobby_messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('lobby_id', lobbyId);
+      if (error) {
+        console.error('Failed to delete lobby message:', error);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.error('Failed to delete lobby message:', e);
+      return false;
+    }
+  }
+
   subscribeToLobby(
     lobbyId: string,
     onMessage: (msg: LobbyMessage) => void,
     onMemberChange?: () => void,
-    sharedSecret?: string | null
+    sharedSecret?: string | null,
+    onDelete?: (messageId: string) => void
   ) {
     const channelUniqueId = `lobby:${lobbyId}:${Math.random().toString(36).slice(2, 9)}`;
     const channel = this.client
@@ -658,6 +687,7 @@ export class LobbyService {
             lobbyId: r.lobby_id,
             channelId: r.channel_id,
             senderCode: r.sender_code,
+            senderId: r.sender_id || r.sender_code,
             senderNickname: r.sender_nickname,
             senderAvatarUrl: r.sender_avatar_url,
             text,
@@ -665,12 +695,23 @@ export class LobbyService {
             mediaUrl: r.media_url,
             mediaName: r.media_name,
             mediaSize: r.media_size,
+            mediaKey: r.media_key,
             replyToId: r.reply_to_id,
             reactions: r.reactions || {},
             pinned: r.pinned || false,
             createdAt: new Date(r.created_at).getTime(),
             editedAt: r.edited_at ? new Date(r.edited_at).getTime() : null,
           });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'lobby_messages', filter: `lobby_id=eq.${lobbyId}` },
+        (payload) => {
+          const old = payload.old as any;
+          if (old?.id && onDelete) {
+            onDelete(old.id);
+          }
         }
       )
       .on(

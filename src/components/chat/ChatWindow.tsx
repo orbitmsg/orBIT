@@ -1065,17 +1065,17 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
   });
 
   const handleLobbyVoiceConnect = useCallback(() => {
-    if (activeChatId?.startsWith('lobby_') && activeChannelId) {
-      const voiceRoom = `lobby-voice-${activeChatId}-${activeChannelId}`;
+    if (activeChatId?.startsWith('lobby_')) {
+      const voiceRoom = `lobby-voice-${activeChatId}`;
       useCallStore.getState().startCall(activeChatId, 'audio', myNickname || 'User', voiceRoom);
       const currentMyCode = useChatStore.getState().myCode;
       if (currentMyCode) {
-        lobbyService.setMemberVoiceChannel(activeChatId, currentMyCode, activeChannelId).catch(() => {});
+        lobbyService.setMemberVoiceChannel(activeChatId, currentMyCode, 'lobby-voice').catch(() => {});
       }
     } else {
       handleAudioCallPress();
     }
-  }, [activeChatId, activeChannelId, myNickname, handleAudioCallPress]);
+  }, [activeChatId, myNickname, handleAudioCallPress]);
 
   const handleLobbyVoiceDisconnect = useCallback(() => {
     useCallStore.getState().endCall();

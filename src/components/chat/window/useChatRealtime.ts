@@ -320,18 +320,29 @@ export const useChatRealtime = ({
                 mediaName: lm.mediaName || undefined,
                 fileSize: lm.mediaSize || undefined,
                 mediaKey: lm.mediaKey || undefined,
+                mediaItems: lm.mediaItems || undefined,
                 reactions: lm.reactions || undefined,
               }));
             if (newOnes.length > 0) {
-              useChatStore.setState((state) => ({
-                messagesByChatId: {
-                  ...state.messagesByChatId,
-                  [targetKey]: [...(state.messagesByChatId[targetKey] || []), ...newOnes].sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0)),
-                  ...(targetKey !== targetLobbyId ? {
-                    [targetLobbyId]: [...(state.messagesByChatId[targetLobbyId] || []), ...newOnes].sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0)),
-                  } : {}),
-                },
-              }));
+              useChatStore.setState((state) => {
+                const targetList = state.messagesByChatId[targetKey] || [];
+                const targetIdSet = new Set(targetList.map((m) => m.id));
+                const filteredTarget = newOnes.filter((m) => !targetIdSet.has(m.id));
+
+                const baseList = state.messagesByChatId[targetLobbyId] || [];
+                const baseIdSet = new Set(baseList.map((m) => m.id));
+                const filteredBase = newOnes.filter((m) => !baseIdSet.has(m.id));
+
+                return {
+                  messagesByChatId: {
+                    ...state.messagesByChatId,
+                    [targetKey]: [...targetList, ...filteredTarget].sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0)),
+                    ...(targetKey !== targetLobbyId ? {
+                      [targetLobbyId]: [...baseList, ...filteredBase].sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0)),
+                    } : {}),
+                  },
+                };
+              });
             }
           }
         } catch {}
@@ -358,11 +369,15 @@ export const useChatRealtime = ({
               mediaName: msg.mediaName || undefined,
               fileSize: msg.mediaSize || undefined,
               mediaKey: msg.mediaKey || undefined,
+              mediaItems: msg.mediaItems || undefined,
               reactions: msg.reactions || undefined,
             };
             useChatStore.getState().addMessage(msgTargetKey, newMsg);
             if (msgTargetKey !== targetLobbyId) {
-              useChatStore.getState().addMessage(targetLobbyId, { ...newMsg, chatId: targetLobbyId });
+              const baseList = useChatStore.getState().messagesByChatId[targetLobbyId] || [];
+              if (!baseList.some((m) => m.id === newMsg.id)) {
+                useChatStore.getState().addMessage(targetLobbyId, { ...newMsg, chatId: targetLobbyId });
+              }
             }
             try {
               (window as any).orbita?.storageAddMessage?.(targetLobbyId, msg.id, newMsg);

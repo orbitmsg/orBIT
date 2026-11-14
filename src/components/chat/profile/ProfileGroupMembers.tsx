@@ -5,6 +5,7 @@ import { Avatar } from '../../common/Avatar';
 import { DeveloperBadge } from '../../ui/DeveloperBadge';
 import { formatLastSeen } from '../../../utils/messageUtils';
 import { groupService } from '../../../services/groupService';
+import { lobbyService } from '../../../services/lobbyService';
 import { generateKeyPair, generateChatId, getDirectChatId } from '../../../lib/crypto';
 import { useChatStore, type Chat } from '../../../store/useChatStore';
 import { useAuthStore } from '../../../store/useAuthStore';
@@ -299,7 +300,11 @@ export const ProfileGroupMembers: React.FC<ProfileGroupMembersProps> = ({
                           onClick={async (e) => {
                             e.stopPropagation();
                             const newRole = isMemberAdmin ? 'member' : 'admin';
-                            await groupService.updateMemberRole(chat.id, member.nickname, newRole, memberCode, myNickname, member.userId);
+                            if (chat.id.startsWith('lobby_')) {
+                              await lobbyService.updateMemberRole(chat.id, memberCode || member.userId || '', newRole as any);
+                            } else {
+                              await groupService.updateMemberRole(chat.id, member.nickname, newRole, memberCode, myNickname, member.userId);
+                            }
                             const updatedMembers = (chat.members || []).map((m: any) => {
                               const mCandidates = [(m as any).userCode, (m as any).user_code, m.userId, (m as any).user_id].filter(Boolean);
                               const isTarget = memberCandidateCodes.some((c) => mCandidates.includes(c)) || (m.nickname && m.nickname === member.nickname);
@@ -330,7 +335,11 @@ export const ProfileGroupMembers: React.FC<ProfileGroupMembersProps> = ({
                         onClick={async (e) => {
                           e.stopPropagation();
                           if (window.confirm(`${t('groupSettings.kick', 'Исключить')} ${member.nickname}?`)) {
-                            await groupService.kickMember(chat.id, chat.sharedSecret!, member.nickname, myNickname || '', memberCode, member.userId);
+                            if (chat.id.startsWith('lobby_')) {
+                              await lobbyService.leaveLobby(chat.id, memberCode || member.userId || '');
+                            } else {
+                              await groupService.kickMember(chat.id, chat.sharedSecret!, member.nickname, myNickname || '', memberCode, member.userId);
+                            }
                             const updatedMembers = (chat.members || []).filter((m: any) => {
                               const mCandidates = [(m as any).userCode, (m as any).user_code, m.userId, (m as any).user_id].filter(Boolean);
                               const isTarget = memberCandidateCodes.some((c) => mCandidates.includes(c)) || (m.nickname && m.nickname === member.nickname);

@@ -1772,6 +1772,10 @@
       "username_taken": "This username is already taken"
     },
     "lobby": {
+      "sections_title": "Sections",
+      "search_members": "Search members...",
+      "create_section": "Create Section",
+      "section_name": "Section Name",
       "create_title": "Create your lobby",
       "create_subtitle": "Your lobby is where you hang out with friends. Create a lobby and start talking.",
       "my_template": "Create My Own",

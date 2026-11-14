@@ -672,6 +672,10 @@ export const useChatStore = create<ChatState>()(
         let state = get();
         if (state.deletedChatIds?.includes(chatId)) return;
         let chat = state.chats.find(c => c.id === chatId);
+        if (!chat && chatId.includes(':')) {
+          const baseId = chatId.split(':')[0];
+          chat = state.chats.find(c => c.id === baseId);
+        }
         if (!chat && message.senderId) {
           chat = state.chats.find(c => c.type === 'private' && (c.peerCode === message.senderId || c.originalPeerCode === message.senderId));
           if (chat) chatId = chat.id;
@@ -780,7 +784,7 @@ export const useChatStore = create<ChatState>()(
             [chatId]: trimmedMessages,
           },
           chats: state.chats.map(c =>
-            c.id === chatId
+            c.id === chatId || (chatId.includes(':') && c.id === chatId.split(':')[0])
               ? {
                   ...c,
                   isArchived: c.muted ? c.isArchived : false,
@@ -913,16 +917,20 @@ export const useChatStore = create<ChatState>()(
             runTelegramDisintegration(bubbleEl);
           }
         }
+        const baseChatId = chatId.includes(':') ? chatId.split(':')[0] : null;
         const messages = state.messagesByChatId[chatId] || [];
+        const baseMessages = baseChatId ? (state.messagesByChatId[baseChatId] || []) : null;
         const baseId = messageId.replace(/_part_\d+$/, '');
         const updated = messages.filter(m => m.id !== messageId && m.id !== baseId);
+        const updatedBase = baseMessages ? baseMessages.filter(m => m.id !== messageId && m.id !== baseId) : null;
         set({
           messagesByChatId: {
             ...state.messagesByChatId,
             [chatId]: updated,
+            ...(baseChatId && updatedBase ? { [baseChatId]: updatedBase } : {}),
           },
           chats: state.chats.map(c =>
-            c.id === chatId
+            c.id === chatId || (chatId.includes(':') && c.id === chatId.split(':')[0])
               ? {
                   ...c,
                   lastMsg: updated.length > 0 ? updated[updated.length - 1].text : 'История очищена',
@@ -956,16 +964,20 @@ export const useChatStore = create<ChatState>()(
             }
           });
         }
+        const baseChatId = chatId.includes(':') ? chatId.split(':')[0] : null;
         const messages = state.messagesByChatId[chatId] || [];
+        const baseMessages = baseChatId ? (state.messagesByChatId[baseChatId] || []) : null;
         const idSet = new Set(messageIds);
         const updated = messages.filter(m => m.id ? (!idSet.has(m.id) && !idSet.has(m.id.replace(/_part_\d+$/, ''))) : true);
+        const updatedBase = baseMessages ? baseMessages.filter(m => m.id ? (!idSet.has(m.id) && !idSet.has(m.id.replace(/_part_\d+$/, ''))) : true) : null;
         set({
           messagesByChatId: {
             ...state.messagesByChatId,
             [chatId]: updated,
+            ...(baseChatId && updatedBase ? { [baseChatId]: updatedBase } : {}),
           },
           chats: state.chats.map(c =>
-            c.id === chatId
+            c.id === chatId || (chatId.includes(':') && c.id === chatId.split(':')[0])
               ? {
                   ...c,
                   lastMsg: updated.length > 0 ? updated[updated.length - 1].text : 'История очищена',
@@ -1003,7 +1015,9 @@ export const useChatStore = create<ChatState>()(
       },
       updateMessageStatus: (chatId, messageId, status) => {
         const state = get();
+        const baseChatId = chatId.includes(':') ? chatId.split(':')[0] : null;
         const messages = state.messagesByChatId[chatId] || [];
+        const baseMessages = baseChatId ? (state.messagesByChatId[baseChatId] || []) : null;
         const STATUS_RANK: Record<string, number> = {
           failed: 0,
           error: 0,
@@ -1013,7 +1027,7 @@ export const useChatStore = create<ChatState>()(
           delivered: 3,
           read: 4,
         };
-        const updated = messages.map(m => {
+        const mapFn = (m: any) => {
           if (m.id !== messageId) return m;
           if (status === 'failed' || status === 'error') {
             if (m.status === 'read' || m.read || m.status === 'delivered') return m;
@@ -1032,11 +1046,14 @@ export const useChatStore = create<ChatState>()(
             uploading: status === 'sent' || status === 'delivered' || status === 'read' ? false : m.uploading,
             read: status === 'read' ? true : m.read,
           };
-        });
+        };
+        const updated = messages.map(mapFn);
+        const updatedBase = baseMessages ? baseMessages.map(mapFn) : null;
         set({
           messagesByChatId: {
             ...state.messagesByChatId,
             [chatId]: updated,
+            ...(baseChatId && updatedBase ? { [baseChatId]: updatedBase } : {}),
           },
         });
         const updatedMsg = updated.find(m => m.id === messageId);

@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Hash,
-  Volume2,
   Plus,
   Trash2,
   PhoneOff,
   ChevronDown,
   ShieldCheck,
   Users,
+  Search,
 } from 'lucide-react';
 import { lobbyService, type LobbyChannel, type LobbyMember } from '../../../services/lobbyService';
 import { useCallStore } from '../../../store/useCallStore';
@@ -47,7 +47,6 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
   isOwnerOrAdmin,
   activeChannelId,
   onSelectChannel,
-  onOpenVoiceCall,
   isVoiceActive = false,
   onDisconnectVoice,
   onProfileClick,
@@ -55,22 +54,14 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
   onOpenSettings,
 }) => {
   const { t } = useTranslation();
-  const myNickname = useAuthStore((s) => s.nickname) || 'User';
-  const myAvatar = useAuthStore((s) => s.avatarUrl);
+  const storeMyCode = useChatStore((s) => s.myCode);
   const callDuration = useCallStore((s) => s.duration);
-  const [sidebarNow, setSidebarNow] = useState<number>(Date.now());
+  const activeChatObj = useChatStore((s) => s.chats.find((c) => c.id === lobbyId));
   const [channels, setChannels] = useState<LobbyChannel[]>([]);
   const [members, setMembers] = useState<LobbyMember[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<'text' | 'voice'>('text');
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSidebarNow(Date.now());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const [memberSearch, setMemberSearch] = useState('');
 
   const loadMembers = useCallback(async () => {
     try {
@@ -133,6 +124,30 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
     }
   }, []);
 
+  const handleKickMember = useCallback(async (e: React.MouseEvent, m: LobbyMember) => {
+    e.stopPropagation();
+    if (window.confirm(`${t('groupSettings.kick', 'Исключить')} ${m.nickname}?`)) {
+      try {
+        await lobbyService.leaveLobby(lobbyId, m.userCode || m.id);
+        const remaining = members.filter((mem) => mem.userCode !== m.userCode && mem.id !== m.id);
+        setMembers(remaining);
+        useChatStore.getState().updateChat(lobbyId, {
+          members: remaining.map((rem) => ({
+            userId: rem.userCode || rem.id,
+            userCode: rem.userCode,
+            nickname: rem.nickname,
+            role: rem.role,
+            lastSeen: rem.lastSeen || Date.now(),
+            avatarUrl: rem.avatarUrl || null,
+          })),
+          membersCount: remaining.length,
+        });
+      } catch (err) {
+        console.error('Failed to kick lobby member:', err);
+      }
+    }
+  }, [lobbyId, members, t]);
+
   useEffect(() => {
     loadMembers();
     const unsub = lobbyService.subscribeToLobby(
@@ -150,7 +165,8 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
   const loadChannels = useCallback(async () => {
     try {
       const list = await lobbyService.getLobbyChannels(lobbyId);
-      setChannels(list);
+      const textOnly = list.filter((c) => c.type === 'text');
+      setChannels(textOnly.length > 0 ? textOnly : list);
       if (!activeChannelId && list.length > 0) {
         const firstText = list.find((c) => c.type === 'text') || list[0];
         onSelectChannel(firstText);
@@ -170,11 +186,6 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
     };
   }, [loadChannels, lobbyId]);
 
-  const handleOpenCreateModal = (type: 'text' | 'voice') => {
-    setModalType(type);
-    setIsModalOpen(true);
-  };
-
   const handleDeleteChannel = async (e: React.MouseEvent, channelId: string) => {
     e.stopPropagation();
     if (channels.length <= 1) return;
@@ -192,7 +203,15 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
   };
 
   const textChannels = channels.filter((c) => c.type === 'text');
-  const voiceChannels = channels.filter((c) => c.type === 'voice');
+
+  const filteredMembers = useMemo(() => {
+    const q = memberSearch.trim().toLowerCase();
+    if (!q) return members;
+    return members.filter((m) => m.nickname.toLowerCase().includes(q));
+  }, [members, memberSearch]);
+
+  const totalMembersCount = members.length || activeChatObj?.membersCount || 1;
+  const onlineMembersCount = Math.max(1, Math.min(totalMembersCount, (activeChatObj as any)?.onlineCount || totalMembersCount));
 
   return (
     <aside
@@ -206,32 +225,37 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
         type="button"
         onClick={onProfileClick}
         aria-label={lobbyName}
-        className="w-full px-4 h-12 flex items-center justify-between border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer border-none outline-none text-left shrink-0"
+        className="w-full px-4 py-2.5 min-h-[52px] flex items-center justify-between border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer border-none outline-none text-left shrink-0"
         style={{
           boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
           backgroundColor: 'var(--title-bar-bg, #121212)',
         }}
       >
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="font-bold text-[15px] text-white truncate">
-            {lobbyName}
+        <div className="flex flex-col min-w-0 pr-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="font-bold text-[15px] text-white truncate">
+              {lobbyName}
+            </span>
+            <ShieldCheck size={14} className="text-[#949ba4] shrink-0" />
+          </div>
+          <span className="text-[11.5px] text-[#949ba4] font-medium truncate mt-0.5">
+            {onlineMembersCount} {t('lobby.online_count', 'в сети')}, {totalMembersCount} {t('lobby.members_count', 'участников')}
           </span>
-          <ShieldCheck size={14} className="text-[#949ba4] shrink-0" />
         </div>
-        <ChevronDown size={18} className="text-[#949ba4] shrink-0 ml-1" />
+        <ChevronDown size={18} className="text-[#949ba4] shrink-0" />
       </button>
 
       <div className="flex-1 overflow-y-auto no-scrollbar px-2 py-3 flex flex-col gap-4">
         <div className="flex flex-col gap-0.5">
           <div className="px-2 py-1 flex items-center justify-between group">
             <span className="text-[11.5px] font-bold text-[#949ba4] uppercase tracking-wider">
-              {t('lobby.text_channels_title', 'Текстовые каналы')}
+              {t('lobby.sections_title', 'Разделы')}
             </span>
             {isOwnerOrAdmin && (
               <button
                 type="button"
-                onClick={() => handleOpenCreateModal('text')}
-                aria-label={t('lobby.add_channel', 'Добавить канал')}
+                onClick={() => setIsModalOpen(true)}
+                aria-label={t('lobby.add_channel', 'Добавить раздел')}
                 className="w-5 h-5 flex items-center justify-center text-[#949ba4] hover:text-white transition-colors cursor-pointer border-none bg-transparent outline-none"
               >
                 <Plus size={15} />
@@ -286,137 +310,7 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
           })}
         </div>
 
-        <div className="flex flex-col gap-0.5">
-          <div className="px-2 py-1 flex items-center justify-between group">
-            <span className="text-[11.5px] font-bold text-[#949ba4] uppercase tracking-wider">
-              {t('lobby.voice_channels_title', 'Голосовые каналы')}
-            </span>
-            {isOwnerOrAdmin && (
-              <button
-                type="button"
-                onClick={() => handleOpenCreateModal('voice')}
-                aria-label={t('lobby.add_voice_channel', 'Добавить голосовой канал')}
-                className="w-5 h-5 flex items-center justify-center text-[#949ba4] hover:text-white transition-colors cursor-pointer border-none bg-transparent outline-none"
-              >
-                <Plus size={15} />
-              </button>
-            )}
-          </div>
-
-          {voiceChannels.map((ch) => {
-            const isChannelActive = isVoiceActive && activeChannelId === ch.id;
-            const channelVoiceMembers = members.filter((m) => m.activeVoiceChannel === ch.id);
-            const storeMyCode = useChatStore.getState().myCode;
-            const displayVoiceMembers = [...channelVoiceMembers];
-            if (isChannelActive && storeMyCode && !displayVoiceMembers.some((m) => m.userCode === storeMyCode)) {
-              displayVoiceMembers.push({
-                id: storeMyCode,
-                lobbyId,
-                userCode: storeMyCode,
-                nickname: myNickname,
-                avatarUrl: myAvatar || null,
-                role: 'member',
-                activeVoiceChannel: ch.id,
-                voiceJoinedAt: Date.now() - callDuration * 1000,
-                joinedAt: Date.now(),
-                lastSeen: Date.now(),
-              });
-            }
-
-            return (
-              <div key={ch.id} className="flex flex-col">
-                <div
-                  onClick={() => onOpenVoiceCall(ch)}
-                  className="group relative flex items-center justify-between px-2.5 py-1.5 rounded-md cursor-pointer transition-colors"
-                  style={{
-                    backgroundColor: isChannelActive ? 'rgba(35, 165, 90, 0.12)' : 'transparent',
-                    color: isChannelActive ? '#23a55a' : '#949ba4',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isChannelActive) {
-                      e.currentTarget.style.backgroundColor = '#35373c';
-                      e.currentTarget.style.color = '#dbdee1';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isChannelActive) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = '#949ba4';
-                    }
-                  }}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Volume2 size={18} className="shrink-0" />
-                    <span className="text-[13.5px] font-medium truncate">
-                      {ch.name}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    {isChannelActive ? (
-                      <span className="text-[11px] font-bold text-emerald-400 font-mono">
-                        {formatDuration(callDuration)}
-                      </span>
-                    ) : (
-                      <span className="text-[11px] text-[#80848e] opacity-0 group-hover:opacity-100 transition-opacity">
-                        {t('lobby.voice_join', 'Войти')}
-                      </span>
-                    )}
-
-                    {isOwnerOrAdmin && voiceChannels.length > 1 && (
-                      <button
-                        type="button"
-                        disabled={deletingId === ch.id}
-                        onClick={(e) => handleDeleteChannel(e, ch.id)}
-                        aria-label={t('common.delete', 'Удалить')}
-                        className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity text-[#949ba4] cursor-pointer border-none bg-transparent outline-none p-1"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {displayVoiceMembers.length > 0 && (
-                  <div className="pl-6 pr-2 py-1 flex flex-col gap-1">
-                    {displayVoiceMembers.map((vm) => {
-                      const isMe = vm.userCode === storeMyCode;
-                      const durationSecs = isMe && isChannelActive
-                        ? callDuration
-                        : (vm.voiceJoinedAt
-                          ? Math.max(0, Math.floor((sidebarNow - vm.voiceJoinedAt) / 1000))
-                          : (vm.joinedAt ? Math.max(0, Math.floor((sidebarNow - vm.joinedAt) / 1000)) : 0));
-
-                      return (
-                        <div
-                          key={vm.userCode || vm.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMemberClick(vm);
-                          }}
-                          className="flex items-center gap-2 py-1 px-2 rounded-md bg-white/[0.04] hover:bg-white/10 transition-colors cursor-pointer"
-                        >
-                          <div className="relative shrink-0">
-                            <Avatar src={vm.avatarUrl || undefined} alt={vm.nickname} className="w-[20px] h-[20px] rounded-full" />
-                            <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-[#2b2d31]" />
-                          </div>
-                          <span className="text-[12px] font-medium text-white truncate flex-1">
-                            {vm.nickname}
-                          </span>
-                          <span className="text-[11px] font-mono text-emerald-400 font-semibold">
-                            {formatDuration(durationSecs)}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="flex flex-col gap-1 mt-2 pt-2 border-t border-white/5">
+        <div className="flex flex-col gap-1 mt-1 pt-2 border-t border-white/5">
           <div className="px-2 py-1 flex items-center justify-between">
             <span className="text-[11.5px] font-bold text-[#949ba4] uppercase tracking-wider flex items-center gap-1.5">
               <Users size={13} className="text-[#949ba4]" />
@@ -424,21 +318,41 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
             </span>
           </div>
 
+          <div className="relative w-full px-1 my-1">
+            <div className="relative w-full">
+              <input
+                type="text"
+                value={memberSearch}
+                onChange={(e) => setMemberSearch(e.target.value)}
+                placeholder={t('lobby.search_members', 'Поиск участников...')}
+                className="w-full pl-8 pr-3 py-1.5 rounded-lg text-[12.5px] font-medium border-none outline-none"
+                style={{
+                  backgroundColor: 'var(--surface-container, #111214)',
+                  color: 'var(--text-main, #ffffff)',
+                }}
+              />
+              <Search size={14} className="absolute left-2.5 top-2.5 text-[#949ba4] pointer-events-none" />
+            </div>
+          </div>
+
           <div className="flex flex-col gap-0.5">
-            {members.map((m) => {
+            {filteredMembers.map((m) => {
               const isOwner = m.role === 'owner';
               const isAdmin = m.role === 'admin';
+              const isSelf = m.userCode === storeMyCode || (m.id && m.id === storeMyCode);
+              const canKick = isOwnerOrAdmin && !isOwner && !isSelf;
+
               return (
                 <div
                   key={m.id || m.userCode}
                   onClick={() => handleMemberClick(m)}
-                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-md hover:bg-white/10 active:scale-[0.99] transition-all cursor-pointer"
+                  className="group relative flex items-center gap-2 px-2.5 py-1.5 rounded-md hover:bg-white/10 active:scale-[0.99] transition-all cursor-pointer"
                 >
                   <div className="relative shrink-0">
                     <Avatar
                       src={m.avatarUrl || undefined}
                       alt={m.nickname}
-                      className="w-[22px] h-[22px] rounded-full"
+                      className="w-[24px] h-[24px] rounded-full"
                     />
                   </div>
                   <span className="text-[13px] font-medium text-white/90 truncate flex-1">
@@ -450,9 +364,19 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
                     </span>
                   )}
                   {isAdmin && (
-                    <span className="text-[10px] font-semibold text-purple-400 bg-purple-400/10 px-1.5 py-0.5 rounded shrink-0">
+                    <span className="text-[10px] font-semibold text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded shrink-0">
                       {t('lobby.role_admin', 'Модератор')}
                     </span>
+                  )}
+                  {canKick && (
+                    <button
+                      type="button"
+                      onClick={(e) => handleKickMember(e, m)}
+                      aria-label={t('groupSettings.kick', 'Исключить')}
+                      className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity text-[#949ba4] cursor-pointer border-none bg-transparent outline-none p-1 shrink-0"
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   )}
                 </div>
               );
@@ -473,7 +397,7 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
                 {t('lobby.voice_connected', 'Голос подключен')}
               </span>
               <span className="text-[11px] text-[#949ba4] font-mono leading-tight">
-                {formatDuration(callDuration)} • {voiceChannels[0]?.name || 'Голосовой'}
+                {formatDuration(callDuration)}
               </span>
             </div>
           </div>
@@ -498,7 +422,7 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
         onClose={() => setIsModalOpen(false)}
         lobbyId={lobbyId}
         lobbyName={lobbyName}
-        initialType={modalType}
+        initialType="text"
         onChannelCreated={(newCh) => {
           setChannels((prev) => [...prev, newCh]);
           if (newCh.type === 'text') {

@@ -125,7 +125,8 @@ export const useChatMessageSend = ({
   ) => {
     const targetChatId = targetChatIdParam || activeChatId;
     if (!targetChatId) return;
-    const targetChat = useChatStore.getState().chats.find((c) => c.id === targetChatId) || activeChat;
+    const baseTargetId = targetChatId.includes(':') ? targetChatId.split(':')[0] : targetChatId;
+    const targetChat = useChatStore.getState().chats.find((c) => c.id === targetChatId || c.id === baseTargetId) || activeChat;
     const effectiveSenderUuid = ensureValidUuid(myUserId || useAuthStore.getState().userId, myCode);
     if (mediaPayload) {
       mediaPayload.senderId = mediaPayload.senderId || effectiveSenderUuid;
@@ -294,7 +295,7 @@ export const useChatMessageSend = ({
       return;
     }
 
-    const chat = useChatStore.getState().chats.find((c) => c.id === targetChatId);
+    const chat = useChatStore.getState().chats.find((c) => c.id === targetChatId || c.id === baseTargetId) || targetChat;
 
     if (chat?.type === 'channel') {
       const canPostInChannel = isChannelOwner || Boolean(chat.isOwner) || chat.role === 'owner' || Boolean(myNickname && chat.creatorNickname && chat.creatorNickname.toLowerCase() === myNickname.toLowerCase());
@@ -661,35 +662,37 @@ export const useChatMessageSend = ({
           const activeChannelId = useChatStore.getState().activeChannelId;
           const targetChatKey = activeChannelId ? `${targetChatId}:${activeChannelId}` : targetChatId;
           const currentAvatar = useAuthStore.getState().avatarUrl;
-          lobbyService.sendLobbyMessage({
-            id: messageId,
-            lobbyId: targetChatId,
-            channelId: activeChannelId,
-            senderCode: myCode,
-            senderId: effectiveSenderUuid || myUserId || myCode,
-            senderNickname: myNickname,
-            senderAvatarUrl: currentAvatar,
-            text,
-            sharedSecret: lobbySecret,
-            mediaType: (mediaPayload?.type as any) || (sanitizedMediaItems && sanitizedMediaItems[0]?.type as any) || null,
-            mediaUrl: mediaPayload?.url || (sanitizedMediaItems && sanitizedMediaItems[0]?.url) || null,
-            mediaName: mediaPayload?.name || (sanitizedMediaItems && sanitizedMediaItems[0]?.name) || null,
-            mediaSize: mediaPayload?.size || (sanitizedMediaItems && sanitizedMediaItems[0]?.size) || null,
-            mediaKey: mediaPayload?.key || (mediaPayload as any)?.mediaKey || (sanitizedMediaItems && sanitizedMediaItems[0]?.key) || null,
-            replyToId: replyingTo?.id,
-          }).then(() => {
+          try {
+            await lobbyService.sendLobbyMessage({
+              id: messageId,
+              lobbyId: targetChatId,
+              channelId: activeChannelId,
+              senderCode: myCode,
+              senderId: effectiveSenderUuid || myUserId || myCode,
+              senderNickname: myNickname,
+              senderAvatarUrl: currentAvatar,
+              text,
+              sharedSecret: lobbySecret,
+              mediaType: (mediaPayload?.type as any) || (sanitizedMediaItems && sanitizedMediaItems[0]?.type as any) || null,
+              mediaUrl: mediaPayload?.url || (sanitizedMediaItems && sanitizedMediaItems[0]?.url) || null,
+              mediaName: mediaPayload?.name || (sanitizedMediaItems && sanitizedMediaItems[0]?.name) || null,
+              mediaSize: mediaPayload?.size || (sanitizedMediaItems && sanitizedMediaItems[0]?.size) || null,
+              mediaKey: mediaPayload?.key || (mediaPayload as any)?.mediaKey || (sanitizedMediaItems && sanitizedMediaItems[0]?.key) || null,
+              mediaItems: sanitizedMediaItems || null,
+              replyToId: replyingTo?.id,
+            });
             useChatStore.getState().updateMessageStatus(targetChatKey, messageId, 'sent');
             if (targetChatKey !== targetChatId) {
               useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sent');
             }
             networkManager.removeOutboxItem(messageId).catch(() => {});
-          }).catch((err) => {
+          } catch (err) {
             console.error('Failed to send lobby message:', err);
             useChatStore.getState().updateMessageStatus(targetChatKey, messageId, 'failed');
             if (targetChatKey !== targetChatId) {
               useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'failed');
             }
-          });
+          }
         } else if (freshChat?.type === 'group') {
           let groupSecret = freshChat.sharedSecret;
           if (!groupSecret && freshChat.id && freshChat.id.length === 36) {

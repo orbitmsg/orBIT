@@ -94,6 +94,7 @@ export interface LobbyMessage {
   mediaName?: string | null;
   mediaSize?: number | null;
   mediaKey?: string | null;
+  mediaItems?: any[] | null;
   replyToId?: string | null;
   reactions?: Record<string, string[]>;
   pinned?: boolean;
@@ -521,6 +522,7 @@ export class LobbyService {
     mediaName?: string | null;
     mediaSize?: number | null;
     mediaKey?: string | null;
+    mediaItems?: any[] | null;
     replyToId?: string | null;
   }): Promise<LobbyMessage> {
     const msgId = params.id || `lmsg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -529,6 +531,7 @@ export class LobbyService {
     let ciphertext: string | null = null;
     let storedText = params.text;
     let storedMediaKey = params.mediaKey || null;
+    let storedMediaItems = params.mediaItems || null;
 
     if (params.sharedSecret) {
       if (params.text) {
@@ -544,6 +547,21 @@ export class LobbyService {
           storedMediaKey = await encryptLobbyPayload(params.mediaKey, params.sharedSecret);
         } catch (e) {
           console.error('Failed to encrypt lobby media key:', e);
+        }
+      }
+      if (storedMediaItems && Array.isArray(storedMediaItems)) {
+        try {
+          storedMediaItems = await Promise.all(
+            storedMediaItems.map(async (item: any) => {
+              if (item.key) {
+                const encKey = await encryptLobbyPayload(item.key, params.sharedSecret!);
+                return { ...item, key: encKey };
+              }
+              return item;
+            })
+          );
+        } catch (e) {
+          console.error('Failed to encrypt lobby media items:', e);
         }
       }
     }
@@ -565,6 +583,7 @@ export class LobbyService {
         media_name: params.mediaName || null,
         media_size: params.mediaSize || null,
         media_key: storedMediaKey,
+        media_items: storedMediaItems,
         reply_to_id: params.replyToId || null,
         created_at: nowIso,
       })
@@ -589,6 +608,7 @@ export class LobbyService {
       mediaName: data.media_name,
       mediaSize: data.media_size,
       mediaKey: params.mediaKey || null,
+      mediaItems: params.mediaItems || null,
       replyToId: data.reply_to_id,
       reactions: data.reactions || {},
       pinned: data.pinned || false,
@@ -637,6 +657,21 @@ export class LobbyService {
             }
           } catch {}
         }
+        let mediaItems = r.media_items || null;
+        if (mediaItems && Array.isArray(mediaItems) && sharedSecret) {
+          try {
+            const decItems = await Promise.all(
+              mediaItems.map(async (item: any) => {
+                if (item.key) {
+                  const decKey = await decryptLobbyPayload(item.key, sharedSecret);
+                  return { ...item, key: decKey && decKey !== '[Encrypted]' ? decKey : item.key };
+                }
+                return item;
+              })
+            );
+            mediaItems = decItems;
+          } catch {}
+        }
         return {
           id: r.id,
           lobbyId: r.lobby_id,
@@ -651,6 +686,7 @@ export class LobbyService {
           mediaName: r.media_name,
           mediaSize: r.media_size,
           mediaKey,
+          mediaItems,
           replyToId: r.reply_to_id,
           reactions: r.reactions || {},
           pinned: r.pinned || false,
@@ -679,6 +715,14 @@ export class LobbyService {
       console.error('Failed to delete lobby message:', e);
       return false;
     }
+  }
+
+  async updateMemberRole(lobbyId: string, userCode: string, role: 'owner' | 'admin' | 'member'): Promise<void> {
+    await this.client
+      .from('lobby_members')
+      .update({ role })
+      .eq('lobby_id', lobbyId)
+      .eq('user_code', userCode);
   }
 
   async toggleLobbyReaction(
@@ -769,6 +813,21 @@ export class LobbyService {
               }
             } catch {}
           }
+          let mediaItems = r.media_items || null;
+          if (mediaItems && Array.isArray(mediaItems) && sharedSecret) {
+            try {
+              const decItems = await Promise.all(
+                mediaItems.map(async (item: any) => {
+                  if (item.key) {
+                    const decKey = await decryptLobbyPayload(item.key, sharedSecret);
+                    return { ...item, key: decKey && decKey !== '[Encrypted]' ? decKey : item.key };
+                  }
+                  return item;
+                })
+              );
+              mediaItems = decItems;
+            } catch {}
+          }
           onMessage({
             id: r.id,
             lobbyId: r.lobby_id,
@@ -783,6 +842,7 @@ export class LobbyService {
             mediaName: r.media_name,
             mediaSize: r.media_size,
             mediaKey,
+            mediaItems,
             replyToId: r.reply_to_id,
             reactions: r.reactions || {},
             pinned: r.pinned || false,

@@ -690,8 +690,7 @@ export const useCallStore = create<CallStore>((set, get) => {
       const chat = useChatStore.getState().chats.find((c) => c.id === chatId);
       const isGroup = chat?.type === 'group';
       const isLobby = chatId.startsWith('lobby_');
-      const activeChannelId = useChatStore.getState().activeChannelId;
-      const roomName = customRoomName || (isLobby && activeChannelId ? `lobby-voice-${chatId}-${activeChannelId}` : (isGroup ? (chat?.activeCallRoom || `group-call-${chatId}`) : `call-${chatId}-${Date.now()}`));
+      const roomName = customRoomName || (isLobby ? `lobby-voice-${chatId}` : (isGroup ? (chat?.activeCallRoom || `group-call-${chatId}`) : `call-${chatId}-${Date.now()}`));
       const verificationSecret = isGroup ? (chat?.sharedSecret || deriveGroupKey(chatId)) : (chat?.type === 'private' ? chat?.sharedSecret : undefined);
       const verificationSalt = isGroup ? `group-salt-${chatId}` : crypto.randomUUID().replace(/-/g, '');
       const isVideo = callType === 'video';

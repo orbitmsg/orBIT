@@ -37,6 +37,7 @@ import { type ContextMenuState } from './MessageContextMenu';
 import { ChatPinnedBar } from './ChatPinnedBar';
 import { ChatHeader } from './ChatHeader';
 import { LobbyVoiceStage } from './lobby/LobbyVoiceStage';
+import { lobbyService } from '../../services/lobbyService';
 import { ChatWindowModals } from './window/ChatWindowModals';
 import { GroupActiveCallBanner } from './window/GroupActiveCallBanner';
 import { ChatScrollToBottomButton } from './window/ChatScrollToBottomButton';
@@ -131,11 +132,14 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
 
   const [renderedCount, setRenderedCount] = useState<number>(getOptimalMessageBatchSize);
   const [prevChatId, setPrevChatId] = useState<string | null>(activeChatId);
+  const activeChannelId = useChatStore((s) => s.activeChannelId);
   const activeChannelName = useChatStore((s) => s.activeChannelName);
+  const activeChannelType = useChatStore((s) => s.activeChannelType);
   const isLobbyVoice = Boolean(
-    activeChat?.type === 'group' &&
-    activeChannelName &&
-    (activeChannelName.toLowerCase().includes('голос') || activeChannelName.toLowerCase().includes('voice'))
+    activeChat?.type === 'group' && (
+      activeChannelType === 'voice' ||
+      (activeChannelName && (activeChannelName.toLowerCase().includes('голос') || activeChannelName.toLowerCase().includes('voice')))
+    )
   );
   const prevScrollHeightRef = useRef<number | null>(null);
   const prevScrollTopRef = useRef<number | null>(null);
@@ -210,7 +214,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
   }, []);
 
   useEffect(() => {
-    if (activeChat?.type === 'group' && activeChatId) {
+    if (activeChat?.type === 'group' && activeChatId && !activeChatId.startsWith('lobby_') && !(activeChat as any).isLobby) {
       groupService.getGroup(activeChatId).then((info) => {
         if (info && info.members && info.members.length > 0) {
           const myUid = useAuthStore.getState().userId;
@@ -1053,6 +1057,29 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     t,
   });
 
+  const handleLobbyVoiceConnect = useCallback(() => {
+    if (activeChatId?.startsWith('lobby_') && activeChannelId) {
+      const voiceRoom = `lobby-voice-${activeChatId}-${activeChannelId}`;
+      useCallStore.getState().startCall(activeChatId, 'audio', myNickname || 'User', voiceRoom);
+      const currentMyCode = useChatStore.getState().myCode;
+      if (currentMyCode) {
+        lobbyService.setMemberVoiceChannel(activeChatId, currentMyCode, activeChannelId).catch(() => {});
+      }
+    } else {
+      handleAudioCallPress();
+    }
+  }, [activeChatId, activeChannelId, myNickname, handleAudioCallPress]);
+
+  const handleLobbyVoiceDisconnect = useCallback(() => {
+    useCallStore.getState().endCall();
+    if (activeChatId?.startsWith('lobby_')) {
+      const currentMyCode = useChatStore.getState().myCode;
+      if (currentMyCode) {
+        lobbyService.setMemberVoiceChannel(activeChatId, currentMyCode, null).catch(() => {});
+      }
+    }
+  }, [activeChatId]);
+
 
   useEffect(() => {
     return () => {
@@ -1147,7 +1174,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         groupTypingUsers={groupTypingUsers}
         isServerConnected={isServerConnected}
         voiceCallsEnabled={voiceCallsEnabled}
-        onAudioCallPress={handleAudioCallPress}
+        onAudioCallPress={handleLobbyVoiceConnect}
         onAddMember={() => setIsAddMemberModalOpen(true)}
         onProfileClick={() => setActiveProfileChatId(activeChatId)}
       />
@@ -1155,8 +1182,8 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
       {isLobbyVoice ? (
         <LobbyVoiceStage
           channelName={activeChannelName || ''}
-          onConnect={() => handleAudioCallPress()}
-          onDisconnect={() => useCallStore.getState().endCall()}
+          onConnect={handleLobbyVoiceConnect}
+          onDisconnect={handleLobbyVoiceDisconnect}
         />
       ) : (
         <>

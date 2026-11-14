@@ -6,6 +6,7 @@ import { ablyService } from '../../../services/ablyService';
 import { supabaseService } from '../../../services/supabaseService';
 import { channelService } from '../../../services/channelService';
 import { groupService } from '../../../services/groupService';
+import { lobbyService } from '../../../services/lobbyService';
 import { supportService } from '../../../services/supportService';
 import { networkManager } from '../../../services/networkManager';
 import { deriveGroupKey, isValidGroupCode } from '../../../lib/groupCrypto';
@@ -649,89 +650,110 @@ export const useChatMessageSend = ({
           }
 
           if (groupSecret) {
-            const ciphertext = await encryptMessage(JSON.stringify(messageData), groupSecret);
-            const groupPusher = getGroupPusher();
-            const channel = groupPusher.subscribe(`presence-group-${targetChatId}`);
-            const firstGroupItem = mediaItemsPayload?.[0];
-            const payload = {
-              mediaType: mediaPayload?.type || firstGroupItem?.type || null,
-              mediaUrl: mediaPayload?.url || firstGroupItem?.url || null,
-              mediaKey: mediaPayload?.key || firstGroupItem?.key || null,
-              mediaName: mediaPayload?.name || firstGroupItem?.name || null,
-              mime: mediaPayload?.mime || firstGroupItem?.mime || null,
-              width: mediaPayload?.width || firstGroupItem?.width || null,
-              height: mediaPayload?.height || firstGroupItem?.height || null,
-              duration: mediaPayload?.duration || firstGroupItem?.duration || null,
-              ...(sanitizedMediaItems && sanitizedMediaItems.length > 0 ? { mediaItems: sanitizedMediaItems } : {}),
-              sender: myNickname,
-              senderCode: myCode,
-              senderId: effectiveSenderUuid,
-              senderUserId: effectiveSenderUuid,
-              ciphertext,
-              type: 'message',
-              messageId,
-              chatId: targetChatId,
-              time: Date.now(),
-            };
-            const doSendPusher = () => {
-              try {
-                const jsonStr = JSON.stringify(payload);
-                if (jsonStr.length < 9800) {
-                  channel.trigger('client-message', payload);
-                } else {
-                  const { mediaItems: _, ...compactPayload } = payload;
-                  channel.trigger('client-message', compactPayload);
-                }
-              } catch {}
-            };
-            if (channel.subscribed) doSendPusher(); else channel.bind('pusher:subscription_succeeded', doSendPusher);
-
-            groupService.sendGroupMessage({
-              id: messageId,
-              groupId: targetChatId,
-              senderCode: myCode,
-              senderId: effectiveSenderUuid,
-              senderUserId: effectiveSenderUuid,
-              senderNickname: myNickname,
-              ciphertext,
-              mediaType: mediaPayload?.type || (mediaItemsPayload?.[0]?.type) || null,
-              mediaUrl: mediaPayload?.url || (mediaItemsPayload?.[0]?.url) || null,
-              mediaName: mediaPayload?.name || (mediaItemsPayload?.[0]?.name) || null,
-              mediaKey: mediaPayload?.key || (mediaItemsPayload?.[0]?.key) || null,
-              mediaItems: sanitizedMediaItems || undefined,
-              mime: mediaPayload?.mime || (mediaItemsPayload?.[0]?.mime) || null,
-              duration: mediaPayload?.duration || (mediaItemsPayload?.[0]?.duration) || null,
-              width: mediaPayload?.width || (mediaItemsPayload?.[0]?.width) || null,
-              height: mediaPayload?.height || (mediaItemsPayload?.[0]?.height) || null,
-              waveform: mediaPayload?.waveform || null,
-              audioMetadata: networkAudioMetadata,
-              linkPreview: linkPreviewPayload || null,
-            }).then((res) => {
-              if (res) {
+            if (targetChatId.startsWith('lobby_')) {
+              const activeChannelId = useChatStore.getState().activeChannelId;
+              const currentAvatar = useAuthStore.getState().avatarUrl;
+              lobbyService.sendLobbyMessage({
+                lobbyId: targetChatId,
+                channelId: activeChannelId,
+                senderCode: myCode,
+                senderNickname: myNickname,
+                senderAvatarUrl: currentAvatar,
+                text,
+                sharedSecret: groupSecret,
+                mediaType: mediaPayload?.type as any,
+                mediaUrl: mediaPayload?.url,
+                mediaName: mediaPayload?.name,
+                mediaSize: mediaPayload?.size,
+                replyToId: replyingTo?.id,
+              }).then(() => {
                 useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sent');
                 networkManager.removeOutboxItem(messageId).catch(() => {});
-              } else {
+              }).catch(() => {});
+            } else {
+              const ciphertext = await encryptMessage(JSON.stringify(messageData), groupSecret);
+              const groupPusher = getGroupPusher();
+              const channel = groupPusher.subscribe(`presence-group-${targetChatId}`);
+              const firstGroupItem = mediaItemsPayload?.[0];
+              const payload = {
+                mediaType: mediaPayload?.type || firstGroupItem?.type || null,
+                mediaUrl: mediaPayload?.url || firstGroupItem?.url || null,
+                mediaKey: mediaPayload?.key || firstGroupItem?.key || null,
+                mediaName: mediaPayload?.name || firstGroupItem?.name || null,
+                mime: mediaPayload?.mime || firstGroupItem?.mime || null,
+                width: mediaPayload?.width || firstGroupItem?.width || null,
+                height: mediaPayload?.height || firstGroupItem?.height || null,
+                duration: mediaPayload?.duration || firstGroupItem?.duration || null,
+                ...(sanitizedMediaItems && sanitizedMediaItems.length > 0 ? { mediaItems: sanitizedMediaItems } : {}),
+                sender: myNickname,
+                senderCode: myCode,
+                senderId: effectiveSenderUuid,
+                senderUserId: effectiveSenderUuid,
+                ciphertext,
+                type: 'message',
+                messageId,
+                chatId: targetChatId,
+                time: Date.now(),
+              };
+              const doSendPusher = () => {
+                try {
+                  const jsonStr = JSON.stringify(payload);
+                  if (jsonStr.length < 9800) {
+                    channel.trigger('client-message', payload);
+                  } else {
+                    const { mediaItems: _, ...compactPayload } = payload;
+                    channel.trigger('client-message', compactPayload);
+                  }
+                } catch {}
+              };
+              if (channel.subscribed) doSendPusher(); else channel.bind('pusher:subscription_succeeded', doSendPusher);
+
+              groupService.sendGroupMessage({
+                id: messageId,
+                groupId: targetChatId,
+                senderCode: myCode,
+                senderId: effectiveSenderUuid,
+                senderUserId: effectiveSenderUuid,
+                senderNickname: myNickname,
+                ciphertext,
+                mediaType: mediaPayload?.type || (mediaItemsPayload?.[0]?.type) || null,
+                mediaUrl: mediaPayload?.url || (mediaItemsPayload?.[0]?.url) || null,
+                mediaName: mediaPayload?.name || (mediaItemsPayload?.[0]?.name) || null,
+                mediaKey: mediaPayload?.key || (mediaItemsPayload?.[0]?.key) || null,
+                mediaItems: sanitizedMediaItems || undefined,
+                mime: mediaPayload?.mime || (mediaItemsPayload?.[0]?.mime) || null,
+                duration: mediaPayload?.duration || (mediaItemsPayload?.[0]?.duration) || null,
+                width: mediaPayload?.width || (mediaItemsPayload?.[0]?.width) || null,
+                height: mediaPayload?.height || (mediaItemsPayload?.[0]?.height) || null,
+                waveform: mediaPayload?.waveform || null,
+                audioMetadata: networkAudioMetadata,
+                linkPreview: linkPreviewPayload || null,
+              }).then((res) => {
+                if (res) {
+                  useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sent');
+                  networkManager.removeOutboxItem(messageId).catch(() => {});
+                } else {
+                  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+                    networkManager.enqueueOutbox({
+                      id: messageId,
+                      chatId: targetChatId,
+                      text,
+                      sender: myNickname,
+                      time: localMessage.time || Date.now(),
+                      recipientTargets: [],
+                      chatType: 'group',
+                      mediaPayload,
+                      sanitizedMediaItems: sanitizedMediaItems || undefined,
+                    }).catch(() => {});
+                    useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sending');
+                  } else {
+                    useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'failed');
+                  }
+                }
+              }).catch(() => {
                 if (typeof navigator !== 'undefined' && !navigator.onLine) {
                   networkManager.enqueueOutbox({
                     id: messageId,
-                    chatId: targetChatId,
-                    text,
-                    sender: myNickname,
-                    time: localMessage.time || Date.now(),
-                    recipientTargets: [],
-                    chatType: 'group',
-                    mediaPayload,
-                    sanitizedMediaItems: sanitizedMediaItems || undefined,
-                  }).catch(() => {});
-                  useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sending');
-                } else {
-                  useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'failed');
-                }
-              }
-            }).catch(() => {
-              if (typeof navigator !== 'undefined' && !navigator.onLine) {
-                networkManager.enqueueOutbox({
-                  id: messageId,
                   chatId: targetChatId,
                   text,
                   sender: myNickname,
@@ -746,6 +768,7 @@ export const useChatMessageSend = ({
                 useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'failed');
               }
             });
+            }
           }
           return;
         }

@@ -162,8 +162,9 @@ export const useChatStore = create<ChatState>()(
       activeProfileChatId: null,
       activeChannelId: null,
       activeChannelName: null,
-      setActiveChannel: (id: string | null, name: string | null = null) =>
-        set({ activeChannelId: id, activeChannelName: name }),
+      activeChannelType: null,
+      setActiveChannel: (id: string | null, name: string | null = null, type: 'text' | 'voice' | null = null) =>
+        set({ activeChannelId: id, activeChannelName: name, activeChannelType: type }),
       messagesByChatId: {},
       deletingMessageIds: {},
       passcode: null,
@@ -364,7 +365,7 @@ export const useChatStore = create<ChatState>()(
         }
 
         const isDifferentChat = id !== previousActiveId;
-        const channelReset = isDifferentChat ? { activeChannelId: null, activeChannelName: null } : {};
+        const channelReset = isDifferentChat ? { activeChannelId: null, activeChannelName: null, activeChannelType: null } : {};
 
         if (chatsChanged) {
           set({ activeChatId: id, chats: nextChats, ...channelReset });

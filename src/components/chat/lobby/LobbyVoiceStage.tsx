@@ -4,6 +4,7 @@ import { Mic, MicOff, Monitor, PhoneOff, Volume2 } from 'lucide-react';
 import { useCallStore } from '../../../store/useCallStore';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { Avatar } from '../../common/Avatar';
+import type { ParticipantInfo } from '../../../services/livekitService';
 
 export interface LobbyVoiceStageProps {
   channelName: string;
@@ -16,6 +17,8 @@ const formatDuration = (totalSeconds: number) => {
   const secs = totalSeconds % 60;
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
+
+const EMPTY_PARTICIPANTS: ParticipantInfo[] = [];
 
 export const LobbyVoiceStage: React.FC<LobbyVoiceStageProps> = ({
   channelName,
@@ -31,7 +34,8 @@ export const LobbyVoiceStage: React.FC<LobbyVoiceStageProps> = ({
   const isScreenSharing = useCallStore((s) => s.isScreenSharing);
   const toggleMic = useCallStore((s) => s.toggleMic);
   const toggleScreenShare = useCallStore((s) => s.toggleScreenShare);
-  const participants = useCallStore((s) => s.activeCall?.participants || []);
+  const rawParticipants = useCallStore((s) => s.activeCall?.participants);
+  const participants = rawParticipants || EMPTY_PARTICIPANTS;
 
   const isConnected = callState === 'connected';
 

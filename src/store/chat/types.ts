@@ -387,7 +387,8 @@ export interface ChatState {
   activeProfileChatId: string | null;
   activeChannelId: string | null;
   activeChannelName: string | null;
-  setActiveChannel: (id: string | null, name?: string | null) => void;
+  activeChannelType: 'text' | 'voice' | null;
+  setActiveChannel: (id: string | null, name?: string | null, type?: 'text' | 'voice' | null) => void;
   messagesByChatId: Record<string, Message[]>;
   deletingMessageIds?: Record<string, boolean>;
   passcode: string | null;

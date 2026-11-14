@@ -157,6 +157,9 @@ class GroupService {
   }
 
   async getGroup(groupIdOrCode: string): Promise<GroupInfo | null> {
+    if (!groupIdOrCode || groupIdOrCode.trim().startsWith('lobby_')) {
+      return null;
+    }
     const raw = groupIdOrCode.trim();
     const cleanCode = extractGroupCode(raw) || raw.replace(/^#/, '');
     const derivedId = deriveGroupId(cleanCode);
@@ -813,6 +816,9 @@ class GroupService {
   }
 
   async fetchGroupMessages(groupId: string, limit = 100): Promise<any[]> {
+    if (!groupId || groupId.startsWith('lobby_')) {
+      return [];
+    }
     try {
       const { data, error } = await this.supabase
         .from('group_messages')
@@ -837,6 +843,10 @@ class GroupService {
   }
 
   async sendGroupMessage(payload: any): Promise<string | null> {
+    const gid = payload?.groupId || payload?.group_id;
+    if (!gid || gid.startsWith('lobby_')) {
+      return null;
+    }
     const msgId = payload.id || `gmsg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     try {
@@ -955,6 +965,7 @@ class GroupService {
     senderUserId?: string;
     senderCode?: string;
   }): Promise<void> {
+    if (!payload?.groupId || payload.groupId.startsWith('lobby_')) return;
     try {
       fetch(`${this.getWorkerUrl()}/groups/read`, {
         method: 'POST',
@@ -965,6 +976,7 @@ class GroupService {
   }
 
   async getActiveCall(groupId: string): Promise<any | null> {
+    if (!groupId || groupId.startsWith('lobby_')) return null;
     try {
       const { data } = await this.supabase
         .from('group_calls')
@@ -1020,6 +1032,7 @@ class GroupService {
   }
 
   async startCall(groupId: string, roomName: string, hostCode: string, hostNickname: string): Promise<void> {
+    if (!groupId || groupId.startsWith('lobby_')) return;
     try {
       fetch(`${this.getWorkerUrl()}/groups/calls/start`, {
         method: 'POST',
@@ -1034,6 +1047,7 @@ class GroupService {
   }
 
   async endCall(groupId: string, actorNickname?: string): Promise<void> {
+    if (!groupId || groupId.startsWith('lobby_')) return;
     try {
       fetch(`${this.getWorkerUrl()}/groups/calls/end`, {
         method: 'POST',

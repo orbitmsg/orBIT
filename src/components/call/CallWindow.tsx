@@ -654,6 +654,7 @@ export const CallWindow = () => {
   }, [isConnected, isPreparing, isVideoEnabled]);
 
   if (!activeCall) return null;
+  if (activeCall.chatId?.startsWith('lobby_') || activeCall.roomName?.startsWith('lobby-voice-')) return null;
 
   const formatDuration = (seconds: number) => {
     const totalSecs = Math.max(0, Math.floor(seconds));

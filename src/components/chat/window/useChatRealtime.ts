@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useChatStore, type Message, isMessageOutgoing } from '../../../store/useChatStore';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { groupService } from '../../../services/groupService';
+import { lobbyService } from '../../../services/lobbyService';
 import { ablyService } from '../../../services/ablyService';
 import { supabaseService } from '../../../services/supabaseService';
 
@@ -124,7 +125,7 @@ export const useChatRealtime = ({
       });
     } catch {}
 
-    if (activeChat?.type === 'group') {
+    if (activeChat?.type === 'group' && !activeChat.id?.startsWith('lobby_') && !(activeChat as any).isLobby) {
       const targetGroupId = activeChatId;
       const candidateSecrets = [
         activeChat.sharedSecret,
@@ -268,6 +269,45 @@ export const useChatRealtime = ({
       groupService.getActiveCall(targetGroupId).then((call) => {
         if (call && call.status === 'active' && call.roomName) {
           useChatStore.getState().updateChat(targetGroupId, { activeCallRoom: call.roomName });
+        }
+      }).catch(() => {});
+    }
+
+    if (activeChat?.id?.startsWith('lobby_')) {
+      const targetLobbyId = activeChatId;
+      const channelId = useChatStore.getState().activeChannelId;
+      const secret = activeChat.sharedSecret || deriveGroupKey(targetLobbyId);
+      lobbyService.getLobbyMessages(targetLobbyId, secret, 50, channelId).then((lobbyMsgs) => {
+        if (useChatStore.getState().activeChatId !== targetLobbyId) return;
+        if (!Array.isArray(lobbyMsgs) || lobbyMsgs.length === 0) return;
+        const current = useChatStore.getState().messagesByChatId[targetLobbyId] || [];
+        const existingIds = new Set(current.map((m) => m.id));
+        const newOnes: Message[] = lobbyMsgs
+          .filter((lm) => !existingIds.has(lm.id))
+          .map((lm) => ({
+            id: lm.id,
+            chatId: targetLobbyId,
+            sender: lm.senderNickname,
+            senderCode: lm.senderCode,
+            senderAvatarUrl: lm.senderAvatarUrl || undefined,
+            text: lm.text,
+            time: lm.createdAt,
+            timestamp: lm.createdAt,
+            isOutgoing: lm.senderCode === myCode,
+            status: 'delivered' as const,
+            mediaType: lm.mediaType as any,
+            mediaUrl: lm.mediaUrl || undefined,
+            mediaName: lm.mediaName || undefined,
+            mediaSize: lm.mediaSize || undefined,
+            replyToId: lm.replyToId || undefined,
+          }));
+        if (newOnes.length > 0) {
+          useChatStore.setState((state) => ({
+            messagesByChatId: {
+              ...state.messagesByChatId,
+              [targetLobbyId]: [...(state.messagesByChatId[targetLobbyId] || []), ...newOnes].sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0)),
+            },
+          }));
         }
       }).catch(() => {});
     }
@@ -585,11 +625,13 @@ export const useChatRealtime = ({
             } else if (item.systemType === 'call') {
               const fallbackRoom = (parsed as any)?.roomName || (data as any)?.roomName || (item as any)?.roomName || `group-call-${targetChatId}`;
               useChatStore.getState().updateChat(targetChatId, { activeCallRoom: fallbackRoom });
-              groupService.getActiveCall(targetChatId).then((call) => {
-                if (call && call.status === 'active') {
-                  useChatStore.getState().updateChat(targetChatId, { activeCallRoom: call.roomName });
-                }
-              }).catch(() => {});
+              if (!targetChatId.startsWith('lobby_')) {
+                groupService.getActiveCall(targetChatId).then((call) => {
+                  if (call && call.status === 'active') {
+                    useChatStore.getState().updateChat(targetChatId, { activeCallRoom: call.roomName });
+                  }
+                }).catch(() => {});
+              }
             }
             try {
               (window as any).orbita?.storageAddMessage?.(targetChatId, mid, item);

@@ -783,8 +783,10 @@ export const usePrivateChatSubscriptions = ({
         if (chat.type === 'channel') {
           subscribeToPublicChannel(chat.id);
         } else if (chat.type === 'group') {
-          subscribeToGroupChat(chat.id);
-          subscribeToDeliveryUpdates(chat.id);
+          if (!chat.id.startsWith('lobby_') && !(chat as any).isLobby) {
+            subscribeToGroupChat(chat.id);
+            subscribeToDeliveryUpdates(chat.id);
+          }
         } else {
           if (chat.sharedSecret) {
             subscribeToChat(chat.id, chat.sharedSecret);
@@ -798,7 +800,7 @@ export const usePrivateChatSubscriptions = ({
         const myUid = useAuthStore.getState().userId;
         const myC = useChatStore.getState().myCode;
 
-        if (chat.type === 'group') {
+        if (chat.type === 'group' && !chat.id.startsWith('lobby_') && !(chat as any).isLobby) {
           groupService.fetchGroupMessages(chat.id, 30).then(async (fetched) => {
             if (!Array.isArray(fetched) || fetched.length === 0) return;
             const secret = chat.sharedSecret || (chat.inviteCode && isValidGroupCode(chat.inviteCode) ? deriveGroupKey(chat.inviteCode) : undefined);

@@ -689,7 +689,9 @@ export const useCallStore = create<CallStore>((set, get) => {
       try { sessionStorage.removeItem('orbita_active_call_state'); } catch {}
       const chat = useChatStore.getState().chats.find((c) => c.id === chatId);
       const isGroup = chat?.type === 'group';
-      const roomName = customRoomName || (isGroup ? (chat?.activeCallRoom || `group-call-${chatId}`) : `call-${chatId}-${Date.now()}`);
+      const isLobby = chatId.startsWith('lobby_');
+      const activeChannelId = useChatStore.getState().activeChannelId;
+      const roomName = customRoomName || (isLobby && activeChannelId ? `lobby-voice-${chatId}-${activeChannelId}` : (isGroup ? (chat?.activeCallRoom || `group-call-${chatId}`) : `call-${chatId}-${Date.now()}`));
       const verificationSecret = isGroup ? (chat?.sharedSecret || deriveGroupKey(chatId)) : (chat?.type === 'private' ? chat?.sharedSecret : undefined);
       const verificationSalt = isGroup ? `group-salt-${chatId}` : crypto.randomUUID().replace(/-/g, '');
       const isVideo = callType === 'video';
@@ -703,12 +705,14 @@ export const useCallStore = create<CallStore>((set, get) => {
 
       if (isGroup) {
         let groupCallStartedAt = 0;
-        try {
-          const activeCallInfo = await groupService.getActiveCall(chatId);
-          if (activeCallInfo?.createdAt) {
-            groupCallStartedAt = activeCallInfo.createdAt;
-          }
-        } catch {}
+        if (!isLobby) {
+          try {
+            const activeCallInfo = await groupService.getActiveCall(chatId);
+            if (activeCallInfo?.createdAt) {
+              groupCallStartedAt = activeCallInfo.createdAt;
+            }
+          } catch {}
+        }
 
         const sessionKey = verificationSecret ? (verificationSalt ? `${verificationSecret}:${verificationSalt}` : verificationSecret) : undefined;
         const { identity: myLivekitIdentity, name: myLivekitName } = getLivekitParticipantIdentity(myNickname);
@@ -776,7 +780,7 @@ export const useCallStore = create<CallStore>((set, get) => {
           } catch {}
         };
 
-        if (isNewCall) {
+        if (isNewCall && !isLobby) {
           const myCode = useChatStore.getState().myCode;
           groupService.startCall(chatId, roomName, myCode || myNickname, myNickname).catch(() => {});
           useChatStore.getState().updateChat(chatId, { activeCallRoom: roomName });
@@ -785,10 +789,13 @@ export const useCallStore = create<CallStore>((set, get) => {
 
         if (groupCallHeartbeatTimer) {
           clearInterval(groupCallHeartbeatTimer);
+          groupCallHeartbeatTimer = null;
         }
-        groupCallHeartbeatTimer = setInterval(() => {
-          sendGroupCallSignal('group-call-active');
-        }, 10000);
+        if (!isLobby) {
+          groupCallHeartbeatTimer = setInterval(() => {
+            sendGroupCallSignal('group-call-active');
+          }, 10000);
+        }
 
         const isElectronSeparateCallWindow = typeof window !== 'undefined' && !!(window as any).orbita?.openCallWindow;
         if (!isElectronSeparateCallWindow && fetchedToken && fetchedUrl) {
@@ -1046,21 +1053,23 @@ export const useCallStore = create<CallStore>((set, get) => {
             clearInterval(groupCallHeartbeatTimer);
             groupCallHeartbeatTimer = null;
           }
-          groupService.endCall(chatId, state.myNickname || undefined).catch(() => {});
-          useChatStore.getState().updateChat(chatId, { activeCallRoom: null });
-          try {
-            const groupPusher = getGroupPusher();
-            const grpCh = groupPusher.subscribe(`presence-group-${chatId}`);
-            const endPayload = { type: 'group-call-ended', chatId, roomName };
-            const sendEnd = () => {
-              try { grpCh.trigger('client-group-call-ended', endPayload); } catch {}
-              try { grpCh.trigger('client-message', endPayload); } catch {}
-            };
-            if (grpCh.subscribed) sendEnd(); else grpCh.bind('pusher:subscription_succeeded', sendEnd);
-          } catch {}
-          try {
-            ablyService.sendMessage(chatId, { type: 'group-call-ended', chatId, roomName }).catch(() => {});
-          } catch {}
+          if (!chatId.startsWith('lobby_')) {
+            groupService.endCall(chatId, state.myNickname || undefined).catch(() => {});
+            useChatStore.getState().updateChat(chatId, { activeCallRoom: null });
+            try {
+              const groupPusher = getGroupPusher();
+              const grpCh = groupPusher.subscribe(`presence-group-${chatId}`);
+              const endPayload = { type: 'group-call-ended', chatId, roomName };
+              const sendEnd = () => {
+                try { grpCh.trigger('client-group-call-ended', endPayload); } catch {}
+                try { grpCh.trigger('client-message', endPayload); } catch {}
+              };
+              if (grpCh.subscribed) sendEnd(); else grpCh.bind('pusher:subscription_succeeded', sendEnd);
+            } catch {}
+            try {
+              ablyService.sendMessage(chatId, { type: 'group-call-ended', chatId, roomName }).catch(() => {});
+            } catch {}
+          }
         }
       }
       try { void liveKitService.stopScreenShare(); } catch {}

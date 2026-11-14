@@ -1195,10 +1195,10 @@ export const MainLayout = () => {
                   isOwnerOrAdmin={Boolean(activeChatObj.isOwner || activeChatObj.role === 'owner' || activeChatObj.role === 'admin')}
                   activeChannelId={activeChannelId}
                   onSelectChannel={(ch) => {
-                    useChatStore.getState().setActiveChannel(ch.id, ch.name);
+                    useChatStore.getState().setActiveChannel(ch.id, ch.name, ch.type);
                   }}
                   onOpenVoiceCall={(ch) => {
-                    useChatStore.getState().setActiveChannel(ch.id, ch.name);
+                    useChatStore.getState().setActiveChannel(ch.id, ch.name, ch.type);
                     const voiceRoom = `lobby-voice-${activeChatObj.id}-${ch.id}`;
                     useCallStore.getState().startCall(activeChatObj.id, 'audio', nickname || 'User', voiceRoom);
                     const currentMyCode = useChatStore.getState().myCode;

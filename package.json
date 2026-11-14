@@ -12,7 +12,8 @@
     "electron:dev": "npm run dev",
     "electron:build": "npm run build && npm run build:native && npx electron-builder --win",
     "backup": "backup.bat",
-    "save": "backup.bat"
+    "save": "backup.bat",
+    "icons": "node scripts/generate_icons.cjs"
   },
   "build": {
     "appId": "com.saizzi.orbit",

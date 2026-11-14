@@ -3751,10 +3751,34 @@ function getNotificationIconBase64(iconName?: string): string | null {
 
 function loadTrayIcon(): Electron.NativeImage | undefined {
   try {
-    const trayCandidates = process.platform === 'win32'
-      ? ['icon.ico', '32x32.png', '16x16.png', '24x24.png', '256x256.png']
-      : ['32x32.png', '16x16.png', '24x24.png', 'icon.ico', '256x256.png'];
+    if (process.platform === 'win32') {
+      let scale = 1;
+      try {
+        scale = screen ? screen.getPrimaryDisplay()?.scaleFactor || 1 : 1;
+      } catch {}
 
+      const candidateNames: string[] = [];
+      if (scale >= 1.75) {
+        candidateNames.push('tray-32.png', 'tray@2x.png', '32x32.png');
+      } else if (scale >= 1.35) {
+        candidateNames.push('tray-24.png', '24x24.png');
+      } else if (scale >= 1.15) {
+        candidateNames.push('tray-20.png', '24x24.png');
+      } else {
+        candidateNames.push('tray-16.png', 'tray.png', '16x16.png');
+      }
+      candidateNames.push('tray.png', '16x16.png', '32x32.png', 'icon.ico');
+
+      for (const name of candidateNames) {
+        const resolved = resolveIconFile(name);
+        if (resolved) {
+          const img = nativeImage.createFromPath(resolved);
+          if (img && !img.isEmpty()) return img;
+        }
+      }
+    }
+
+    const trayCandidates = ['tray.png', '32x32.png', '16x16.png', '24x24.png', 'icon.ico', '256x256.png'];
     for (const name of trayCandidates) {
       const resolved = resolveIconFile(name);
       if (resolved) {
@@ -3863,6 +3887,8 @@ function showTrayContextMenu() {
   trayInstance.popUpContextMenu(menu);
 }
 
+let displayMetricsListenerAttached = false;
+
 function setupTray() {
   if (trayInstance || !showInTraySetting) return;
   const icon = loadTrayIcon();
@@ -3874,6 +3900,10 @@ function setupTray() {
       showMainWindow();
     });
     trayInstance.on('right-click', () => showTrayContextMenu());
+    if (!displayMetricsListenerAttached && screen) {
+      displayMetricsListenerAttached = true;
+      screen.on('display-metrics-changed', () => updateTrayIcon());
+    }
   }
 }
 

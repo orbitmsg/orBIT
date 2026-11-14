@@ -64,7 +64,7 @@
       margin-top: 26px;
       font-size: 13.5px;
       font-weight: 600;
-      color: #9f96b3;
+      color: #917bbd;
       text-align: center;
       letter-spacing: 0.15px;
       height: 22px;
@@ -78,36 +78,40 @@
       transition: opacity 0.15s ease;
       -webkit-app-region: no-drag;
     }
-    .dots {
-      display: inline-flex;
-      margin-left: 1px;
-      letter-spacing: 0.5px;
-    }
-    .dot {
-      display: inline-block;
-      animation: dotPulse 1.4s ease-in-out infinite;
-      opacity: 0.25;
-      color: #9f96b3;
-      font-weight: 700;
-    }
-    .dot:nth-child(1) {
-      animation-delay: 0s;
-    }
-    .dot:nth-child(2) {
-      animation-delay: 0.2s;
-    }
-    .dot:nth-child(3) {
-      animation-delay: 0.4s;
-    }
-    @keyframes dotPulse {
+    @keyframes orbitaTypingDotPulse {
       0%, 100% {
         opacity: 0.25;
-        transform: translateY(0);
+        transform: scale(0.7);
       }
       50% {
         opacity: 1;
-        transform: translateY(-2px);
+        transform: scale(1.15);
       }
+    }
+    .orbita-typing-dots {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+    .orbita-typing-dot {
+      width: 3.5px;
+      height: 3.5px;
+      border-radius: 50%;
+      background-color: currentColor;
+      display: inline-block;
+      will-change: transform, opacity;
+      animation: orbitaTypingDotPulse 1.2s infinite ease-in-out both;
+    }
+    .orbita-typing-dot:nth-child(1) {
+      animation-delay: -0.32s;
+    }
+    .orbita-typing-dot:nth-child(2) {
+      animation-delay: -0.16s;
+    }
+    .orbita-typing-dot:nth-child(3) {
+      animation-delay: 0s;
     }
 
     @keyframes blockStep {
@@ -197,7 +201,12 @@
     </div>
 
     <div id="status" class="status-text">
-      <span id="status-label">Checking for updates</span><span class="dots"><span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></span>
+      <span id="status-label">Checking for updates</span>
+      <span class="orbita-typing-dots" aria-hidden="true">
+        <span class="orbita-typing-dot"></span>
+        <span class="orbita-typing-dot"></span>
+        <span class="orbita-typing-dot"></span>
+      </span>
     </div>
   </div>
 

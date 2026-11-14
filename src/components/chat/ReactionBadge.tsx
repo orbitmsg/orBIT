@@ -274,7 +274,7 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
                 height: 24,
                 borderRadius: '50%',
                 flexShrink: 0,
-                marginLeft: idx > 0 ? -7 : 0,
+                marginLeft: idx > 0 ? -13 : 0,
                 boxShadow: idx > 0 ? '0 0 0 2px var(--reaction-badge-bg)' : 'none',
                 position: 'relative',
                 zIndex: idx + 1,

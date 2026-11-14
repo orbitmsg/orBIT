@@ -1039,8 +1039,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     style={{
                       position: 'absolute',
                       bottom: '15px',
-                      left: isOwn ? '-5px' : undefined,
-                      right: !isOwn ? '-5px' : undefined,
+                      left: isOwn ? '-25px' : undefined,
+                      right: !isOwn ? '-25px' : undefined,
                       backgroundColor: '#18191d',
                       borderRadius: '9999px',
                       padding: '3px 8px',
@@ -1082,7 +1082,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
 
             {media.type === 'image' && (
               <div
-                className="max-w-[min(440px, 75%)] relative overflow-visible shadow-lg cursor-pointer"
+                className="max-w-[min(440px, 75%)] relative overflow-hidden shadow-lg cursor-pointer"
                 style={{
                   border: 'none',
                   maxWidth: 'min(440px, 75%)',
@@ -1090,7 +1090,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     ? `${Math.min(440, (msg.width / msg.height) < 1 ? Math.round(380 * Math.max(0.6, msg.width / msg.height)) : msg.width)}px`
                     : 'min(440px, 75vw)',
                   borderRadius: customRadius || bubbleRadius,
-                  overflow: 'visible',
+                  overflow: 'hidden',
+                  WebkitMaskImage: '-webkit-radial-gradient(white, black)',
                 }}
               >
                 <EncryptedMedia
@@ -1122,7 +1123,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
 
             {media.type === 'video' && (
               <div
-                className="max-w-[min(440px, 75%)] relative overflow-visible shadow-lg cursor-pointer"
+                className="max-w-[min(440px, 75%)] relative overflow-hidden shadow-lg cursor-pointer"
                 style={{
                   border: 'none',
                   maxWidth: 'min(440px, 75%)',
@@ -1130,7 +1131,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     ? `${Math.min(440, (msg.width / msg.height) < 1 ? Math.round(380 * Math.max(0.6, msg.width / msg.height)) : msg.width)}px`
                     : 'min(440px, 75vw)',
                   borderRadius: customRadius || bubbleRadius,
-                  overflow: 'visible',
+                  overflow: 'hidden',
+                  WebkitMaskImage: '-webkit-radial-gradient(white, black)',
                 }}
               >
                 <EncryptedMedia

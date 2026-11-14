@@ -362,22 +362,14 @@ export const EncryptedMedia = memo(({
         maxWidth: '100%',
         aspectRatio: `${mediaSize.width} / ${mediaSize.height}`,
         maxHeight: `${mediaSize.height}px`,
+        borderRadius: formattedRadius,
+        overflow: 'hidden',
+        WebkitMaskImage: '-webkit-radial-gradient(white, black)',
         position: 'relative',
-        overflow: 'visible',
+        backgroundColor: (type === 'video' ? Boolean(blobUrl) : Boolean(blobUrl || activeImageSrc)) ? 'transparent' : 'var(--surface-container, rgba(255,255,255,0.06))',
+        overflowAnchor: 'none',
       }}
     >
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          borderRadius: formattedRadius,
-          overflow: 'hidden',
-          WebkitMaskImage: '-webkit-radial-gradient(white, black)',
-          position: 'relative',
-          backgroundColor: (type === 'video' ? Boolean(blobUrl) : Boolean(blobUrl || activeImageSrc)) ? 'transparent' : 'var(--surface-container, rgba(255,255,255,0.06))',
-          overflowAnchor: 'none',
-        }}
-      >
       {((type === 'video' ? !blobUrl : (!blobUrl && !activeImageSrc)) || effectiveIsUploading) && (
         <div
           className="absolute inset-0 flex flex-col items-center justify-center z-10 select-none cursor-pointer"
@@ -619,16 +611,14 @@ export const EncryptedMedia = memo(({
           )}
         </div>
       )}
-      </div>
 
       {timeNode && (
         <div
           className="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
           style={{
             position: 'absolute',
-            bottom: '15px',
-            left: isOwn ? '-5px' : undefined,
-            right: !isOwn ? '-5px' : undefined,
+            bottom: '10px',
+            right: '8px',
             borderRadius: '9999px',
             backgroundColor: 'rgba(24, 25, 29, 0.75)',
             padding: '3px 8px',

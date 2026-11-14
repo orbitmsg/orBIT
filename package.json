@@ -77,7 +77,10 @@
   },
   "dependencies": {
     "@emoji-mart/data": "^1.2.1",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@gravity-ui/icons": "^2.21.0",
+    "@mui/material": "^9.0.0",
     "@noble/curves": "^2.4.0",
     "@privacyresearch/libsignal-protocol-typescript": "^0.0.16",
     "@stablelib/hex": "^1.0.1",
@@ -113,8 +116,7 @@
     "react-virtuoso": "^4.18.11",
     "sqlite3": "^6.0.1",
     "uiohook-napi": "^1.5.5",
-    "zustand": "^5.0.12",
-    "@mui/material": "^9.0.0"
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@napi-rs/cli": "^3.7.2",

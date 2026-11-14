@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
+const pngToIco = require('png-to-ico').default;
 
 function getFullLogoSvg(withGlow = true) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="140 150 740 740" width="740" height="740">
@@ -64,11 +65,15 @@ function getTraySvg(size) {
           <stop offset="100%" stop-color="#8c74bd" />
         </linearGradient>
       </defs>
-      <path d="M 9.5 4.8 A 5.6 5.6 0 1 0 12.8 8.5" fill="none" stroke="url(#trayIris16)" stroke-width="2.6" stroke-linecap="round" />
-      <path d="M 8.2 6.5 A 3.2 3.2 0 1 0 10.4 8.5" fill="none" stroke="url(#trayIris16)" stroke-width="1.8" stroke-linecap="round" opacity="0.9" />
-      <rect x="8.5" y="5.0" width="2.0" height="2.0" rx="0.3" fill="#FFFFFF" />
-      <rect x="10.8" y="2.7" width="2.0" height="2.0" rx="0.3" fill="#FFFFFF" />
-      <rect x="13.1" y="0.4" width="2.0" height="2.0" rx="0.3" fill="#FFFFFF" />
+      <path
+        d="M 9.2 3.4 A 5.8 5.8 0 1 0 13.6 8.5"
+        fill="none"
+        stroke="url(#trayIris16)"
+        stroke-width="3.4"
+        stroke-linecap="round"
+      />
+      <path d="M 10.0 2.5 L 11.7 4.2 L 10.0 5.9 L 8.3 4.2 Z" fill="#FFFFFF" />
+      <path d="M 13.4 0.1 L 15.1 1.8 L 13.4 3.5 L 11.7 1.8 Z" fill="#FFFFFF" />
     </svg>`;
   } else if (size <= 24) {
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
@@ -78,11 +83,15 @@ function getTraySvg(size) {
           <stop offset="100%" stop-color="#8c74bd" />
         </linearGradient>
       </defs>
-      <path d="M 14.3 7.2 A 8.4 8.4 0 1 0 19.2 12.8" fill="none" stroke="url(#trayIris24)" stroke-width="3.8" stroke-linecap="round" />
-      <path d="M 12.3 9.8 A 4.8 4.8 0 1 0 15.6 12.8" fill="none" stroke="url(#trayIris24)" stroke-width="2.6" stroke-linecap="round" opacity="0.9" />
-      <rect x="12.8" y="7.5" width="3.0" height="3.0" rx="0.5" fill="#FFFFFF" />
-      <rect x="16.2" y="4.1" width="3.0" height="3.0" rx="0.5" fill="#FFFFFF" />
-      <rect x="19.6" y="0.7" width="3.0" height="3.0" rx="0.5" fill="#FFFFFF" />
+      <path
+        d="M 13.8 5.1 A 8.7 8.7 0 1 0 20.4 12.8"
+        fill="none"
+        stroke="url(#trayIris24)"
+        stroke-width="5.0"
+        stroke-linecap="round"
+      />
+      <path d="M 15.0 3.8 L 17.5 6.3 L 15.0 8.8 L 12.5 6.3 Z" fill="#FFFFFF" />
+      <path d="M 20.1 0.2 L 22.6 2.7 L 20.1 5.2 L 17.6 2.7 Z" fill="#FFFFFF" />
     </svg>`;
   } else {
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
@@ -92,93 +101,17 @@ function getTraySvg(size) {
           <stop offset="100%" stop-color="#8c74bd" />
         </linearGradient>
       </defs>
-      <path d="M 19.0 9.6 A 11.2 11.2 0 1 0 25.6 17" fill="none" stroke="url(#trayIris32)" stroke-width="5.2" stroke-linecap="round" />
-      <path d="M 16.4 13.0 A 6.4 6.4 0 1 0 20.8 17" fill="none" stroke="url(#trayIris32)" stroke-width="3.6" stroke-linecap="round" opacity="0.9" />
-      <rect x="17.0" y="10.0" width="4.2" height="4.2" rx="0.7" fill="#FFFFFF" />
-      <rect x="21.6" y="5.4" width="4.2" height="4.2" rx="0.7" fill="#FFFFFF" />
-      <rect x="26.2" y="0.8" width="4.2" height="4.2" rx="0.7" fill="#FFFFFF" />
+      <path
+        d="M 18.4 6.8 A 11.6 11.6 0 1 0 27.2 17.0"
+        fill="none"
+        stroke="url(#trayIris32)"
+        stroke-width="6.8"
+        stroke-linecap="round"
+      />
+      <path d="M 20.0 5.0 L 23.4 8.4 L 20.0 11.8 L 16.6 8.4 Z" fill="#FFFFFF" />
+      <path d="M 26.8 0.2 L 30.2 3.6 L 26.8 7.0 L 23.4 3.6 Z" fill="#FFFFFF" />
     </svg>`;
   }
-}
-
-function makeDibFrame(rawRgbaBuffer, width, height) {
-  const headerSize = 40;
-  const pixelDataSize = width * height * 4;
-  const andRowStride = Math.ceil(width / 32) * 4;
-  const andMaskSize = andRowStride * height;
-  const totalFrameSize = headerSize + pixelDataSize + andMaskSize;
-
-  const buf = Buffer.alloc(totalFrameSize);
-
-  buf.writeUInt32LE(40, 0);
-  buf.writeInt32LE(width, 4);
-  buf.writeInt32LE(height * 2, 8);
-  buf.writeUInt16LE(1, 12);
-  buf.writeUInt16LE(32, 14);
-  buf.writeUInt32LE(0, 16);
-  buf.writeUInt32LE(pixelDataSize, 20);
-  buf.writeInt32LE(0, 24);
-  buf.writeInt32LE(0, 28);
-  buf.writeUInt32LE(0, 32);
-  buf.writeUInt32LE(0, 36);
-
-  let dstOffset = headerSize;
-  for (let y = height - 1; y >= 0; y--) {
-    for (let x = 0; x < width; x++) {
-      const srcIdx = (y * width + x) * 4;
-      const r = rawRgbaBuffer[srcIdx];
-      const g = rawRgbaBuffer[srcIdx + 1];
-      const b = rawRgbaBuffer[srcIdx + 2];
-      const a = rawRgbaBuffer[srcIdx + 3];
-
-      buf[dstOffset] = b;
-      buf[dstOffset + 1] = g;
-      buf[dstOffset + 2] = r;
-      buf[dstOffset + 3] = a;
-      dstOffset += 4;
-    }
-  }
-
-  return buf;
-}
-
-function buildNativeIco(entries) {
-  const count = entries.length;
-  const headerSize = 6;
-  const dirEntrySize = 16;
-  const dirSize = headerSize + count * dirEntrySize;
-
-  let totalSize = dirSize;
-  for (const item of entries) {
-    totalSize += item.buffer.length;
-  }
-
-  const out = Buffer.alloc(totalSize);
-  out.writeUInt16LE(0, 0);
-  out.writeUInt16LE(1, 2);
-  out.writeUInt16LE(count, 4);
-
-  let currentOffset = dirSize;
-  for (let i = 0; i < count; i++) {
-    const item = entries[i];
-    const entryOffset = headerSize + i * dirEntrySize;
-    const w = item.size >= 256 ? 0 : item.size;
-    const h = item.size >= 256 ? 0 : item.size;
-
-    out.writeUInt8(w, entryOffset + 0);
-    out.writeUInt8(h, entryOffset + 1);
-    out.writeUInt8(0, entryOffset + 2);
-    out.writeUInt8(0, entryOffset + 3);
-    out.writeUInt16LE(1, entryOffset + 4);
-    out.writeUInt16LE(32, entryOffset + 6);
-    out.writeUInt32LE(item.buffer.length, entryOffset + 8);
-    out.writeUInt32LE(currentOffset, entryOffset + 12);
-
-    item.buffer.copy(out, currentOffset);
-    currentOffset += item.buffer.length;
-  }
-
-  return out;
 }
 
 async function run() {
@@ -190,21 +123,13 @@ async function run() {
   fs.writeFileSync(path.join(__dirname, '../public/logo.svg'), getFullLogoSvg(true).trim());
 
   const sizes = [16, 20, 24, 32, 48, 64, 128, 256, 512, 1024];
-  const pngMap = {};
-  const rawMap = {};
 
   for (const s of sizes) {
     const svg = getFullLogoSvg(s >= 64);
-    const { data } = await sharp(Buffer.from(svg))
+    const pngBuf = await sharp(Buffer.from(svg))
       .resize(s, s, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-      .raw()
-      .toBuffer({ resolveWithObject: true });
-    rawMap[s] = data;
-
-    const pngBuf = await sharp(data, { raw: { width: s, height: s, channels: 4 } })
       .png()
       .toBuffer();
-    pngMap[s] = pngBuf;
     fs.writeFileSync(path.join(iconsDir, `${s}x${s}.png`), pngBuf);
   }
 
@@ -220,18 +145,16 @@ async function run() {
   fs.writeFileSync(path.join(iconsDir, 'tray.png'), tray16);
   fs.writeFileSync(path.join(iconsDir, 'tray@2x.png'), tray32);
 
-  const icoSizes = [16, 20, 24, 32, 48, 64, 128, 256];
-  const icoEntries = [];
-  for (const s of icoSizes) {
-    if (s === 256) {
-      icoEntries.push({ size: 256, buffer: pngMap[256] });
-    } else {
-      const dib = makeDibFrame(rawMap[s], s, s);
-      icoEntries.push({ size: s, buffer: dib });
-    }
-  }
+  const pngFilesForIco = [
+    path.join(iconsDir, '16x16.png'),
+    path.join(iconsDir, '32x32.png'),
+    path.join(iconsDir, '48x48.png'),
+    path.join(iconsDir, '64x64.png'),
+    path.join(iconsDir, '128x128.png'),
+    path.join(iconsDir, '256x256.png'),
+  ];
 
-  const icoBuffer = buildNativeIco(icoEntries);
+  const icoBuffer = await pngToIco(pngFilesForIco);
   fs.writeFileSync(path.join(iconsDir, 'icon.ico'), icoBuffer);
   fs.writeFileSync(path.join(__dirname, '../public/favicon.ico'), icoBuffer);
 
@@ -240,7 +163,7 @@ async function run() {
     fs.writeFileSync(path.join(websiteIcons, 'icon.ico'), icoBuffer);
   }
 
-  console.log('Successfully generated full icon suite with native DIB ICO and tight 95% coverage!');
+  console.log('Successfully generated icons: png-to-ico used for icon.ico, dedicated single-ring diamonds for tray!');
 }
 
 run().catch(err => {

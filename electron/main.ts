@@ -3697,25 +3697,6 @@ function resolveIconPath(iconName: string, ext: string): string | undefined {
 
 function loadNativeAppIcon(iconName?: string): Electron.NativeImage | undefined {
   try {
-    if (process.platform === 'win32' && (!iconName || iconName === 'icon')) {
-      const img = nativeImage.createEmpty();
-      const sizes = [16, 20, 24, 32, 48, 64, 128, 256];
-      let loadedAny = false;
-      for (const s of sizes) {
-        const file = resolveIconFile(`${s}x${s}.png`);
-        if (file && fs.existsSync(file)) {
-          img.addRepresentation({
-            scaleFactor: 1.0,
-            width: s,
-            height: s,
-            buffer: fs.readFileSync(file),
-          });
-          loadedAny = true;
-        }
-      }
-      if (loadedAny) return img;
-    }
-
     const list: string[] = [];
     if (iconName) {
       if (process.platform === 'win32') {
@@ -4885,7 +4866,7 @@ function createSplashWindow() {
     minimizable: false,
     center: true,
     alwaysOnTop: true,
-    skipTaskbar: false,
+    skipTaskbar: true,
     backgroundColor: '#00000000',
     hasShadow: true,
     show: false,
@@ -5674,8 +5655,15 @@ app.whenReady().then(async () => {
     appReadyHandled = true;
     updateSplashStatus(statusStarting);
     if (mainWindow && !mainWindow.isDestroyed()) {
+      const icon = loadNativeAppIcon();
+      if (icon && !icon.isEmpty()) {
+        mainWindow.setIcon(icon);
+      }
       mainWindow.show();
       mainWindow.focus();
+      if (icon && !icon.isEmpty()) {
+        mainWindow.setIcon(icon);
+      }
       mainWindow.webContents.send('window:state-changed', mainWindow.isMaximized());
     }
     if (splashWindow && !splashWindow.isDestroyed()) {

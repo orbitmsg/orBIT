@@ -174,8 +174,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
-                  width="16"
-                  height="16"
+                  width="20"
+                  height="20"
                   aria-hidden="true"
                 >
                   <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
@@ -193,7 +193,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
               type="button"
               onClick={() => item.onClick?.()}
               aria-label={item.label}
-              className="group w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[14px] outline-none cursor-pointer transition-colors text-left"
+              className="group w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[14px] outline-none cursor-pointer transition-colors text-left"
               style={{
                 borderRadius: '14px',
                 border: 'none',
@@ -207,19 +207,10 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                 e.currentTarget.style.backgroundColor = surfaceTint;
               }}
             >
-              <span
-                className="flex items-center justify-center shrink-0 transition-transform duration-150 group-hover:scale-105"
-                style={{
-                  width: '28px',
-                  height: '28px',
-                  borderRadius: '10px',
-                  backgroundColor: 'color-mix(in srgb, var(--accent-color, #5865F2) 16%, transparent)',
-                  color: 'var(--accent-text, var(--accent-color, #5865F2))',
-                }}
-              >
+              <span className="shrink-0 text-[#949ba4] group-hover:text-white transition-colors flex items-center justify-center">
                 {item.icon}
               </span>
-              <span className="text-[12.5px] font-semibold truncate flex-1 min-w-0">
+              <span className="text-[13px] font-medium truncate flex-1 min-w-0 text-[#949ba4] group-hover:text-white transition-colors">
                 {item.label}
               </span>
             </button>

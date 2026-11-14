@@ -1,7 +1,6 @@
 {
   "name": "orBIT",
   "version": "2.0.2",
-  "description": "orBIT",
   "author": "Saizzi",
   "main": "dist-electron/main.cjs",
   "scripts": {
@@ -21,14 +20,6 @@
     "directories": {
       "output": "release"
     },
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "orbitachat",
-        "repo": "orbita-desktop",
-        "releaseType": "draft"
-      }
-    ],
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
@@ -53,7 +44,6 @@
       "icon": "public/icons/icon.ico",
       "executableName": "orBIT",
       "legalTrademarks": "orBIT",
-      "fileDescription": "orBIT",
       "target": [
         {
           "target": "nsis",

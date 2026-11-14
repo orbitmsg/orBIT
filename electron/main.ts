@@ -436,7 +436,7 @@ function getMediaDir(): string {
       return nativeModule.rustCacheResolveFolder(configuredMediaDir);
     } catch {}
   }
-  return configuredMediaDir || path.join(app.getPath('downloads'), 'Orbita Desktop');
+  return configuredMediaDir || path.join(app.getPath('downloads'), 'orBIT');
 }
 
 async function initMediaDb(): Promise<sqlite3.Database> {
@@ -1016,7 +1016,7 @@ function registerMediaIpcHandlers() {
 
   ipcMain.handle('media:get-folder-info', async () => {
     const currentPath = getMediaDir();
-    const defaultDir = path.join(app.getPath('downloads'), 'Orbita Desktop');
+    const defaultDir = path.join(app.getPath('downloads'), 'orBIT');
     const isDefault = !configuredMediaDir || path.resolve(currentPath) === path.resolve(defaultDir);
     const exists = fs.existsSync(currentPath);
     return { path: currentPath, isDefault, exists };
@@ -1416,7 +1416,7 @@ function registerOrbitaMediaProtocol() {
 // -----------------------------------------------------------------------------
 // 4. Downloads Helpers
 // -----------------------------------------------------------------------------
-const DOWNLOADS_SUBDIR = 'Orbita';
+const DOWNLOADS_SUBDIR = 'orBIT';
 
 function getDownloadsDir(): string {
   return path.join(app.getPath('downloads'), DOWNLOADS_SUBDIR);
@@ -1512,7 +1512,7 @@ function registerDownloadsIpcHandlers() {
   ipcMain.handle('orbita:open-file', async (_event, data: string | Uint8Array | ArrayBuffer, fileName: string) => {
     try {
       const sanitizedName = (fileName || 'file.dat').replace(/[<>:"/\\|?*]/g, '_');
-      const tempDir = path.join(app.getPath('temp'), 'Orbita_Files');
+      const tempDir = path.join(app.getPath('temp'), 'orBIT_Files');
       if (!fs.existsSync(tempDir)) {
         fs.mkdirSync(tempDir, { recursive: true });
       }
@@ -4354,7 +4354,7 @@ function initOrGetCallWindow(initialPayload?: any): BrowserWindow {
       backgroundThrottling: false,
       devTools: !app.isPackaged,
     },
-    title: 'Orbita Call',
+    title: 'orBIT Call',
     show: false,
     icon: icon && !icon.isEmpty() ? icon : undefined,
   });
@@ -4596,7 +4596,7 @@ function initOrGetMediaWindow(initialPayload?: any): BrowserWindow {
       backgroundThrottling: false,
       devTools: !app.isPackaged,
     },
-    title: 'Orbita',
+    title: 'orBIT',
     show: false,
     icon: icon && !icon.isEmpty() ? icon : undefined,
   });
@@ -5397,7 +5397,7 @@ async function fetchLatestGitHubRelease(): Promise<{
   try {
     const res = await electronNet.fetch('https://api.github.com/repos/orbitachat/orbita-desktop/releases/latest', {
       headers: {
-        'User-Agent': `Orbita-Desktop/${currentVersion}`,
+        'User-Agent': `orBIT/${currentVersion}`,
         'Accept': 'application/vnd.github.v3+json',
       },
       signal: AbortSignal.timeout(8000),
@@ -5432,7 +5432,7 @@ async function fetchLatestGitHubRelease(): Promise<{
   try {
     const webRes = await electronNet.fetch('https://github.com/orbitachat/orbita-desktop/releases/latest', {
       headers: {
-        'User-Agent': `Orbita-Desktop/${currentVersion}`,
+        'User-Agent': `orBIT/${currentVersion}`,
       },
       redirect: 'follow',
       signal: AbortSignal.timeout(10000),
@@ -5464,7 +5464,7 @@ async function fetchLatestGitHubRelease(): Promise<{
   try {
     const rawRes = await electronNet.fetch('https://raw.githubusercontent.com/orbitachat/orbita-desktop/main/package.json', {
       headers: {
-        'User-Agent': `Orbita-Desktop/${currentVersion}`,
+        'User-Agent': `orBIT/${currentVersion}`,
       },
       signal: AbortSignal.timeout(8000),
     });
@@ -5496,7 +5496,7 @@ async function downloadUpdateAsset(url: string, fileName: string): Promise<strin
   const targetPath = path.join(targetDir, fileName || 'orbita_update.exe');
   const response = await electronNet.fetch(url, {
     headers: {
-      'User-Agent': `Orbita-Desktop/${app.getVersion()}`,
+      'User-Agent': `orBIT/${app.getVersion()}`,
     },
     redirect: 'follow',
   });

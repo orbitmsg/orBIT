@@ -1083,7 +1083,7 @@
       "anonymous_forwarding_title": "Anonymous forwarding",
       "anonymous_forwarding_desc": "Hide author name and profile link when forwarding messages",
       "media_folder_title": "Media folder",
-      "media_folder_desc": "Cached media files are saved to the Orbita Desktop folder in Downloads. You can freely rename it in File Explorer or choose another folder.",
+      "media_folder_desc": "Cached media files are saved to the orBIT folder in Downloads. You can freely rename it in File Explorer or choose another folder.",
       "media_folder_not_created": "The folder will appear after downloading at least one file",
       "change_folder": "Change folder",
       "open_in_explorer": "Open in Explorer",

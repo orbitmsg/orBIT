@@ -119,7 +119,7 @@ export function showNotification(
   const isTextHidden = Boolean(notificationHideContent || !notificationShowText);
 
   if (isNameHidden) {
-    finalTitle = i18n.t('settings.hidden_name') || 'Orbita Desktop';
+    finalTitle = i18n.t('settings.hidden_name') || 'orBIT';
     finalAvatarUrl = undefined;
   }
   if (isTextHidden) {

@@ -21,6 +21,7 @@ import { useToastStore } from '../../store/useToastStore';
 import { groupService } from '../../services/groupService';
 import { type ConfirmActionType } from '../common/ActionConfirmModal';
 import { type MediaViewerItem } from './TelegramMediaViewer';
+import { mediaManager } from '../../services/mediaManager';
 import { EmptyChatGreeting } from './EmptyChatGreeting';
 import { ChannelEmptyCard } from './ChannelEmptyCard';
 export {
@@ -406,6 +407,19 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     } else {
       initialIndex = index !== -1 ? index : 0;
     }
+
+    finalItems = finalItems.map((it) => {
+      const sec = it.sharedSecret || it.key || sharedSecret || '';
+      const cached = mediaManager.getCachedMedia(it.url, sec);
+      if (cached?.blobUrl) {
+        return {
+          ...it,
+          directUrl: cached.blobUrl,
+        };
+      }
+      return it;
+    });
+
     const orbita = (window as any).orbita;
 
     if (orbita?.openMediaWindow) {

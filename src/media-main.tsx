@@ -115,19 +115,31 @@ export const MediaWindowView: React.FC = () => {
     useChatStore.persist?.rehydrate?.();
     useAuthStore.persist?.rehydrate?.();
 
+    const applyPayload = (p: any) => {
+      if (!p) {
+        setPayload(null);
+        return;
+      }
+      syncUsers(p.usersById, p.myUserId, p.myNickname);
+      setPayload((prev) => {
+        if (
+          prev &&
+          prev.chatId === p.chatId &&
+          prev.initialIndex === p.initialIndex &&
+          prev.items?.length === p.items?.length &&
+          prev.items[0]?.id === p.items[0]?.id &&
+          prev.items[0]?.directUrl === p.items[0]?.directUrl
+        ) {
+          return prev;
+        }
+        return p;
+      });
+    };
+
     if (orbita?.getMediaPayload) {
       orbita.getMediaPayload().then((p: any) => {
-        console.log('[MediaWindow] getMediaPayload resolved:', {
-          hasPayload: Boolean(p),
-          itemsCount: p?.items?.length,
-          initialIndex: p?.initialIndex,
-          chatId: p?.chatId,
-          sharedSecret: Boolean(p?.sharedSecret),
-          items: p?.items?.map((it: any) => ({ id: it.id, type: it.type, url: it.url, directUrl: it.directUrl })),
-        });
         if (p) {
-          syncUsers(p.usersById, p.myUserId, p.myNickname);
-          setPayload(p);
+          applyPayload(p);
         }
       });
     }
@@ -135,17 +147,7 @@ export const MediaWindowView: React.FC = () => {
     let unsubPayload: (() => void) | undefined;
     if (orbita?.onMediaPayload) {
       unsubPayload = orbita.onMediaPayload((newPayload: any) => {
-        console.log('[MediaWindow] onMediaPayload received:', {
-          hasPayload: Boolean(newPayload),
-          itemsCount: newPayload?.items?.length,
-          initialIndex: newPayload?.initialIndex,
-          items: newPayload?.items?.map((it: any) => ({ id: it.id, type: it.type, url: it.url })),
-        });
-        if (newPayload) {
-          syncUsers(newPayload.usersById, newPayload.myUserId, newPayload.myNickname);
-
-        }
-        setPayload(newPayload || null);
+        applyPayload(newPayload);
       });
     }
 
@@ -155,13 +157,12 @@ export const MediaWindowView: React.FC = () => {
       bc.onmessage = (event) => {
         if (event.data?.type === 'SET_MEDIA_PAYLOAD') {
           if (event.data.payload) {
-            syncUsers(event.data.payload.usersById, event.data.payload.myUserId, event.data.payload.myNickname);
             const root = document.getElementById('root');
             if (root) root.style.display = '';
             const viewerEl = document.getElementById('telegram-media-viewer-root');
             if (viewerEl) viewerEl.style.display = 'flex';
           }
-          setPayload(event.data.payload || null);
+          applyPayload(event.data.payload || null);
         } else if (event.data?.type === 'SYNC_USERS') {
           syncUsers(event.data.usersById, event.data.myUserId, event.data.myNickname);
         }

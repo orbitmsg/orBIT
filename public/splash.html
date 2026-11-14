@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Orbita Desktop</title>
+  <title>Orbita</title>
   <link rel="icon" type="image/x-icon" href="/icons/icon.ico" />
   <link rel="stylesheet" href="fonts/offline-fonts.css" />
   <style>
@@ -14,293 +14,199 @@
       user-select: none;
       -webkit-user-select: none;
     }
-    body {
-      width: 100vw;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      background: #121212;
-      overflow: hidden;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", Roboto, sans-serif;
+    :root {
+      --main-font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", Roboto, sans-serif;
     }
-    .orbita-titlebar {
-      height: 30px;
+    html, body {
       width: 100%;
-      background: transparent;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      flex-shrink: 0;
-      -webkit-app-region: drag;
-      user-select: none;
-    }
-    .orbita-titlebar-controls {
-      display: flex;
-      align-items: center;
       height: 100%;
-      -webkit-app-region: no-drag;
-    }
-    .orbita-titlebar-btn {
-      width: 30px;
-      height: 30px;
-      border: none;
-      outline: none;
       background: transparent;
-      color: #b0b0b0;
-      cursor: pointer;
-      padding: 0;
-      margin: 0;
+      overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background-color 0.12s ease, color 0.12s ease;
-      -webkit-app-region: no-drag;
-      user-select: none;
+      font-family: var(--main-font);
     }
-    .orbita-titlebar-btn:hover {
-      background-color: rgba(255, 255, 255, 0.08);
-      color: #ffffff;
-    }
-    .orbita-titlebar-btn:active {
-      background-color: rgba(255, 255, 255, 0.16);
-    }
-    .orbita-titlebar-btn:focus {
-      outline: none;
-    }
-    .splash-card {
-      flex: 1;
-      width: 100%;
-      border-radius: 0;
-      background: #121212;
-      border: none;
-      box-shadow: none;
+    .splash-container {
+      width: 300px;
+      height: 350px;
+      border-radius: 10px;
+      background: color-mix(in srgb, #1e1b2e 96%, #000);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 0 20px 30px;
+      padding: 24px;
       position: relative;
+      -webkit-app-region: drag;
+      overflow: hidden;
     }
     .logo-container {
-      width: 220px;
-      height: 220px;
-      aspect-ratio: 1 / 1;
+      width: 130px;
+      height: 130px;
       display: flex;
       align-items: center;
       justify-content: center;
       opacity: 0;
       transform: scale(0.92);
-      animation: logo-reveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      animation: logoReveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      -webkit-app-region: no-drag;
     }
-    @keyframes logo-reveal {
+    @keyframes logoReveal {
       to {
         opacity: 1;
         transform: scale(1);
       }
     }
     .status-text {
-      margin-top: 22px;
-      font-size: 14px;
-      font-weight: 700;
-      color: #8e8e93;
+      margin-top: 24px;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #9f96b3;
       text-align: center;
-      letter-spacing: 0.2px;
-      height: 20px;
-      line-height: 20px;
-      transition: opacity 0.2s ease;
+      letter-spacing: 0.15px;
+      height: 22px;
+      line-height: 22px;
+      max-width: 250px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: opacity 0.15s ease;
+      -webkit-app-region: no-drag;
+    }
+    .loader-track {
+      width: 130px;
+      height: 3px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.06);
+      margin-top: 14px;
+      overflow: hidden;
+      position: relative;
+      -webkit-app-region: no-drag;
+    }
+    .loader-bar {
+      width: 45%;
+      height: 100%;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, transparent, #917bbd, #a894d1, transparent);
+      animation: loaderSlide 1.3s ease-in-out infinite;
+    }
+    @keyframes loaderSlide {
+      0% { transform: translateX(-120%); }
+      100% { transform: translateX(250%); }
+    }
+
+    @keyframes blockStep {
+      0%, 15% {
+        transform: translate(0, 0);
+      }
+      80%, 100% {
+        transform: translate(85px, -85px);
+      }
+    }
+    @keyframes blockEnter {
+      0%, 15% {
+        opacity: 0;
+        transform: translate(0, 0);
+      }
+      80%, 100% {
+        opacity: 1;
+        transform: translate(85px, -85px);
+      }
+    }
+    @keyframes blockExit {
+      0%, 15% {
+        opacity: 1;
+        transform: translate(0, 0);
+      }
+      80%, 100% {
+        opacity: 0;
+        transform: translate(85px, -85px);
+      }
+    }
+
+    .block-0 {
+      animation: blockEnter 1.15s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+    }
+    .block-1 {
+      animation: blockStep 1.15s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+    }
+    .block-2 {
+      animation: blockStep 1.15s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+    }
+    .block-3 {
+      animation: blockExit 1.15s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
     }
   </style>
 </head>
 <body>
-  <div class="orbita-titlebar" id="orbita-titlebar">
-    <div class="orbita-titlebar-controls">
-      <button id="btn-minimize" class="orbita-titlebar-btn" aria-label="Minimize">
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M0 5H10" stroke="currentColor" stroke-width="1" stroke-linecap="square" />
-        </svg>
-      </button>
-      <button id="btn-maximize" class="orbita-titlebar-btn" aria-label="Maximize">
-        <svg id="icon-maximize" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="0.5" y="0.5" width="9" height="9" stroke="currentColor" stroke-width="1" />
-        </svg>
-        <svg id="icon-restore" style="display: none;" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M2.5 0.5H9.5V7.5" stroke="currentColor" stroke-width="1" stroke-linecap="square" />
-          <rect x="0.5" y="2.5" width="7" height="7" stroke="currentColor" stroke-width="1" fill="#121212" />
-        </svg>
-      </button>
-      <button id="btn-close" class="orbita-titlebar-btn" aria-label="Close">
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M1 1L9 9M9 1L1 9" stroke="currentColor" stroke-width="1" stroke-linecap="square" />
-        </svg>
-      </button>
-    </div>
-  </div>
-  <div class="splash-card">
+  <div class="splash-container">
     <div class="logo-container">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="100%" height="100%">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="100 100 800 800" width="130" height="130" aria-hidden="true">
         <defs>
-          <clipPath id="front-clip">
-            <rect x="-600" y="0" width="1200" height="600" />
-          </clipPath>
-          <mask id="back-ring-mask">
-            <rect x="0" y="0" width="800" height="800" fill="white" />
-            <circle cx="400" cy="400" r="192" fill="black" />
-          </mask>
-          <mask id="planet-mask">
-            <rect x="0" y="0" width="800" height="800" fill="white" />
-            <g transform="translate(400, 400) rotate(-26)">
-              <path d="M 224 0 A 224 59 0 0 1 -224 0 L -376 0 A 376 121 0 0 0 376 0 Z" fill="black" />
-            </g>
-          </mask>
-          <mask id="ring-hole">
-            <rect x="-600" y="-600" width="1200" height="1200" fill="white" />
-            <ellipse cx="0" cy="0" rx="240" ry="75" fill="black" />
-          </mask>
-          <mask id="rotating-gap">
-            <rect x="0" y="0" width="800" height="800" fill="white" />
-            <g>
-              <animateTransform
-                attributeName="transform"
-                type="rotate"
-                from="-26 400 400"
-                to="334 400 400"
-                dur="1s"
-                repeatCount="indefinite" />
-              <path d="M 400 400 L 400 -200 A 600 600 0 0 1 824.26 -24.26 Z" fill="black" />
-            </g>
-          </mask>
+          <linearGradient id="ringFill" x1="75%" y1="15%" x2="20%" y2="85%">
+            <stop offset="0%" stop-color="#a894d1" />
+            <stop offset="50%" stop-color="#917bbd" />
+            <stop offset="100%" stop-color="#755f9f" />
+          </linearGradient>
+
+          <linearGradient id="ringStroke" x1="80%" y1="10%" x2="20%" y2="90%">
+            <stop offset="0%" stop-color="#c0b0df" stop-opacity="0.85" />
+            <stop offset="50%" stop-color="#917bbd" stop-opacity="0.5" />
+            <stop offset="100%" stop-color="#7e69a8" stop-opacity="0.7" />
+          </linearGradient>
         </defs>
-        <g mask="url(#rotating-gap)">
-          <rect x="0" y="0" width="800" height="800" fill="transparent" pointer-events="none" />
-          <g mask="url(#back-ring-mask)">
-            <g transform="translate(400, 400) rotate(-26)">
-              <ellipse cx="0" cy="0" rx="360" ry="105" fill="#BCC0C3" mask="url(#ring-hole)" />
-            </g>
-          </g>
-        </g>
-        <circle cx="400" cy="400" r="175" fill="#BCC0C3" mask="url(#planet-mask)" />
-        <g mask="url(#rotating-gap)">
-          <rect x="0" y="0" width="800" height="800" fill="transparent" pointer-events="none" />
-          <g transform="translate(400, 400) rotate(-26)">
-            <g clip-path="url(#front-clip)">
-              <ellipse cx="0" cy="0" rx="360" ry="105" fill="#BCC0C3" mask="url(#ring-hole)" />
-            </g>
-          </g>
+
+        <path
+          d="M 678.5 239.0 A 340 340 0 1 0 816.0 376.5 L 780.7 411.8 A 290 290 0 1 1 643.2 274.3 Z"
+          fill="url(#ringFill)"
+          stroke="url(#ringStroke)"
+          stroke-width="3.5"
+          stroke-linejoin="round"
+        />
+
+        <path
+          d="M 603.7 313.8 A 240 240 0 1 0 741.2 451.3 L 705.2 487.3 A 190 190 0 1 1 567.7 349.8 Z"
+          fill="url(#ringFill)"
+          stroke="url(#ringStroke)"
+          stroke-width="3.5"
+          stroke-linejoin="round"
+        />
+
+        <g class="tetris-blocks">
+          <rect class="block-0" x="520" y="440" width="85" height="85" rx="5" fill="#FFFFFF" />
+          <rect class="block-1" x="605" y="355" width="85" height="85" rx="5" fill="#FFFFFF" />
+          <rect class="block-2" x="690" y="270" width="85" height="85" rx="5" fill="#FFFFFF" />
+          <rect class="block-3" x="775" y="185" width="85" height="85" rx="5" fill="#FFFFFF" />
         </g>
       </svg>
     </div>
-    <div id="status-text" class="status-text" style="display: none;"></div>
+
+    <div id="status" class="status-text">Проверка обновлений...</div>
+
+    <div class="loader-track">
+      <div class="loader-bar"></div>
+    </div>
   </div>
+
   <script>
-    (function() {
-      try {
-        var savedFont = localStorage.getItem('orbita_font_family');
-        if (savedFont && savedFont !== 'system') {
-          var fontMap = {
-            'Segoe UI': "'Segoe UI', 'Segoe', system-ui, sans-serif",
-            'Segoe UI Black': "'Segoe UI Black', 'Segoe UI', system-ui, sans-serif",
-            'Inter': "'Inter', system-ui, sans-serif",
-            'Roboto': "'Roboto', sans-serif",
-            'Open Sans': "'Open Sans', sans-serif",
-            'Lato': "'Lato', sans-serif",
-            'Montserrat': "'Montserrat', sans-serif",
-            'Poppins': "'Poppins', sans-serif",
-            'Nunito': "'Nunito', sans-serif",
-            'Rubik': "'Rubik', sans-serif",
-            'Fira Sans': "'Fira Sans', sans-serif",
-            'Ubuntu': "'Ubuntu', sans-serif",
-            'Manrope': "'Manrope', sans-serif",
-            'Arial': "Arial, Helvetica, sans-serif",
-            'Arial Black': "'Arial Black', 'Arial Bold', sans-serif",
-            'Trebuchet MS': "'Trebuchet MS', sans-serif",
-            'Verdana': "Verdana, Geneva, sans-serif",
-            'Tahoma': "Tahoma, Geneva, sans-serif",
-            'Georgia': "Georgia, serif",
-            'Times New Roman': "'Times New Roman', Times, serif",
-            'Merriweather': "'Merriweather', Georgia, serif",
-            'Playfair Display': "'Playfair Display', Georgia, serif",
-            'Fira Code': "'Fira Code', monospace",
-            'JetBrains Mono': "'JetBrains Mono', monospace",
-            'Consolas': "Consolas, 'Courier New', monospace",
-            'Courier New': "'Courier New', Courier, monospace",
-            'Comic Sans MS': "'Comic Sans MS', 'Comic Sans', cursive",
-            'Caveat': "'Caveat', cursive",
-            'Pacifico': "'Pacifico', cursive"
-          };
-          var css = fontMap[savedFont] || fontMap['system'] || 'system-ui, sans-serif';
-          document.body.style.fontFamily = css;
-          var el = document.getElementById('status-text');
-          if (el) el.style.fontFamily = css;
-        }
-      } catch(e) {}
-    })();
-
     window.setStatus = function(text) {
-      var el = document.getElementById('status-text');
-      if (el) {
+      var el = document.getElementById('status');
+      if (!el || !text) return;
+      el.style.opacity = '0';
+      setTimeout(function() {
         el.textContent = text;
-        el.style.fontWeight = '700';
-        el.style.fontSize = '14px';
-      }
+        el.style.opacity = '1';
+      }, 100);
     };
+
     window.setFont = function(fontCss) {
-      if (document.body) document.body.style.fontFamily = fontCss;
-      var el = document.getElementById('status-text');
-      if (el) {
-        el.style.fontFamily = fontCss;
-        el.style.fontWeight = '700';
-        el.style.fontSize = '14px';
-      }
+      if (!fontCss) return;
+      document.documentElement.style.setProperty('--main-font', fontCss);
+      document.body.style.fontFamily = fontCss;
     };
-
-    (function() {
-      var btnMin = document.getElementById('btn-minimize');
-      var btnMax = document.getElementById('btn-maximize');
-      var btnClose = document.getElementById('btn-close');
-      var iconMax = document.getElementById('icon-maximize');
-      var iconRestore = document.getElementById('icon-restore');
-      var titlebar = document.getElementById('orbita-titlebar');
-
-      function updateMaxState(isMax) {
-        if (iconMax && iconRestore) {
-          iconMax.style.display = isMax ? 'none' : 'block';
-          iconRestore.style.display = isMax ? 'block' : 'none';
-        }
-      }
-
-      if (window.orbita) {
-        if (typeof window.orbita.isWindowMaximized === 'function') {
-          window.orbita.isWindowMaximized().then(updateMaxState).catch(function() {});
-        }
-        if (typeof window.orbita.onWindowStateChange === 'function') {
-          window.orbita.onWindowStateChange(updateMaxState);
-        }
-        if (btnMin) {
-          btnMin.addEventListener('click', function(e) {
-            e.currentTarget.blur();
-            if (window.orbita.minimizeWindow) window.orbita.minimizeWindow();
-          });
-        }
-        if (btnMax) {
-          btnMax.addEventListener('click', function(e) {
-            e.currentTarget.blur();
-            if (window.orbita.maximizeWindow) window.orbita.maximizeWindow();
-          });
-        }
-        if (btnClose) {
-          btnClose.addEventListener('click', function(e) {
-            e.currentTarget.blur();
-            if (window.orbita.closeWindow) window.orbita.closeWindow();
-          });
-        }
-        if (titlebar) {
-          titlebar.addEventListener('dblclick', function(e) {
-            if (e.target && e.target.closest && e.target.closest('.orbita-titlebar-controls')) return;
-            if (window.orbita.doubleClickTitleBar) window.orbita.doubleClickTitleBar();
-          });
-        }
-      }
-    })();
   </script>
 </body>
 </html>

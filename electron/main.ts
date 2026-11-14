@@ -4826,21 +4826,18 @@ ipcMain.handle('orbita:get-os-info', () => {
 function createSplashWindow() {
   const icon = loadNativeAppIcon();
   splashWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    minWidth: 360,
-    minHeight: 600,
-    title: 'Orbita Desktop',
+    width: 300,
+    height: 350,
+    title: 'Orbita',
     frame: false,
-    titleBarStyle: 'hidden',
-    transparent: false,
-    resizable: true,
-    maximizable: true,
-    minimizable: true,
+    transparent: true,
+    resizable: false,
+    maximizable: false,
+    minimizable: false,
     center: true,
-    alwaysOnTop: false,
+    alwaysOnTop: true,
     skipTaskbar: false,
-    backgroundColor: '#121212',
+    backgroundColor: '#00000000',
     hasShadow: true,
     show: false,
     webPreferences: {
@@ -4868,11 +4865,9 @@ function createSplashWindow() {
     splashWindow = null;
   });
 
-  splashWindow.on('maximize', () => splashWindow?.webContents.send('window:state-changed', true));
-  splashWindow.on('unmaximize', () => splashWindow?.webContents.send('window:state-changed', false));
-
   splashWindow.once('ready-to-show', () => {
     if (splashWindow && !splashWindow.isDestroyed()) {
+      splashWindow.center();
       splashWindow.show();
     }
   });
@@ -4947,12 +4942,10 @@ function createMainWindow() {
   });
 
   mainWindow.once('ready-to-show', () => {
-    if (splashWindow && !splashWindow.isDestroyed()) {
-      splashWindow.destroy();
-      splashWindow = null;
+    if (!splashWindow || splashWindow.isDestroyed()) {
+      mainWindow?.show();
+      mainWindow?.webContents.send('window:state-changed', mainWindow.isMaximized());
     }
-    mainWindow?.show();
-    mainWindow?.webContents.send('window:state-changed', mainWindow.isMaximized());
     trimAppMemory(true);
   });
 
@@ -5647,6 +5640,13 @@ app.whenReady().then(async () => {
       initOrGetMediaWindow();
     } catch {}
   };
+
+  ipcMain.handle('orbita:set-splash-status', (_event, text: string) => {
+    if (typeof text === 'string') {
+      updateSplashStatus(text);
+    }
+    return true;
+  });
 
   ipcMain.once('orbita:app-ready', finishStartup);
   setTimeout(finishStartup, 8000);

@@ -230,6 +230,7 @@ declare global {
       onMediaPayload?: (callback: (payload: any) => void) => () => void;
       sendMediaAction?: (action: any) => void;
       onMediaAction?: (callback: (action: any) => void) => () => void;
+      setSplashStatus?: (text: string) => Promise<boolean>;
       notifyAppReady?: () => void;
       relaunchApp?: () => Promise<{ success: boolean; error?: string }>;
       getCurrentLanguage?: () => Promise<string>;

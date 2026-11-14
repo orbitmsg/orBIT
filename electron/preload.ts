@@ -522,6 +522,7 @@ contextBridge.exposeInMainWorld('orbita', {
   getRemovableDrives: () => ipcRenderer.invoke('orbita:getRemovableDrives'),
   writeUsbKey: (targetDir: string, keyData: any) => ipcRenderer.invoke('orbita:writeUsbKey', targetDir, keyData),
   readKeyFile: (filePath: string) => ipcRenderer.invoke('orbita:readKeyFile', filePath),
+  setSplashStatus: (text: string) => ipcRenderer.invoke('orbita:set-splash-status', text),
   notifyAppReady: () => ipcRenderer.send('orbita:app-ready'),
 });
 

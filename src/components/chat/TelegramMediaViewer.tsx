@@ -271,13 +271,17 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
     return mediaManager.getCachedMedia(currentItem.url, effectiveSecret || '');
   }, [currentItem?.url, effectiveSecret]);
 
-  const { blobUrl, blob, progress, cancel } = useDecryptedMedia(
+  const validDirectUrl = currentItem?.directUrl || null;
+  const hasDirectReady = Boolean(validDirectUrl && (validDirectUrl.startsWith('blob:') || validDirectUrl.startsWith('data:') || validDirectUrl.startsWith('http')));
+
+  const { blobUrl, blob, progress, cancel, isLoading } = useDecryptedMedia(
     currentItem?.url || null,
     effectiveSecret,
     currentItem?.name,
     currentItem?.mime,
     currentItem?.chatId,
-    currentItem?.messageId
+    currentItem?.messageId,
+    !hasDirectReady
   );
   const isGif = currentItem?.type === 'gif' || Boolean(
     (currentItem?.mime === 'image/gif') ||
@@ -295,10 +299,9 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
   const isPhoto = !isVideo && !isGif;
 
   const isPlaintextUrl = Boolean(currentItem?.url && (currentItem.url.startsWith('blob:') || currentItem.url.startsWith('data:') || currentItem.url.includes('tenor.com') || currentItem.url.includes('giphy.com')));
-  const validBlobUrl = (blobUrl && !blobUrl.startsWith('orbita-media:')) ? blobUrl : null;
-  const validCachedUrl = (cachedDecrypted?.blobUrl && !cachedDecrypted.blobUrl.startsWith('orbita-media:')) ? cachedDecrypted.blobUrl : null;
-  const validDirectUrl = (currentItem?.directUrl && !currentItem.directUrl.startsWith('orbita-media:')) ? currentItem.directUrl : null;
-  const displaySrc = fallbackBlobUrl || validCachedUrl || validBlobUrl || (isPlaintextUrl ? currentItem?.url : null) || (!isVideo ? validDirectUrl : null);
+  const validBlobUrl = blobUrl || null;
+  const validCachedUrl = cachedDecrypted?.blobUrl || null;
+  const displaySrc = fallbackBlobUrl || (hasDirectReady ? validDirectUrl : null) || validCachedUrl || validBlobUrl || (isPlaintextUrl ? currentItem?.url : null) || validDirectUrl;
   const previewSrc = currentItem?.thumbnail || currentItem?.blurPreview || videoFirstFrame;
 
   useEffect(() => {
@@ -1442,29 +1445,31 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 />
               </div>
             )}
-            <div
-              style={{
-                position: 'relative',
-                zIndex: 10,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                pointerEvents: 'auto',
-              }}
-            >
-              <AudioCoverWithPlay
-                cover={null}
-                size={54}
-                state="downloading"
-                progress={progress}
-                customBg="rgba(15, 17, 26, 0.75)"
-                onClick={() => {
-                  if (cancel) cancel();
+            {isLoading && !hasDirectReady && !previewSrc && (
+              <div
+                style={{
+                  position: 'relative',
+                  zIndex: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  pointerEvents: 'auto',
                 }}
-                onCancel={cancel}
-                ariaLabel={t('common.loading', 'Загрузка...')}
-              />
-            </div>
+              >
+                <AudioCoverWithPlay
+                  cover={null}
+                  size={54}
+                  state="downloading"
+                  progress={progress}
+                  customBg="rgba(15, 17, 26, 0.75)"
+                  onClick={() => {
+                    if (cancel) cancel();
+                  }}
+                  onCancel={cancel}
+                  ariaLabel={t('common.loading', 'Загрузка...')}
+                />
+              </div>
+            )}
           </div>
         ) : null}
       </div>

@@ -25,6 +25,7 @@ import { accountSyncService } from './services/accountSyncService';
 import { useAccountStore } from './services/accountManager';
 import { appVisibility } from './utils/appVisibility';
 import { initializeIdentityKeys } from './lib/identityKeys';
+import { optimizeAvatarUrl } from './components/common/Avatar';
 
 appVisibility.init();
 
@@ -112,6 +113,7 @@ const AuthFlowOverlay: React.FC<{ isElectron: boolean; isOpen: boolean }> = ({ i
 };
 
 function App() {
+  const { t } = useTranslation();
   const isElectron = isElectronApp();
   const [isHydrated, setIsHydrated] = useState(() => useAuthStore.persist.hasHydrated() && useChatStore.persist.hasHydrated());
   const [isAccountInitialized, setIsAccountInitialized] = useState(false);
@@ -120,6 +122,12 @@ function App() {
   useEffect(() => {
     document.documentElement.style.setProperty('--titlebar-height', isElectron ? '30px' : '0px');
   }, [isElectron]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).orbita?.setSplashStatus) {
+      (window as any).orbita.setSplashStatus(t('splash.initializing_data', 'Инициализация данных...')).catch(() => {});
+    }
+  }, [t]);
 
   useEffect(() => {
     if (isHydrated) return;
@@ -143,10 +151,64 @@ function App() {
     if (!isHydrated) return;
     if (appReadyNotifiedRef.current) return;
     appReadyNotifiedRef.current = true;
-    if (typeof window !== 'undefined' && (window as any).orbita?.notifyAppReady) {
-      (window as any).orbita.notifyAppReady();
-    }
-  }, [isHydrated]);
+
+    const orbita = (window as any).orbita;
+
+    const preloadAvatarsAndReady = async () => {
+      try {
+        if (orbita?.setSplashStatus) {
+          orbita.setSplashStatus(t('splash.loading_avatars', 'Загрузка аватарок и профилей...')).catch(() => {});
+        }
+
+        const myAvatar = useAuthStore.getState().avatarUrl;
+        const chatAvatars = useChatStore.getState().chats.map((c) => c.avatarUrl).filter(Boolean) as string[];
+        const userAvatars = Object.values(useChatStore.getState().usersById || {}).map((u: any) => u.avatarUrl).filter(Boolean) as string[];
+        const allAvatars = Array.from(new Set([myAvatar, ...chatAvatars, ...userAvatars].filter(Boolean) as string[]));
+
+        const preloadImg = (rawUrl: string): Promise<void> => {
+          return new Promise((resolve) => {
+            const clean = optimizeAvatarUrl(rawUrl, 128);
+            if (!clean) return resolve();
+            const img = new Image();
+            img.decoding = 'async';
+            let done = false;
+            const finish = () => {
+              if (done) return;
+              done = true;
+              if ('decode' in img) {
+                img.decode().then(resolve).catch(resolve);
+              } else {
+                resolve();
+              }
+            };
+            img.onload = finish;
+            img.onerror = () => resolve();
+            img.src = clean;
+            if (img.complete) finish();
+          });
+        };
+
+        if (allAvatars.length > 0) {
+          await Promise.race([
+            Promise.allSettled(allAvatars.map(preloadImg)),
+            new Promise((res) => setTimeout(res, 2200)),
+          ]);
+        }
+      } catch {}
+
+      try {
+        if (orbita?.setSplashStatus) {
+          await orbita.setSplashStatus(t('splash.starting', 'Запуск...')).catch(() => {});
+        }
+      } catch {}
+
+      if (orbita?.notifyAppReady) {
+        orbita.notifyAppReady();
+      }
+    };
+
+    preloadAvatarsAndReady();
+  }, [isHydrated, t]);
 
   const step = useAuthStore((state) => state.step);
   const activeAccountId = useAccountStore((state) => state.activeAccountId);

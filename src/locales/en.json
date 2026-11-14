@@ -1741,6 +1741,8 @@
       "checking_updates": "Checking for updates...",
       "loading_components": "Loading components...",
       "preparing_interface": "Preparing interface...",
+      "initializing_data": "Initializing data...",
+      "loading_avatars": "Loading avatars and profiles...",
       "starting": "Starting..."
     },
     "sidebar": {

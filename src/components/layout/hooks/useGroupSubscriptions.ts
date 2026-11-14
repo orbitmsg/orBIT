@@ -2,12 +2,11 @@ import { useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, isMessageOutgoing, type Chat, type Message } from '../../../store/useChatStore';
 import { useAuthStore } from '../../../store/useAuthStore';
-import { getPusher, getGroupPusher, CLIENT_SESSION_ID } from '../../../utils/pusher';
+import { getGroupPusher, CLIENT_SESSION_ID } from '../../../utils/pusher';
 import { ablyService } from '../../../services/ablyService';
-import { channelService } from '../../../services/channelService';
 import { groupService } from '../../../services/groupService';
 import { supabaseService } from '../../../services/supabaseService';
-import { deriveChannelKey, decryptMessage } from '../../../lib/crypto';
+import { decryptMessage } from '../../../lib/crypto';
 import { deriveGroupKey, isValidGroupCode } from '../../../lib/groupCrypto';
 
 import { showNotification } from '../../../utils/notification';
@@ -49,6 +48,7 @@ export const useGroupSubscriptions = ({
   }, []);
 
   const subscribeToGroupChat = useCallback((chatId: string) => {
+    if (!chatId || chatId.startsWith('lobby_')) return null;
     const pusher = getGroupPusher();
     if (activeSubscriptions.current.has(chatId)) return activeSubscriptions.current.get(chatId)!.channel;
     const channel = pusher.subscribe(`presence-group-${chatId}`);
@@ -604,10 +604,17 @@ export const useGroupSubscriptions = ({
           targetNickname: parsedData?.targetNickname || data.targetNickname || undefined,
         };
 
+        const sysType = parsedData?.systemType || data.systemType;
+        if (sysType === 'call' || sysType === 'call_ended') {
+          if (sysType === 'call_ended') {
+            useChatStore.getState().updateChat(chatId, { activeCallRoom: null });
+          }
+          return;
+        }
+
         addMessage(chatId, msgPayload);
 
         if (parsedData?.mediaType === 'system' || data.mediaType === 'system') {
-          const sysType = parsedData?.systemType || data.systemType;
           if (sysType === 'join' || sysType === 'invite') {
             groupService.getGroup(chatId).then((info) => {
               if (info?.members) {
@@ -615,17 +622,6 @@ export const useGroupSubscriptions = ({
                   members: info.members as any,
                   membersCount: info.membersCount || info.members.length,
                 });
-              }
-            }).catch(() => {});
-          }
-          if (sysType === 'call_ended') {
-            useChatStore.getState().updateChat(chatId, { activeCallRoom: null });
-          } else if (sysType === 'call') {
-            const fallbackRoom = parsedData?.roomName || (data as any)?.roomName || `group-call-${chatId}`;
-            useChatStore.getState().updateChat(chatId, { activeCallRoom: fallbackRoom });
-            groupService.getActiveCall(chatId).then((call) => {
-              if (call && call.status === 'active') {
-                useChatStore.getState().updateChat(chatId, { activeCallRoom: call.roomName });
               }
             }).catch(() => {});
           }
@@ -876,400 +872,9 @@ export const useGroupSubscriptions = ({
   }, [nickname, addMessage, updateChat, t]);
 
   const subscribeToPublicChannel = useCallback((channelId: string) => {
-    const pusher = getPusher();
-    if (activeSubscriptions.current.has(channelId)) {
-      return activeSubscriptions.current.get(channelId)!.channel;
-    }
-
-    const channelName = `public-channel-${channelId}`;
-    const channel = pusher.subscribe(channelName);
-
-    const handleNewPost = async (post: any) => {
-      console.log('[MainLayout] Received new channel post:', post);
-      if (!post || !post.id) return;
-
-      let postText = post.text || '';
-      if (postText.startsWith('orb_e2e:')) {
-        const channelKey = deriveChannelKey(channelId);
-        const decrypted = await decryptMessage(postText.slice(8), channelKey);
-        if (decrypted && decrypted !== '[ENCRYPTED MESSAGE]') {
-          postText = decrypted;
-        }
-      }
-
-      const currentChat = useChatStore.getState().chats.find((c) => c.id === channelId);
-      const activeChatId = useChatStore.getState().activeChatId;
-      const isViewingThisChannel = activeChatId === channelId;
-
-      const currentMsgs = useChatStore.getState().messagesByChatId[channelId] || [];
-      const existingMatch = currentMsgs.find(
-        (m) =>
-          m.id === post.id ||
-          (m.isOutgoing &&
-            m.sender === (post.sender || post.senderNickname) &&
-            ((post.text && m.text === post.text) ||
-              (post.mediaUrl && m.mediaUrl === post.mediaUrl) ||
-              (post.mediaName && m.mediaName === post.mediaName)) &&
-            Math.abs(m.time - (post.time || 0)) < 30000)
-      );
-
-      const sender = post.sender || post.senderNickname || 'Channel';
-      const myUserId = useAuthStore.getState().userId;
-      const isOwnerById = Boolean(
-        currentChat?.type === 'channel' &&
-        myUserId &&
-        (currentChat.creatorId === myUserId || (currentChat.isOwner && (!currentChat.creatorId || currentChat.creatorId === myUserId)))
-      );
-      if (isOwnerById && !post.senderId) {
-        post.senderId = myUserId;
-      }
-      const myNick = nickname || useAuthStore.getState().nickname;
-      const isMine = Boolean(
-        existingMatch?.isOutgoing ||
-        (myUserId && (post.senderUserId === myUserId || post.userId === myUserId || post.senderId === myUserId)) ||
-        (myCode && (post.senderCode === myCode || post.senderId === myCode)) ||
-        (myNick && ((post.sender && post.sender.trim().toLowerCase() === myNick.trim().toLowerCase()) || (post.senderNickname && post.senderNickname.trim().toLowerCase() === myNick.trim().toLowerCase()))) ||
-        (isOwnerById && (!post.senderId || post.senderId === myUserId))
-      );
-
-      const newMsg: Message = {
-        id: post.id,
-        senderId: post.senderId || post.senderUserId || post.senderCode,
-        sender,
-        text: postText,
-        time: (typeof post.time === 'number' && post.time > 0) ? post.time : Date.now(),
-        read: isViewingThisChannel,
-        status: isMine ? 'read' : undefined,
-        isOutgoing: isMine,
-        mediaType: post.mediaType || undefined,
-        mediaUrl: post.mediaUrl || undefined,
-        mediaName: post.mediaName || undefined,
-        mime: post.mime || undefined,
-        duration: post.duration || undefined,
-        width: post.width || undefined,
-        height: post.height || undefined,
-        waveform: post.waveform || undefined,
-        audioMetadata: post.audioMetadata || undefined,
-        linkPreview: post.linkPreview || undefined,
-        reactions: post.reactions || undefined,
-        blurPreview: post.blurPreview || post.thumbnail || undefined,
-      };
-
-      const validPostTime = (typeof post.time === 'number' && post.time > 0) ? post.time : Date.now();
-      if (existingMatch) {
-        if (existingMatch.id !== post.id) {
-          try {
-            (window as any).orbita?.storageDeleteMessage?.(existingMatch.id).catch(() => {});
-          } catch {}
-        }
-        useChatStore.setState((state) => {
-          const list = state.messagesByChatId[channelId] || [];
-          const updated = list.map((m) =>
-            m.id === existingMatch.id
-              ? {
-                  ...m,
-                  id: post.id,
-                  text: postText || m.text,
-                  time: validPostTime,
-                  status: 'read' as const,
-                }
-              : m
-          );
-          const saved = updated.find((m) => m.id === post.id);
-          if (saved) {
-            try {
-              (window as any).orbita?.storageAddMessage?.(channelId, post.id, saved).catch(() => {});
-            } catch {}
-          }
-          return {
-            messagesByChatId: {
-              ...state.messagesByChatId,
-              [channelId]: updated,
-            },
-          };
-        });
-      } else {
-        addMessage(channelId, newMsg);
-      }
-      useChatStore.getState().updateChat(channelId, { lastMsg: postText || 'Новый пост' });
-
-      if (!isMine && (!isViewingThisChannel || !isAppInFocusAndVisible())) {
-        let notifBody = postText;
-        if (typeof notifBody === 'string' && (notifBody.startsWith('orb_e2e:') || notifBody === '[ENCRYPTED MESSAGE]')) {
-          notifBody = '';
-        }
-        if (!notifBody) {
-          if (post.mediaType === 'photo' || post.mediaType === 'image') notifBody = t('chatWindow.photo') || '📷 Фотография';
-          else if (post.mediaType === 'video') notifBody = t('chatWindow.video') || '📹 Видео';
-          else if (post.mediaType === 'voice') notifBody = t('chatWindow.voice_message') || '🎤 Голосовое сообщение';
-          else if (post.mediaType === 'audio') notifBody = post.mediaName || t('chatWindow.audio') || '🎵 Музыка';
-          else if (post.mediaType === 'file') notifBody = post.mediaName || t('chatWindow.file') || '📁 Файл';
-          else notifBody = t('chatWindow.new_message') || 'Новое сообщение';
-        }
-        showNotification(currentChat?.name || post.sender || 'Канал', notifBody, channelId, currentChat?.avatarUrl || null);
-      }
-    };
-
-    const handleReaction = (data: any) => {
-      console.log('[MainLayout] Received channel reaction update:', data);
-      if (data?.postId && data?.reactions) {
-        const currentMyUserId = useAuthStore.getState().userId;
-        const currentMyNickname = useAuthStore.getState().nickname;
-        const currentMyCode = useChatStore.getState().myCode;
-        const isSelf = Boolean(
-          (currentMyUserId && (data.userId === currentMyUserId || data.senderUserId === currentMyUserId || data.senderId === currentMyUserId)) ||
-          (currentMyCode && (data.senderCode === currentMyCode || data.senderId === currentMyCode || data.userId === currentMyCode)) ||
-          (currentMyNickname && (data.userId === currentMyNickname || data.sender === currentMyNickname)) ||
-          data.userId === 'YOU'
-        );
-        if (isSelf) return;
-
-        const aliases = new Set([currentMyUserId, currentMyCode, currentMyNickname, 'YOU'].filter(Boolean).map((s) => s!.toLowerCase()));
-
-        useChatStore.setState((state) => {
-          const currentMsgs = state.messagesByChatId[channelId] || [];
-          return {
-            messagesByChatId: {
-              ...state.messagesByChatId,
-              [channelId]: currentMsgs.map((m) => {
-                if (m.id !== data.postId) return m;
-                const merged: Record<string, string[]> = {};
-                const allEmojis = new Set([...Object.keys(m.reactions || {}), ...Object.keys(data.reactions || {})]);
-                for (const em of allEmojis) {
-                  const serverUsers = (data.reactions[em] || []).filter((u: string) => !aliases.has(u.toLowerCase()));
-                  const hadSelf = (m.reactions?.[em] || []).some((u: string) => aliases.has(u.toLowerCase()));
-                  const finalUsers = hadSelf ? [...serverUsers, 'YOU'] : serverUsers;
-                  if (finalUsers.length > 0) {
-                    merged[em] = finalUsers;
-                  }
-                }
-                return {
-                  ...m,
-                  reactions: Object.keys(merged).length > 0 ? merged : undefined,
-                };
-              }),
-            },
-          };
-        });
-      }
-    };
-
-    const handleSubscribers = (data: any) => {
-      console.log('[MainLayout] Received channel subscribers update:', data);
-      if (typeof data?.subscribersCount === 'number') {
-        useChatStore.getState().updateChat(channelId, {
-          subscribersCount: data.subscribersCount,
-        });
-      }
-    };
-
-    const handleChannelUpdated = (data: any) => {
-      const updates: Partial<Chat> = {};
-      if (data?.name !== undefined && data.name) updates.name = data.name;
-      if (data?.description !== undefined) updates.description = data.description;
-      if (data?.avatarUrl !== undefined) updates.avatarUrl = data.avatarUrl;
-      updates.updatedAt = data?.updatedAt || Date.now();
-      useChatStore.getState().updateChat(channelId, updates);
-    };
-
-    const handleDeletePost = (data: any) => {
-      const postId = data?.postId || data?.targetMessageId || data?.id;
-      if (postId) {
-        useChatStore.getState().deleteMessage(channelId, postId);
-      }
-    };
-
-    const handlePin = (data: any) => {
-      if (data?.type === 'pin' || data?.type === 'pin-message') {
-        useChatStore.getState().updateChat(channelId, { pinnedMessage: data.pinData });
-        const actor = data.sender || data.actorNickname || data.pinData?.pinnedBy || '';
-        const isAlreadyAdded = (useChatStore.getState().messagesByChatId[channelId] || []).some(
-          (m) => m.systemType === 'pin' && Math.abs((m.time || 0) - (data.pinData?.pinnedAt || Date.now())) < 5000
-        );
-        if (!isAlreadyAdded) {
-          const sysMsg: Message = data.systemMessage || {
-            id: `sys_pin_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-            sender: 'system',
-            text: `${actor || 'Канал'} закрепил(а) сообщение`,
-            time: data.pinData?.pinnedAt || Date.now(),
-            status: 'sent',
-            mediaType: 'system',
-            systemType: 'pin',
-            actorNickname: actor,
-          };
-          addMessage(channelId, sysMsg);
-          try {
-            (window as any).orbita?.storageAddMessage?.(channelId, sysMsg.id, sysMsg);
-          } catch {}
-        }
-      } else if (data?.type === 'unpin' || data?.type === 'unpin-message') {
-        useChatStore.getState().updateChat(channelId, { pinnedMessage: null });
-      }
-    };
-
-    channel.bind('new-post', handleNewPost);
-    channel.bind('delete-post', handleDeletePost);
-    channel.bind('post-deleted', handleDeletePost);
-    channel.bind('reaction-updated', handleReaction);
-    channel.bind('subscribers-updated', handleSubscribers);
-    channel.bind('channel-updated', handleChannelUpdated);
-    channel.bind('pin', handlePin);
-    channel.bind('unpin', handlePin);
-    channel.bind('client-message', handlePin);
-
-    if (!ablyMessageUnsubscribes.current.has(channelId)) {
-      const unsub = ablyService.subscribeToChatMessages(`public-channel-${channelId}`, (data: any) => {
-        if (data?.type === 'channel-post' && data?.post) {
-          handleNewPost(data.post);
-        } else if (data?.type === 'delete-post' || data?.type === 'post-deleted' || data?.type === 'delete-message') {
-          handleDeletePost(data);
-        } else if (data?.type === 'reaction-updated') {
-          handleReaction(data);
-        } else if (data?.type === 'channel-updated') {
-          handleChannelUpdated(data);
-        } else if (data?.type === 'subscribers-updated' && typeof data?.subscribersCount === 'number') {
-          useChatStore.getState().updateChat(channelId, { subscribersCount: data.subscribersCount });
-        } else if (data?.type === 'pin' || data?.type === 'pin-message' || data?.type === 'unpin' || data?.type === 'unpin-message') {
-          handlePin(data);
-        } else if (data?.id) {
-          handleNewPost(data);
-        }
-      });
-      ablyMessageUnsubscribes.current.set(channelId, unsub);
-    }
-
-    activeSubscriptions.current.set(channelId, {
-      channel,
-      handler: handleNewPost,
-    });
-
-    channelService.getChannel(channelId).then((info) => {
-      if (info) {
-        const current = useChatStore.getState().chats.find((c) => c.id === channelId);
-        if (current?.updatedAt && info.updatedAt && current.updatedAt > info.updatedAt) {
-          return;
-        }
-        const currentUserId = useAuthStore.getState().userId;
-        const isCreator = Boolean(
-          current?.isOwner ||
-          current?.role === 'owner' ||
-          (currentUserId && (
-            (info.creatorId && info.creatorId === currentUserId) ||
-            (current?.creatorId && current.creatorId === currentUserId) ||
-            (current?.members?.some(m => m.userId === currentUserId && (m.role === 'owner' || m.role === 'admin')))
-          ))
-        );
-        const updates: Partial<Chat> = {
-          subscribersCount: info.subscribersCount,
-          creatorId: info.creatorId || current?.creatorId,
-          creatorNickname: info.creatorNickname || current?.creatorNickname,
-        };
-        if (isCreator) {
-          updates.isOwner = true;
-        }
-        if (info.name) updates.name = info.name;
-        if (info.description !== undefined) updates.description = info.description;
-        updates.avatarUrl = info.avatarUrl || undefined;
-        if (info.updatedAt) updates.updatedAt = info.updatedAt;
-        useChatStore.getState().updateChat(channelId, updates);
-      }
-    }).catch(() => {});
-
-    channelService.getChannelPosts(channelId).then((posts) => {
-      if (posts) {
-        useChatStore.setState((state) => {
-          const currentMsgs = state.messagesByChatId[channelId] || [];
-          const fetchedIds = new Set(posts.map((p) => p.id));
-          const existingIds = new Set<string>();
-
-          const validExisting = currentMsgs.filter((m) =>
-            !m.id || fetchedIds.has(m.id) || m.isOutgoing || (Date.now() - (m.time || 0) < 60000)
-          );
-
-          const updatedExisting = validExisting.map((m) => {
-            const fetched = posts.find(
-              (p) =>
-                p.id === m.id ||
-                (m.isOutgoing &&
-                  m.sender === p.sender &&
-                  ((p.text && m.text === p.text) || (p.mediaUrl && m.mediaUrl === p.mediaUrl) || (p.mediaName && m.mediaName === p.mediaName)) &&
-                  Math.abs(m.time - (p.time || 0)) < 60000)
-            );
-            if (fetched) {
-              existingIds.add(fetched.id);
-              return {
-                ...m,
-                id: fetched.id,
-                text: fetched.text || m.text,
-                time: fetched.time || m.time,
-                reactions: fetched.reactions || m.reactions,
-                status: 'read' as const,
-              };
-            }
-            if (m.id) existingIds.add(m.id);
-            return m;
-          });
-          const newItems: Message[] = [];
-          const myUserId = useAuthStore.getState().userId;
-          const targetChannel = state.chats.find((c) => c.id === channelId);
-          const isOwnerById = Boolean(
-            targetChannel?.type === 'channel' &&
-            myUserId &&
-            (targetChannel.creatorId === myUserId || (targetChannel.isOwner && (!targetChannel.creatorId || targetChannel.creatorId === myUserId)))
-          );
-          posts.forEach((post) => {
-            if (!existingIds.has(post.id)) {
-              if (isOwnerById && !post.senderId) {
-                post.senderId = myUserId;
-              }
-              const isMine = Boolean(myUserId && post.senderId && post.senderId === myUserId);
-              newItems.push({
-                id: post.id,
-                senderId: post.senderId,
-                sender: post.sender,
-                text: post.text,
-                time: post.time,
-                read: state.activeChatId === channelId,
-                status: isMine ? 'read' : undefined,
-                isOutgoing: isMine,
-                mediaType: post.mediaType || undefined,
-                mediaUrl: post.mediaUrl || undefined,
-                mediaName: post.mediaName || undefined,
-                mime: post.mime || undefined,
-                duration: post.duration || undefined,
-                width: post.width || undefined,
-                height: post.height || undefined,
-                waveform: post.waveform || undefined,
-                audioMetadata: post.audioMetadata || undefined,
-                linkPreview: post.linkPreview || undefined,
-                reactions: post.reactions || undefined,
-              });
-            }
-          });
-          if (newItems.length === 0 && updatedExisting.length === currentMsgs.length && updatedExisting === currentMsgs) return state;
-          const merged = [...updatedExisting, ...newItems].sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0));
-          const latest = merged[merged.length - 1];
-          return {
-            messagesByChatId: {
-              ...state.messagesByChatId,
-              [channelId]: merged,
-            },
-            chats: state.chats.map((c) =>
-              c.id === channelId
-                ? {
-                    ...c,
-                    lastMsg: latest ? (latest.text || (latest.mediaType ? `[${latest.mediaType}]` : c.lastMsg)) : 'История очищена',
-                  }
-                : c
-            ),
-          };
-        });
-      }
-    }).catch(() => {});
-
-    return channel;
-  }, [addMessage, t]);
-
+    void channelId;
+    return null;
+  }, []);
 
   return {
     subscribeToGroupChat,

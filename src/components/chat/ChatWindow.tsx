@@ -39,7 +39,6 @@ import { ChatHeader } from './ChatHeader';
 import { LobbyVoiceStage } from './lobby/LobbyVoiceStage';
 import { lobbyService } from '../../services/lobbyService';
 import { ChatWindowModals } from './window/ChatWindowModals';
-import { GroupActiveCallBanner } from './window/GroupActiveCallBanner';
 import { ChatScrollToBottomButton } from './window/ChatScrollToBottomButton';
 import { ChatMessageItem } from './window/ChatMessageItem';
 import { useChatDragDrop } from './window/useChatDragDrop';
@@ -92,9 +91,14 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
       };
     })
   );
+  const activeChannelId = useChatStore((s) => s.activeChannelId);
+  const activeChannelName = useChatStore((s) => s.activeChannelName);
+  const activeChannelType = useChatStore((s) => s.activeChannelType);
+  const isLobby = Boolean(activeChatId?.startsWith('lobby_'));
+  const effectiveChatKey = isLobby && activeChannelId ? `${activeChatId}:${activeChannelId}` : (activeChatId || '');
+
   const rawMessages = useChatStore(useShallow((s) => {
-    const chatId = activeChatId || '';
-    return chatId ? s.messagesByChatId[chatId] || EMPTY_ARRAY : EMPTY_ARRAY;
+    return effectiveChatKey ? s.messagesByChatId[effectiveChatKey] || EMPTY_ARRAY : EMPTY_ARRAY;
   }));
 
   const messages = useMemo(() => {
@@ -132,9 +136,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
 
   const [renderedCount, setRenderedCount] = useState<number>(getOptimalMessageBatchSize);
   const [prevChatId, setPrevChatId] = useState<string | null>(activeChatId);
-  const activeChannelId = useChatStore((s) => s.activeChannelId);
-  const activeChannelName = useChatStore((s) => s.activeChannelName);
-  const activeChannelType = useChatStore((s) => s.activeChannelType);
   const isLobbyVoice = Boolean(
     activeChat?.type === 'group' && (
       activeChannelType === 'voice' ||
@@ -144,8 +145,8 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
   const prevScrollHeightRef = useRef<number | null>(null);
   const prevScrollTopRef = useRef<number | null>(null);
 
-  if (prevChatId !== activeChatId) {
-    setPrevChatId(activeChatId);
+  if (prevChatId !== effectiveChatKey) {
+    setPrevChatId(effectiveChatKey);
     setRenderedCount(getOptimalMessageBatchSize());
   }
 
@@ -153,7 +154,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     decryptedUrlCache.clear();
     prevScrollHeightRef.current = null;
     prevScrollTopRef.current = null;
-  }, [activeChatId]);
+  }, [effectiveChatKey]);
 
   const hasMoreAbove = messages.length > renderedCount;
   const startIndex = hasMoreAbove ? messages.length - renderedCount : 0;
@@ -737,7 +738,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
   const themeColor = 'var(--accent-color)';
 
   const startCall = useCallStore((state) => state.startCall);
-  const isUserInCall = useCallStore((state) => state.callState !== 'idle' && state.callState !== 'ended' && !!state.activeCall);
 
 
   const scrollbarTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1196,10 +1196,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
           onCancel={selection.exitSelectionMode}
           height={headerHeight}
         />
-      )}
-
-      {activeChat?.type === 'group' && activeChat.activeCallRoom && !isUserInCall && (
-        <GroupActiveCallBanner onJoin={handleAudioCallPress} />
       )}
 
       <ChatPinnedBar

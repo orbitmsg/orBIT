@@ -33,6 +33,8 @@ export const useChatRealtime = ({
   notifyPeerReadBatch,
   setMemberAvatars,
 }: UseChatRealtimeProps) => {
+  const activeChannelId = useChatStore((s) => s.activeChannelId);
+
   useEffect(() => {
     if (!activeChatId) return;
 
@@ -273,43 +275,66 @@ export const useChatRealtime = ({
       }).catch(() => {});
     }
 
+    let unsubLobbyRealtime: (() => void) | null = null;
     if (activeChat?.id?.startsWith('lobby_')) {
       const targetLobbyId = activeChatId;
-      const channelId = useChatStore.getState().activeChannelId;
+      const targetKey = activeChannelId ? `${targetLobbyId}:${activeChannelId}` : targetLobbyId;
       const secret = activeChat.sharedSecret || deriveGroupKey(targetLobbyId);
-      lobbyService.getLobbyMessages(targetLobbyId, secret, 50, channelId).then((lobbyMsgs) => {
+      lobbyService.getLobbyMessages(targetLobbyId, secret, 50, activeChannelId).then((lobbyMsgs) => {
         if (useChatStore.getState().activeChatId !== targetLobbyId) return;
         if (!Array.isArray(lobbyMsgs) || lobbyMsgs.length === 0) return;
-        const current = useChatStore.getState().messagesByChatId[targetLobbyId] || [];
+        const current = useChatStore.getState().messagesByChatId[targetKey] || [];
         const existingIds = new Set(current.map((m) => m.id));
         const newOnes: Message[] = lobbyMsgs
           .filter((lm) => !existingIds.has(lm.id))
           .map((lm) => ({
             id: lm.id,
-            chatId: targetLobbyId,
+            chatId: targetKey,
             sender: lm.senderNickname,
             senderCode: lm.senderCode,
-            senderAvatarUrl: lm.senderAvatarUrl || undefined,
             text: lm.text,
             time: lm.createdAt,
-            timestamp: lm.createdAt,
             isOutgoing: lm.senderCode === myCode,
             status: 'delivered' as const,
             mediaType: lm.mediaType as any,
             mediaUrl: lm.mediaUrl || undefined,
             mediaName: lm.mediaName || undefined,
-            mediaSize: lm.mediaSize || undefined,
-            replyToId: lm.replyToId || undefined,
+            fileSize: lm.mediaSize || undefined,
           }));
         if (newOnes.length > 0) {
           useChatStore.setState((state) => ({
             messagesByChatId: {
               ...state.messagesByChatId,
-              [targetLobbyId]: [...(state.messagesByChatId[targetLobbyId] || []), ...newOnes].sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0)),
+              [targetKey]: [...(state.messagesByChatId[targetKey] || []), ...newOnes].sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0)),
             },
           }));
         }
       }).catch(() => {});
+
+      unsubLobbyRealtime = lobbyService.subscribeToLobby(
+        targetLobbyId,
+        (msg) => {
+          if (msg.senderCode === myCode) return;
+          const msgTargetKey = msg.channelId ? `${targetLobbyId}:${msg.channelId}` : targetLobbyId;
+          const newMsg: Message = {
+            id: msg.id,
+            chatId: msgTargetKey,
+            sender: msg.senderNickname,
+            senderCode: msg.senderCode,
+            text: msg.text,
+            time: msg.createdAt,
+            isOutgoing: false,
+            status: 'delivered',
+            mediaType: msg.mediaType as any,
+            mediaUrl: msg.mediaUrl || undefined,
+            mediaName: msg.mediaName || undefined,
+            fileSize: msg.mediaSize || undefined,
+          };
+          useChatStore.getState().addMessage(msgTargetKey, newMsg);
+        },
+        undefined,
+        secret
+      );
     }
 
     const ablyTopic = activeChat?.type === 'channel' ? `public-channel-${activeChatId}` : activeChatId;
@@ -619,20 +644,13 @@ export const useChatRealtime = ({
               targetNickname: parsed?.targetNickname || data.targetNickname || undefined,
             };
             const targetChatId = data.chatId || data.groupId || activeChatId;
-            useChatStore.getState().addMessage(targetChatId, item);
-            if (item.systemType === 'call_ended') {
-              useChatStore.getState().updateChat(targetChatId, { activeCallRoom: null });
-            } else if (item.systemType === 'call') {
-              const fallbackRoom = (parsed as any)?.roomName || (data as any)?.roomName || (item as any)?.roomName || `group-call-${targetChatId}`;
-              useChatStore.getState().updateChat(targetChatId, { activeCallRoom: fallbackRoom });
-              if (!targetChatId.startsWith('lobby_')) {
-                groupService.getActiveCall(targetChatId).then((call) => {
-                  if (call && call.status === 'active') {
-                    useChatStore.getState().updateChat(targetChatId, { activeCallRoom: call.roomName });
-                  }
-                }).catch(() => {});
+            if (item.systemType === 'call' || item.systemType === 'call_ended') {
+              if (item.systemType === 'call_ended') {
+                useChatStore.getState().updateChat(targetChatId, { activeCallRoom: null });
               }
+              return;
             }
+            useChatStore.getState().addMessage(targetChatId, item);
             try {
               (window as any).orbita?.storageAddMessage?.(targetChatId, mid, item);
             } catch {}
@@ -960,6 +978,7 @@ export const useChatRealtime = ({
     channel.bind('profile-update', handleClientMessage);
 
     return () => {
+      unsubLobbyRealtime?.();
       unsubAbly();
       channel.unbind('reaction', handleReaction);
       channel.unbind('client-message', handleClientMessage);
@@ -978,5 +997,5 @@ export const useChatRealtime = ({
       channel.unbind('member-profile-updated', handleClientMessage);
       channel.unbind('profile-update', handleClientMessage);
     };
-  }, [activeChatId, activeChat?.type, myNickname]);
+  }, [activeChatId, activeChat?.type, activeChannelId, myNickname]);
 };

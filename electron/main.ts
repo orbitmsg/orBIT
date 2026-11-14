@@ -79,7 +79,7 @@ const {
 app.setPath('userData', path.join(app.getPath('appData'), 'Orbita'));
 app.setName('orBIT');
 if (process.platform === 'win32') {
-  app.setAppUserModelId('orBIT');
+  app.setAppUserModelId('com.saizzi.orbit');
 }
 
 app.commandLine.appendSwitch('disk-cache-size', '33554432');
@@ -3869,20 +3869,13 @@ const TRAY_LOCALES: Record<string, {
 };
 
 function getValidIcoPath(): string {
-  if (!app.isPackaged) {
-    const devIco = path.resolve(__dirname, '../public/icons/icon.ico');
-    if (fs.existsSync(devIco)) return devIco;
+  if (app.isPackaged) {
+    return process.execPath;
   }
-  const userIco = path.join(app.getPath('userData'), 'icon.ico');
-  try {
-    if (!fs.existsSync(userIco)) {
-      const srcIco = resolveIconFile('icon.ico');
-      if (srcIco && fs.existsSync(srcIco)) {
-        fs.writeFileSync(userIco, fs.readFileSync(srcIco));
-      }
-    }
-    if (fs.existsSync(userIco)) return userIco;
-  } catch {}
+  const devIco = path.resolve(__dirname, '../public/icons/icon.ico');
+  if (fs.existsSync(devIco)) return devIco;
+  const devFavicon = path.resolve(__dirname, '../public/favicon.ico');
+  if (fs.existsSync(devFavicon)) return devFavicon;
   return process.execPath;
 }
 
@@ -5003,7 +4996,7 @@ function createSplashWindow() {
     const icoPath = getValidIcoPath();
     try {
       splashWindow.setAppDetails({
-        appId: 'orBIT',
+        appId: 'com.saizzi.orbit',
         appIconPath: icoPath,
         appIconIndex: 0,
       });
@@ -5083,7 +5076,7 @@ function createMainWindow() {
     if (icoPath) {
       try {
         mainWindow.setAppDetails({
-          appId: 'orBIT',
+          appId: 'com.saizzi.orbit',
           appIconPath: icoPath,
           appIconIndex: 0,
         });

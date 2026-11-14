@@ -523,9 +523,12 @@ export const useChatMessageSend = ({
       forwardedFrom: forwardedFromPayload,
     };
 
+    const currentActiveChannelId = useChatStore.getState().activeChannelId;
+    const effectiveChatKey = (targetChatId.startsWith('lobby_') && currentActiveChannelId) ? `${targetChatId}:${currentActiveChannelId}` : targetChatId;
+
     if (existingMessageId) {
       useChatStore.setState((state) => {
-        const currentMsgs = state.messagesByChatId[targetChatId] || [];
+        const currentMsgs = state.messagesByChatId[effectiveChatKey] || [];
         const updated = currentMsgs.map((m) =>
           m.id === messageId
             ? {
@@ -554,17 +557,17 @@ export const useChatMessageSend = ({
         );
         const target = updated.find((m) => m.id === messageId);
         if (target) {
-          (window as any).orbita?.storageAddMessage?.(targetChatId, messageId, target).catch(() => {});
+          (window as any).orbita?.storageAddMessage?.(effectiveChatKey, messageId, target).catch(() => {});
         }
         return {
           messagesByChatId: {
             ...state.messagesByChatId,
-            [targetChatId]: updated,
+            [effectiveChatKey]: updated,
           },
         };
       });
     } else {
-      addMessage(targetChatId, localMessage);
+      addMessage(effectiveChatKey, localMessage);
     }
 
     sendQueueRef.current = sendQueueRef.current.then(async () => {
@@ -652,6 +655,7 @@ export const useChatMessageSend = ({
           if (groupSecret) {
             if (targetChatId.startsWith('lobby_')) {
               const activeChannelId = useChatStore.getState().activeChannelId;
+              const targetChatKey = activeChannelId ? `${targetChatId}:${activeChannelId}` : targetChatId;
               const currentAvatar = useAuthStore.getState().avatarUrl;
               lobbyService.sendLobbyMessage({
                 lobbyId: targetChatId,
@@ -667,9 +671,11 @@ export const useChatMessageSend = ({
                 mediaSize: mediaPayload?.size,
                 replyToId: replyingTo?.id,
               }).then(() => {
-                useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sent');
+                useChatStore.getState().updateMessageStatus(targetChatKey, messageId, 'sent');
                 networkManager.removeOutboxItem(messageId).catch(() => {});
-              }).catch(() => {});
+              }).catch(() => {
+                useChatStore.getState().updateMessageStatus(targetChatKey, messageId, 'failed');
+              });
             } else {
               const ciphertext = await encryptMessage(JSON.stringify(messageData), groupSecret);
               const groupPusher = getGroupPusher();

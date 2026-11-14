@@ -1083,7 +1083,8 @@ export const useMainLayoutSync = ({
             addMessagesBatch(nonBatchMessages);
             const activeId = useChatStore.getState().activeChatId;
             for (const item of nonBatchMessages) {
-              if (item.chatId !== activeId || !isAppInFocusAndVisible()) {
+              const isRecent = (Date.now() - (Number(item.message.time) || 0)) < 30000;
+              if (isRecent && (item.chatId !== activeId || !isAppInFocusAndVisible())) {
                 const targetChat = useChatStore.getState().chats.find((c) => c.id === item.chatId);
                 const senderName = item.message.sender || targetChat?.name || 'Orbita';
                 let bodyText = item.message.text || '';

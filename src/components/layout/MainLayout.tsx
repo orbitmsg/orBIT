@@ -1167,7 +1167,7 @@ export const MainLayout = () => {
           defaultWidth={392}
           minWidth={SIDEBAR_MIN_WIDTH + 72}
           maxWidth={maxSidebarWidth ? maxSidebarWidth + 72 : undefined}
-          className="md:flex-none"
+          className="flex-none"
           resizable={false}
         >
           <div className="flex h-full w-full select-none" style={{ gap: 0 }}>

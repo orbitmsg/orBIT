@@ -391,7 +391,8 @@ export const usePrivateChatSubscriptions = ({
 
           if (!isSelf && chat) {
             const activeChatId = useChatStore.getState().activeChatId;
-            if (activeChatId !== actualChatId || !isAppInFocusAndVisible()) {
+            const isRecent = !data.time || (Date.now() - Number(data.time) < 15000);
+            if (isRecent && (activeChatId !== actualChatId || !isAppInFocusAndVisible())) {
               let notifBody = messageData.text;
               if (
                 messageData.mediaType === 'sticker' ||
@@ -780,14 +781,7 @@ export const usePrivateChatSubscriptions = ({
         subscribeToTypingUpdates(chat.id);
       }
       if (!activeSubscriptions.current.has(chat.id)) {
-        if (chat.type === 'channel') {
-          subscribeToPublicChannel(chat.id);
-        } else if (chat.type === 'group') {
-          if (!chat.id.startsWith('lobby_') && !(chat as any).isLobby) {
-            subscribeToGroupChat(chat.id);
-            subscribeToDeliveryUpdates(chat.id);
-          }
-        } else {
+        if (chat.type === 'private') {
           if (chat.sharedSecret) {
             subscribeToChat(chat.id, chat.sharedSecret);
             subscribeToDeliveryUpdates(chat.id);
@@ -795,7 +789,7 @@ export const usePrivateChatSubscriptions = ({
         }
       }
 
-      if ((chat.type === 'group' || chat.type === 'channel') && !syncedGroupChannelIds.current.has(chat.id)) {
+      if (false && (chat.type === 'group' || chat.type === 'channel') && !syncedGroupChannelIds.current.has(chat.id)) {
         syncedGroupChannelIds.current.add(chat.id);
         const myUid = useAuthStore.getState().userId;
         const myC = useChatStore.getState().myCode;

@@ -303,12 +303,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </div>
         </div>
       </header>
-      <ActiveCallBar
-        style={{
-          margin: '4px 14px 8px 14px',
-          width: 'calc(100% - 28px)',
-        }}
-      />
+      {activeChat?.type !== 'group' && !activeChat?.id?.startsWith('lobby_') && (
+        <ActiveCallBar
+          style={{
+            margin: '4px 14px 8px 14px',
+            width: 'calc(100% - 28px)',
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -129,7 +129,10 @@ export const ResizableSidebar: React.FC<ResizableSidebarProps> = ({
 
   const sidebarStyle: React.CSSProperties = {
     width: isMobile ? '100%' : `${width}px`,
+    minWidth: isMobile ? '100%' : `${minWidth}px`,
+    maxWidth: isMobile ? '100%' : (maxWidth ? `${maxWidth}px` : undefined),
     flexShrink: 0,
+    flexGrow: 0,
     position: 'relative',
     transition: 'none',
     backgroundColor: 'transparent',

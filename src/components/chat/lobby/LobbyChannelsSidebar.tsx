@@ -58,11 +58,19 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
   const myNickname = useAuthStore((s) => s.nickname) || 'User';
   const myAvatar = useAuthStore((s) => s.avatarUrl);
   const callDuration = useCallStore((s) => s.duration);
+  const [sidebarNow, setSidebarNow] = useState<number>(Date.now());
   const [channels, setChannels] = useState<LobbyChannel[]>([]);
   const [members, setMembers] = useState<LobbyMember[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'text' | 'voice'>('text');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSidebarNow(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const loadMembers = useCallback(async () => {
     try {
@@ -309,6 +317,7 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
                 avatarUrl: myAvatar || null,
                 role: 'member',
                 activeVoiceChannel: ch.id,
+                voiceJoinedAt: Date.now() - callDuration * 1000,
                 joinedAt: Date.now(),
                 lastSeen: Date.now(),
               });
@@ -370,29 +379,36 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
 
                 {displayVoiceMembers.length > 0 && (
                   <div className="pl-6 pr-2 py-1 flex flex-col gap-1">
-                    {displayVoiceMembers.map((vm) => (
-                      <div
-                        key={vm.userCode || vm.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMemberClick(vm);
-                        }}
-                        className="flex items-center gap-2 py-1 px-2 rounded-md bg-white/[0.04] hover:bg-white/10 transition-colors cursor-pointer"
-                      >
-                        <div className="relative shrink-0">
-                          <Avatar src={vm.avatarUrl || undefined} alt={vm.nickname} className="w-[20px] h-[20px] rounded-full" />
-                          <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-[#2b2d31]" />
-                        </div>
-                        <span className="text-[12px] font-medium text-white truncate flex-1">
-                          {vm.nickname}
-                        </span>
-                        {isChannelActive && vm.userCode === storeMyCode && (
-                          <span className="text-[11px] font-mono text-emerald-400 font-semibold">
-                            {formatDuration(callDuration)}
+                    {displayVoiceMembers.map((vm) => {
+                      const isMe = vm.userCode === storeMyCode;
+                      const durationSecs = isMe && isChannelActive
+                        ? callDuration
+                        : (vm.voiceJoinedAt
+                          ? Math.max(0, Math.floor((sidebarNow - vm.voiceJoinedAt) / 1000))
+                          : (vm.joinedAt ? Math.max(0, Math.floor((sidebarNow - vm.joinedAt) / 1000)) : 0));
+
+                      return (
+                        <div
+                          key={vm.userCode || vm.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMemberClick(vm);
+                          }}
+                          className="flex items-center gap-2 py-1 px-2 rounded-md bg-white/[0.04] hover:bg-white/10 transition-colors cursor-pointer"
+                        >
+                          <div className="relative shrink-0">
+                            <Avatar src={vm.avatarUrl || undefined} alt={vm.nickname} className="w-[20px] h-[20px] rounded-full" />
+                            <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-[#2b2d31]" />
+                          </div>
+                          <span className="text-[12px] font-medium text-white truncate flex-1">
+                            {vm.nickname}
                           </span>
-                        )}
-                      </div>
-                    ))}
+                          <span className="text-[11px] font-mono text-emerald-400 font-semibold">
+                            {formatDuration(durationSecs)}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

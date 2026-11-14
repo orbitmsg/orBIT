@@ -612,6 +612,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           if (parsed.text) displayedText = parsed.text;
         } catch {}
       }
+      if (msg.systemType === 'call' || msg.systemType === 'call_ended') {
+        return null;
+      }
       if (msg.systemType) {
         const act = msg.actorNickname || '';
         const trg = msg.targetNickname || '';
@@ -633,10 +636,6 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           displayedText = t('system.promoted_admin', { actor: act, target: trg, defaultValue: `${act} назначил(а) ${trg} администратором` });
         } else if (msg.systemType === 'unadmin' && act) {
           displayedText = t('system.demoted_admin', { actor: act, target: trg, defaultValue: `${act} снял(а) ${trg} с администратора` });
-        } else if (msg.systemType === 'call') {
-          displayedText = act ? t('system.call_started', { actor: act, defaultValue: `${act} начал(а) голосовой чат` }) : t('system.call_started_generic', { defaultValue: 'Голосовой чат начат' });
-        } else if (msg.systemType === 'call_ended') {
-          displayedText = t('system.call_ended', { defaultValue: 'Голосовой звонок завершен' });
         } else if (msg.systemType === 'kick' && act) {
           displayedText = t('system.member_removed', { actor: act, target: trg, defaultValue: `${act} удалил(а) ${trg} из лобби` });
         }

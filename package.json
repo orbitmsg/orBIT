@@ -52,6 +52,8 @@
     "win": {
       "icon": "public/icons/icon.ico",
       "executableName": "orBIT",
+      "legalTrademarks": "orBIT",
+      "fileDescription": "orBIT",
       "target": [
         {
           "target": "nsis",

@@ -75,6 +75,7 @@ export interface LobbyMember {
   avatarUrl: string | null;
   role: 'owner' | 'admin' | 'member';
   activeVoiceChannel?: string | null;
+  voiceJoinedAt?: number | null;
   joinedAt: number;
   lastSeen: number;
 }
@@ -480,6 +481,7 @@ export class LobbyService {
       avatarUrl: r.avatar_url,
       role: r.role,
       activeVoiceChannel: r.active_voice_channel || null,
+      voiceJoinedAt: r.voice_joined_at ? new Date(r.voice_joined_at).getTime() : null,
       joinedAt: new Date(r.joined_at).getTime(),
       lastSeen: new Date(r.last_seen).getTime(),
     }));
@@ -489,7 +491,10 @@ export class LobbyService {
     try {
       await this.client
         .from('lobby_members')
-        .update({ active_voice_channel: channelId })
+        .update({
+          active_voice_channel: channelId,
+          voice_joined_at: channelId ? new Date().toISOString() : null,
+        })
         .eq('lobby_id', lobbyId)
         .eq('user_code', userCode);
     } catch (e) {
@@ -539,8 +544,8 @@ export class LobbyService {
         ciphertext: ciphertext,
         media_type: params.mediaType || null,
         media_url: params.mediaUrl || null,
-        mediaName: params.mediaName || null,
-        mediaSize: params.mediaSize || null,
+        media_name: params.mediaName || null,
+        media_size: params.mediaSize || null,
         reply_to_id: params.replyToId || null,
         created_at: nowIso,
       })
@@ -629,15 +634,22 @@ export class LobbyService {
   subscribeToLobby(
     lobbyId: string,
     onMessage: (msg: LobbyMessage) => void,
-    onMemberChange?: () => void
+    onMemberChange?: () => void,
+    sharedSecret?: string | null
   ) {
     const channel = this.client
       .channel(`lobby:${lobbyId}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'lobby_messages', filter: `lobby_id=eq.${lobbyId}` },
-        (payload) => {
+        async (payload) => {
           const r = payload.new as any;
+          let text = r.text || '';
+          if (r.ciphertext && sharedSecret) {
+            try {
+              text = await decryptLobbyPayload(r.ciphertext, sharedSecret);
+            } catch {}
+          }
           onMessage({
             id: r.id,
             lobbyId: r.lobby_id,
@@ -645,7 +657,7 @@ export class LobbyService {
             senderCode: r.sender_code,
             senderNickname: r.sender_nickname,
             senderAvatarUrl: r.sender_avatar_url,
-            text: r.text || '',
+            text,
             mediaType: r.media_type,
             mediaUrl: r.media_url,
             mediaName: r.media_name,

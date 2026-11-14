@@ -1040,13 +1040,9 @@ class GroupService {
         body: JSON.stringify({ groupId, roomName, hostCode, hostNickname }),
       }).catch(() => {});
     } catch {}
-
-    const chatSecret = useChatStore.getState().chats.find(c => c.id === groupId)?.sharedSecret;
-    const secret = chatSecret || deriveGroupKey(groupId);
-    this.sendSystemMessage(groupId, secret, 'call', hostNickname, undefined, { roomName });
   }
 
-  async endCall(groupId: string, actorNickname?: string): Promise<void> {
+  async endCall(groupId: string, _actorNickname?: string): Promise<void> {
     if (!groupId || groupId.startsWith('lobby_')) return;
     try {
       fetch(`${this.getWorkerUrl()}/groups/calls/end`, {
@@ -1055,94 +1051,9 @@ class GroupService {
         body: JSON.stringify({ groupId }),
       }).catch(() => {});
     } catch {}
-
-    const chatSecret = useChatStore.getState().chats.find(c => c.id === groupId)?.sharedSecret;
-    const secret = chatSecret || deriveGroupKey(groupId);
-    await this.sendSystemMessage(groupId, secret, 'call_ended', actorNickname || '');
   }
 
-  async fetchMyGroups(userCode: string, userId?: string): Promise<(GroupInfo & { role: string })[]> {
-    try {
-      const filters: string[] = [];
-      if (userCode) {
-        filters.push(`user_code.eq.${userCode}`);
-        filters.push(`user_id.eq.${userCode}`);
-      }
-      if (userId && userId !== userCode) {
-        filters.push(`user_code.eq.${userId}`);
-        filters.push(`user_id.eq.${userId}`);
-      }
-      if (filters.length > 0) {
-        const { data: memberRows } = await this.supabase
-          .from('group_members')
-          .select('group_id, role')
-          .or(filters.join(','));
-
-        if (memberRows && memberRows.length > 0) {
-          const groupIds = memberRows.map((r: any) => r.group_id);
-          const { data: groups } = await this.supabase.from('groups').select('*').in('id', groupIds);
-          const roleMap: Record<string, string> = {};
-          memberRows.forEach((r: any) => { roleMap[r.group_id] = r.role; });
-
-          const results = await Promise.all((groups || []).map(async (g: any) => {
-            const { data: members } = await this.supabase.from('group_members').select('*').eq('group_id', g.id);
-            const formatted = (members || []).map((m: any) => ({
-              nickname: m.nickname,
-              userCode: m.user_code,
-              userId: m.user_id || m.user_code,
-              role: m.role || 'member',
-              joinedAt: new Date(m.joined_at || g.created_at).getTime(),
-              lastSeen: m.last_seen ? new Date(m.last_seen).getTime() : undefined,
-              avatarUrl: m.avatar_url || null,
-            }));
-
-            let inviteActive = true;
-            let expiresAt: number | null = null;
-            if (g.creator_id && typeof g.creator_id === 'string' && g.creator_id.startsWith('{')) {
-              try {
-                const parsed = JSON.parse(g.creator_id);
-                if (parsed.active === false) inviteActive = false;
-                if (typeof parsed.expiresAt === 'number') expiresAt = parsed.expiresAt;
-              } catch {}
-            }
-
-            return {
-              id: g.id,
-              code: g.code,
-              name: g.name,
-              description: g.description || '',
-              avatarUrl: g.avatar_url || null,
-              creatorNickname: g.creator_nickname,
-              creatorCode: g.creator_code || null,
-              membersCount: g.members_count || formatted.length || 1,
-              maxMembers: g.max_members || 10,
-              members: formatted,
-              createdAt: new Date(g.created_at).getTime(),
-              role: roleMap[g.id] || 'member',
-              sharedSecret: deriveGroupKey(g.id),
-              inviteActive,
-              inviteExpiresAt: expiresAt,
-            };
-          }));
-
-          if (results.length > 0) return results;
-        }
-      }
-    } catch {}
-
-    try {
-      const q = new URLSearchParams();
-      if (userCode) q.set('userCode', userCode);
-      if (userId) q.set('userId', userId);
-      const res = await fetch(`${this.getWorkerUrl()}/groups/my?${q.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        return (data.groups || []).map((g: any) => ({
-          ...g,
-          sharedSecret: deriveGroupKey(g.id),
-        }));
-      }
-    } catch {}
+  async fetchMyGroups(_userCode: string, _userId?: string): Promise<(GroupInfo & { role: string })[]> {
     return [];
   }
 

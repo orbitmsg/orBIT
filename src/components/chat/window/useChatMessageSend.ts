@@ -558,16 +558,23 @@ export const useChatMessageSend = ({
         const target = updated.find((m) => m.id === messageId);
         if (target) {
           (window as any).orbita?.storageAddMessage?.(effectiveChatKey, messageId, target).catch(() => {});
+          if (effectiveChatKey !== targetChatId) {
+            (window as any).orbita?.storageAddMessage?.(targetChatId, messageId, target).catch(() => {});
+          }
         }
         return {
           messagesByChatId: {
             ...state.messagesByChatId,
             [effectiveChatKey]: updated,
+            ...(effectiveChatKey !== targetChatId ? { [targetChatId]: updated } : {}),
           },
         };
       });
     } else {
       addMessage(effectiveChatKey, localMessage);
+      if (effectiveChatKey !== targetChatId) {
+        addMessage(targetChatId, { ...localMessage, chatId: targetChatId });
+      }
     }
 
     sendQueueRef.current = sendQueueRef.current.then(async () => {
@@ -636,7 +643,51 @@ export const useChatMessageSend = ({
         let freshChat = useChatStore.getState().chats.find(c => c.id === targetChatId);
         const wasDraft = Boolean(freshChat?.isDraft || targetChat?.isDraft);
 
-        if (freshChat?.type === 'group') {
+        if (targetChatId.startsWith('lobby_')) {
+          let lobbySecret = freshChat?.sharedSecret;
+          if (!lobbySecret) {
+            try {
+              const lobby = await lobbyService.getLobbyById(targetChatId);
+              if (lobby?.sharedSecret) {
+                lobbySecret = lobby.sharedSecret;
+                useChatStore.getState().updateChat(targetChatId, { sharedSecret: lobby.sharedSecret });
+              }
+            } catch {}
+          }
+          if (!lobbySecret) {
+            lobbySecret = deriveGroupKey(targetChatId);
+          }
+
+          const activeChannelId = useChatStore.getState().activeChannelId;
+          const targetChatKey = activeChannelId ? `${targetChatId}:${activeChannelId}` : targetChatId;
+          const currentAvatar = useAuthStore.getState().avatarUrl;
+          lobbyService.sendLobbyMessage({
+            lobbyId: targetChatId,
+            channelId: activeChannelId,
+            senderCode: myCode,
+            senderNickname: myNickname,
+            senderAvatarUrl: currentAvatar,
+            text,
+            sharedSecret: lobbySecret,
+            mediaType: mediaPayload?.type as any,
+            mediaUrl: mediaPayload?.url,
+            mediaName: mediaPayload?.name,
+            mediaSize: mediaPayload?.size,
+            replyToId: replyingTo?.id,
+          }).then(() => {
+            useChatStore.getState().updateMessageStatus(targetChatKey, messageId, 'sent');
+            if (targetChatKey !== targetChatId) {
+              useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sent');
+            }
+            networkManager.removeOutboxItem(messageId).catch(() => {});
+          }).catch((err) => {
+            console.error('Failed to send lobby message:', err);
+            useChatStore.getState().updateMessageStatus(targetChatKey, messageId, 'failed');
+            if (targetChatKey !== targetChatId) {
+              useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'failed');
+            }
+          });
+        } else if (freshChat?.type === 'group') {
           let groupSecret = freshChat.sharedSecret;
           if (!groupSecret && freshChat.id && freshChat.id.length === 36) {
             groupSecret = deriveGroupKey(freshChat.id);
@@ -653,30 +704,6 @@ export const useChatMessageSend = ({
           }
 
           if (groupSecret) {
-            if (targetChatId.startsWith('lobby_')) {
-              const activeChannelId = useChatStore.getState().activeChannelId;
-              const targetChatKey = activeChannelId ? `${targetChatId}:${activeChannelId}` : targetChatId;
-              const currentAvatar = useAuthStore.getState().avatarUrl;
-              lobbyService.sendLobbyMessage({
-                lobbyId: targetChatId,
-                channelId: activeChannelId,
-                senderCode: myCode,
-                senderNickname: myNickname,
-                senderAvatarUrl: currentAvatar,
-                text,
-                sharedSecret: groupSecret,
-                mediaType: mediaPayload?.type as any,
-                mediaUrl: mediaPayload?.url,
-                mediaName: mediaPayload?.name,
-                mediaSize: mediaPayload?.size,
-                replyToId: replyingTo?.id,
-              }).then(() => {
-                useChatStore.getState().updateMessageStatus(targetChatKey, messageId, 'sent');
-                networkManager.removeOutboxItem(messageId).catch(() => {});
-              }).catch(() => {
-                useChatStore.getState().updateMessageStatus(targetChatKey, messageId, 'failed');
-              });
-            } else {
               const ciphertext = await encryptMessage(JSON.stringify(messageData), groupSecret);
               const groupPusher = getGroupPusher();
               const channel = groupPusher.subscribe(`presence-group-${targetChatId}`);
@@ -774,7 +801,6 @@ export const useChatMessageSend = ({
                 useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'failed');
               }
             });
-            }
           }
           return;
         }

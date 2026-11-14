@@ -279,62 +279,91 @@ export const useChatRealtime = ({
     if (activeChat?.id?.startsWith('lobby_')) {
       const targetLobbyId = activeChatId;
       const targetKey = activeChannelId ? `${targetLobbyId}:${activeChannelId}` : targetLobbyId;
-      const secret = activeChat.sharedSecret || deriveGroupKey(targetLobbyId);
-      lobbyService.getLobbyMessages(targetLobbyId, secret, 50, activeChannelId).then((lobbyMsgs) => {
-        if (useChatStore.getState().activeChatId !== targetLobbyId) return;
-        if (!Array.isArray(lobbyMsgs) || lobbyMsgs.length === 0) return;
-        const current = useChatStore.getState().messagesByChatId[targetKey] || [];
-        const existingIds = new Set(current.map((m) => m.id));
-        const newOnes: Message[] = lobbyMsgs
-          .filter((lm) => !existingIds.has(lm.id))
-          .map((lm) => ({
-            id: lm.id,
-            chatId: targetKey,
-            sender: lm.senderNickname,
-            senderCode: lm.senderCode,
-            text: lm.text,
-            time: lm.createdAt,
-            isOutgoing: lm.senderCode === myCode,
-            status: 'delivered' as const,
-            mediaType: lm.mediaType as any,
-            mediaUrl: lm.mediaUrl || undefined,
-            mediaName: lm.mediaName || undefined,
-            fileSize: lm.mediaSize || undefined,
-          }));
-        if (newOnes.length > 0) {
-          useChatStore.setState((state) => ({
-            messagesByChatId: {
-              ...state.messagesByChatId,
-              [targetKey]: [...(state.messagesByChatId[targetKey] || []), ...newOnes].sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0)),
-            },
-          }));
-        }
-      }).catch(() => {});
 
-      unsubLobbyRealtime = lobbyService.subscribeToLobby(
-        targetLobbyId,
-        (msg) => {
-          if (msg.senderCode === myCode) return;
-          const msgTargetKey = msg.channelId ? `${targetLobbyId}:${msg.channelId}` : targetLobbyId;
-          const newMsg: Message = {
-            id: msg.id,
-            chatId: msgTargetKey,
-            sender: msg.senderNickname,
-            senderCode: msg.senderCode,
-            text: msg.text,
-            time: msg.createdAt,
-            isOutgoing: false,
-            status: 'delivered',
-            mediaType: msg.mediaType as any,
-            mediaUrl: msg.mediaUrl || undefined,
-            mediaName: msg.mediaName || undefined,
-            fileSize: msg.mediaSize || undefined,
-          };
-          useChatStore.getState().addMessage(msgTargetKey, newMsg);
-        },
-        undefined,
-        secret
-      );
+      const resolveSecretAndLoad = async () => {
+        let secret = activeChat?.sharedSecret;
+        if (!secret) {
+          try {
+            const l = await lobbyService.getLobbyById(targetLobbyId);
+            if (l?.sharedSecret) {
+              secret = l.sharedSecret;
+              useChatStore.getState().updateChat(targetLobbyId, { sharedSecret: l.sharedSecret });
+            }
+          } catch {}
+        }
+        if (!secret) {
+          secret = deriveGroupKey(targetLobbyId);
+        }
+
+        try {
+          const lobbyMsgs = await lobbyService.getLobbyMessages(targetLobbyId, secret, 50, activeChannelId);
+          if (useChatStore.getState().activeChatId !== targetLobbyId) return;
+          if (Array.isArray(lobbyMsgs) && lobbyMsgs.length > 0) {
+            const current = useChatStore.getState().messagesByChatId[targetKey] || [];
+            const existingIds = new Set(current.map((m) => m.id));
+            const newOnes: Message[] = lobbyMsgs
+              .filter((lm) => !existingIds.has(lm.id))
+              .map((lm) => ({
+                id: lm.id,
+                chatId: targetKey,
+                sender: lm.senderNickname,
+                senderCode: lm.senderCode,
+                text: lm.text,
+                time: lm.createdAt,
+                isOutgoing: lm.senderCode === myCode,
+                status: 'delivered' as const,
+                mediaType: lm.mediaType as any,
+                mediaUrl: lm.mediaUrl || undefined,
+                mediaName: lm.mediaName || undefined,
+                fileSize: lm.mediaSize || undefined,
+              }));
+            if (newOnes.length > 0) {
+              useChatStore.setState((state) => ({
+                messagesByChatId: {
+                  ...state.messagesByChatId,
+                  [targetKey]: [...(state.messagesByChatId[targetKey] || []), ...newOnes].sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0)),
+                  ...(targetKey !== targetLobbyId ? {
+                    [targetLobbyId]: [...(state.messagesByChatId[targetLobbyId] || []), ...newOnes].sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0)),
+                  } : {}),
+                },
+              }));
+            }
+          }
+        } catch {}
+
+        unsubLobbyRealtime = lobbyService.subscribeToLobby(
+          targetLobbyId,
+          (msg) => {
+            if (msg.senderCode === myCode) return;
+            const msgTargetKey = msg.channelId ? `${targetLobbyId}:${msg.channelId}` : targetLobbyId;
+            const newMsg: Message = {
+              id: msg.id,
+              chatId: msgTargetKey,
+              sender: msg.senderNickname,
+              senderCode: msg.senderCode,
+              text: msg.text,
+              time: msg.createdAt,
+              isOutgoing: false,
+              status: 'delivered',
+              mediaType: msg.mediaType as any,
+              mediaUrl: msg.mediaUrl || undefined,
+              mediaName: msg.mediaName || undefined,
+              fileSize: msg.mediaSize || undefined,
+            };
+            useChatStore.getState().addMessage(msgTargetKey, newMsg);
+            if (msgTargetKey !== targetLobbyId) {
+              useChatStore.getState().addMessage(targetLobbyId, { ...newMsg, chatId: targetLobbyId });
+            }
+            try {
+              (window as any).orbita?.storageAddMessage?.(targetLobbyId, msg.id, newMsg);
+            } catch {}
+          },
+          undefined,
+          secret
+        );
+      };
+
+      resolveSecretAndLoad();
     }
 
     const ablyTopic = activeChat?.type === 'channel' ? `public-channel-${activeChatId}` : activeChatId;

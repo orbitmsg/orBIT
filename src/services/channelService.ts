@@ -56,83 +56,10 @@ const setChannelPostsStorage = async (channelId: string, val: string): Promise<v
 
 class ChannelService {
   async getFeaturedChannels(): Promise<ChannelInfo[]> {
-    try {
-      const res = await fetch(`${W}/channels/featured`);
-      if (res.ok) {
-        const data = (await res.json()) as { channels: ChannelInfo[] };
-        if (data.channels && data.channels.length > 0) return data.channels;
-      }
-    } catch {}
-
-    try {
-      const res = await fetch(`${CHANNELS_SUPABASE_URL}/rest/v1/public_channels?select=*&order=created_at.desc&limit=20`, {
-        headers: {
-          'apikey': CHANNELS_SUPABASE_KEY,
-          'Authorization': `Bearer ${CHANNELS_SUPABASE_KEY}`,
-        },
-      });
-      if (res.ok) {
-        const data = (await res.json()) as any[];
-        if (Array.isArray(data)) {
-          return data.map((c) => ({
-            id: c.id,
-            name: c.name,
-            username: c.username || null,
-            description: c.description || '',
-            avatarUrl: c.avatar_url || null,
-            creatorId: c.creator_id || undefined,
-            creatorNickname: c.creator_nickname,
-            subscribersCount: c.subscribers_count || 1,
-            isOfficial: c.is_official || false,
-            createdAt: new Date(c.created_at).getTime(),
-            updatedAt: c.updated_at ? new Date(c.updated_at).getTime() : new Date(c.created_at).getTime(),
-          }));
-        }
-      }
-    } catch {}
     return [];
   }
 
-  async getChannel(channelId: string): Promise<ChannelInfo | null> {
-    const cleanId = channelId.trim().replace(/^@+/, '');
-    if (!cleanId) return null;
-
-    try {
-      const res = await fetch(`${CHANNELS_SUPABASE_URL}/rest/v1/public_channels?or=(id.eq.${encodeURIComponent(cleanId)},username.ilike.${encodeURIComponent(cleanId)})&select=*&limit=1`, {
-        headers: {
-          'apikey': CHANNELS_SUPABASE_KEY,
-          'Authorization': `Bearer ${CHANNELS_SUPABASE_KEY}`,
-        },
-      });
-      if (res.ok) {
-        const data = (await res.json()) as any[];
-        if (Array.isArray(data) && data.length > 0) {
-          const c = data[0];
-          return {
-            id: c.id,
-            name: c.name,
-            username: c.username || null,
-            description: c.description || '',
-            avatarUrl: c.avatar_url || null,
-            creatorId: c.creator_id || undefined,
-            creatorNickname: c.creator_nickname,
-            subscribersCount: c.subscribers_count || 1,
-            isOfficial: c.is_official || false,
-            createdAt: new Date(c.created_at).getTime(),
-            updatedAt: c.updated_at ? new Date(c.updated_at).getTime() : new Date(c.created_at).getTime(),
-          };
-        }
-      }
-    } catch {}
-
-    try {
-      const res = await fetch(`${W}/channels/get?channelId=${encodeURIComponent(cleanId)}`);
-      if (res.ok) {
-        const data = (await res.json()) as { channel: ChannelInfo };
-        if (data.channel) return data.channel;
-      }
-    } catch {}
-
+  async getChannel(_channelId: string): Promise<ChannelInfo | null> {
     return null;
   }
 

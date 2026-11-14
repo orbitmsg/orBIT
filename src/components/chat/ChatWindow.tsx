@@ -98,7 +98,14 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
   const effectiveChatKey = isLobby && activeChannelId ? `${activeChatId}:${activeChannelId}` : (activeChatId || '');
 
   const rawMessages = useChatStore(useShallow((s) => {
-    return effectiveChatKey ? s.messagesByChatId[effectiveChatKey] || EMPTY_ARRAY : EMPTY_ARRAY;
+    if (!effectiveChatKey) return EMPTY_ARRAY;
+    const channelMsgs = s.messagesByChatId[effectiveChatKey];
+    if (channelMsgs && channelMsgs.length > 0) return channelMsgs;
+    if (isLobby && activeChatId && effectiveChatKey !== activeChatId) {
+      const baseMsgs = s.messagesByChatId[activeChatId];
+      if (baseMsgs && baseMsgs.length > 0) return baseMsgs;
+    }
+    return EMPTY_ARRAY;
   }));
 
   const messages = useMemo(() => {

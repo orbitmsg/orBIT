@@ -590,7 +590,7 @@ export class LobbyService {
       .eq('lobby_id', lobbyId);
 
     if (channelId) {
-      query = query.eq('channel_id', channelId);
+      query = query.or(`channel_id.eq.${channelId},channel_id.is.null`);
     }
 
     const { data, error } = await query

@@ -30,7 +30,7 @@ export const SpoilerSpan: React.FC<{ content: string; isOwn?: boolean }> = ({ co
 
 export function renderFormattedInlineText(
   rawText: string,
-  themeColor: string,
+  _themeColor: string,
   onLinkClick?: (url: string) => void,
   isOwn: boolean = true
 ): React.ReactNode[] {
@@ -39,9 +39,7 @@ export function renderFormattedInlineText(
   let lastIndex = 0;
   let match: RegExpExecArray | null;
   let keyCounter = 0;
-  const linkColor = isOwn
-    ? 'var(--bubble-own-text, #ffffff)'
-    : (themeColor && themeColor !== 'var(--accent-color)' ? themeColor : 'var(--accent-text, var(--accent-color))');
+  const linkColor = '#917bbd';
 
   while ((match = regex.exec(rawText)) !== null) {
     if (match.index > lastIndex) {
@@ -90,7 +88,7 @@ export function renderFormattedInlineText(
               onLinkClick(targetUrl);
             }
           }}
-          style={{ color: linkColor, textDecoration: isOwn ? 'underline' : 'none', cursor: 'pointer' }}
+          style={{ color: linkColor, textDecoration: 'underline', cursor: 'pointer' }}
         >
           {mdLinkLabel}
         </a>
@@ -113,7 +111,7 @@ export function renderFormattedInlineText(
               onLinkClick(targetUrl);
             }
           }}
-          style={{ color: linkColor, textDecoration: isOwn ? 'underline' : 'none', cursor: 'pointer' }}
+          style={{ color: linkColor, textDecoration: 'underline', cursor: 'pointer' }}
         >
           {fullMatch}
         </a>

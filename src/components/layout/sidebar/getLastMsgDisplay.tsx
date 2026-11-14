@@ -97,7 +97,8 @@ export const getLastMsgDisplay = (chat: Chat, lastMsg: Message | null, t: any, i
       .replace(/\n+/g, ' ')
       .trim();
 
-    return renderFallback(plain || t('common.no_messages'));
+    const isLink = /^(?:https?:\/\/|ftp:\/\/|[a-zA-Z0-9-]+\.[a-zA-Z]{2,})/i.test(plain);
+    return renderFallback(plain || t('common.no_messages'), isLink);
   }
 
   if (lastMsg.mediaType === 'system' || lastMsg.sender === 'system' || (lastMsg as any).systemType) {
@@ -308,7 +309,8 @@ export const getLastMsgDisplay = (chat: Chat, lastMsg: Message | null, t: any, i
       .replace(/^>\s?(.*)$/gm, '$1')
       .replace(/\n+/g, ' ')
       .trim();
-    return renderWithPrefix(plain || t('common.no_messages'));
+    const isLink = /^(?:https?:\/\/|ftp:\/\/|[a-zA-Z0-9-]+\.[a-zA-Z]{2,})/i.test(plain);
+    return renderWithPrefix(plain || t('common.no_messages'), isLink);
   }
 
   return renderWithPrefix(t('common.no_messages'));

@@ -182,11 +182,11 @@ export const DeveloperBadge: React.FC<DeveloperBadgeProps> = ({
         height: size,
         flexShrink: 0,
         verticalAlign: 'middle',
-        color: 'var(--accent-color, #c85f95)',
+        color: 'var(--accent-color, #917bbd)',
         ...style,
       }}
     >
-      <OrbitaBadgeIcon size={size} color="var(--accent-color, #c85f95)" />
+      <OrbitaBadgeIcon size={size} color="var(--accent-color, #917bbd)" />
     </span>
   );
 };

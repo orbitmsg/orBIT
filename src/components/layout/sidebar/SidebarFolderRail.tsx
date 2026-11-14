@@ -88,7 +88,7 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
             className="w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 outline-none border-none select-none"
             style={{
               borderRadius: isHomeActive || hoveredInfo?.id === 'home' ? '16px' : '24px',
-              backgroundColor: isHomeActive || hoveredInfo?.id === 'home' ? '#5865F2' : '#313338',
+              backgroundColor: isHomeActive || hoveredInfo?.id === 'home' ? 'var(--accent-color, #917bbd)' : '#313338',
               color: '#ffffff',
             }}
           >
@@ -100,7 +100,7 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
           <div
             className="absolute left-0 w-1 rounded-r-full transition-all duration-200"
             style={{
-              backgroundColor: '#23a55a',
+              backgroundColor: 'var(--accent-color, #917bbd)',
               height: hoveredInfo?.id === 'add-lobby' ? '20px' : '0px',
             }}
           />
@@ -113,8 +113,8 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
             className="w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 outline-none border-none select-none"
             style={{
               borderRadius: hoveredInfo?.id === 'add-lobby' ? '16px' : '24px',
-              backgroundColor: hoveredInfo?.id === 'add-lobby' ? '#23a55a' : '#313338',
-              color: hoveredInfo?.id === 'add-lobby' ? '#ffffff' : '#23a55a',
+              backgroundColor: hoveredInfo?.id === 'add-lobby' ? 'var(--accent-color, #917bbd)' : '#313338',
+              color: hoveredInfo?.id === 'add-lobby' ? '#ffffff' : 'var(--accent-color, #917bbd)',
             }}
           >
             <Plus size={24} strokeWidth={2.4} />
@@ -125,7 +125,7 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
           <div
             className="absolute left-0 w-1 rounded-r-full transition-all duration-200"
             style={{
-              backgroundColor: '#23a55a',
+              backgroundColor: 'var(--accent-color, #917bbd)',
               height: currentView === 'explore' ? '40px' : hoveredInfo?.id === 'explore' ? '20px' : '0px',
             }}
           />
@@ -138,8 +138,8 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
             className="w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 outline-none border-none select-none"
             style={{
               borderRadius: currentView === 'explore' || hoveredInfo?.id === 'explore' ? '16px' : '24px',
-              backgroundColor: currentView === 'explore' || hoveredInfo?.id === 'explore' ? '#23a55a' : '#313338',
-              color: currentView === 'explore' || hoveredInfo?.id === 'explore' ? '#ffffff' : '#23a55a',
+              backgroundColor: currentView === 'explore' || hoveredInfo?.id === 'explore' ? 'var(--accent-color, #917bbd)' : '#313338',
+              color: currentView === 'explore' || hoveredInfo?.id === 'explore' ? '#ffffff' : 'var(--accent-color, #917bbd)',
             }}
           >
             <Compass size={24} strokeWidth={2} />
@@ -179,7 +179,7 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
                 className="relative w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 outline-none border-none font-semibold text-sm select-none overflow-hidden"
                 style={{
                   borderRadius: isLobbyActive || isHovered ? '16px' : '24px',
-                  backgroundColor: isLobbyActive || isHovered ? '#5865F2' : '#313338',
+                  backgroundColor: isLobbyActive || isHovered ? 'var(--accent-color, #917bbd)' : '#313338',
                   color: isLobbyActive || isHovered ? '#ffffff' : '#dbdee1',
                 }}
               >
@@ -230,7 +230,7 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
                 className="relative w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 outline-none border-none font-semibold text-sm select-none"
                 style={{
                   borderRadius: '16px',
-                  backgroundColor: isFolderActive || isHovered ? '#5865F2' : 'var(--surface-container, #18181a)',
+                  backgroundColor: isFolderActive || isHovered ? 'var(--accent-color, #917bbd)' : 'var(--surface-container, #18181a)',
                   color: isFolderActive || isHovered ? '#ffffff' : 'var(--text-dim, #8e8e93)',
                 }}
               >

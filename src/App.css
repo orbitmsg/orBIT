@@ -25,12 +25,12 @@
   --bg-primary: #313338;
   --bg-secondary: #2b2d31;
   --chat-list-bg: #2b2d31;
-  --accent-color: #5865F2;
-  --accent-light: #7289da;
-  --accent-dark: #4752c4;
-  --accent-hover: #4752c4;
-  --accent-gradient: linear-gradient(135deg, #5865F2 0%, #4752c4 100%);
-  --accent-glow: rgba(88, 101, 242, 0.25);
+  --accent-color: #917bbd;
+  --accent-light: #a894d1;
+  --accent-dark: #7a65a3;
+  --accent-hover: #7e67ab;
+  --accent-gradient: linear-gradient(135deg, #a894d1 0%, #7a65a3 100%);
+  --accent-glow: rgba(145, 123, 189, 0.25);
   --text-main: #dbdee1;
   --text-dim: #949ba4;
   --text-offline: #80848e;

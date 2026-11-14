@@ -65,12 +65,12 @@ export const DEFAULT_FONT = "var(--main-font), 'Apple Color Emoji', sans-serif";
 const standardThemeVars: Record<string, string> = {
   '--bg-primary': '#070708',
   '--bg-secondary': '#121212',
-  '--accent-color': '#5865F2',
-  '--accent-light': '#7983f5',
-  '--accent-dark': '#4752c4',
-  '--accent-gradient': 'linear-gradient(135deg, #5865F2 0%, #4752c4 100%)',
-  '--accent-glow': 'rgba(88, 101, 242, 0.25)',
-  '--accent-glow-light': 'rgba(88, 101, 242, 0.12)',
+  '--accent-color': '#917bbd',
+  '--accent-light': '#a894d1',
+  '--accent-dark': '#7a65a3',
+  '--accent-gradient': 'linear-gradient(135deg, #a894d1 0%, #7a65a3 100%)',
+  '--accent-glow': 'rgba(145, 123, 189, 0.25)',
+  '--accent-glow-light': 'rgba(145, 123, 189, 0.12)',
   '--text-main': '#dbdee1',
   '--text-dim': '#949ba4',
   '--text-offline': '#80848e',
@@ -185,7 +185,7 @@ export const resolveThemeVars = (_themeId: ThemeId, _chatColor?: string, _themeT
   const theme = themePalettes.dark;
   const tint = getThemeTintById(DEFAULT_THEME_TINT_ID);
 
-  const accentColor = '#5865F2';
+  const accentColor = '#917bbd';
   const effectiveChatColor = '#383a40';
   const accentOnColor = '#FFFFFF';
   const bubbleOwnText = '#FFFFFF';
@@ -233,18 +233,18 @@ export const resolveThemeVars = (_themeId: ThemeId, _chatColor?: string, _themeT
     '--bubble-own-text': bubbleOwnText,
     '--chat-bubble-incoming-bg': '#141416',
     '--chat-bubble-incoming-text': '#FFFFFF',
-    '--accent-color': '#5865F2',
-    '--accent-light': '#7983f5',
-    '--accent-dark': '#4752c4',
-    '--accent-hover': '#4752c4',
-    '--accent-gradient': 'linear-gradient(135deg, #5865F2 0%, #4752c4 100%)',
+    '--accent-color': '#917bbd',
+    '--accent-light': '#a894d1',
+    '--accent-dark': '#7a65a3',
+    '--accent-hover': '#7e67ab',
+    '--accent-gradient': 'linear-gradient(135deg, #a894d1 0%, #7a65a3 100%)',
     '--accent-on-color': accentOnColor,
     '--accent-text': accentText,
-    '--accent-glow': 'rgba(88, 101, 242, 0.25)',
-    '--accent-glow-light': 'rgba(88, 101, 242, 0.12)',
-    '--selection-bg': 'rgba(88, 101, 242, 0.15)',
-    '--md-sys-color-primary': '#5865F2',
-    '--settings-primary': '#5865F2',
+    '--accent-glow': 'rgba(145, 123, 189, 0.25)',
+    '--accent-glow-light': 'rgba(145, 123, 189, 0.12)',
+    '--selection-bg': 'rgba(145, 123, 189, 0.18)',
+    '--md-sys-color-primary': '#917bbd',
+    '--settings-primary': '#917bbd',
     '--settings-on-primary': '#070708',
     '--settings-primary-cont': '#2a2a2e',
   };

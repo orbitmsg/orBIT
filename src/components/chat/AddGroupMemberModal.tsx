@@ -331,10 +331,11 @@ export const AddGroupMemberModal: React.FC<AddGroupMemberModalProps> = ({
                           />
                           <OnlineIndicator
                             online={contact.online}
-                            showOffline={true}
+                            showOffline={false}
                             size="sm"
                             ringColor="var(--settings-bg, var(--bg-secondary, #1e1b2e))"
-                            ariaLabel={contact.online ? t('chatWindow.online', 'в сети') : t('chatWindow.offline', 'не в сети')}
+                            color="#917bbd"
+                            ariaLabel={contact.online ? t('chatWindow.online', 'в сети') : undefined}
                           />
                         </div>
                         <div className="flex flex-col min-w-0">

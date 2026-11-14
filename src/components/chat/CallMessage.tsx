@@ -85,7 +85,9 @@ export const CallMessage = memo(
           <span
             className="font-medium truncate"
             style={{
-              color: isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--chat-bubble-incoming-text, var(--text-main))',
+              color: isOwn
+                ? 'var(--bubble-own-text, #ffffff)'
+                : (displayStatus === 'missed' ? '#917bbd' : 'var(--chat-bubble-incoming-text, var(--text-main))'),
               fontSize: orbitFs(13),
             }}
           >
@@ -103,7 +105,7 @@ export const CallMessage = memo(
           </div>
         </div>
         <div
-          style={{ color: isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--accent-text, var(--accent-color))' }}
+          style={{ color: isOwn ? 'var(--bubble-own-text, #ffffff)' : '#917bbd' }}
           className="flex-shrink-0 flex items-center justify-center"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 42 42" fill="currentColor">

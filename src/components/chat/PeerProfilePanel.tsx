@@ -290,13 +290,15 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
         style={{
           width: '320px',
           flexShrink: 0,
-          height: '100%',
-          backgroundColor: 'transparent',
-          borderLeft: '1px solid rgba(255, 255, 255, 0.06)',
-          borderTop: 'none',
-          borderRight: 'none',
-          borderBottom: 'none',
+          height: 'fit-content',
+          maxHeight: 'calc(100% - 24px)',
+          alignSelf: 'flex-start',
+          margin: '12px 12px 12px 0',
+          borderRadius: '16px',
+          backgroundColor: '#232428',
+          border: 'none',
           outline: 'none',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
@@ -382,7 +384,8 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                 online={Boolean(effectiveChat.online)}
                 showOffline={false}
                 size="lg"
-                ringColor="var(--title-bar-bg, #14111d)"
+                ringColor="#232428"
+                color="#917bbd"
                 ariaLabel={effectiveChat.online ? t('userStatus.online', 'в сети') : undefined}
               />
             </div>
@@ -456,7 +459,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                     fontSize: '12.5px',
                     fontWeight: effectiveChat.online ? 600 : 400,
                     color: effectiveChat.online
-                      ? 'var(--accent-text, var(--accent-color, #5865F2))'
+                      ? '#917bbd'
                       : 'var(--text-dim, #949ba4)',
                     lineHeight: 1.3,
                   }}

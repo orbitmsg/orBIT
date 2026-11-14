@@ -138,11 +138,11 @@ export const ChatListItem = React.memo(({
           {chat.type === 'private' && chat.id !== 'notes' && (
             <OnlineIndicator
               online={chat.online}
-              showOffline={true}
               size="sm"
               ringColor={ringColor}
+              color="#917bbd"
               className="z-[2]"
-              ariaLabel={chat.online ? t('common.online', 'В сети') : t('common.network_offline_title', 'Не в сети')}
+              ariaLabel={chat.online ? t('userStatus.online', 'в сети') : undefined}
             />
           )}
           {chat.type === 'group' && chat.activeCallRoom && (

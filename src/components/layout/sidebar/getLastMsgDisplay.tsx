@@ -3,7 +3,7 @@ import i18n from 'i18next';
 import type { Chat, Message } from '../../../store/useChatStore';
 
 export const getLastMsgDisplay = (chat: Chat, lastMsg: Message | null, t: any, isOwn = false): React.ReactNode => {
-  const accentStyle: React.CSSProperties = { color: 'var(--accent-color, #7C3AED)' };
+  const accentStyle: React.CSSProperties = { color: '#917bbd' };
 
   if (!lastMsg) {
     if (chat.lastMsg === 'HISTORY_CLEARED') return t('common.history_cleared');

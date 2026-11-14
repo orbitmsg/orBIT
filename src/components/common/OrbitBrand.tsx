@@ -57,15 +57,15 @@ export const OrbitIcon: React.FC<OrbitIconProps> = ({
     >
       <defs>
         <linearGradient id={ringFill} x1="75%" y1="15%" x2="20%" y2="85%">
-          <stop offset="0%" stopColor="#6B67F8" />
-          <stop offset="50%" stopColor="#514AE6" />
-          <stop offset="100%" stopColor="#3C33C4" />
+          <stop offset="0%" stopColor="#a894d1" />
+          <stop offset="50%" stopColor="#917bbd" />
+          <stop offset="100%" stopColor="#755f9f" />
         </linearGradient>
 
         <linearGradient id={ringStroke} x1="80%" y1="10%" x2="20%" y2="90%">
-          <stop offset="0%" stopColor="#9A98FF" stopOpacity="0.85" />
-          <stop offset="50%" stopColor="#6C67F5" stopOpacity="0.5" />
-          <stop offset="100%" stopColor="#554EE0" stopOpacity="0.7" />
+          <stop offset="0%" stopColor="#c0b0df" stopOpacity="0.85" />
+          <stop offset="50%" stopColor="#917bbd" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#7e69a8" stopOpacity="0.7" />
         </linearGradient>
       </defs>
 
@@ -133,7 +133,7 @@ export const OrbitWordmark: React.FC<OrbitWordmarkProps> = ({
       style={{ fontSize, fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif" }}
     >
       <span className="text-white font-normal">or</span>
-      <span className="font-extrabold" style={{ color: '#5865F2' }}>
+      <span className="font-extrabold" style={{ color: '#917bbd' }}>
         BIT
       </span>
     </span>

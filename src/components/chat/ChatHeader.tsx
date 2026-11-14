@@ -251,8 +251,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   <span
                     className="text-[11.5px] font-normal"
                     style={{
-                      color: isOnline ? 'var(--accent-text, var(--accent-color))' : 'var(--text-dim)',
-                      textShadow: isOnline ? '0 0 1.5px color-mix(in srgb, var(--accent-text, var(--accent-color)) 24%, transparent)' : 'none',
+                      color: isOnline ? '#917bbd' : 'var(--text-dim)',
                     }}
                   >
                     {otherUserTyping && activeChatId !== 'notes' ? (

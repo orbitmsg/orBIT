@@ -20,7 +20,7 @@ const SIZE_MAP: Record<OnlineIndicatorSize, string> = {
 
 export const OnlineIndicator = ({
   online = false,
-  showOffline = false,
+  showOffline: _showOffline = false,
   size = 'sm',
   ringColor,
   color,
@@ -28,7 +28,7 @@ export const OnlineIndicator = ({
   ariaLabel,
   style,
 }: OnlineIndicatorProps) => {
-  if (!online && !showOffline) {
+  if (!online) {
     return null;
   }
 

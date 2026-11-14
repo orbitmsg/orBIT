@@ -246,7 +246,7 @@ export const FileMessage = memo(({
             className="font-semibold truncate"
             style={{
               fontSize: orbitFs(13),
-              color: isOwn ? 'var(--bubble-own-text, #ffffff)' : 'var(--chat-bubble-incoming-text, var(--text-main))',
+              color: isOwn ? 'var(--bubble-own-text, #ffffff)' : '#917bbd',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',

@@ -837,14 +837,22 @@ export const TelegramAlbumGrid = memo(({
       }}
     >
       <div
-        className="flex flex-col w-full"
+        className="flex flex-col w-full relative"
         style={{
           width: '100%',
-          gap: '2px',
-          borderRadius: photoBorderRadius,
-          overflow: items.length > 1 ? 'hidden' : 'visible',
+          position: 'relative',
+          overflow: 'visible',
         }}
       >
+        <div
+          className="flex flex-col w-full"
+          style={{
+            width: '100%',
+            gap: '2px',
+            borderRadius: photoBorderRadius,
+            overflow: 'hidden',
+          }}
+        >
         {rows.map((rowIndices, rIdx) => {
           const rowCount = rowIndices.length;
           let rowAspectRatio = '2 / 1';
@@ -916,14 +924,15 @@ export const TelegramAlbumGrid = memo(({
             </div>
           );
         })}
+        </div>
         {!hasCaption && timeNode && (
           <div
             className="flex items-center justify-center z-[4] pointer-events-none select-none opacity-0 group-hover:opacity-100 transition-opacity duration-150"
             style={{
               position: 'absolute',
               bottom: '15px',
-              left: isOwn ? '15px' : undefined,
-              right: !isOwn ? '15px' : undefined,
+              left: isOwn ? '-5px' : undefined,
+              right: !isOwn ? '-5px' : undefined,
               padding: '3px 8px',
               height: '22px',
               boxSizing: 'border-box',

@@ -733,7 +733,7 @@ export const useChatAudioAndFiles = ({
         let fileKey: string | undefined = undefined;
         let tempPath: string | null = null;
         let uploadTotalBytes = cleanedBuffer.byteLength;
-        const isPublic = isChannel || isBotChat || isLobby;
+        const isPublic = isChannel || isBotChat;
         const ext = isTranscodedTemp ? 'mp4' : (file.name?.match(/\.([^.]+)$/) || [])[1]?.toLowerCase();
 
         if (isPublic) {

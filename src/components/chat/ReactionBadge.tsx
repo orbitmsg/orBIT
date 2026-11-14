@@ -260,7 +260,7 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
                 borderRadius: '50%',
                 flexShrink: 0,
                 marginLeft: idx > 0 ? -8 : 0,
-                boxShadow: '0 0 0 2px var(--reaction-badge-bg, #383a42)',
+                boxShadow: 'none',
                 position: 'relative',
                 zIndex: idx + 1,
                 pointerEvents: 'none',

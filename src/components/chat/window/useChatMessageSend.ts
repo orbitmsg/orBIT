@@ -662,6 +662,7 @@ export const useChatMessageSend = ({
           const targetChatKey = activeChannelId ? `${targetChatId}:${activeChannelId}` : targetChatId;
           const currentAvatar = useAuthStore.getState().avatarUrl;
           lobbyService.sendLobbyMessage({
+            id: messageId,
             lobbyId: targetChatId,
             channelId: activeChannelId,
             senderCode: myCode,
@@ -670,10 +671,10 @@ export const useChatMessageSend = ({
             senderAvatarUrl: currentAvatar,
             text,
             sharedSecret: lobbySecret,
-            mediaType: mediaPayload?.type as any,
-            mediaUrl: mediaPayload?.url,
-            mediaName: mediaPayload?.name,
-            mediaSize: mediaPayload?.size,
+            mediaType: (mediaPayload?.type as any) || (sanitizedMediaItems && sanitizedMediaItems[0]?.type as any) || null,
+            mediaUrl: mediaPayload?.url || (sanitizedMediaItems && sanitizedMediaItems[0]?.url) || null,
+            mediaName: mediaPayload?.name || (sanitizedMediaItems && sanitizedMediaItems[0]?.name) || null,
+            mediaSize: mediaPayload?.size || (sanitizedMediaItems && sanitizedMediaItems[0]?.size) || null,
             mediaKey: mediaPayload?.key || (mediaPayload as any)?.mediaKey || (sanitizedMediaItems && sanitizedMediaItems[0]?.key) || null,
             replyToId: replyingTo?.id,
           }).then(() => {

@@ -320,6 +320,7 @@ export const useChatRealtime = ({
                 mediaName: lm.mediaName || undefined,
                 fileSize: lm.mediaSize || undefined,
                 mediaKey: lm.mediaKey || undefined,
+                reactions: lm.reactions || undefined,
               }));
             if (newOnes.length > 0) {
               useChatStore.setState((state) => ({
@@ -357,6 +358,7 @@ export const useChatRealtime = ({
               mediaName: msg.mediaName || undefined,
               fileSize: msg.mediaSize || undefined,
               mediaKey: msg.mediaKey || undefined,
+              reactions: msg.reactions || undefined,
             };
             useChatStore.getState().addMessage(msgTargetKey, newMsg);
             if (msgTargetKey !== targetLobbyId) {
@@ -385,6 +387,21 @@ export const useChatRealtime = ({
             try {
               (window as any).orbita?.storageDeleteMessage?.(deletedMsgId);
             } catch {}
+          },
+          (updatedMsgId, updatedReactions) => {
+            useChatStore.setState((state) => {
+              const applyReactions = (list: Message[]) =>
+                list.map((m) => (m.id === updatedMsgId ? { ...m, reactions: updatedReactions } : m));
+              return {
+                messagesByChatId: {
+                  ...state.messagesByChatId,
+                  [targetKey]: applyReactions(state.messagesByChatId[targetKey] || []),
+                  ...(targetKey !== targetLobbyId ? {
+                    [targetLobbyId]: applyReactions(state.messagesByChatId[targetLobbyId] || []),
+                  } : {}),
+                },
+              };
+            });
           }
         );
       };
@@ -484,7 +501,12 @@ export const useChatRealtime = ({
         if (isSelf) return;
         const targetId = data.messageId || data.id;
         if (targetId) {
+          const currentActiveChannelId = useChatStore.getState().activeChannelId;
+          const effectiveChatKey = (activeChatId.startsWith('lobby_') && currentActiveChannelId) ? `${activeChatId}:${currentActiveChannelId}` : activeChatId;
           useChatStore.getState().setReaction(activeChatId, targetId, data.emoji, data.sender, data.action || 'add');
+          if (effectiveChatKey !== activeChatId) {
+            useChatStore.getState().setReaction(effectiveChatKey, targetId, data.emoji, data.sender, data.action || 'add');
+          }
         }
       } else if (data?.type === 'delete' || data?.type === 'delete-message' || data?.type === 'delete-messages') {
         const targetIds = data.targetMessageIds || (data.targetMessageId ? [data.targetMessageId] : (data.messageId ? [data.messageId] : []));
@@ -798,7 +820,12 @@ export const useChatRealtime = ({
         if (isSelf) return;
         const targetId = data.messageId || data.id;
         if (targetId) {
+          const currentActiveChannelId = useChatStore.getState().activeChannelId;
+          const effectiveChatKey = (activeChatId.startsWith('lobby_') && currentActiveChannelId) ? `${activeChatId}:${currentActiveChannelId}` : activeChatId;
           useChatStore.getState().setReaction(activeChatId, targetId, data.emoji, data.sender, data.action || 'add');
+          if (effectiveChatKey !== activeChatId) {
+            useChatStore.getState().setReaction(effectiveChatKey, targetId, data.emoji, data.sender, data.action || 'add');
+          }
         }
       } else if (data.type === 'delete' || data.type === 'delete-message' || data.type === 'delete-messages') {
         const targetIds = data.targetMessageIds || (data.targetMessageId ? [data.targetMessageId] : (data.messageId ? [data.messageId] : []));

@@ -765,13 +765,13 @@ export const VoiceMessagePlayer = memo(({
 
       {hasReactions && (
         <div
-          className="flex items-end justify-between mt-1.5 w-full select-none"
+          className="flex items-end mt-1.5 w-full select-none"
           style={{
             userSelect: 'none',
             WebkitUserSelect: 'none',
-            gap: '10px',
-            flexWrap: 'nowrap',
+            paddingRight: '64px',
             paddingTop: '2px',
+            minHeight: '26px',
           }}
         >
           <MessageReactions
@@ -780,39 +780,25 @@ export const VoiceMessagePlayer = memo(({
             isOwn={isOwn}
             activeChatId={chatId}
           />
-          <div
-            className="flex-shrink-0 select-none message-time-badge ml-auto"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-              lineHeight: 1,
-              alignSelf: 'flex-end',
-            }}
-          >
-            {timeNode}
-          </div>
         </div>
       )}
 
-      {!hasReactions && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: isOwn ? '2px' : '5px',
-            right: isOwn ? '3px' : '10px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '2px',
-            pointerEvents: 'none',
-            userSelect: 'none',
-            lineHeight: 1,
-          }}
-        >
-          {timeNode}
-        </div>
-      )}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: isOwn ? '3px' : '5px',
+          right: isOwn ? '4px' : '8px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '2px',
+          pointerEvents: 'none',
+          userSelect: 'none',
+          lineHeight: 1,
+          zIndex: 2,
+        }}
+      >
+        {timeNode}
+      </div>
     </div>
   );
 });

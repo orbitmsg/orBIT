@@ -978,7 +978,7 @@ textarea::selection,
   --reaction-badge-bg: var(--accent-color, #7C3AED);
   background-color: var(--accent-color, #7C3AED) !important;
   color: #ffffff !important;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+  box-shadow: none !important;
 }
 
 html.app-paused *,

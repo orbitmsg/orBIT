@@ -568,7 +568,12 @@ export const useChatMessageActions = ({
   const triggerReactionMessage = (targetMessageIndexOrId: number | string, emoji: string) => {
     if (!activeChatId) return;
 
-    const currentMsgs = useChatStore.getState().messagesByChatId[activeChatId] || [];
+    const isLobby = activeChatId.startsWith('lobby_');
+    const currentActiveChannelId = useChatStore.getState().activeChannelId;
+    const effectiveChatKey = (isLobby && currentActiveChannelId) ? `${activeChatId}:${currentActiveChannelId}` : activeChatId;
+
+    const currentMsgs = useChatStore.getState().messagesByChatId[effectiveChatKey] ||
+      useChatStore.getState().messagesByChatId[activeChatId] || [];
     const setReaction = useChatStore.getState().setReaction;
 
     const targetMsg = typeof targetMessageIndexOrId === 'number'
@@ -580,7 +585,10 @@ export const useChatMessageActions = ({
 
     const userAliases = [myUserId, myCode, myNickname, 'YOU'].filter(Boolean) as string[];
     const reactionUserId = myUserId || myCode || myNickname || 'YOU';
-    const result = setReaction(activeChatId, msgId, emoji, reactionUserId, 'toggle', userAliases);
+    const result = setReaction(effectiveChatKey, msgId, emoji, reactionUserId, 'toggle', userAliases);
+    if (effectiveChatKey !== activeChatId) {
+      setReaction(activeChatId, msgId, emoji, reactionUserId, 'toggle', userAliases);
+    }
     if (result === 'limit_reached') {
       useToastStore.getState().showToast(t('common.max_reactions_limit'));
       return;
@@ -598,11 +606,17 @@ export const useChatMessageActions = ({
 
     const timer = setTimeout(() => {
       reactionDebounceTimers.current.delete(timerKey);
-      const latestMsgs = useChatStore.getState().messagesByChatId[activeChatId] || [];
+      const latestMsgs = useChatStore.getState().messagesByChatId[effectiveChatKey] ||
+        useChatStore.getState().messagesByChatId[activeChatId] || [];
       const latestMsg = latestMsgs.find((m) => m.id === msgId);
       const currentUsers = latestMsg?.reactions?.[emoji] || [];
       const isPresent = currentUsers.includes(reactionUserId) || (myCode ? currentUsers.includes(myCode) : false) || (myUserId ? currentUsers.includes(myUserId) : false) || currentUsers.includes(myNickname);
       const finalAction: 'add' | 'remove' = isPresent ? 'add' : 'remove';
+
+      if (isLobby) {
+        lobbyService.toggleLobbyReaction(activeChatId, msgId, emoji, reactionUserId, finalAction);
+        return;
+      }
 
       if (activeChat?.type === 'channel') {
         channelService.toggleReaction(activeChatId, msgId, emoji, reactionUserId, finalAction, CLIENT_SESSION_ID);

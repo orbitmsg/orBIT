@@ -362,14 +362,22 @@ export const EncryptedMedia = memo(({
         maxWidth: '100%',
         aspectRatio: `${mediaSize.width} / ${mediaSize.height}`,
         maxHeight: `${mediaSize.height}px`,
-        borderRadius: formattedRadius,
-        overflow: 'hidden',
-        WebkitMaskImage: '-webkit-radial-gradient(white, black)',
         position: 'relative',
-        backgroundColor: (type === 'video' ? Boolean(blobUrl) : Boolean(blobUrl || activeImageSrc)) ? 'transparent' : 'var(--surface-container, rgba(255,255,255,0.06))',
-        overflowAnchor: 'none',
+        overflow: 'visible',
       }}
     >
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          borderRadius: formattedRadius,
+          overflow: 'hidden',
+          WebkitMaskImage: '-webkit-radial-gradient(white, black)',
+          position: 'relative',
+          backgroundColor: (type === 'video' ? Boolean(blobUrl) : Boolean(blobUrl || activeImageSrc)) ? 'transparent' : 'var(--surface-container, rgba(255,255,255,0.06))',
+          overflowAnchor: 'none',
+        }}
+      >
       {((type === 'video' ? !blobUrl : (!blobUrl && !activeImageSrc)) || effectiveIsUploading) && (
         <div
           className="absolute inset-0 flex flex-col items-center justify-center z-10 select-none cursor-pointer"
@@ -611,6 +619,7 @@ export const EncryptedMedia = memo(({
           )}
         </div>
       )}
+      </div>
 
       {timeNode && (
         <div
@@ -618,8 +627,8 @@ export const EncryptedMedia = memo(({
           style={{
             position: 'absolute',
             bottom: '15px',
-            left: isOwn ? '15px' : undefined,
-            right: !isOwn ? '15px' : undefined,
+            left: isOwn ? '-5px' : undefined,
+            right: !isOwn ? '-5px' : undefined,
             borderRadius: '9999px',
             backgroundColor: 'rgba(24, 25, 29, 0.75)',
             padding: '3px 8px',

@@ -507,6 +507,7 @@ export class LobbyService {
   }
 
   async sendLobbyMessage(params: {
+    id?: string;
     lobbyId: string;
     channelId?: string | null;
     senderCode: string;
@@ -522,18 +523,28 @@ export class LobbyService {
     mediaKey?: string | null;
     replyToId?: string | null;
   }): Promise<LobbyMessage> {
-    const msgId = `lmsg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    const msgId = params.id || `lmsg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
     const nowIso = new Date().toISOString();
 
     let ciphertext: string | null = null;
     let storedText = params.text;
+    let storedMediaKey = params.mediaKey || null;
 
-    if (params.sharedSecret && params.text) {
-      try {
-        ciphertext = await encryptLobbyPayload(params.text, params.sharedSecret);
-        storedText = '';
-      } catch (e) {
-        console.error('Failed to encrypt lobby message:', e);
+    if (params.sharedSecret) {
+      if (params.text) {
+        try {
+          ciphertext = await encryptLobbyPayload(params.text, params.sharedSecret);
+          storedText = '';
+        } catch (e) {
+          console.error('Failed to encrypt lobby message:', e);
+        }
+      }
+      if (params.mediaKey) {
+        try {
+          storedMediaKey = await encryptLobbyPayload(params.mediaKey, params.sharedSecret);
+        } catch (e) {
+          console.error('Failed to encrypt lobby media key:', e);
+        }
       }
     }
 
@@ -553,7 +564,7 @@ export class LobbyService {
         media_url: params.mediaUrl || null,
         media_name: params.mediaName || null,
         media_size: params.mediaSize || null,
-        media_key: params.mediaKey || null,
+        media_key: storedMediaKey,
         reply_to_id: params.replyToId || null,
         created_at: nowIso,
       })
@@ -577,7 +588,7 @@ export class LobbyService {
       mediaUrl: data.media_url,
       mediaName: data.media_name,
       mediaSize: data.media_size,
-      mediaKey: data.media_key,
+      mediaKey: params.mediaKey || null,
       replyToId: data.reply_to_id,
       reactions: data.reactions || {},
       pinned: data.pinned || false,
@@ -617,6 +628,15 @@ export class LobbyService {
             text = '[Зашифрованное сообщение]';
           }
         }
+        let mediaKey = r.media_key || null;
+        if (r.media_key && sharedSecret) {
+          try {
+            const dec = await decryptLobbyPayload(r.media_key, sharedSecret);
+            if (dec && dec !== '[Encrypted]') {
+              mediaKey = dec;
+            }
+          } catch {}
+        }
         return {
           id: r.id,
           lobbyId: r.lobby_id,
@@ -630,7 +650,7 @@ export class LobbyService {
           mediaUrl: r.media_url,
           mediaName: r.media_name,
           mediaSize: r.media_size,
-          mediaKey: r.media_key,
+          mediaKey,
           replyToId: r.reply_to_id,
           reactions: r.reactions || {},
           pinned: r.pinned || false,
@@ -661,12 +681,70 @@ export class LobbyService {
     }
   }
 
+  async toggleLobbyReaction(
+    lobbyId: string,
+    messageId: string,
+    emoji: string,
+    userId: string,
+    action?: 'add' | 'remove' | 'toggle'
+  ): Promise<Record<string, string[]> | null> {
+    try {
+      const { data, error } = await this.client
+        .from('lobby_messages')
+        .select('reactions')
+        .eq('id', messageId)
+        .eq('lobby_id', lobbyId)
+        .maybeSingle();
+
+      if (error || !data) return null;
+
+      const currentReactions: Record<string, string[]> = { ...(data.reactions || {}) };
+      const userList = Array.isArray(currentReactions[emoji]) ? [...currentReactions[emoji]] : [];
+      const userIndex = userList.indexOf(userId);
+
+      const isAdding = action === 'add' || (action === 'toggle' || !action ? userIndex === -1 : false);
+
+      if (isAdding) {
+        if (userIndex === -1) {
+          userList.push(userId);
+        }
+      } else {
+        if (userIndex !== -1) {
+          userList.splice(userIndex, 1);
+        }
+      }
+
+      if (userList.length > 0) {
+        currentReactions[emoji] = userList;
+      } else {
+        delete currentReactions[emoji];
+      }
+
+      const { error: updateError } = await this.client
+        .from('lobby_messages')
+        .update({ reactions: currentReactions })
+        .eq('id', messageId)
+        .eq('lobby_id', lobbyId);
+
+      if (updateError) {
+        console.error('Failed to update lobby reactions:', updateError);
+        return null;
+      }
+
+      return currentReactions;
+    } catch (e) {
+      console.error('toggleLobbyReaction error:', e);
+      return null;
+    }
+  }
+
   subscribeToLobby(
     lobbyId: string,
     onMessage: (msg: LobbyMessage) => void,
     onMemberChange?: () => void,
     sharedSecret?: string | null,
-    onDelete?: (messageId: string) => void
+    onDelete?: (messageId: string) => void,
+    onReactionUpdate?: (messageId: string, reactions: Record<string, string[]>) => void
   ) {
     const channelUniqueId = `lobby:${lobbyId}:${Math.random().toString(36).slice(2, 9)}`;
     const channel = this.client
@@ -682,6 +760,15 @@ export class LobbyService {
               text = await decryptLobbyPayload(r.ciphertext, sharedSecret);
             } catch {}
           }
+          let mediaKey = r.media_key || null;
+          if (r.media_key && sharedSecret) {
+            try {
+              const dec = await decryptLobbyPayload(r.media_key, sharedSecret);
+              if (dec && dec !== '[Encrypted]') {
+                mediaKey = dec;
+              }
+            } catch {}
+          }
           onMessage({
             id: r.id,
             lobbyId: r.lobby_id,
@@ -695,13 +782,23 @@ export class LobbyService {
             mediaUrl: r.media_url,
             mediaName: r.media_name,
             mediaSize: r.media_size,
-            mediaKey: r.media_key,
+            mediaKey,
             replyToId: r.reply_to_id,
             reactions: r.reactions || {},
             pinned: r.pinned || false,
             createdAt: new Date(r.created_at).getTime(),
             editedAt: r.edited_at ? new Date(r.edited_at).getTime() : null,
           });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'lobby_messages', filter: `lobby_id=eq.${lobbyId}` },
+        (payload) => {
+          const r = payload.new as any;
+          if (r?.id && onReactionUpdate) {
+            onReactionUpdate(r.id, r.reactions || {});
+          }
         }
       )
       .on(

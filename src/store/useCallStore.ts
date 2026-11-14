@@ -10,6 +10,7 @@ import { useAudioStore } from './useAudioStore';
 import { gatewayManager } from '../services/gatewayManager';
 import { ablyService } from '../services/ablyService';
 import { groupService } from '../services/groupService';
+import { lobbyService } from '../services/lobbyService';
 import { deriveGroupKey } from '../lib/groupCrypto';
 import { generateKeyPair, generateChatId, getDirectChatId } from '../lib/crypto';
 import { sqliteStorage } from '../services/sqliteStorage';
@@ -679,7 +680,7 @@ export const useCallStore = create<CallStore>((set, get) => {
         }, INCOMING_AUTO_REJECT_MS);
     },
 
-    startCall: async (chatId, callType, myNickname) => {
+    startCall: async (chatId, callType, myNickname, customRoomName?: string) => {
       const state = get();
       if (state.isBusy()) return;
       if (!useChatStore.getState().voiceCallsEnabled) return;
@@ -688,7 +689,7 @@ export const useCallStore = create<CallStore>((set, get) => {
       try { sessionStorage.removeItem('orbita_active_call_state'); } catch {}
       const chat = useChatStore.getState().chats.find((c) => c.id === chatId);
       const isGroup = chat?.type === 'group';
-      const roomName = isGroup ? (chat?.activeCallRoom || `group-call-${chatId}`) : `call-${chatId}-${Date.now()}`;
+      const roomName = customRoomName || (isGroup ? (chat?.activeCallRoom || `group-call-${chatId}`) : `call-${chatId}-${Date.now()}`);
       const verificationSecret = isGroup ? (chat?.sharedSecret || deriveGroupKey(chatId)) : (chat?.type === 'private' ? chat?.sharedSecret : undefined);
       const verificationSalt = isGroup ? `group-salt-${chatId}` : crypto.randomUUID().replace(/-/g, '');
       const isVideo = callType === 'video';
@@ -996,6 +997,12 @@ export const useCallStore = create<CallStore>((set, get) => {
       const activeCall = state.activeCall;
       const { chatId, direction, startTime, roomName } = activeCall;
       if (roomName) get().addProcessedRoomName(roomName);
+      if (activeCall.chatType === 'group' && chatId) {
+        const myCode = useChatStore.getState().myCode;
+        if (myCode) {
+          lobbyService.setMemberVoiceChannel(chatId, myCode, null).catch(() => {});
+        }
+      }
       const duration = startTime > 0 ? Math.max(0, Math.floor((Date.now() - startTime) / 1000)) : 0;
       let endedStatus: CallEndedStatus = activeCall.endedStatus;
       let signalType: string | null = null;

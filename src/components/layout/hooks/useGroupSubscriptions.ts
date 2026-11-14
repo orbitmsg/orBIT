@@ -934,6 +934,7 @@ export const useGroupSubscriptions = ({
 
       const newMsg: Message = {
         id: post.id,
+        senderId: post.senderId || post.senderUserId || post.senderCode,
         sender,
         text: postText,
         time: (typeof post.time === 'number' && post.time > 0) ? post.time : Date.now(),
@@ -1224,6 +1225,7 @@ export const useGroupSubscriptions = ({
               const isMine = Boolean(myUserId && post.senderId && post.senderId === myUserId);
               newItems.push({
                 id: post.id,
+                senderId: post.senderId,
                 sender: post.sender,
                 text: post.text,
                 time: post.time,

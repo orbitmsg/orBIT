@@ -31,6 +31,7 @@ export const LobbyVoiceStage: React.FC<LobbyVoiceStageProps> = ({
   const isScreenSharing = useCallStore((s) => s.isScreenSharing);
   const toggleMic = useCallStore((s) => s.toggleMic);
   const toggleScreenShare = useCallStore((s) => s.toggleScreenShare);
+  const participants = useCallStore((s) => s.activeCall?.participants || []);
 
   const isConnected = callState === 'connected';
 
@@ -61,38 +62,52 @@ export const LobbyVoiceStage: React.FC<LobbyVoiceStageProps> = ({
 
       <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
         {isConnected ? (
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative">
-              <div
-                className="w-28 h-28 rounded-full flex items-center justify-center p-1 transition-all duration-300"
-                style={{
-                  border: '3px solid #23a55a',
-                  boxShadow: '0 0 20px rgba(35, 165, 90, 0.4)',
-                }}
-              >
-                <Avatar
-                  src={avatarUrl}
-                  alt={nickname}
-                  className="w-full h-full rounded-full object-cover"
-                />
-              </div>
-              {!isMicEnabled && (
+          <div className="flex flex-wrap items-center justify-center gap-6 max-w-4xl w-full p-4">
+            <div className="flex flex-col items-center gap-2">
+              <div className="relative">
                 <div
-                  className="absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center bg-[#f23f43] text-white shadow-md"
+                  className="w-24 h-24 rounded-full flex items-center justify-center p-1 transition-all duration-300"
+                  style={{
+                    border: '3px solid #23a55a',
+                    boxShadow: '0 0 16px rgba(35, 165, 90, 0.4)',
+                  }}
                 >
-                  <MicOff size={16} />
+                  <Avatar src={avatarUrl} alt={nickname} className="w-full h-full rounded-full object-cover" />
                 </div>
-              )}
-            </div>
-
-            <div className="flex flex-col items-center gap-1">
-              <span className="text-base font-bold text-white">
+                {!isMicEnabled && (
+                  <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full flex items-center justify-center bg-[#f23f43] text-white shadow-md">
+                    <MicOff size={14} />
+                  </div>
+                )}
+              </div>
+              <span className="text-sm font-semibold text-white truncate max-w-[120px]">
                 {nickname}
               </span>
-              <span className="text-xs font-mono text-[#23a55a] font-medium">
-                {t('lobby.voice_duration', 'Время в сети')}: {formatDuration(duration)}
-              </span>
             </div>
+
+            {participants.map((p) => (
+              <div key={p.identity} className="flex flex-col items-center gap-2">
+                <div className="relative">
+                  <div
+                    className="w-24 h-24 rounded-full flex items-center justify-center p-1 transition-all duration-300"
+                    style={{
+                      border: p.isSpeaking ? '3px solid #23a55a' : '3px solid rgba(255,255,255,0.1)',
+                      boxShadow: p.isSpeaking ? '0 0 16px rgba(35, 165, 90, 0.4)' : 'none',
+                    }}
+                  >
+                    <Avatar src={p.avatarUrl} alt={p.name || p.identity} className="w-full h-full rounded-full object-cover" />
+                  </div>
+                  {!p.audioEnabled && (
+                    <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full flex items-center justify-center bg-[#f23f43] text-white shadow-md">
+                      <MicOff size={14} />
+                    </div>
+                  )}
+                </div>
+                <span className="text-sm font-semibold text-white truncate max-w-[120px]">
+                  {p.name || p.identity}
+                </span>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="flex flex-col items-center gap-4 max-w-sm text-center">

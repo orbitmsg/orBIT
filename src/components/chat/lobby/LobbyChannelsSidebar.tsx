@@ -14,6 +14,7 @@ import { lobbyService, type LobbyChannel, type LobbyMember } from '../../../serv
 import { useCallStore } from '../../../store/useCallStore';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { useChatStore } from '../../../store/useChatStore';
+import { generateKeyPair, generateChatId, getDirectChatId } from '../../../lib/crypto';
 import { Avatar } from '../../common/Avatar';
 import { UserDockPanel } from '../../layout/sidebar/UserDockPanel';
 import { CreateLobbyChannelModal } from './CreateLobbyChannelModal';
@@ -83,6 +84,46 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
       console.error('Failed to load lobby members:', e);
     }
   }, [lobbyId]);
+
+  const handleMemberClick = useCallback((m: LobbyMember) => {
+    const currentMyCode = useChatStore.getState().myCode;
+    const currentMyUid = useAuthStore.getState().userId;
+    const myIds = [currentMyCode, currentMyUid].filter(Boolean);
+    if (myIds.includes(m.userCode) || (m.id && myIds.includes(m.id))) {
+      return;
+    }
+    const chatStore = useChatStore.getState();
+    const currentChats = chatStore.chats;
+    const targetCode = m.userCode || m.id;
+    if (!targetCode) return;
+
+    const directChatId = currentMyCode ? getDirectChatId(currentMyCode, targetCode) : null;
+    const existing = currentChats.find((c) =>
+      c.type === 'private' &&
+      c.id !== 'notes' &&
+      (c.id === directChatId || c.peerCode === targetCode || c.originalPeerCode === targetCode || (c as any).userId === targetCode)
+    );
+
+    if (existing) {
+      chatStore.setActiveChat(existing.id);
+    } else {
+      const myKeys = generateKeyPair();
+      const newChatId = directChatId || generateChatId();
+      chatStore.addChat({
+        id: newChatId,
+        type: 'private',
+        name: m.nickname || targetCode,
+        lastMsg: '',
+        online: true,
+        isChatInitiator: true,
+        sharedSecret: myKeys.privateKey,
+        avatarUrl: m.avatarUrl || undefined,
+        peerCode: targetCode,
+        unreadCount: 0,
+      });
+      chatStore.setActiveChat(newChatId);
+    }
+  }, []);
 
   useEffect(() => {
     loadMembers();
@@ -255,23 +296,41 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
           </div>
 
           {voiceChannels.map((ch) => {
+            const isChannelActive = isVoiceActive && activeChannelId === ch.id;
+            const channelVoiceMembers = members.filter((m) => m.activeVoiceChannel === ch.id);
+            const storeMyCode = useChatStore.getState().myCode;
+            const displayVoiceMembers = [...channelVoiceMembers];
+            if (isChannelActive && storeMyCode && !displayVoiceMembers.some((m) => m.userCode === storeMyCode)) {
+              displayVoiceMembers.push({
+                id: storeMyCode,
+                lobbyId,
+                userCode: storeMyCode,
+                nickname: myNickname,
+                avatarUrl: myAvatar || null,
+                role: 'member',
+                activeVoiceChannel: ch.id,
+                joinedAt: Date.now(),
+                lastSeen: Date.now(),
+              });
+            }
+
             return (
               <div key={ch.id} className="flex flex-col">
                 <div
                   onClick={() => onOpenVoiceCall(ch)}
                   className="group relative flex items-center justify-between px-2.5 py-1.5 rounded-md cursor-pointer transition-colors"
                   style={{
-                    backgroundColor: isVoiceActive ? 'rgba(35, 165, 90, 0.12)' : 'transparent',
-                    color: isVoiceActive ? '#23a55a' : '#949ba4',
+                    backgroundColor: isChannelActive ? 'rgba(35, 165, 90, 0.12)' : 'transparent',
+                    color: isChannelActive ? '#23a55a' : '#949ba4',
                   }}
                   onMouseEnter={(e) => {
-                    if (!isVoiceActive) {
+                    if (!isChannelActive) {
                       e.currentTarget.style.backgroundColor = '#35373c';
                       e.currentTarget.style.color = '#dbdee1';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (!isVoiceActive) {
+                    if (!isChannelActive) {
                       e.currentTarget.style.backgroundColor = 'transparent';
                       e.currentTarget.style.color = '#949ba4';
                     }
@@ -285,7 +344,7 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
                   </div>
 
                   <div className="flex items-center gap-1.5">
-                    {isVoiceActive ? (
+                    {isChannelActive ? (
                       <span className="text-[11px] font-bold text-emerald-400 font-mono">
                         {formatDuration(callDuration)}
                       </span>
@@ -309,20 +368,31 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
                   </div>
                 </div>
 
-                {isVoiceActive && (
+                {displayVoiceMembers.length > 0 && (
                   <div className="pl-6 pr-2 py-1 flex flex-col gap-1">
-                    <div className="flex items-center gap-2 py-1 px-2 rounded-md bg-white/[0.04]">
-                      <div className="relative shrink-0">
-                        <Avatar src={myAvatar} alt={myNickname} className="w-[22px] h-[22px] rounded-full" />
-                        <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-[#2b2d31]" />
+                    {displayVoiceMembers.map((vm) => (
+                      <div
+                        key={vm.userCode || vm.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMemberClick(vm);
+                        }}
+                        className="flex items-center gap-2 py-1 px-2 rounded-md bg-white/[0.04] hover:bg-white/10 transition-colors cursor-pointer"
+                      >
+                        <div className="relative shrink-0">
+                          <Avatar src={vm.avatarUrl || undefined} alt={vm.nickname} className="w-[20px] h-[20px] rounded-full" />
+                          <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-[#2b2d31]" />
+                        </div>
+                        <span className="text-[12px] font-medium text-white truncate flex-1">
+                          {vm.nickname}
+                        </span>
+                        {isChannelActive && vm.userCode === storeMyCode && (
+                          <span className="text-[11px] font-mono text-emerald-400 font-semibold">
+                            {formatDuration(callDuration)}
+                          </span>
+                        )}
                       </div>
-                      <span className="text-[12.5px] font-medium text-white truncate flex-1">
-                        {myNickname}
-                      </span>
-                      <span className="text-[11px] font-mono text-emerald-400 font-semibold">
-                        {formatDuration(callDuration)}
-                      </span>
-                    </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -345,7 +415,8 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
               return (
                 <div
                   key={m.id || m.userCode}
-                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-md hover:bg-white/5 transition-colors"
+                  onClick={() => handleMemberClick(m)}
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-md hover:bg-white/10 active:scale-[0.99] transition-all cursor-pointer"
                 >
                   <div className="relative shrink-0">
                     <Avatar

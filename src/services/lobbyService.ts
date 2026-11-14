@@ -74,6 +74,7 @@ export interface LobbyMember {
   nickname: string;
   avatarUrl: string | null;
   role: 'owner' | 'admin' | 'member';
+  activeVoiceChannel?: string | null;
   joinedAt: number;
   lastSeen: number;
 }
@@ -141,7 +142,7 @@ export class LobbyService {
         shared_secret: sharedSecret,
         is_public: params.isPublic ?? false,
         members_count: 1,
-        max_members: 1000,
+        max_members: 50,
         created_at: nowIso,
         updated_at: nowIso,
       })
@@ -238,6 +239,11 @@ export class LobbyService {
   ): Promise<Lobby | null> {
     const lobby = await this.getLobbyById(lobbyId);
     if (!lobby) return null;
+
+    const maxLimit = lobby.maxMembers || 50;
+    if (lobby.membersCount >= maxLimit) {
+      throw new Error('Лимит участников в лобби достигнут (максимум 50)');
+    }
 
     const nowIso = new Date().toISOString();
     await this.client.from('lobby_members').upsert(
@@ -403,6 +409,8 @@ export class LobbyService {
     const id = `ch_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const nowIso = new Date().toISOString();
     const cleanName = name.trim().toLowerCase().replace(/\s+/g, '-');
+    const existingChannels = await this.getLobbyChannels(lobbyId);
+    const position = existingChannels.length;
     const { data, error } = await this.client
       .from('lobby_channels')
       .insert({
@@ -410,7 +418,7 @@ export class LobbyService {
         lobby_id: lobbyId,
         name: cleanName,
         type,
-        position: Date.now(),
+        position,
         created_at: nowIso,
       })
       .select('*')
@@ -471,9 +479,22 @@ export class LobbyService {
       nickname: r.nickname,
       avatarUrl: r.avatar_url,
       role: r.role,
+      activeVoiceChannel: r.active_voice_channel || null,
       joinedAt: new Date(r.joined_at).getTime(),
       lastSeen: new Date(r.last_seen).getTime(),
     }));
+  }
+
+  async setMemberVoiceChannel(lobbyId: string, userCode: string, channelId: string | null): Promise<void> {
+    try {
+      await this.client
+        .from('lobby_members')
+        .update({ active_voice_channel: channelId })
+        .eq('lobby_id', lobbyId)
+        .eq('user_code', userCode);
+    } catch (e) {
+      console.warn('Failed to update member voice channel:', e);
+    }
   }
 
   async sendLobbyMessage(params: {

@@ -165,7 +165,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
       )}
 
       <div
-        className="relative flex-1 min-h-0 flex flex-col overflow-hidden"
+        className="relative flex-1 min-h-0 flex flex-col"
         style={{ backgroundColor: 'var(--title-bar-bg, #121212)' }}
         onMouseEnter={showChatScrollbar}
         onMouseLeave={handleChatListMouseLeave}
@@ -251,7 +251,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           style={{
             marginTop: 0,
             paddingTop: isViewingArchive ? '8px' : incomingFriendRequests.length > 0 ? '92px' : '52px',
-            paddingBottom: '8px',
+            paddingBottom: '74px',
             overflowY: 'scroll',
             overflowX: 'hidden',
           }}
@@ -644,10 +644,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
         />
 
         {!hideDock && (
-          <div
-            className="p-1.5 shrink-0 z-20 select-none pointer-events-auto"
-            style={{ backgroundColor: 'var(--title-bar-bg, #121212)' }}
-          >
+          <div className="absolute left-[6px] right-[6px] bottom-[6px] z-20 select-none pointer-events-auto">
             <UserDockPanel
               onOpenProfile={onOpenProfile}
               onOpenSettings={onOpenSettings}

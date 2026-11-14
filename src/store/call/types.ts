@@ -54,7 +54,7 @@ export interface CallStore {
   setIncomingCall: (call: IncomingCall | null) => void;
   addProcessedRoomName: (roomName: string) => void;
   setMinimized: (minimized: boolean) => void;
-  startCall: (chatId: string, callType: CallType, myNickname: string) => Promise<void>;
+  startCall: (chatId: string, callType: CallType, myNickname: string, customRoomName?: string) => Promise<void>;
   initiateCall: () => Promise<void>;
   answerCall: (myNickname: string) => Promise<void>;
   rejectCall: (silent?: boolean) => void;

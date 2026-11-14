@@ -1290,7 +1290,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
         {chatThumb && (
           <>
             <div
-              className="overlay-scroll-track"
+              className="chat-overlay-scroll-track"
               onMouseDown={(e) => handleScrollbarTrackMouseDown(e, messagesContainerRef.current)}
               style={{
                 top: '6px',
@@ -1300,7 +1300,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
             />
 
             <div
-              className="overlay-scroll-thumb"
+              className="chat-overlay-scroll-thumb"
               onMouseDown={(e) => handleScrollbarThumbMouseDown(e, messagesContainerRef.current)}
               style={{
                 top: chatThumb.top + 6,

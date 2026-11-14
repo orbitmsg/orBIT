@@ -42,6 +42,7 @@ import { SidebarFolderRail } from './sidebar/SidebarFolderRail';
 import { ChatContextMenuOverlay } from './sidebar/ChatContextMenuOverlay';
 import { SidebarContent } from './sidebar/SidebarContent';
 import { LobbyChannelsSidebar } from '../chat/lobby/LobbyChannelsSidebar';
+import { lobbyService } from '../../services/lobbyService';
 import { useGroupSubscriptions } from './hooks/useGroupSubscriptions';
 import { usePrivateChatSubscriptions } from './hooks/usePrivateChatSubscriptions';
 import { useHandshakeListeners } from './hooks/useHandshakeListeners';
@@ -920,12 +921,12 @@ export const MainLayout = () => {
     thumb.style.display = 'block';
     track.style.display = 'block';
 
-    const trackHeight = Math.max(0, clientHeight - 36);
-    const thumbHeight = Math.max(24, (clientHeight / scrollHeight) * trackHeight);
+    const trackHeight = track.clientHeight || Math.max(0, clientHeight - 128);
+    const thumbHeight = Math.max(24, (trackHeight / scrollHeight) * trackHeight);
     const maxTop = Math.max(0, trackHeight - thumbHeight);
     const scrollableDistance = scrollHeight - clientHeight;
     const ratio = scrollableDistance > 0 ? scrollTop / scrollableDistance : 0;
-    const top = maxTop * ratio;
+    const top = Math.min(maxTop, maxTop * ratio);
 
     thumb.style.height = `${thumbHeight}px`;
     thumb.style.transform = `translateY(${top}px)`;
@@ -1198,10 +1199,21 @@ export const MainLayout = () => {
                   }}
                   onOpenVoiceCall={(ch) => {
                     useChatStore.getState().setActiveChannel(ch.id, ch.name);
-                    useCallStore.getState().startCall(activeChatObj.id, 'audio', nickname || 'User');
+                    const voiceRoom = `lobby-voice-${activeChatObj.id}-${ch.id}`;
+                    useCallStore.getState().startCall(activeChatObj.id, 'audio', nickname || 'User', voiceRoom);
+                    const currentMyCode = useChatStore.getState().myCode;
+                    if (currentMyCode) {
+                      lobbyService.setMemberVoiceChannel(activeChatObj.id, currentMyCode, ch.id).catch(() => {});
+                    }
                   }}
                   isVoiceActive={isVoiceActive}
-                  onDisconnectVoice={() => useCallStore.getState().endCall()}
+                  onDisconnectVoice={() => {
+                    useCallStore.getState().endCall();
+                    const currentMyCode = useChatStore.getState().myCode;
+                    if (currentMyCode) {
+                      lobbyService.setMemberVoiceChannel(activeChatObj.id, currentMyCode, null).catch(() => {});
+                    }
+                  }}
                   onProfileClick={() => setActiveProfileChatId(activeChatObj.id)}
                   onOpenProfile={() => setIsMyProfileOpen(true)}
                   onOpenSettings={handleOpenSettings}

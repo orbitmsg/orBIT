@@ -145,6 +145,7 @@ export interface Message {
   id?: string;
   chatId?: string;
   senderId?: string;
+  senderCode?: string;
   sender: string;
   isOutgoing?: boolean;
   text: string;

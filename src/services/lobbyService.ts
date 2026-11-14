@@ -332,8 +332,9 @@ export class LobbyService {
   }
 
   subscribeToPublicLobbies(onChange: () => void): () => void {
+    const channelId = `public:lobbies:${Math.random().toString(36).slice(2, 9)}`;
     const channel = this.client
-      .channel('public:lobbies')
+      .channel(channelId)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'lobbies' },
@@ -449,8 +450,9 @@ export class LobbyService {
   }
 
   subscribeToLobbyChannels(lobbyId: string, onChange: () => void): () => void {
+    const channelUniqueId = `channels:${lobbyId}:${Math.random().toString(36).slice(2, 9)}`;
     const channel = this.client
-      .channel(`channels:${lobbyId}`)
+      .channel(channelUniqueId)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'lobby_channels', filter: `lobby_id=eq.${lobbyId}` },
@@ -637,8 +639,9 @@ export class LobbyService {
     onMemberChange?: () => void,
     sharedSecret?: string | null
   ) {
+    const channelUniqueId = `lobby:${lobbyId}:${Math.random().toString(36).slice(2, 9)}`;
     const channel = this.client
-      .channel(`lobby:${lobbyId}`)
+      .channel(channelUniqueId)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'lobby_messages', filter: `lobby_id=eq.${lobbyId}` },

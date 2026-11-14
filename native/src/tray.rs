@@ -170,9 +170,9 @@ static SELECTED_INDEX: AtomicI32 = AtomicI32::new(-1);
 static MENU_ITEMS: Mutex<Vec<Vec<u16>>> = Mutex::new(Vec::new());
 static MENU_FONT_NAME: Mutex<Vec<u16>> = Mutex::new(Vec::new());
 
-static COLOR_BG: AtomicU32 = AtomicU32::new(0x003b252a);
+static COLOR_BG: AtomicU32 = AtomicU32::new(0x00121212);
 static COLOR_TEXT: AtomicU32 = AtomicU32::new(0x00ffffff);
-static COLOR_HOVER: AtomicU32 = AtomicU32::new(0x00472e34);
+static COLOR_HOVER: AtomicU32 = AtomicU32::new(0x00211e1e);
 
 const FONT_SIZE: i32 = -12;
 const ITEM_HEIGHT: i32 = 30;
@@ -394,9 +394,9 @@ pub fn show_native_tray_menu(
         return Ok(-1);
     }
 
-    let bg = bg_color.unwrap_or(0x003b252a);
+    let bg = bg_color.unwrap_or(0x00121212);
     let text = text_color.unwrap_or(0x00ffffff);
-    let hover = hover_color.unwrap_or(0x00472e34);
+    let hover = hover_color.unwrap_or(0x00211e1e);
 
     COLOR_BG.store(bg, Ordering::SeqCst);
     COLOR_TEXT.store(text, Ordering::SeqCst);

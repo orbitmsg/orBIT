@@ -3586,6 +3586,7 @@ ipcMain.handle('orbita:get-current-theme', () => ({
 ipcMain.on('orbita:set-current-theme', (_event, { themeId, themeVars }) => {
   currentThemeId = themeId;
   currentThemeVars = themeVars || {};
+  saveWindowSettings();
   if (callWindow && !callWindow.isDestroyed()) {
     callWindow.webContents.send('orbita:theme-changed', { themeId, themeVars });
   }
@@ -3848,12 +3849,12 @@ function showTrayContextMenu() {
     'Закрыть orBIT',
   ];
 
-  const bgStr = currentThemeVars['--md-surface'] || currentThemeVars['--settings-surface'] || currentThemeVars['--surface-container'] || '#2a253b';
-  const hoverStr = currentThemeVars['--md-surface-var'] || currentThemeVars['--settings-surface-var'] || currentThemeVars['--surface-container-strong'] || '#342e47';
+  const bgStr = currentThemeVars['--settings-surface'] || currentThemeVars['--md-surface'] || currentThemeVars['--surface-container'] || '#121212';
+  const hoverStr = currentThemeVars['--surface-container-strong'] || currentThemeVars['--settings-surface-var'] || currentThemeVars['--md-surface-var'] || '#1e1e21';
   const textStr = currentThemeVars['--text-main'] || '#ffffff';
 
-  const bgColor = parseColorToBgr(bgStr, 0x003b252a);
-  const hoverColor = parseColorToBgr(hoverStr, 0x00472e34);
+  const bgColor = parseColorToBgr(bgStr, 0x00121212);
+  const hoverColor = parseColorToBgr(hoverStr, 0x00211e1e);
   const textColor = parseColorToBgr(textStr, 0x00ffffff);
 
   let fontName = currentFontFamily;
@@ -4036,6 +4037,8 @@ function loadWindowSettings() {
         if (typeof data.ghostMode === 'boolean') ghostModeSetting = data.ghostMode;
         if (typeof data.hideMenuBar === 'boolean') hideMenuBarSetting = data.hideMenuBar;
         if (typeof data.showInTray === 'boolean') showInTraySetting = data.showInTray;
+        if (data.themeVars && typeof data.themeVars === 'object') currentThemeVars = data.themeVars;
+        if (typeof data.themeId === 'string') currentThemeId = data.themeId;
       }
     }
   } catch {}
@@ -4048,6 +4051,8 @@ function saveWindowSettings() {
       ghostMode: ghostModeSetting,
       hideMenuBar: hideMenuBarSetting,
       showInTray: showInTraySetting,
+      themeVars: currentThemeVars,
+      themeId: currentThemeId,
     };
     fs.writeFileSync(WINDOW_SETTINGS_FILE, JSON.stringify(data), 'utf8');
   } catch {}
@@ -5596,6 +5601,7 @@ function registerWindowsAppIdentity(): void {
 
 app.whenReady().then(async () => {
   registerWindowsAppIdentity();
+  loadWindowSettings();
   if (!app.requestSingleInstanceLock()) {
     app.quit();
     return;

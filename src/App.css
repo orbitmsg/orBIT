@@ -970,8 +970,14 @@ textarea::selection,
 
 .reaction-badge-btn.is-own.is-inactive {
   --reaction-badge-bg: #4a4d57;
-  background-color: rgba(255, 255, 255, 0.2) !important;
+  background-color: #4a4d57 !important;
   color: #ffffff !important;
+}
+
+[data-theme-light="true"] .reaction-badge-btn.is-own.is-inactive {
+  --reaction-badge-bg: #e2e4e9;
+  background-color: #e2e4e9 !important;
+  color: #1b1b1b !important;
 }
 
 .reaction-badge-btn.is-own.is-active {

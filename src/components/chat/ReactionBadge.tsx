@@ -38,6 +38,46 @@ const countVariants: Variants = {
   }),
 };
 
+function getReactionUniqueUsers(
+  users: string[],
+  myUserId?: string | null,
+  myCode?: string | null,
+  myNickname?: string | null
+): { uniqueUsers: string[]; uniqueCount: number; hasReacted: boolean } {
+  const lowerUserId = myUserId ? myUserId.toLowerCase() : null;
+  const lowerCode = myCode ? myCode.toLowerCase() : null;
+  const lowerNick = myNickname ? myNickname.toLowerCase() : null;
+  const seen = new Set<string>();
+  const list: string[] = [];
+  let reacted = false;
+
+  for (const u of users) {
+    const lowerU = u.toLowerCase();
+    const isMe =
+      (myUserId && u === myUserId) ||
+      (lowerUserId && lowerU === lowerUserId) ||
+      (myCode && u === myCode) ||
+      (lowerCode && lowerU === lowerCode) ||
+      (myNickname && u === myNickname) ||
+      (lowerNick && lowerU === lowerNick) ||
+      u === 'YOU' ||
+      lowerU === 'you';
+
+    const key = isMe ? '__ME__' : lowerU;
+    if (!seen.has(key)) {
+      seen.add(key);
+      list.push(u);
+    }
+    if (isMe) reacted = true;
+  }
+
+  return {
+    uniqueUsers: list,
+    uniqueCount: Math.max(1, list.length),
+    hasReacted: reacted,
+  };
+}
+
 interface ReactionBadgeProps {
   emoji: string;
   users: string[];
@@ -45,6 +85,8 @@ interface ReactionBadgeProps {
   activeChatId?: string;
   isChannel?: boolean;
   isOwn?: boolean;
+  forceShowNumber?: boolean;
+  maxAvatars?: number;
 }
 
 export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
@@ -54,6 +96,8 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
   activeChatId,
   isChannel: isChannelProp,
   isOwn = false,
+  forceShowNumber = false,
+  maxAvatars = 4,
 }) => {
   const myNickname = useAuthStore((s) => s.nickname) || 'YOU';
   const myUserId = useAuthStore((s) => s.userId);
@@ -67,42 +111,13 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
   const usersById = useChatStore((s) => s.usersById);
 
   const isChannel = isChannelProp !== undefined ? isChannelProp : (activeChat?.type === 'channel');
+  const showNumber = isChannel || forceShowNumber;
   const [, setCacheTick] = useState(0);
 
-  const { uniqueUsers, uniqueCount, hasReacted } = useMemo(() => {
-    const lowerUserId = myUserId ? myUserId.toLowerCase() : null;
-    const lowerCode = myCode ? myCode.toLowerCase() : null;
-    const lowerNick = myNickname ? myNickname.toLowerCase() : null;
-    const seen = new Set<string>();
-    const list: string[] = [];
-    let reacted = false;
-
-    for (const u of users) {
-      const lowerU = u.toLowerCase();
-      const isMe =
-        (myUserId && u === myUserId) ||
-        (lowerUserId && lowerU === lowerUserId) ||
-        (myCode && u === myCode) ||
-        (lowerCode && lowerU === lowerCode) ||
-        (myNickname && u === myNickname) ||
-        (lowerNick && lowerU === lowerNick) ||
-        u === 'YOU' ||
-        lowerU === 'you';
-
-      const key = isMe ? '__ME__' : lowerU;
-      if (!seen.has(key)) {
-        seen.add(key);
-        list.push(u);
-      }
-      if (isMe) reacted = true;
-    }
-
-    return {
-      uniqueUsers: list,
-      uniqueCount: Math.max(1, list.length),
-      hasReacted: reacted,
-    };
-  }, [users, myUserId, myCode, myNickname]);
+  const { uniqueUsers, uniqueCount, hasReacted } = useMemo(
+    () => getReactionUniqueUsers(users, myUserId, myCode, myNickname),
+    [users, myUserId, myCode, myNickname]
+  );
 
   const prevCountRef = useRef(uniqueCount);
   const direction = uniqueCount >= prevCountRef.current ? 1 : -1;
@@ -111,9 +126,9 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
   }, [uniqueCount]);
 
   useEffect(() => {
-    if (isChannel) return;
-    const topThree = uniqueUsers.slice(0, 3);
-    topThree.forEach((u) => {
+    if (showNumber) return;
+    const topUsers = uniqueUsers.slice(0, maxAvatars);
+    topUsers.forEach((u) => {
       const lowerU = u.toLowerCase();
       const isMe =
         (myUserId && u === myUserId) ||
@@ -136,16 +151,16 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
           .catch(() => {});
       }
     });
-  }, [uniqueUsers, isChannel, myUserId, myCode, myNickname]);
+  }, [uniqueUsers, showNumber, maxAvatars, myUserId, myCode, myNickname]);
 
   const visibleUsersData = useMemo(() => {
-    if (isChannel) return [];
-    const topThree = uniqueUsers.slice(0, 3);
+    if (showNumber) return [];
+    const topUsers = uniqueUsers.slice(0, maxAvatars);
     const lowerUserId = myUserId ? myUserId.toLowerCase() : null;
     const lowerCode = myCode ? myCode.toLowerCase() : null;
     const lowerNick = myNickname ? myNickname.toLowerCase() : null;
 
-    return topThree.map((u) => {
+    return topUsers.map((u) => {
       const lowerU = u.toLowerCase();
       const isMe =
         (myUserId && u === myUserId) ||
@@ -246,7 +261,7 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
         {emoji}
       </span>
 
-      {!isChannel ? (
+      {!showNumber ? (
         <>
           {visibleUsersData.map((user, idx) => (
             <Avatar
@@ -259,8 +274,8 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
                 height: 24,
                 borderRadius: '50%',
                 flexShrink: 0,
-                marginLeft: idx > 0 ? -8 : 0,
-                boxShadow: 'none',
+                marginLeft: idx > 0 ? -7 : 0,
+                boxShadow: idx > 0 ? '0 0 0 2px var(--reaction-badge-bg)' : 'none',
                 position: 'relative',
                 zIndex: idx + 1,
                 pointerEvents: 'none',
@@ -268,22 +283,6 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
               }}
             />
           ))}
-          {uniqueCount >= 4 && (
-            <span
-              className="tabular-nums"
-              style={{
-                fontSize: '12.5px',
-                fontWeight: 600,
-                lineHeight: 1,
-                display: 'inline-flex',
-                alignItems: 'center',
-                color: 'inherit',
-                transition: 'color 0.15s ease',
-              }}
-            >
-              {uniqueCount}
-            </span>
-          )}
         </>
       ) : (
         <span
@@ -349,6 +348,10 @@ export const MessageReactions: React.FC<MessageReactionsProps> = React.memo(({
   isChannel,
   isSmallMessage = false,
 }) => {
+  const myNickname = useAuthStore((s) => s.nickname) || 'YOU';
+  const myUserId = useAuthStore((s) => s.userId);
+  const myCode = useChatStore((s) => s.myCode);
+
   const entries = useMemo(() => {
     if (!reactions) return [];
     return Object.entries(reactions)
@@ -361,6 +364,27 @@ export const MessageReactions: React.FC<MessageReactionsProps> = React.memo(({
       });
   }, [reactions]);
 
+  const reactionTypesCount = entries.length;
+
+  const shouldShowNumbersForAll = useMemo(() => {
+    if (reactionTypesCount >= 3) {
+      return true;
+    }
+    if (reactionTypesCount === 2) {
+      return entries.some(([_, users]) => {
+        const { uniqueCount } = getReactionUniqueUsers(users, myUserId, myCode, myNickname);
+        return uniqueCount >= 4;
+      });
+    }
+    if (reactionTypesCount === 1) {
+      const { uniqueCount } = getReactionUniqueUsers(entries[0][1], myUserId, myCode, myNickname);
+      return uniqueCount >= 5;
+    }
+    return false;
+  }, [entries, reactionTypesCount, myUserId, myCode, myNickname]);
+
+  const maxAvatarsPerBadge = reactionTypesCount === 1 ? 4 : 3;
+
   if (entries.length === 0) return null;
 
   return (
@@ -370,7 +394,7 @@ export const MessageReactions: React.FC<MessageReactionsProps> = React.memo(({
         display: 'flex',
         flexWrap: 'wrap',
         gap: '4px',
-        maxWidth: isSmallMessage ? '170px' : '230px',
+        maxWidth: isSmallMessage ? '180px' : '320px',
         width: 'fit-content',
         justifyContent: 'flex-start',
       }}
@@ -384,6 +408,8 @@ export const MessageReactions: React.FC<MessageReactionsProps> = React.memo(({
           activeChatId={activeChatId}
           isChannel={isChannel}
           isOwn={isOwn}
+          forceShowNumber={shouldShowNumbersForAll}
+          maxAvatars={maxAvatarsPerBadge}
         />
       ))}
     </div>

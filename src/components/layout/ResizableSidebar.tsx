@@ -15,26 +15,27 @@ const RESIZE_HANDLE_WIDTH = 6;
 const MOBILE_BREAKPOINT = 680;
 const MIN_CHAT_WIDTH = 300;
 const MAX_WIDTH_PERCENT = 0.75;
+const DEFAULT_SIDEBAR_WIDTH = 392;
 
 export const ResizableSidebar: React.FC<ResizableSidebarProps> = ({
   children,
-  defaultWidth = 300,
-  minWidth = 300,
+  defaultWidth = DEFAULT_SIDEBAR_WIDTH,
+  minWidth = DEFAULT_SIDEBAR_WIDTH,
   maxWidth: propMaxWidth,
   className = '',
   onWidthChange,
-  resizable = true,
+  resizable = false,
 }) => {
   const [width, setWidth] = useState(defaultWidth);
   const [isResizing, setIsResizing] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < MOBILE_BREAKPOINT);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < MOBILE_BREAKPOINT : false);
 
   const computeMaxWidth = useCallback(() => {
     if (propMaxWidth !== undefined) return propMaxWidth;
     const byChatReserve = window.innerWidth - MIN_CHAT_WIDTH;
     const byPercent = window.innerWidth * MAX_WIDTH_PERCENT;
-    return Math.max(300, Math.min(byChatReserve, byPercent));
-  }, [propMaxWidth]);
+    return Math.max(minWidth, Math.min(byChatReserve, byPercent));
+  }, [propMaxWidth, minWidth]);
 
   const [maxWidth, setMaxWidth] = useState<number>(computeMaxWidth);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -42,63 +43,54 @@ export const ResizableSidebar: React.FC<ResizableSidebarProps> = ({
   const startWidthRef = useRef<number>(0);
 
   useEffect(() => {
-    if (propMaxWidth !== undefined) return;
-    const handleResize = () => {
-      const newMax = computeMaxWidth();
-      setMaxWidth(newMax);
-      setWidth((current) => Math.min(current, newMax));
-    };
-    window.addEventListener('resize', handleResize);
-    handleResize();
-    return () => window.removeEventListener('resize', handleResize);
-  }, [propMaxWidth, computeMaxWidth]);
-
-  useEffect(() => {
-    if (propMaxWidth !== undefined) {
-      setWidth((current) => Math.min(current, propMaxWidth));
+    if (!resizable) {
+      setWidth(defaultWidth);
+      sqliteStorage.remove('orbita-sidebar-width').catch(() => {});
+      return;
     }
-  }, [propMaxWidth]);
+
+    sqliteStorage.get('orbita-sidebar-width').then((savedWidth) => {
+      if (savedWidth) {
+        const parsed = parseInt(savedWidth, 10);
+        if (!isNaN(parsed) && parsed >= minWidth) {
+          const clamped = Math.max(minWidth, Math.min(maxWidth, parsed));
+          setWidth(clamped);
+        } else {
+          setWidth(defaultWidth);
+        }
+      } else {
+        setWidth(defaultWidth);
+      }
+    }).catch(() => {});
+  }, [resizable, defaultWidth, minWidth, maxWidth]);
 
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < MOBILE_BREAKPOINT;
       setIsMobile(mobile);
-      if (mobile) setWidth(defaultWidth);
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [defaultWidth]);
-
-  useEffect(() => {
-    sqliteStorage.get('orbita-sidebar-width').then((savedWidth) => {
-      if (savedWidth) {
-        const parsed = parseInt(savedWidth, 10);
-        if (!isNaN(parsed)) {
-          const clamped = Math.max(300, Math.min(maxWidth, parsed));
-          setWidth(clamped);
-        } if (false) {
-          setWidth(parsed);
-        }
+      if (!resizable) {
+        setWidth(defaultWidth);
+        return;
       }
-    }).catch(() => {});
-  }, []);
+      const newMax = computeMaxWidth();
+      setMaxWidth(newMax);
+      setWidth((current) => Math.max(minWidth, Math.min(current, newMax)));
+    };
 
-  useEffect(() => {
-    if (!isMobile) {
-      sqliteStorage.set('orbita-sidebar-width', String(width)).catch(() => {});
-    }
-  }, [width, isMobile]);
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, [defaultWidth, minWidth, resizable, computeMaxWidth]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (isMobile) return;
+    if (!resizable || isMobile) return;
     e.preventDefault();
     setIsResizing(true);
     startXRef.current = e.clientX;
     startWidthRef.current = width;
     document.body.style.userSelect = 'none';
     document.body.style.cursor = 'col-resize';
-  }, [isMobile, width]);
+  }, [resizable, isMobile, width]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing) return;
@@ -113,8 +105,11 @@ export const ResizableSidebar: React.FC<ResizableSidebarProps> = ({
       setIsResizing(false);
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
+      if (resizable && !isMobile && width >= minWidth) {
+        sqliteStorage.set('orbita-sidebar-width', String(width)).catch(() => {});
+      }
     }
-  }, [isResizing]);
+  }, [isResizing, resizable, isMobile, width, minWidth]);
 
   useEffect(() => {
     if (isResizing) {
@@ -156,7 +151,10 @@ export const ResizableSidebar: React.FC<ResizableSidebarProps> = ({
             width: RESIZE_HANDLE_WIDTH,
             transform: 'translateX(50%)',
             cursor: 'col-resize',
-            background: isResizing ? 'rgba(255, 255, 255, 0.14)' : 'transparent', border: 'none', outline: 'none', borderRadius: '9999px',
+            background: isResizing ? 'rgba(255, 255, 255, 0.14)' : 'transparent',
+            border: 'none',
+            outline: 'none',
+            borderRadius: '9999px',
           }}
           onMouseDown={handleMouseDown}
         />

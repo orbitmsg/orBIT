@@ -1163,9 +1163,9 @@ export const MainLayout = () => {
     >
       {(!isMobileView || !activeChatId) && (
         <ResizableSidebar
-          defaultWidth={isMobileView ? undefined : 392}
-          minWidth={isMobileView ? 0 : SIDEBAR_MIN_WIDTH + 72}
-          maxWidth={isMobileView ? undefined : (maxSidebarWidth ? maxSidebarWidth + 72 : undefined)}
+          defaultWidth={392}
+          minWidth={SIDEBAR_MIN_WIDTH + 72}
+          maxWidth={maxSidebarWidth ? maxSidebarWidth + 72 : undefined}
           className="md:flex-none"
           resizable={false}
         >

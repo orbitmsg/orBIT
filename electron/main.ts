@@ -3654,6 +3654,7 @@ ipcMain.handle('orbita:get-current-language', () => currentLanguage);
 ipcMain.on('orbita:set-current-language', (_event, lang: string) => {
   if (!lang) return;
   currentLanguage = lang;
+  saveWindowSettings();
   setKvValue('selected-language', lang).catch(() => {});
   if (callWindow && !callWindow.isDestroyed()) {
     callWindow.webContents.send('orbita:language-changed', lang);
@@ -3838,15 +3839,63 @@ function parseColorToBgr(colorStr: string, defaultBgr: number): number {
   return defaultBgr;
 }
 
+const TRAY_LOCALES: Record<string, {
+  open: string;
+  restart: string;
+  streamerOn: string;
+  streamerOff: string;
+  ghostOn: string;
+  ghostOff: string;
+  quit: string;
+}> = {
+  ru: {
+    open: 'Открыть orBIT',
+    restart: 'Перезапустить orBIT',
+    streamerOn: 'Включить режим стримера',
+    streamerOff: 'Выключить режим стримера',
+    ghostOn: 'Включить призрачный режим',
+    ghostOff: 'Выключить призрачный режим',
+    quit: 'Закрыть orBIT',
+  },
+  en: {
+    open: 'Open orBIT',
+    restart: 'Restart orBIT',
+    streamerOn: 'Enable Streamer Mode',
+    streamerOff: 'Disable Streamer Mode',
+    ghostOn: 'Enable Ghost Mode',
+    ghostOff: 'Disable Ghost Mode',
+    quit: 'Quit orBIT',
+  },
+};
+
+function getValidIcoPath(): string {
+  if (!app.isPackaged) {
+    const devIco = path.resolve(__dirname, '../public/icons/icon.ico');
+    if (fs.existsSync(devIco)) return devIco;
+  }
+  const userIco = path.join(app.getPath('userData'), 'icon.ico');
+  try {
+    if (!fs.existsSync(userIco)) {
+      const srcIco = resolveIconFile('icon.ico');
+      if (srcIco && fs.existsSync(srcIco)) {
+        fs.writeFileSync(userIco, fs.readFileSync(srcIco));
+      }
+    }
+    if (fs.existsSync(userIco)) return userIco;
+  } catch {}
+  return process.execPath;
+}
+
 function showTrayContextMenu() {
   if (!trayInstance) return;
   const bounds = trayInstance.getBounds();
+  const t = (currentLanguage && currentLanguage.startsWith('en')) ? TRAY_LOCALES.en : TRAY_LOCALES.ru;
   const items = [
-    'Открыть orBIT',
-    'Перезапустить orBIT',
-    screenProtectionSetting ? 'Выключить режим стримера' : 'Включить режим стримера',
-    ghostModeSetting ? 'Выключить призрачный режим' : 'Включить призрачный режим',
-    'Закрыть orBIT',
+    t.open,
+    t.restart,
+    screenProtectionSetting ? t.streamerOff : t.streamerOn,
+    ghostModeSetting ? t.ghostOff : t.ghostOn,
+    t.quit,
   ];
 
   const bgStr = currentThemeVars['--settings-surface'] || currentThemeVars['--md-surface'] || currentThemeVars['--surface-container'] || '#121212';
@@ -4039,6 +4088,7 @@ function loadWindowSettings() {
         if (typeof data.showInTray === 'boolean') showInTraySetting = data.showInTray;
         if (data.themeVars && typeof data.themeVars === 'object') currentThemeVars = data.themeVars;
         if (typeof data.themeId === 'string') currentThemeId = data.themeId;
+        if (typeof data.language === 'string') currentLanguage = data.language;
       }
     }
   } catch {}
@@ -4053,6 +4103,7 @@ function saveWindowSettings() {
       showInTray: showInTraySetting,
       themeVars: currentThemeVars,
       themeId: currentThemeId,
+      language: currentLanguage,
     };
     fs.writeFileSync(WINDOW_SETTINGS_FILE, JSON.stringify(data), 'utf8');
   } catch {}
@@ -4948,7 +4999,8 @@ function createSplashWindow() {
     splashWindow.setIcon(icon);
   }
 
-  if (process.platform === 'win32' && icoPath) {
+  if (process.platform === 'win32') {
+    const icoPath = getValidIcoPath();
     try {
       splashWindow.setAppDetails({
         appId: 'orBIT',
@@ -5027,7 +5079,7 @@ function createMainWindow() {
   if (icon && !icon.isEmpty()) mainWindow.setIcon(icon);
 
   if (process.platform === 'win32') {
-    const icoPath = resolveIconFile('icon.ico');
+    const icoPath = getValidIcoPath();
     if (icoPath) {
       try {
         mainWindow.setAppDetails({
@@ -5541,28 +5593,21 @@ function setupAutoUpdater() {
 function registerWindowsAppIdentity(): void {
   if (process.platform !== 'win32') return;
   try {
-    const icoPath = app.isPackaged
-      ? path.join(process.resourcesPath, 'icons', 'icon.ico')
-      : path.join(__dirname, '..', 'public', 'icons', 'icon.ico');
+    const targetIco = getValidIcoPath();
     const programsPath = app.getPath('programs');
-    const targetIco = fs.existsSync(icoPath) ? icoPath : process.execPath;
 
     const shortcutDetails = {
       target: process.execPath,
       args: app.isPackaged ? '' : `"${path.resolve(__dirname, '..')}"`,
       description: 'orBIT',
       appUserModelId: 'orBIT',
-      icon: targetIco,
+      icon: app.isPackaged ? process.execPath : targetIco,
       iconIndex: 0,
       cwd: app.isPackaged ? path.dirname(process.execPath) : path.resolve(__dirname, '..'),
     };
 
     const orbitLnk = path.join(programsPath, 'orBIT.lnk');
-    if (fs.existsSync(orbitLnk)) {
-      shell.writeShortcutLink(orbitLnk, 'update', shortcutDetails);
-    } else {
-      shell.writeShortcutLink(orbitLnk, 'create', shortcutDetails);
-    }
+    shell.writeShortcutLink(orbitLnk, 'create', shortcutDetails);
 
     const oldLinks = [
       path.join(programsPath, 'Orbita.lnk'),
@@ -5571,26 +5616,18 @@ function registerWindowsAppIdentity(): void {
     for (const oldLink of oldLinks) {
       if (fs.existsSync(oldLink)) {
         try {
-          shell.writeShortcutLink(oldLink, 'update', {
-            ...shortcutDetails,
-            description: 'orBIT',
-            appUserModelId: 'orBIT',
-            icon: targetIco,
-            iconIndex: 0,
-          });
+          shell.writeShortcutLink(oldLink, 'create', shortcutDetails);
         } catch {}
       }
     }
 
     const regCommands = [
-      `reg add "HKCU\\Software\\Classes\\AppUserModelId\\orBIT" /v DisplayName /d "orBIT" /f`,
-      `reg add "HKCU\\Software\\Classes\\AppUserModelId\\orBIT" /v IconUri /d "${icoPath}" /f`,
-      `reg add "HKCU\\Software\\Classes\\AppUserModelId\\orBIT" /v IconBackgroundColor /d "0" /f`,
-      `reg add "HKCU\\Software\\Classes\\AppUserModelId\\com.saizzi.orbita" /v DisplayName /d "orBIT" /f`,
-      `reg add "HKCU\\Software\\Classes\\AppUserModelId\\com.saizzi.orbita" /v IconUri /d "${icoPath}" /f`,
+      `reg delete "HKCU\\Software\\Classes\\AppUserModelId\\orBIT" /f`,
+      `reg delete "HKCU\\Software\\Classes\\AppUserModelId\\com.saizzi.orbita" /f`,
+      `reg delete "HKCU\\Software\\Classes\\AppUserModelId\\com.saizzi.orbit" /f`,
       `reg add "HKCU\\Software\\Classes\\Applications\\electron.exe" /v FriendlyAppName /d "orBIT" /f`,
       `reg add "HKCU\\Software\\Classes\\Applications\\electron.exe" /v ApplicationCompany /d "orBIT" /f`,
-      `reg add "HKCU\\Software\\Classes\\Applications\\electron.exe\\DefaultIcon" /ve /d "${icoPath},0" /f`,
+      `reg add "HKCU\\Software\\Classes\\Applications\\electron.exe\\DefaultIcon" /ve /d "${targetIco},0" /f`,
     ];
 
     for (const cmd of regCommands) {

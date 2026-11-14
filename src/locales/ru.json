@@ -1820,7 +1820,14 @@
       "open_lobby": "Открыть",
       "voice_duration": "Время в сети",
       "voice_connect_hint": "Нажмите кнопку ниже, чтобы войти в голосовой канал и начать общение.",
-      "connect_voice": "Подключиться к голосовому каналу"
+      "connect_voice": "Подключиться к голосовому каналу",
+      "tray_open": "Открыть orBIT",
+      "tray_restart": "Перезапустить orBIT",
+      "tray_streamer_mode_enable": "Включить режим стримера",
+      "tray_streamer_mode_disable": "Выключить режим стримера",
+      "tray_ghost_mode_enable": "Включить призрачный режим",
+      "tray_ghost_mode_disable": "Выключить призрачный режим",
+      "tray_quit": "Закрыть orBIT"
     }
   }
 }

@@ -1820,7 +1820,14 @@
       "open_lobby": "Open",
       "voice_duration": "Time connected",
       "voice_connect_hint": "Click the button below to join the voice channel and start talking.",
-      "connect_voice": "Connect to voice"
+      "connect_voice": "Connect to voice",
+      "tray_open": "Open orBIT",
+      "tray_restart": "Restart orBIT",
+      "tray_streamer_mode_enable": "Enable Streamer Mode",
+      "tray_streamer_mode_disable": "Disable Streamer Mode",
+      "tray_ghost_mode_enable": "Enable Ghost Mode",
+      "tray_ghost_mode_disable": "Disable Ghost Mode",
+      "tray_quit": "Quit orBIT"
     }
   }
 }

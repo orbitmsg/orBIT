@@ -76,10 +76,11 @@ const {
   SYNC_SERVER_PORT = '49832',
 } = process.env;
 
+app.setName('Orbita');
 if (process.platform === 'win32') {
-  app.setName('orBIT');
   app.setAppUserModelId('orBIT');
 }
+app.setPath('userData', path.join(app.getPath('appData'), 'Orbita'));
 
 app.commandLine.appendSwitch('disk-cache-size', '33554432');
 app.commandLine.appendSwitch('media-cache-size', '16777216');

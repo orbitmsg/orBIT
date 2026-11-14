@@ -64,10 +64,11 @@ function getTraySvg(size) {
           <stop offset="100%" stop-color="#8c74bd" />
         </linearGradient>
       </defs>
-      <path d="M 10.2 4.2 A 5.6 5.6 0 1 0 12.8 8.5" fill="none" stroke="url(#trayIris16)" stroke-width="2.6" stroke-linecap="round" />
-      <path d="M 8.8 6.0 A 3.2 3.2 0 1 0 10.4 8.5" fill="none" stroke="url(#trayIris16)" stroke-width="1.8" stroke-linecap="round" opacity="0.9" />
-      <rect x="9.6" y="0.8" width="3.8" height="3.8" rx="0.6" fill="#FFFFFF" />
-      <rect x="12.2" y="3.2" width="3.2" height="3.2" rx="0.5" fill="#FFFFFF" />
+      <path d="M 9.5 4.8 A 5.6 5.6 0 1 0 12.8 8.5" fill="none" stroke="url(#trayIris16)" stroke-width="2.6" stroke-linecap="round" />
+      <path d="M 8.2 6.5 A 3.2 3.2 0 1 0 10.4 8.5" fill="none" stroke="url(#trayIris16)" stroke-width="1.8" stroke-linecap="round" opacity="0.9" />
+      <rect x="8.5" y="5.0" width="2.0" height="2.0" rx="0.3" fill="#FFFFFF" />
+      <rect x="10.8" y="2.7" width="2.0" height="2.0" rx="0.3" fill="#FFFFFF" />
+      <rect x="13.1" y="0.4" width="2.0" height="2.0" rx="0.3" fill="#FFFFFF" />
     </svg>`;
   } else if (size <= 24) {
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
@@ -77,10 +78,11 @@ function getTraySvg(size) {
           <stop offset="100%" stop-color="#8c74bd" />
         </linearGradient>
       </defs>
-      <path d="M 15.3 6.3 A 8.4 8.4 0 1 0 19.2 12.8" fill="none" stroke="url(#trayIris24)" stroke-width="3.8" stroke-linecap="round" />
-      <path d="M 13.2 9.0 A 4.8 4.8 0 1 0 15.6 12.8" fill="none" stroke="url(#trayIris24)" stroke-width="2.6" stroke-linecap="round" opacity="0.9" />
-      <rect x="14.4" y="1.2" width="5.7" height="5.7" rx="0.8" fill="#FFFFFF" />
-      <rect x="18.3" y="4.8" width="4.8" height="4.8" rx="0.7" fill="#FFFFFF" />
+      <path d="M 14.3 7.2 A 8.4 8.4 0 1 0 19.2 12.8" fill="none" stroke="url(#trayIris24)" stroke-width="3.8" stroke-linecap="round" />
+      <path d="M 12.3 9.8 A 4.8 4.8 0 1 0 15.6 12.8" fill="none" stroke="url(#trayIris24)" stroke-width="2.6" stroke-linecap="round" opacity="0.9" />
+      <rect x="12.8" y="7.5" width="3.0" height="3.0" rx="0.5" fill="#FFFFFF" />
+      <rect x="16.2" y="4.1" width="3.0" height="3.0" rx="0.5" fill="#FFFFFF" />
+      <rect x="19.6" y="0.7" width="3.0" height="3.0" rx="0.5" fill="#FFFFFF" />
     </svg>`;
   } else {
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
@@ -90,10 +92,11 @@ function getTraySvg(size) {
           <stop offset="100%" stop-color="#8c74bd" />
         </linearGradient>
       </defs>
-      <path d="M 20.4 8.4 A 11.2 11.2 0 1 0 25.6 17" fill="none" stroke="url(#trayIris32)" stroke-width="5.2" stroke-linecap="round" />
-      <path d="M 17.6 12 A 6.4 6.4 0 1 0 20.8 17" fill="none" stroke="url(#trayIris32)" stroke-width="3.6" stroke-linecap="round" opacity="0.9" />
-      <rect x="19.2" y="1.6" width="7.6" height="7.6" rx="1.2" fill="#FFFFFF" />
-      <rect x="24.4" y="6.4" width="6.4" height="6.4" rx="1.0" fill="#FFFFFF" />
+      <path d="M 19.0 9.6 A 11.2 11.2 0 1 0 25.6 17" fill="none" stroke="url(#trayIris32)" stroke-width="5.2" stroke-linecap="round" />
+      <path d="M 16.4 13.0 A 6.4 6.4 0 1 0 20.8 17" fill="none" stroke="url(#trayIris32)" stroke-width="3.6" stroke-linecap="round" opacity="0.9" />
+      <rect x="17.0" y="10.0" width="4.2" height="4.2" rx="0.7" fill="#FFFFFF" />
+      <rect x="21.6" y="5.4" width="4.2" height="4.2" rx="0.7" fill="#FFFFFF" />
+      <rect x="26.2" y="0.8" width="4.2" height="4.2" rx="0.7" fill="#FFFFFF" />
     </svg>`;
   }
 }

@@ -94,9 +94,10 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
             />
             <OnlineIndicator
               online={isServerConnected}
-              showOffline={true}
+              showOffline={false}
               size="xs"
               ringColor={dockRingColor}
+              color="#917bbd"
               ariaLabel={isServerConnected ? t('discord.online', 'В сети') : t('common.network_connecting_title', 'Соединение...')}
             />
           </div>
@@ -109,7 +110,7 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
             </span>
             <span
               className="text-[12px] truncate mt-0.5"
-              style={{ color: 'color-mix(in srgb, var(--accent-on-color, #ffffff) 80%, transparent)' }}
+              style={{ color: isServerConnected ? '#917bbd' : 'color-mix(in srgb, var(--accent-on-color, #ffffff) 80%, transparent)' }}
             >
               {isServerConnected ? t('discord.online', 'В сети') : t('common.network_connecting_title', 'Соединение...')}
             </span>

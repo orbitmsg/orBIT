@@ -5,6 +5,7 @@ export interface OnlineIndicatorProps {
   showOffline?: boolean;
   size?: OnlineIndicatorSize;
   ringColor?: string;
+  color?: string;
   className?: string;
   ariaLabel?: string;
   style?: React.CSSProperties;
@@ -19,9 +20,10 @@ const SIZE_MAP: Record<OnlineIndicatorSize, string> = {
 
 export const OnlineIndicator = ({
   online = false,
-  showOffline = true,
+  showOffline = false,
   size = 'sm',
   ringColor,
+  color,
   className = '',
   ariaLabel,
   style,
@@ -32,8 +34,8 @@ export const OnlineIndicator = ({
 
   const dimension = SIZE_MAP[size];
   const cutoutColor = ringColor || 'var(--chat-list-bg, #121212)';
-  const strokeColor = online
-    ? 'var(--online-color, #23a55a)'
+  const fillColor = online
+    ? (color || 'var(--online-color, #917bbd)')
     : 'var(--offline-color, #80848e)';
 
   return (
@@ -46,10 +48,9 @@ export const OnlineIndicator = ({
         width: dimension,
         height: dimension,
         boxSizing: 'border-box',
-        backgroundColor: cutoutColor,
-        border: `2px solid ${strokeColor}`,
-        boxShadow: `0 0 0 2px ${cutoutColor}`,
-        transition: 'box-shadow 180ms ease, background-color 180ms ease, border-color 180ms ease',
+        backgroundColor: fillColor,
+        border: `2px solid ${cutoutColor}`,
+        transition: 'background-color 180ms ease, border-color 180ms ease',
         ...style,
       }}
     />

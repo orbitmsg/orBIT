@@ -339,9 +339,10 @@ export const AvatarCropperModal: React.FC<AvatarCropperModalProps> = ({
         style={{
           position: 'fixed',
           bottom: '36px',
-          backgroundColor: 'rgba(24, 20, 34, 0.92)',
-          backdropFilter: 'blur(16px)',
-          borderRadius: '9999px',
+          backgroundColor: 'rgba(24, 20, 34, 0.95)',
+          backdropFilter: 'none',
+          WebkitBackdropFilter: 'none',
+          borderRadius: '10px',
           border: '1px solid rgba(255, 255, 255, 0.1)',
           padding: '8px 20px',
           display: 'flex',

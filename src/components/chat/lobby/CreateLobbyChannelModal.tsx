@@ -49,15 +49,22 @@ export const CreateLobbyChannelModal: React.FC<CreateLobbyChannelModalProps> = (
 
   return (
     <div
-      className="fixed inset-0 z-[999999] flex items-center justify-center p-4"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(6px)' }}
+      className="fixed inset-0 z-[999999] flex items-center justify-center p-4 select-none"
+      style={{
+        backgroundColor: 'rgba(0, 0, 0, 0.55)',
+        backdropFilter: 'none',
+        WebkitBackdropFilter: 'none',
+      }}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[460px] rounded-2xl overflow-hidden flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+        className="w-full max-w-[460px] rounded-[10px] overflow-hidden flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-150"
         style={{
-          backgroundColor: '#313338',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 96%, #000)',
+          borderRadius: '10px',
+          border: 'none',
+          outline: 'none',
+          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -90,13 +97,13 @@ export const CreateLobbyChannelModal: React.FC<CreateLobbyChannelModalProps> = (
               type="button"
               onClick={() => setChannelType('text')}
               aria-label={t('lobby.channel_text', 'Текстовый канал')}
-              className="flex items-center gap-3.5 p-3 rounded-xl transition-colors cursor-pointer border-none text-left outline-none"
+              className="flex items-center gap-3.5 p-3 rounded-[10px] transition-colors cursor-pointer border-none text-left outline-none"
               style={{
                 backgroundColor: channelType === 'text' ? 'rgba(255, 255, 255, 0.08)' : '#2b2d31',
               }}
             >
               <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0"
                 style={{
                   backgroundColor: channelType === 'text' ? '#5865F2' : 'rgba(255, 255, 255, 0.05)',
                   color: '#ffffff',
@@ -118,13 +125,13 @@ export const CreateLobbyChannelModal: React.FC<CreateLobbyChannelModalProps> = (
               type="button"
               onClick={() => setChannelType('voice')}
               aria-label={t('lobby.channel_voice', 'Голосовой канал')}
-              className="flex items-center gap-3.5 p-3 rounded-xl transition-colors cursor-pointer border-none text-left outline-none"
+              className="flex items-center gap-3.5 p-3 rounded-[10px] transition-colors cursor-pointer border-none text-left outline-none"
               style={{
                 backgroundColor: channelType === 'voice' ? 'rgba(255, 255, 255, 0.08)' : '#2b2d31',
               }}
             >
               <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0"
                 style={{
                   backgroundColor: channelType === 'voice' ? '#23a55a' : 'rgba(255, 255, 255, 0.05)',
                   color: '#ffffff',
@@ -158,7 +165,7 @@ export const CreateLobbyChannelModal: React.FC<CreateLobbyChannelModalProps> = (
                 onChange={(e) => setName(e.target.value)}
                 placeholder={channelType === 'text' ? 'новый-топик' : 'Голосовой'}
                 autoFocus
-                className="w-full pl-9 pr-3 py-2.5 rounded-xl text-[14px] font-medium text-white border-none outline-none"
+                className="w-full pl-9 pr-3 py-2.5 rounded-[10px] text-[14px] font-medium text-white border-none outline-none"
                 style={{
                   backgroundColor: '#1e1f22',
                 }}
@@ -177,7 +184,7 @@ export const CreateLobbyChannelModal: React.FC<CreateLobbyChannelModalProps> = (
               onClick={onClose}
               disabled={isLoading}
               aria-label={t('common.cancel', 'Отмена')}
-              className="px-4 py-2 rounded-xl text-[13.5px] font-medium text-white hover:underline bg-transparent border-none outline-none cursor-pointer"
+              className="px-4 py-2 rounded-[10px] text-[13.5px] font-medium text-white hover:underline bg-transparent border-none outline-none cursor-pointer"
             >
               {t('common.cancel', 'Отмена')}
             </button>
@@ -185,7 +192,7 @@ export const CreateLobbyChannelModal: React.FC<CreateLobbyChannelModalProps> = (
               type="submit"
               disabled={isLoading || !name.trim()}
               aria-label={t('lobby.create_channel_btn', 'Создать канал')}
-              className="px-5 py-2.5 rounded-xl text-[13.5px] font-semibold text-white transition-opacity disabled:opacity-40 disabled:cursor-not-allowed border-none outline-none cursor-pointer"
+              className="px-5 py-2.5 rounded-[10px] text-[13.5px] font-semibold text-white transition-opacity disabled:opacity-40 disabled:cursor-not-allowed border-none outline-none cursor-pointer"
               style={{
                 backgroundColor: '#5865F2',
               }}

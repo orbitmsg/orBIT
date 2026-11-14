@@ -12,7 +12,6 @@ import { SendAsTxtModal } from '../SendAsTxtModal';
 import { FileAttachmentModal, type AttachedFile } from '../FileAttachmentModal';
 import { TelegramMediaViewer } from '../TelegramMediaViewer';
 import { ActionConfirmModal } from '../../common/ActionConfirmModal';
-import { SupportTicketsModal } from '../SupportTicketsModal';
 import { MessageContextMenu, type ContextMenuState } from '../MessageContextMenu';
 import { UnsafeLinkModal } from '../UnsafeLinkModal';
 import { AddGroupMemberModal } from '../AddGroupMemberModal';
@@ -89,8 +88,6 @@ export interface ChatWindowModalsProps {
   setActivePickerTab: (tab: any) => void;
   unsafeLinkData: { isOpen: boolean; url: string };
   setUnsafeLinkData: (v: { isOpen: boolean; url: string }) => void;
-  isSupportTicketsModalOpen: boolean;
-  setIsSupportTicketsModalOpen: (v: boolean) => void;
   isAddMemberModalOpen: boolean;
   setIsAddMemberModalOpen: (v: boolean) => void;
   isForwardModalOpen?: boolean;
@@ -163,8 +160,6 @@ export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
   setActivePickerTab,
   unsafeLinkData,
   setUnsafeLinkData,
-  isSupportTicketsModalOpen,
-  setIsSupportTicketsModalOpen,
   isAddMemberModalOpen,
   setIsAddMemberModalOpen,
 }) => {
@@ -245,7 +240,8 @@ export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
               inset: 0,
               zIndex: 50,
               backgroundColor: 'rgba(20, 16, 30, 0.88)',
-              backdropFilter: 'blur(12px)',
+              backdropFilter: 'none',
+              WebkitBackdropFilter: 'none',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -477,18 +473,6 @@ export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
         url={unsafeLinkData.url}
         onClose={() => setUnsafeLinkData({ isOpen: false, url: '' })}
       />
-
-      {createPortal(
-        <AnimatePresence>
-          {isSupportTicketsModalOpen && (
-            <SupportTicketsModal
-              isOpen={isSupportTicketsModalOpen}
-              onClose={() => setIsSupportTicketsModalOpen(false)}
-            />
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
 
       {activeChat?.type === 'group' && (
         <AddGroupMemberModal

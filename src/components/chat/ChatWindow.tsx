@@ -194,7 +194,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
   const [inputText, setInputText] = useState('');
   const [isDiscordFileLimitModalOpen, setIsDiscordFileLimitModalOpen] = useState(false);
   const [isSendAsTxtModalOpen, setIsSendAsTxtModalOpen] = useState(false);
-  const [isSupportTicketsModalOpen, setIsSupportTicketsModalOpen] = useState(false);
   const [unsafeLinkData, setUnsafeLinkData] = useState<{ isOpen: boolean; url: string }>({ isOpen: false, url: '' });
   const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
 
@@ -1458,8 +1457,6 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
           setActivePickerTab={setActivePickerTab}
           unsafeLinkData={unsafeLinkData}
           setUnsafeLinkData={setUnsafeLinkData}
-          isSupportTicketsModalOpen={isSupportTicketsModalOpen}
-          setIsSupportTicketsModalOpen={setIsSupportTicketsModalOpen}
           isAddMemberModalOpen={isAddMemberModalOpen}
           setIsAddMemberModalOpen={setIsAddMemberModalOpen}
         />

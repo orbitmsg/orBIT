@@ -63,12 +63,13 @@ export const NameEditModal = ({ open, onClose, currentNickname, onSave }: NameEd
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             style={{
-              backgroundColor: 'var(--bg-secondary)',
-              borderRadius: '16px',
+              backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 96%, #000)',
+              borderRadius: '10px',
+              border: 'none',
               padding: '24px',
               width: '100%',
               maxWidth: '380px',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -142,7 +143,7 @@ export const NameEditModal = ({ open, onClose, currentNickname, onSave }: NameEd
                 aria-label={t('common.cancel', 'Отмена')}
                 style={{
                   padding: '8px 16px',
-                  borderRadius: '9999px',
+                  borderRadius: '10px',
                   border: 'none',
                   backgroundColor: 'transparent',
                   color: 'var(--accent-color, #9b7dd4)',
@@ -159,7 +160,7 @@ export const NameEditModal = ({ open, onClose, currentNickname, onSave }: NameEd
                 aria-label={t('common.save', 'Сохранить')}
                 style={{
                   padding: '8px 16px',
-                  borderRadius: '9999px',
+                  borderRadius: '10px',
                   border: 'none',
                   backgroundColor: 'var(--accent-color, #7C3AED)',
                   color: 'var(--accent-on-color, #ffffff)',
@@ -411,7 +412,7 @@ export const UsernameEditModal = ({ open, onClose, currentUsername, onSave }: Us
                 aria-label={t('common.cancel', 'Отмена')}
                 style={{
                   padding: '8px 16px',
-                  borderRadius: '9999px',
+                  borderRadius: '10px',
                   border: 'none',
                   backgroundColor: 'transparent',
                   color: 'var(--accent-color, #9b7dd4)',
@@ -429,7 +430,7 @@ export const UsernameEditModal = ({ open, onClose, currentUsername, onSave }: Us
                 aria-label={t('common.save', 'Сохранить')}
                 style={{
                   padding: '8px 16px',
-                  borderRadius: '9999px',
+                  borderRadius: '10px',
                   border: 'none',
                   backgroundColor: 'var(--accent-color, #7C3AED)',
                   opacity: isSaving || status === 'checking' || status === 'taken' ? 0.45 : 1,
@@ -559,12 +560,13 @@ export const BirthdayEditModal = ({ open, onClose, currentBirthday, onSave }: Bi
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             style={{
-              backgroundColor: 'var(--bg-secondary)',
-              borderRadius: '16px',
+              backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 96%, #000)',
+              borderRadius: '10px',
+              border: 'none',
               padding: '24px',
               width: '100%',
               maxWidth: '380px',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -703,7 +705,7 @@ export const BirthdayEditModal = ({ open, onClose, currentBirthday, onSave }: Bi
                   aria-label={t('common.cancel', 'Отмена')}
                   style={{
                     padding: '8px 16px',
-                    borderRadius: '9999px',
+                    borderRadius: '10px',
                     border: 'none',
                     backgroundColor: 'transparent',
                     color: 'var(--accent-color, #9b7dd4)',
@@ -721,7 +723,7 @@ export const BirthdayEditModal = ({ open, onClose, currentBirthday, onSave }: Bi
                   aria-label={t('common.save', 'Сохранить')}
                   style={{
                     padding: '8px 16px',
-                    borderRadius: '9999px',
+                    borderRadius: '10px',
                     border: 'none',
                     backgroundColor: 'var(--accent-color, #7C3AED)',
                     opacity: isSaving ? 0.45 : 1,

@@ -415,9 +415,9 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
           className="w-full relative overflow-hidden flex flex-col items-center text-center"
           style={{
             maxWidth: '400px',
-            backgroundColor: 'var(--settings-bg, var(--bg-primary, #0f0f13))',
-            borderRadius: '16px',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 96%, #000)',
+            borderRadius: '10px',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
             border: 'none',
             padding: isExpiredOrRevoked ? '36px 24px 36px' : '32px 24px 24px',
             color: 'var(--text-main)',
@@ -425,9 +425,9 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
           onClick={(e) => e.stopPropagation()}
         >
           <div
-            className="w-[92px] h-[92px] rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
+            className="w-[92px] h-[92px] rounded-[14px] overflow-hidden flex items-center justify-center flex-shrink-0"
             style={{
-              borderRadius: '9999px',
+              borderRadius: '14px',
               backgroundColor: 'var(--surface-container, rgba(255, 255, 255, 0.08))',
             }}
           >
@@ -483,7 +483,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
                   style={{
                     width: '100%',
                     height: '44px',
-                    borderRadius: '9999px',
+                    borderRadius: '10px',
                     backgroundColor: 'var(--accent-color, #7C3AED)',
                     color: '#ffffff',
                     border: 'none',
@@ -507,7 +507,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
                   style={{
                     width: '100%',
                     height: '44px',
-                    borderRadius: '9999px',
+                    borderRadius: '10px',
                     backgroundColor: 'var(--accent-color, #7C3AED)',
                     color: '#ffffff',
                     border: 'none',
@@ -532,7 +532,7 @@ export const GroupInviteModal: React.FC<GroupInviteModalProps> = ({
                 style={{
                   width: '100%',
                   height: '44px',
-                  borderRadius: '9999px',
+                  borderRadius: '10px',
                   backgroundColor: 'var(--surface-container, rgba(255, 255, 255, 0.08))',
                   color: 'var(--text-main, #ffffff)',
                   border: 'none',

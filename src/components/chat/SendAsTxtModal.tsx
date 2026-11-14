@@ -59,11 +59,11 @@ export const SendAsTxtModal: React.FC<SendAsTxtModalProps> = ({
             style={{
               width: '100%',
               maxWidth: '440px',
-              backgroundColor: 'var(--bg-secondary, #252836)',
-              borderRadius: '8px',
+              backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 96%, #000)',
+              borderRadius: '10px',
               border: 'none',
               outline: 'none',
-              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.35)',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
@@ -71,7 +71,6 @@ export const SendAsTxtModal: React.FC<SendAsTxtModalProps> = ({
               fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
             }}
           >
-            {/* Header */}
             <div
               style={{
                 display: 'flex',
@@ -230,6 +229,7 @@ export const SendAsTxtModal: React.FC<SendAsTxtModalProps> = ({
                 style={{
                   background: 'none',
                   border: 'none',
+                  borderRadius: '10px',
                   color: 'var(--accent-color, #7C3AED)',
                   fontSize: '14px',
                   fontWeight: 600,
@@ -245,6 +245,7 @@ export const SendAsTxtModal: React.FC<SendAsTxtModalProps> = ({
                 style={{
                   background: 'none',
                   border: 'none',
+                  borderRadius: '10px',
                   color: 'var(--accent-color, #7C3AED)',
                   fontSize: '14px',
                   fontWeight: 700,

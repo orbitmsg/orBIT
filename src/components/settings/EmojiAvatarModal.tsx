@@ -135,10 +135,10 @@ export const EmojiAvatarModal: React.FC<EmojiAvatarModalProps> = ({
           width: '100%',
           maxWidth: '380px',
           maxHeight: '86vh',
-          backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
+          backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 96%, #000)',
           borderRadius: '10px',
-          border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
-          boxShadow: '0 24px 60px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.3)',
+          border: 'none',
+          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -167,7 +167,7 @@ export const EmojiAvatarModal: React.FC<EmojiAvatarModalProps> = ({
               alignItems: 'center',
               justifyContent: 'center',
               padding: '6px',
-              borderRadius: '8px',
+              borderRadius: '10px',
             }}
           >
             <ArrowLeft size={20} />

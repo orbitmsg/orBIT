@@ -130,12 +130,13 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ duration: 0.15, ease: 'easeOut' }}
-          className="w-full max-w-[640px] rounded-[16px] shadow-2xl flex flex-col overflow-hidden"
+          className="w-full max-w-[640px] rounded-[10px] shadow-2xl flex flex-col overflow-hidden"
           style={{
-            backgroundColor: 'var(--bg-secondary, #1e1b2e)',
-            border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
-            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.45)',
+            backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 96%, #000)',
+            border: 'none',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
             maxHeight: '90vh',
+            borderRadius: '10px',
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -154,7 +155,8 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
                   type="button"
                   onClick={fetchSources}
                   aria-label={t('common.refresh', 'Обновить')}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text-dim,#8a96a3)] hover:text-[var(--text-main,#ffffff)] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] transition-colors border-0 bg-transparent cursor-pointer outline-none"
+                  className="w-8 h-8 rounded-[10px] flex items-center justify-center text-[var(--text-dim,#8a96a3)] hover:text-[var(--text-main,#ffffff)] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] transition-colors border-0 bg-transparent cursor-pointer outline-none"
+                  style={{ borderRadius: '10px' }}
                 >
                   <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
                 </button>
@@ -163,7 +165,8 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
                 type="button"
                 onClick={handleClose}
                 aria-label={t('common.close', 'Закрыть')}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text-dim,#8a96a3)] hover:text-[var(--text-main,#ffffff)] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] transition-colors border-0 bg-transparent cursor-pointer outline-none"
+                className="w-8 h-8 rounded-[10px] flex items-center justify-center text-[var(--text-dim,#8a96a3)] hover:text-[var(--text-main,#ffffff)] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] transition-colors border-0 bg-transparent cursor-pointer outline-none"
+                style={{ borderRadius: '10px' }}
               >
                 <X size={18} />
               </button>
@@ -244,8 +247,9 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
                         key={item.id}
                         onClick={() => setSelectedSourceId(item.id)}
                         onDoubleClick={handleStart}
-                        className="group relative flex flex-col rounded-[12px] p-2.5 transition-all cursor-pointer overflow-hidden"
+                        className="group relative flex flex-col rounded-[10px] p-2.5 transition-all cursor-pointer overflow-hidden"
                         style={{
+                          borderRadius: '10px',
                           backgroundColor: isSelected
                             ? 'color-mix(in srgb, var(--accent-color, #7C3AED) 14%, var(--surface-container, rgba(255,255,255,0.05)))'
                             : 'var(--surface-container, rgba(255, 255, 255, 0.04))',
@@ -254,7 +258,7 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
                             : '1.5px solid var(--border-color, transparent)',
                         }}
                       >
-                        <div className="relative w-full aspect-video rounded-[8px] overflow-hidden bg-black/75 flex items-center justify-center">
+                        <div className="relative w-full aspect-video rounded-[8px] overflow-hidden bg-black/75 flex items-center justify-center" style={{ borderRadius: '8px' }}>
                           {item.thumbnail ? (
                             <img
                               src={item.thumbnail}
@@ -345,8 +349,9 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
 
             {shareAudio && (
               <div
-                className="w-full text-[11.5px] px-3 py-1.5 rounded-lg select-none"
+                className="w-full text-[11.5px] px-3 py-1.5 rounded-[10px] select-none"
                 style={{
+                  borderRadius: '10px',
                   color: 'color-mix(in srgb, #f59e0b 55%, var(--text-main))',
                   backgroundColor: 'rgba(245, 158, 11, 0.14)',
                   border: '1px solid rgba(245, 158, 11, 0.35)',
@@ -361,7 +366,8 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
                 type="button"
                 onClick={handleClose}
                 aria-label={t('common.cancel', 'Отмена')}
-                className="px-4 py-2 rounded-lg text-[13px] font-medium text-[var(--text-main,#ffffff)] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] transition-colors border-0 bg-transparent cursor-pointer"
+                className="px-4 py-2 rounded-[10px] text-[13px] font-medium text-[var(--text-main,#ffffff)] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] transition-colors border-0 bg-transparent cursor-pointer"
+                style={{ borderRadius: '10px' }}
               >
                 {t('common.cancel', 'Отмена')}
               </button>
@@ -370,8 +376,9 @@ export const ScreenSharePickerModal: React.FC<ScreenSharePickerModalProps> = ({
                 type="button"
                 onClick={handleStart}
                 aria-label={t('call.go_live')}
-                className="px-5 py-2 rounded-lg text-[13px] font-medium shadow-lg cursor-pointer transition-transform active:scale-95 border-0"
+                className="px-5 py-2 rounded-[10px] text-[13px] font-medium shadow-lg cursor-pointer transition-transform active:scale-95 border-0"
                 style={{
+                  borderRadius: '10px',
                   background: 'linear-gradient(135deg, var(--accent-color, #7C3AED), var(--accent-dark, #5B21B6))',
                   color: 'var(--accent-on-color, #ffffff)',
                 }}

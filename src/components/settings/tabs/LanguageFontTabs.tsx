@@ -68,33 +68,42 @@ const SettingsRestartModal: React.FC<SettingsRestartModalProps> = ({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.15 }}
-        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 select-none"
+        style={{
+          backgroundColor: 'rgba(0, 0, 0, 0.55)',
+          backdropFilter: 'none',
+          WebkitBackdropFilter: 'none',
+          border: 'none',
+        }}
         onClick={onClose}
       >
         <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
+          initial={{ scale: 0.94, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          transition={{ duration: 0.15 }}
+          exit={{ scale: 0.94, opacity: 0 }}
+          transition={{ duration: 0.15, ease: 'easeOut' }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-[390px] rounded-[16px] shadow-2xl p-6"
+          className="w-full max-w-[360px] rounded-[10px] p-5 shadow-2xl overflow-hidden"
           style={{
-            backgroundColor: 'var(--surface-container-high, #24272c)',
-            border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
+            backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 96%, #000)',
+            borderRadius: '10px',
+            border: 'none',
+            outline: 'none',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
             color: 'var(--text-main, #ffffff)',
           }}
         >
           <div className="text-left select-none">
-            <p
-              className="text-[15px] font-semibold leading-snug"
+            <h3
+              className="text-[14px] font-medium leading-snug"
               style={{ color: 'var(--text-main, #ffffff)', margin: 0 }}
             >
               {topText}
-            </p>
+            </h3>
             {bottomText && (
               <p
-                className="text-[14px] font-medium leading-snug"
-                style={{ color: 'var(--text-dim, #a1a1aa)', margin: '12px 0 0' }}
+                className="text-[13px] mt-3 font-normal leading-snug"
+                style={{ color: 'var(--text-dim, #9ca3af)', margin: '12px 0 0' }}
               >
                 {bottomText}
               </p>
@@ -106,8 +115,9 @@ const SettingsRestartModal: React.FC<SettingsRestartModalProps> = ({
               type="button"
               onClick={onClose}
               aria-label={t('common.cancel', 'Отмена')}
-              className="px-4 py-2 rounded-lg text-[14px] font-semibold transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-[10px] text-[14px] font-medium transition-colors cursor-pointer"
               style={{
+                borderRadius: '10px',
                 backgroundColor: 'transparent',
                 color: 'var(--accent-text, var(--accent-color, #7C3AED))',
                 border: 'none',
@@ -127,8 +137,9 @@ const SettingsRestartModal: React.FC<SettingsRestartModalProps> = ({
               type="button"
               onClick={onConfirm}
               aria-label={confirmText}
-              className="px-4 py-2 rounded-lg text-[14px] font-semibold transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-[10px] text-[14px] font-medium transition-colors cursor-pointer"
               style={{
+                borderRadius: '10px',
                 backgroundColor: 'transparent',
                 color: 'var(--accent-text, var(--accent-color, #7C3AED))',
                 border: 'none',

@@ -538,7 +538,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
             maxWidth: activeType === 'friend' ? '480px' : '440px',
             backgroundColor: 'var(--settings-bg, var(--bg-secondary, #1e1b2e))',
             color: 'var(--text-main)',
-            borderRadius: '24px',
+            borderRadius: '10px',
             padding: '22px',
             border: 'none',
             outline: 'none',
@@ -567,11 +567,11 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
               type="button"
               onClick={onClose}
               aria-label={t('common.close', 'Закрыть')}
-              className="w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer transition-colors border-none outline-none shrink-0"
+              className="w-8 h-8 flex items-center justify-center rounded-[10px] cursor-pointer transition-colors border-none outline-none shrink-0"
               style={{
                 backgroundColor: 'var(--surface-container-soft)',
                 color: 'var(--text-dim)',
-                borderRadius: '12px',
+                borderRadius: '10px',
                 border: 'none',
                 outline: 'none',
               }}
@@ -771,7 +771,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                         className="w-full text-left flex items-center justify-between gap-2.5 px-3 py-2.5 transition-colors border-none outline-none disabled:opacity-60 disabled:cursor-default cursor-pointer"
                         style={{
                           backgroundColor: 'var(--surface-container)',
-                          borderRadius: '14px',
+                          borderRadius: '10px',
                           border: 'none',
                           outline: 'none',
                         }}
@@ -821,7 +821,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                           className="w-full text-left flex items-center justify-between gap-2.5 px-3 py-2.5 transition-colors border-none outline-none cursor-pointer"
                           style={{
                             backgroundColor: 'var(--surface-container)',
-                            borderRadius: '14px',
+                            borderRadius: '10px',
                             border: 'none',
                             outline: 'none',
                           }}
@@ -945,7 +945,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                         backgroundColor: 'var(--surface-container)',
                         border: 'none',
                         outline: 'none',
-                        borderRadius: '14px',
+                        borderRadius: '10px',
                         padding: '10px 14px',
                         boxSizing: 'border-box',
                         boxShadow: tempWarning
@@ -989,7 +989,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                       backgroundColor: 'var(--surface-container)',
                       border: 'none',
                       outline: 'none',
-                      borderRadius: '14px',
+                      borderRadius: '10px',
                       padding: '10px 14px',
                       boxSizing: 'border-box',
                       boxShadow: isDescFocused
@@ -1005,7 +1005,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                       className="flex items-center gap-2 transition-all"
                       style={{
                         backgroundColor: 'var(--surface-container)',
-                        borderRadius: '14px',
+                        borderRadius: '10px',
                         padding: '0 14px',
                         boxShadow: usernameError
                           ? '0 0 0 2px rgba(239, 68, 68, 0.5)'
@@ -1128,7 +1128,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                   aria-label={t('common.cancel', 'Отмена')}
                   className="px-4 py-2.5 text-[13.5px] font-semibold transition-colors cursor-pointer border-none outline-none"
                   style={{
-                    borderRadius: '14px',
+                    borderRadius: '10px',
                     backgroundColor: 'var(--surface-container-soft)',
                     color: 'var(--text-main)',
                     border: 'none',
@@ -1152,7 +1152,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                   aria-label={submitLabel}
                   className="px-5 py-2.5 text-[13.5px] font-semibold transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 border-none outline-none"
                   style={{
-                    borderRadius: '14px',
+                    borderRadius: '10px',
                     background: 'var(--accent-gradient, var(--accent-color, #5865F2))',
                     color: 'var(--accent-on-color, #ffffff)',
                     border: 'none',

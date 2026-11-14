@@ -35,11 +35,13 @@ export const DeleteGroupModal = ({ isOpen, onClose, onConfirm, mode = 'delete' }
           initial={{ scale: 0.95 }}
           animate={{ scale: 1 }}
           exit={{ scale: 0.95 }}
-          className="w-full max-w-sm rounded-2xl p-6"
+          className="w-full max-w-sm rounded-[10px] p-6 shadow-2xl overflow-hidden"
           style={{
-            backgroundColor: 'var(--bg-secondary)',
+            backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 96%, #000)',
+            borderRadius: '10px',
             border: 'none',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+            outline: 'none',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -58,11 +60,13 @@ export const DeleteGroupModal = ({ isOpen, onClose, onConfirm, mode = 'delete' }
                 type="button"
                 onClick={onClose}
                 aria-label={t('common.cancel')}
-                className="px-6 py-2 rounded-full text-sm font-medium transition-colors"
+                className="px-6 py-2 rounded-[10px] text-sm font-medium transition-colors"
                 style={{
+                  borderRadius: '10px',
                   backgroundColor: 'var(--surface-muted)',
                   color: 'var(--text-main)',
                   border: 'none',
+                  outline: 'none',
                   cursor: 'pointer',
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-strong)')}
@@ -74,11 +78,13 @@ export const DeleteGroupModal = ({ isOpen, onClose, onConfirm, mode = 'delete' }
                 type="button"
                 onClick={onConfirm}
                 aria-label={isDelete ? t('common.delete') : t('groupSettings.leave_group')}
-                className="px-6 py-2 rounded-full text-sm font-bold transition-colors"
+                className="px-6 py-2 rounded-[10px] text-sm font-bold transition-colors"
                 style={{
+                  borderRadius: '10px',
                   backgroundColor: 'var(--accent-color)',
                   color: '#fff',
                   border: 'none',
+                  outline: 'none',
                   cursor: 'pointer',
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--accent-light)')}

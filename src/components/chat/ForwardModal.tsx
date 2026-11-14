@@ -66,10 +66,10 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
               width: '100%',
               maxWidth: '440px',
               maxHeight: '85vh',
-              backgroundColor: 'var(--bg-secondary, #1c1c1e)',
-              borderRadius: '16px',
+              backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 96%, #000)',
+              borderRadius: '10px',
               border: 'none',
-              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
@@ -115,7 +115,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                   color: 'var(--text-dim)',
                   cursor: 'pointer',
                   padding: '8px',
-                  borderRadius: '9999px',
+                  borderRadius: '10px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -141,7 +141,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                   alignItems: 'center',
                   gap: '8px',
                   backgroundColor: 'var(--surface-container)',
-                  borderRadius: '9999px',
+                  borderRadius: '10px',
                   padding: '9px 16px',
                   border: 'none',
                 }}
@@ -200,7 +200,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                         alignItems: 'center',
                         gap: '12px',
                         padding: '8px 14px',
-                        borderRadius: '9999px',
+                        borderRadius: '10px',
                         backgroundColor: 'transparent',
                         border: 'none',
                         width: '100%',
@@ -218,7 +218,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                             style={{
                               width: '40px',
                               height: '40px',
-                              borderRadius: '9999px',
+                              borderRadius: '14px',
                               backgroundColor: 'var(--accent-color, #9b7dd4)',
                               display: 'flex',
                               alignItems: 'center',
@@ -232,7 +232,8 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                           <Avatar
                             src={(chat as Chat).avatarUrl}
                             alt={chat.name}
-                            className="w-10 h-10 rounded-full"
+                            className="w-10 h-10 rounded-[14px]"
+                            style={{ borderRadius: '14px' }}
                           />
                         )}
                       </div>

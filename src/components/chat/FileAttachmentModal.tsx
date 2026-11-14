@@ -253,12 +253,12 @@ export const FileAttachmentModal = ({
                             className="w-full h-full max-h-[280px] object-contain rounded-lg"
                           />
                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
-                            <div className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white shadow-lg">
+                            <div className="w-12 h-12 rounded-full bg-black/60 flex items-center justify-center text-white shadow-lg">
                               <SmoothPlayPauseIcon isPlaying={false} size={22} fill="white" />
                             </div>
                           </div>
                           {firstFile.duration ? (
-                            <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[12px] font-medium pointer-events-none">
+                            <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/60 text-white px-2 py-0.5 rounded text-[12px] font-medium pointer-events-none">
                               {formatDuration(firstFile.duration)}
                             </div>
                           ) : null}
@@ -280,7 +280,7 @@ export const FileAttachmentModal = ({
                       <button
                         type="button"
                         onClick={() => onRemoveFile(0)}
-                        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md text-white flex items-center justify-center transition-colors z-10"
+                        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center transition-colors z-10"
                       >
                         <X size={15} />
                       </button>
@@ -323,7 +323,7 @@ export const FileAttachmentModal = ({
                           )}
 
                           {file.fileType === 'video' && (
-                            <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 bg-black/60 backdrop-blur-sm text-white px-1.5 py-0.5 rounded text-[11px] font-medium">
+                            <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 bg-black/60 text-white px-1.5 py-0.5 rounded text-[11px] font-medium">
                               <SmoothPlayPauseIcon isPlaying={false} size={11} fill="white" />
                               {file.duration ? formatDuration(file.duration) : ''}
                             </div>
@@ -333,7 +333,7 @@ export const FileAttachmentModal = ({
                             <button
                               type="button"
                               onClick={() => onRemoveFile(idx)}
-                              className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/65 hover:bg-black/85 backdrop-blur-md text-white flex items-center justify-center transition-colors z-10"
+                              className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/65 hover:bg-black/85 text-white flex items-center justify-center transition-colors z-10"
                             >
                               <X size={13} />
                             </button>

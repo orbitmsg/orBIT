@@ -133,7 +133,8 @@ export const AccountRestoreModal: React.FC<AccountRestoreModalProps> = ({ isOpen
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: 'rgba(0, 0, 0, 0.65)',
-          backdropFilter: 'blur(8px)',
+          backdropFilter: 'none',
+          WebkitBackdropFilter: 'none',
           padding: '16px',
         }}
         onClick={(e) => {
@@ -150,10 +151,10 @@ export const AccountRestoreModal: React.FC<AccountRestoreModalProps> = ({ isOpen
           style={{
             width: '100%',
             maxWidth: '480px',
-            backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
-            border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
-            borderRadius: '20px',
-            boxShadow: '0 20px 48px rgba(0, 0, 0, 0.4)',
+            backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 96%, #000)',
+            border: 'none',
+            borderRadius: '10px',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
@@ -600,7 +601,7 @@ export const AccountRestoreModal: React.FC<AccountRestoreModalProps> = ({ isOpen
               style={{
                 width: '100%',
                 height: '48px',
-                borderRadius: '12px',
+                borderRadius: '10px',
                 border: 'none',
                 backgroundColor:
                   !isLoading &&

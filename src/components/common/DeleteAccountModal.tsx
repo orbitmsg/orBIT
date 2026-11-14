@@ -32,12 +32,13 @@ export const DeleteAccountModal = ({ isOpen, onClose, onConfirm }: DeleteAccount
           initial={{ scale: 0.95 }}
           animate={{ scale: 1 }}
           exit={{ scale: 0.95 }}
-          className="w-full max-w-sm rounded-[20px] p-6"
+          className="w-full max-w-sm rounded-[10px] p-6 shadow-2xl overflow-hidden"
           style={{
-            backgroundColor: 'var(--bg-secondary)',
+            backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 96%, #000)',
+            borderRadius: '10px',
             border: 'none',
             outline: 'none',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -53,9 +54,12 @@ export const DeleteAccountModal = ({ isOpen, onClose, onConfirm }: DeleteAccount
             </p>
             <div className="flex gap-3 justify-center">
               <button
+                type="button"
                 onClick={onClose}
-                className="px-6 py-2 rounded-full text-sm font-medium transition-colors cursor-pointer"
+                aria-label={t('common.cancel')}
+                className="px-6 py-2 rounded-[10px] text-sm font-medium transition-colors cursor-pointer"
                 style={{
+                  borderRadius: '10px',
                   backgroundColor: 'var(--surface-muted)',
                   color: 'var(--text-main)',
                   border: 'none',
@@ -67,9 +71,12 @@ export const DeleteAccountModal = ({ isOpen, onClose, onConfirm }: DeleteAccount
                 {t('common.cancel')}
               </button>
               <button
+                type="button"
                 onClick={onConfirm}
-                className="px-6 py-2 rounded-full text-sm font-bold transition-colors cursor-pointer"
+                aria-label={t('common.delete')}
+                className="px-6 py-2 rounded-[10px] text-sm font-bold transition-colors cursor-pointer"
                 style={{
+                  borderRadius: '10px',
                   backgroundColor: 'var(--accent-color)',
                   color: '#fff',
                   border: 'none',

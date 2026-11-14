@@ -199,17 +199,27 @@ export const CreateLobbyModal: React.FC<CreateLobbyModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 select-none"
+      style={{
+        backgroundColor: 'rgba(0, 0, 0, 0.55)',
+        backdropFilter: 'none',
+        WebkitBackdropFilter: 'none',
+      }}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
         transition={{ duration: 0.16, ease: 'easeOut' }}
-        className="relative w-full max-w-[440px] flex flex-col rounded-2xl overflow-hidden shadow-2xl"
+        className="relative w-full max-w-[440px] flex flex-col rounded-[10px] overflow-hidden shadow-2xl"
         style={{
-          backgroundColor: 'var(--settings-bg, var(--bg-secondary, #313338))',
+          backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 96%, #000)',
+          borderRadius: '10px',
+          border: 'none',
+          outline: 'none',
           color: 'var(--text-main, #ffffff)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
+          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -247,7 +257,7 @@ export const CreateLobbyModal: React.FC<CreateLobbyModalProps> = ({
                     type="button"
                     onClick={() => handleSelectTemplate('custom', 'general')}
                     aria-label={t('lobby.my_template')}
-                    className="flex items-center justify-between p-3.5 rounded-xl transition-all cursor-pointer border-none outline-none text-left"
+                    className="flex items-center justify-between p-3.5 rounded-[10px] transition-all cursor-pointer border-none outline-none text-left"
                     style={{
                       backgroundColor: 'var(--surface-container, rgba(255,255,255,0.06))',
                       color: 'var(--text-main, #ffffff)',
@@ -272,7 +282,7 @@ export const CreateLobbyModal: React.FC<CreateLobbyModalProps> = ({
                     type="button"
                     onClick={() => handleSelectTemplate('gaming', 'gaming')}
                     aria-label={t('lobby.template_gaming')}
-                    className="flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer border-none outline-none text-left"
+                    className="flex items-center justify-between p-3 rounded-[10px] transition-all cursor-pointer border-none outline-none text-left"
                     style={{
                       backgroundColor: 'var(--surface-container, rgba(255,255,255,0.06))',
                       color: 'var(--text-main, #ffffff)',
@@ -293,7 +303,7 @@ export const CreateLobbyModal: React.FC<CreateLobbyModalProps> = ({
                     type="button"
                     onClick={() => handleSelectTemplate('friends', 'friends')}
                     aria-label={t('lobby.template_friends')}
-                    className="flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer border-none outline-none text-left"
+                    className="flex items-center justify-between p-3 rounded-[10px] transition-all cursor-pointer border-none outline-none text-left"
                     style={{
                       backgroundColor: 'var(--surface-container, rgba(255,255,255,0.06))',
                       color: 'var(--text-main, #ffffff)',
@@ -314,7 +324,7 @@ export const CreateLobbyModal: React.FC<CreateLobbyModalProps> = ({
                     type="button"
                     onClick={() => handleSelectTemplate('study', 'study')}
                     aria-label={t('lobby.template_study')}
-                    className="flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer border-none outline-none text-left"
+                    className="flex items-center justify-between p-3 rounded-[10px] transition-all cursor-pointer border-none outline-none text-left"
                     style={{
                       backgroundColor: 'var(--surface-container, rgba(255,255,255,0.06))',
                       color: 'var(--text-main, #ffffff)',
@@ -335,7 +345,7 @@ export const CreateLobbyModal: React.FC<CreateLobbyModalProps> = ({
                     type="button"
                     onClick={() => handleSelectTemplate('club', 'club')}
                     aria-label={t('lobby.template_club')}
-                    className="flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer border-none outline-none text-left"
+                    className="flex items-center justify-between p-3 rounded-[10px] transition-all cursor-pointer border-none outline-none text-left"
                     style={{
                       backgroundColor: 'var(--surface-container, rgba(255,255,255,0.06))',
                       color: 'var(--text-main, #ffffff)',
@@ -361,7 +371,7 @@ export const CreateLobbyModal: React.FC<CreateLobbyModalProps> = ({
                     type="button"
                     onClick={() => setStep('join')}
                     aria-label={t('lobby.join_lobby')}
-                    className="w-full py-2.5 rounded-xl font-medium text-[13.5px] transition-colors cursor-pointer border-none outline-none"
+                    className="w-full py-2.5 rounded-[10px] font-medium text-[13.5px] transition-colors cursor-pointer border-none outline-none"
                     style={{
                       backgroundColor: 'rgba(255, 255, 255, 0.08)',
                       color: '#ffffff',
@@ -396,7 +406,7 @@ export const CreateLobbyModal: React.FC<CreateLobbyModalProps> = ({
                     type="button"
                     onClick={() => handleSelectAudience(false)}
                     aria-label={t('lobby.for_friends')}
-                    className="flex items-center justify-between p-3.5 rounded-xl transition-all cursor-pointer border-none outline-none text-left"
+                    className="flex items-center justify-between p-3.5 rounded-[10px] transition-all cursor-pointer border-none outline-none text-left"
                     style={{
                       backgroundColor: 'var(--surface-container, rgba(255,255,255,0.06))',
                       color: 'var(--text-main, #ffffff)',
@@ -417,7 +427,7 @@ export const CreateLobbyModal: React.FC<CreateLobbyModalProps> = ({
                     type="button"
                     onClick={() => handleSelectAudience(true)}
                     aria-label={t('lobby.for_community')}
-                    className="flex items-center justify-between p-3.5 rounded-xl transition-all cursor-pointer border-none outline-none text-left"
+                    className="flex items-center justify-between p-3.5 rounded-[10px] transition-all cursor-pointer border-none outline-none text-left"
                     style={{
                       backgroundColor: 'var(--surface-container, rgba(255,255,255,0.06))',
                       color: 'var(--text-main, #ffffff)',
@@ -450,7 +460,7 @@ export const CreateLobbyModal: React.FC<CreateLobbyModalProps> = ({
                     type="button"
                     onClick={() => setStep('templates')}
                     aria-label={t('lobby.back_btn')}
-                    className="px-4 py-2 rounded-xl text-[13px] font-medium text-[var(--text-dim)] hover:text-white transition-colors border-none bg-transparent cursor-pointer"
+                    className="px-4 py-2 rounded-[10px] text-[13px] font-medium text-[var(--text-dim)] hover:text-white transition-colors border-none bg-transparent cursor-pointer"
                   >
                     {t('lobby.back_btn')}
                   </button>
@@ -517,7 +527,7 @@ export const CreateLobbyModal: React.FC<CreateLobbyModalProps> = ({
                     onChange={(e) => setLobbyName(e.target.value)}
                     placeholder={t('lobby.lobby_name')}
                     maxLength={48}
-                    className="w-full px-3.5 py-2.5 rounded-xl text-[14px] font-medium outline-none border-none transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-[10px] text-[14px] font-medium outline-none border-none transition-colors"
                     style={{
                       backgroundColor: 'var(--surface-container, rgba(255,255,255,0.06))',
                       color: 'var(--text-main, #ffffff)',
@@ -536,7 +546,7 @@ export const CreateLobbyModal: React.FC<CreateLobbyModalProps> = ({
                     type="button"
                     onClick={() => setStep('audience')}
                     aria-label={t('lobby.back_btn')}
-                    className="px-4 py-2 rounded-xl text-[13px] font-medium text-[var(--text-dim)] hover:text-white transition-colors border-none bg-transparent cursor-pointer"
+                    className="px-4 py-2 rounded-[10px] text-[13px] font-medium text-[var(--text-dim)] hover:text-white transition-colors border-none bg-transparent cursor-pointer"
                   >
                     {t('lobby.back_btn')}
                   </button>
@@ -546,7 +556,7 @@ export const CreateLobbyModal: React.FC<CreateLobbyModalProps> = ({
                     onClick={handleCreate}
                     disabled={!lobbyName.trim() || isLoading}
                     aria-label={t('lobby.create_btn')}
-                    className="px-6 py-2.5 rounded-xl text-[13.5px] font-semibold text-white transition-all cursor-pointer border-none outline-none disabled:opacity-50"
+                    className="px-6 py-2.5 rounded-[10px] text-[13.5px] font-semibold text-white transition-all cursor-pointer border-none outline-none disabled:opacity-50"
                     style={{
                       backgroundColor: '#5865F2',
                     }}
@@ -581,7 +591,7 @@ export const CreateLobbyModal: React.FC<CreateLobbyModalProps> = ({
                     value={inviteInput}
                     onChange={(e) => setInviteInput(e.target.value)}
                     placeholder={t('lobby.invite_placeholder')}
-                    className="w-full px-3.5 py-2.5 rounded-xl text-[14px] font-medium outline-none border-none transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-[10px] text-[14px] font-medium outline-none border-none transition-colors"
                     style={{
                       backgroundColor: 'var(--surface-container, rgba(255,255,255,0.06))',
                       color: 'var(--text-main, #ffffff)',
@@ -600,7 +610,7 @@ export const CreateLobbyModal: React.FC<CreateLobbyModalProps> = ({
                     type="button"
                     onClick={() => setStep('templates')}
                     aria-label={t('lobby.back_btn')}
-                    className="px-4 py-2 rounded-xl text-[13px] font-medium text-[var(--text-dim)] hover:text-white transition-colors border-none bg-transparent cursor-pointer"
+                    className="px-4 py-2 rounded-[10px] text-[13px] font-medium text-[var(--text-dim)] hover:text-white transition-colors border-none bg-transparent cursor-pointer"
                   >
                     {t('lobby.back_btn')}
                   </button>
@@ -610,7 +620,7 @@ export const CreateLobbyModal: React.FC<CreateLobbyModalProps> = ({
                     onClick={handleJoinByInvite}
                     disabled={!inviteInput.trim() || isLoading}
                     aria-label={t('lobby.enter_lobby')}
-                    className="px-6 py-2.5 rounded-xl text-[13.5px] font-semibold text-white transition-all cursor-pointer border-none outline-none disabled:opacity-50"
+                    className="px-6 py-2.5 rounded-[10px] text-[13.5px] font-semibold text-white transition-all cursor-pointer border-none outline-none disabled:opacity-50"
                     style={{
                       backgroundColor: '#5865F2',
                     }}

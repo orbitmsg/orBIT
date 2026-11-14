@@ -32,7 +32,7 @@ const SS_CIPHER_METHODS = [
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '9px 12px',
-  borderRadius: '12px',
+  borderRadius: '10px',
   backgroundColor: 'var(--surface-container, rgba(255, 255, 255, 0.05))',
   border: 'none',
   boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.08)',
@@ -262,10 +262,10 @@ export const ProxyEditModal: React.FC<ProxyEditModalProps> = ({
           maxWidth: '440px',
           maxHeight: '90vh',
           overflowY: 'auto',
-          backgroundColor: 'var(--settings-surface, var(--bg-secondary))',
-          borderRadius: '18px',
+          backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 96%, #000)',
+          borderRadius: '10px',
           border: 'none',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
           padding: '18px 20px',
           display: 'flex',
           flexDirection: 'column',
@@ -286,7 +286,7 @@ export const ProxyEditModal: React.FC<ProxyEditModalProps> = ({
             style={{
               background: 'none',
               border: 'none',
-              borderRadius: '12px',
+              borderRadius: '10px',
               color: 'var(--text-dim)',
               cursor: 'pointer',
               padding: '4px',
@@ -352,7 +352,7 @@ export const ProxyEditModal: React.FC<ProxyEditModalProps> = ({
                   onClick={() => handleSelectProtocol(option.id)}
                   style={{
                     padding: '7px 8px',
-                    borderRadius: '12px',
+                    borderRadius: '10px',
                     fontSize: '12px',
                     fontWeight: active ? 600 : 500,
                     cursor: 'pointer',
@@ -501,7 +501,7 @@ export const ProxyEditModal: React.FC<ProxyEditModalProps> = ({
                 justifyContent: 'space-between',
                 gap: '12px',
                 padding: '10px 12px',
-                borderRadius: '12px',
+                borderRadius: '10px',
                 backgroundColor: 'var(--surface-container, rgba(255, 255, 255, 0.05))',
                 border: 'none',
                 cursor: 'pointer',
@@ -534,7 +534,7 @@ export const ProxyEditModal: React.FC<ProxyEditModalProps> = ({
             style={{
               background: 'none',
               border: 'none',
-              borderRadius: '12px',
+              borderRadius: '10px',
               color: 'var(--accent-color, #9b7dd4)',
               fontSize: '13px',
               fontWeight: 500,
@@ -566,7 +566,7 @@ export const ProxyEditModal: React.FC<ProxyEditModalProps> = ({
             onClick={onClose}
             style={{
               padding: '8px 14px',
-              borderRadius: '12px',
+              borderRadius: '10px',
               background: 'var(--surface-container, rgba(255, 255, 255, 0.05))',
               border: 'none',
               color: 'var(--text-main)',
@@ -582,7 +582,7 @@ export const ProxyEditModal: React.FC<ProxyEditModalProps> = ({
             onClick={handleSave}
             style={{
               padding: '8px 16px',
-              borderRadius: '12px',
+              borderRadius: '10px',
               background: 'var(--accent-color, #9b7dd4)',
               border: 'none',
               color: 'var(--accent-on-color, #ffffff)',

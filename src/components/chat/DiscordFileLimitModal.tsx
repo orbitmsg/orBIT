@@ -46,11 +46,11 @@ export const DiscordFileLimitModal: React.FC<DiscordFileLimitModalProps> = ({
             style={{
               width: '100%',
               maxWidth: '420px',
-              backgroundColor: 'var(--bg-secondary, #252836)',
-              borderRadius: '8px',
+              backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 96%, #000)',
+              borderRadius: '10px',
               border: 'none',
               outline: 'none',
-              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.35)',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
               padding: '28px 24px 24px 24px',
               display: 'flex',
               flexDirection: 'column',
@@ -60,7 +60,6 @@ export const DiscordFileLimitModal: React.FC<DiscordFileLimitModalProps> = ({
               fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
             }}
           >
-            {/* Graphic / Icon */}
             <div
               style={{
                 width: '64px',
@@ -107,7 +106,6 @@ export const DiscordFileLimitModal: React.FC<DiscordFileLimitModalProps> = ({
               Максимальный суммарный размер файлов и медиа в одном сообщении составляет {maxMb} МБ. Пожалуйста, выберите файл меньшего размера.
             </p>
 
-            {/* Action Button */}
             <button
               type="button"
               onClick={onClose}
@@ -118,7 +116,7 @@ export const DiscordFileLimitModal: React.FC<DiscordFileLimitModalProps> = ({
                 color: '#ffffff',
                 border: 'none',
                 outline: 'none',
-                borderRadius: '8px',
+                borderRadius: '10px',
                 fontSize: '15px',
                 fontWeight: 600,
                 cursor: 'pointer',

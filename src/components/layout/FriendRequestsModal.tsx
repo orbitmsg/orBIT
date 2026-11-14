@@ -63,14 +63,14 @@ export const FriendRequestsModal: React.FC<FriendRequestsModalProps> = ({
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
             onClick={(e) => e.stopPropagation()}
-            className="rounded-2xl"
+            className="rounded-[10px]"
             style={{
               width: '100%',
               maxWidth: '420px',
               maxHeight: '80vh',
-              borderRadius: '16px',
-              backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+              borderRadius: '10px',
+              backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 96%, #000)',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
               color: 'var(--text-main)',
               overflow: 'hidden',
               display: 'flex',
@@ -88,8 +88,8 @@ export const FriendRequestsModal: React.FC<FriendRequestsModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="absolute right-0 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-[var(--surface-container-strong,rgba(255,255,255,0.08))] text-[var(--text-dim)] hover:text-[var(--text-main)] transition-colors cursor-pointer"
-                style={{ border: 'none', outline: 'none' }}
+                className="absolute right-0 top-1/2 -translate-y-1/2 p-1.5 rounded-[10px] hover:bg-[var(--surface-container-strong,rgba(255,255,255,0.08))] text-[var(--text-dim)] hover:text-[var(--text-main)] transition-colors cursor-pointer"
+                style={{ border: 'none', outline: 'none', borderRadius: '10px' }}
                 aria-label={t('common.close', 'Закрыть')}
               >
                 <X size={18} />
@@ -105,14 +105,15 @@ export const FriendRequestsModal: React.FC<FriendRequestsModalProps> = ({
                 incomingRequests.map((req) => (
                   <div
                     key={req.id}
-                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-[var(--surface-container,rgba(255,255,255,0.05))] transition-colors select-none"
-                    style={{ border: 'none', outline: 'none' }}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-[10px] hover:bg-[var(--surface-container,rgba(255,255,255,0.05))] transition-colors select-none"
+                    style={{ border: 'none', outline: 'none', borderRadius: '10px' }}
                   >
                     <div className="flex items-center gap-3 min-w-0 pr-3">
                       <Avatar
                         src={req.avatarUrl}
                         alt={req.senderNickname}
-                        className="w-10 h-10 rounded-full"
+                        className="w-10 h-10 rounded-[14px]"
+                        style={{ borderRadius: '14px' }}
                       />
                       <div className="min-w-0 flex flex-col">
                         <span className="text-sm font-semibold text-[var(--text-main)] truncate leading-tight">
@@ -129,9 +130,9 @@ export const FriendRequestsModal: React.FC<FriendRequestsModalProps> = ({
                         type="button"
                         onClick={() => onReject(req)}
                         aria-label={t('common.decline', 'Отклонить')}
-                        className="px-3.5 py-1.5 text-xs font-semibold rounded-full hover:opacity-80 transition-opacity cursor-pointer select-none"
+                        className="px-3.5 py-1.5 text-xs font-semibold rounded-[10px] hover:opacity-80 transition-opacity cursor-pointer select-none"
                         style={{
-                          borderRadius: '9999px',
+                          borderRadius: '10px',
                           backgroundColor: 'var(--surface-container-strong, rgba(255,255,255,0.08))',
                           color: 'var(--text-main, #ffffff)',
                           border: 'none',
@@ -144,9 +145,9 @@ export const FriendRequestsModal: React.FC<FriendRequestsModalProps> = ({
                         type="button"
                         onClick={() => onAccept(req)}
                         aria-label={t('common.accept', 'Принять')}
-                        className="px-4 py-1.5 text-xs font-semibold rounded-full hover:opacity-90 transition-opacity cursor-pointer select-none shadow-sm"
+                        className="px-4 py-1.5 text-xs font-semibold rounded-[10px] hover:opacity-90 transition-opacity cursor-pointer select-none shadow-sm"
                         style={{
-                          borderRadius: '9999px',
+                          borderRadius: '10px',
                           backgroundColor: 'var(--accent-color, #7C3AED)',
                           color: '#ffffff',
                           border: 'none',

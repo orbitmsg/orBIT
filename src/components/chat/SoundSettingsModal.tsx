@@ -1,4 +1,3 @@
-// src/components/chat/SoundSettingsModal.tsx
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useChatStore } from '../../store/useChatStore';
@@ -22,7 +21,6 @@ export const SoundSettingsModal = ({ chatId, onClose, position, isMobileView = f
   const isMuted = chat.muted ?? false;
   const notificationsEnabled = chat.notificationsEnabled ?? true;
 
-  // Позиционирование: на мобильных – по центру, на десктопе – у кнопки
   const contentStyle: React.CSSProperties = isMobileView
     ? {
         position: 'fixed',
@@ -49,8 +47,8 @@ export const SoundSettingsModal = ({ chatId, onClose, position, isMobileView = f
         backgroundColor: 'transparent',
       }}
       onClick={(e) => {
-        e.stopPropagation(); // предотвращаем всплытие до профиля
-        onClose(); // закрываем только модальное окно
+        e.stopPropagation();
+        onClose();
       }}
     >
       <motion.div
@@ -59,17 +57,18 @@ export const SoundSettingsModal = ({ chatId, onClose, position, isMobileView = f
         exit={{ opacity: 0, scale: 0.95 }}
         style={{
           ...contentStyle,
-          backgroundColor: 'var(--bg-secondary, #1a1a1a)',
-          borderRadius: '16px',
+          backgroundColor: 'color-mix(in srgb, var(--bg-secondary, #1e1b2e) 96%, #000)',
+          borderRadius: '10px',
+          border: 'none',
           padding: '16px 20px',
           color: 'var(--text-main, #fff)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
           width: '280px',
           display: 'flex',
           flexDirection: 'column',
           gap: '12px',
         }}
-        onClick={(e) => e.stopPropagation()} // предотвращаем закрытие при клике внутри
+        onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div

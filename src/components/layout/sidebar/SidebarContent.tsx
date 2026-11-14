@@ -123,7 +123,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
     <div className={isMobileView ? 'flex flex-col h-full gap-2 p-2' : 'flex flex-col h-full'}>
       {isMobileView && !activeChatId && (isCallMinimized ? <CallMiniPlayer /> : <GlobalAudioPlayer />)}
 
-      {isViewingArchive ? (
+      {isViewingArchive && (
         <div
           className="px-3 py-2 select-none shrink-0 overflow-hidden"
           style={{
@@ -158,15 +158,43 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
             </span>
           </div>
         </div>
-      ) : (
-        <div
-          className="shrink-0 overflow-hidden px-2 py-1 flex flex-col gap-1.5 select-none"
-          style={{ backgroundColor: 'var(--title-bar-bg, #121212)' }}
-        >
-          {[
-            {
-              label: t('sidebar.find_friend', 'Найти друга'),
-              icon: (
+      )}
+
+      {isMobileView && !activeChatId && (
+        <ActiveCallBar />
+      )}
+
+      <div
+        className="relative flex-1 min-h-0 flex flex-col"
+        style={{ backgroundColor: 'var(--title-bar-bg, #121212)' }}
+        onMouseEnter={showChatScrollbar}
+        onMouseLeave={handleChatListMouseLeave}
+      >
+        {!isViewingArchive && (
+          <div className="absolute left-[6px] right-[6px] top-[6px] z-20 select-none pointer-events-auto flex flex-col gap-1.5">
+            <button
+              type="button"
+              onClick={() => onOpenAddFriend?.()}
+              aria-label={t('sidebar.find_friend', 'Найти друга')}
+              className="group w-full flex items-center gap-2.5 px-3 py-2.5 outline-none cursor-pointer transition-colors text-left"
+              style={{
+                borderRadius: '10px',
+                border: 'none',
+                backgroundColor: surfaceTint,
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.45)',
+                color: 'var(--text-main)',
+                minHeight: '40px',
+                height: '40px',
+                boxSizing: 'border-box',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = surfaceHoverTint;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = surfaceTint;
+              }}
+            >
+              <span className="shrink-0 text-[#949ba4] group-hover:text-white transition-colors flex items-center justify-center">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
@@ -180,90 +208,49 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                     <path d="M19 16v6m3-3h-6" />
                   </g>
                 </svg>
-              ),
-              onClick: onOpenAddFriend,
-            },
-          ].map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              onClick={() => item.onClick?.()}
-              aria-label={item.label}
-              className="group w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[14px] outline-none cursor-pointer transition-colors text-left"
-              style={{
-                borderRadius: '14px',
-                border: 'none',
-                backgroundColor: surfaceTint,
-                color: 'var(--text-main)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = surfaceHoverTint;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = surfaceTint;
-              }}
-            >
-              <span className="shrink-0 text-[#949ba4] group-hover:text-white transition-colors flex items-center justify-center">
-                {item.icon}
               </span>
               <span className="text-[13px] font-medium truncate flex-1 min-w-0 text-[#949ba4] group-hover:text-white transition-colors">
-                {item.label}
+                {t('sidebar.find_friend', 'Найти друга')}
               </span>
             </button>
-          ))}
-        </div>
-      )}
+            {incomingFriendRequests.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowFriendRequestsModal(true)}
+                className="w-full flex items-center justify-between px-3.5 py-2 hover:opacity-90 transition-opacity text-xs font-medium cursor-pointer shadow-none select-none"
+                style={{
+                  borderRadius: '10px',
+                  border: 'none',
+                  backgroundColor: surfaceTint,
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.45)',
+                  color: 'var(--text-main)',
+                }}
+              >
+                <span className="font-semibold text-xs text-[var(--text-main)]">
+                  {t('friendRequests.pending_banner', 'Запросы на переписку')}
+                </span>
+                <span
+                  className="px-2 py-0.5 rounded-full font-bold text-[11px]"
+                  style={{
+                    borderRadius: '9999px',
+                    backgroundColor: 'var(--accent-color, #7C3AED)',
+                    color: 'var(--accent-on-color, #ffffff)',
+                  }}
+                >
+                  {incomingFriendRequests.length}
+                </span>
+              </button>
+            )}
+          </div>
+        )}
 
-      {incomingFriendRequests.length > 0 && (
-        <div
-          className="shrink-0 overflow-hidden px-2 py-1"
-          style={{ backgroundColor: 'var(--title-bar-bg, #121212)' }}
-        >
-          <button
-            type="button"
-            onClick={() => setShowFriendRequestsModal(true)}
-            className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl hover:opacity-90 transition-opacity text-xs font-medium cursor-pointer shadow-none select-none"
-            style={{
-              borderRadius: '14px',
-              border: 'none',
-              backgroundColor: surfaceTint,
-              color: 'var(--text-main)',
-            }}
-          >
-            <span className="font-semibold text-xs text-[var(--text-main)]">
-              {t('friendRequests.pending_banner', 'Запросы на переписку')}
-            </span>
-            <span
-              className="px-2 py-0.5 rounded-full font-bold text-[11px]"
-              style={{
-                borderRadius: '9999px',
-                backgroundColor: 'var(--accent-color, #7C3AED)',
-                color: 'var(--accent-on-color, #ffffff)',
-              }}
-            >
-              {incomingFriendRequests.length}
-            </span>
-          </button>
-        </div>
-      )}
-
-      {isMobileView && !activeChatId && (
-        <ActiveCallBar />
-      )}
-
-      <div
-        className="relative flex-1 min-h-0 flex flex-col"
-        style={{ backgroundColor: 'var(--title-bar-bg, #121212)' }}
-        onMouseEnter={showChatScrollbar}
-        onMouseLeave={handleChatListMouseLeave}
-      >
         <div
           ref={chatListScrollRef}
           onScroll={handleChatListScroll}
           className="flex-1 chat-list-scrollbar select-none"
           style={{
             marginTop: 0,
-            paddingTop: '8px',
+            paddingTop: isViewingArchive ? '8px' : incomingFriendRequests.length > 0 ? '92px' : '52px',
             paddingBottom: '74px',
             overflowY: 'scroll',
             overflowX: 'hidden',
@@ -475,11 +462,11 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                     onClick={() => handleSelectFoundChannel(searchChannelResult)}
                     className="flex items-center gap-3 cursor-pointer transition-colors rounded-2xl"
                     style={{
-                      borderRadius: '5px',
+                      borderRadius: '10px',
                       border: 'none',
-                      margin: '2.5px 6px 2.5px 6px',
-                      width: 'calc(100% - 12px)',
-                      padding: '8px 4px 8px 6px',
+                      margin: '2.5px 2px 2.5px 6px',
+                      width: 'calc(100% - 8px)',
+                      padding: '8px 8px 8px 6px',
                       boxSizing: 'border-box',
                       backgroundColor: 'transparent',
                     }}
@@ -493,7 +480,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                     <Avatar
                       src={searchChannelResult.avatarUrl}
                       alt={searchChannelResult.name}
-                      className="w-12 h-12 rounded-full flex-shrink-0"
+                      className="w-12 h-12 rounded-[14px] flex-shrink-0"
                     />
                     <div className="flex-1 min-w-0" style={{ transform: 'translateY(-6px)' }}>
                       <div className="flex items-center gap-1.5">
@@ -556,11 +543,11 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                         onClick={() => handleSelectFoundUser(user)}
                         className="flex items-center gap-3 cursor-pointer transition-colors rounded-2xl"
                         style={{
-                          borderRadius: '5px',
+                          borderRadius: '10px',
                           border: 'none',
-                          margin: '2.5px 6px 2.5px 6px',
-                          width: 'calc(100% - 12px)',
-                          padding: '10px 4px 10px 6px',
+                          margin: '2.5px 2px 2.5px 6px',
+                          width: 'calc(100% - 8px)',
+                          padding: '10px 8px 10px 6px',
                           minHeight: 60,
                           boxSizing: 'border-box',
                           backgroundColor: 'transparent',
@@ -635,7 +622,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           className="overlay-scroll-track"
           onMouseDown={(e) => handleScrollbarTrackMouseDown(e, chatListScrollRef.current)}
           style={{
-            top: '18px',
+            top: isViewingArchive ? '18px' : incomingFriendRequests.length > 0 ? '94px' : '52px',
             bottom: '18px',
             opacity: 0,
             transition: 'opacity 0.2s ease',
@@ -648,7 +635,7 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
           className="overlay-scroll-thumb"
           onMouseDown={(e) => handleScrollbarThumbMouseDown(e, chatListScrollRef.current)}
           style={{
-            top: '18px',
+            top: isViewingArchive ? '18px' : incomingFriendRequests.length > 0 ? '94px' : '52px',
             opacity: 0,
             transition: 'opacity 0.2s ease',
             willChange: 'transform',

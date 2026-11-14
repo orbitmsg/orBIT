@@ -111,12 +111,12 @@ export const ChatListItem = React.memo(({
       className="group relative cursor-pointer"
       style={{
         borderRadius: '10px',
-        margin: '2.5px 6px 2.5px 6px',
-        width: 'calc(100% - 12px)',
+        margin: '2.5px 2px 2.5px 6px',
+        width: 'calc(100% - 8px)',
         backgroundColor: rowBg,
         border: 'none',
         outline: 'none',
-        padding: '7px 4px 7px 6px',
+        padding: '7px 8px 7px 6px',
         minHeight: 60,
         boxSizing: 'border-box',
         contentVisibility: 'auto',
@@ -374,15 +374,15 @@ export const ArchiveListItem = React.memo(({
       onMouseLeave={() => setIsHovered(false)}
       className="group relative cursor-pointer"
       style={{
-        borderRadius: '5px',
-        margin: '2.5px 6px 2.5px 6px',
-        width: 'calc(100% - 12px)',
+        borderRadius: '10px',
+        margin: '2.5px 2px 2.5px 6px',
+        width: 'calc(100% - 8px)',
         backgroundColor: isHovered
           ? 'var(--surface-hover, rgba(128, 128, 128, 0.08))'
           : 'transparent',
         border: 'none',
         outline: 'none',
-        padding: '8px 4px 8px 6px',
+        padding: '8px 8px 8px 6px',
         minHeight: 60,
         boxSizing: 'border-box',
         transition: 'background-color 0.12s ease',
@@ -394,7 +394,7 @@ export const ArchiveListItem = React.memo(({
             style={{
               width: 49,
               height: 49,
-              borderRadius: '50%',
+              borderRadius: '14px',
               backgroundColor: 'var(--surface-container-strong, rgba(128, 128, 128, 0.16))',
               display: 'flex',
               alignItems: 'center',

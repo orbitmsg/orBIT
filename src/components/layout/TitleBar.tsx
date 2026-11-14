@@ -39,7 +39,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
     : currentView === 'settings'
       ? t('mainMenu.settings', 'Настройки')
       : currentView === 'explore'
-        ? t('sidebar.explore_treasures', 'В поисках сокровищ')
+        ? t('sidebar.explore_treasures', 'Лобби')
         : activeChat
           ? activeChat.type === 'group'
             ? activeChannelName

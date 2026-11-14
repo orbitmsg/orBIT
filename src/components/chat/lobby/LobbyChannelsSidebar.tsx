@@ -8,10 +8,12 @@ import {
   PhoneOff,
   ChevronDown,
   ShieldCheck,
+  Users,
 } from 'lucide-react';
-import { lobbyService, type LobbyChannel } from '../../../services/lobbyService';
+import { lobbyService, type LobbyChannel, type LobbyMember } from '../../../services/lobbyService';
 import { useCallStore } from '../../../store/useCallStore';
 import { useAuthStore } from '../../../store/useAuthStore';
+import { useChatStore } from '../../../store/useChatStore';
 import { Avatar } from '../../common/Avatar';
 import { UserDockPanel } from '../../layout/sidebar/UserDockPanel';
 import { CreateLobbyChannelModal } from './CreateLobbyChannelModal';
@@ -56,9 +58,45 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
   const myAvatar = useAuthStore((s) => s.avatarUrl);
   const callDuration = useCallStore((s) => s.duration);
   const [channels, setChannels] = useState<LobbyChannel[]>([]);
+  const [members, setMembers] = useState<LobbyMember[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'text' | 'voice'>('text');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const loadMembers = useCallback(async () => {
+    try {
+      const list = await lobbyService.getLobbyMembers(lobbyId);
+      setMembers(list);
+      const validMembers = list.map((m) => ({
+        userId: m.userCode || m.id,
+        userCode: m.userCode,
+        nickname: m.nickname,
+        role: m.role,
+        lastSeen: m.lastSeen || Date.now(),
+        avatarUrl: m.avatarUrl || null,
+      }));
+      useChatStore.getState().updateChat(lobbyId, {
+        members: validMembers,
+        membersCount: validMembers.length,
+      });
+    } catch (e) {
+      console.error('Failed to load lobby members:', e);
+    }
+  }, [lobbyId]);
+
+  useEffect(() => {
+    loadMembers();
+    const unsub = lobbyService.subscribeToLobby(
+      lobbyId,
+      () => {},
+      () => {
+        loadMembers();
+      }
+    );
+    return () => {
+      unsub();
+    };
+  }, [loadMembers, lobbyId]);
 
   const loadChannels = useCallback(async () => {
     try {
@@ -290,6 +328,49 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
               </div>
             );
           })}
+        </div>
+
+        <div className="flex flex-col gap-1 mt-2 pt-2 border-t border-white/5">
+          <div className="px-2 py-1 flex items-center justify-between">
+            <span className="text-[11.5px] font-bold text-[#949ba4] uppercase tracking-wider flex items-center gap-1.5">
+              <Users size={13} className="text-[#949ba4]" />
+              {t('lobby.members_section', 'Участники')} ({members.length})
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-0.5">
+            {members.map((m) => {
+              const isOwner = m.role === 'owner';
+              const isAdmin = m.role === 'admin';
+              return (
+                <div
+                  key={m.id || m.userCode}
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-md hover:bg-white/5 transition-colors"
+                >
+                  <div className="relative shrink-0">
+                    <Avatar
+                      src={m.avatarUrl || undefined}
+                      alt={m.nickname}
+                      className="w-[22px] h-[22px] rounded-full"
+                    />
+                  </div>
+                  <span className="text-[13px] font-medium text-white/90 truncate flex-1">
+                    {m.nickname}
+                  </span>
+                  {isOwner && (
+                    <span className="text-[10px] font-semibold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded shrink-0">
+                      {t('lobby.role_owner', 'Создатель')}
+                    </span>
+                  )}
+                  {isAdmin && (
+                    <span className="text-[10px] font-semibold text-purple-400 bg-purple-400/10 px-1.5 py-0.5 rounded shrink-0">
+                      {t('lobby.role_admin', 'Модератор')}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 

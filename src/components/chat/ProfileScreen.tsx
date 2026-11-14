@@ -239,7 +239,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
 
   useEffect(() => {
     if (!chat || chat.type !== 'group') return;
-    groupService.getGroup(chat.id).then((info) => {
+    groupService.getGroup(chat.id).then(async (info) => {
       if (info) {
         const current = useChatStore.getState().chats.find((c) => c.id === chat.id);
         const currentUserId = useAuthStore.getState().userId;
@@ -292,6 +292,40 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
           updates.role = 'owner';
         }
         updateChat(chat.id, updates);
+      } else {
+        const lobby = await lobbyService.getLobbyById(chat.id);
+        if (lobby) {
+          const lobbyMembers = await lobbyService.getLobbyMembers(chat.id);
+          const current = useChatStore.getState().chats.find((c) => c.id === chat.id);
+          const currentUserId = useAuthStore.getState().userId;
+          const validMembers = lobbyMembers.map((m) => ({
+            userId: m.userCode || m.id,
+            userCode: m.userCode,
+            nickname: m.nickname,
+            role: m.role,
+            lastSeen: m.lastSeen || Date.now(),
+            avatarUrl: m.avatarUrl || null,
+          }));
+          const isCreator = Boolean(
+            current?.isOwner ||
+            current?.role === 'owner' ||
+            (currentUserId && lobby.creatorCode && lobby.creatorCode === currentUserId) ||
+            (myNickname && lobby.creatorNickname === myNickname)
+          );
+          const updates: Partial<Chat> = {
+            name: lobby.name || current?.name,
+            description: lobby.description || current?.description,
+            avatarUrl: lobby.avatarUrl || current?.avatarUrl || undefined,
+            membersCount: validMembers.length || lobby.membersCount || 1,
+            inviteCode: lobby.code || current?.inviteCode,
+            members: validMembers,
+          };
+          if (isCreator) {
+            updates.isOwner = true;
+            updates.role = 'owner';
+          }
+          updateChat(chat.id, updates);
+        }
       }
     });
   }, [chat?.id, chat?.type, updateChat, myNickname, onClose]);

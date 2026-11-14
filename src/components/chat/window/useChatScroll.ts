@@ -112,7 +112,7 @@ export const useChatScroll = ({
     if (chatActiveTimerRef.current) clearTimeout(chatActiveTimerRef.current);
     chatActiveTimerRef.current = setTimeout(() => {
       setIsChatActive(false);
-    }, 1000);
+    }, 2500);
   }, [updateChatThumb]);
 
   const handleChatMouseLeave = useCallback(() => {

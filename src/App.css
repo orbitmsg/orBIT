@@ -568,25 +568,25 @@ a:hover {
   position: absolute;
   top: 6px;
   bottom: 6px;
-  right: -5.5px;
-  width: 3.5px;
+  right: 2px;
+  width: 5px;
   border-radius: 9999px;
   background-color: rgba(255, 255, 255, 0.08);
   pointer-events: auto;
-  z-index: 10;
+  z-index: 30;
   cursor: pointer;
   transition: opacity 0.2s ease;
 }
 
 .overlay-scroll-thumb {
   position: absolute;
-  right: -5.5px;
-  width: 3.5px;
+  right: 2px;
+  width: 5px;
   border-radius: 9999px;
   background-color: var(--scroll-thumb-color, rgba(255, 255, 255, 0.45));
   pointer-events: auto;
   top: 6px;
-  z-index: 11;
+  z-index: 31;
   cursor: pointer;
   user-select: none;
   transition: opacity 0.2s ease;

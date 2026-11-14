@@ -5,9 +5,8 @@ import {
   Sparkles,
   Gamepad2,
   Music,
-  Film,
-  Cpu,
   GraduationCap,
+  Newspaper,
   Globe2,
 } from 'lucide-react';
 import { lobbyService, type Lobby } from '../../services/lobbyService';
@@ -67,6 +66,17 @@ export const ExploreLobbiesView: React.FC = () => {
         avatarUrl: myAvatar || null,
       });
 
+      const members = await lobbyService.getLobbyMembers(lobby.id);
+      const chatMembers = members.map((m) => ({
+        userId: m.userCode,
+        userCode: m.userCode,
+        nickname: m.nickname,
+        avatarUrl: m.avatarUrl || null,
+        role: m.role || 'member',
+        joinedAt: m.joinedAt,
+        lastSeen: m.lastSeen || Date.now(),
+      }));
+
       const existingChat = chats.find((c) => c.id === lobby.id);
       if (!existingChat) {
         addChat({
@@ -82,6 +92,13 @@ export const ExploreLobbiesView: React.FC = () => {
           role: lobby.creatorCode === myCode ? 'owner' : 'member',
           lastMsg: 'Вы присоединились к лобби',
           unreadCount: 0,
+          membersCount: Math.max(lobby.membersCount, chatMembers.length),
+          members: chatMembers,
+        });
+      } else {
+        useChatStore.getState().updateChat(lobby.id, {
+          members: chatMembers,
+          membersCount: Math.max(lobby.membersCount, chatMembers.length),
         });
       }
 
@@ -94,18 +111,15 @@ export const ExploreLobbiesView: React.FC = () => {
   };
 
   const categories = [
-    { id: 'all', label: t('lobby.cat_featured'), icon: Sparkles },
-    { id: 'gaming', label: t('lobby.cat_gaming'), icon: Gamepad2 },
-    { id: 'music', label: t('lobby.cat_music'), icon: Music },
-    { id: 'entertainment', label: t('lobby.cat_entertainment'), icon: Film },
-    { id: 'tech', label: t('lobby.cat_tech'), icon: Cpu },
-    { id: 'education', label: t('lobby.cat_education'), icon: GraduationCap },
-    { id: 'student', label: t('lobby.cat_student'), icon: Globe2 },
+    { id: 'all', label: t('lobby.cat_featured', 'Главная'), icon: Sparkles },
+    { id: 'gaming', label: t('lobby.cat_gaming', 'Игровое'), icon: Gamepad2 },
+    { id: 'education', label: t('lobby.cat_education', 'Учебное'), icon: GraduationCap },
+    { id: 'music', label: t('lobby.cat_music', 'Музыкальное'), icon: Music },
+    { id: 'news', label: t('lobby.cat_news', 'Новостное'), icon: Newspaper },
   ];
 
   return (
     <div className="flex-1 w-full h-full flex flex-col overflow-y-auto chat-list-scrollbar select-none" style={{ backgroundColor: 'var(--chat-bg, #1e1f22)' }}>
-      {/* Верхняя навигация и поиск */}
       <div
         className="sticky top-0 z-20 w-full px-6 py-3 flex items-center justify-between gap-4 border-b border-white/5 backdrop-blur-md"
         style={{ backgroundColor: 'rgba(30, 31, 34, 0.85)' }}
@@ -138,7 +152,7 @@ export const ExploreLobbiesView: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('lobby.search_placeholder')}
+            placeholder={t('lobby.search_placeholder', 'Поиск сообществ...')}
             className="w-full pl-9 pr-3 py-1.5 rounded-lg text-[13px] font-medium border-none outline-none"
             style={{
               backgroundColor: 'var(--surface-container, #111214)',
@@ -150,37 +164,35 @@ export const ExploreLobbiesView: React.FC = () => {
       </div>
 
       <div className="p-8 flex flex-col gap-8 max-w-[1280px] w-full mx-auto">
-        {/* Большой приветственный баннер */}
         <div
-          className="relative w-full rounded-2xl overflow-hidden p-10 flex flex-col justify-center min-h-[200px]"
+          className="relative w-full rounded-2xl overflow-hidden p-8 flex flex-col justify-center min-h-[160px]"
           style={{
             background: 'linear-gradient(135deg, #1e3a8a 0%, #312e81 40%, #4c1d95 100%)',
             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.35)',
           }}
         >
           <div className="absolute -right-8 -bottom-10 opacity-20 pointer-events-none">
-            <OrbitIcon size={300} />
+            <OrbitIcon size={260} />
           </div>
 
-          <div className="relative z-10 max-w-[620px] flex flex-col gap-2">
-            <h1 className="text-3xl font-extrabold tracking-tight text-white leading-tight">
-              {t('lobby.explore_title')}
+          <div className="relative z-10 max-w-[720px] flex flex-col gap-2">
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-tight">
+              {t('lobby.explore_title', 'Найдите себе уютное место под ваши интересы')}
             </h1>
             <p className="text-[14px] text-blue-100/80 leading-relaxed font-normal">
-              {t('lobby.explore_subtitle')}
+              {t('lobby.explore_subtitle', 'Этот раздел создан для того, чтобы оживить мессенджер и я думаю, он вам понравится!')}
             </p>
           </div>
         </div>
 
-        {/* Сетка лобби */}
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-white tracking-tight">
-              {t('lobby.recommended')}
+              {t('lobby.recommended', 'Рекомендуемые лобби')}
             </h2>
             {lobbies.length > 0 && (
               <span className="text-[12px] text-[var(--text-dim)]">
-                {lobbies.length} {t('lobby.lobbies_count')}
+                {lobbies.length} {t('lobby.lobbies_count', 'лобби')}
               </span>
             )}
           </div>
@@ -190,7 +202,7 @@ export const ExploreLobbiesView: React.FC = () => {
               {[1, 2, 3, 4].map((n) => (
                 <div
                   key={n}
-                  className="h-64 rounded-2xl animate-pulse"
+                  className="h-48 rounded-2xl animate-pulse"
                   style={{ backgroundColor: 'var(--surface-container, rgba(255,255,255,0.04))' }}
                 />
               ))}
@@ -201,10 +213,10 @@ export const ExploreLobbiesView: React.FC = () => {
                 <Globe2 size={32} />
               </div>
               <div className="text-[16px] font-semibold text-white">
-                {t('lobby.no_lobbies_title')}
+                {t('lobby.no_lobbies_title', 'Пока нет открытых лобби')}
               </div>
               <div className="text-[13px] text-[var(--text-dim)] max-w-sm">
-                {t('lobby.no_lobbies_desc')}
+                {t('lobby.no_lobbies_desc', 'Создайте первое открытое лобби, и оно появится на этой витрине!')}
               </div>
             </div>
           ) : (
@@ -214,73 +226,61 @@ export const ExploreLobbiesView: React.FC = () => {
                 return (
                   <div
                     key={lobby.id}
-                    className="group relative flex flex-col rounded-2xl overflow-hidden transition-all duration-200 cursor-pointer hover:-translate-y-1"
+                    className="group relative flex flex-col rounded-2xl p-5 transition-colors cursor-pointer border border-white/[0.06] hover:border-white/20"
                     style={{
                       backgroundColor: 'var(--surface-container, #2b2d31)',
                       boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
                     }}
-                    onClick={() => handleJoinLobby(lobby)}
+                    onClick={() => (isMember ? setActiveChat(lobby.id) : handleJoinLobby(lobby))}
                   >
-                    {/* Баннер карточки */}
-                    <div
-                      className="w-full h-28 relative overflow-hidden"
-                      style={{
-                        background: lobby.bannerUrl
-                          ? `url(${lobby.bannerUrl}) center/cover no-repeat`
-                          : 'linear-gradient(135deg, #4338ca 0%, #6366f1 100%)',
-                      }}
-                    />
-
-                    {/* Тело карточки */}
-                    <div className="p-4 pt-0 flex flex-col flex-1 relative">
-                      {/* Аватарка лобби */}
-                      <div className="-mt-8 mb-2 relative self-start">
-                        <div
-                          className="w-12 h-12 rounded-2xl border-4 overflow-hidden flex items-center justify-center text-white font-bold text-lg"
-                          style={{
-                            borderColor: 'var(--surface-container, #2b2d31)',
-                            backgroundColor: '#5865F2',
-                          }}
-                        >
-                          {lobby.avatarUrl ? (
-                            <img src={lobby.avatarUrl} alt={lobby.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <span>{lobby.name.charAt(0).toUpperCase()}</span>
-                          )}
-                        </div>
+                    {lobby.avatarUrl ? (
+                      <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 mb-3 bg-white/5 border border-white/10">
+                        <img src={lobby.avatarUrl} alt={lobby.name} className="w-full h-full object-cover" />
                       </div>
+                    ) : null}
 
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <h3 className="font-bold text-[15px] text-white truncate">
-                          {lobby.name}
-                        </h3>
-                      </div>
+                    <h3 className="font-bold text-[16px] text-white truncate mb-1">
+                      {lobby.name}
+                    </h3>
 
-                      <p className="text-[12.5px] text-[var(--text-dim, #949ba4)] line-clamp-2 leading-relaxed mb-4 flex-1">
-                        {lobby.description || 'Приватное лобби со сквозным шифрованием.'}
+                    {lobby.description && lobby.description.trim() ? (
+                      <p className="text-[13px] text-[var(--text-dim, #949ba4)] line-clamp-2 leading-relaxed mb-3">
+                        {lobby.description.trim()}
                       </p>
+                    ) : null}
 
-                      <div className="pt-3 border-t border-white/5 flex items-center justify-between text-[11.5px] text-[var(--text-dim, #949ba4)] font-medium">
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-                          <span>1 {t('lobby.online_count')}</span>
-                          <span className="mx-1">•</span>
-                          <span>{lobby.membersCount} {t('lobby.members_count')}</span>
-                        </div>
-
-                        <button
-                          type="button"
-                          disabled={joiningId === lobby.id}
-                          aria-label={t('lobby.enter_lobby')}
-                          className="px-3 py-1 rounded-lg text-[12px] font-semibold text-white transition-opacity cursor-pointer border-none outline-none"
-                          style={{
-                            backgroundColor: isMember ? 'rgba(255,255,255,0.1)' : '#5865F2',
-                          }}
-                        >
-                          {isMember ? t('lobby.open_lobby') : t('lobby.enter_lobby')}
-                        </button>
-                      </div>
+                    <div className="flex items-center gap-1.5 text-[12px] text-[var(--text-dim, #949ba4)] font-medium mb-4 mt-auto pt-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                      <span>
+                        {Math.max(1, Math.min(lobby.membersCount, (lobby as any).onlineCount || 1))} {t('lobby.online_count', 'в сети')}, {lobby.membersCount} {t('lobby.members_count', 'участников')}
+                      </span>
                     </div>
+
+                    <button
+                      type="button"
+                      disabled={joiningId === lobby.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isMember) {
+                          setActiveChat(lobby.id);
+                        } else {
+                          handleJoinLobby(lobby);
+                        }
+                      }}
+                      aria-label={isMember ? t('lobby.goto_lobby', 'Перейти в лобби') : t('lobby.join_lobby', 'Присоединиться к лобби')}
+                      className="w-full py-2 px-3 rounded-xl text-[13px] font-semibold text-white transition-colors cursor-pointer border-none outline-none flex items-center justify-center gap-2"
+                      style={{
+                        backgroundColor: isMember ? 'rgba(255, 255, 255, 0.1)' : 'var(--accent-color, #7C3AED)',
+                      }}
+                    >
+                      {joiningId === lobby.id ? (
+                        <span>...</span>
+                      ) : isMember ? (
+                        t('lobby.goto_lobby', 'Перейти в лобби')
+                      ) : (
+                        t('lobby.join_lobby', 'Присоединиться к лобби')
+                      )}
+                    </button>
                   </div>
                 );
               })}

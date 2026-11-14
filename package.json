@@ -1,7 +1,7 @@
 {
-  "name": "orbita",
+  "name": "orBIT",
   "version": "2.0.2",
-  "description": "Orbita",
+  "description": "orBIT",
   "author": "Saizzi",
   "main": "dist-electron/main.cjs",
   "scripts": {
@@ -51,6 +51,7 @@
     ],
     "win": {
       "icon": "public/icons/icon.ico",
+      "executableName": "orBIT",
       "target": [
         {
           "target": "nsis",

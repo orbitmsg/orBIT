@@ -138,15 +138,17 @@ export const OrbitIcon: React.FC<OrbitIconProps> = ({
           strokeLinejoin="round"
         />
 
+        </g>
+
+      <g filter={`url(#${topPixelGlow})`}>
         <rect
           x="605"
           y="355"
           width="85"
           height="85"
-          fill={`url(#sq1Grad)`}
-          stroke="#726DFF"
+          fill="#FFFFFF"
+          stroke="#FFFFFF"
           strokeWidth="1.5"
-          strokeOpacity="0.5"
         />
 
         <rect
@@ -154,21 +156,18 @@ export const OrbitIcon: React.FC<OrbitIconProps> = ({
           y="270"
           width="85"
           height="85"
-          fill={`url(#sq2Grad)`}
-          stroke="#8E8AFF"
+          fill="#FFFFFF"
+          stroke="#FFFFFF"
           strokeWidth="1.5"
-          strokeOpacity="0.6"
         />
-      </g>
 
-      <g filter={`url(#${topPixelGlow})`}>
         <rect
           x="775"
           y="185"
           width="85"
           height="85"
-          fill={`url(#sq3Grad)`}
-          stroke="#D0D0FF"
+          fill="#FFFFFF"
+          stroke="#FFFFFF"
           strokeWidth="2"
         />
       </g>

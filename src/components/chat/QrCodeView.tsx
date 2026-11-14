@@ -112,8 +112,8 @@ function getOrbitaLogoSvg(colors: string[], idSuffix: string = ''): string {
   <g>
     <path d="M 678.5 239.0 A 340 340 0 1 0 816.0 376.5 L 780.7 411.8 A 290 290 0 1 1 643.2 274.3 Z" fill="url(#${gId})" />
     <path d="M 603.7 313.8 A 240 240 0 1 0 741.2 451.3 L 705.2 487.3 A 190 190 0 1 1 567.7 349.8 Z" fill="url(#${gId})" />
-    <rect x="605" y="355" width="85" height="85" fill="${c1}" />
-    <rect x="690" y="270" width="85" height="85" fill="${c2}" />
+    <rect x="605" y="355" width="85" height="85" fill="#FFFFFF" />
+    <rect x="690" y="270" width="85" height="85" fill="#FFFFFF" />
     <rect x="775" y="185" width="85" height="85" fill="#FFFFFF" />
   </g>
 </svg>`;

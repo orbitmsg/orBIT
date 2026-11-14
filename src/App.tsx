@@ -129,14 +129,16 @@ function App() {
     }
     if (typeof window !== 'undefined' && window.orbita?.getGhostMode) {
       window.orbita.getGhostMode().then((enabled: boolean) => {
-        if (typeof enabled === 'boolean') {
+        if (typeof enabled === 'boolean' && useChatStore.getState().ghostModeEnabled !== enabled) {
           useChatStore.getState().setGhostModeEnabled(enabled);
         }
       }).catch(() => {});
     }
     if (typeof window !== 'undefined' && window.orbita?.onGhostModeChanged) {
       return window.orbita.onGhostModeChanged((enabled: boolean) => {
-        useChatStore.getState().setGhostModeEnabled(enabled);
+        if (useChatStore.getState().ghostModeEnabled !== enabled) {
+          useChatStore.getState().setGhostModeEnabled(enabled);
+        }
       });
     }
   }, []);

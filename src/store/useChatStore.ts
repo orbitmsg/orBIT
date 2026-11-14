@@ -1717,6 +1717,7 @@ export const useChatStore = create<ChatState>()(
 
       setVoiceCallsEnabled: (enabled) => set({ voiceCallsEnabled: enabled }),
       setGhostModeEnabled: (enabled) => {
+        if (get().ghostModeEnabled === enabled) return;
         set({ ghostModeEnabled: enabled });
         if (typeof window !== 'undefined' && window.orbita?.setGhostMode) {
           window.orbita.setGhostMode(enabled).catch(() => {});

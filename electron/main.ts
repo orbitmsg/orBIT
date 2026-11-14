@@ -4057,7 +4057,9 @@ let screenProtectionSetting = false;
 let ghostModeSetting = false;
 
 ipcMain.handle('orbita:set-screen-protection', (_event, enabled: boolean) => {
-  screenProtectionSetting = !!enabled;
+  const nextVal = !!enabled;
+  if (screenProtectionSetting === nextVal) return screenProtectionSetting;
+  screenProtectionSetting = nextVal;
   saveWindowSettings();
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.setContentProtection(screenProtectionSetting);
@@ -4078,7 +4080,9 @@ ipcMain.handle('orbita:get-screen-protection', () => {
 });
 
 ipcMain.handle('orbita:set-ghost-mode', (_event, enabled: boolean) => {
-  ghostModeSetting = !!enabled;
+  const nextVal = !!enabled;
+  if (ghostModeSetting === nextVal) return ghostModeSetting;
+  ghostModeSetting = nextVal;
   saveWindowSettings();
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('orbita:ghost-mode-changed', ghostModeSetting);

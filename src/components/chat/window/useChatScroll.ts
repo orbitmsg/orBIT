@@ -329,7 +329,7 @@ export const useChatScroll = ({
   ]);
 
   const notifyPeerReadBatch = useCallback((lastMsgId: string, lastTime: number, readIds?: string[]) => {
-    if (!readReceiptsEnabled || !activeChatId || activeChatId === 'notes') return;
+    if (!readReceiptsEnabled || useChatStore.getState().ghostModeEnabled || !activeChatId || activeChatId === 'notes') return;
     const allIds = readIds && readIds.length > 0 ? readIds : (lastMsgId ? [lastMsgId] : []);
     const isGroup = activeChat?.type === 'group';
 
@@ -382,7 +382,7 @@ export const useChatScroll = ({
   }, [readReceiptsEnabled, activeChatId, activeChat?.type, myNickname, myUserId, myCode]);
 
   useEffect(() => {
-    if (!readReceiptsEnabled || !activeChatId || activeChatId === 'notes') return;
+    if (!readReceiptsEnabled || useChatStore.getState().ghostModeEnabled || !activeChatId || activeChatId === 'notes') return;
 
     const markUnreadInViewAsRead = () => {
       if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;

@@ -92,6 +92,10 @@ declare global {
       getAutoLaunchState: () => Promise<boolean>;
       setScreenProtection: (enabled: boolean) => Promise<boolean>;
       getScreenProtection: () => Promise<boolean>;
+      onScreenProtectionChanged?: (callback: (enabled: boolean) => void) => () => void;
+      setGhostMode?: (enabled: boolean) => Promise<boolean>;
+      getGhostMode?: () => Promise<boolean>;
+      onGhostModeChanged?: (callback: (enabled: boolean) => void) => () => void;
       setHideMenuBar: (hide: boolean) => Promise<boolean>;
       getHideMenuBar: () => Promise<boolean>;
       openOrbitaFromTray: () => void;

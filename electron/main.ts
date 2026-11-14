@@ -77,8 +77,8 @@ const {
 } = process.env;
 
 if (process.platform === 'win32') {
-  app.setName('Orbita');
-  app.setAppUserModelId('com.saizzi.orbita');
+  app.setName('orBIT');
+  app.setAppUserModelId('orBIT');
 }
 
 app.commandLine.appendSwitch('disk-cache-size', '33554432');
@@ -3839,7 +3839,13 @@ function parseColorToBgr(colorStr: string, defaultBgr: number): number {
 function showTrayContextMenu() {
   if (!trayInstance) return;
   const bounds = trayInstance.getBounds();
-  const items = ['Открыть Orbita', 'Закрыть Orbita'];
+  const items = [
+    'Открыть orBIT',
+    'Перезапустить orBIT',
+    screenProtectionSetting ? 'Выключить режим стримера' : 'Включить режим стримера',
+    ghostModeSetting ? 'Выключить призрачный режим' : 'Включить призрачный режим',
+    'Закрыть orBIT',
+  ];
 
   const bgStr = currentThemeVars['--md-surface'] || currentThemeVars['--settings-surface'] || currentThemeVars['--surface-container'] || '#2a253b';
   const hoverStr = currentThemeVars['--md-surface-var'] || currentThemeVars['--settings-surface-var'] || currentThemeVars['--surface-container-strong'] || '#342e47';
@@ -3853,6 +3859,40 @@ function showTrayContextMenu() {
   if (fontName === 'system' || !fontName) {
     fontName = 'Segoe UI';
   }
+
+  const handleSelection = (selectedIndex: number) => {
+    if (selectedIndex === 0) {
+      showMainWindow();
+    } else if (selectedIndex === 1) {
+      flushKvWritesSync();
+      app.relaunch();
+      isQuitting = true;
+      app.exit(0);
+    } else if (selectedIndex === 2) {
+      screenProtectionSetting = !screenProtectionSetting;
+      saveWindowSettings();
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.setContentProtection(screenProtectionSetting);
+        mainWindow.webContents.send('orbita:screen-protection-changed', screenProtectionSetting);
+      }
+      if (callWindow && !callWindow.isDestroyed()) {
+        callWindow.setContentProtection(screenProtectionSetting);
+      }
+      if (mediaWindow && !mediaWindow.isDestroyed()) {
+        mediaWindow.setContentProtection(screenProtectionSetting);
+      }
+    } else if (selectedIndex === 3) {
+      ghostModeSetting = !ghostModeSetting;
+      saveWindowSettings();
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('orbita:ghost-mode-changed', ghostModeSetting);
+      }
+    } else if (selectedIndex === 4) {
+      isQuitting = true;
+      flushKvWritesSync();
+      app.quit();
+    }
+  };
 
   if (nativeModule && typeof nativeModule.showNativeTrayMenu === 'function') {
     try {
@@ -3868,12 +3908,7 @@ function showTrayContextMenu() {
         0,
         fontName
       );
-      if (selectedIndex === 0) {
-        showMainWindow();
-      } else if (selectedIndex === 1) {
-        isQuitting = true;
-        app.quit();
-      }
+      handleSelection(selectedIndex);
       return;
     } catch (err) {
       console.warn('[TrayMenu] Native tray menu error, falling back:', err);
@@ -3881,8 +3916,11 @@ function showTrayContextMenu() {
   }
 
   const menu = Menu.buildFromTemplate([
-    { label: 'Открыть Orbita', click: () => showMainWindow() },
-    { label: 'Закрыть Orbita', click: () => { isQuitting = true; app.quit(); } },
+    { label: items[0], click: () => handleSelection(0) },
+    { label: items[1], click: () => handleSelection(1) },
+    { label: items[2], click: () => handleSelection(2) },
+    { label: items[3], click: () => handleSelection(3) },
+    { label: items[4], click: () => handleSelection(4) },
   ]);
   trayInstance.popUpContextMenu(menu);
 }
@@ -3894,11 +3932,9 @@ function setupTray() {
   const icon = loadTrayIcon();
   if (icon) {
     trayInstance = new Tray(icon);
-    trayInstance.setToolTip('Orbita Desktop');
+    trayInstance.setToolTip('orBIT');
     trayInstance.setIgnoreDoubleClickEvents(true);
-    trayInstance.on('click', () => {
-      showMainWindow();
-    });
+    trayInstance.on('click', () => showTrayContextMenu());
     trayInstance.on('right-click', () => showTrayContextMenu());
     if (!displayMetricsListenerAttached && screen) {
       displayMetricsListenerAttached = true;
@@ -3996,6 +4032,7 @@ function loadWindowSettings() {
       const data = JSON.parse(fs.readFileSync(WINDOW_SETTINGS_FILE, 'utf8'));
       if (data && typeof data === 'object') {
         if (typeof data.screenProtection === 'boolean') screenProtectionSetting = data.screenProtection;
+        if (typeof data.ghostMode === 'boolean') ghostModeSetting = data.ghostMode;
         if (typeof data.hideMenuBar === 'boolean') hideMenuBarSetting = data.hideMenuBar;
         if (typeof data.showInTray === 'boolean') showInTraySetting = data.showInTray;
       }
@@ -4007,6 +4044,7 @@ function saveWindowSettings() {
   try {
     const data = {
       screenProtection: screenProtectionSetting,
+      ghostMode: ghostModeSetting,
       hideMenuBar: hideMenuBarSetting,
       showInTray: showInTraySetting,
     };
@@ -4015,12 +4053,14 @@ function saveWindowSettings() {
 }
 
 let screenProtectionSetting = false;
+let ghostModeSetting = false;
 
 ipcMain.handle('orbita:set-screen-protection', (_event, enabled: boolean) => {
   screenProtectionSetting = !!enabled;
   saveWindowSettings();
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.setContentProtection(screenProtectionSetting);
+    mainWindow.webContents.send('orbita:screen-protection-changed', screenProtectionSetting);
   }
   if (callWindow && !callWindow.isDestroyed()) {
     callWindow.setContentProtection(screenProtectionSetting);
@@ -4034,6 +4074,20 @@ ipcMain.handle('orbita:set-screen-protection', (_event, enabled: boolean) => {
 ipcMain.handle('orbita:get-screen-protection', () => {
   loadWindowSettings();
   return screenProtectionSetting;
+});
+
+ipcMain.handle('orbita:set-ghost-mode', (_event, enabled: boolean) => {
+  ghostModeSetting = !!enabled;
+  saveWindowSettings();
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('orbita:ghost-mode-changed', ghostModeSetting);
+  }
+  return ghostModeSetting;
+});
+
+ipcMain.handle('orbita:get-ghost-mode', () => {
+  loadWindowSettings();
+  return ghostModeSetting;
 });
 
 let hideMenuBarSetting = false;
@@ -4855,10 +4909,11 @@ ipcMain.handle('orbita:get-os-info', () => {
 // -----------------------------------------------------------------------------
 function createSplashWindow() {
   const icon = loadNativeAppIcon();
+  const icoPath = resolveIconFile('icon.ico');
   splashWindow = new BrowserWindow({
     width: 300,
     height: 350,
-    title: 'Orbita',
+    title: 'orBIT',
     frame: false,
     transparent: true,
     resizable: false,
@@ -4866,7 +4921,7 @@ function createSplashWindow() {
     minimizable: false,
     center: true,
     alwaysOnTop: true,
-    skipTaskbar: true,
+    skipTaskbar: false,
     backgroundColor: '#00000000',
     hasShadow: true,
     show: false,
@@ -4878,6 +4933,20 @@ function createSplashWindow() {
     },
     icon: icon && !icon.isEmpty() ? icon : undefined,
   });
+
+  if (icon && !icon.isEmpty()) {
+    splashWindow.setIcon(icon);
+  }
+
+  if (process.platform === 'win32' && icoPath) {
+    try {
+      splashWindow.setAppDetails({
+        appId: 'orBIT',
+        appIconPath: icoPath,
+        appIconIndex: 0,
+      });
+    } catch {}
+  }
 
   if (isPackaged) {
     splashWindow.loadFile(path.join(__dirname, '../dist/splash.html'));
@@ -4937,7 +5006,7 @@ function createMainWindow() {
       backgroundThrottling: true,
       devTools: !app.isPackaged,
     },
-    title: 'Orbita Desktop',
+    title: 'orBIT',
     backgroundColor: '#000000',
     autoHideMenuBar: true,
     show: false,
@@ -4952,7 +5021,7 @@ function createMainWindow() {
     if (icoPath) {
       try {
         mainWindow.setAppDetails({
-          appId: 'com.saizzi.orbita',
+          appId: 'orBIT',
           appIconPath: icoPath,
           appIconIndex: 0,
         });
@@ -5466,30 +5535,52 @@ function registerWindowsAppIdentity(): void {
       ? path.join(process.resourcesPath, 'icons', 'icon.ico')
       : path.join(__dirname, '..', 'public', 'icons', 'icon.ico');
     const programsPath = app.getPath('programs');
-    const shortcutPath = path.join(programsPath, 'Orbita.lnk');
+    const targetIco = fs.existsSync(icoPath) ? icoPath : process.execPath;
 
     const shortcutDetails = {
       target: process.execPath,
       args: app.isPackaged ? '' : `"${path.resolve(__dirname, '..')}"`,
-      description: 'Orbita',
-      appUserModelId: 'com.saizzi.orbita',
-      icon: fs.existsSync(icoPath) ? icoPath : process.execPath,
+      description: 'orBIT',
+      appUserModelId: 'orBIT',
+      icon: targetIco,
       iconIndex: 0,
       cwd: app.isPackaged ? path.dirname(process.execPath) : path.resolve(__dirname, '..'),
     };
 
-    if (fs.existsSync(shortcutPath)) {
-      shell.writeShortcutLink(shortcutPath, 'update', shortcutDetails);
+    const orbitLnk = path.join(programsPath, 'orBIT.lnk');
+    if (fs.existsSync(orbitLnk)) {
+      shell.writeShortcutLink(orbitLnk, 'update', shortcutDetails);
     } else {
-      shell.writeShortcutLink(shortcutPath, 'create', shortcutDetails);
+      shell.writeShortcutLink(orbitLnk, 'create', shortcutDetails);
+    }
+
+    const oldLinks = [
+      path.join(programsPath, 'Orbita.lnk'),
+      path.join(programsPath, 'Orbita Desktop.lnk'),
+    ];
+    for (const oldLink of oldLinks) {
+      if (fs.existsSync(oldLink)) {
+        try {
+          shell.writeShortcutLink(oldLink, 'update', {
+            ...shortcutDetails,
+            description: 'orBIT',
+            appUserModelId: 'orBIT',
+            icon: targetIco,
+            iconIndex: 0,
+          });
+        } catch {}
+      }
     }
 
     const regCommands = [
-      `reg add "HKCU\\Software\\Classes\\AppUserModelId\\com.saizzi.orbita" /v DisplayName /d "Orbita" /f`,
+      `reg add "HKCU\\Software\\Classes\\AppUserModelId\\orBIT" /v DisplayName /d "orBIT" /f`,
+      `reg add "HKCU\\Software\\Classes\\AppUserModelId\\orBIT" /v IconUri /d "${icoPath}" /f`,
+      `reg add "HKCU\\Software\\Classes\\AppUserModelId\\orBIT" /v IconBackgroundColor /d "0" /f`,
+      `reg add "HKCU\\Software\\Classes\\AppUserModelId\\com.saizzi.orbita" /v DisplayName /d "orBIT" /f`,
       `reg add "HKCU\\Software\\Classes\\AppUserModelId\\com.saizzi.orbita" /v IconUri /d "${icoPath}" /f`,
-      `reg add "HKCU\\Software\\Classes\\AppUserModelId\\com.saizzi.orbita" /v IconBackgroundColor /d "0" /f`,
-      `reg add "HKCU\\Software\\Classes\\Applications\\electron.exe" /v FriendlyAppName /d "Orbita" /f`,
-      `reg add "HKCU\\Software\\Classes\\Applications\\electron.exe" /v ApplicationCompany /d "Orbita" /f`,
+      `reg add "HKCU\\Software\\Classes\\Applications\\electron.exe" /v FriendlyAppName /d "orBIT" /f`,
+      `reg add "HKCU\\Software\\Classes\\Applications\\electron.exe" /v ApplicationCompany /d "orBIT" /f`,
+      `reg add "HKCU\\Software\\Classes\\Applications\\electron.exe\\DefaultIcon" /ve /d "${icoPath},0" /f`,
     ];
 
     for (const cmd of regCommands) {

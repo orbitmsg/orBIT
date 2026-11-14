@@ -234,6 +234,26 @@ contextBridge.exposeInMainWorld('orbita', {
     return ipcRenderer.invoke('orbita:get-screen-protection');
   },
 
+  onScreenProtectionChanged: (callback: (enabled: boolean) => void) => {
+    const handler = (_event: unknown, enabled: boolean) => callback(enabled);
+    ipcRenderer.on('orbita:screen-protection-changed', handler);
+    return () => ipcRenderer.removeListener('orbita:screen-protection-changed', handler);
+  },
+
+  setGhostMode: (enabled: boolean) => {
+    return ipcRenderer.invoke('orbita:set-ghost-mode', enabled);
+  },
+
+  getGhostMode: () => {
+    return ipcRenderer.invoke('orbita:get-ghost-mode');
+  },
+
+  onGhostModeChanged: (callback: (enabled: boolean) => void) => {
+    const handler = (_event: unknown, enabled: boolean) => callback(enabled);
+    ipcRenderer.on('orbita:ghost-mode-changed', handler);
+    return () => ipcRenderer.removeListener('orbita:ghost-mode-changed', handler);
+  },
+
   setHideMenuBar: (hide: boolean) => {
     return ipcRenderer.invoke('orbita:set-hide-menu-bar', hide);
   },

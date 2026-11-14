@@ -380,9 +380,6 @@ export const WelcomeScreen: React.FC = () => {
                 }}
               >
                 <OrbitWordmark fontSize="36px" />
-                <span style={{ fontSize: '26px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.7)' }}>
-                  Desktop
-                </span>
               </div>
 
               <div
@@ -1094,7 +1091,7 @@ export const WelcomeScreen: React.FC = () => {
             fontWeight: 500,
           }}
         >
-          {`orBIT Desktop v${packageJson.version} x64`}
+          {`orBIT v${packageJson.version} x64`}
         </span>
       </div>
     </div>

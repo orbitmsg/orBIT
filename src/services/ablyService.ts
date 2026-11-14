@@ -345,6 +345,7 @@ class AblyService {
     this.heartbeatTimer = setInterval(() => {
       if (typeof navigator !== 'undefined' && !navigator.onLine) return;
       if (!this.client || !this.isConnected || !this.userId) return;
+      if (useChatStore.getState().ghostModeEnabled) return;
       const channel = this.client.channels.get(`presence:user:${userId}`);
       channel.presence.update({
         status: 'online',
@@ -361,6 +362,9 @@ class AblyService {
   }
 
   setOnline(userId: string): void {
+    if (useChatStore.getState().ghostModeEnabled) {
+      return;
+    }
     if (!this.client || !this.isConnected) {
       return;
     }
@@ -583,7 +587,7 @@ class AblyService {
     const cleanChatId = chatId.trim();
 
     const state = useChatStore.getState();
-    if (!state.typingIndicatorsEnabled) return;
+    if (!state.typingIndicatorsEnabled || state.ghostModeEnabled) return;
 
     const myUid = useAuthStore.getState().userId;
     const myC = state.myCode;
@@ -674,7 +678,7 @@ class AblyService {
     }
 
     const state = useChatStore.getState();
-    if (!state.readReceiptsEnabled) {
+    if (!state.readReceiptsEnabled || state.ghostModeEnabled) {
       return;
     }
 
@@ -694,7 +698,7 @@ class AblyService {
     }
 
     const state = useChatStore.getState();
-    if (!state.readReceiptsEnabled) {
+    if (!state.readReceiptsEnabled || state.ghostModeEnabled) {
       return;
     }
 

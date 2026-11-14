@@ -262,7 +262,7 @@
       "help": "Help"
     },
     "welcome": {
-      "title": "orBIT Desktop",
+      "title": "orBIT",
       "subtitle": "Your freedom in every word",
       "back_to_primary": "Back to main account",
       "cancel_add_account": "Cancel",
@@ -850,7 +850,7 @@
       "preview_sender_name": "Saizzi",
       "preview_message_text": "Do you like penguins?",
       "new_message": "New message",
-      "hidden_name": "orBIT Desktop",
+      "hidden_name": "orBIT",
       "system_integration": "System Integration",
       "use_windows_notifications": "Use Windows notifications",
       "respect_focus_assist": "Respect Focus Assist",
@@ -890,7 +890,7 @@
       "devices": "Devices",
       "this_device": "This device",
       "unknown_os": "Unknown OS",
-      "orbita_desktop": "Orbita Desktop",
+      "orbita_desktop": "orBIT",
       "logout": "Log Out",
       "off": "Off",
       "on": "On",

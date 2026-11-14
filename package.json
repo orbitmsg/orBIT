@@ -17,7 +17,7 @@
   },
   "build": {
     "appId": "com.saizzi.orbit",
-    "productName": "orBIT Desktop",
+    "productName": "orBIT",
     "directories": {
       "output": "release"
     },
@@ -71,7 +71,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Orbita Desktop",
+      "shortcutName": "orBIT",
       "artifactName": "setup_${version}.${ext}"
     }
   },

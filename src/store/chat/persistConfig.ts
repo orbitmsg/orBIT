@@ -61,6 +61,7 @@ export const chatStorePersistConfig: PersistOptions<ChatState, any> = {
     appIcon: state.appIcon,
     notificationIcon: state.notificationIcon,
     voiceCallsEnabled: state.voiceCallsEnabled,
+    ghostModeEnabled: state.ghostModeEnabled,
     readReceiptsEnabled: state.readReceiptsEnabled,
     typingIndicatorsEnabled: state.typingIndicatorsEnabled,
     linkPreviewsEnabled: state.linkPreviewsEnabled,

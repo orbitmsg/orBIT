@@ -262,7 +262,7 @@
       "help": "Помощь"
     },
     "welcome": {
-      "title": "orBIT Desktop",
+      "title": "orBIT",
       "subtitle": "Ваша свобода в каждом слове",
       "back_to_primary": "Вернуться к основному аккаунту",
       "cancel_add_account": "Отменить добавление",
@@ -850,7 +850,7 @@
       "preview_sender_name": "Saizzi",
       "preview_message_text": "А ты любишь пингвинов?",
       "new_message": "Новое сообщение",
-      "hidden_name": "orBIT Desktop",
+      "hidden_name": "orBIT",
       "system_integration": "Взаимодействие с системой",
       "use_windows_notifications": "Использовать уведомления Windows",
       "respect_focus_assist": "Соблюдать режим фокусирования",
@@ -890,7 +890,7 @@
       "devices": "Устройства",
       "this_device": "Это устройство",
       "unknown_os": "Неизвестная ОС",
-      "orbita_desktop": "Orbita Desktop",
+      "orbita_desktop": "orBIT",
       "logout": "Выйти из аккаунта",
       "off": "Выкл.",
       "on": "Вкл.",

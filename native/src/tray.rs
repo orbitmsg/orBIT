@@ -173,7 +173,7 @@ static COLOR_BG: AtomicU32 = AtomicU32::new(0x003b252a);
 static COLOR_TEXT: AtomicU32 = AtomicU32::new(0x00ffffff);
 static COLOR_HOVER: AtomicU32 = AtomicU32::new(0x00472e34);
 
-const MENU_WIDTH: i32 = 190;
+const MENU_WIDTH: i32 = 230;
 const ITEM_HEIGHT: i32 = 34;
 const PADDING_V: i32 = 5;
 const PADDING_H: i32 = 14;

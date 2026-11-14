@@ -6,7 +6,7 @@ import { supabaseService } from './supabaseService';
 export async function sendEncryptedReadReceipt(chatId: string, messageIds: string[], lastTime?: number): Promise<void> {
   try {
     const state = useChatStore.getState();
-    if (!state.readReceiptsEnabled || !chatId || chatId === 'notes') return;
+    if (!state.readReceiptsEnabled || state.ghostModeEnabled || !chatId || chatId === 'notes') return;
 
     const chat = state.chats.find((c) => c.id === chatId);
     if (!chat || !chat.ratchetState || chat.type !== 'private') return;

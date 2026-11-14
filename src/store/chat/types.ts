@@ -435,6 +435,7 @@ export interface ChatState {
   notificationIcon: IconOption;
 
   voiceCallsEnabled: boolean;
+  ghostModeEnabled: boolean;
   readReceiptsEnabled: boolean;
   typingIndicatorsEnabled: boolean;
   typingByChatId: Record<string, ChatTypingUser[]>;
@@ -626,6 +627,7 @@ export interface ChatState {
   toggleChatBlocked: (chatId: string) => void;
 
   setVoiceCallsEnabled: (enabled: boolean) => void;
+  setGhostModeEnabled: (enabled: boolean) => void;
   setReadReceiptsEnabled: (enabled: boolean) => void;
   setTypingIndicatorsEnabled: (enabled: boolean) => void;
   setChatTyping: (chatId: string, users: ChatTypingUser[]) => void;

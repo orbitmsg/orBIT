@@ -224,6 +224,7 @@ export const useChatStore = create<ChatState>()(
       notificationIcon: 'orbita1',
 
       voiceCallsEnabled: true,
+      ghostModeEnabled: false,
       readReceiptsEnabled: true,
       typingIndicatorsEnabled: true,
       typingByChatId: {},
@@ -1715,6 +1716,23 @@ export const useChatStore = create<ChatState>()(
       },
 
       setVoiceCallsEnabled: (enabled) => set({ voiceCallsEnabled: enabled }),
+      setGhostModeEnabled: (enabled) => {
+        set({ ghostModeEnabled: enabled });
+        if (typeof window !== 'undefined' && window.orbita?.setGhostMode) {
+          window.orbita.setGhostMode(enabled).catch(() => {});
+        }
+        if (typeof window !== 'undefined' && (window as any).ablyService) {
+          const authUserId = (window as any).__ORBITA_AUTH_STORE__?.getState?.()?.userId;
+          const myId = authUserId || get().myCode;
+          if (myId) {
+            if (enabled) {
+              (window as any).ablyService.setOffline(myId);
+            } else {
+              (window as any).ablyService.setOnline(myId);
+            }
+          }
+        }
+      },
       setReadReceiptsEnabled: (enabled) => set({ readReceiptsEnabled: enabled }),
       setTypingIndicatorsEnabled: (enabled) => set({ typingIndicatorsEnabled: enabled }),
       setChatTyping: (chatId, users) =>

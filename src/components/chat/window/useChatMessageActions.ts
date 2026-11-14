@@ -583,8 +583,8 @@ export const useChatMessageActions = ({
     if (!targetMsg || !targetMsg.id) return;
     const msgId = targetMsg.id;
 
-    const userAliases = [myUserId, myCode, myNickname, 'YOU'].filter(Boolean) as string[];
-    const reactionUserId = myUserId || myCode || myNickname || 'YOU';
+    const userAliases = [myCode, myUserId, myNickname, 'YOU'].filter(Boolean) as string[];
+    const reactionUserId = isLobby ? (myCode || myNickname || myUserId || 'YOU') : (myUserId || myCode || myNickname || 'YOU');
     const result = setReaction(effectiveChatKey, msgId, emoji, reactionUserId, 'toggle', userAliases);
     if (effectiveChatKey !== activeChatId) {
       setReaction(activeChatId, msgId, emoji, reactionUserId, 'toggle', userAliases);
@@ -614,7 +614,8 @@ export const useChatMessageActions = ({
       const finalAction: 'add' | 'remove' = isPresent ? 'add' : 'remove';
 
       if (isLobby) {
-        lobbyService.toggleLobbyReaction(activeChatId, msgId, emoji, reactionUserId, finalAction);
+        const cleanLobbyId = activeChatId.split(':')[0];
+        lobbyService.toggleLobbyReaction(cleanLobbyId, msgId, emoji, reactionUserId, finalAction, userAliases);
         return;
       }
 

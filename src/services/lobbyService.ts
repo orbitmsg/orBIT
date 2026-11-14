@@ -754,21 +754,25 @@ export class LobbyService {
     messageId: string,
     emoji: string,
     userId: string,
-    action?: 'add' | 'remove' | 'toggle'
+    action?: 'add' | 'remove' | 'toggle',
+    userAliases: string[] = []
   ): Promise<Record<string, string[]> | null> {
     try {
+      const cleanLobbyId = (lobbyId || '').split(':')[0];
       const { data, error } = await this.client
         .from('lobby_messages')
         .select('reactions')
         .eq('id', messageId)
-        .eq('lobby_id', lobbyId)
+        .eq('lobby_id', cleanLobbyId)
         .maybeSingle();
 
       if (error || !data) return null;
 
       const currentReactions: Record<string, string[]> = { ...(data.reactions || {}) };
       const userList = Array.isArray(currentReactions[emoji]) ? [...currentReactions[emoji]] : [];
-      const userIndex = userList.indexOf(userId);
+      
+      const aliases = new Set([userId, ...userAliases].filter(Boolean).map((a) => a.toLowerCase()));
+      const userIndex = userList.findIndex((u) => aliases.has(u.toLowerCase()));
 
       const isAdding = action === 'add' || (action === 'toggle' || !action ? userIndex === -1 : false);
 
@@ -792,7 +796,7 @@ export class LobbyService {
         .from('lobby_messages')
         .update({ reactions: currentReactions })
         .eq('id', messageId)
-        .eq('lobby_id', lobbyId);
+        .eq('lobby_id', cleanLobbyId);
 
       if (updateError) {
         console.error('Failed to update lobby reactions:', updateError);

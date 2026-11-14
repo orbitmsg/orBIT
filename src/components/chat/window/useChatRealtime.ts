@@ -325,20 +325,29 @@ export const useChatRealtime = ({
               }));
             if (newOnes.length > 0) {
               useChatStore.setState((state) => {
-                const targetList = state.messagesByChatId[targetKey] || [];
-                const targetIdSet = new Set(targetList.map((m) => m.id));
-                const filteredTarget = newOnes.filter((m) => !targetIdSet.has(m.id));
-
-                const baseList = state.messagesByChatId[targetLobbyId] || [];
-                const baseIdSet = new Set(baseList.map((m) => m.id));
-                const filteredBase = newOnes.filter((m) => !baseIdSet.has(m.id));
+                const mergeList = (existingList: Message[]) => {
+                  const map = new Map(existingList.map((m) => [m.id, m]));
+                  for (const fresh of newOnes) {
+                    const prev = map.get(fresh.id);
+                    if (prev) {
+                      map.set(fresh.id, {
+                        ...prev,
+                        ...fresh,
+                        reactions: fresh.reactions || prev.reactions,
+                      });
+                    } else {
+                      map.set(fresh.id, fresh);
+                    }
+                  }
+                  return Array.from(map.values()).sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0));
+                };
 
                 return {
                   messagesByChatId: {
                     ...state.messagesByChatId,
-                    [targetKey]: [...targetList, ...filteredTarget].sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0)),
+                    [targetKey]: mergeList(state.messagesByChatId[targetKey] || []),
                     ...(targetKey !== targetLobbyId ? {
-                      [targetLobbyId]: [...baseList, ...filteredBase].sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0)),
+                      [targetLobbyId]: mergeList(state.messagesByChatId[targetLobbyId] || []),
                     } : {}),
                   },
                 };

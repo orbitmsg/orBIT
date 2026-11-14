@@ -104,8 +104,9 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
   const myAvatarUrl = useAuthStore((s) => s.avatarUrl);
   const myCode = useChatStore((s) => s.myCode);
   const activeChat = useChatStore((s) => {
-    const cid = activeChatId || s.activeChatId;
-    return s.chats.find((c) => c.id === cid);
+    const rawCid = activeChatId || s.activeChatId;
+    const baseCid = rawCid?.split(':')[0];
+    return s.chats.find((c) => c.id === rawCid || (baseCid && c.id === baseCid));
   });
   const chats = useChatStore((s) => s.chats);
   const usersById = useChatStore((s) => s.usersById);
@@ -159,6 +160,7 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
     const lowerUserId = myUserId ? myUserId.toLowerCase() : null;
     const lowerCode = myCode ? myCode.toLowerCase() : null;
     const lowerNick = myNickname ? myNickname.toLowerCase() : null;
+    const allMsgs = useChatStore.getState().messagesByChatId;
 
     return topUsers.map((u) => {
       const lowerU = u.toLowerCase();
@@ -173,10 +175,15 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
         lowerU === 'you';
 
       if (isMe) {
+        const selfMember = activeChat?.members?.find((m: any) =>
+          (myCode && (m.userCode === myCode || m.userId === myCode)) ||
+          (myUserId && m.userId === myUserId) ||
+          (myNickname && m.nickname === myNickname)
+        );
         return {
           id: u,
           name: myNickname,
-          avatarUrl: myAvatarUrl || null,
+          avatarUrl: myAvatarUrl || selfMember?.avatarUrl || (selfMember as any)?.avatar_url || null,
         };
       }
 
@@ -188,7 +195,7 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
         };
       }
 
-      if (activeChat?.type === 'group' && activeChat.members) {
+      if (activeChat?.members) {
         const member = activeChat.members.find(
           (m: any) =>
             m.userId === u ||
@@ -196,13 +203,56 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
             m.nickname === u ||
             m.user_code === u ||
             m.user_id === u ||
-            (m.nickname && m.nickname.toLowerCase() === lowerU)
+            (m.nickname && m.nickname.toLowerCase() === lowerU) ||
+            (m.userCode && m.userCode.toLowerCase() === lowerU) ||
+            (m.user_code && String(m.user_code).toLowerCase() === lowerU)
         );
         if (member) {
           return {
             id: u,
             name: member.nickname || (member as any).name || u,
             avatarUrl: member.avatarUrl || (member as any).avatar_url || null,
+          };
+        }
+      }
+
+      for (const c of chats) {
+        if (c.members) {
+          const mb = c.members.find(
+            (m: any) =>
+              m.userId === u ||
+              m.userCode === u ||
+              m.nickname === u ||
+              m.user_code === u ||
+              m.user_id === u ||
+              (m.nickname && m.nickname.toLowerCase() === lowerU) ||
+              (m.userCode && m.userCode.toLowerCase() === lowerU)
+          );
+          if (mb && (mb.avatarUrl || (mb as any).avatar_url)) {
+            return {
+              id: u,
+              name: mb.nickname || (mb as any).name || u,
+              avatarUrl: mb.avatarUrl || (mb as any).avatar_url || null,
+            };
+          }
+        }
+      }
+
+      for (const mList of Object.values(allMsgs)) {
+        if (!mList) continue;
+        const found = mList.find(
+          (m) =>
+            (m as any).senderCode === u ||
+            m.senderId === u ||
+            m.sender === u ||
+            ((m as any).senderCode && u.toLowerCase() === String((m as any).senderCode).toLowerCase()) ||
+            (m.sender && u.toLowerCase() === m.sender.toLowerCase())
+        );
+        if (found && (found.avatarUrl || found.senderAvatar)) {
+          return {
+            id: u,
+            name: found.sender || u,
+            avatarUrl: found.avatarUrl || found.senderAvatar || null,
           };
         }
       }
@@ -228,13 +278,14 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
         };
       }
 
+      const isLongHashOrCode = u.length >= 24;
       return {
         id: u,
-        name: u,
+        name: isLongHashOrCode ? 'Пользователь' : u,
         avatarUrl: profileAvatarCache.get(u) || null,
       };
     });
-  }, [uniqueUsers, isChannel, myUserId, myCode, myNickname, myAvatarUrl, activeChat, chats, usersById]);
+  }, [uniqueUsers, showNumber, maxAvatars, isChannel, myUserId, myCode, myNickname, myAvatarUrl, activeChat, chats, usersById]);
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();

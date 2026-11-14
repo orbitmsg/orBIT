@@ -160,6 +160,10 @@ export const useChatStore = create<ChatState>()(
       setActiveFolderId: (id: string | null) => set({ activeFolderId: id }),
       activeChatId: null,
       activeProfileChatId: null,
+      activeChannelId: null,
+      activeChannelName: null,
+      setActiveChannel: (id: string | null, name: string | null = null) =>
+        set({ activeChannelId: id, activeChannelName: name }),
       messagesByChatId: {},
       deletingMessageIds: {},
       passcode: null,
@@ -358,10 +362,13 @@ export const useChatStore = create<ChatState>()(
           }
         }
 
+        const isDifferentChat = id !== previousActiveId;
+        const channelReset = isDifferentChat ? { activeChannelId: null, activeChannelName: null } : {};
+
         if (chatsChanged) {
-          set({ activeChatId: id, chats: nextChats });
+          set({ activeChatId: id, chats: nextChats, ...channelReset });
         } else {
-          set({ activeChatId: id });
+          set({ activeChatId: id, ...channelReset });
         }
       },
       setActiveProfileChatId: (id) => set({ activeProfileChatId: id }),

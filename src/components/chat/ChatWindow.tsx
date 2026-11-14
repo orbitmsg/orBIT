@@ -35,7 +35,7 @@ export {
 import { type ContextMenuState } from './MessageContextMenu';
 import { ChatPinnedBar } from './ChatPinnedBar';
 import { ChatHeader } from './ChatHeader';
-import { LobbyChannelsSidebar, type LobbyChannel } from './lobby/LobbyChannelsSidebar';
+import { LobbyVoiceStage } from './lobby/LobbyVoiceStage';
 import { ChatWindowModals } from './window/ChatWindowModals';
 import { GroupActiveCallBanner } from './window/GroupActiveCallBanner';
 import { ChatScrollToBottomButton } from './window/ChatScrollToBottomButton';
@@ -130,14 +130,18 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
 
   const [renderedCount, setRenderedCount] = useState<number>(getOptimalMessageBatchSize);
   const [prevChatId, setPrevChatId] = useState<string | null>(activeChatId);
-  const [activeLobbyChannel, setActiveLobbyChannel] = useState<LobbyChannel | null>(null);
+  const activeChannelName = useChatStore((s) => s.activeChannelName);
+  const isLobbyVoice = Boolean(
+    activeChat?.type === 'group' &&
+    activeChannelName &&
+    (activeChannelName.toLowerCase().includes('голос') || activeChannelName.toLowerCase().includes('voice'))
+  );
   const prevScrollHeightRef = useRef<number | null>(null);
   const prevScrollTopRef = useRef<number | null>(null);
 
   if (prevChatId !== activeChatId) {
     setPrevChatId(activeChatId);
     setRenderedCount(getOptimalMessageBatchSize());
-    setActiveLobbyChannel(null);
   }
 
   useEffect(() => {
@@ -1107,7 +1111,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
 
   return (
     <div
-      className="flex flex-row h-full w-full bg-transparent overflow-hidden min-h-0 relative select-none"
+      className="flex flex-col h-full w-full bg-transparent overflow-hidden min-h-0 relative select-none"
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -1117,39 +1121,33 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
       onClick={handleChatWindowClick}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {activeChat?.type === 'group' && !isMobileView && (
-        <LobbyChannelsSidebar
-          lobbyId={activeChat.id}
-          lobbyName={activeChat.name}
-          isOwnerOrAdmin={isChannelOwner || Boolean(activeChat.isOwner) || activeChat.role === 'owner' || activeChat.role === 'admin'}
-          activeChannelId={activeLobbyChannel?.id || null}
-          onSelectChannel={(ch) => setActiveLobbyChannel(ch)}
-          onOpenVoiceCall={() => handleAudioCallPress()}
-          isVoiceActive={isUserInCall}
-          onDisconnectVoice={() => useCallStore.getState().endCall()}
-          onProfileClick={() => setActiveProfileChatId(activeChatId)}
-        />
-      )}
+      <ChatHeader
+        headerRef={headerRef}
+        activeChatId={activeChatId}
+        activeChat={activeChat}
+        activeChannelName={activeChannelName || undefined}
+        isMobileView={isMobileView}
+        onBack={onBack}
+        isOnline={isOnline}
+        otherUserTyping={otherUserTyping}
+        otherUserAction={otherUserAction}
+        groupTypingUsers={groupTypingUsers}
+        isServerConnected={isServerConnected}
+        voiceCallsEnabled={voiceCallsEnabled}
+        onAudioCallPress={handleAudioCallPress}
+        onAddMember={() => setIsAddMemberModalOpen(true)}
+        onOpenSupportTickets={() => setIsSupportTicketsModalOpen(true)}
+        onProfileClick={() => setActiveProfileChatId(activeChatId)}
+      />
 
-      <div className="flex-1 flex flex-col h-full min-h-0 min-w-0 relative overflow-hidden">
-        <ChatHeader
-          headerRef={headerRef}
-          activeChatId={activeChatId}
-          activeChat={activeChat}
-          activeChannelName={activeLobbyChannel?.name}
-          isMobileView={isMobileView}
-          onBack={onBack}
-          isOnline={isOnline}
-          otherUserTyping={otherUserTyping}
-          otherUserAction={otherUserAction}
-          groupTypingUsers={groupTypingUsers}
-          isServerConnected={isServerConnected}
-          voiceCallsEnabled={voiceCallsEnabled}
-          onAudioCallPress={handleAudioCallPress}
-          onAddMember={() => setIsAddMemberModalOpen(true)}
-          onOpenSupportTickets={() => setIsSupportTicketsModalOpen(true)}
-          onProfileClick={() => setActiveProfileChatId(activeChatId)}
+      {isLobbyVoice ? (
+        <LobbyVoiceStage
+          channelName={activeChannelName || ''}
+          onConnect={() => handleAudioCallPress()}
+          onDisconnect={() => useCallStore.getState().endCall()}
         />
+      ) : (
+        <>
 
       {selection.isSelectionMode && (
         <SelectionPanel
@@ -1395,9 +1393,10 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
           onEmojiMouseLeave={handleEmojiMouseLeave}
         />
       )}
-      </div>
+        </>
+      )}
 
-        <ChatWindowModals
+      <ChatWindowModals
           isDiscordFileLimitModalOpen={isDiscordFileLimitModalOpen}
           setIsDiscordFileLimitModalOpen={setIsDiscordFileLimitModalOpen}
           maxFileMb={MAX_FILE_MB}

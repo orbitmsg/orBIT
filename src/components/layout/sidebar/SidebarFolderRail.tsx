@@ -63,7 +63,7 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
       className="flex flex-col items-center shrink-0 select-none py-3 relative"
       style={{
         width: '64px',
-        backgroundColor: 'var(--title-bar-bg, #121212)',
+        backgroundColor: '#1e1f22',
         borderRadius: '18px',
         border: 'none',
         height: '100%',
@@ -88,9 +88,9 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
             aria-label={t('sidebar.direct_messages', 'Личные сообщения')}
             className="w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 outline-none border-none select-none"
             style={{
-              borderRadius: '16px',
-              backgroundColor: isHomeActive || hoveredInfo?.id === 'home' ? '#5865F2' : 'var(--surface-container, #18181a)',
-              color: isHomeActive || hoveredInfo?.id === 'home' ? '#ffffff' : 'var(--text-dim, #8e8e93)',
+              borderRadius: isHomeActive || hoveredInfo?.id === 'home' ? '16px' : '24px',
+              backgroundColor: isHomeActive || hoveredInfo?.id === 'home' ? '#5865F2' : '#313338',
+              color: '#ffffff',
             }}
           >
             <OrbitIcon size={26} monochrome />
@@ -113,9 +113,9 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
             aria-label={t('sidebar.add_lobby', 'Добавить лобби')}
             className="w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 outline-none border-none select-none"
             style={{
-              borderRadius: '16px',
-              backgroundColor: hoveredInfo?.id === 'add-lobby' ? '#23a55a' : 'var(--surface-container, #18181a)',
-              color: hoveredInfo?.id === 'add-lobby' ? '#ffffff' : 'var(--text-dim, #8e8e93)',
+              borderRadius: hoveredInfo?.id === 'add-lobby' ? '16px' : '24px',
+              backgroundColor: hoveredInfo?.id === 'add-lobby' ? '#23a55a' : '#313338',
+              color: hoveredInfo?.id === 'add-lobby' ? '#ffffff' : '#23a55a',
             }}
           >
             <Plus size={24} strokeWidth={2.4} />
@@ -138,9 +138,9 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
             aria-label={t('sidebar.explore_treasures', 'В поисках сокровищ')}
             className="w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 outline-none border-none select-none"
             style={{
-              borderRadius: '16px',
-              backgroundColor: currentView === 'explore' || hoveredInfo?.id === 'explore' ? '#23a55a' : 'var(--surface-container, #18181a)',
-              color: currentView === 'explore' || hoveredInfo?.id === 'explore' ? '#ffffff' : 'var(--text-dim, #8e8e93)',
+              borderRadius: currentView === 'explore' || hoveredInfo?.id === 'explore' ? '16px' : '24px',
+              backgroundColor: currentView === 'explore' || hoveredInfo?.id === 'explore' ? '#23a55a' : '#313338',
+              color: currentView === 'explore' || hoveredInfo?.id === 'explore' ? '#ffffff' : '#23a55a',
             }}
           >
             <Compass size={24} strokeWidth={2} />
@@ -180,8 +180,8 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
                 className="relative w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-200 outline-none border-none font-semibold text-sm select-none overflow-hidden"
                 style={{
                   borderRadius: isLobbyActive || isHovered ? '16px' : '24px',
-                  backgroundColor: isLobbyActive || isHovered ? '#5865F2' : 'var(--surface-container, #18181a)',
-                  color: isLobbyActive || isHovered ? '#ffffff' : 'var(--text-dim, #8e8e93)',
+                  backgroundColor: isLobbyActive || isHovered ? '#5865F2' : '#313338',
+                  color: isLobbyActive || isHovered ? '#ffffff' : '#dbdee1',
                 }}
               >
                 {lobby.avatarUrl ? (

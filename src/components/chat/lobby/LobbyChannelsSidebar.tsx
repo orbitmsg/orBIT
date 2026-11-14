@@ -10,6 +10,10 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { lobbyService, type LobbyChannel } from '../../../services/lobbyService';
+import { useCallStore } from '../../../store/useCallStore';
+import { useAuthStore } from '../../../store/useAuthStore';
+import { Avatar } from '../../common/Avatar';
+import { UserDockPanel } from '../../layout/sidebar/UserDockPanel';
 import { CreateLobbyChannelModal } from './CreateLobbyChannelModal';
 
 export type { LobbyChannel };
@@ -24,7 +28,15 @@ export interface LobbyChannelsSidebarProps {
   isVoiceActive?: boolean;
   onDisconnectVoice?: () => void;
   onProfileClick?: () => void;
+  onOpenProfile?: () => void;
+  onOpenSettings?: () => void;
 }
+
+const formatDuration = (totalSeconds: number) => {
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
 
 export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
   lobbyId,
@@ -36,8 +48,13 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
   isVoiceActive = false,
   onDisconnectVoice,
   onProfileClick,
+  onOpenProfile,
+  onOpenSettings,
 }) => {
   const { t } = useTranslation();
+  const myNickname = useAuthStore((s) => s.nickname) || 'User';
+  const myAvatar = useAuthStore((s) => s.avatarUrl);
+  const callDuration = useCallStore((s) => s.duration);
   const [channels, setChannels] = useState<LobbyChannel[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'text' | 'voice'>('text');
@@ -93,32 +110,33 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
   return (
     <aside
       aria-label={t('lobby.channels_sidebar', 'Каналы лобби')}
-      className="w-60 shrink-0 h-full flex flex-col select-none border-r border-white/5"
+      className="w-60 shrink-0 h-full flex flex-col select-none"
       style={{
         backgroundColor: '#2b2d31',
+        borderRadius: '18px',
+        overflow: 'hidden',
       }}
     >
       <button
         type="button"
         onClick={onProfileClick}
         aria-label={lobbyName}
-        className="w-full px-4 h-12 flex items-center justify-between border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer border-none outline-none text-left"
+        className="w-full px-4 h-12 flex items-center justify-between border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer border-none outline-none text-left shrink-0"
         style={{
           boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+          backgroundColor: '#2b2d31',
         }}
       >
-        <span className="font-bold text-[15px] text-white truncate">
-          {lobbyName}
-        </span>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="font-bold text-[15px] text-white truncate">
+            {lobbyName}
+          </span>
+          <ShieldCheck size={14} className="text-[#949ba4] shrink-0" />
+        </div>
         <ChevronDown size={18} className="text-[#949ba4] shrink-0 ml-1" />
       </button>
 
-      <div className="px-3 pt-2.5 pb-1 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400">
-        <ShieldCheck size={14} />
-        <span>{t('lobby.e2ee_protected', 'E2EE Защищено')}</span>
-      </div>
-
-      <div className="flex-1 overflow-y-auto no-scrollbar px-2 py-2 flex flex-col gap-4">
+      <div className="flex-1 overflow-y-auto no-scrollbar px-2 py-3 flex flex-col gap-4">
         <div className="flex flex-col gap-0.5">
           <div className="px-2 py-1 flex items-center justify-between group">
             <span className="text-[11.5px] font-bold text-[#949ba4] uppercase tracking-wider">
@@ -142,10 +160,22 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
               <div
                 key={ch.id}
                 onClick={() => onSelectChannel(ch)}
-                className="group relative flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors"
+                className="group relative flex items-center justify-between px-2.5 py-1.5 rounded-md cursor-pointer transition-colors"
                 style={{
-                  backgroundColor: isActive ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                  backgroundColor: isActive ? '#404249' : 'transparent',
                   color: isActive ? '#ffffff' : '#949ba4',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = '#35373c';
+                    e.currentTarget.style.color = '#dbdee1';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = '#949ba4';
+                  }
                 }}
               >
                 <div className="flex items-center gap-2 min-w-0">
@@ -190,44 +220,75 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
 
           {voiceChannels.map((ch) => {
             return (
-              <div
-                key={ch.id}
-                onClick={() => onOpenVoiceCall(ch)}
-                className="group relative flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors hover:bg-white/5"
-                style={{
-                  color: isVoiceActive ? '#23a55a' : '#949ba4',
-                }}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <Volume2 size={18} className="shrink-0" />
-                  <span className="text-[13.5px] font-medium truncate">
-                    {ch.name}
-                  </span>
+              <div key={ch.id} className="flex flex-col">
+                <div
+                  onClick={() => onOpenVoiceCall(ch)}
+                  className="group relative flex items-center justify-between px-2.5 py-1.5 rounded-md cursor-pointer transition-colors"
+                  style={{
+                    backgroundColor: isVoiceActive ? 'rgba(35, 165, 90, 0.12)' : 'transparent',
+                    color: isVoiceActive ? '#23a55a' : '#949ba4',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isVoiceActive) {
+                      e.currentTarget.style.backgroundColor = '#35373c';
+                      e.currentTarget.style.color = '#dbdee1';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isVoiceActive) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = '#949ba4';
+                    }
+                  }}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Volume2 size={18} className="shrink-0" />
+                    <span className="text-[13.5px] font-medium truncate">
+                      {ch.name}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    {isVoiceActive ? (
+                      <span className="text-[11px] font-bold text-emerald-400 font-mono">
+                        {formatDuration(callDuration)}
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-[#80848e] opacity-0 group-hover:opacity-100 transition-opacity">
+                        {t('lobby.voice_join', 'Войти')}
+                      </span>
+                    )}
+
+                    {isOwnerOrAdmin && voiceChannels.length > 1 && (
+                      <button
+                        type="button"
+                        disabled={deletingId === ch.id}
+                        onClick={(e) => handleDeleteChannel(e, ch.id)}
+                        aria-label={t('common.delete', 'Удалить')}
+                        className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity text-[#949ba4] cursor-pointer border-none bg-transparent outline-none p-1"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-1">
-                  {isVoiceActive ? (
-                    <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                      {t('lobby.voice_connected', 'В эфире')}
-                    </span>
-                  ) : (
-                    <span className="text-[11px] text-[#80848e] opacity-0 group-hover:opacity-100 transition-opacity">
-                      {t('lobby.voice_join', 'Войти')}
-                    </span>
-                  )}
-
-                  {isOwnerOrAdmin && voiceChannels.length > 1 && (
-                    <button
-                      type="button"
-                      disabled={deletingId === ch.id}
-                      onClick={(e) => handleDeleteChannel(e, ch.id)}
-                      aria-label={t('common.delete', 'Удалить')}
-                      className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity text-[#949ba4] cursor-pointer border-none bg-transparent outline-none p-1"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  )}
-                </div>
+                {isVoiceActive && (
+                  <div className="pl-6 pr-2 py-1 flex flex-col gap-1">
+                    <div className="flex items-center gap-2 py-1 px-2 rounded-md bg-white/[0.04]">
+                      <div className="relative shrink-0">
+                        <Avatar src={myAvatar} alt={myNickname} className="w-[22px] h-[22px] rounded-full" />
+                        <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-[#2b2d31]" />
+                      </div>
+                      <span className="text-[12.5px] font-medium text-white truncate flex-1">
+                        {myNickname}
+                      </span>
+                      <span className="text-[11px] font-mono text-emerald-400 font-semibold">
+                        {formatDuration(callDuration)}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -236,28 +297,35 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
 
       {isVoiceActive && (
         <div
-          className="p-3 border-t border-white/5 flex items-center justify-between shrink-0"
-          style={{ backgroundColor: 'rgba(35, 165, 90, 0.1)' }}
+          className="px-3 py-2 flex items-center justify-between shrink-0 border-t border-white/5"
+          style={{ backgroundColor: '#111214' }}
         >
-          <div className="flex flex-col">
-            <span className="text-[12px] font-bold text-emerald-400">
-              {t('lobby.voice_connected_title', 'Голос подключен')}
-            </span>
-            <span className="text-[11px] text-[#949ba4]">
-              {lobbyName}
-            </span>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <div className="flex flex-col min-w-0">
+              <span className="text-[12px] font-bold text-emerald-400 leading-tight">
+                {t('lobby.voice_connected', 'Голос подключен')}
+              </span>
+              <span className="text-[11px] text-[#949ba4] font-mono leading-tight">
+                {formatDuration(callDuration)} • {voiceChannels[0]?.name || 'Голосовой'}
+              </span>
+            </div>
           </div>
 
           <button
             type="button"
             onClick={onDisconnectVoice}
             aria-label={t('lobby.disconnect_voice', 'Отключиться')}
-            className="w-8 h-8 rounded-full flex items-center justify-center bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition-colors border-none outline-none cursor-pointer"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-red-400 hover:text-white hover:bg-red-500/20 transition-colors border-none outline-none cursor-pointer"
           >
             <PhoneOff size={16} />
           </button>
         </div>
       )}
+
+      <div className="shrink-0 p-1 border-t border-white/5" style={{ backgroundColor: '#232428' }}>
+        <UserDockPanel onOpenProfile={onOpenProfile} onOpenSettings={onOpenSettings} />
+      </div>
 
       <CreateLobbyChannelModal
         isOpen={isModalOpen}

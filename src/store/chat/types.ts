@@ -384,6 +384,9 @@ export interface ChatState {
   pinnedChatIds: string[];
   activeChatId: string | null;
   activeProfileChatId: string | null;
+  activeChannelId: string | null;
+  activeChannelName: string | null;
+  setActiveChannel: (id: string | null, name?: string | null) => void;
   messagesByChatId: Record<string, Message[]>;
   deletingMessageIds?: Record<string, boolean>;
   passcode: string | null;

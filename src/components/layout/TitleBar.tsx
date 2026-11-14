@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useChatStore, flushStorageSet } from '../../store/useChatStore';
 import { DiscordSettingsIcon } from './sidebar/ProfileDockIcons';
 import { OrbitIcon } from '../common/OrbitBrand';
+import { Hash } from 'lucide-react';
 
 export const isElectronApp = (): boolean => {
   if (typeof window === 'undefined') return false;
@@ -28,6 +29,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
   const [isHoverSuppressed, setIsHoverSuppressed] = useState(false);
   const [isHelpHovered, setIsHelpHovered] = useState(false);
   const activeChatId = useChatStore((s) => s.activeChatId);
+  const activeChannelName = useChatStore((s) => s.activeChannelName);
   const chats = useChatStore((s) => s.chats);
   const currentView = useChatStore((s) => s.currentView);
 
@@ -36,13 +38,15 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
     ? title
     : currentView === 'settings'
       ? t('mainMenu.settings', 'Настройки')
-      : activeChat
-        ? activeChat.type === 'channel'
-          ? t('titleBar.community', 'Сообщество')
-          : activeChat.type === 'group'
-            ? t('titleBar.group_chat', 'Групповой чат')
-            : t('titleBar.direct_messages', 'Личные сообщения')
-        : t('discord.friends', 'Друзья');
+      : currentView === 'explore'
+        ? t('sidebar.explore_treasures', 'В поисках сокровищ')
+        : activeChat
+          ? activeChat.type === 'group'
+            ? activeChannelName
+              ? `${activeChat.name} — #${activeChannelName.replace(/^#+/, '')}`
+              : activeChat.name || 'Лобби'
+            : activeChat.name || (activeChat.type === 'channel' ? t('titleBar.community', 'Сообщество') : t('titleBar.direct_messages', 'Личные сообщения'))
+          : t('discord.friends', 'Друзья');
 
   useEffect(() => {
     if (!isElectron) return;
@@ -159,7 +163,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
       style={{
         height: '30px',
         width: '100%',
-        backgroundColor: 'var(--title-bar-bg, var(--md-surface, #232428))',
+        backgroundColor: '#1e1f22',
         padding: 0,
         margin: 0,
         WebkitAppRegion: 'drag',
@@ -167,6 +171,16 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
       } as React.CSSProperties}
       onDoubleClick={handleDoubleClick}
     >
+      <div
+        className="flex items-center gap-1.5 pl-3 select-none pointer-events-none"
+        style={{ ['WebkitAppRegion' as any]: 'drag' }}
+      >
+        <OrbitIcon size={14} monochrome />
+        <span className="text-[12px] font-bold text-white tracking-tight">
+          or<span style={{ color: '#5865F2' }}>BIT</span>
+        </span>
+      </div>
+
       {!hideTitle && (
         <div
           className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center gap-1.5 text-xs text-[var(--text-dim,#949ba4)] font-medium pointer-events-none select-none max-w-[45%]"
@@ -184,19 +198,12 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
               <path fill="currentColor" d="M5 13a1 1 0 0 1-2 0v-2a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2zm6.276-10.638a.5.5 0 0 1 .724.447v10.382a.5.5 0 0 1-.724.447L6 11V5zm3.171 4.362a1 1 0 0 1 .553.894v.764a1 1 0 0 1-.553.895L13 10V6z" />
             </svg>
           ) : activeChat.type === 'group' ? (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="14" height="14" className="shrink-0" aria-hidden="true">
-              <path fill="currentColor" d="M10 9a3 3 0 1 0 0-6a3 3 0 0 0 0 6M6 8a2 2 0 1 1-4 0a2 2 0 0 1 4 0m-4.51 7.326a.78.78 0 0 1-.358-.442a3 3 0 0 1 4.308-3.516a6.48 6.48 0 0 0-1.905 3.959q-.034.335.025.654a5 5 0 0 1-2.07-.655m14.95.654a5 5 0 0 0 2.07-.654a.78.78 0 0 0 .357-.442a3 3 0 0 0-4.308-3.517a6.48 6.48 0 0 1 1.907 3.96a2.3 2.3 0 0 1-.026.654M18 8a2 2 0 1 1-4 0a2 2 0 0 1 4 0M5.304 16.19a.84.84 0 0 1-.277-.71a5 5 0 0 1 9.947 0a.84.84 0 0 1-.277.71A6.98 6.98 0 0 1 10 18a6.97 6.97 0 0 1-4.696-1.81" />
-            </svg>
+            <Hash size={14} className="shrink-0 text-[#949ba4]" />
           ) : (
             <OrbitIcon size={14} monochrome />
           )
         ) : (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#949ba4] shrink-0" aria-hidden="true">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-          </svg>
+          <OrbitIcon size={14} monochrome />
         )}
           <span className="truncate">{resolvedTitle}</span>
         </div>

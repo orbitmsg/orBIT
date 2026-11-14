@@ -63,26 +63,26 @@ export const AVAILABLE_FONTS = {
 export const DEFAULT_FONT = "var(--main-font), 'Apple Color Emoji', sans-serif";
 
 const standardThemeVars: Record<string, string> = {
-  '--bg-primary': '#070708',
-  '--bg-secondary': '#121212',
-  '--accent-color': '#AFAFAF',
-  '--accent-light': '#D4D4D8',
-  '--accent-dark': '#71717A',
-  '--accent-gradient': 'linear-gradient(135deg, #2a2a2e 0%, #1c1c1f 100%)',
-  '--accent-glow': 'rgba(175,175,175,0.20)',
-  '--accent-glow-light': 'rgba(175,175,175,0.10)',
-  '--text-main': '#FFFFFF',
-  '--text-dim': '#8e8e93',
-  '--text-offline': '#71717A',
+  '--bg-primary': '#313338',
+  '--bg-secondary': '#2b2d31',
+  '--accent-color': '#5865F2',
+  '--accent-light': '#7983f5',
+  '--accent-dark': '#4752c4',
+  '--accent-gradient': 'linear-gradient(135deg, #5865F2 0%, #4752c4 100%)',
+  '--accent-glow': 'rgba(88, 101, 242, 0.25)',
+  '--accent-glow-light': 'rgba(88, 101, 242, 0.12)',
+  '--text-main': '#dbdee1',
+  '--text-dim': '#949ba4',
+  '--text-offline': '#80848e',
   '--text-heading': '#ffffff',
-  '--surface-container': '#18181a',
-  '--surface-container-strong': '#1e1e21',
+  '--surface-container': '#2b2d31',
+  '--surface-container-strong': '#383a40',
   '--surface-container-soft': 'rgba(255,255,255,0.05)',
   '--surface-muted': 'rgba(255,255,255,0.06)',
   '--surface-muted-strong': 'rgba(255,255,255,0.12)',
   '--surface-subtle': 'rgba(255,255,255,0.03)',
   '--border-color': 'rgba(255,255,255,0.08)',
-  '--chat-list-bg': '#121212',
+  '--chat-list-bg': '#2b2d31',
   '--surface-border': 'rgba(255,255,255,0.08)',
   '--online-color': '#23a55a',
   '--offline-color': '#80848e',
@@ -90,10 +90,10 @@ const standardThemeVars: Record<string, string> = {
   '--switch-border': 'rgba(255,255,255,0.22)',
   '--selection-bg': 'rgba(255,255,255,0.10)',
   '--logo-type': 'classic',
-  '--title-bar-bg': '#121212',
-  '--settings-bg': '#070708',
-  '--settings-surface': '#121212',
-  '--settings-surface-var': '#18181a',
+  '--title-bar-bg': '#1e1f22',
+  '--settings-bg': '#313338',
+  '--settings-surface': '#2b2d31',
+  '--settings-surface-var': '#383a40',
   '--settings-outline': 'rgba(255,255,255,0.08)',
   '--settings-outline-med': 'rgba(255,255,255,0.14)',
   '--settings-on-surface': '#FFFFFF',
@@ -185,17 +185,14 @@ export const resolveThemeVars = (_themeId: ThemeId, _chatColor?: string, _themeT
   const theme = themePalettes.dark;
   const tint = getThemeTintById(DEFAULT_THEME_TINT_ID);
 
-  const accentColor = '#AFAFAF';
-  const accentLight = '#D4D4D8';
-  const accentDark = '#71717A';
-  const effectiveChatColor = '#222226';
+  const accentColor = '#5865F2';
+  const effectiveChatColor = '#383a40';
   const accentOnColor = '#FFFFFF';
   const bubbleOwnText = '#FFFFFF';
   const accentText = '#FFFFFF';
 
-  const textMain = '#FFFFFF';
-  const textHeading = '#FFFFFF';
-  const textDim = '#8e8e93';
+  const textMain = '#dbdee1';
+  const textDim = '#949ba4';
 
   const surfaceHover = 'rgba(255, 255, 255, 0.05)';
   const surfaceActive = 'rgba(255, 255, 255, 0.09)';
@@ -204,11 +201,11 @@ export const resolveThemeVars = (_themeId: ThemeId, _chatColor?: string, _themeT
 
   const vars: Record<string, string> = {
     ...theme.vars,
-    '--bg-primary': '#070708',
-    '--bg-secondary': '#121212',
-    '--chat-list-bg': '#121212',
-    '--surface-container': '#18181a',
-    '--surface-container-strong': '#1e1e21',
+    '--bg-primary': '#313338',
+    '--bg-secondary': '#2b2d31',
+    '--chat-list-bg': '#2b2d31',
+    '--surface-container': '#2b2d31',
+    '--surface-container-strong': '#383a40',
     '--surface-container-soft': 'rgba(255, 255, 255, 0.05)',
     '--surface-hover': surfaceHover,
     '--surface-active': surfaceActive,
@@ -216,38 +213,38 @@ export const resolveThemeVars = (_themeId: ThemeId, _chatColor?: string, _themeT
     '--surface-border': 'rgba(255, 255, 255, 0.08)',
     '--online-color': '#23a55a',
     '--offline-color': '#80848e',
-    '--title-bar-bg': '#121212',
+    '--title-bar-bg': '#1e1f22',
     '--titlebar-fg': '#b0b0b0',
     '--titlebar-hover-fg': '#ffffff',
     '--titlebar-hover-bg': 'rgba(255, 255, 255, 0.09)',
     '--titlebar-active-bg': 'rgba(255, 255, 255, 0.16)',
     '--scroll-thumb-color': scrollThumbColor,
-    '--text-main': textMain,
-    '--text-heading': textHeading,
-    '--text-dim': textDim,
-    '--settings-bg': '#070708',
-    '--settings-surface': '#121212',
-    '--settings-surface-var': '#18181a',
+    '--text-main': '#dbdee1',
+    '--text-heading': '#ffffff',
+    '--text-dim': '#949ba4',
+    '--settings-bg': '#313338',
+    '--settings-surface': '#2b2d31',
+    '--settings-surface-var': '#383a40',
     '--settings-outline': 'rgba(255, 255, 255, 0.08)',
     '--settings-outline-med': mdOutlineMed,
-    '--settings-on-surface': textMain,
-    '--settings-on-surface-var': textDim,
-    '--chat-bubble-own-bg': effectiveChatColor,
+    '--settings-on-surface': '#dbdee1',
+    '--settings-on-surface-var': '#949ba4',
+    '--chat-bubble-own-bg': '#383a40',
     '--bubble-own-text': bubbleOwnText,
-    '--chat-bubble-incoming-bg': '#141416',
+    '--chat-bubble-incoming-bg': '#2b2d31',
     '--chat-bubble-incoming-text': '#FFFFFF',
-    '--accent-color': accentColor,
-    '--accent-light': accentLight,
-    '--accent-dark': accentDark,
-    '--accent-hover': '#949499',
-    '--accent-gradient': 'linear-gradient(135deg, #2a2a2e 0%, #1c1c1f 100%)',
+    '--accent-color': '#5865F2',
+    '--accent-light': '#7983f5',
+    '--accent-dark': '#4752c4',
+    '--accent-hover': '#4752c4',
+    '--accent-gradient': 'linear-gradient(135deg, #5865F2 0%, #4752c4 100%)',
     '--accent-on-color': accentOnColor,
     '--accent-text': accentText,
-    '--accent-glow': 'rgba(175, 175, 175, 0.20)',
-    '--accent-glow-light': 'rgba(175, 175, 175, 0.10)',
-    '--selection-bg': 'rgba(255, 255, 255, 0.10)',
-    '--md-sys-color-primary': accentColor,
-    '--settings-primary': accentColor,
+    '--accent-glow': 'rgba(88, 101, 242, 0.25)',
+    '--accent-glow-light': 'rgba(88, 101, 242, 0.12)',
+    '--selection-bg': 'rgba(88, 101, 242, 0.15)',
+    '--md-sys-color-primary': '#5865F2',
+    '--settings-primary': '#5865F2',
     '--settings-on-primary': '#070708',
     '--settings-primary-cont': '#2a2a2e',
   };

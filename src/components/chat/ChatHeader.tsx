@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Hash } from 'lucide-react';
+import { ArrowLeft, Hash, Volume2 } from 'lucide-react';
 import { useChatStore, type Chat, type ChatAction, type ChatTypingUser } from '../../store/useChatStore';
 import { Avatar } from '../common/Avatar';
 import { NotesAvatar } from '../common/NotesAvatar';
@@ -152,13 +152,17 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 )}
                 {activeChat?.type === 'group' && (
                   activeChannelName ? (
-                    <Hash size={18} className="flex-shrink-0 text-[#80848e]" style={{ marginRight: 2 }} />
+                    activeChannelName.toLowerCase().includes('голос') || activeChannelName.toLowerCase().includes('voice') ? (
+                      <Volume2 size={18} className="flex-shrink-0 text-[#80848e]" style={{ marginRight: 2 }} />
+                    ) : (
+                      <Hash size={18} className="flex-shrink-0 text-[#80848e]" style={{ marginRight: 2 }} />
+                    )
                   ) : (
                     <GroupUsersIcon size={16} className="flex-shrink-0 text-[var(--accent-text,var(--accent-color))]" style={{ marginRight: 2 }} />
                   )
                 )}
                 <h2 className="font-bold text-[14px] truncate select-none m-0" style={{ color: 'var(--text-heading, var(--text-main))', userSelect: 'none', WebkitUserSelect: 'none' }}>
-                  {activeChatId === 'notes' ? t('connectModal.notes') : activeChannelName ? `#${activeChannelName}` : activeChat?.name}
+                  {activeChatId === 'notes' ? t('connectModal.notes') : activeChannelName ? activeChannelName.replace(/^#+/, '') : activeChat?.name}
                 </h2>
                 {(activeChat?.isOfficial || activeChatId === 'system_support') && (
                   <VerifiedBadge size={18} className="flex-shrink-0" />

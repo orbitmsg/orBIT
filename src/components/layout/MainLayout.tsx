@@ -41,6 +41,7 @@ import { ChatListItem } from './sidebar/ChatListItems';
 import { SidebarFolderRail } from './sidebar/SidebarFolderRail';
 import { ChatContextMenuOverlay } from './sidebar/ChatContextMenuOverlay';
 import { SidebarContent } from './sidebar/SidebarContent';
+import { LobbyChannelsSidebar } from '../chat/lobby/LobbyChannelsSidebar';
 import { useGroupSubscriptions } from './hooks/useGroupSubscriptions';
 import { usePrivateChatSubscriptions } from './hooks/usePrivateChatSubscriptions';
 import { useHandshakeListeners } from './hooks/useHandshakeListeners';
@@ -994,6 +995,8 @@ export const MainLayout = () => {
   const SIDEBAR_MIN_WIDTH = 320;
 
   const isCallMinimized = useCallStore((state) => state.isMinimized && !!state.activeCall);
+  const isVoiceActive = useCallStore((state) => Boolean(state.activeCall && state.callState !== 'idle'));
+  const activeChannelId = useChatStore((state) => state.activeChannelId);
   const showCallModalsInWindow = !((window as any).orbita?.openCallWindow);
 
   const maxSidebarWidth = useMemo(() => {
@@ -1208,40 +1211,61 @@ export const MainLayout = () => {
               />
             )}
             <div className="flex-1 min-w-0 h-full">
-              <SidebarContent
-                isMobileView={isMobileView}
-                hideDock={false}
-                isViewingArchive={isViewingArchive}
-                setIsViewingArchive={setIsViewingArchive}
-                archivedChats={archivedChats}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                setShowFriendRequestsModal={setShowFriendRequestsModal}
-                incomingFriendRequests={incomingFriendRequests}
-                isNetworkOnline={isNetworkOnline}
-                handleBannerReconnect={handleBannerReconnect}
-                chatListScrollRef={chatListScrollRef}
-                handleChatListScroll={handleChatListScroll}
-                showChatScrollbar={showChatScrollbar}
-                handleChatListMouseLeave={handleChatListMouseLeave}
-                chatTrackRef={chatTrackRef}
-                chatThumbRef={chatThumbRef}
-                handleScrollbarTrackMouseDown={handleScrollbarTrackMouseDown}
-                handleScrollbarThumbMouseDown={handleScrollbarThumbMouseDown}
-                visibleChats={visibleChats}
-                renderChat={renderChat}
-                searchChannelResult={searchChannelResult}
-                handleSelectFoundChannel={handleSelectFoundChannel}
-                globalFoundUsers={globalFoundUsers}
-                handleSelectFoundUser={handleSelectFoundUser}
-                handleSelectFoundSupport={handleSelectFoundSupport}
-                isLightTheme={isLightTheme}
-                onOpenCreateGroup={() => setConnectModalConfig({ isOpen: true, type: 'group' })}
-                onOpenCreateChannel={() => setConnectModalConfig({ isOpen: true, type: 'channel' })}
-                onOpenAddFriend={() => setConnectModalConfig({ isOpen: true, type: 'friend' })}
-                onOpenSettings={handleOpenSettings}
-                onOpenProfile={() => setIsMyProfileOpen(true)}
-              />
+              {activeChatObj && activeChatObj.type === 'group' && currentView === 'chats' ? (
+                <LobbyChannelsSidebar
+                  lobbyId={activeChatObj.id}
+                  lobbyName={activeChatObj.name}
+                  isOwnerOrAdmin={Boolean(activeChatObj.isOwner || activeChatObj.role === 'owner' || activeChatObj.role === 'admin')}
+                  activeChannelId={activeChannelId}
+                  onSelectChannel={(ch) => {
+                    useChatStore.getState().setActiveChannel(ch.id, ch.name);
+                  }}
+                  onOpenVoiceCall={(ch) => {
+                    useChatStore.getState().setActiveChannel(ch.id, ch.name);
+                    useCallStore.getState().startCall(activeChatObj.id, 'audio', nickname || 'User');
+                  }}
+                  isVoiceActive={isVoiceActive}
+                  onDisconnectVoice={() => useCallStore.getState().endCall()}
+                  onProfileClick={() => setActiveProfileChatId(activeChatObj.id)}
+                  onOpenProfile={() => setIsMyProfileOpen(true)}
+                  onOpenSettings={handleOpenSettings}
+                />
+              ) : (
+                <SidebarContent
+                  isMobileView={isMobileView}
+                  hideDock={false}
+                  isViewingArchive={isViewingArchive}
+                  setIsViewingArchive={setIsViewingArchive}
+                  archivedChats={archivedChats}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  setShowFriendRequestsModal={setShowFriendRequestsModal}
+                  incomingFriendRequests={incomingFriendRequests}
+                  isNetworkOnline={isNetworkOnline}
+                  handleBannerReconnect={handleBannerReconnect}
+                  chatListScrollRef={chatListScrollRef}
+                  handleChatListScroll={handleChatListScroll}
+                  showChatScrollbar={showChatScrollbar}
+                  handleChatListMouseLeave={handleChatListMouseLeave}
+                  chatTrackRef={chatTrackRef}
+                  chatThumbRef={chatThumbRef}
+                  handleScrollbarTrackMouseDown={handleScrollbarTrackMouseDown}
+                  handleScrollbarThumbMouseDown={handleScrollbarThumbMouseDown}
+                  visibleChats={visibleChats}
+                  renderChat={renderChat}
+                  searchChannelResult={searchChannelResult}
+                  handleSelectFoundChannel={handleSelectFoundChannel}
+                  globalFoundUsers={globalFoundUsers}
+                  handleSelectFoundUser={handleSelectFoundUser}
+                  handleSelectFoundSupport={handleSelectFoundSupport}
+                  isLightTheme={isLightTheme}
+                  onOpenCreateGroup={() => setConnectModalConfig({ isOpen: true, type: 'group' })}
+                  onOpenCreateChannel={() => setConnectModalConfig({ isOpen: true, type: 'channel' })}
+                  onOpenAddFriend={() => setConnectModalConfig({ isOpen: true, type: 'friend' })}
+                  onOpenSettings={handleOpenSettings}
+                  onOpenProfile={() => setIsMyProfileOpen(true)}
+                />
+              )}
             </div>
           </div>
         </ResizableSidebar>

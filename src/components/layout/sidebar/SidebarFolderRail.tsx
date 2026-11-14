@@ -63,8 +63,7 @@ export const SidebarFolderRail: React.FC<SidebarFolderRailProps> = ({
       className="flex flex-col items-center shrink-0 select-none py-3 relative"
       style={{
         width: '64px',
-        backgroundColor: '#1e1f22',
-        borderRadius: '18px',
+        backgroundColor: 'var(--title-bar-bg, #121212)',
         border: 'none',
         height: '100%',
         boxSizing: 'border-box',

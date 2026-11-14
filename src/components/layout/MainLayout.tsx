@@ -1193,7 +1193,7 @@ export const MainLayout = () => {
           className="md:flex-none"
           resizable={false}
         >
-          <div className="flex h-full w-full select-none" style={{ gap: '8px' }}>
+          <div className="flex h-full w-full select-none" style={{ gap: 0 }}>
             {!isMobileView && (
               <SidebarFolderRail
                 activeFolderId={activeFolderId}

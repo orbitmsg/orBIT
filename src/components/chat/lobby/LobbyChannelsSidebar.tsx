@@ -112,9 +112,7 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
       aria-label={t('lobby.channels_sidebar', 'Каналы лобби')}
       className="w-60 shrink-0 h-full flex flex-col select-none"
       style={{
-        backgroundColor: '#2b2d31',
-        borderRadius: '18px',
-        overflow: 'hidden',
+        backgroundColor: 'var(--title-bar-bg, #121212)',
       }}
     >
       <button
@@ -124,7 +122,7 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
         className="w-full px-4 h-12 flex items-center justify-between border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer border-none outline-none text-left shrink-0"
         style={{
           boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
-          backgroundColor: '#2b2d31',
+          backgroundColor: 'var(--title-bar-bg, #121212)',
         }}
       >
         <div className="flex items-center gap-1.5 min-w-0">
@@ -298,7 +296,7 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
       {isVoiceActive && (
         <div
           className="px-3 py-2 flex items-center justify-between shrink-0 border-t border-white/5"
-          style={{ backgroundColor: '#111214' }}
+          style={{ backgroundColor: 'var(--title-bar-bg, #121212)' }}
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
@@ -323,7 +321,7 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
         </div>
       )}
 
-      <div className="shrink-0 p-1 border-t border-white/5" style={{ backgroundColor: '#232428' }}>
+      <div className="shrink-0 p-1 border-t border-white/5" style={{ backgroundColor: 'var(--title-bar-bg, #121212)' }}>
         <UserDockPanel onOpenProfile={onOpenProfile} onOpenSettings={onOpenSettings} />
       </div>
 

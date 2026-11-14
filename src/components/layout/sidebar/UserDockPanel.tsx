@@ -55,7 +55,7 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
         style={{
           minHeight: '52px',
           height: '52px',
-          backgroundColor: '#232428',
+          backgroundColor: 'var(--title-bar-bg, #121212)',
           borderRadius: '8px',
           border: 'none',
           outline: 'none',

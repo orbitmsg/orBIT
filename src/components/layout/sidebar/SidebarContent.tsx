@@ -113,8 +113,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   if (isInChatSearch) {
     return (
       <div
-        className="flex flex-col h-full rounded-[18px] overflow-hidden"
-        style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}
+        className="flex flex-col h-full overflow-hidden"
+        style={{ backgroundColor: 'var(--title-bar-bg, #121212)' }}
       >
         <InChatSidebarSearch
           onClose={closeInChatSearch}
@@ -126,14 +126,14 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   }
 
   return (
-    <div className={isMobileView ? 'flex flex-col h-full gap-2 p-2' : 'flex flex-col h-full gap-2'}>
+    <div className={isMobileView ? 'flex flex-col h-full gap-2 p-2' : 'flex flex-col h-full'}>
       {isMobileView && !activeChatId && (isCallMinimized ? <CallMiniPlayer /> : <GlobalAudioPlayer />)}
 
       {isViewingArchive ? (
         <div
-          className="px-3 py-2 select-none shrink-0 rounded-[18px] overflow-hidden"
+          className="px-3 py-2 select-none shrink-0 overflow-hidden"
           style={{
-            backgroundColor: 'var(--chat-list-bg, #2b2d31)',
+            backgroundColor: 'var(--title-bar-bg, #121212)',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
@@ -166,8 +166,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
         </div>
       ) : (
         <div
-          className="shrink-0 rounded-[18px] overflow-hidden p-2 flex flex-col gap-1.5 select-none"
-          style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}
+          className="shrink-0 overflow-hidden px-2 py-1 flex flex-col gap-1.5 select-none"
+          style={{ backgroundColor: 'var(--title-bar-bg, #121212)' }}
         >
           {[
             {
@@ -218,8 +218,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
 
       {incomingFriendRequests.length > 0 && (
         <div
-          className="shrink-0 rounded-[18px] overflow-hidden p-2"
-          style={{ backgroundColor: 'var(--chat-list-bg, #2b2d31)' }}
+          className="shrink-0 overflow-hidden px-2 py-1"
+          style={{ backgroundColor: 'var(--title-bar-bg, #121212)' }}
         >
           <button
             type="button"
@@ -254,8 +254,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
       )}
 
       <div
-        className="relative flex-1 min-h-0 flex flex-col rounded-[18px]"
-        style={{ backgroundColor: 'var(--chat-list-bg, #121212)' }}
+        className="relative flex-1 min-h-0 flex flex-col"
+        style={{ backgroundColor: 'var(--title-bar-bg, #121212)' }}
         onMouseEnter={showChatScrollbar}
         onMouseLeave={handleChatListMouseLeave}
       >

@@ -163,7 +163,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
       style={{
         height: '30px',
         width: '100%',
-        backgroundColor: '#1e1f22',
+        backgroundColor: 'var(--title-bar-bg, #121212)',
         padding: 0,
         margin: 0,
         WebkitAppRegion: 'drag',

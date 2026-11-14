@@ -37,11 +37,11 @@ export const LobbyVoiceStage: React.FC<LobbyVoiceStageProps> = ({
   return (
     <div
       className="flex-1 flex flex-col h-full w-full select-none relative overflow-hidden"
-      style={{ backgroundColor: '#313338' }}
+      style={{ backgroundColor: 'transparent' }}
     >
       <div
-        className="h-12 px-4 flex items-center justify-between shrink-0 border-b border-black/20"
-        style={{ backgroundColor: '#313338' }}
+        className="h-12 px-4 flex items-center justify-between shrink-0 border-b border-white/5"
+        style={{ backgroundColor: 'transparent' }}
       >
         <div className="flex items-center gap-2">
           <Volume2 size={20} className="text-[#949ba4]" />
@@ -120,7 +120,7 @@ export const LobbyVoiceStage: React.FC<LobbyVoiceStageProps> = ({
       {isConnected && (
         <div
           className="h-16 px-6 flex items-center justify-center gap-3 shrink-0 border-t border-black/20"
-          style={{ backgroundColor: '#2b2d31' }}
+          style={{ backgroundColor: 'var(--surface-container, #18181a)' }}
         >
           <button
             type="button"

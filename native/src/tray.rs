@@ -91,6 +91,7 @@ const DT_LEFT: u32 = 0x00000000;
 const DT_VCENTER: u32 = 0x00000004;
 const DT_SINGLELINE: u32 = 0x00000020;
 const DT_NOPREFIX: u32 = 0x00000800;
+const DT_CALCRECT: u32 = 0x00000400;
 
 #[link(name = "user32")]
 extern "system" {
@@ -173,8 +174,8 @@ static COLOR_BG: AtomicU32 = AtomicU32::new(0x003b252a);
 static COLOR_TEXT: AtomicU32 = AtomicU32::new(0x00ffffff);
 static COLOR_HOVER: AtomicU32 = AtomicU32::new(0x00472e34);
 
-const MENU_WIDTH: i32 = 230;
-const ITEM_HEIGHT: i32 = 34;
+const FONT_SIZE: i32 = -12;
+const ITEM_HEIGHT: i32 = 30;
 const PADDING_V: i32 = 5;
 const PADDING_H: i32 = 14;
 
@@ -226,7 +227,7 @@ unsafe extern "system" fn tray_menu_wnd_proc(
                 }
             };
             let hfont = CreateFontW(
-                -13, 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, font_name.as_ptr(),
+                FONT_SIZE, 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, font_name.as_ptr(),
             );
             let old_font = SelectObject(mem_dc, hfont);
 
@@ -405,7 +406,7 @@ pub fn show_native_tray_menu(
     let wide_fname = to_wide(&fname);
     {
         let mut global_font = MENU_FONT_NAME.lock().unwrap();
-        *global_font = wide_fname;
+        *global_font = wide_fname.clone();
     }
 
     let wide_items: Vec<Vec<u16>> = items.iter().map(|s| to_wide(s)).collect();
@@ -413,7 +414,7 @@ pub fn show_native_tray_menu(
 
     {
         let mut global_items = MENU_ITEMS.lock().unwrap();
-        *global_items = wide_items;
+        *global_items = wide_items.clone();
     }
 
     HOVER_INDEX.store(-1, Ordering::SeqCst);
@@ -432,8 +433,28 @@ pub fn show_native_tray_menu(
         wc.hbr_background = COLOR_WINDOW;
         RegisterClassExW(&wc);
 
+        let mut max_text_width = 0;
+        let calc_dc = CreateCompatibleDC(0);
+        if calc_dc != 0 {
+            let font_for_calc = CreateFontW(
+                FONT_SIZE, 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, wide_fname.as_ptr(),
+            );
+            let old_calc_font = SelectObject(calc_dc, font_for_calc);
+            for item in &wide_items {
+                let mut calc_rc = RECT { left: 0, top: 0, right: 0, bottom: 0 };
+                DrawTextW(calc_dc, item.as_ptr(), -1, &mut calc_rc, DT_CALCRECT | DT_NOPREFIX | DT_SINGLELINE);
+                let w = calc_rc.right - calc_rc.left;
+                if w > max_text_width {
+                    max_text_width = w;
+                }
+            }
+            SelectObject(calc_dc, old_calc_font);
+            DeleteObject(font_for_calc);
+            DeleteDC(calc_dc);
+        }
+
         let total_height = PADDING_V * 2 + items_count * ITEM_HEIGHT;
-        let total_width = MENU_WIDTH;
+        let total_width = (max_text_width + PADDING_H * 2 + 20).max(180);
 
         let screen_w = GetSystemMetrics(SM_CXSCREEN);
         let screen_h = GetSystemMetrics(SM_CYSCREEN);

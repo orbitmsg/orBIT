@@ -31,8 +31,7 @@ export const getLastMsgDisplay = (chat: Chat, lastMsg: Message | null, t: any, i
       }
       return (
         <span className="truncate">
-          <span style={accentStyle}>{fallbackSenderPrefix}</span>
-          <span>: </span>
+          <span style={accentStyle}>{fallbackSenderPrefix}: </span>
           {isAccent ? <span style={accentStyle}>{content}</span> : content}
         </span>
       );
@@ -127,8 +126,7 @@ export const getLastMsgDisplay = (chat: Chat, lastMsg: Message | null, t: any, i
     }
     return (
       <span className="truncate">
-        <span style={accentStyle}>{senderName}</span>
-        <span>: </span>
+        <span style={accentStyle}>{senderName}: </span>
         {isAccent ? <span style={accentStyle}>{content}</span> : content}
       </span>
     );

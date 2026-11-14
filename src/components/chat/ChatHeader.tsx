@@ -11,7 +11,6 @@ import { DeveloperBadge } from '../ui/DeveloperBadge';
 import { ChannelMegaphoneIcon } from '../common/ChannelMegaphoneIcon';
 import { GroupUsersIcon } from '../common/GroupUsersIcon';
 import { ActiveCallBar } from '../call/ActiveCallBar';
-import { supportService, SUPPORT_AVATAR_URL } from '../../services/supportService';
 import { formatLastSeen } from '../../utils/messageUtils';
 
 interface ChatHeaderProps {
@@ -29,7 +28,6 @@ interface ChatHeaderProps {
   voiceCallsEnabled: boolean;
   onAudioCallPress: () => void;
   onAddMember?: () => void;
-  onOpenSupportTickets: () => void;
   onProfileClick: () => void;
 }
 
@@ -74,7 +72,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   isServerConnected,
   voiceCallsEnabled,
   onAudioCallPress,
-  onOpenSupportTickets,
   onProfileClick,
 }) => {
   const { t } = useTranslation();
@@ -127,15 +124,15 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             {isMobileView && (
               <div className="relative flex-shrink-0">
                 {activeChatId === 'notes' ? (
-                  <NotesAvatar className="w-10 h-10" />
-                ) : (activeChat?.avatarUrl || activeChatId === 'system_support') ? (
-                  <Avatar src={activeChat?.avatarUrl || SUPPORT_AVATAR_URL} alt={activeChat?.name} className="w-10 h-10 rounded-full flex-shrink-0" />
+                  <NotesAvatar className="w-10 h-10" style={{ borderRadius: '12px' }} />
+                ) : activeChat?.avatarUrl ? (
+                  <Avatar src={activeChat?.avatarUrl} alt={activeChat?.name} className="w-10 h-10 rounded-[12px] flex-shrink-0" style={{ borderRadius: '12px' }} />
                 ) : activeChat?.type === 'bot' ? (
-                  <BotAvatar className="w-10 h-10" />
+                  <BotAvatar className="w-10 h-10" style={{ borderRadius: '12px' }} />
                 ) : (
-                  <Avatar src={activeChat?.avatarUrl} alt={activeChat?.name} className="w-10 h-10 rounded-full flex-shrink-0" />
+                  <Avatar src={activeChat?.avatarUrl} alt={activeChat?.name} className="w-10 h-10 rounded-[12px] flex-shrink-0" style={{ borderRadius: '12px' }} />
                 )}
-                {(!activeChat?.type || activeChat.type === 'private') && activeChatId !== 'notes' && activeChatId !== 'system_support' && (
+                {(!activeChat?.type || activeChat.type === 'private') && activeChatId !== 'notes' && (
                   <OnlineIndicator
                     online={isOnline}
                     size="xs"
@@ -274,24 +271,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-1">
-            {activeChatId === 'system_support' && supportService.isAdmin && (
-              <button
-                type="button"
-                className="p-2 rounded-xl transition-colors duration-200 text-[var(--accent-text,var(--accent-color,#7C3AED))] hover:bg-[var(--surface-hover,rgba(128,128,128,0.12))] cursor-pointer bg-transparent border-none outline-none flex items-center justify-center relative"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenSupportTickets();
-                }}
-                aria-label={t('support.open_tickets_modal', 'Тикеты поддержки')}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
-                  <path d="M13 5v2"/>
-                  <path d="M13 17v2"/>
-                  <path d="M13 11v2"/>
-                </svg>
-              </button>
-            )}
             
             <button
               type="button"

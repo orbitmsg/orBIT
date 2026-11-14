@@ -7,7 +7,6 @@ import {
   WifiOff,
 } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
-import { VerifiedBadge } from '../../common/VerifiedBadge';
 import { ArchiveListItem } from './ChatListItems';
 import { UserDockPanel } from './UserDockPanel';
 import { InChatSidebarSearch } from '../InChatSidebarSearch';
@@ -19,7 +18,6 @@ import { useChatStore, type Chat, type IncomingFriendRequest } from '../../../st
 import { useAuthStore } from '../../../store/useAuthStore';
 import { useConnectionStore } from '../../../store/useConnectionStore';
 import { useCallStore } from '../../../store/useCallStore';
-import { supportService, SUPPORT_AVATAR_URL } from '../../../services/supportService';
 import type { ChannelInfo } from '../../../services/channelService';
 import type { UserDirectoryRecord } from '../../../services/supabaseService';
 
@@ -48,7 +46,6 @@ export interface SidebarContentProps {
   handleSelectFoundChannel: (ch: ChannelInfo) => void;
   globalFoundUsers: UserDirectoryRecord[];
   handleSelectFoundUser: (user: UserDirectoryRecord) => void;
-  handleSelectFoundSupport: () => void;
   isLightTheme: boolean;
   setIsMainMenuOpen?: (val: boolean) => void;
   onOpenCreateGroup?: () => void;
@@ -83,7 +80,6 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
   handleSelectFoundChannel,
   globalFoundUsers,
   handleSelectFoundUser,
-  handleSelectFoundSupport,
   isLightTheme,
   onOpenCreateGroup: _onOpenCreateGroup,
   onOpenCreateChannel: _onOpenCreateChannel,
@@ -548,11 +544,12 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
               {visibleChats.map((chat) => renderChat(chat))}
               {searchQuery.trim().length >= 2 && globalFoundUsers.length > 0 && (
                 <div className="w-full">
-                  {globalFoundUsers.map((user) => {
+                  {globalFoundUsers
+                    .filter((user) => user.user_code !== 'system_support' && user.username?.toLowerCase() !== 'support')
+                    .map((user) => {
                     const myUid = useAuthStore.getState().userId;
                     const myC = useChatStore.getState().myCode;
                     const isMe = user.user_code === myC || user.user_code === myUid;
-                    const isSupport = user.user_code === supportService.BOT_ID || user.username?.toLowerCase() === 'support';
                     return (
                       <div
                         key={user.user_code}
@@ -576,29 +573,15 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                         }}
                       >
                         <Avatar
-                          src={isSupport ? (user.avatar_url || SUPPORT_AVATAR_URL) : user.avatar_url}
+                          src={user.avatar_url}
                           alt={user.nickname}
-                          className="w-12 h-12 rounded-full flex-shrink-0"
+                          className="w-12 h-12 rounded-[14px] flex-shrink-0"
                         />
                         <div className="flex-1 min-w-0" style={{ transform: 'translateY(-6px)' }}>
                           <div className="flex items-center gap-1.5">
                             <span className="font-semibold text-[14px] text-[var(--text-main)] truncate">
                               {user.nickname}
                             </span>
-                            {isSupport && (
-                              <>
-                                <VerifiedBadge size={15} className="flex-shrink-0" />
-                                <span
-                                  className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-                                  style={{
-                                    backgroundColor: 'color-mix(in srgb, var(--accent-color, #5865F2) 16%, transparent)',
-                                    color: 'var(--accent-text, var(--accent-color))',
-                                  }}
-                                >
-                                  Support
-                                </span>
-                              </>
-                            )}
                             {isMe && (
                               <span
                                 className="px-2 py-0.5 rounded-full bg-[var(--accent-color)] text-[10px] font-bold"
@@ -624,20 +607,6 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
                             </div>
                           )}
                         </div>
-                        {isSupport && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSelectFoundSupport();
-                            }}
-                            aria-label={t('common.open', 'Открыть')}
-                            className="px-3 py-1.5 rounded-xl bg-[var(--accent-color)] text-xs font-semibold hover:opacity-90 transition-opacity border-none outline-none cursor-pointer flex-shrink-0"
-                            style={{ borderRadius: '12px', border: 'none', color: 'var(--accent-on-color, #ffffff)' }}
-                          >
-                            {t('common.open', 'Открыть')}
-                          </button>
-                        )}
                       </div>
                     );
                   })}

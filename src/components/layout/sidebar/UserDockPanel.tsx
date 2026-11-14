@@ -29,7 +29,7 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
     : '#232428';
 
   return (
-    <div className="shrink-0 w-full z-20 select-none pointer-events-auto rounded-[5px]">
+    <div className="shrink-0 w-full z-20 select-none pointer-events-auto rounded-[10px]">
       <style>{`
         .orbita-dock-panel .dock-profile-btn:hover,
         .orbita-dock-panel .dock-btn:hover {
@@ -53,10 +53,10 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
       <div
         className="orbita-dock-panel flex items-center justify-between px-2.5 py-1.5"
         style={{
-          minHeight: '52px',
-          height: '52px',
+          minHeight: '62px',
+          height: '62px',
           backgroundColor: '#232428',
-          borderRadius: '14px',
+          borderRadius: '10px',
           boxShadow: '0 4px 16px rgba(0, 0, 0, 0.45)',
           border: 'none',
           outline: 'none',
@@ -90,7 +90,8 @@ export const UserDockPanel: React.FC<UserDockPanelProps> = ({
             <Avatar
               src={avatarUrl}
               alt={nickname || 'Saizzi'}
-              className="w-10 h-10 rounded-full"
+              className="w-[42px] h-[42px]"
+              style={{ borderRadius: '12px' }}
             />
             <OnlineIndicator
               online={isServerConnected}

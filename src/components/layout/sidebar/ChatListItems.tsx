@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Archive } from 'lucide-react';
-import { SUPPORT_AVATAR_URL } from '../../../services/supportService';
 import { DeveloperBadge } from '../../ui/DeveloperBadge';
 import { ActionIcon } from '../../chat/ChatHeader';
 import { CustomPinIcon } from '../../chat/ChatWindow';
@@ -91,6 +90,8 @@ export const ChatListItem = React.memo(({
 
   const [isHovered, setIsHovered] = useState(false);
 
+  if (chat.id === 'system_support') return null;
+
   const baseBg = isLightTheme
     ? 'var(--chat-list-bg, #f5f5f5)'
     : 'var(--chat-list-bg, #2b2d31)';
@@ -109,7 +110,7 @@ export const ChatListItem = React.memo(({
       onMouseLeave={() => setIsHovered(false)}
       className="group relative cursor-pointer"
       style={{
-        borderRadius: '5px',
+        borderRadius: '10px',
         margin: '2.5px 6px 2.5px 6px',
         width: 'calc(100% - 12px)',
         backgroundColor: rowBg,
@@ -127,13 +128,13 @@ export const ChatListItem = React.memo(({
       <div className="flex justify-between items-center min-w-0">
         <div style={{ width: 49, height: 49, marginRight: 12, flexShrink: 0, position: 'relative' }}>
           {chat.id === 'notes' ? (
-            <NotesAvatar className="w-[49px] h-[49px]" />
-          ) : (chat.avatarUrl || chat.id === 'system_support') ? (
-            <Avatar src={chat.avatarUrl || SUPPORT_AVATAR_URL} alt={chat.name} className="w-[49px] h-[49px]" style={{ borderRadius: '50%' }} />
+            <NotesAvatar className="w-[49px] h-[49px]" style={{ borderRadius: '14px' }} />
+          ) : chat.avatarUrl ? (
+            <Avatar src={chat.avatarUrl} alt={chat.name} className="w-[49px] h-[49px]" style={{ borderRadius: '14px' }} />
           ) : chat.type === 'bot' ? (
-            <BotAvatar className="w-[49px] h-[49px]" />
+            <BotAvatar className="w-[49px] h-[49px]" style={{ borderRadius: '14px' }} />
           ) : (
-            <Avatar src={chat.avatarUrl} alt={chat.name} className="w-[49px] h-[49px]" style={{ borderRadius: '50%' }} />
+            <Avatar src={chat.avatarUrl} alt={chat.name} className="w-[49px] h-[49px]" style={{ borderRadius: '14px' }} />
           )}
           {chat.type === 'private' && chat.id !== 'notes' && (
             <OnlineIndicator
@@ -142,7 +143,7 @@ export const ChatListItem = React.memo(({
               ringColor={ringColor}
               color="#917bbd"
               className="z-[2]"
-              ariaLabel={chat.online ? t('userStatus.online', 'в сети') : undefined}
+              ariaLabel={chat.online ? t('userStatus.online', 'В сети') : undefined}
             />
           )}
           {chat.type === 'group' && chat.activeCallRoom && (

@@ -263,19 +263,16 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
     [effectiveChat?.birthday, i18n.language]
   );
 
-  if (!effectiveChat || effectiveChat.type !== 'private' || effectiveChat.id === 'notes') {
+  if (!effectiveChat || effectiveChat.type !== 'private' || effectiveChat.id === 'notes' || effectiveChat.id === 'system_support') {
     return null;
   }
 
   const cleanUsername = effectiveChat.username ? effectiveChat.username.replace(/^@+/, '').trim() : '';
   const bioText = effectiveChat.description ? effectiveChat.description.trim() : '';
-  const displayAvatarUrl =
-    effectiveChat.id === 'system_support'
-      ? effectiveChat.avatarUrl || SUPPORT_AVATAR_URL
-      : effectiveChat.avatarUrl;
+  const displayAvatarUrl = effectiveChat.avatarUrl;
   const hasAvatar = Boolean(displayAvatarUrl);
   const statusText = effectiveChat.online
-    ? t('userStatus.online', 'в сети')
+    ? t('userStatus.online', 'В сети')
     : formatLastSeen(effectiveChat.lastSeen, t);
   const badgeUserId =
     effectiveChat.peerCode ||
@@ -324,7 +321,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                 position: 'relative',
                 width: '80px',
                 height: '80px',
-                borderRadius: '50%',
+                borderRadius: '20px',
                 flexShrink: 0,
                 backgroundColor: 'transparent',
               }}
@@ -337,7 +334,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                   style={{
                     width: '100%',
                     height: '100%',
-                    borderRadius: '50%',
+                    borderRadius: '20px',
                     overflow: 'hidden',
                     padding: 0,
                     border: 'none',
@@ -359,8 +356,8 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                   <Avatar
                     src={displayAvatarUrl}
                     alt={effectiveChat.name}
-                    className="w-20 h-20 rounded-full"
-                    style={{ width: '80px', height: '80px', fontSize: '32px' }}
+                    className="w-20 h-20 rounded-[20px]"
+                    style={{ width: '80px', height: '80px', fontSize: '32px', borderRadius: '20px' }}
                   />
                 </button>
               ) : (
@@ -368,15 +365,15 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
                   style={{
                     width: '100%',
                     height: '100%',
-                    borderRadius: '50%',
+                    borderRadius: '20px',
                     overflow: 'hidden',
                   }}
                 >
                   <Avatar
                     src={displayAvatarUrl}
                     alt={effectiveChat.name}
-                    className="w-20 h-20 rounded-full"
-                    style={{ width: '80px', height: '80px', fontSize: '32px' }}
+                    className="w-20 h-20 rounded-[20px]"
+                    style={{ width: '80px', height: '80px', fontSize: '32px', borderRadius: '20px' }}
                   />
                 </div>
               )}

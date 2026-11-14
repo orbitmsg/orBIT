@@ -9,8 +9,9 @@ interface NotesAvatarProps {
 export const NotesAvatar: React.FC<NotesAvatarProps> = ({ className = '', style }) => {
   return (
     <div
-      className={`flex items-center justify-center rounded-full flex-shrink-0 ${className}`}
+      className={`flex items-center justify-center rounded-[14px] flex-shrink-0 ${className}`}
       style={{
+        borderRadius: '14px',
         backgroundColor: 'var(--accent-color, #7C3AED)',
         color: '#fff',
         ...style,

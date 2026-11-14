@@ -8,8 +8,9 @@ interface BotAvatarProps {
 export const BotAvatar: React.FC<BotAvatarProps> = ({ className = '', style }) => {
   return (
     <div
-      className={`flex items-center justify-center rounded-full flex-shrink-0 ${className}`}
+      className={`flex items-center justify-center rounded-[14px] flex-shrink-0 ${className}`}
       style={{
+        borderRadius: '14px',
         background: 'var(--accent-gradient, linear-gradient(135deg, var(--accent-color, #5865F2) 0%, var(--accent-dark, #4752c4) 100%))',
         color: '#ffffff',
         ...style,

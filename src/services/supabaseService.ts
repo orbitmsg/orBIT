@@ -1372,22 +1372,6 @@ class SupabaseService {
       }
     }
 
-    if (cleanQuery.length >= 2 && ('support'.startsWith(cleanQuery) || cleanQuery === 'support')) {
-      const hasSupport = results.some((r) => r.user_code === 'system_support' || r.username?.toLowerCase() === 'support');
-      if (!hasSupport) {
-        results.unshift({
-          user_code: 'system_support',
-          nickname: 'Техническая поддержка',
-          avatar_url: SUPPORT_AVATAR_URL,
-          banner_url: null,
-          username: 'support',
-          bio: 'Официальная служба технической поддержки мессенджера Orbita',
-          updated_at: new Date().toISOString(),
-        });
-        this.ensureSupportProfile().catch(() => {});
-      }
-    }
-
     return results;
   }
 

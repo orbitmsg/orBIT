@@ -1,4 +1,4 @@
-import { useChatStore, Chat, Message } from '../store/useChatStore';
+import { useChatStore, Message } from '../store/useChatStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { getPusher } from '../utils/pusher';
 import { gatewayManager } from './gatewayManager';
@@ -56,44 +56,21 @@ class SupportService {
 
   public restoreSupportChat(): void {
     const store = useChatStore.getState();
-    if (store.chats.some((c) => c.id === this.BOT_ID)) return;
-    const chatName = this.t ? this.t('support.name', 'Техническая поддержка') : 'Техническая поддержка';
-    const now = Date.now();
-    const botChat: Chat = {
-      id: this.BOT_ID,
-      type: 'bot',
-      name: chatName,
-      username: 'support',
-      avatarUrl: SUPPORT_AVATAR_URL,
-      isOfficial: true,
-      lastMsg: '',
-      online: true,
-      description: this.t ? this.t('support.description', 'Официальная служба технической поддержки мессенджера Orbita') : 'Официальная служба технической поддержки мессенджера Orbita',
-      createdAt: now,
-      updatedAt: now,
-      unreadCount: 0,
-    };
-    store.addChat(botChat);
+    if (store.chats.some((c) => c.id === this.BOT_ID)) {
+      store.deleteChat(this.BOT_ID);
+    }
   }
 
   public init(t: any, userCode?: string): void {
     this.t = t;
     const store = useChatStore.getState();
+    if (store.chats.some((c) => c.id === this.BOT_ID)) {
+      store.deleteChat(this.BOT_ID);
+    }
     this.myCode = userCode || store.myCode || this.myCode || '';
     sqliteStorage.get('orbita_user_active_ticket').then((t) => {
       if (t) this.activeTicketNumber = t;
     }).catch(() => {});
-
-    const existing = store.chats.find((c) => c.id === this.BOT_ID);
-    if (existing) {
-      const updates: Partial<Chat> = {};
-      if (!existing.username) updates.username = 'support';
-      if (!existing.isOfficial) updates.isOfficial = true;
-      if (existing.avatarUrl !== SUPPORT_AVATAR_URL) updates.avatarUrl = SUPPORT_AVATAR_URL;
-      if (Object.keys(updates).length > 0) {
-        store.updateChat(this.BOT_ID, updates);
-      }
-    }
 
     if (!this.myCode) {
       const unsub = useChatStore.subscribe((state) => {
@@ -108,68 +85,12 @@ class SupportService {
     }
   }
 
-  public initSupportChat(t?: any, userCode?: string): void {
-    if (t) this.t = t;
+  public initSupportChat(_t?: any, userCode?: string): void {
     const store = useChatStore.getState();
+    if (store.chats.some((c) => c.id === this.BOT_ID)) {
+      store.deleteChat(this.BOT_ID);
+    }
     this.myCode = userCode || store.myCode || this.myCode || '';
-    sqliteStorage.get('orbita_user_active_ticket').then((t) => {
-      if (t) this.activeTicketNumber = t;
-    }).catch(() => {});
-
-    const existing = store.chats.find((c) => c.id === this.BOT_ID);
-    const chatName = this.t ? this.t('support.name', 'Техническая поддержка') : 'Техническая поддержка';
-    const initialLastMsg = this.t ? this.t('support.initial_last_msg', 'Служба поддержки Orbita') : 'Служба поддержки Orbita';
-    const now = Date.now();
-
-    if (!existing) {
-      const botChat: Chat = {
-        id: this.BOT_ID,
-        type: 'bot',
-        name: chatName,
-        username: 'support',
-        avatarUrl: SUPPORT_AVATAR_URL,
-        isOfficial: true,
-        lastMsg: initialLastMsg,
-        online: true,
-        description: this.t ? this.t('support.description', 'Официальная служба технической поддержки мессенджера Orbita') : 'Официальная служба технической поддержки мессенджера Orbita',
-        createdAt: now,
-        updatedAt: now,
-        unreadCount: 0,
-      };
-      store.addChat(botChat);
-
-      const welcomeMsg: Message = {
-        id: 'support_welcome_1',
-        senderId: this.BOT_ID,
-        sender: chatName,
-        isOutgoing: false,
-        text: this.t ? this.t('support.welcome_msg', 'Здравствуйте! Вы обратились в официальную службу технической поддержки Orbita.\n\nОпишите ваш вопрос или возникшую проблему в этом чате. Ваше сообщение будет передано администраторам, и ответ поступит прямо сюда.') : 'Здравствуйте! Вы обратились в официальную службу технической поддержки Orbita.\n\nОпишите ваш вопрос или возникшую проблему в этом чате. Ваше сообщение будет передано администраторам, и ответ поступит прямо сюда.',
-        time: now,
-        read: false,
-        status: 'delivered',
-      };
-      store.addMessage(this.BOT_ID, welcomeMsg);
-    } else {
-      const updates: Partial<Chat> = {};
-      if (!existing.username) updates.username = 'support';
-      if (!existing.isOfficial) updates.isOfficial = true;
-      if (existing.avatarUrl !== SUPPORT_AVATAR_URL) updates.avatarUrl = SUPPORT_AVATAR_URL;
-      if (Object.keys(updates).length > 0) {
-        store.updateChat(this.BOT_ID, updates);
-      }
-    }
-
-    if (!this.myCode) {
-      const unsub = useChatStore.subscribe((state) => {
-        if (state.myCode && state.myCode !== this.myCode) {
-          this.myCode = state.myCode;
-          this.checkAdminStatus();
-          unsub();
-        }
-      });
-    } else {
-      this.checkAdminStatus();
-    }
   }
 
   public async checkAdminStatus(): Promise<void> {

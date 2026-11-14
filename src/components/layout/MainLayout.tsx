@@ -49,7 +49,6 @@ import { useMainLayoutSync } from './hooks/useMainLayoutSync';
 import { useConnectRequestHandler } from './hooks/useConnectRequestHandler';
 import { CreateLobbyModal } from '../lobby/CreateLobbyModal';
 import { ExploreLobbiesView } from '../lobby/ExploreLobbiesView';
-import { supportService, SUPPORT_AVATAR_URL } from '../../services/supportService';
 
 interface ChatContextMenu {
   visible: boolean;
@@ -257,33 +256,14 @@ export const MainLayout = () => {
     if (store.chats.some((c) => c.id === 'system_orbitos')) {
       store.deleteChat('system_orbitos');
     }
-    const supportChat = store.chats.find((c) => c.id === supportService.BOT_ID);
+    const supportChat = store.chats.find((c) => c.id === 'system_support');
     if (supportChat) {
-      const activeTicket = supportService.activeTicketNumber;
-      const isAdminToken = supportService.isAdmin;
-      const msgs = store.messagesByChatId[supportService.BOT_ID] || [];
-      const hasOutgoing = msgs.some((m) => m.isOutgoing);
-      if (!activeTicket && !isAdminToken && !hasOutgoing) {
-        store.deleteChat(supportService.BOT_ID);
-      } else {
-        const updates: Partial<Chat> = {};
-        if (!supportChat.username) updates.username = 'support';
-        if (!supportChat.isOfficial) updates.isOfficial = true;
-        if (supportChat.avatarUrl !== SUPPORT_AVATAR_URL) updates.avatarUrl = SUPPORT_AVATAR_URL;
-        if (Object.keys(updates).length > 0) {
-          store.updateChat(supportService.BOT_ID, updates);
-        }
-      }
+      store.deleteChat('system_support');
     }
-    supportService.init(t, myCode);
-    supabaseService.ensureSupportProfile().catch(() => {});
+    if (store.activeChatId === 'system_support') {
+      store.setActiveChat(null);
+    }
   }, [t, myCode]);
-
-  useEffect(() => {
-    if (activeChatId === supportService.BOT_ID) {
-      supportService.checkAdminStatus();
-    }
-  }, [activeChatId]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -741,6 +721,9 @@ export const MainLayout = () => {
 
   const filteredChats = useMemo(() => {
     return chats.filter(chat => {
+      if (chat.id === 'system_support') {
+        return false;
+      }
       if (chat.id === 'notes') {
         return hasNotesMessages;
       }
@@ -1042,15 +1025,8 @@ export const MainLayout = () => {
     setActiveChat(null);
   }, [setActiveChat]);
 
-  const handleSelectFoundSupport = useCallback(() => {
-    supportService.initSupportChat(t, myCode);
-    handleSelectChat(supportService.BOT_ID);
-    setSearchQuery('');
-  }, [t, myCode, handleSelectChat]);
-
   const handleSelectFoundUser = useCallback((user: UserDirectoryRecord) => {
-    if (user.user_code === supportService.BOT_ID || user.username?.toLowerCase() === 'support') {
-      handleSelectFoundSupport();
+    if (user.user_code === 'system_support' || user.username?.toLowerCase() === 'support') {
       return;
     }
     const myUid = useAuthStore.getState().userId;
@@ -1257,7 +1233,6 @@ export const MainLayout = () => {
                   handleSelectFoundChannel={handleSelectFoundChannel}
                   globalFoundUsers={globalFoundUsers}
                   handleSelectFoundUser={handleSelectFoundUser}
-                  handleSelectFoundSupport={handleSelectFoundSupport}
                   isLightTheme={isLightTheme}
                   onOpenCreateGroup={() => setConnectModalConfig({ isOpen: true, type: 'group' })}
                   onOpenCreateChannel={() => setConnectModalConfig({ isOpen: true, type: 'channel' })}

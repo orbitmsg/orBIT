@@ -53,20 +53,6 @@ const MIC_STYLES = `
     border-radius: 5px;
     transition: color 0.15s ease;
   }
-  .pdi-pop-anim {
-    animation: pdi-icon-pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  @keyframes pdi-icon-pop {
-    0% {
-      transform: scale(0.82) translateY(1.5px);
-    }
-    55% {
-      transform: scale(1.18) translateY(-2px);
-    }
-    100% {
-      transform: scale(1) translateY(0);
-    }
-  }
   .pdi-slash-line,
   .pdi-slash-mask-line {
     stroke-dasharray: 32;
@@ -131,7 +117,6 @@ const MIC_STYLES = `
   @media (prefers-reduced-motion: reduce) {
     .pdi-mic-hitbox:hover .pdi-mic-upper,
     .dock-btn:hover .pdi-mic-upper,
-    .pdi-pop-anim,
     .pdi-slash-line,
     .pdi-slash-mask-line {
       animation: none;
@@ -147,9 +132,6 @@ const HEADPHONES_STYLES = `
     width: 20px;
     height: 20px;
     transition: color 0.15s ease;
-  }
-  .pdi-pop-anim {
-    animation: pdi-icon-pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
   .pdi-slash-line,
   .pdi-slash-mask-line {
@@ -189,33 +171,46 @@ const HEADPHONES_STYLES = `
   }
   .dock-btn:hover .pdi-hp-headband,
   .pdi-hp-wrap:hover .pdi-hp-headband {
-    animation: pdi-headband-expand 1.1s ease-in-out infinite;
+    animation: pdi-headband-stretch-apart 0.95s ease-in-out infinite;
   }
-  @keyframes pdi-headband-expand {
+  @keyframes pdi-headband-stretch-apart {
     0%, 100% {
       transform: scale(1, 1);
     }
     50% {
-      transform: scale(1.04, 1.09) translateY(-0.7px);
+      transform: scale(1.15, 0.98);
     }
   }
-  .pdi-hp-earcup-left,
-  .pdi-hp-earcup-right {
+  .pdi-hp-earcup-left {
     transform-box: view-box;
     transform-origin: 12px 17px;
   }
   .dock-btn:hover .pdi-hp-earcup-left,
-  .pdi-hp-wrap:hover .pdi-hp-earcup-left,
-  .dock-btn:hover .pdi-hp-earcup-right,
-  .pdi-hp-wrap:hover .pdi-hp-earcup-right {
-    animation: pdi-earcup-beat 1.1s ease-in-out infinite;
+  .pdi-hp-wrap:hover .pdi-hp-earcup-left {
+    animation: pdi-earcup-left-apart 0.95s ease-in-out infinite;
   }
-  @keyframes pdi-earcup-beat {
+  @keyframes pdi-earcup-left-apart {
     0%, 100% {
-      transform: translateY(0);
+      transform: translateX(0);
     }
     50% {
-      transform: translateY(-0.5px);
+      transform: translateX(-2.4px);
+    }
+  }
+  .pdi-hp-earcup-right {
+    transform-box: view-box;
+    transform-origin: 12px 17px;
+  }
+  .dock-btn:hover .pdi-hp-earcup-right,
+  .pdi-hp-wrap:hover .pdi-hp-earcup-right {
+    animation: pdi-earcup-right-apart 0.95s ease-in-out infinite;
+  }
+  @keyframes pdi-earcup-right-apart {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    50% {
+      transform: translateX(2.4px);
     }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -225,7 +220,6 @@ const HEADPHONES_STYLES = `
     .pdi-hp-wrap:hover .pdi-hp-earcup-left,
     .dock-btn:hover .pdi-hp-earcup-right,
     .pdi-hp-wrap:hover .pdi-hp-earcup-right,
-    .pdi-pop-anim,
     .pdi-slash-line,
     .pdi-slash-mask-line {
       animation: none;
@@ -266,7 +260,7 @@ export const MicToggleIcon: React.FC<{ muted: boolean }> = ({ muted }) => {
   const maskId = `pdi-mic-mask-${rawId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
 
   return (
-    <span key={String(muted)} className={`pdi-mic-hitbox pdi-pop-anim ${muted ? 'pdi-mic-muted' : 'pdi-mic-unmuted'}`}>
+    <span key={String(muted)} className={`pdi-mic-hitbox ${muted ? 'pdi-mic-muted' : 'pdi-mic-unmuted'}`}>
       <style>{MIC_STYLES}</style>
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -323,7 +317,7 @@ export const HeadphonesToggleIcon: React.FC<{ muted: boolean }> = ({ muted }) =>
   const maskId = `pdi-hp-mask-${rawId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
 
   return (
-    <span key={String(muted)} className={`pdi-hp-wrap pdi-pop-anim ${muted ? 'pdi-hp-muted' : 'pdi-hp-unmuted'}`}>
+    <span key={String(muted)} className={`pdi-hp-wrap ${muted ? 'pdi-hp-muted' : 'pdi-hp-unmuted'}`}>
       <style>{HEADPHONES_STYLES}</style>
       <svg
         xmlns="http://www.w3.org/2000/svg"

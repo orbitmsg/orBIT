@@ -188,12 +188,14 @@ export const Avatar = ({ src, alt = '', className = '', style }: AvatarProps) =>
     setVideoError(false);
   }, [cleanSrc]);
 
+  const effectiveRadius = style?.borderRadius && style.borderRadius !== '50%' ? style.borderRadius : '14px';
+
   if (!cleanSrc || (isVideo && videoError) || (!isVideo && imageError)) {
     return (
       <div
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
-        className={`flex items-center justify-center rounded-full flex-shrink-0 select-none ${className}`}
+        className={`flex items-center justify-center rounded-[14px] flex-shrink-0 select-none ${className}`}
         style={{
           background: gradient,
           color: '#fff',
@@ -202,8 +204,7 @@ export const Avatar = ({ src, alt = '', className = '', style }: AvatarProps) =>
           alignItems: 'center',
           justifyContent: 'center',
           lineHeight: 1,
-          borderRadius: '50%',
-          clipPath: 'circle(50% at 50% 50%)',
+          borderRadius: effectiveRadius,
           border: 'none',
           outline: 'none',
           overflow: 'hidden',
@@ -241,10 +242,9 @@ export const Avatar = ({ src, alt = '', className = '', style }: AvatarProps) =>
         preload="metadata"
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
-        className={`object-cover rounded-full flex-shrink-0 select-none ${className}`}
+        className={`object-cover rounded-[14px] flex-shrink-0 select-none ${className}`}
         style={{
-          borderRadius: '50%',
-          clipPath: 'circle(50% at 50% 50%)',
+          borderRadius: effectiveRadius,
           border: 'none',
           outline: 'none',
           overflow: 'hidden',
@@ -266,10 +266,9 @@ export const Avatar = ({ src, alt = '', className = '', style }: AvatarProps) =>
       loading="eager"
       draggable={false}
       onDragStart={(e) => e.preventDefault()}
-      className={`object-cover rounded-full flex-shrink-0 select-none ${className}`}
+      className={`object-cover rounded-[14px] flex-shrink-0 select-none ${className}`}
       style={{
-        borderRadius: '50%',
-        clipPath: 'circle(50% at 50% 50%)',
+        borderRadius: effectiveRadius,
         border: 'none',
         outline: 'none',
         overflow: 'hidden',

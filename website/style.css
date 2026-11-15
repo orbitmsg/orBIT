@@ -1,18 +1,19 @@
 /* =========================================================
-   Orbitachat - Minimal Text-First Dark Theme
+   orBIT - Modern Encrypted Messenger Website
    ========================================================= */
 
 :root {
   --surface-muted: rgba(255, 255, 255, 0.08);
   --surface-muted-strong: rgba(255, 255, 255, 0.14);
-  --accent-color: #5c54e5;
-  --accent-light: #7c75f2;
+  --accent-color: #917bbd;
+  --accent-light: #a894d1;
+  --accent-dark: #755f9f;
 
-  --bg-primary: #18181a;
-  --bg-secondary: #1f1f22;
+  --bg-primary: #121118;
+  --bg-secondary: #1a1823;
   --text-main: #f6f6f6;
-  --text-dim: #8e8e93;
-  --text-muted: #a1a1aa;
+  --text-dim: #9f96b3;
+  --text-muted: #b8afcc;
 }
 
 *, *::before, *::after {
@@ -89,9 +90,9 @@ body {
 }
 
 .brand-logo {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
 }
 
 .brand-name {

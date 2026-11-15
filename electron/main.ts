@@ -4434,8 +4434,18 @@ function buildCallUrlQuery(payload?: any): string {
     if (payload.activeCall?.roomName) params.set('roomName', payload.activeCall.roomName);
     const secret = payload.activeCall?.verificationSecret;
     if (secret) params.set('secret', secret);
-    const salt = payload.activeCall?.verificationSalt;
+    const salt = payload.activeCall?.verificationSalt || payload.incomingCall?.verificationSalt;
     if (salt) params.set('salt', salt);
+    const emojis = payload.activeCall?.verificationEmojis;
+    if (Array.isArray(emojis) && emojis.length === 4) {
+      params.set('emojis', emojis.join(','));
+    }
+    if (payload.incomingCall) {
+      if (payload.incomingCall.chatId && !params.has('chatId')) params.set('chatId', payload.incomingCall.chatId);
+      if (payload.incomingCall.roomName && !params.has('roomName')) params.set('roomName', payload.incomingCall.roomName);
+      if (payload.incomingCall.callType && !params.has('type')) params.set('type', payload.incomingCall.callType);
+      if (!params.has('direction')) params.set('direction', 'incoming');
+    }
     if (payload.myNickname) params.set('myNickname', payload.myNickname);
   }
   if (currentFontFamily) params.set('font', currentFontFamily);

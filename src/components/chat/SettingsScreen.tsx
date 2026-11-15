@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { securityService } from '../../services/securityService';
 
 import { OrbitaKeySettings } from '../settings/OrbitaKeySettings';
@@ -48,7 +48,6 @@ import { mediaManager } from '../../services/mediaManager';
 
 import {
   MD3,
-  GLOBAL_CSS,
   Block,
   M3Switch,
   type TabId,
@@ -208,10 +207,10 @@ export const SettingsScreen = () => {
   }, [activeTab, loadMediaDevices]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.orbita?.getAutoLaunchState) {
+    if (activeTab === 'preferences' && typeof window !== 'undefined' && window.orbita?.getAutoLaunchState) {
       window.orbita.getAutoLaunchState().then((enabled) => setAutoLaunch(enabled)).catch(() => {});
     }
-  }, [setAutoLaunch]);
+  }, [activeTab, setAutoLaunch]);
 
   const [updateStatus, setUpdateStatus] = useState<{
     status: 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error' | 'dev-mode';
@@ -281,11 +280,8 @@ export const SettingsScreen = () => {
 
   useEffect(() => {
     if (initialSettingsTab) {
-      if (!isMobileWidth && initialSettingsTab === 'main') {
-        setTabStack(['myAccount']);
-      } else {
-        setTabStack([initialSettingsTab]);
-      }
+      const targetTab = (!isMobileWidth && initialSettingsTab === 'main') ? 'myAccount' : initialSettingsTab;
+      setTabStack((prev) => (prev[prev.length - 1] === targetTab ? prev : [targetTab]));
     }
   }, [initialSettingsTab, isMobileWidth]);
 
@@ -304,7 +300,7 @@ export const SettingsScreen = () => {
     if (!el) return;
     const { scrollTop, scrollHeight, clientHeight } = el;
     if (scrollHeight <= clientHeight + 8) {
-      setSettingsThumb(null);
+      setSettingsThumb((prev) => (prev === null ? prev : null));
       return;
     }
     const trackHeight = clientHeight - 12;
@@ -312,7 +308,11 @@ export const SettingsScreen = () => {
     const maxTop = trackHeight - thumbHeight;
     const scrollableDistance = scrollHeight - clientHeight;
     const ratio = scrollableDistance > 0 ? scrollTop / scrollableDistance : 0;
-    setSettingsThumb({ top: maxTop * ratio, height: thumbHeight });
+    const newTop = maxTop * ratio;
+    setSettingsThumb((prev) => {
+      if (prev && Math.abs(prev.top - newTop) < 0.5 && Math.abs(prev.height - thumbHeight) < 0.5) return prev;
+      return { top: newTop, height: thumbHeight };
+    });
   }, []);
 
   const triggerSettingsActive = useCallback(() => {
@@ -942,13 +942,12 @@ export const SettingsScreen = () => {
 
   return (
     <>
-      <style>{GLOBAL_CSS}</style>
-      <AnimatePresence>
-        <motion.div
-          key="settings-backdrop"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+      <motion.div
+        key="settings-backdrop"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.12 }}
         style={{
           position: 'fixed',
           inset: 0,
@@ -963,19 +962,15 @@ export const SettingsScreen = () => {
           padding: isMobileWidth ? '0' : '40px 24px 16px',
           userSelect: 'none',
           boxSizing: 'border-box',
+          willChange: 'opacity',
         }}
         onClick={() => setCurrentView('chats')}
       >
         <motion.div
-          initial={false}
-          animate={{
-            opacity: 1,
-            scale: 1,
-          }}
-          transition={{
-            opacity: { duration: 0.14 },
-            scale: { duration: 0 },
-          }}
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.98 }}
+          transition={{ duration: 0.12, ease: 'easeOut' }}
           onClick={e => e.stopPropagation()}
           style={{
             position: 'relative',
@@ -987,6 +982,7 @@ export const SettingsScreen = () => {
             display: 'flex',
             flexDirection: isMobileWidth ? 'column' : 'row',
             margin: 0,
+            willChange: 'transform, opacity',
             marginTop: isMobileWidth ? '30px' : '0',
             backgroundColor: MD3.bg,
             borderRadius: isMobileWidth ? 0 : 10,
@@ -1227,7 +1223,6 @@ export const SettingsScreen = () => {
           </div>
         </motion.div>
       </motion.div>
-      </AnimatePresence>
 
       <NameEditModal open={nameEditOpen} onClose={() => setNameEditOpen(false)} currentNickname={nickname || ''} onSave={handleNameSave} />
       <UsernameEditModal open={usernameEditOpen} onClose={() => setUsernameEditOpen(false)} currentUsername={username || null} onSave={handleUsernameSave} />

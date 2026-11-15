@@ -233,11 +233,11 @@ export const useCallStore = create<CallStore>((set, get) => {
 
       set({ statusMessage: i18n.t('call.connected') });
 
-      const chat = s.activeCall?.chatId ? useChatStore.getState().chats.find((c) => c.id === s.activeCall?.chatId) : null;
+      const chat = s.activeCall?.chatId ? useChatStore.getState().chats.find((c) => c.id === s.activeCall?.chatId || c.peerCode === s.activeCall?.chatId) : null;
       const isGroup = s.activeCall.chatType === 'group' || chat?.type === 'group';
       let emojis = s.activeCall.verificationEmojis;
-      const targetSecret = s.activeCall.verificationSecret || chat?.sharedSecret || chat?.ratchetState?.rootKey || (s.activeCall.chatId ? deriveGroupKey(s.activeCall.chatId) : undefined);
-      const targetSalt = s.activeCall.verificationSalt || (isGroup ? `group-salt-${s.activeCall.chatId}` : s.activeCall.roomName);
+      const targetSecret = s.activeCall.verificationSecret || chat?.sharedSecret || chat?.ratchetState?.rootKey || (s.activeCall.chatId ? deriveGroupKey(s.activeCall.chatId) : (s.activeCall.roomName ? deriveGroupKey(s.activeCall.roomName) : undefined));
+      const targetSalt = s.activeCall.verificationSalt || s.activeCall.roomName || (isGroup ? `group-salt-${s.activeCall.chatId}` : 'orbita-salt');
       if (!emojis && targetSecret && targetSalt) {
         try {
           emojis = await generateCallVerificationEmojis(targetSecret + targetSalt);
@@ -689,11 +689,11 @@ export const useCallStore = create<CallStore>((set, get) => {
       try { useAudioStore.getState().pause(); } catch {}
       try { await liveKitService.stopScreenShare(); } catch {}
       try { sessionStorage.removeItem('orbita_active_call_state'); } catch {}
-      const chat = useChatStore.getState().chats.find((c) => c.id === chatId);
+      const chat = useChatStore.getState().chats.find((c) => c.id === chatId || c.peerCode === chatId);
       const isGroup = chat?.type === 'group';
       const isLobby = chatId.startsWith('lobby_');
       const roomName = customRoomName || (isLobby ? `lobby-voice-${chatId}` : (isGroup ? (chat?.activeCallRoom || `group-call-${chatId}`) : `call-${chatId}-${Date.now()}`));
-      const verificationSecret = chat?.sharedSecret || chat?.ratchetState?.rootKey || deriveGroupKey(chatId);
+      const verificationSecret = chat?.sharedSecret || chat?.ratchetState?.rootKey || (chatId ? deriveGroupKey(chatId) : deriveGroupKey(roomName));
       const verificationSalt = isGroup ? `group-salt-${chatId}` : crypto.randomUUID().replace(/-/g, '');
       const isVideo = callType === 'video';
 
@@ -902,13 +902,14 @@ export const useCallStore = create<CallStore>((set, get) => {
       try { useAudioStore.getState().pause(); } catch {}
       const { chatId, roomName, verificationSalt, callType } = state.incomingCall;
       if (incomingAutoRejectTimer) { clearTimeout(incomingAutoRejectTimer); incomingAutoRejectTimer = null; }
-      const chat = useChatStore.getState().chats.find((c) => c.id === chatId);
-      const verificationSecret = chat?.sharedSecret || chat?.ratchetState?.rootKey || deriveGroupKey(chatId);
+      const chat = useChatStore.getState().chats.find((c) => c.id === chatId || c.peerCode === chatId);
+      const verificationSecret = chat?.sharedSecret || chat?.ratchetState?.rootKey || (chatId ? deriveGroupKey(chatId) : deriveGroupKey(roomName));
+      const effectiveSalt = verificationSalt || roomName;
       const isVideo = callType === 'video';
       let answeredEmojis: string[] | undefined;
-      if (verificationSecret && verificationSalt) {
+      if (verificationSecret && effectiveSalt) {
         try {
-          answeredEmojis = await generateCallVerificationEmojis(verificationSecret + verificationSalt);
+          answeredEmojis = await generateCallVerificationEmojis(verificationSecret + effectiveSalt);
         } catch {}
       }
       const { identity: myLivekitIdentity, name: myLivekitName } = getLivekitParticipantIdentity(myNickname);
@@ -1342,6 +1343,9 @@ const syncCallState = (state: CallStore) => {
       members,
       otherName: chat?.name || state.activeCall.chatId,
       otherAvatar: chat?.avatarUrl || null,
+      verificationEmojis: state.activeCall.verificationEmojis,
+      verificationSecret: state.activeCall.verificationSecret,
+      verificationSalt: state.activeCall.verificationSalt,
     } : null,
     myAvatar,
     knownAvatars,

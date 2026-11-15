@@ -78,6 +78,8 @@ export const CallWindowView = () => {
         const roomName = searchParams.get('roomName') || (chatType === 'group' ? `group-call-${chatId}` : '');
         const verificationSecret = searchParams.get('secret') || undefined;
         const verificationSalt = searchParams.get('salt') || undefined;
+        const emojisParam = searchParams.get('emojis');
+        const verificationEmojis = emojisParam ? emojisParam.split(',') : undefined;
 
         return {
           activeCall: {
@@ -93,6 +95,7 @@ export const CallWindowView = () => {
             chatType,
             verificationSecret,
             verificationSalt,
+            verificationEmojis,
           },
           incomingCall: direction === 'incoming' ? {
             from: nameParam,
@@ -232,7 +235,18 @@ export const CallWindowView = () => {
     if (orbita?.getCallState) {
       orbita.getCallState().then((state: CallStatePayload | null) => {
         if (state && state.callState !== 'idle' && state.callState !== 'ended') {
-          setCallData(state);
+          setCallData((prev) => {
+            if (!prev) return state;
+            return {
+              ...state,
+              activeCall: state.activeCall ? {
+                ...state.activeCall,
+                verificationEmojis: state.activeCall.verificationEmojis || prev.activeCall?.verificationEmojis,
+                verificationSecret: state.activeCall.verificationSecret || prev.activeCall?.verificationSecret,
+                verificationSalt: state.activeCall.verificationSalt || prev.activeCall?.verificationSalt,
+              } : null,
+            };
+          });
         } else {
           resetCallStateAndDisconnect();
         }
@@ -241,7 +255,18 @@ export const CallWindowView = () => {
 
     const unsubState = orbita?.onCallState?.((state: CallStatePayload | null) => {
       if (state && state.callState !== 'idle' && state.callState !== 'ended') {
-        setCallData(state);
+        setCallData((prev) => {
+          if (!prev) return state;
+          return {
+            ...state,
+            activeCall: state.activeCall ? {
+              ...state.activeCall,
+              verificationEmojis: state.activeCall.verificationEmojis || prev.activeCall?.verificationEmojis,
+              verificationSecret: state.activeCall.verificationSecret || prev.activeCall?.verificationSecret,
+              verificationSalt: state.activeCall.verificationSalt || prev.activeCall?.verificationSalt,
+            } : null,
+          };
+        });
       } else {
         resetCallStateAndDisconnect();
       }
@@ -282,7 +307,18 @@ export const CallWindowView = () => {
         if (event.data?.type === 'CALL_STATE_UPDATE') {
           const payload = event.data.payload;
           if (payload && payload.callState !== 'idle' && payload.callState !== 'ended') {
-            setCallData(payload);
+            setCallData((prev) => {
+              if (!prev) return payload;
+              return {
+                ...payload,
+                activeCall: payload.activeCall ? {
+                  ...payload.activeCall,
+                  verificationEmojis: payload.activeCall.verificationEmojis || prev.activeCall?.verificationEmojis,
+                  verificationSecret: payload.activeCall.verificationSecret || prev.activeCall?.verificationSecret,
+                  verificationSalt: payload.activeCall.verificationSalt || prev.activeCall?.verificationSalt,
+                } : null,
+              };
+            });
           } else {
             resetCallStateAndDisconnect();
           }
@@ -887,9 +923,10 @@ export const CallWindowView = () => {
   }, [activeCall?.roomName, activeCall?.token]);
 
   useEffect(() => {
-    const secret = activeCall?.verificationSecret || (activeCall?.chatId ? deriveGroupKey(activeCall.chatId) : undefined);
-    const salt = activeCall?.verificationSalt || (activeCall?.chatId ? `group-salt-${activeCall.chatId}` : undefined);
-    if (activeCall && !activeCall.verificationEmojis && secret && salt) {
+    if (!activeCall || (activeCall.verificationEmojis && activeCall.verificationEmojis.length === 4)) return;
+    const secret = activeCall.verificationSecret || (activeCall.chatId ? deriveGroupKey(activeCall.chatId) : (activeCall.roomName ? deriveGroupKey(activeCall.roomName) : undefined));
+    const salt = activeCall.verificationSalt || activeCall.roomName || (activeCall.chatId ? `group-salt-${activeCall.chatId}` : 'orbita-salt');
+    if (secret && salt) {
       generateCallVerificationEmojis(secret + salt)
         .then((emojis) => {
           if (emojis && emojis.length === 4) {
@@ -901,7 +938,7 @@ export const CallWindowView = () => {
         })
         .catch(() => {});
     }
-  }, [activeCall?.verificationSecret, activeCall?.verificationSalt, activeCall?.verificationEmojis, activeCall?.chatId]);
+  }, [activeCall?.verificationSecret, activeCall?.verificationSalt, activeCall?.verificationEmojis, activeCall?.chatId, activeCall?.roomName]);
 
   useEffect(() => {
     if (isRemoteScreenShareActive && remoteScreenShareRef.current) {

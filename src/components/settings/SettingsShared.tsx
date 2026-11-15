@@ -97,6 +97,13 @@ export const GLOBAL_CSS = `
   }
 `;
 
+if (typeof document !== 'undefined' && !document.getElementById('orbita-settings-global-css')) {
+  const styleEl = document.createElement('style');
+  styleEl.id = 'orbita-settings-global-css';
+  styleEl.textContent = GLOBAL_CSS;
+  document.head.appendChild(styleEl);
+}
+
 export const TuxAvatar = () => (
   <div
     style={{

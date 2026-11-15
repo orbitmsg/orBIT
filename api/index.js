@@ -817,10 +817,17 @@ module.exports = async function handler(req, res) {
     }
 
     if (pathname === '/cloudinary/destroy' || pathname === '/cloudinary-destroy') {
-      const publicId = body.public_id || body.publicId || query.public_id || query.publicId || '';
+      const publicId = String(body.public_id || body.publicId || query.public_id || query.publicId || '').trim();
       const resourceType = body.resourceType || body.resource_type || 'image';
       if (!publicId || !ENV.CLOUDINARY_API_KEY || !ENV.CLOUDINARY_API_SECRET || !ENV.CLOUDINARY_CLOUD_NAME) {
         return sendJson(res, { success: false });
+      }
+      const lowerId = publicId.toLowerCase();
+      if (lowerId.includes('support_avatar') || lowerId.includes('logo') || lowerId.startsWith('system/')) {
+        return sendError(res, 'Forbidden: cannot delete protected assets', 403);
+      }
+      if (!/^[a-zA-Z0-9_\-\/]{4,128}$/.test(publicId)) {
+        return sendError(res, 'Invalid public_id format', 400);
       }
       try {
         const timestamp = Math.floor(Date.now() / 1000).toString();
@@ -1712,7 +1719,11 @@ module.exports = async function handler(req, res) {
         return sendError(res, 'Access denied: not an authorized admin', 403);
       }
 
-      if (adminToken && adminRecord.auth_token !== adminToken) {
+      if (adminRecord.auth_token) {
+        if (!adminToken || adminRecord.auth_token !== adminToken) {
+          return sendError(res, 'Access denied: invalid admin token', 403);
+        }
+      } else if (adminToken) {
         await supabase
           .from('support_admins')
           .update({ auth_token: adminToken })
@@ -1741,7 +1752,11 @@ module.exports = async function handler(req, res) {
         return sendError(res, 'Access denied: not an authorized admin', 403);
       }
 
-      if (adminToken && adminRecord.auth_token !== adminToken) {
+      if (adminRecord.auth_token) {
+        if (!adminToken || adminRecord.auth_token !== adminToken) {
+          return sendError(res, 'Access denied: invalid admin token', 403);
+        }
+      } else if (adminToken) {
         await supabase
           .from('support_admins')
           .update({ auth_token: adminToken })
@@ -1824,7 +1839,11 @@ module.exports = async function handler(req, res) {
         return sendError(res, 'Access denied: not an authorized admin', 403);
       }
 
-      if (adminToken && adminRecord.auth_token !== adminToken) {
+      if (adminRecord.auth_token) {
+        if (!adminToken || adminRecord.auth_token !== adminToken) {
+          return sendError(res, 'Access denied: invalid admin token', 403);
+        }
+      } else if (adminToken) {
         await supabase
           .from('support_admins')
           .update({ auth_token: adminToken })
@@ -2059,18 +2078,23 @@ module.exports = async function handler(req, res) {
       if (!channelId) return sendError(res, 'Missing channelId', 400);
       const supabase = getChannelsSupabaseClient();
       const userId = toUuid(body.userId);
-      if (supabase && userId) {
+      if (supabase) {
         try {
           const { data: chan } = await supabase.from('public_channels').select('creator_id').eq('id', channelId).maybeSingle();
-          if (chan && chan.creator_id && chan.creator_id !== userId) {
-            const { data: member } = await supabase
-              .from('channel_members')
-              .select('role')
-              .eq('channel_id', channelId)
-              .eq('user_id', userId)
-              .maybeSingle();
-            if (!member || (member.role !== 'owner' && member.role !== 'admin')) {
-              return sendError(res, 'Forbidden: insufficient channel permissions', 403);
+          if (chan && chan.creator_id) {
+            if (!userId) {
+              return sendError(res, 'Forbidden: authentication required', 403);
+            }
+            if (chan.creator_id !== userId) {
+              const { data: member } = await supabase
+                .from('channel_members')
+                .select('role')
+                .eq('channel_id', channelId)
+                .eq('user_id', userId)
+                .maybeSingle();
+              if (!member || (member.role !== 'owner' && member.role !== 'admin')) {
+                return sendError(res, 'Forbidden: insufficient channel permissions', 403);
+              }
             }
           }
         } catch {}
@@ -2157,19 +2181,23 @@ module.exports = async function handler(req, res) {
       const channelId = body.channelId;
       const senderId = toUuid(body.senderId);
       const supabase = getChannelsSupabaseClient();
-      if (supabase && senderId) {
+      if (supabase) {
         try {
           const { data: chan } = await supabase.from('public_channels').select('creator_id, creator_nickname').eq('id', channelId).maybeSingle();
-          const isCreatorNick = chan && chan.creator_nickname && body.senderNickname && chan.creator_nickname.toLowerCase() === body.senderNickname.toLowerCase();
-          if (chan && chan.creator_id && chan.creator_id !== senderId && !isCreatorNick) {
-            const { data: member } = await supabase
-              .from('channel_members')
-              .select('role')
-              .eq('channel_id', channelId)
-              .eq('user_id', senderId)
-              .maybeSingle();
-            if (!member || (member.role !== 'owner' && member.role !== 'admin')) {
-              return sendError(res, 'Forbidden: only channel owner or admin can post', 403);
+          if (chan && chan.creator_id) {
+            if (!senderId) {
+              return sendError(res, 'Forbidden: authentication required', 403);
+            }
+            if (chan.creator_id !== senderId) {
+              const { data: member } = await supabase
+                .from('channel_members')
+                .select('role')
+                .eq('channel_id', channelId)
+                .eq('user_id', senderId)
+                .maybeSingle();
+              if (!member || (member.role !== 'owner' && member.role !== 'admin')) {
+                return sendError(res, 'Forbidden: only channel owner or admin can post', 403);
+              }
             }
           }
         } catch {}
@@ -2242,27 +2270,22 @@ module.exports = async function handler(req, res) {
       const supabase = getChannelsSupabaseClient();
       const userId = toUuid(body.userId);
       if (supabase) {
+        if (!userId) {
+          return sendError(res, 'Forbidden: authentication required', 403);
+        }
         try {
           const { data: postData } = await supabase.from('channel_posts').select('sender_id, sender_nickname').eq('id', postId).maybeSingle();
           const { data: chanData } = await supabase.from('public_channels').select('creator_id, creator_nickname').eq('id', channelId).maybeSingle();
-          const isPostAuthor = Boolean(
-            (postData && postData.sender_id && userId && postData.sender_id === userId) ||
-            (postData && postData.sender_nickname && body.senderNickname && postData.sender_nickname.toLowerCase() === body.senderNickname.toLowerCase()) ||
-            (!postData)
-          );
-          const isChanOwner = Boolean(
-            (chanData && chanData.creator_id && userId && chanData.creator_id === userId) ||
-            (chanData && chanData.creator_nickname && body.senderNickname && chanData.creator_nickname.toLowerCase() === body.senderNickname.toLowerCase()) ||
-            (!chanData?.creator_id)
-          );
-          if (!isPostAuthor && !isChanOwner && userId) {
+          const isPostAuthor = Boolean(postData && postData.sender_id && postData.sender_id === userId);
+          const isChanOwner = Boolean(chanData && chanData.creator_id && chanData.creator_id === userId);
+          if (!isPostAuthor && !isChanOwner) {
             const { data: member } = await supabase
               .from('channel_members')
               .select('role')
               .eq('channel_id', channelId)
               .eq('user_id', userId)
               .maybeSingle();
-            if (member && (member.role !== 'owner' && member.role !== 'admin')) {
+            if (!member || (member.role !== 'owner' && member.role !== 'admin')) {
               return sendError(res, 'Forbidden: insufficient delete permissions', 403);
             }
           }
@@ -2769,13 +2792,20 @@ module.exports = async function handler(req, res) {
     }
 
     if (pathname === '/groups/kick' && req.method === 'POST') {
-      const { groupId, targetNickname, targetUserCode, targetUserId, adminNickname } = body;
+      const { groupId, targetNickname, targetUserCode, targetUserId, adminNickname, adminUserCode, adminUserId } = body;
       const targetId = targetUserCode || targetUserId;
       if (!groupId || (!targetNickname && !targetId)) return sendError(res, 'Missing kick parameters', 400);
 
       const supabase = getGroupsSupabaseClient();
       if (supabase) {
         try {
+          const adminId = adminUserCode || adminUserId;
+          if (adminId) {
+            const { data: adminMember } = await supabase.from('group_members').select('role').eq('group_id', groupId).or(`user_code.eq.${adminId},user_id.eq.${adminId}`).maybeSingle();
+            if (adminMember && adminMember.role !== 'owner' && adminMember.role !== 'admin') {
+              return sendError(res, 'Forbidden: insufficient permissions to kick member', 403);
+            }
+          }
           const orConditions = [];
           if (targetUserCode) orConditions.push(`user_code.eq.${targetUserCode}`, `user_id.eq.${targetUserCode}`);
           if (targetUserId && targetUserId !== targetUserCode) orConditions.push(`user_code.eq.${targetUserId}`, `user_id.eq.${targetUserId}`);
@@ -2856,12 +2886,22 @@ module.exports = async function handler(req, res) {
     }
 
     if (pathname === '/groups/delete' && req.method === 'POST') {
-      const { groupId } = body;
+      const { groupId, requesterCode, requesterId } = body;
       if (!groupId) return sendError(res, 'Missing groupId', 400);
 
       const supabase = getGroupsSupabaseClient();
       if (supabase) {
         try {
+          const { data: grp } = await supabase.from('groups').select('creator_id, creator_code').eq('id', groupId).maybeSingle();
+          if (grp && (grp.creator_id || grp.creator_code)) {
+            const isOwner = Boolean(
+              (grp.creator_id && requesterId && grp.creator_id === requesterId) ||
+              (grp.creator_code && requesterCode && grp.creator_code === requesterCode)
+            );
+            if (!isOwner) {
+              return sendError(res, 'Forbidden: only group owner can delete group', 403);
+            }
+          }
           await supabase.from('groups').delete().eq('id', groupId);
           const deletePayload = { type: 'group-deleted', groupId };
           await triggerGroupPusherEvent(`presence-group-${groupId}`, 'group-deleted', deletePayload);
@@ -2877,13 +2917,20 @@ module.exports = async function handler(req, res) {
     }
 
     if (pathname === '/groups/role' && req.method === 'POST') {
-      const { groupId, targetNickname, targetUserCode, targetUserId, role } = body;
+      const { groupId, targetNickname, targetUserCode, targetUserId, role, adminUserCode, adminUserId } = body;
       const targetId = targetUserCode || targetUserId;
       if (!groupId || (!targetNickname && !targetId) || !role) return sendError(res, 'Missing parameters', 400);
 
       const supabase = getGroupsSupabaseClient();
       if (supabase) {
         try {
+          const adminId = adminUserCode || adminUserId;
+          if (adminId) {
+            const { data: adminMember } = await supabase.from('group_members').select('role').eq('group_id', groupId).or(`user_code.eq.${adminId},user_id.eq.${adminId}`).maybeSingle();
+            if (adminMember && adminMember.role !== 'owner' && adminMember.role !== 'admin') {
+              return sendError(res, 'Forbidden: insufficient permissions to change roles', 403);
+            }
+          }
           const orConditions = [];
           if (targetUserCode) orConditions.push(`user_code.eq.${targetUserCode}`, `user_id.eq.${targetUserCode}`);
           if (targetUserId && targetUserId !== targetUserCode) orConditions.push(`user_code.eq.${targetUserId}`, `user_id.eq.${targetUserId}`);

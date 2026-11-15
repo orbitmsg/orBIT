@@ -11,7 +11,6 @@ import { gatewayManager } from '../services/gatewayManager';
 import { ablyService } from '../services/ablyService';
 import { groupService } from '../services/groupService';
 import { lobbyService } from '../services/lobbyService';
-import { deriveGroupKey } from '../lib/groupCrypto';
 import { generateKeyPair, generateChatId, getDirectChatId } from '../lib/crypto';
 import { sqliteStorage } from '../services/sqliteStorage';
 import i18n from '../i18n';
@@ -691,7 +690,7 @@ export const useCallStore = create<CallStore>((set, get) => {
       const isGroup = chat?.type === 'group';
       const isLobby = chatId.startsWith('lobby_');
       const roomName = customRoomName || (isLobby ? `lobby-voice-${chatId}` : (isGroup ? (chat?.activeCallRoom || `group-call-${chatId}`) : `call-${chatId}-${Date.now()}`));
-      const verificationSecret = isGroup ? (chat?.sharedSecret || deriveGroupKey(chatId)) : (chat?.type === 'private' ? chat?.sharedSecret : undefined);
+      const verificationSecret = chat?.sharedSecret || undefined;
       const verificationSalt = isGroup ? `group-salt-${chatId}` : crypto.randomUUID().replace(/-/g, '');
       const isVideo = callType === 'video';
 

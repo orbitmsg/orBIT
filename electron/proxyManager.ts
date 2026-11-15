@@ -343,7 +343,12 @@ function writeAsync(socket: Duplex, data: Buffer): Promise<void> {
       reject(new Error('Socket destroyed before write'));
       return;
     }
+    const onError = (err: Error) => {
+      reject(err);
+    };
+    socket.once('error', onError);
     socket.write(data, (err) => {
+      socket.removeListener('error', onError);
       if (err) reject(err);
       else resolve();
     });

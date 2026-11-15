@@ -715,12 +715,14 @@ class GroupService {
     actorNickname?: string
   ): Promise<boolean> {
     const actor = actorNickname || useAuthStore.getState().nickname || '';
-    const secret = sharedSecret || deriveGroupKey(groupId);
-    if (data?.name !== undefined) {
-      this.sendSystemMessage(groupId, secret, 'title', actor, undefined);
-    }
-    if (data?.avatarUrl !== undefined) {
-      this.sendSystemMessage(groupId, secret, 'avatar', actor, undefined);
+    const secret = sharedSecret || useChatStore.getState().chats.find((c) => c.id === groupId)?.sharedSecret;
+    if (secret) {
+      if (data?.name !== undefined) {
+        this.sendSystemMessage(groupId, secret, 'title', actor, undefined);
+      }
+      if (data?.avatarUrl !== undefined) {
+        this.sendSystemMessage(groupId, secret, 'avatar', actor, undefined);
+      }
     }
 
     const updatePayload: any = { updated_at: new Date().toISOString() };
@@ -806,11 +808,13 @@ class GroupService {
     } catch {}
 
     const actor = actorNickname || useAuthStore.getState().nickname || '';
-    const secret = deriveGroupKey(groupId);
-    if (role === 'admin') {
-      this.sendSystemMessage(groupId, secret, 'admin', actor, targetNickname);
-    } else if (role === 'member') {
-      this.sendSystemMessage(groupId, secret, 'unadmin', actor, targetNickname);
+    const secret = useChatStore.getState().chats.find((c) => c.id === groupId)?.sharedSecret;
+    if (secret) {
+      if (role === 'admin') {
+        this.sendSystemMessage(groupId, secret, 'admin', actor, targetNickname);
+      } else if (role === 'member') {
+        this.sendSystemMessage(groupId, secret, 'unadmin', actor, targetNickname);
+      }
     }
     return true;
   }

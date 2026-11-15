@@ -3665,6 +3665,7 @@ let splashWindow: BrowserWindow | null = null;
 let trayInstance: Tray | null = null;
 let showInTraySetting = true;
 let isQuitting = false;
+let currentWebRtcPolicy: 'default' | 'disable_non_proxied_udp' = 'default';
 
 ipcMain.handle('orbita:get-current-theme', () => ({
   themeId: currentThemeId,
@@ -4480,6 +4481,7 @@ function initOrGetCallWindow(initialPayload?: any): BrowserWindow {
   });
 
   Menu.setApplicationMenu(null);
+  callWindow.webContents.setWebRTCIPHandlingPolicy(currentWebRtcPolicy);
   if (screenProtectionSetting) {
     callWindow.setContentProtection(true);
   }
@@ -4745,6 +4747,7 @@ function initOrGetMediaWindow(initialPayload?: any): BrowserWindow {
   }
 
   Menu.setApplicationMenu(null);
+  mediaWindow.webContents.setWebRTCIPHandlingPolicy(currentWebRtcPolicy);
   if (screenProtectionSetting) {
     mediaWindow.setContentProtection(true);
   }
@@ -5304,6 +5307,7 @@ function createMainWindow() {
   }
 
   Menu.setApplicationMenu(null);
+  mainWindow.webContents.setWebRTCIPHandlingPolicy(currentWebRtcPolicy);
   if (screenProtectionSetting) {
     mainWindow.setContentProtection(true);
   }
@@ -6142,6 +6146,7 @@ ipcMain.on('orbita:show-custom-notification', (_event, payload: any) => {
 });
 
 function applyWebRtcIpPolicy(policy: 'default' | 'disable_non_proxied_udp') {
+  currentWebRtcPolicy = policy;
   for (const win of BrowserWindow.getAllWindows()) {
     if (!win.isDestroyed()) {
       win.webContents.setWebRTCIPHandlingPolicy(policy);

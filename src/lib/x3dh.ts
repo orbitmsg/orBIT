@@ -12,17 +12,17 @@ export async function x3dhInitiator(
   theirPreKeySignature: string,
   theirOneTimePreKeyPublic?: string
 ): Promise<string> {
-  // 1. (Optional) Verify the signed prekey signature
-  const isValid = await verifySignature(
-    theirIdentitySigningKeyPublic,
-    theirPreKeySignature,
-    theirIdentityKeyPublic + theirSignedPreKeyPublic
-  );
-  if (!isValid) {
-    console.warn('[X3DH] Warning: PreKey signature verification failed or skipped.');
+  if (theirIdentitySigningKeyPublic && theirPreKeySignature) {
+    const isValid = await verifySignature(
+      theirIdentitySigningKeyPublic,
+      theirPreKeySignature,
+      theirIdentityKeyPublic + theirSignedPreKeyPublic
+    );
+    if (!isValid) {
+      throw new Error('[X3DH] PreKey signature verification failed: untrusted or forged signed prekey');
+    }
   }
 
-  // 2. Compute DH outputs
   const dh1 = x25519SharedKey(hexDecode(ourIdentityKey.privateKey), hexDecode(theirSignedPreKeyPublic));
   const dh2 = x25519SharedKey(hexDecode(ourEphemeralKey.privateKey), hexDecode(theirIdentityKeyPublic));
   const dh3 = x25519SharedKey(hexDecode(ourEphemeralKey.privateKey), hexDecode(theirSignedPreKeyPublic));

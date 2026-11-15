@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { useChatStore } from './useChatStore';
 import { securityService } from '../services/securityService';
+import { setAuthStoreGetter } from './authStoreRef';
 
 type AuthStep = 'welcome' | 'nickname' | 'main';
 
@@ -486,6 +487,4 @@ export const useAuthStore = create<AuthState>()(
   )
 );
 
-if (typeof window !== 'undefined') {
-  (window as any).__ORBITA_AUTH_STORE__ = useAuthStore;
-}
+setAuthStoreGetter(() => useAuthStore.getState());

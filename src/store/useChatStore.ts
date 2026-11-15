@@ -7,6 +7,7 @@ import { generateChatId as genChatId, ensureValidUuid } from '../lib/crypto';
 import { mediaManager } from '../services/mediaManager';
 import { supabaseService } from '../services/supabaseService';
 import { sqliteStorage } from '../services/sqliteStorage';
+import { getAuthStoreState } from './authStoreRef';
 
 import {
   RotationSpeed,
@@ -600,7 +601,7 @@ export const useChatStore = create<ChatState>()(
           let myAvatar = '';
           let myUserId = '';
           try {
-            const authStore = (window as any).__ORBITA_AUTH_STORE__?.getState?.();
+            const authStore = getAuthStoreState();
             if (authStore) {
               myNick = authStore.nickname || '';
               myAvatar = authStore.avatarUrl || '';
@@ -743,7 +744,7 @@ export const useChatStore = create<ChatState>()(
 
         const ttl = state.messageTTLSeconds || undefined;
         const isOut = Boolean(message.isOutgoing);
-        const authUserId = typeof window !== 'undefined' ? (window as any).__ORBITA_AUTH_STORE__?.getState?.()?.userId : undefined;
+        const authUserId = getAuthStoreState()?.userId;
         const ensuredSenderId = ensureValidUuid(
           message.senderId || (isOut ? (authUserId || state.myCode) : undefined),
           isOut ? (authUserId || state.myCode) : (chat.peerCode || message.sender)
@@ -862,7 +863,7 @@ export const useChatStore = create<ChatState>()(
           }
 
           const isItemOut = Boolean(message.isOutgoing);
-          const itemAuthUserId = typeof window !== 'undefined' ? (window as any).__ORBITA_AUTH_STORE__?.getState?.()?.userId : undefined;
+          const itemAuthUserId = getAuthStoreState()?.userId;
           const ensuredItemSenderId = ensureValidUuid(
             message.senderId || (isItemOut ? (itemAuthUserId || state.myCode) : undefined),
             isItemOut ? (itemAuthUserId || state.myCode) : (chat.peerCode || message.sender)
@@ -1537,7 +1538,7 @@ export const useChatStore = create<ChatState>()(
         const array = new Uint8Array(32);
         crypto.getRandomValues(array);
         const sharedSecret = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
-        const authStore = (window as any).__ORBITA_AUTH_STORE__?.getState?.() || {};
+        const authStore = getAuthStoreState() || {};
         const nickname = authStore.nickname || 'Unknown';
         const userId = authStore.userId || 'user';
         const newChat: Chat = {
@@ -1574,7 +1575,7 @@ export const useChatStore = create<ChatState>()(
       joinGroupByCode: async (inviteCode, callback) => {
         const normalized = inviteCode.trim().toLowerCase();
         if (!normalized) { callback(false, 'Введите код лобби'); return; }
-        const authStore = (window as any).__ORBITA_AUTH_STORE__?.getState?.() || {};
+        const authStore = getAuthStoreState() || {};
         const nickname = authStore.nickname || 'Unknown';
         const userId = authStore.userId || 'user';
         const existing = get().chats.find(c => c.type === 'group' && c.inviteCode === normalized);
@@ -1857,7 +1858,7 @@ export const useChatStore = create<ChatState>()(
           window.orbita.setGhostMode(enabled).catch(() => {});
         }
         if (typeof window !== 'undefined' && (window as any).ablyService) {
-          const authUserId = (window as any).__ORBITA_AUTH_STORE__?.getState?.()?.userId;
+          const authUserId = getAuthStoreState()?.userId;
           const myId = authUserId || get().myCode;
           if (myId) {
             if (enabled) {

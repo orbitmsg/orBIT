@@ -1,11 +1,10 @@
-// electron/downloads.ts
 import { app, ipcMain, shell } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 
 const DOWNLOADS_FOLDER = 'orBIT';
 
-function getDownloadsDir(): string {
+export function getDownloadsDir(): string {
   return path.join(app.getPath('downloads'), DOWNLOADS_FOLDER);
 }
 
@@ -19,12 +18,13 @@ export function ensureDownloadsDir(): void {
 export function saveToDownloads(fileData: Buffer, fileName: string): string {
   const dir = getDownloadsDir();
   ensureDownloadsDir();
-  const filePath = path.join(dir, fileName);
+  const safeName = path.basename(fileName || 'download');
+  const filePath = path.join(dir, safeName);
   let finalPath = filePath;
   let counter = 1;
   while (fs.existsSync(finalPath)) {
-    const ext = path.extname(fileName);
-    const base = path.basename(fileName, ext);
+    const ext = path.extname(safeName);
+    const base = path.basename(safeName, ext);
     finalPath = path.join(dir, `${base} (${counter})${ext}`);
     counter++;
   }
@@ -32,7 +32,7 @@ export function saveToDownloads(fileData: Buffer, fileName: string): string {
   return finalPath;
 }
 
-const DANGEROUS_EXTENSIONS = new Set([
+export const DANGEROUS_EXTENSIONS = new Set([
   '.exe', '.bat', '.cmd', '.com', '.pif', '.scr', '.vbs', '.vbe',
   '.js', '.jse', '.wsf', '.wsh', '.ps1', '.ps1xml', '.ps2', '.psc1',
   '.psc2', '.msh', '.msh1', '.msh2', '.msi', '.msp', '.mst', '.hta',
@@ -42,7 +42,7 @@ const DANGEROUS_EXTENSIONS = new Set([
   '.bash', '.zsh', '.command', '.bin', '.gadget', '.theme'
 ]);
 
-function isDangerousExecutable(filePath: string): boolean {
+export function isDangerousExecutable(filePath: string): boolean {
   try {
     const ext = path.extname(filePath).toLowerCase();
     if (DANGEROUS_EXTENSIONS.has(ext)) return true;

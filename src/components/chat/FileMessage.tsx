@@ -183,7 +183,10 @@ export const FileMessage = memo(({
       const arrayBuffer = await fileBlob.arrayBuffer();
       const base64 = arrayBufferToBase64(arrayBuffer);
       if (window.orbita && window.orbita.openFile) {
-        await window.orbita.openFile(base64, displayName);
+        const res = await window.orbita.openFile(base64, displayName);
+        if (res && res.error === 'BLOCKED_DANGEROUS_FILE') {
+          return;
+        }
       } else {
         const a = document.createElement('a');
         a.href = blobUrl;

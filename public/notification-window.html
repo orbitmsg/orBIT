@@ -285,7 +285,21 @@
   </div>
 
   <script>
-    const { ipcRenderer } = require('electron');
+    const sendAllClosed = () => {
+      if (window.orbitaNotif?.allClosed) {
+        window.orbitaNotif.allClosed();
+      } else if (typeof require !== 'undefined') {
+        try { require('electron').ipcRenderer.send('notif-window:all-closed'); } catch {}
+      }
+    };
+
+    const sendClicked = (data) => {
+      if (window.orbitaNotif?.clickNotification) {
+        window.orbitaNotif.clickNotification(data);
+      } else if (typeof require !== 'undefined') {
+        try { require('electron').ipcRenderer.send('notif-window:clicked', data); } catch {}
+      }
+    };
 
     let settings = {
       position: 'bottom-right',
@@ -300,10 +314,6 @@
     let isHovering = false;
 
     const NOTIF_TIMEOUT_MS = 8500;
-
-    ipcRenderer.on('notif:icon-data', (_event, data) => {
-      iconData = data;
-    });
 
     function getAnimClass(position) {
       if (position.includes('right')) return 'from-right';
@@ -369,19 +379,19 @@
         if (immediate) {
           notifEl.remove();
           if (activeNotifs.length === 0) {
-            ipcRenderer.send('notif-window:all-closed');
+            sendAllClosed();
           }
         } else {
           notifEl.classList.add(animation);
           setTimeout(() => {
             if (notifEl) notifEl.remove();
             if (activeNotifs.length === 0) {
-              ipcRenderer.send('notif-window:all-closed');
+              sendAllClosed();
             }
           }, 180);
         }
       } else if (activeNotifs.length === 0) {
-        ipcRenderer.send('notif-window:all-closed');
+        sendAllClosed();
       }
     }
 
@@ -389,7 +399,7 @@
       const list = [...activeNotifs];
       list.forEach(n => removeNotifInstant(n.id, 'fade-out', true));
       updateHideAllVisibility();
-      ipcRenderer.send('notif-window:all-closed');
+      sendAllClosed();
     }
 
     function removeOldestNotification() {
@@ -510,16 +520,17 @@
 
       let avatarHtml;
       const isOrbitaTitle = !finalTitle || String(finalTitle).toLowerCase().includes('orbit');
-      if (isHidden || (isOrbitaTitle && (!avatarUrl || avatarUrl.trim() === ''))) {
+      const safeAvatarUrl = sanitizeMediaUrl(avatarUrl);
+      if (isHidden || (isOrbitaTitle && !safeAvatarUrl)) {
         avatarHtml = getOrbitaLogoSvg();
-      } else if (avatarUrl && typeof avatarUrl === 'string' && avatarUrl.trim() !== '') {
-        const cleanUrl = avatarUrl.split('?')[0];
+      } else if (safeAvatarUrl) {
+        const cleanUrl = safeAvatarUrl.split('?')[0];
         const ext = cleanUrl.split('.').pop().toLowerCase();
         const isVideo = ['mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v'].includes(ext);
         if (isVideo) {
-          avatarHtml = `<video src="${avatarUrl}" autoplay muted loop playsinline></video>`;
+          avatarHtml = `<video src="${escapeHtml(safeAvatarUrl)}" autoplay muted loop playsinline></video>`;
         } else {
-          avatarHtml = `<img src="${avatarUrl}" alt="Avatar" onerror="this.onerror=null;this.parentElement.innerHTML=getLetterAvatar('${escapeHtml(finalTitle)}','${accent}');" />`;
+          avatarHtml = `<img src="${escapeHtml(safeAvatarUrl)}" alt="Avatar" class="notif-avatar-img" />`;
         }
       } else {
         avatarHtml = getLetterAvatar(finalTitle, accent);
@@ -546,6 +557,15 @@
           </svg>
         </div>
       `;
+
+      const avatarImg = el.querySelector('.notif-avatar-img');
+      if (avatarImg) {
+        avatarImg.addEventListener('error', () => {
+          if (avatarImg.parentElement) {
+            avatarImg.parentElement.innerHTML = getLetterAvatar(finalTitle, accent);
+          }
+        });
+      }
 
       const notifObj = {
         id,
@@ -586,7 +606,7 @@
         if (isTriggered) return;
         if (e && e.target && e.target.closest && e.target.closest('.notif-close')) return;
         isTriggered = true;
-        ipcRenderer.send('notif-window:clicked', { chatId });
+        sendClicked({ chatId });
         clearAllNotifications();
       };
       el.addEventListener('pointerup', onCardClick);
@@ -622,12 +642,27 @@
       updateHideAllVisibility();
     }
 
+    function sanitizeMediaUrl(url) {
+      if (!url || typeof url !== 'string') return null;
+      const trimmed = url.trim();
+      if (
+        trimmed.startsWith('https://') ||
+        trimmed.startsWith('http://') ||
+        trimmed.startsWith('data:image/') ||
+        trimmed.startsWith('orbita-media:')
+      ) {
+        return trimmed;
+      }
+      return null;
+    }
+
     function escapeHtml(str) {
       return String(str)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
     const hideAllBarEl = document.getElementById('hide-all-bar');
@@ -647,7 +682,11 @@
       hideAllBarEl.addEventListener('click', onHideAllClick);
     }
 
-    ipcRenderer.on('notif:show', (_event, payload) => {
+    const handleIconData = (data) => {
+      iconData = data;
+    };
+
+    const handleNotifShow = (payload) => {
       settings = {
         position:    payload.position    || 'bottom-right',
         theme:       payload.theme       || 'dark',
@@ -681,11 +720,20 @@
         avatarUrl:   payload.avatarUrl,
         isGroup:     Boolean(payload.isGroup),
       });
-    });
+    };
 
-    ipcRenderer.on('notif:clear-all', () => {
-      clearAllNotifications();
-    });
+    if (window.orbitaNotif) {
+      window.orbitaNotif.onIconData(handleIconData);
+      window.orbitaNotif.onShow(handleNotifShow);
+      window.orbitaNotif.onClearAll(clearAllNotifications);
+    } else if (typeof require !== 'undefined') {
+      try {
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.on('notif:icon-data', (_e, d) => handleIconData(d));
+        ipcRenderer.on('notif:show', (_e, p) => handleNotifShow(p));
+        ipcRenderer.on('notif:clear-all', () => clearAllNotifications());
+      } catch {}
+    }
   </script>
 </body>
 </html>

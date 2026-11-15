@@ -548,6 +548,30 @@ contextBridge.exposeInMainWorld('orbita', {
   notifyAppReady: () => ipcRenderer.send('orbita:app-ready'),
 });
 
+contextBridge.exposeInMainWorld('orbitaNotif', {
+  onShow: (callback: (payload: any) => void) => {
+    const handler = (_event: unknown, payload: any) => callback(payload);
+    ipcRenderer.on('notif:show', handler);
+    return () => ipcRenderer.removeListener('notif:show', handler);
+  },
+  onIconData: (callback: (data: string) => void) => {
+    const handler = (_event: unknown, data: string) => callback(data);
+    ipcRenderer.on('notif:icon-data', handler);
+    return () => ipcRenderer.removeListener('notif:icon-data', handler);
+  },
+  onClearAll: (callback: () => void) => {
+    const handler = () => callback();
+    ipcRenderer.on('notif:clear-all', handler);
+    return () => ipcRenderer.removeListener('notif:clear-all', handler);
+  },
+  clickNotification: (data: { chatId?: string }) => {
+    ipcRenderer.send('notif-window:clicked', data);
+  },
+  allClosed: () => {
+    ipcRenderer.send('notif-window:all-closed');
+  },
+});
+
 Object.defineProperty(window, '__ELECTRON_RENDERER__', {
   value: true,
   configurable: false,

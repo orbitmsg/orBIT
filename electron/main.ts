@@ -29,6 +29,7 @@ import * as sqlite3 from 'sqlite3';
 import { autoUpdater } from 'electron-updater';
 import { spawn } from 'child_process';
 import { getLocalKey, isPinLocked, isPinSet, unlockWithPin, setupPin, removePin, setNativeModule } from './localKey';
+import { DANGEROUS_EXTENSIONS, isDangerousExecutable } from './downloads';
 import {
   ProxyConfigPayload,
   startLocalProxyRelay,
@@ -40,7 +41,6 @@ import {
 
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 app.commandLine.appendSwitch('js-flags', '--expose-gc --max-old-space-size=2048');
-app.commandLine.appendSwitch('disable-site-isolation-trials');
 app.commandLine.appendSwitch('disable-breakpad');
 app.commandLine.appendSwitch('disable-features', 'MediaRouter');
 app.commandLine.appendSwitch('wm-window-animations-disabled');
@@ -251,8 +251,9 @@ function getOrCreateNotificationWindow(settings: { position: string; maxCount: n
     hasShadow: false,
     roundedCorners: false,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.cjs'),
       backgroundThrottling: true,
     },
     show: false,
@@ -1286,7 +1287,13 @@ function registerOrbitaMediaProtocol() {
           const arrayBuf = await response.arrayBuffer();
           rawBuf = Buffer.from(arrayBuf) as Buffer;
         } else {
-          const localPath = mediaUrl.startsWith('file://') ? fileURLToPath(mediaUrl) : mediaUrl;
+          const localPath = path.resolve(mediaUrl.startsWith('file://') ? fileURLToPath(mediaUrl) : mediaUrl);
+          const allowedBase1 = path.resolve(app.getPath('userData'));
+          const allowedBase2 = path.resolve(app.getPath('temp'));
+          const isAllowed = localPath.startsWith(allowedBase1 + path.sep) || localPath.startsWith(allowedBase2 + path.sep);
+          if (!isAllowed) {
+            return new Response('Forbidden', { status: 403 });
+          }
           if (fs.existsSync(localPath)) {
             rawBuf = fastReadFile(localPath);
           } else {
@@ -1532,6 +1539,11 @@ function registerDownloadsIpcHandlers() {
         buf = Buffer.from(data.buffer, data.byteOffset, data.byteLength);
       }
       fs.writeFileSync(filePath, buf);
+      const ext = path.extname(sanitizedName).toLowerCase();
+      if (DANGEROUS_EXTENSIONS.has(ext) || isDangerousExecutable(filePath)) {
+        shell.showItemInFolder(filePath);
+        return { success: false, error: 'BLOCKED_DANGEROUS_FILE' };
+      }
       const err = await shell.openPath(filePath);
       if (err) {
         return { success: false, error: err };
@@ -1546,8 +1558,14 @@ function registerDownloadsIpcHandlers() {
   ipcMain.handle('downloads:open', async (_event, fileName?: string) => {
     const dir = getDownloadsDir();
     if (fileName) {
-      const full = path.join(dir, fileName);
+      const sanitized = path.basename(fileName);
+      const full = path.join(dir, sanitized);
       if (fs.existsSync(full)) {
+        const ext = path.extname(full).toLowerCase();
+        if (DANGEROUS_EXTENSIONS.has(ext) || isDangerousExecutable(full)) {
+          shell.showItemInFolder(full);
+          return;
+        }
         await shell.openPath(full);
       }
     } else {
@@ -2666,13 +2684,14 @@ ipcMain.handle('orbita:openFolder', async (_event, folderPath: string) => {
 ipcMain.handle('orbita:saveBackupFile', async (_event, folderPath: string, fileName: string, data: Uint8Array | ArrayBuffer) => {
   try {
     const defaultBackupsDir = path.join(app.getPath('userData'), 'backups');
-    const targetFolder = folderPath && folderPath.trim() !== '' ? folderPath : defaultBackupsDir;
+    const safeName = path.basename(fileName || 'backup.dat');
+    const targetFolder = folderPath && folderPath.trim() !== '' ? path.resolve(folderPath) : defaultBackupsDir;
 
     if (!fs.existsSync(targetFolder)) {
       await fs.promises.mkdir(targetFolder, { recursive: true });
     }
 
-    const fullPath = path.join(targetFolder, fileName);
+    const fullPath = path.join(targetFolder, safeName);
     const buf = Buffer.isBuffer(data) ? data : Buffer.from(data as any);
     await fs.promises.writeFile(fullPath, buf);
 
@@ -3510,7 +3529,42 @@ ipcMain.handle('orbita:openExternal', async (_event, url: string) => {
   }
 });
 
+function isSafeNetworkUrl(targetUrl: string): boolean {
+  try {
+    const parsed = new URL(targetUrl);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return false;
+    }
+    const host = parsed.hostname.toLowerCase();
+    if (
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === '0.0.0.0' ||
+      host === '::1' ||
+      host === '[::1]' ||
+      host.endsWith('.local') ||
+      host.endsWith('.internal')
+    ) {
+      return false;
+    }
+    if (
+      host.startsWith('10.') ||
+      host.startsWith('192.168.') ||
+      host.startsWith('169.254.') ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host)
+    ) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function fetchWithRedirects(targetUrl: string): Promise<string> {
+  if (!isSafeNetworkUrl(targetUrl)) {
+    throw new Error('Blocked: URL target is not permitted');
+  }
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 6000);
   try {
@@ -5529,8 +5583,15 @@ async function fetchLatestGitHubRelease(): Promise<{
 }
 
 async function downloadUpdateAsset(url: string, fileName: string): Promise<string> {
+  if (!url || typeof url !== 'string' || !url.startsWith('https://github.com/orbitachat/orbita-desktop/releases/download/')) {
+    throw new Error('Blocked: Untrusted update source URL');
+  }
+  const safeFileName = path.basename(fileName || 'orbita_update.exe');
+  if (!safeFileName.toLowerCase().endsWith('.exe')) {
+    throw new Error('Blocked: Invalid update package extension');
+  }
   const targetDir = app.getPath('temp');
-  const targetPath = path.join(targetDir, fileName || 'orbita_update.exe');
+  const targetPath = path.join(targetDir, safeFileName);
   const response = await electronNet.fetch(url, {
     headers: {
       'User-Agent': `orBIT/${app.getVersion()}`,
@@ -5773,11 +5834,38 @@ app.whenReady().then(async () => {
     }
   });
 
-  session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
-    callback(true);
+  const isTrustedWebContents = (wc: Electron.WebContents | null) => {
+    if (!wc) return false;
+    const url = wc.getURL();
+    if (!url) return true;
+    if (
+      url.startsWith('file://') ||
+      url.startsWith('http://127.0.0.1:5173') ||
+      url.startsWith('http://localhost:5173') ||
+      url.startsWith('https://orbitad.vercel.app')
+    ) {
+      return true;
+    }
+    return false;
+  };
+
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    if (!isTrustedWebContents(webContents)) {
+      return callback(false);
+    }
+    if (['media', 'notifications', 'fullscreen'].includes(permission)) {
+      return callback(true);
+    }
+    callback(false);
   });
-  session.defaultSession.setPermissionCheckHandler((_webContents, _permission) => {
-    return true;
+  session.defaultSession.setPermissionCheckHandler((webContents, permission) => {
+    if (!isTrustedWebContents(webContents)) {
+      return false;
+    }
+    if (['media', 'notifications', 'fullscreen'].includes(permission)) {
+      return true;
+    }
+    return false;
   });
 
   if (app.configureHostResolver) {

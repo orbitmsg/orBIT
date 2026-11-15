@@ -828,6 +828,7 @@ export const TelegramAlbumGrid = memo(({
       style={{
         width: containerWidth,
         maxWidth: `${maxWidth}px`,
+        alignSelf: isOwn ? 'flex-end' : 'flex-start',
         borderRadius: photoBorderRadius,
         overflow: items.length > 1 ? 'hidden' : 'visible',
         WebkitMaskImage: items.length > 1 ? '-webkit-radial-gradient(white, black)' : undefined,

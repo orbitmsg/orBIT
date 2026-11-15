@@ -126,12 +126,19 @@ export const ProfileGroupMembers: React.FC<ProfileGroupMembersProps> = ({
             const effectiveAvatar = (isSelf && myAvatarUrl)
               ? myAvatarUrl
               : (
+                  (userObj as any)?.avatarUrl ||
+                  directChat?.avatarUrl ||
+                  (memberCode ? memberAvatars[memberCode] : null) ||
                   member.avatarUrl ||
                   (member as any).avatar_url ||
-                  (memberCode ? memberAvatars[memberCode] : null) ||
-                  directChat?.avatarUrl ||
-                  (userObj as any)?.avatarUrl ||
                   null
+                );
+            const effectiveNickname = (isSelf && myNickname)
+              ? myNickname
+              : (
+                  userObj?.nickname ||
+                  (directChat?.name && directChat.name !== directChat.peerCode ? directChat.name : undefined) ||
+                  member.nickname
                 );
             const isMemberOnline = isSelf ||
               Boolean(chat.onlineCount && chat.members && chat.onlineCount >= chat.members.length) ||
@@ -245,15 +252,15 @@ export const ProfileGroupMembers: React.FC<ProfileGroupMembersProps> = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
                   <Avatar
                     src={effectiveAvatar}
-                    alt={member.nickname}
+                    alt={effectiveNickname}
                     className="w-9 h-9 rounded-full flex-shrink-0"
                   />
                   <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span className={`truncate ${isSelf ? '' : 'hover:underline'}`} style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--text-main)' }}>
-                        {member.nickname}
+                        {effectiveNickname}
                       </span>
-                      <DeveloperBadge userId={memberCode || member.userId || member.nickname} nickname={member.nickname} size={24} />
+                      <DeveloperBadge userId={memberCode || member.userId || effectiveNickname} nickname={effectiveNickname} size={24} />
                     </div>
                     <span style={{ fontSize: '11px', color: isMemberOnline ? 'var(--accent-color, #9b7dd4)' : 'var(--text-dim)' }}>
                       {isMemberOnline ? t('userStatus.online', 'в сети') : (member.lastSeen ? formatLastSeen(member.lastSeen, t) : t('userStatus.offline', 'был(а) недавно'))}

@@ -237,9 +237,10 @@ export const useGroupSubscriptions = ({
         const newNickname = data.nickname || data.sender;
 
         const isTarget = (member: any) => {
-          const mId = member.userId || member.userCode;
-          if (targetUserId && mId) return mId === targetUserId;
-          if (targetUserCode && mId) return mId === targetUserCode;
+          const mCodes = [member.userId, member.userCode, member.user_id, member.user_code].filter(Boolean);
+          if (targetUserId && mCodes.includes(targetUserId)) return true;
+          if (targetUserCode && mCodes.includes(targetUserCode)) return true;
+          if (data.oldNickname && member.nickname === data.oldNickname) return true;
           return false;
         };
 

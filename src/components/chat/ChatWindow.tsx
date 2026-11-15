@@ -259,43 +259,70 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
     const usersById = useChatStore.getState().usersById || {};
 
     activeChat.members.forEach((m) => {
-      const code = m.userId || (m as any).userCode;
-      if (!code || checkedMembersRef.current.has(code)) return;
-      if (m.avatarUrl || (m as any).avatar_url) return;
-      if (memberAvatars[code]) return;
+      const code = m.userId || (m as any).userCode || (m as any).user_code || (m as any).user_id;
+      if (!code) return;
 
-      checkedMembersRef.current.add(code);
+      const directChat = allChats.find(
+        (c) => c.type === 'private' && (c.peerCode === code || c.originalPeerCode === code || (c as any).userId === code)
+      );
+      const knownProfile = usersById[code];
 
-      let localAvatar = '';
-      if (usersById[code]?.avatarUrl) {
-        localAvatar = usersById[code].avatarUrl;
-      }
-      if (!localAvatar) {
-        const directChat = allChats.find(c => c.type === 'private' && (c.peerCode === code || c.originalPeerCode === code));
-        if (directChat?.avatarUrl) localAvatar = directChat.avatarUrl;
-      }
+      const localAvatar = knownProfile?.avatarUrl || directChat?.avatarUrl;
+      const localNickname = knownProfile?.nickname || (directChat?.name && directChat.name !== directChat.peerCode ? directChat.name : undefined);
 
       if (localAvatar) {
-        setMemberAvatars(prev => ({
-          ...prev,
-          [code]: localAvatar,
-        }));
-        return;
+        setMemberAvatars((prev) => ({ ...prev, [code]: localAvatar }));
       }
 
+      if (checkedMembersRef.current.has(code)) return;
+      checkedMembersRef.current.add(code);
+
       supabaseService.lookupPublicProfile(code).then((profile) => {
-        if (isMounted && profile?.avatar_url) {
-          setMemberAvatars((prev) => ({
-            ...prev,
-            [code]: profile.avatar_url!,
-          }));
+        if (!isMounted || !profile) return;
+        const freshAvatar = profile.avatar_url || localAvatar;
+        const freshNick = profile.nickname || localNickname;
+
+        if (freshAvatar) {
+          setMemberAvatars((prev) => ({ ...prev, [code]: freshAvatar }));
+        }
+
+        if (freshAvatar || freshNick) {
+          useChatStore.getState().setUserProfile(code, {
+            nickname: freshNick,
+            avatarUrl: freshAvatar,
+          });
+
+          const currentChat = useChatStore.getState().chats.find((c) => c.id === activeChat.id);
+          if (currentChat?.members) {
+            const hasChange = currentChat.members.some((mb: any) => {
+              const mCodes = [mb.userId, mb.userCode, mb.user_id, mb.user_code].filter(Boolean);
+              return mCodes.includes(code) && (
+                (freshNick && mb.nickname !== freshNick) ||
+                (freshAvatar && mb.avatarUrl !== freshAvatar)
+              );
+            });
+            if (hasChange) {
+              const updatedMembers = currentChat.members.map((mb: any) => {
+                const mCodes = [mb.userId, mb.userCode, mb.user_id, mb.user_code].filter(Boolean);
+                if (mCodes.includes(code)) {
+                  return {
+                    ...mb,
+                    nickname: freshNick || mb.nickname,
+                    avatarUrl: freshAvatar !== undefined ? freshAvatar : mb.avatarUrl,
+                  };
+                }
+                return mb;
+              });
+              useChatStore.getState().updateChat(activeChat.id, { members: updatedMembers });
+            }
+          }
         }
       }).catch(() => {});
     });
     return () => {
       isMounted = false;
     };
-  }, [activeChat?.id, activeChat?.type, activeChat?.members?.length]);
+  }, [activeChat?.id, activeChat?.type, activeChat?.members]);
 
 
   const selection = useSelection();

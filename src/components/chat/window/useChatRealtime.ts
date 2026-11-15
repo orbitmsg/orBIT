@@ -872,11 +872,35 @@ export const useChatRealtime = ({
       } else if (data.type === 'member-profile-updated' || data.type === 'profile-update') {
         const targetCode = data.userId || data.senderUserId || data.userCode || data.senderCode;
         const newAvatar = data.avatarUrl;
-        if (newAvatar && targetCode) {
-          setMemberAvatars((prev) => ({
-            ...prev,
-            [targetCode]: newAvatar,
-          }));
+        const newNickname = data.nickname || data.sender;
+        if (targetCode) {
+          if (newAvatar) {
+            setMemberAvatars((prev) => ({
+              ...prev,
+              [targetCode]: newAvatar,
+            }));
+          }
+          if (newNickname || newAvatar !== undefined) {
+            useChatStore.getState().setUserProfile(targetCode, {
+              nickname: newNickname,
+              avatarUrl: newAvatar,
+            });
+            const curChat = useChatStore.getState().chats.find((c) => c.id === activeChatId);
+            if (curChat?.members) {
+              const updatedMembers = curChat.members.map((m: any) => {
+                const mCodes = [m.userId, m.userCode, m.user_id, m.user_code].filter(Boolean);
+                if (mCodes.includes(targetCode)) {
+                  return {
+                    ...m,
+                    nickname: newNickname || m.nickname,
+                    avatarUrl: newAvatar !== undefined ? newAvatar : m.avatarUrl,
+                  };
+                }
+                return m;
+              });
+              useChatStore.getState().updateChat(activeChatId, { members: updatedMembers });
+            }
+          }
         }
       }
     };

@@ -960,6 +960,23 @@ export const useChatAudioAndFiles = ({
         const itemMime = resolveMime(file.fileType, file.name);
 
         const fileSizeBytes = file.sizeMb ? Math.round(file.sizeMb * 1024 * 1024) : undefined;
+        const singleMediaItem: MediaItem = {
+          type: itemType,
+          url: itemType === 'video' ? (file.uploadedUrl || file.filePath || '') : (file.preview || file.filePath || ''),
+          preview: file.preview || (file as any).thumbnail || file.blurPreview || null,
+          localFilePath: file.filePath,
+          name: file.name,
+          mime: itemMime,
+          size: fileSizeBytes,
+          width: file.width,
+          height: file.height,
+          duration: file.duration || file.audioMetadata?.duration,
+          blurPreview: file.blurPreview,
+          thumbnail: file.preview || (file as any).thumbnail || file.blurPreview,
+          uploading: true,
+          uploadedMb: 0,
+          senderId: senderUuid,
+        };
         const localMessage: Message = {
           id: messageId,
           senderId: senderUuid,
@@ -984,6 +1001,7 @@ export const useChatAudioAndFiles = ({
           duration: file.duration || file.audioMetadata?.duration,
           blurPreview: file.blurPreview,
           thumbnail: file.preview || (file as any).thumbnail || file.blurPreview,
+          mediaItems: [singleMediaItem],
         };
         addMessage(effectiveChatKey, localMessage);
         if (effectiveChatKey !== targetChatId) {

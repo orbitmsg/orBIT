@@ -1141,18 +1141,12 @@ class GroupService {
       } catch {}
     }
 
-    try {
-      fetch(`${this.getWorkerUrl()}/groups/update-member`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: userId || null,
-          userCode: userCode || null,
-          nickname: newNickname,
-          avatarUrl: newAvatarUrl || null,
-        }),
-      }).catch(() => {});
-    } catch {}
+    this.postToWorker('/groups/update-member', {
+      userId: userId || null,
+      userCode: userCode || null,
+      nickname: newNickname,
+      avatarUrl: newAvatarUrl || null,
+    }).catch(() => {});
   }
 }
 

@@ -1,9 +1,9 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { File, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, type Message, type MediaItem, isMessageOutgoing } from '../../../store/useChatStore';
 import { mediaManager } from '../../../services/mediaManager';
-import { getOrbitaMediaUrl, calculateMediaDisplaySize } from '../../../lib/media-utils';
+import { getOrbitaMediaUrl } from '../../../lib/media-utils';
 import { GroupedAudioBubble } from '../GroupedAudioBubble';
 import { TelegramAlbumGrid } from '../TelegramAlbumGrid';
 import { EncryptedMedia } from '../EncryptedMedia';
@@ -197,17 +197,57 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
       (m.userCode && (msg as any).senderCode && m.userCode === (msg as any).senderCode) ||
       (m.nickname && msg.sender && m.nickname === msg.sender)
   ) || null;
-  const senderNickname = senderMember?.nickname || msg.sender || '';
+
+  const senderCandidateCodes = useMemo(() => {
+    return [
+      msg.senderId,
+      (msg as any).senderCode,
+      (msg as any).senderUserId,
+      senderMember?.userId,
+      senderMember?.userCode,
+      (senderMember as any)?.user_id,
+      (senderMember as any)?.user_code,
+    ].filter((c): c is string => Boolean(c && typeof c === 'string'));
+  }, [msg.senderId, (msg as any).senderCode, (msg as any).senderUserId, senderMember]);
+
+  const senderUserProfile = useMemo(() => {
+    const usersById = useChatStore.getState().usersById || {};
+    for (const c of senderCandidateCodes) {
+      if (usersById[c]) return usersById[c];
+    }
+    return null;
+  }, [senderCandidateCodes]);
+
+  const senderDirectChat = useMemo(() => {
+    const allChats = useChatStore.getState().chats || [];
+    return allChats.find(
+      (c) =>
+        c.type === 'private' &&
+        c.id !== 'notes' &&
+        ((c.peerCode && senderCandidateCodes.includes(c.peerCode)) ||
+          (c.originalPeerCode && senderCandidateCodes.includes(c.originalPeerCode)) ||
+          ((c as any).userId && senderCandidateCodes.includes((c as any).userId)))
+    );
+  }, [senderCandidateCodes]);
+
+  const senderNickname =
+    senderUserProfile?.nickname ||
+    (senderDirectChat?.name && senderDirectChat.name !== senderDirectChat.peerCode ? senderDirectChat.name : undefined) ||
+    senderMember?.nickname ||
+    msg.sender ||
+    '';
+
   const senderAvatar = (() => {
+    if (senderUserProfile?.avatarUrl) return senderUserProfile.avatarUrl;
+    if (senderDirectChat?.avatarUrl) return senderDirectChat.avatarUrl;
+    for (const c of senderCandidateCodes) {
+      if (memberAvatars[c]) return memberAvatars[c];
+    }
     if (senderMember?.avatarUrl) return senderMember.avatarUrl;
     if ((senderMember as any)?.avatar_url) return (senderMember as any).avatar_url;
     if ((msg as any).senderAvatar) return (msg as any).senderAvatar;
     if ((msg as any).avatarUrl) return (msg as any).avatarUrl;
     if ((msg as any).senderAvatarUrl) return (msg as any).senderAvatarUrl;
-    if (msg.senderId && memberAvatars[msg.senderId]) return memberAvatars[msg.senderId];
-    if ((msg as any).senderCode && memberAvatars[(msg as any).senderCode]) return memberAvatars[(msg as any).senderCode];
-    if (senderMember?.userId && memberAvatars[senderMember.userId]) return memberAvatars[senderMember.userId];
-    if ((senderMember as any)?.userCode && memberAvatars[(senderMember as any).userCode]) return memberAvatars[(senderMember as any).userCode];
     return null;
   })();
 
@@ -752,18 +792,6 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
       const cleanCaption = msg.text ? msg.text.replace(/^\[(?:Photo|GIF|Sticker|Video)\]\s*(https?:\/\/[^\s]+)?/i, '').trim() : '';
       const hasCaption = Boolean(cleanCaption);
 
-      let groupBubbleWidth = 'min(440px, 85vw)';
-      if (isPhotoGroup && effectiveMediaItems.length === 1) {
-        const it = effectiveMediaItems[0];
-        const w = it.width || msg.width;
-        const h = it.height || msg.height;
-        if (w && h && h > 0) {
-          const singleSize = calculateMediaDisplaySize(w, h, 440, 400);
-          const targetW = hasCaption ? Math.max(singleSize.width, 260) : singleSize.width;
-          groupBubbleWidth = `min(${targetW}px, 100%)`;
-        }
-      }
-
       let photoRadius = customRadius;
       if (isPhotoGroup) {
         const pR = Math.max(parseFloat(baseRadius) || 16, 20);
@@ -817,8 +845,12 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     background: (isPhotoGroup && !hasCaption) ? 'transparent' : undefined,
                     border: (isPhotoGroup && !hasCaption) ? 'none' : undefined,
                     overflow: (isPhotoGroup && !hasCaption) ? 'visible' : 'hidden',
-                    width: isPhotoGroup ? groupBubbleWidth : 'fit-content',
+                    width: 'fit-content',
                     maxWidth: 'min(440px, 75%)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: isOwn ? 'flex-end' : 'flex-start',
+                    alignSelf: isOwn ? 'flex-end' : 'flex-start',
                     boxSizing: 'border-box',
                   })}
                 >

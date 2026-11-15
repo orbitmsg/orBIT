@@ -336,11 +336,42 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
     if (!chat || chat.type !== 'group' || !chat.members) return;
     let isMounted = true;
     chat.members.forEach((m) => {
-      const code = m.userId || (m as any).userCode;
-      if (!code || m.avatarUrl || memberAvatars[code]) return;
+      const code = m.userId || (m as any).userCode || (m as any).user_code || (m as any).user_id;
+      if (!code) return;
       supabaseService.lookupPublicProfile(code).then((profile) => {
-        if (isMounted && profile?.avatar_url) {
+        if (!isMounted || !profile) return;
+        if (profile.avatar_url) {
           setMemberAvatars((prev) => ({ ...prev, [code]: profile.avatar_url! }));
+        }
+        if (profile.nickname || profile.avatar_url) {
+          useChatStore.getState().setUserProfile(code, {
+            nickname: profile.nickname,
+            avatarUrl: profile.avatar_url,
+          });
+          const curChat = useChatStore.getState().chats.find((c) => c.id === chat.id);
+          if (curChat?.members) {
+            const hasChange = curChat.members.some((mb: any) => {
+              const mCodes = [mb.userId, mb.userCode, mb.user_id, mb.user_code].filter(Boolean);
+              return mCodes.includes(code) && (
+                (profile.nickname && mb.nickname !== profile.nickname) ||
+                (profile.avatar_url && mb.avatarUrl !== profile.avatar_url)
+              );
+            });
+            if (hasChange) {
+              const updatedMembers = curChat.members.map((mb: any) => {
+                const mCodes = [mb.userId, mb.userCode, mb.user_id, mb.user_code].filter(Boolean);
+                if (mCodes.includes(code)) {
+                  return {
+                    ...mb,
+                    nickname: profile.nickname || mb.nickname,
+                    avatarUrl: profile.avatar_url !== undefined ? profile.avatar_url : mb.avatarUrl,
+                  };
+                }
+                return mb;
+              });
+              useChatStore.getState().updateChat(chat.id, { members: updatedMembers });
+            }
+          }
         }
       }).catch(() => {});
     });

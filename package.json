@@ -1,6 +1,6 @@
 {
   "name": "orBIT",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "author": "Saizzi",
   "main": "dist-electron/main.cjs",
   "scripts": {

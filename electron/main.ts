@@ -2673,9 +2673,12 @@ ipcMain.handle('orbita:selectDirectory', async () => {
 
 ipcMain.handle('orbita:openFolder', async (_event, folderPath: string) => {
   try {
-    if (folderPath && typeof folderPath === 'string') {
-      await shell.openPath(folderPath);
-      return true;
+    if (folderPath && typeof folderPath === 'string' && fs.existsSync(folderPath)) {
+      const stat = fs.statSync(folderPath);
+      if (stat.isDirectory()) {
+        await shell.openPath(folderPath);
+        return true;
+      }
     }
   } catch (err) {}
   return false;
@@ -2853,6 +2856,10 @@ ipcMain.handle('orbita:writeUsbKey', async (_event, targetDir: string, keyData: 
 ipcMain.handle('orbita:readKeyFile', async (_event, filePath: string) => {
   try {
     if (!filePath || !fs.existsSync(filePath)) return null;
+    const lower = filePath.toLowerCase();
+    if (!lower.endsWith('.key') && path.basename(lower) !== 'orbita.key') {
+      return null;
+    }
     return await fs.promises.readFile(filePath);
   } catch {
     return null;
@@ -3086,8 +3093,20 @@ ipcMain.handle('native:decrypt-file-stream', async (_event, sourcePath: string, 
 
 ipcMain.handle('orbita:rustReadFileFast', async (_event, filePath: string) => {
   try {
-    if (filePath && fs.existsSync(filePath)) {
-      return fastReadFile(filePath);
+    if (!filePath || typeof filePath !== 'string') return null;
+    const resolved = path.resolve(filePath);
+    const allowedBase1 = path.resolve(app.getPath('userData'));
+    const allowedBase2 = path.resolve(app.getPath('temp'));
+    const allowedBase3 = path.resolve(os.tmpdir());
+    const isAllowed =
+      resolved.startsWith(allowedBase1 + path.sep) ||
+      resolved.startsWith(allowedBase2 + path.sep) ||
+      resolved.startsWith(allowedBase3 + path.sep);
+    if (!isAllowed) {
+      return null;
+    }
+    if (fs.existsSync(resolved)) {
+      return fastReadFile(resolved);
     }
   } catch (err) {
     console.error('[Electron] fastReadFile failed:', err);
@@ -3131,8 +3150,14 @@ ipcMain.handle('orbita:readClipboardImage', async () => {
 
 ipcMain.handle('orbita:deleteTempFile', async (_event, filePath: string) => {
   try {
-    if (filePath && fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    if (!filePath || typeof filePath !== 'string') return;
+    const resolved = path.resolve(filePath);
+    const temp1 = path.resolve(app.getPath('temp'));
+    const temp2 = path.resolve(os.tmpdir());
+    if (resolved.startsWith(temp1 + path.sep) || resolved.startsWith(temp2 + path.sep)) {
+      if (fs.existsSync(resolved)) {
+        fs.unlinkSync(resolved);
+      }
     }
   } catch { }
 });
@@ -3178,9 +3203,15 @@ ipcMain.handle('orbita:destroyCloudinaryMedia', async (_event, publicId: string,
 
 ipcMain.handle('orbita:readFileAsDataURL', async (_event, filePath: string) => {
   try {
-    if (!filePath || !fs.existsSync(filePath)) return null;
-    const buf = fs.readFileSync(filePath);
-    const ext = path.extname(filePath).toLowerCase().replace('.', '');
+    if (!filePath || typeof filePath !== 'string' || !fs.existsSync(filePath)) return null;
+    const resolved = path.resolve(filePath);
+    const lower = resolved.toLowerCase();
+    const disallowedExts = ['.env', '.key', '.enc', '.db', '.sqlite', '.sqlite3', '.node', '.exe', '.bat', '.cmd', '.ps1', '.vbs', '.reg'];
+    if (disallowedExts.some((ext) => lower.endsWith(ext)) || lower.includes(path.sep + '.ssh' + path.sep) || lower.includes(path.sep + '.aws' + path.sep)) {
+      return null;
+    }
+    const buf = fs.readFileSync(resolved);
+    const ext = path.extname(resolved).toLowerCase().replace('.', '');
     let mime = 'application/octet-stream';
     if (['mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v'].includes(ext)) {
       mime = `video/${ext === 'mov' ? 'quicktime' : ext}`;
@@ -3990,22 +4021,13 @@ function updateWindowsShortcutsAndTaskbar(iconName: string): void {
     ];
 
     const updateLnk = (lnkPath: string) => {
-      let updated = false;
       try {
-        updated = shell.writeShortcutLink(lnkPath, 'update', {
+        shell.writeShortcutLink(lnkPath, 'update', {
           icon: absIcoPath,
           iconIndex: 0,
           appUserModelId: appId,
         });
       } catch {}
-      if (!updated) {
-        try {
-          const escapedLnk = lnkPath.replace(/'/g, "''");
-          const escapedIco = absIcoPath.replace(/'/g, "''");
-          const psCmd = `$s=(New-Object -ComObject WScript.Shell).CreateShortcut('${escapedLnk}');$s.IconLocation='${escapedIco},0';$s.Save()`;
-          spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-Command', psCmd], { windowsHide: true, stdio: 'ignore' });
-        } catch {}
-      }
     };
 
     for (const dir of shortcutDirs) {
@@ -4526,6 +4548,23 @@ function initOrGetCallWindow(initialPayload?: any): BrowserWindow {
 
   const queryStr = buildCallUrlQuery(initialPayload || currentCallStateCache);
 
+  callWindow.webContents.on('will-navigate', (event, url) => {
+    const currentUrl = callWindow?.webContents.getURL() || '';
+    if (url !== currentUrl && !url.startsWith('http://127.0.0.1:5173') && !url.startsWith('file://')) {
+      event.preventDefault();
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        shell.openExternal(url);
+      }
+    }
+  });
+
+  callWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      shell.openExternal(url);
+    }
+    return { action: 'deny' };
+  });
+
   if (isPackaged) {
     callWindow.loadFile(path.join(__dirname, '../dist/call.html'), { search: queryStr });
   } else {
@@ -4778,6 +4817,24 @@ function initOrGetMediaWindow(initialPayload?: any): BrowserWindow {
   });
 
   const isMaxParam = state.isMaximized ? '1' : '0';
+
+  mediaWindow.webContents.on('will-navigate', (event, url) => {
+    const currentUrl = mediaWindow?.webContents.getURL() || '';
+    if (url !== currentUrl && !url.startsWith('http://127.0.0.1:5173') && !url.startsWith('file://')) {
+      event.preventDefault();
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        shell.openExternal(url);
+      }
+    }
+  });
+
+  mediaWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      shell.openExternal(url);
+    }
+    return { action: 'deny' };
+  });
+
   if (isPackaged) {
     mediaWindow.loadFile(path.join(__dirname, '../dist/media.html'), { query: { maximized: isMaxParam, lang: currentLanguage } });
   } else {
@@ -5074,9 +5131,8 @@ function startSyncServer(): Promise<{ url: string; port: number }> {
       }
     });
 
-    syncServer.listen(syncPort, '0.0.0.0', () => {
-      syncServerUrl = `http://${localIp}:${syncPort}/sync`;
-      console.log(`[Sync] Server started at ${syncServerUrl}`);
+    syncServer.listen(syncPort, '127.0.0.1', () => {
+      syncServerUrl = `http://127.0.0.1:${syncPort}/sync`;
       resolve({ url: syncServerUrl, port: syncPort });
     });
 
@@ -5823,7 +5879,12 @@ app.whenReady().then(async () => {
 
       const deepLink = commandLine.find((arg) => arg.startsWith('orbita://'));
       if (deepLink) {
-        mainWindow.webContents.send('deep-link', deepLink);
+        try {
+          const parsed = new URL(deepLink);
+          if (parsed.protocol === 'orbita:') {
+            mainWindow.webContents.send('deep-link', deepLink);
+          }
+        } catch {}
       }
     }
   });

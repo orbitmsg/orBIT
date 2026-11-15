@@ -135,17 +135,29 @@ export const OrbitaLogoAvatar = () => {
       : './icons/256x256.png';
 
   return (
-    <img
-      src={src}
-      alt="Orbita"
+    <div
       style={{
         width: '60px',
         height: '60px',
-        objectFit: 'contain',
+        borderRadius: '50%',
         flexShrink: 0,
-        display: 'block',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
       }}
-    />
+    >
+      <img
+        src={src}
+        alt="Orbita"
+        style={{
+          width: '72%',
+          height: '72%',
+          objectFit: 'contain',
+          display: 'block',
+        }}
+      />
+    </div>
   );
 };
 

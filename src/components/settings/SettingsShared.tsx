@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, memo, type ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useChatStore } from '../../store/useChatStore';
 import { uiSounds } from '../../utils/uiSounds';
 export const QrCodeMiniIcon: React.FC<{ size?: number; color?: string }> = ({ size = 20, color = 'currentColor' }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={size} height={size}>
@@ -125,19 +126,28 @@ export const TuxAvatar = () => (
   </div>
 );
 
-export const OrbitaLogoAvatar = () => (
-  <img
-    src="./icons/128x128.png"
-    alt="Orbita"
-    style={{
-      width: '60px',
-      height: '60px',
-      objectFit: 'contain',
-      flexShrink: 0,
-      display: 'block',
-    }}
-  />
-);
+export const OrbitaLogoAvatar = () => {
+  const appIcon = useChatStore((s) => s.appIcon);
+  const src = appIcon === 'pride'
+    ? './icons/pride.png'
+    : appIcon === 'apple'
+      ? './icons/apple.png'
+      : './icons/256x256.png';
+
+  return (
+    <img
+      src={src}
+      alt="Orbita"
+      style={{
+        width: '60px',
+        height: '60px',
+        objectFit: 'contain',
+        flexShrink: 0,
+        display: 'block',
+      }}
+    />
+  );
+};
 
 export const TaskbarIcon = () => (
   <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

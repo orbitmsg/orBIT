@@ -98,6 +98,8 @@ contextBridge.exposeInMainWorld('orbita', {
     };
     hideAllText?: string;
     isGroup?: boolean;
+    hideAvatar?: boolean;
+    appIcon?: string;
   }) => {
     ipcRenderer.send('orbita:show-custom-notification', payload);
   },

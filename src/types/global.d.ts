@@ -27,6 +27,8 @@ interface OrbitaCustomNotificationPayload {
   };
   hideAllText?: string;
   isGroup?: boolean;
+  hideAvatar?: boolean;
+  appIcon?: string;
 }
 
 interface AudioMetadata {

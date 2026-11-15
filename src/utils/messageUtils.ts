@@ -2,7 +2,8 @@ export function formatPreviewText(
   rawText: string,
   t: any,
   mediaType?: string | null,
-  mediaName?: string | null
+  mediaName?: string | null,
+  duration?: number | null
 ): string {
   const clean = (rawText || '').replace(/^↩\s(?:\[id:.+?\]\s)?.+?:.+?,\s\d{2}:\d{2}\n?/, '').trim();
   const lower = (clean + ' ' + (mediaName || '')).toLowerCase();
@@ -12,13 +13,44 @@ export function formatPreviewText(
     const isMissed = /missed|пропущен/i.test(lower);
     const isRejected = /rejected|busy|отклон/i.test(lower);
     const isOutgoing = /исходящ|outgoing/i.test(lower);
-    return isMissed
-      ? t('call.missed_call', 'Пропущенный звонок')
-      : isRejected
-      ? t('call.rejected_call', 'Отклонённый звонок')
-      : isOutgoing
+    if (isMissed) return t('call.missed_call', 'Пропущенный звонок');
+    if (isRejected) return t('call.rejected_call', 'Отклонённый звонок');
+    const baseText = isOutgoing
       ? t('call.outgoing_call', 'Исходящий звонок')
       : t('call.incoming_call', 'Входящий звонок');
+
+    let mins = 0;
+    let secs = 0;
+    let hasDuration = false;
+
+    if (typeof duration === 'number' && duration > 0) {
+      const totalSecs = Math.floor(duration);
+      mins = Math.floor(totalSecs / 60);
+      secs = totalSecs % 60;
+      hasDuration = true;
+    } else {
+      const mmSsMatch = clean.match(/(?:,\s*|\s+|^)(\d+):(\d{2})(?!\d)/);
+      if (mmSsMatch) {
+        mins = parseInt(mmSsMatch[1], 10);
+        secs = parseInt(mmSsMatch[2], 10);
+        hasDuration = true;
+      } else {
+        const textMatch = clean.match(/(\d+)\s*(?:мин|min)\s*(\d+)\s*(?:сек|sec)/i);
+        if (textMatch) {
+          mins = parseInt(textMatch[1], 10);
+          secs = parseInt(textMatch[2], 10);
+          hasDuration = true;
+        }
+      }
+    }
+
+    if (hasDuration) {
+      const durationFormatted = t
+        ? t('call.duration', { mins, secs, defaultValue: `${mins} мин ${secs} сек` })
+        : `${mins} мин ${secs} сек`;
+      return `${baseText} (${durationFormatted})`;
+    }
+    return baseText;
   }
 
   const isSticker =

@@ -17,8 +17,8 @@ export async function createCallMessage(
     const sender = direction === 'outgoing' ? myNickname : chat.name;
     const directionText = direction === 'outgoing' ? 'Исходящий' : 'Входящий';
     let messageText = `[Call] ${directionText}`;
+    const safeDuration = Math.max(0, Math.floor(duration) || 0);
     if (endedStatus === 'completed') {
-      const safeDuration = Math.max(0, Math.floor(duration) || 0);
       const mins = Math.floor(safeDuration / 60);
       const secs = safeDuration % 60;
       messageText += `, ${mins}:${secs.toString().padStart(2, '0')}`;
@@ -44,6 +44,7 @@ export async function createCallMessage(
       mediaType: 'call',
       mediaUrl: '',
       mediaName: endedStatus || 'completed',
+      duration: safeDuration,
     });
   } catch (err) {
     console.error('[CallStore] Failed to create call message:', err);

@@ -25,6 +25,7 @@ interface ShowNotificationPayload {
   avatarUrl?: string | null;
   hideAllText?: string;
   isGroup?: boolean;
+  hideAvatar?: boolean;
 }
 
 const CARD_WIDTH     = 348;
@@ -172,6 +173,8 @@ export function showCustomNotification(payload: ShowNotificationPayload): void {
       avatarUrl:    avatarUrl || null,
       hideAllText:  payload.hideAllText || 'Скрыть все',
       isGroup:      Boolean(payload.isGroup),
+      iconData:     iconData || null,
+      hideAvatar:   Boolean(payload.hideAvatar),
     });
   };
 

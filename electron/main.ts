@@ -297,8 +297,9 @@ function showCustomNotification(payload: {
   avatarUrl?: string;
   hideAllText?: string;
   isGroup?: boolean;
+  hideAvatar?: boolean;
 }) {
-  const { title, body, chatId, settings, colors, fontFamily, iconData, avatarUrl, hideAllText, isGroup } = payload;
+  const { title, body, chatId, settings, colors, fontFamily, iconData, avatarUrl, hideAllText, isGroup, hideAvatar } = payload;
   console.log('[NotifManager] showCustomNotification called:', { title, body, position: settings.position });
 
   if (mainWindowRef && !mainWindowRef.isDestroyed() && !mainWindowRef.isFocused() && settings.flashTaskbar) {
@@ -324,6 +325,8 @@ function showCustomNotification(payload: {
       avatarUrl: avatarUrl || null,
       hideAllText: hideAllText || 'Скрыть все',
       isGroup: Boolean(isGroup),
+      iconData: iconData || null,
+      hideAvatar: Boolean(hideAvatar),
     });
   };
 
@@ -3734,9 +3737,10 @@ function loadNativeAppIcon(iconName?: string): Electron.NativeImage | undefined 
 
 function getNotificationIconBase64(iconName?: string): string | null {
   try {
-    const candidates = iconName
-      ? [`${iconName}.png`, '128x128.png', '256x256.png', '64x64.png']
-      : ['128x128.png', '256x256.png', '64x64.png'];
+    const rawName = iconName === 'default' ? 'orbita1' : iconName;
+    const candidates = rawName
+      ? [`${rawName}.png`, 'orbita1.png', '256x256.png', '128x128.png', '64x64.png']
+      : ['orbita1.png', '256x256.png', '128x128.png', '64x64.png'];
 
     for (const name of candidates) {
       const resolved = resolveIconFile(name);
@@ -4101,6 +4105,7 @@ ipcMain.on('orbita:set-app-icon', (_event, iconName: string) => {
   const effectiveName = iconName === 'default' ? 'orbita1' : iconName;
   activeAppliedAppIcon = effectiveName;
   currentAppIconName = effectiveName;
+  currentNotifIconName = effectiveName;
   saveWindowSettings();
 
   const icoPath = getValidIcoPath(effectiveName);
@@ -4150,7 +4155,8 @@ ipcMain.on('orbita:set-app-icon', (_event, iconName: string) => {
 });
 
 ipcMain.on('orbita:set-notification-icon', (_event, iconName: string) => {
-  currentNotifIconName = iconName;
+  const effectiveName = iconName === 'default' ? 'orbita1' : iconName;
+  currentNotifIconName = effectiveName;
 });
 
 ipcMain.handle('orbita:get-current-icons', () => ({
@@ -5998,7 +6004,8 @@ ipcMain.on('orbita:show-custom-notification', (_event, payload: any) => {
     textDim: payload.colors?.textDim || currentThemeVars['--text-dim'] || '#9f96b3',
     border: currentThemeVars['--border-color'] || 'transparent',
   };
-  const iconData = getNotificationIconBase64(currentNotifIconName);
+  const effectiveIconName = payload.appIcon || currentNotifIconName || currentAppIconName || 'orbita1';
+  const iconData = getNotificationIconBase64(effectiveIconName);
   showCustomNotification({
     title: payload.title,
     body: payload.body,
@@ -6018,6 +6025,7 @@ ipcMain.on('orbita:show-custom-notification', (_event, payload: any) => {
     iconData,
     avatarUrl: payload.avatarUrl,
     hideAllText: payload.hideAllText,
+    hideAvatar: payload.hideAvatar,
   });
 });
 

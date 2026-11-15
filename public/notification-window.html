@@ -386,6 +386,9 @@
     }
 
     function getOrbitaLogoSvg() {
+      if (iconData) {
+        return `<img src="${iconData}" alt="orBIT" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;" />`;
+      }
       return `
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="100 100 800 800" width="58" height="58" style="width:100%;height:100%;display:block;">
           <defs>
@@ -407,7 +410,8 @@
     }
 
     function getLetterAvatar(name, accentColor = '#9b7dd4') {
-      if (!name || String(name).toLowerCase().includes('orbita')) {
+      const isOrb = !name || String(name).toLowerCase().includes('orbit');
+      if (isOrb) {
         return getOrbitaLogoSvg();
       }
       const initial = (name && String(name).trim().length > 0) ? String(name).trim().charAt(0).toUpperCase() : 'O';
@@ -439,7 +443,7 @@
       `;
     }
 
-    function showNotification({ id, title, body, chatId, position, theme, hideContent, colors, fontFamily, soundEnabled, volume, avatarUrl, isGroup }) {
+    function showNotification({ id, title, body, chatId, position, theme, hideContent, hideAvatar, colors, fontFamily, soundEnabled, volume, avatarUrl, isGroup }) {
       const root = document.getElementById('root');
       applyStackDirection(position);
 
@@ -484,7 +488,7 @@
       const animClass = getAnimClass(position);
       const themeClass = theme === 'light' ? 'theme-light' : 'theme-dark';
 
-      const isHidden = Boolean(hideContent);
+      const isHidden = Boolean(hideContent || hideAvatar);
       const finalTitle = title || 'Orbita Desktop';
       let finalBody = body || 'Новое сообщение';
       if (/^\[Audio\]\s+voice_/i.test(finalBody) || /^voice_\d+/i.test(finalBody) || finalBody.includes('voice_')) {
@@ -492,7 +496,7 @@
       }
 
       let avatarHtml;
-      const isOrbitaTitle = !finalTitle || String(finalTitle).toLowerCase().includes('orbita');
+      const isOrbitaTitle = !finalTitle || String(finalTitle).toLowerCase().includes('orbit');
       if (isHidden || (isOrbitaTitle && (!avatarUrl || avatarUrl.trim() === ''))) {
         avatarHtml = getOrbitaLogoSvg();
       } else if (avatarUrl && typeof avatarUrl === 'string' && avatarUrl.trim() !== '') {
@@ -638,6 +642,10 @@
         maxCount:    payload.maxCount    || 3,
       };
 
+      if (payload.iconData) {
+        iconData = payload.iconData;
+      }
+
       if (payload.hideAllText) {
         const txtEl = document.getElementById('hide-all-text');
         if (txtEl) txtEl.textContent = payload.hideAllText;
@@ -652,6 +660,7 @@
         position:    settings.position,
         theme:       settings.theme,
         hideContent: settings.hideContent,
+        hideAvatar:  Boolean(payload.hideAvatar),
         colors:      payload.colors,
         fontFamily:  payload.fontFamily,
         soundEnabled: payload.soundEnabled,

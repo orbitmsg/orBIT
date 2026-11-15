@@ -2,6 +2,32 @@ import React from 'react';
 import i18n from 'i18next';
 import type { Chat, Message } from '../../../store/useChatStore';
 
+const parseCallDuration = (text?: string | null, durationSec?: number | null) => {
+  if (typeof durationSec === 'number' && durationSec > 0) {
+    const totalSecs = Math.floor(durationSec);
+    return {
+      mins: Math.floor(totalSecs / 60),
+      secs: totalSecs % 60,
+    };
+  }
+  if (!text) return null;
+  const mmSsMatch = text.match(/(?:,\s*|\s+|^)(\d+):(\d{2})(?!\d)/);
+  if (mmSsMatch) {
+    return {
+      mins: parseInt(mmSsMatch[1], 10),
+      secs: parseInt(mmSsMatch[2], 10),
+    };
+  }
+  const textMatch = text.match(/(\d+)\s*(?:мин|min)\s*(\d+)\s*(?:сек|sec)/i);
+  if (textMatch) {
+    return {
+      mins: parseInt(textMatch[1], 10),
+      secs: parseInt(textMatch[2], 10),
+    };
+  }
+  return null;
+};
+
 export const getLastMsgDisplay = (chat: Chat, lastMsg: Message | null, t: any, isOwn = false): React.ReactNode => {
   const accentStyle: React.CSSProperties = { color: '#917bbd' };
 
@@ -41,8 +67,19 @@ export const getLastMsgDisplay = (chat: Chat, lastMsg: Message | null, t: any, i
       const isMissed = /missed|пропущен/i.test(rawFallback);
       const isRejected = /rejected|busy|отклон/i.test(rawFallback);
       const isOutgoing = /исходящ|outgoing/i.test(rawFallback);
-      const text = isMissed ? t('call.missed_call') : (isRejected ? t('call.rejected_call') : (isOutgoing ? t('call.outgoing_call') : t('call.incoming_call')));
-      return renderFallback(text, true);
+      if (isMissed) {
+        return renderFallback(t('call.missed_call'), true);
+      }
+      if (isRejected) {
+        return renderFallback(t('call.rejected_call'), true);
+      }
+      const baseText = isOutgoing ? t('call.outgoing_call') : t('call.incoming_call');
+      const dur = parseCallDuration(rawFallback, null);
+      if (dur) {
+        const durationFormatted = t('call.duration', { mins: dur.mins, secs: dur.secs, defaultValue: `${dur.mins} мин ${dur.secs} сек` });
+        return renderFallback(`${baseText} (${durationFormatted})`, true);
+      }
+      return renderFallback(baseText, true);
     }
 
     if (/^\[(?:photo|image)\]$/i.test(rawFallback) || /^(?:фото|фотография|photo)$/i.test(rawFallback)) {
@@ -132,22 +169,28 @@ export const getLastMsgDisplay = (chat: Chat, lastMsg: Message | null, t: any, i
     );
   };
 
-  if (lastMsg.text?.startsWith('[Call]')) {
-    const parts = lastMsg.text.split(', ');
-    const directionPart = parts[0].replace(/^\[Call\]\s/, '');
-    const isOutgoing = directionPart.includes('Исходящий');
+  if (lastMsg.mediaType === 'call' || lastMsg.text?.startsWith('[Call]') || /^(?:исходящий|входящий|пропущенный|отклонённый)\s+звонок/i.test(lastMsg.text || '')) {
+    const rawText = lastMsg.text || '';
     const status = lastMsg.mediaName || 'completed';
     const displayStatus = status === 'busy' ? 'rejected' : status;
+    const isMissed = displayStatus === 'missed' || /missed|пропущен/i.test(rawText);
+    const isRejected = displayStatus === 'rejected' || /rejected|busy|отклон/i.test(rawText);
+    const isOutgoing = lastMsg.isOutgoing ?? (/исходящ|outgoing/i.test(rawText));
 
     let text = '';
-    if (displayStatus === 'missed') {
+    if (isMissed) {
       text = t('call.missed_call');
-    } else if (displayStatus === 'rejected') {
+    } else if (isRejected) {
       text = t('call.rejected_call');
-    } else if (displayStatus === 'completed') {
-      text = isOutgoing ? t('call.outgoing_call') : t('call.incoming_call');
     } else {
-      text = isOutgoing ? t('call.outgoing_call') : t('call.incoming_call');
+      const baseText = isOutgoing ? t('call.outgoing_call') : t('call.incoming_call');
+      const dur = parseCallDuration(rawText, lastMsg.duration);
+      if (dur) {
+        const durationFormatted = t('call.duration', { mins: dur.mins, secs: dur.secs, defaultValue: `${dur.mins} мин ${dur.secs} сек` });
+        text = `${baseText} (${durationFormatted})`;
+      } else {
+        text = baseText;
+      }
     }
     return (
       <span className="truncate" style={accentStyle}>{text}</span>

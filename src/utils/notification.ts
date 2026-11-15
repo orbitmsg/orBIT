@@ -132,9 +132,15 @@ export function showNotification(
   if (notificationNativeWindows && ('Notification' in window)) {
     if (Notification.permission === 'granted') {
       try {
+        const appIcon = state.appIcon;
+        const iconPath = appIcon === 'pride'
+          ? '/icons/pride.png'
+          : appIcon === 'apple'
+            ? '/icons/apple.png'
+            : '/icons/128x128.png';
         const n = new Notification(finalTitle, {
           body: finalBody,
-          icon: finalAvatarUrl || '/icons/128x128.png',
+          icon: finalAvatarUrl || iconPath,
           tag: chatId || 'orbita-message',
         });
         n.addEventListener('click', () => {
@@ -171,6 +177,7 @@ export function showNotification(
       position:     notificationPosition    ?? 'bottom-right',
       theme:        notificationPreviewTheme ?? 'dark',
       hideContent:  notificationHideContent  ?? false,
+      hideAvatar:   isNameHidden,
       maxCount:     notificationCount        ?? 3,
       fontFamily:   fontFamilyCSS,
       soundEnabled: notificationSoundEnabled ?? true,
@@ -180,6 +187,7 @@ export function showNotification(
       colors,
       hideAllText:  i18n.t('common.hide_all') || 'Скрыть все',
       isGroup:      isGroupChat,
+      appIcon:      state.appIcon || 'orbita1',
     });
     return;
   }

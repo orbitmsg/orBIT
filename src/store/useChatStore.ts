@@ -1819,9 +1819,10 @@ export const useChatStore = create<ChatState>()(
       setNotificationNativeWindows: (enabled) => set({ notificationNativeWindows: enabled }),
       setNotificationRespectFocus: (enabled) => set({ notificationRespectFocus: enabled }),
       setAppIcon: (icon) => {
-        set({ appIcon: icon });
-        if (typeof window !== 'undefined' && (window as any).orbita?.setAppIcon) {
-          (window as any).orbita.setAppIcon(icon);
+        set({ appIcon: icon, notificationIcon: icon });
+        if (typeof window !== 'undefined') {
+          (window as any).orbita?.setAppIcon?.(icon);
+          (window as any).orbita?.setNotificationIcon?.(icon);
         }
       },
       setNotificationIcon: (icon) => set({ notificationIcon: icon }),

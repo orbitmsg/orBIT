@@ -1,11 +1,8 @@
-import React, { useMemo, useRef, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCallStore } from '../../store/useCallStore';
 import { useChatStore } from '../../store/useChatStore';
 import { Avatar } from '../common/Avatar';
-import { useAppVisibility } from '../../utils/appVisibility';
-import { liveKitService } from '../../services/livekitService';
-import { groupLiveKitService } from '../../services/groupLiveKitService';
 
 interface ActiveCallBarProps {
   className?: string;
@@ -23,8 +20,6 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
   const chats = useChatStore((s) => s.chats);
   const activeChatId = useChatStore((s) => s.activeChatId);
   const chatColor = useChatStore((s) => s.chatColor);
-  const callAnimationsEnabled = useChatStore((s) => s.callAnimationsEnabled);
-  const isAppVisible = useAppVisibility();
 
   const isCallActive = !!activeCall && (callState === 'connected' || callState === 'connecting' || callState === 'ringing');
 
@@ -40,336 +35,10 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
     return 'var(--accent-gradient, linear-gradient(90deg, var(--accent-dark, #4752c4) 0%, var(--accent-color, #5865F2) 55%, var(--accent-light, #7289da) 100%))';
   }, [chatColor]);
 
-  const barRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const mediaSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const smoothedVolumeRef = useRef(0.04);
-  const timeRef = useRef(0);
-  const accentRgbRef = useRef<[number, number, number]>([92, 84, 229]);
-  const broadcastVolRef = useRef(0);
-  const broadcastSpeakingRef = useRef(false);
-  const lastBroadcastTimeRef = useRef(0);
-
-  useEffect(() => {
-    if (!isCallActive) return;
-    let bc: BroadcastChannel | null = null;
-    try {
-      bc = new BroadcastChannel('orbita-call-channel');
-      bc.onmessage = (event) => {
-        if (event.data?.type === 'CALL_REMOTE_AUDIO' && event.data.payload) {
-          broadcastVolRef.current = Number(event.data.payload.volume) || 0;
-          broadcastSpeakingRef.current = Boolean(event.data.payload.isSpeaking);
-          lastBroadcastTimeRef.current = Date.now();
-        }
-      };
-    } catch {}
-
-    const unsubAction = (window as any).orbita?.onCallAction?.((action: any) => {
-      if (action?.type === 'remoteAudio' && action.payload) {
-        broadcastVolRef.current = Number(action.payload.volume) || 0;
-        broadcastSpeakingRef.current = Boolean(action.payload.isSpeaking);
-        lastBroadcastTimeRef.current = Date.now();
-      }
-    });
-
-    return () => {
-      if (bc) {
-        try { bc.close(); } catch {}
-      }
-      if (typeof unsubAction === 'function') {
-        try { unsubAction(); } catch {}
-      }
-    };
-  }, [isCallActive]);
-
-  useEffect(() => {
-    if (!barRef.current) return;
-    if (chatColor) {
-      if (chatColor.startsWith('#')) {
-        const r = parseInt(chatColor.slice(1, 3), 16) || 92;
-        const g = parseInt(chatColor.slice(3, 5), 16) || 84;
-        const b = parseInt(chatColor.slice(5, 7), 16) || 229;
-        accentRgbRef.current = [r, g, b];
-        return;
-      }
-      const hexMatch = chatColor.match(/#[0-9a-fA-F]{6}/);
-      if (hexMatch) {
-        const hex = hexMatch[0];
-        accentRgbRef.current = [
-          parseInt(hex.slice(1, 3), 16) || 92,
-          parseInt(hex.slice(3, 5), 16) || 84,
-          parseInt(hex.slice(5, 7), 16) || 229,
-        ];
-        return;
-      }
-    }
-    const computed = getComputedStyle(barRef.current);
-    const col = computed.getPropertyValue('--accent-color').trim() || '#5c54e5';
-    if (col.startsWith('#')) {
-      const r = parseInt(col.slice(1, 3), 16) || 92;
-      const g = parseInt(col.slice(3, 5), 16) || 84;
-      const b = parseInt(col.slice(5, 7), 16) || 229;
-      accentRgbRef.current = [r, g, b];
-    } else if (col.startsWith('rgb')) {
-      const parts = col.match(/\d+/g);
-      if (parts && parts.length >= 3) {
-        accentRgbRef.current = [Number(parts[0]), Number(parts[1]), Number(parts[2])];
-      }
-    }
-  }, [chatColor]);
-
-  useEffect(() => {
-    if (!isCallActive || !callAnimationsEnabled) {
-      if (mediaSourceRef.current) {
-        try { mediaSourceRef.current.disconnect(); } catch {}
-        mediaSourceRef.current = null;
-      }
-      if (analyserRef.current) {
-        try { analyserRef.current.disconnect(); } catch {}
-        analyserRef.current = null;
-      }
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close().catch(() => {});
-        audioContextRef.current = null;
-      }
-      streamRef.current = null;
-      return;
-    }
-
-    let isCancelled = false;
-    const isGroup = activeCall?.chatType === 'group';
-    const svc = isGroup ? groupLiveKitService : liveKitService;
-
-    const setupRemoteAnalyser = async () => {
-      try {
-        const remoteTrack = svc.getRemoteAudioTrack();
-        const mediaTrack = remoteTrack?.mediaStreamTrack;
-        if (!mediaTrack || mediaTrack.readyState === 'ended' || isCancelled) {
-          return;
-        }
-
-        if (streamRef.current && streamRef.current.getAudioTracks()[0] === mediaTrack && analyserRef.current) {
-          return;
-        }
-
-        const stream = new MediaStream([mediaTrack]);
-        streamRef.current = stream;
-
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-        if (!AudioCtx) return;
-
-        if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
-          audioContextRef.current = new AudioCtx();
-        }
-        const audioCtx = audioContextRef.current;
-        if (audioCtx.state === 'suspended') {
-          await audioCtx.resume();
-        }
-
-        if (mediaSourceRef.current) {
-          try { mediaSourceRef.current.disconnect(); } catch {}
-        }
-        if (analyserRef.current) {
-          try { analyserRef.current.disconnect(); } catch {}
-        }
-
-        const source = audioCtx.createMediaStreamSource(stream);
-        mediaSourceRef.current = source;
-
-        const analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 64;
-        analyser.smoothingTimeConstant = 0.2;
-        analyserRef.current = analyser;
-
-        source.connect(analyser);
-      } catch {}
-    };
-
-    setupRemoteAnalyser();
-
-    const onTrackSubscribed = () => {
-      setupRemoteAnalyser();
-    };
-
-    svc.on('trackSubscribed', onTrackSubscribed);
-    svc.on('participantsChanged', onTrackSubscribed);
-
-    const checkInterval = setInterval(() => {
-      if (!analyserRef.current && !isCancelled) {
-        setupRemoteAnalyser();
-      }
-    }, 800);
-
-    return () => {
-      isCancelled = true;
-      clearInterval(checkInterval);
-      try { svc.off('trackSubscribed', onTrackSubscribed); } catch {}
-      try { svc.off('participantsChanged', onTrackSubscribed); } catch {}
-      if (mediaSourceRef.current) {
-        try { mediaSourceRef.current.disconnect(); } catch {}
-        mediaSourceRef.current = null;
-      }
-      if (analyserRef.current) {
-        try { analyserRef.current.disconnect(); } catch {}
-        analyserRef.current = null;
-      }
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close().catch(() => {});
-        audioContextRef.current = null;
-      }
-      streamRef.current = null;
-    };
-  }, [isCallActive, callAnimationsEnabled, activeCall?.chatType]);
-
-  useEffect(() => {
-    if (!isCallActive || !callAnimationsEnabled) return;
-    const canvas = canvasRef.current;
-    const container = barRef.current;
-    if (!canvas || !container) return;
-
-    let animId: number | null = null;
-
-    const resize = () => {
-      const rect = container.getBoundingClientRect();
-      if (rect.width > 0) {
-        canvas.width = rect.width;
-        canvas.height = 42;
-      }
-    };
-
-    resize();
-    const observer = new ResizeObserver(resize);
-    observer.observe(container);
-
-    const timeData = new Uint8Array(64);
-    const freqData = new Uint8Array(32);
-
-    const cornerRadius = 18;
-    const fadeWidth = 10;
-
-    const drawWaveLayer = (
-      ctx: CanvasRenderingContext2D,
-      width: number,
-      height: number,
-      baseline: number,
-      amplitude: number,
-      f1: number,
-      f2: number,
-      wavePhase: number,
-      colorRgb: [number, number, number],
-      alpha: number
-    ) => {
-      ctx.beginPath();
-      ctx.moveTo(0, height);
-      const step = 2;
-      for (let x = 0; x <= width; x += step) {
-        const distFromEdge = Math.min(x, width - x);
-        const normEdge = Math.min(1, Math.max(0, distFromEdge / fadeWidth));
-        const edgeFactor = normEdge * normEdge * (3 - 2 * normEdge);
-        const dx = x < cornerRadius ? cornerRadius - x : x > width - cornerRadius ? x - (width - cornerRadius) : 0;
-        const cornerDrop = dx > 0 ? cornerRadius - Math.sqrt(Math.max(0, cornerRadius * cornerRadius - dx * dx)) : 0;
-        const s1 = Math.sin(x * f1 + wavePhase);
-        const s2 = Math.sin(x * f2 - wavePhase * 0.75 + 1.3);
-        const norm = (s1 * 0.68 + s2 * 0.32 + 1) * 0.5;
-        const elevation = Math.min(22, norm * amplitude) * edgeFactor;
-        const y = baseline + cornerDrop - elevation;
-        ctx.lineTo(x, y);
-      }
-      ctx.lineTo(width, height);
-      ctx.closePath();
-
-      const [r, g, b] = colorRgb;
-      const grad = ctx.createLinearGradient(0, Math.max(0, baseline - 22), 0, baseline);
-      grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.25})`);
-      grad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.70})`);
-      grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, ${alpha})`);
-      ctx.fillStyle = grad;
-      ctx.fill();
-    };
-
-    const render = () => {
-      if (!isAppVisible) return;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      const width = canvas.width;
-      const height = canvas.height;
-      if (width === 0 || height === 0) {
-        animId = requestAnimationFrame(render);
-        return;
-      }
-
-      ctx.clearRect(0, 0, width, height);
-
-      if (Date.now() - lastBroadcastTimeRef.current > 300) {
-        broadcastVolRef.current = 0;
-        broadcastSpeakingRef.current = false;
-      }
-
-      let localAnalyserVol = 0;
-      if (analyserRef.current) {
-        analyserRef.current.getByteTimeDomainData(timeData);
-        let maxDev = 0;
-        for (let i = 0; i < timeData.length; i++) {
-          const dev = Math.abs(timeData[i] - 128);
-          if (dev > maxDev) maxDev = dev;
-        }
-        const timeVol = Math.min(1, maxDev / 120);
-
-        analyserRef.current.getByteFrequencyData(freqData);
-        let sum = 0;
-        for (let i = 0; i < freqData.length; i++) {
-          sum += freqData[i];
-        }
-        const avg = sum / freqData.length;
-        const freqVol = Math.min(1, avg / 100);
-
-        localAnalyserVol = Math.max(timeVol, freqVol);
-      }
-
-      const rawAudioVol = Math.max(broadcastVolRef.current, localAnalyserVol);
-      const NOISE_GATE = 0.32;
-      let targetVol = 0;
-      if (rawAudioVol > NOISE_GATE) {
-        const norm = (rawAudioVol - NOISE_GATE) / (1 - NOISE_GATE);
-        targetVol = Math.pow(Math.min(1, Math.max(0, norm)), 2.2);
-      }
-
-      if (targetVol > smoothedVolumeRef.current) {
-        smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.08;
-      } else {
-        smoothedVolumeRef.current += (targetVol - smoothedVolumeRef.current) * 0.04;
-      }
-
-      timeRef.current += 0.015 + smoothedVolumeRef.current * 0.022;
-
-      const phase = timeRef.current;
-      const vol = smoothedVolumeRef.current;
-      const baseline = 24;
-
-      drawWaveLayer(ctx, width, height, baseline, 2.5 + vol * 14, 0.008, 0.016, phase * 0.7, accentRgbRef.current, 0.28);
-      drawWaveLayer(ctx, width, height, baseline, 3.8 + vol * 16, 0.011, 0.022, phase * 0.95 + 1.8, accentRgbRef.current, 0.45);
-      drawWaveLayer(ctx, width, height, baseline, 5.0 + vol * 18, 0.014, 0.028, phase * 1.2 + 3.6, accentRgbRef.current, 0.65);
-
-      animId = requestAnimationFrame(render);
-    };
-
-    animId = requestAnimationFrame(render);
-
-    return () => {
-      if (animId !== null) cancelAnimationFrame(animId);
-      observer.disconnect();
-    };
-  }, [isCallActive, callAnimationsEnabled, isAppVisible, activeCall]);
-
   if (!isCallActive) return null;
 
   return (
     <div
-      ref={barRef}
       className={`active-call-header-bar flex items-center justify-between select-none cursor-pointer relative flex-shrink-0 ${className}`}
       style={{
         height: '42px',
@@ -377,9 +46,8 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
         margin: '0 10px 8px 10px',
         background: 'transparent',
         border: 'none',
-        borderBottom: 'none',
-        borderRadius: '18px',
-        overflow: 'visible',
+        borderRadius: '10px',
+        overflow: 'hidden',
         ...style,
       }}
       onClick={() => {
@@ -389,29 +57,13 @@ export const ActiveCallBar: React.FC<ActiveCallBarProps> = ({ className = '', st
         } catch {}
       }}
     >
-      {callAnimationsEnabled && (
-        <canvas
-          ref={canvasRef}
-          style={{
-            position: 'absolute',
-            bottom: 'calc(100% - 18px)',
-            left: 0,
-            width: '100%',
-            height: '42px',
-            pointerEvents: 'none',
-            zIndex: 1,
-          }}
-        />
-      )}
-
       <div
         className="w-full h-full flex items-center justify-between relative"
         style={{
           background: gradientBackground,
-          borderRadius: '18px',
+          borderRadius: '10px',
           overflow: 'hidden',
           position: 'relative',
-          zIndex: 2,
           transition: 'background 0.3s ease',
         }}
       >

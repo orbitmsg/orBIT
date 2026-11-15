@@ -34,9 +34,8 @@ export const EmojiAvatarModal: React.FC<EmojiAvatarModalProps> = ({
 
   const handleSave = () => {
     try {
-      const size = 512;
+      const size = 1024;
       const center = size / 2;
-      const radius = center - 1.5;
 
       const canvas = document.createElement('canvas');
       canvas.width = size;
@@ -52,6 +51,12 @@ export const EmojiAvatarModal: React.FC<EmojiAvatarModalProps> = ({
       grad.addColorStop(0, colors[0]);
       grad.addColorStop(1, colors[1] || colors[0]);
 
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, size, size);
+
+      const fontSize = 590;
+      const font = `${fontSize}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+
       const offCanvas = document.createElement('canvas');
       offCanvas.width = size;
       offCanvas.height = size;
@@ -60,7 +65,7 @@ export const EmojiAvatarModal: React.FC<EmojiAvatarModalProps> = ({
       let offsetY = 0;
 
       if (offCtx) {
-        offCtx.font = '295px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+        offCtx.font = font;
         offCtx.textAlign = 'center';
         offCtx.textBaseline = 'middle';
         offCtx.fillText(selectedEmoji, center, center);
@@ -72,8 +77,9 @@ export const EmojiAvatarModal: React.FC<EmojiAvatarModalProps> = ({
           let hasPixels = false;
 
           for (let y = 0; y < size; y++) {
+            const rowOffset = y * size;
             for (let x = 0; x < size; x++) {
-              const alpha = data[(y * size + x) * 4 + 3];
+              const alpha = data[(rowOffset + x) * 4 + 3];
               if (alpha > 15) {
                 hasPixels = true;
                 if (x < minX) minX = x;
@@ -93,15 +99,10 @@ export const EmojiAvatarModal: React.FC<EmojiAvatarModalProps> = ({
         } catch (e) {}
       }
 
-      ctx.beginPath();
-      ctx.arc(center, center, radius, 0, Math.PI * 2);
-      ctx.fillStyle = grad;
-      ctx.fill();
-
-      ctx.font = '295px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+      ctx.font = font;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(selectedEmoji, center + offsetX, center + offsetY);
+      ctx.fillText(selectedEmoji, Math.round(center + offsetX), Math.round(center + offsetY));
 
       const dataUrl = canvas.toDataURL('image/png');
       onSave(dataUrl);
@@ -208,7 +209,7 @@ export const EmojiAvatarModal: React.FC<EmojiAvatarModalProps> = ({
               style={{
                 width: '106px',
                 height: '106px',
-                borderRadius: '50%',
+                borderRadius: '26px',
                 background: selectedGradient,
                 display: 'flex',
                 alignItems: 'center',

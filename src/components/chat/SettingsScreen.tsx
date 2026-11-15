@@ -1235,10 +1235,7 @@ export const SettingsScreen = () => {
       <EmojiAvatarModal
         isOpen={emojiModalOpen}
         onClose={() => setEmojiModalOpen(false)}
-        onSave={(emojiUrl: string) => {
-          setAvatarUrl(emojiUrl);
-          broadcastProfileUpdate({ avatarUrl: emojiUrl });
-        }}
+        onSave={handleAvatarSave}
       />
       <AvatarCropperModal
         isOpen={cropperModalOpen}

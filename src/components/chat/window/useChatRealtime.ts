@@ -1,11 +1,12 @@
 import { sqliteStorage } from '../../../services/sqliteStorage';
 import { useEffect } from 'react';
-import { useChatStore, type Message, isMessageOutgoing } from '../../../store/useChatStore';
+import { useChatStore, type Message, isMessageOutgoing, MAX_MESSAGES_PER_CHAT } from '../../../store/useChatStore';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { groupService } from '../../../services/groupService';
 import { lobbyService } from '../../../services/lobbyService';
 import { ablyService } from '../../../services/ablyService';
 import { supabaseService } from '../../../services/supabaseService';
+import { p2pDataService } from '../../../services/p2pDataService';
 
 import { getPusher, getGroupPusher, CLIENT_SESSION_ID } from '../../../utils/pusher';
 import { isValidGroupCode, deriveGroupKey } from '../../../lib/groupCrypto';
@@ -41,6 +42,9 @@ export const useChatRealtime = ({
 
     if (activeChatId !== 'notes' && activeChat?.type !== 'channel') {
       useChatStore.getState().syncReactionsFromSupabase(activeChatId);
+    }
+    if (activeChat?.type === 'private') {
+      p2pDataService.initiate(activeChatId);
     }
 
     const isLobby = Boolean(activeChatId?.startsWith('lobby_'));
@@ -104,7 +108,7 @@ export const useChatRealtime = ({
               return {
                 messagesByChatId: {
                   ...state.messagesByChatId,
-                  [targetChatId]: sanitizedCached,
+                  [targetChatId]: sanitizedCached.length > MAX_MESSAGES_PER_CHAT ? sanitizedCached.slice(-MAX_MESSAGES_PER_CHAT) : sanitizedCached,
                 },
               };
             }
@@ -133,7 +137,7 @@ export const useChatRealtime = ({
               return {
                 messagesByChatId: {
                   ...state.messagesByChatId,
-                  [targetChatId]: merged,
+                  [targetChatId]: merged.length > MAX_MESSAGES_PER_CHAT ? merged.slice(-MAX_MESSAGES_PER_CHAT) : merged,
                 },
               };
             }
@@ -1135,6 +1139,9 @@ export const useChatRealtime = ({
     channel.bind('profile-update', handleClientMessage);
 
     return () => {
+      if (activeChat?.type === 'private') {
+        p2pDataService.close(activeChatId);
+      }
       unsubLobbyRealtime?.();
       unsubAbly();
       channel.unbind('reaction', handleReaction);

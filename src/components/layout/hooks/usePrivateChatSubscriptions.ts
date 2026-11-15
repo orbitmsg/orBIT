@@ -16,6 +16,8 @@ import { deriveGroupKey, isValidGroupCode } from '../../../lib/groupCrypto';
 import { messageQueue } from '../../../lib/message-queue';
 import { showNotification } from '../../../utils/notification';
 import { isAppInFocusAndVisible } from './layoutSyncUtils';
+import { receiptQueue } from '../../../services/receiptService';
+import { p2pDataService } from '../../../services/p2pDataService';
 
 const isValidProfileString = (val: unknown): val is string =>
   typeof val === 'string' && val.trim().length > 0 && val.trim() !== 'undefined' && val.trim() !== 'null';
@@ -98,6 +100,11 @@ export const usePrivateChatSubscriptions = ({
 
       if (isSelf) return;
 
+      if (data.type === 'p2p-signal') {
+        p2pDataService.handleSignal(chatId, data);
+        return;
+      }
+
       if (data.type === 'reaction' && data.emoji && data.sender) {
         if (data.sessionId === CLIENT_SESSION_ID) return;
         const targetId = data.messageId || data.id;
@@ -108,9 +115,11 @@ export const usePrivateChatSubscriptions = ({
       }
 
       if (data.type === 'delivered') {
+        const rawIds: string[] = Array.isArray(data.messageIds) ? data.messageIds : (data.messageId ? [data.messageId] : []);
+        const targetIds = new Set(rawIds);
         const currentMessages = useChatStore.getState().messagesByChatId[targetChatId] || [];
         const updatedMessages = currentMessages.map((msg) => {
-          const isTarget = (data.messageId && msg.id === data.messageId) || (data.time && msg.time <= data.time && msg.isOutgoing);
+          const isTarget = (msg.id && targetIds.has(msg.id)) || (data.messageId && msg.id === data.messageId) || (data.time && msg.time <= data.time && msg.isOutgoing);
           if (isTarget) {
             if (msg.status === 'read' || msg.read) return msg;
             return { ...msg, status: 'delivered' as const, deliveredAt: data.timestamp || Date.now() };
@@ -127,12 +136,14 @@ export const usePrivateChatSubscriptions = ({
       }
 
       if (data.type === 'read') {
+        const rawIds: string[] = Array.isArray(data.messageIds) ? data.messageIds : (data.messageId ? [data.messageId] : []);
+        const targetIds = new Set(rawIds);
         const currentMessages = useChatStore.getState().messagesByChatId[targetChatId] || [];
         const readIds: string[] = [];
         const readMediaUrls: string[] = [];
         const readMsgObjects: Message[] = [];
         const updatedMessages = currentMessages.map((msg) => {
-          const isTarget = (data.messageId && msg.id === data.messageId) || (data.time && msg.time <= data.time && msg.isOutgoing);
+          const isTarget = (msg.id && targetIds.has(msg.id)) || (data.messageId && msg.id === data.messageId) || (data.time && msg.time <= data.time && msg.isOutgoing);
           if (isTarget) {
             const readMsg = { ...msg, read: true, status: 'read' as const, readAt: data.timestamp || Date.now() };
             if (readMsg.id) readIds.push(readMsg.id);
@@ -155,9 +166,6 @@ export const usePrivateChatSubscriptions = ({
         }));
         if (readIds.length > 0) {
           supabaseService.purgeServerMessages(targetChatId, readIds);
-        }
-        if (readMediaUrls.length > 0) {
-
         }
         if (typeof window !== 'undefined' && (window as any).orbita?.storageAddMessage) {
           for (const rm of readMsgObjects) {
@@ -433,17 +441,11 @@ export const usePrivateChatSubscriptions = ({
             }
           }
 
-          if (!isSelf) {
-            ablyService.markMessageDelivered(chatId, data.messageId);
-            const pusher = getPusher();
-            const ch = pusher.subscribe(`private-chat-${chatId}`);
+          if (!isSelf && data.messageId) {
             if (isCurrentActive) {
-              ablyService.markMessageRead(chatId, data.messageId);
-              const sendRead = () => ch.trigger('client-message', { type: 'read', messageId: data.messageId, time: data.time, sender: nickname });
-              if (ch.subscribed) sendRead(); else ch.bind('pusher:subscription_succeeded', sendRead);
+              receiptQueue.queueRead(chatId, data.messageId);
             } else {
-              const sendDelivered = () => ch.trigger('client-message', { type: 'delivered', messageId: data.messageId, time: data.time, sender: nickname });
-              if (ch.subscribed) sendDelivered(); else ch.bind('pusher:subscription_succeeded', sendDelivered);
+              receiptQueue.queueDelivered(chatId, data.messageId);
             }
           }
         }).catch(() => {});
@@ -726,6 +728,8 @@ export const usePrivateChatSubscriptions = ({
         useChatStore.getState().setReaction(chatId, targetId, data.emoji, data.sender, data.action || 'add');
       }
     };
+
+    p2pDataService.onMessage(chatId, handleMessage);
 
     channel.bind('client-message', handleMessage);
     channel.bind('reaction', handleReaction);

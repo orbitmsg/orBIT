@@ -2,6 +2,8 @@ import { useChatStore } from '../store/useChatStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { DoubleRatchet } from '../lib/double-ratchet';
 import { supabaseService } from './supabaseService';
+import { getPusher } from '../utils/pusher';
+import { ablyService } from './ablyService';
 
 export async function sendEncryptedReadReceipt(chatId: string, messageIds: string[], lastTime?: number): Promise<void> {
   try {
@@ -45,9 +47,116 @@ export async function sendEncryptedReadReceipt(chatId: string, messageIds: strin
         ciphertext,
         index,
         dhPublicKey
-      ).catch((err) => console.warn('[ReadReceipt] Offline receipt dispatch error:', err));
+      ).catch(() => {});
     }
-  } catch (err) {
-    console.warn('[ReadReceipt] Failed to send encrypted receipt:', err);
+  } catch {}
+}
+
+class ReceiptQueue {
+  private deliveredQueue = new Map<string, Set<string>>();
+  private readQueue = new Map<string, Set<string>>();
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+  public queueDelivered(chatId: string, messageId: string): void {
+    if (!chatId || !messageId) return;
+    if (!this.deliveredQueue.has(chatId)) {
+      this.deliveredQueue.set(chatId, new Set());
+    }
+    this.deliveredQueue.get(chatId)!.add(messageId);
+    this.scheduleFlush();
+  }
+
+  public queueRead(chatId: string, messageId: string): void {
+    if (!chatId || !messageId) return;
+    if (!this.readQueue.has(chatId)) {
+      this.readQueue.set(chatId, new Set());
+    }
+    this.readQueue.get(chatId)!.add(messageId);
+    if (this.deliveredQueue.has(chatId)) {
+      this.deliveredQueue.get(chatId)!.delete(messageId);
+    }
+    this.scheduleFlush();
+  }
+
+  private scheduleFlush(): void {
+    if (this.flushTimer) return;
+    this.flushTimer = setTimeout(() => {
+      this.flushTimer = null;
+      this.flush();
+    }, 300);
+  }
+
+  public flush(): void {
+    const nickname = useAuthStore.getState().nickname || 'user';
+    const now = Date.now();
+
+    for (const [chatId, idSet] of this.deliveredQueue.entries()) {
+      if (idSet.size === 0) continue;
+      const messageIds = Array.from(idSet);
+      idSet.clear();
+
+      for (const mId of messageIds) {
+        ablyService.markMessageDelivered(chatId, mId);
+      }
+
+      try {
+        const pusher = getPusher();
+        const ch = pusher.channel(`private-chat-${chatId}`) || pusher.subscribe(`private-chat-${chatId}`);
+        const payload = {
+          type: 'delivered',
+          messageId: messageIds[messageIds.length - 1],
+          messageIds,
+          time: now,
+          sender: nickname,
+        };
+        const trigger = () => {
+          try {
+            ch.trigger('client-message', payload);
+          } catch {}
+        };
+        if (ch.subscribed) trigger();
+        else ch.bind('pusher:subscription_succeeded', function onSub() {
+          ch.unbind('pusher:subscription_succeeded', onSub);
+          trigger();
+        });
+      } catch {}
+    }
+
+    for (const [chatId, idSet] of this.readQueue.entries()) {
+      if (idSet.size === 0) continue;
+      const messageIds = Array.from(idSet);
+      idSet.clear();
+
+      for (const mId of messageIds) {
+        ablyService.markMessageRead(chatId, mId);
+      }
+
+      sendEncryptedReadReceipt(chatId, messageIds, now).catch(() => {});
+      supabaseService.purgeServerMessages(chatId, messageIds);
+
+      try {
+        const pusher = getPusher();
+        const ch = pusher.channel(`private-chat-${chatId}`) || pusher.subscribe(`private-chat-${chatId}`);
+        const payload = {
+          type: 'read',
+          messageId: messageIds[messageIds.length - 1],
+          messageIds,
+          time: now,
+          sender: nickname,
+        };
+        const trigger = () => {
+          try {
+            ch.trigger('client-message', payload);
+          } catch {}
+        };
+        if (ch.subscribed) trigger();
+        else ch.bind('pusher:subscription_succeeded', function onSub() {
+          ch.unbind('pusher:subscription_succeeded', onSub);
+          trigger();
+        });
+      } catch {}
+    }
   }
 }
+
+export const receiptQueue = new ReceiptQueue();

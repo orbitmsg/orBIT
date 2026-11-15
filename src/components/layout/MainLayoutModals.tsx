@@ -1,18 +1,19 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { ConnectModal } from './ConnectModal';
-import { MyProfileModal } from '../chat/MyProfileModal';
-import { CallsModal } from '../call/CallsModal';
-import { FriendRequestsModal } from './FriendRequestsModal';
-import { DeleteAccountModal } from '../common/DeleteAccountModal';
 import { ActionConfirmModal, type ConfirmActionType } from '../common/ActionConfirmModal';
-import { IncomingCallModal } from '../call/IncomingCallModal';
-import { CallWindow } from '../call/CallWindow';
-import { DevicePermissionModal } from '../common/DevicePermissionModal';
-import { GroupInviteModal } from '../chat/GroupInviteModal';
-import { ChannelInviteModal } from '../chat/ChannelInviteModal';
 import type { ChannelInfo } from '../../services/channelService';
 import { useChatStore, type IncomingFriendRequest } from '../../store/useChatStore';
+
+const ConnectModal = lazy(() => import('./ConnectModal').then(m => ({ default: m.ConnectModal })));
+const MyProfileModal = lazy(() => import('../chat/MyProfileModal').then(m => ({ default: m.MyProfileModal })));
+const CallsModal = lazy(() => import('../call/CallsModal').then(m => ({ default: m.CallsModal })));
+const FriendRequestsModal = lazy(() => import('./FriendRequestsModal').then(m => ({ default: m.FriendRequestsModal })));
+const DeleteAccountModal = lazy(() => import('../common/DeleteAccountModal').then(m => ({ default: m.DeleteAccountModal })));
+const IncomingCallModal = lazy(() => import('../call/IncomingCallModal').then(m => ({ default: m.IncomingCallModal })));
+const CallWindow = lazy(() => import('../call/CallWindow').then(m => ({ default: m.CallWindow })));
+const DevicePermissionModal = lazy(() => import('../common/DevicePermissionModal').then(m => ({ default: m.DevicePermissionModal })));
+const GroupInviteModal = lazy(() => import('../chat/GroupInviteModal').then(m => ({ default: m.GroupInviteModal })));
+const ChannelInviteModal = lazy(() => import('../chat/ChannelInviteModal').then(m => ({ default: m.ChannelInviteModal })));
 
 export interface MainLayoutModalsProps {
   groupInviteUrl?: string | null;
@@ -100,7 +101,7 @@ export const MainLayoutModals: React.FC<MainLayoutModalsProps> = ({
   setChannelInviteData,
 }) => {
   return (
-    <>
+    <Suspense fallback={null}>
       {connectModalConfig.isOpen && (
         <ConnectModal
           type={connectModalConfig.type}
@@ -225,6 +226,6 @@ export const MainLayoutModals: React.FC<MainLayoutModalsProps> = ({
           }}
         />
       )}
-    </>
+    </Suspense>
   );
 };

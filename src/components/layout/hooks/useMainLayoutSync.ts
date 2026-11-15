@@ -15,7 +15,7 @@ import { networkManager, type OutboxItem } from '../../../services/networkManage
 import { isValidGroupCode, deriveGroupKey } from '../../../lib/groupCrypto';
 import { DoubleRatchet } from '../../../lib/double-ratchet';
 import { revalidateDevelopersOnConnection } from '../../ui/DeveloperBadge';
-import { sendEncryptedReadReceipt } from '../../../services/receiptService';
+import { sendEncryptedReadReceipt, receiptQueue } from '../../../services/receiptService';
 import { showNotification } from '../../../utils/notification';
 import { isAppInFocusAndVisible } from './layoutSyncUtils';
 
@@ -715,13 +715,9 @@ export const useMainLayoutSync = ({
           });
           addMessagesBatch(batchMessages);
           for (const item of batchMessages) {
-            try {
-              ablyService.markMessageDelivered(item.chatId, item.message.id);
-              const pusher = getPusher();
-              const ch = pusher.channel(`private-chat-${item.chatId}`) || pusher.subscribe(`private-chat-${item.chatId}`);
-              const sendDelivered = () => ch.trigger('client-message', { type: 'delivered', messageId: item.message.id, time: Date.now(), sender: nickname });
-              if (ch.subscribed) sendDelivered(); else ch.bind('pusher:subscription_succeeded', sendDelivered);
-            } catch {}
+            if (item.message.id) {
+              receiptQueue.queueDelivered(item.chatId, item.message.id);
+            }
           }
         }
 

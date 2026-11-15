@@ -76,7 +76,9 @@ export default defineConfig({
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'zustand', 'framer-motion'],
           'vendor-ui': ['lucide-react', 'i18next', 'react-i18next'],
-          'vendor-network': ['@supabase/supabase-js', 'ably', 'pusher-js', 'livekit-client'],
+          'vendor-mui': ['@mui/material'],
+          'vendor-network': ['@supabase/supabase-js', 'ably', 'pusher-js'],
+          'vendor-livekit': ['livekit-client'],
           'vendor-crypto': ['@stablelib/x25519', '@stablelib/sha256', '@stablelib/hkdf', 'crypto-js'],
           'vendor-emoji': ['@emoji-mart/data'],
         },

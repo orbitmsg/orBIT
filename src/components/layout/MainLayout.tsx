@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo, Suspense, lazy } from 'react';
 import { useChatStore, type Chat, type ChatFolder } from '../../store/useChatStore';
 import { useAuthStore, getInitialNumericId } from '../../store/useAuthStore';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -33,8 +33,8 @@ import { useShallow } from 'zustand/react/shallow';
 import { type ConfirmActionType } from '../common/ActionConfirmModal';
 import { useConnectionStore } from '../../store/useConnectionStore';
 import { InChatSidebarSearch } from './InChatSidebarSearch';
-import { SettingsScreen } from '../chat/SettingsScreen';
-import { ProfileScreen } from '../chat/ProfileScreen';
+const SettingsScreen = lazy(() => import('../chat/SettingsScreen').then(m => ({ default: m.SettingsScreen })));
+const ProfileScreen = lazy(() => import('../chat/ProfileScreen').then(m => ({ default: m.ProfileScreen })));
 import { MainLayoutModals } from './MainLayoutModals';
 import { useAccountStore } from '../../services/accountManager';
 import { ChatListItem } from './sidebar/ChatListItems';
@@ -1324,63 +1324,64 @@ export const MainLayout = () => {
         )}
       </div>
 
-        <AnimatePresence>
-          {currentView === 'settings' && (
-            <SettingsScreen />
-          )}
-        </AnimatePresence>
+        <Suspense fallback={null}>
+          <AnimatePresence>
+            {currentView === 'settings' && (
+              <SettingsScreen />
+            )}
+          </AnimatePresence>
 
-        <AnimatePresence>
-          {activeProfileChatId && (
-            <ProfileScreen
-              chatId={activeProfileChatId}
-              onClose={() => setActiveProfileChatId(null)}
-              isMobileView={isMobileView}
-              onLinkClick={(url) => {
-                const cleanUrl = url.trim();
-                if (cleanUrl.startsWith('@')) {
-                  const targetUsername = cleanUrl.replace(/^@+/, '').trim().toLowerCase();
-                  if (!targetUsername) return;
-                  const myUid = useAuthStore.getState().userId;
-                  const myC = useChatStore.getState().myCode;
-                  const myU = useAuthStore.getState().username?.toLowerCase();
-                  if (targetUsername === myU || targetUsername === myC?.toLowerCase() || targetUsername === myUid?.toLowerCase()) {
-                    handleSelectChat('notes');
-                    setActiveProfileChatId('notes');
-                    return;
-                  }
-                  const currentChats = useChatStore.getState().chats;
-                  const existingChat = currentChats.find(
-                    (c) =>
-                      c.type === 'private' &&
-                      ((c.username && c.username.toLowerCase() === targetUsername) ||
-                        c.peerCode?.toLowerCase() === targetUsername ||
-                        c.originalPeerCode?.toLowerCase() === targetUsername)
-                  );
-                  if (existingChat) {
-                    handleSelectChat(existingChat.id);
-                    setActiveProfileChatId(existingChat.id);
-                    return;
-                  }
-                  supabaseService.lookupProfileByUsername(targetUsername).then((user) => {
-                    if (!user) {
-                      useToastStore.getState().showToast(t('chatWindow.userNotFound'), 'text');
+          <AnimatePresence>
+            {activeProfileChatId && (
+              <ProfileScreen
+                chatId={activeProfileChatId}
+                onClose={() => setActiveProfileChatId(null)}
+                isMobileView={isMobileView}
+                onLinkClick={(url) => {
+                  const cleanUrl = url.trim();
+                  if (cleanUrl.startsWith('@')) {
+                    const targetUsername = cleanUrl.replace(/^@+/, '').trim().toLowerCase();
+                    if (!targetUsername) return;
+                    const myUid = useAuthStore.getState().userId;
+                    const myC = useChatStore.getState().myCode;
+                    const myU = useAuthStore.getState().username?.toLowerCase();
+                    if (targetUsername === myU || targetUsername === myC?.toLowerCase() || targetUsername === myUid?.toLowerCase()) {
+                      handleSelectChat('notes');
+                      setActiveProfileChatId('notes');
                       return;
                     }
-                    handleSelectFoundUser(user);
-                  }).catch(() => {
-                    useToastStore.getState().showToast(t('chatWindow.userNotFound'), 'text');
-                  });
-                  return;
-                }
-                if ((window as any).orbita?.openExternal) {
-                  (window as any).orbita.openExternal(cleanUrl);
-                }
-              }}
-            />
-          )}
-        </AnimatePresence>
-
+                    const currentChats = useChatStore.getState().chats;
+                    const existingChat = currentChats.find(
+                      (c) =>
+                        c.type === 'private' &&
+                        ((c.username && c.username.toLowerCase() === targetUsername) ||
+                          c.peerCode?.toLowerCase() === targetUsername ||
+                          c.originalPeerCode?.toLowerCase() === targetUsername)
+                    );
+                    if (existingChat) {
+                      handleSelectChat(existingChat.id);
+                      setActiveProfileChatId(existingChat.id);
+                      return;
+                    }
+                    supabaseService.lookupProfileByUsername(targetUsername).then((user) => {
+                      if (!user) {
+                        useToastStore.getState().showToast(t('chatWindow.userNotFound'), 'text');
+                        return;
+                      }
+                      handleSelectFoundUser(user);
+                    }).catch(() => {
+                      useToastStore.getState().showToast(t('chatWindow.userNotFound'), 'text');
+                    });
+                    return;
+                  }
+                  if ((window as any).orbita?.openExternal) {
+                    (window as any).orbita.openExternal(cleanUrl);
+                  }
+                }}
+              />
+            )}
+          </AnimatePresence>
+        </Suspense>
         <AnimatePresence>
           {isMobileView && inChatSearch?.isOpen && (
             <motion.div
@@ -1399,7 +1400,6 @@ export const MainLayout = () => {
             </motion.div>
           )}
         </AnimatePresence>
-
         <CreateLobbyModal
           isOpen={isCreateLobbyOpen}
           onClose={() => setIsCreateLobbyOpen(false)}

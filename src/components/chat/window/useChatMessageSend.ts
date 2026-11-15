@@ -9,6 +9,7 @@ import { groupService } from '../../../services/groupService';
 import { lobbyService } from '../../../services/lobbyService';
 import { supportService } from '../../../services/supportService';
 import { networkManager } from '../../../services/networkManager';
+import { p2pDataService } from '../../../services/p2pDataService';
 import { deriveGroupKey, isValidGroupCode } from '../../../lib/groupCrypto';
 import { encryptMessage, generateKeyPair, ensureValidUuid } from '../../../lib/crypto';
 import { DoubleRatchet } from '../../../lib/double-ratchet';
@@ -980,6 +981,7 @@ export const useChatMessageSend = ({
               chatId: targetChatId,
             };
 
+            p2pDataService.send(targetChatId, preHandshakePayload);
             ablyService.sendMessage(targetChatId, preHandshakePayload).catch(() => {});
 
             try {
@@ -1080,6 +1082,7 @@ export const useChatMessageSend = ({
         const primaryTarget = freshChat?.peerCode || targetChat?.peerCode || freshChat?.originalPeerCode || targetChat?.originalPeerCode;
         const targetsForOffline = primaryTarget ? [primaryTarget] : recipientTargets.slice(0, 1);
 
+        p2pDataService.send(targetChatId, payload);
         ablyService.sendMessage(targetChatId, payload).catch(() => {});
 
         try {

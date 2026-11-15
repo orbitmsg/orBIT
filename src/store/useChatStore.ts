@@ -1153,6 +1153,59 @@ export const useChatStore = create<ChatState>()(
         }
 
         if (targetIdx === -1) {
+          if (typeof window !== 'undefined' && (window as any).orbita?.storageGetMessages) {
+            (window as any).orbita.storageGetMessages(chatId).then((cached: any[]) => {
+              if (!Array.isArray(cached) || cached.length === 0) return;
+              const foundMsg = cached.find((cm) => cm && cm.id && (cm.id === targetStr || cm.id === targetStr.replace(/_part_\d+$/, '')));
+              if (!foundMsg) return;
+              const curReactions: Record<string, string[]> = { ...(foundMsg.reactions || {}) };
+              const uList = curReactions[emoji] ? [...curReactions[emoji]] : [];
+              const present = uList.some(isTargetUser);
+              let nextUsers: string[];
+              if (action === 'add') {
+                nextUsers = present ? uList : [...uList.filter((u) => !isTargetUser(u)), user];
+              } else if (action === 'remove') {
+                nextUsers = uList.filter((u) => !isTargetUser(u));
+              } else {
+                nextUsers = present ? uList.filter((u) => !isTargetUser(u)) : [...uList.filter((u) => !isTargetUser(u)), user];
+              }
+              if (nextUsers.length > 0) {
+                curReactions[emoji] = nextUsers;
+              } else {
+                delete curReactions[emoji];
+              }
+              const updatedFound = {
+                ...foundMsg,
+                reactions: Object.keys(curReactions).length > 0 ? curReactions : undefined,
+              };
+              (window as any).orbita?.storageAddMessage?.(chatId, updatedFound.id, updatedFound).catch(() => {});
+            }).catch(() => {});
+          }
+          sqliteStorage.getJson<Record<string, Record<string, string[]>>>(`orbita_reactions_${chatId}`, {}).then((chatReactions) => {
+            const nextReactions = { ...chatReactions };
+            const curMsgReactions: Record<string, string[]> = { ...(nextReactions[targetStr] || {}) };
+            const uList = curMsgReactions[emoji] ? [...curMsgReactions[emoji]] : [];
+            const present = uList.some(isTargetUser);
+            let nextUsers: string[];
+            if (action === 'add') {
+              nextUsers = present ? uList : [...uList.filter((u) => !isTargetUser(u)), user];
+            } else if (action === 'remove') {
+              nextUsers = uList.filter((u) => !isTargetUser(u));
+            } else {
+              nextUsers = present ? uList.filter((u) => !isTargetUser(u)) : [...uList.filter((u) => !isTargetUser(u)), user];
+            }
+            if (nextUsers.length > 0) {
+              curMsgReactions[emoji] = nextUsers;
+            } else {
+              delete curMsgReactions[emoji];
+            }
+            if (Object.keys(curMsgReactions).length > 0) {
+              nextReactions[targetStr] = curMsgReactions;
+            } else {
+              delete nextReactions[targetStr];
+            }
+            sqliteStorage.setJson(`orbita_reactions_${chatId}`, nextReactions).catch(() => {});
+          }).catch(() => {});
           return 'add';
         }
 
@@ -1195,10 +1248,11 @@ export const useChatStore = create<ChatState>()(
         }
 
         const updated = [...messages];
-        updated[targetIdx] = {
+        const updatedMsg = {
           ...m,
           reactions: Object.keys(currentReactions).length > 0 ? currentReactions : undefined,
         };
+        updated[targetIdx] = updatedMsg;
 
         set({
           messagesByChatId: {
@@ -1207,10 +1261,23 @@ export const useChatStore = create<ChatState>()(
           },
         });
 
-        const updatedMsg = updated[targetIdx];
         if (updatedMsg && typeof window !== 'undefined' && (window as any).orbita?.storageAddMessage) {
           (window as any).orbita.storageAddMessage(chatId, updatedMsg.id, updatedMsg).catch(() => {});
+          const cleanChatId = chatId.split(':')[0];
+          if (cleanChatId !== chatId) {
+            (window as any).orbita.storageAddMessage(cleanChatId, updatedMsg.id, updatedMsg).catch(() => {});
+          }
         }
+
+        sqliteStorage.getJson<Record<string, Record<string, string[]>>>(`orbita_reactions_${chatId}`, {}).then((chatReactions) => {
+          const nextReactions = { ...chatReactions };
+          if (Object.keys(currentReactions).length > 0) {
+            nextReactions[targetStr] = currentReactions;
+          } else {
+            delete nextReactions[targetStr];
+          }
+          sqliteStorage.setJson(`orbita_reactions_${chatId}`, nextReactions).catch(() => {});
+        }).catch(() => {});
 
         return resultingAction;
       },
@@ -1278,8 +1345,16 @@ export const useChatStore = create<ChatState>()(
             }
           }
 
+          sqliteStorage.getJson<Record<string, Record<string, string[]>>>(`orbita_reactions_${chatId}`, {}).then((chatReactions) => {
+            const nextReactions = { ...chatReactions };
+            for (const [mid, recMap] of idReactionsMap.entries()) {
+              nextReactions[mid] = { ...(nextReactions[mid] || {}), ...recMap };
+            }
+            sqliteStorage.setJson(`orbita_reactions_${chatId}`, nextReactions).catch(() => {});
+          }).catch(() => {});
+
           const chat = state.chats.find((c) => c.id === chatId);
-          if (chat && chat.type !== 'channel' && chatId !== 'notes') {
+          if (chat && chat.type === 'private' && chatId !== 'notes') {
             await supabaseService.deleteReactionsForChat(chatId);
           }
         } catch (err) {

@@ -643,9 +643,19 @@ export const useChatMessageActions = ({
         activeChat?.name && activeChat.name.length === 36 ? activeChat.name : undefined,
       ].filter((rec): rec is string => Boolean(rec && rec !== myCode && rec !== myUserId))));
 
-      for (const rId of recipientTargets) {
-        supabaseService.saveReaction(activeChatId, rId, msgId, emoji, reactionUserId, finalAction, myNickname).catch(() => {});
+      if (activeChat?.type === 'group' && activeChat.members) {
+        const memberRecipients = activeChat.members
+          .map((m: any) => m.userId || m.userCode)
+          .filter((id: string) => Boolean(id && id !== myCode && id !== myUserId));
+        for (const mId of memberRecipients) {
+          supabaseService.saveReaction(activeChatId, mId, msgId, emoji, reactionUserId, finalAction, myNickname).catch(() => {});
+        }
+      } else {
+        for (const rId of recipientTargets) {
+          supabaseService.saveReaction(activeChatId, rId, msgId, emoji, reactionUserId, finalAction, myNickname).catch(() => {});
+        }
       }
+      supabaseService.saveReaction(activeChatId, undefined, msgId, emoji, reactionUserId, finalAction, myNickname).catch(() => {});
 
       ablyService.sendMessage(activeChatId, {
         ...payload,

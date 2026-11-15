@@ -44,11 +44,25 @@ export const useChatRealtime = ({
 
     const targetChatId = activeChatId;
     try {
-      (window as any).orbita?.storageGetMessages?.(targetChatId).then((cached: any[]) => {
+      (window as any).orbita?.storageGetMessages?.(targetChatId).then(async (cached: any[]) => {
         if (useChatStore.getState().activeChatId !== targetChatId) return;
         if (Array.isArray(cached) && cached.length > 0) {
+          const cleanBaseId = targetChatId.split(':')[0];
+          const [storedReactions, baseStoredReactions] = await Promise.all([
+            sqliteStorage.getJson<Record<string, Record<string, string[]>>>(`orbita_reactions_${targetChatId}`, {}),
+            cleanBaseId !== targetChatId
+              ? sqliteStorage.getJson<Record<string, Record<string, string[]>>>(`orbita_reactions_${cleanBaseId}`, {})
+              : Promise.resolve({}),
+          ]);
+          const allStored: Record<string, Record<string, string[]>> = { ...baseStoredReactions, ...storedReactions };
           const sanitizedCached = cached.map((m) => {
             if (!m) return m;
+            if (m.id && allStored[m.id]) {
+              m = {
+                ...m,
+                reactions: mergeReactions(allStored[m.id], m.reactions),
+              };
+            }
             const validTime = (typeof m.time === 'number' && !isNaN(m.time) && m.time > 0) ? m.time : Date.now();
             let timeFixed = validTime !== m.time ? { ...m, time: validTime } : m;
             const hasMedia = Boolean(timeFixed.mediaType || (timeFixed.mediaItems && timeFixed.mediaItems.length > 0) || timeFixed.mediaUrl);
@@ -899,6 +913,18 @@ export const useChatRealtime = ({
                 return m;
               });
               useChatStore.getState().updateChat(activeChatId, { members: updatedMembers });
+            }
+            const targetDirectChat = useChatStore.getState().chats.find(
+              (c: any) =>
+                c.type === 'private' &&
+                c.id !== 'notes' &&
+                (c.peerCode === targetCode || c.originalPeerCode === targetCode || c.userId === targetCode)
+            );
+            if (targetDirectChat && newNickname && targetDirectChat.name !== newNickname) {
+              useChatStore.getState().updateChat(targetDirectChat.id, {
+                name: newNickname,
+                avatarUrl: newAvatar !== undefined ? newAvatar : targetDirectChat.avatarUrl,
+              });
             }
           }
         }

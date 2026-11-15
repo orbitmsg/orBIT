@@ -269,6 +269,19 @@ export const useGroupSubscriptions = ({
               avatarUrl: newAvatar,
             });
           }
+          const targetDirectChat = useChatStore.getState().chats.find(
+            (c) =>
+              c.type === 'private' &&
+              c.id !== 'notes' &&
+              ((targetUserCode && (c.peerCode === targetUserCode || c.originalPeerCode === targetUserCode)) ||
+                (targetUserId && (c as any).userId === targetUserId))
+          );
+          if (targetDirectChat && newNickname && targetDirectChat.name !== newNickname) {
+            updateChat(targetDirectChat.id, {
+              name: newNickname,
+              avatarUrl: newAvatar !== undefined ? newAvatar : targetDirectChat.avatarUrl,
+            });
+          }
         }
 
         const groupMessages = useChatStore.getState().messagesByChatId[chatId];

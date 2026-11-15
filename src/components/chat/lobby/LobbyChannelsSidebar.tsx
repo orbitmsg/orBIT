@@ -91,15 +91,35 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
 
       list.forEach((m) => {
         const code = m.userCode || m.id;
-        if (code && code.length >= 6) {
-          supabaseService.lookupPublicProfile(code).then((p) => {
-            if (p?.avatar_url || p?.nickname) {
-              useChatStore.getState().setUserProfile(code, {
-                nickname: p.nickname,
-                avatarUrl: p.avatar_url,
+        if (code) {
+          if (m.nickname || m.avatarUrl) {
+            useChatStore.getState().setUserProfile(code, {
+              nickname: m.nickname,
+              avatarUrl: m.avatarUrl,
+            });
+            const targetDirectChat = useChatStore.getState().chats.find(
+              (c: any) =>
+                c.type === 'private' &&
+                c.id !== 'notes' &&
+                (c.peerCode === code || c.originalPeerCode === code || c.userId === code)
+            );
+            if (targetDirectChat && m.nickname && targetDirectChat.name !== m.nickname) {
+              useChatStore.getState().updateChat(targetDirectChat.id, {
+                name: m.nickname,
+                avatarUrl: m.avatarUrl || targetDirectChat.avatarUrl,
               });
             }
-          }).catch(() => {});
+          }
+          if (code.length >= 6) {
+            supabaseService.lookupPublicProfile(code).then((p) => {
+              if (p?.avatar_url || p?.nickname) {
+                useChatStore.getState().setUserProfile(code, {
+                  nickname: p.nickname,
+                  avatarUrl: p.avatar_url,
+                });
+              }
+            }).catch(() => {});
+          }
         }
       });
     } catch (e) {
@@ -380,11 +400,11 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
 
               const effectiveAvatar = isSelf
                 ? (useAuthStore.getState().avatarUrl || m.avatarUrl || undefined)
-                : (userObj?.avatarUrl || directChat?.avatarUrl || m.avatarUrl || undefined);
+                : (m.avatarUrl || userObj?.avatarUrl || directChat?.avatarUrl || undefined);
 
               const effectiveNickname = isSelf
                 ? (useAuthStore.getState().nickname || m.nickname)
-                : (userObj?.nickname || (directChat?.name && directChat.name !== directChat.peerCode ? directChat.name : undefined) || m.nickname);
+                : (m.nickname || userObj?.nickname || (directChat?.name && directChat.name !== directChat.peerCode ? directChat.name : undefined) || m.userCode);
 
               return (
                 <div

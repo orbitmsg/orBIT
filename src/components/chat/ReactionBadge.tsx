@@ -302,20 +302,20 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
       }
 
       const resolvedAvatar =
+        matchedMember?.avatarUrl ||
+        (matchedMember as any)?.avatar_url ||
         userObj?.avatarUrl ||
         directChat?.avatarUrl ||
         profileAvatarCache.get(u) ||
         msgFoundAvatar ||
-        matchedMember?.avatarUrl ||
-        (matchedMember as any)?.avatar_url ||
         null;
 
       const resolvedName =
+        matchedMember?.nickname ||
+        (matchedMember as any)?.name ||
         userObj?.nickname ||
         (directChat?.name && directChat.name !== directChat.peerCode ? directChat.name : undefined) ||
         msgFoundName ||
-        matchedMember?.nickname ||
-        (matchedMember as any)?.name ||
         (u.length >= 24 ? 'Пользователь' : u);
 
       return {

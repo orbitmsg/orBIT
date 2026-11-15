@@ -83,10 +83,7 @@ export const useMainLayoutSync = ({
     const processedIds = new Set<string>();
 
     try {
-      const nestedRecords = await Promise.all(
-        keysToCheck.map(key => supabaseService.getPendingHandshakes(key).catch(() => []))
-      );
-      const records = nestedRecords.flat();
+      const records = await supabaseService.getPendingHandshakesBatch(keysToCheck).catch(() => []);
 
       for (const hs of records) {
         if (processedIds.has(hs.id)) continue;
@@ -1414,6 +1411,7 @@ export const useMainLayoutSync = ({
       if (now - lastCheck < PROFILE_TTL) {
         continue;
       }
+      lastProfileCheckTimeRef.current.set(chat.id, now);
       try {
         const updatePromise = supabaseService.getLatestProfileUpdate(chat.id, myCode || undefined);
         const initialPeerCode = (chat.peerCode && chat.peerCode !== myCode)
@@ -1758,7 +1756,7 @@ export const useMainLayoutSync = ({
     window.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('orbita:sync-now', handleSyncNow);
 
-    const interval = setInterval(() => syncAll(false), 2500);
+    const interval = setInterval(() => syncAll(false), 30000);
     const checkTimer = setInterval(() => {
       const navOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
       if (!navOnline) {

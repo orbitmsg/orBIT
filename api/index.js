@@ -936,13 +936,15 @@ module.exports = async function handler(req, res) {
       const supabase = getSupabaseClient();
       if (!supabase) return sendError(res, 'Database not configured', 500);
       const recipientCode = query.recipientCode;
-      if (!recipientCode) return sendError(res, 'Missing recipientCode parameter', 400);
-      const { data, error } = await supabase
-        .from('handshakes')
-        .select('*')
-        .eq('recipient_code', recipientCode)
-        .eq('consumed', false)
-        .order('created_at', { ascending: true });
+      const recipientCodes = query.recipientCodes ? query.recipientCodes.split(',').map(s => s.trim()).filter(Boolean) : [];
+      if (!recipientCode && recipientCodes.length === 0) return sendError(res, 'Missing recipientCode parameter', 400);
+      let queryBuilder = supabase.from('handshakes').select('*').eq('consumed', false).order('created_at', { ascending: true });
+      if (recipientCodes.length > 0) {
+        queryBuilder = queryBuilder.in('recipient_code', recipientCodes);
+      } else {
+        queryBuilder = queryBuilder.eq('recipient_code', recipientCode);
+      }
+      const { data, error } = await queryBuilder;
       if (error) return sendError(res, error.message, 500);
       return sendJson(res, { handshakes: data || [] });
     }

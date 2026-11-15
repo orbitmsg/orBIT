@@ -643,6 +643,60 @@ class SupabaseService {
     throw lastError || new Error('All relay nodes failed');
   }
 
+  async getPendingHandshakesBatch(recipientCodes: string[]): Promise<OfflineHandshakeRecord[]> {
+    if (!recipientCodes || recipientCodes.length === 0) return [];
+    const nodes = relayRouter.getNodes();
+    const allHandshakes: OfflineHandshakeRecord[] = [];
+    const seenIds = new Set<string>();
+    const codesParam = recipientCodes.map((c) => c.trim()).filter(Boolean).join(',');
+
+    for (const relay of nodes) {
+      const lastFail = this.failedRelays.get(relay.url) || 0;
+      if (Date.now() - lastFail < 10000) continue;
+
+      try {
+        const res = await networkManager.safeFetch(`${relay.url}/relay/handshakes?recipientCodes=${encodeURIComponent(codesParam)}`, undefined, 8000, 1);
+        if (res.ok) {
+          const data = (await res.json()) as { handshakes: OfflineHandshakeRecord[] };
+          for (const hs of data.handshakes || []) {
+            if (!seenIds.has(hs.id)) {
+              seenIds.add(hs.id);
+              allHandshakes.push(hs);
+            }
+          }
+        } else {
+          this.failedRelays.set(relay.url, Date.now());
+        }
+      } catch (err) {
+        this.failedRelays.set(relay.url, Date.now());
+      }
+    }
+
+    if (allHandshakes.length > 0 || !this.client) {
+      return allHandshakes.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    }
+
+    if (this.client) {
+      const { data, error } = await this.client
+        .from('handshakes')
+        .select('*')
+        .in('recipient_code', recipientCodes)
+        .eq('consumed', false)
+        .order('created_at', { ascending: true });
+
+      if (!error && data) {
+        for (const hs of data) {
+          if (!seenIds.has(hs.id)) {
+            seenIds.add(hs.id);
+            allHandshakes.push(hs);
+          }
+        }
+      }
+    }
+
+    return allHandshakes.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  }
+
   async getPendingHandshakes(recipientCode: string): Promise<OfflineHandshakeRecord[]> {
     const nodes = relayRouter.getNodes();
     const allHandshakes: OfflineHandshakeRecord[] = [];

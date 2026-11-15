@@ -1,6 +1,7 @@
-import { getPusher } from '../utils/pusher';
+import { getPusher, CLIENT_SESSION_ID } from '../utils/pusher';
 import { ablyService } from './ablyService';
 import { useAuthStore } from '../store/useAuthStore';
+import { useChatStore } from '../store/useChatStore';
 
 const ICE_SERVERS: RTCConfiguration = {
   iceServers: [
@@ -14,6 +15,7 @@ interface P2PSignalPayload {
   type: 'p2p-signal';
   subType: 'offer' | 'answer' | 'candidate';
   senderId: string;
+  sessionId: string;
   data: any;
 }
 
@@ -63,7 +65,9 @@ class P2PDataService {
       ch.unbind('pusher:subscription_succeeded', onSub);
       doTrigger();
     });
-    ablyService.sendMessage(chatId, signal).catch(() => {});
+    if (signal.subType !== 'candidate') {
+      ablyService.sendMessage(chatId, signal).catch(() => {});
+    }
   }
 
   public async initiate(chatId: string): Promise<void> {
@@ -72,7 +76,7 @@ class P2PDataService {
 
     try {
       this.close(chatId);
-      const myId = useAuthStore.getState().userId || 'initiator';
+      const myId = useAuthStore.getState().userId || useChatStore.getState().myCode || CLIENT_SESSION_ID;
       const pc = new RTCPeerConnection(ICE_SERVERS);
       this.peerConnections.set(chatId, pc);
 
@@ -85,6 +89,7 @@ class P2PDataService {
             type: 'p2p-signal',
             subType: 'candidate',
             senderId: myId,
+            sessionId: CLIENT_SESSION_ID,
             data: event.candidate.toJSON(),
           });
         }
@@ -103,6 +108,7 @@ class P2PDataService {
         type: 'p2p-signal',
         subType: 'offer',
         senderId: myId,
+        sessionId: CLIENT_SESSION_ID,
         data: offer,
       });
     } catch {
@@ -113,12 +119,17 @@ class P2PDataService {
   }
 
   public async handleSignal(chatId: string, signal: P2PSignalPayload): Promise<void> {
+    if (!signal || signal.sessionId === CLIENT_SESSION_ID) return;
     const myId = useAuthStore.getState().userId;
-    if (signal.senderId && myId && signal.senderId === myId) return;
+    const myCode = useChatStore.getState().myCode;
+    if (signal.senderId && ((myId && signal.senderId === myId) || (myCode && signal.senderId === myCode))) {
+      return;
+    }
 
     if (signal.subType === 'offer') {
       try {
         this.close(chatId);
+        const myIdentifier = myId || myCode || CLIENT_SESSION_ID;
         const pc = new RTCPeerConnection(ICE_SERVERS);
         this.peerConnections.set(chatId, pc);
 
@@ -131,7 +142,8 @@ class P2PDataService {
             this.sendSignal(chatId, {
               type: 'p2p-signal',
               subType: 'candidate',
-              senderId: myId || 'peer',
+              senderId: myIdentifier,
+              sessionId: CLIENT_SESSION_ID,
               data: event.candidate.toJSON(),
             });
           }
@@ -159,7 +171,8 @@ class P2PDataService {
         this.sendSignal(chatId, {
           type: 'p2p-signal',
           subType: 'answer',
-          senderId: myId || 'peer',
+          senderId: myIdentifier,
+          sessionId: CLIENT_SESSION_ID,
           data: answer,
         });
       } catch {

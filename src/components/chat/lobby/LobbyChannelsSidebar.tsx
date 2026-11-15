@@ -9,6 +9,7 @@ import {
   Search,
 } from 'lucide-react';
 import { lobbyService, type LobbyChannel, type LobbyMember } from '../../../services/lobbyService';
+import { supabaseService } from '../../../services/supabaseService';
 import { useCallStore } from '../../../store/useCallStore';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { useChatStore } from '../../../store/useChatStore';
@@ -55,6 +56,8 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
   const storeMyCode = useChatStore((s) => s.myCode);
   const callDuration = useCallStore((s) => s.duration);
   const activeChatObj = useChatStore((s) => s.chats.find((c) => c.id === lobbyId));
+  const usersById = useChatStore((s) => s.usersById);
+  const allChats = useChatStore((s) => s.chats);
   const [channels, setChannels] = useState<LobbyChannel[]>([]);
   const [members, setMembers] = useState<LobbyMember[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -85,6 +88,20 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
       if (!isOwner && list.length > 0 && !list.some((m) => myIds.includes(m.userCode) || (m.id && myIds.includes(m.id)))) {
         useChatStore.getState().deleteChat(lobbyId);
       }
+
+      list.forEach((m) => {
+        const code = m.userCode || m.id;
+        if (code && code.length >= 6) {
+          supabaseService.lookupPublicProfile(code).then((p) => {
+            if (p?.avatar_url || p?.nickname) {
+              useChatStore.getState().setUserProfile(code, {
+                nickname: p.nickname,
+                avatarUrl: p.avatar_url,
+              });
+            }
+          }).catch(() => {});
+        }
+      });
     } catch (e) {
       console.error('Failed to load lobby members:', e);
     }
@@ -345,6 +362,30 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
               const isSelf = m.userCode === storeMyCode || (m.id && m.id === storeMyCode);
               const canKick = isOwnerOrAdmin && !isOwner && !isSelf;
 
+              const candidateCodes = [m.userCode, m.id].filter(Boolean) as string[];
+              const userObj = Object.values(usersById || {}).find(
+                (u: any) =>
+                  candidateCodes.some((c) => u.id === c || (u as any).userId === c || (u as any).userCode === c || (u as any).user_code === c) ||
+                  (m.nickname && u.nickname && u.nickname.toLowerCase() === m.nickname.toLowerCase())
+              );
+              const directChat = allChats.find(
+                (c: any) =>
+                  c.type === 'private' &&
+                  c.id !== 'notes' &&
+                  ((c.peerCode && candidateCodes.includes(c.peerCode)) ||
+                    (c.originalPeerCode && candidateCodes.includes(c.originalPeerCode)) ||
+                    (c.userId && candidateCodes.includes(c.userId)) ||
+                    (m.nickname && c.name && c.name.toLowerCase() === m.nickname.toLowerCase()))
+              );
+
+              const effectiveAvatar = isSelf
+                ? (useAuthStore.getState().avatarUrl || m.avatarUrl || undefined)
+                : (userObj?.avatarUrl || directChat?.avatarUrl || m.avatarUrl || undefined);
+
+              const effectiveNickname = isSelf
+                ? (useAuthStore.getState().nickname || m.nickname)
+                : (userObj?.nickname || (directChat?.name && directChat.name !== directChat.peerCode ? directChat.name : undefined) || m.nickname);
+
               return (
                 <div
                   key={m.id || m.userCode}
@@ -353,13 +394,13 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
                 >
                   <div className="relative shrink-0">
                     <Avatar
-                      src={m.avatarUrl || undefined}
-                      alt={m.nickname}
+                      src={effectiveAvatar}
+                      alt={effectiveNickname}
                       className="w-[24px] h-[24px] rounded-full"
                     />
                   </div>
                   <span className="text-[13px] font-medium text-white/90 truncate flex-1">
-                    {m.nickname}
+                    {effectiveNickname}
                   </span>
                   {isOwner && (
                     <span

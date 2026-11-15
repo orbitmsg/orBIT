@@ -138,21 +138,49 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
         (myNickname && u === myNickname) ||
         u === 'YOU' ||
         lowerU === 'you';
-      if (isMe || profileAvatarCache.has(u)) return;
+      if (isMe) return;
 
-      if (u.length >= 6) {
-        supabaseService
-          .lookupPublicProfile(u)
-          .then((p) => {
-            if (p?.avatar_url) {
-              profileAvatarCache.set(u, p.avatar_url);
-              setCacheTick((prev) => prev + 1);
-            }
-          })
-          .catch(() => {});
+      const candidateCodes = [u];
+      if (activeChat?.members) {
+        const mb = activeChat.members.find(
+          (m: any) =>
+            m.userId === u ||
+            m.userCode === u ||
+            m.nickname === u ||
+            (m.nickname && m.nickname.toLowerCase() === lowerU)
+        );
+        if (mb?.userCode) candidateCodes.push(mb.userCode);
+        if (mb?.userId) candidateCodes.push(mb.userId);
       }
+
+      candidateCodes.forEach((code) => {
+        if (code && code.length >= 6) {
+          supabaseService
+            .lookupPublicProfile(code)
+            .then((p) => {
+              if (p) {
+                if (p.avatar_url) {
+                  profileAvatarCache.set(u, p.avatar_url);
+                  profileAvatarCache.set(code, p.avatar_url);
+                }
+                if (p.avatar_url || p.nickname) {
+                  useChatStore.getState().setUserProfile(code, {
+                    nickname: p.nickname,
+                    avatarUrl: p.avatar_url,
+                  });
+                  useChatStore.getState().setUserProfile(u, {
+                    nickname: p.nickname,
+                    avatarUrl: p.avatar_url,
+                  });
+                  setCacheTick((prev) => prev + 1);
+                }
+              }
+            })
+            .catch(() => {});
+        }
+      });
     });
-  }, [uniqueUsers, showNumber, maxAvatars, myUserId, myCode, myNickname]);
+  }, [uniqueUsers, showNumber, maxAvatars, myUserId, myCode, myNickname, activeChat]);
 
   const visibleUsersData = useMemo(() => {
     if (showNumber) return [];
@@ -195,8 +223,10 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
         };
       }
 
+      const candidateCodes: string[] = [u];
+      let matchedMember: any = null;
       if (activeChat?.members) {
-        const member = activeChat.members.find(
+        matchedMember = activeChat.members.find(
           (m: any) =>
             m.userId === u ||
             m.userCode === u ||
@@ -207,12 +237,11 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
             (m.userCode && m.userCode.toLowerCase() === lowerU) ||
             (m.user_code && String(m.user_code).toLowerCase() === lowerU)
         );
-        if (member) {
-          return {
-            id: u,
-            name: member.nickname || (member as any).name || u,
-            avatarUrl: member.avatarUrl || (member as any).avatar_url || null,
-          };
+        if (matchedMember) {
+          if (matchedMember.userId) candidateCodes.push(matchedMember.userId);
+          if (matchedMember.userCode) candidateCodes.push(matchedMember.userCode);
+          if (matchedMember.user_code) candidateCodes.push(matchedMember.user_code);
+          if (matchedMember.nickname) candidateCodes.push(matchedMember.nickname);
         }
       }
 
@@ -228,61 +257,71 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
               (m.nickname && m.nickname.toLowerCase() === lowerU) ||
               (m.userCode && m.userCode.toLowerCase() === lowerU)
           );
-          if (mb && (mb.avatarUrl || (mb as any).avatar_url)) {
-            return {
-              id: u,
-              name: mb.nickname || (mb as any).name || u,
-              avatarUrl: mb.avatarUrl || (mb as any).avatar_url || null,
-            };
+          if (mb) {
+            if (mb.userId) candidateCodes.push(mb.userId);
+            if (mb.userCode) candidateCodes.push(mb.userCode);
+            if (mb.nickname) candidateCodes.push(mb.nickname);
           }
         }
       }
 
+      const userObj = usersById[u] || Object.values(usersById || {}).find(
+        (usr: any) =>
+          candidateCodes.some((c) => usr.id === c || usr.userId === c || usr.userCode === c || usr.user_code === c) ||
+          candidateCodes.some((c) => usr.nickname && usr.nickname.toLowerCase() === c.toLowerCase())
+      );
+
+      const directChat = chats.find(
+        (c: any) =>
+          c.type === 'private' &&
+          c.id !== 'notes' &&
+          (candidateCodes.includes(c.peerCode) ||
+            candidateCodes.includes(c.originalPeerCode) ||
+            candidateCodes.includes(c.userId) ||
+            candidateCodes.includes(c.id) ||
+            candidateCodes.some((code) => c.name && c.name.toLowerCase() === code.toLowerCase()))
+      );
+
+      let msgFoundAvatar: string | null = null;
+      let msgFoundName: string | null = null;
       for (const mList of Object.values(allMsgs)) {
         if (!mList) continue;
         const found = mList.find(
           (m) =>
-            (m as any).senderCode === u ||
-            m.senderId === u ||
-            m.sender === u ||
-            ((m as any).senderCode && u.toLowerCase() === String((m as any).senderCode).toLowerCase()) ||
-            (m.sender && u.toLowerCase() === m.sender.toLowerCase())
+            (Boolean((m as any).senderCode) && candidateCodes.includes((m as any).senderCode)) ||
+            (Boolean(m.senderId) && candidateCodes.includes(m.senderId!)) ||
+            (Boolean(m.sender) && candidateCodes.includes(m.sender)) ||
+            candidateCodes.some((code) => (m as any).senderCode && code.toLowerCase() === String((m as any).senderCode).toLowerCase()) ||
+            candidateCodes.some((code) => m.sender && code.toLowerCase() === m.sender.toLowerCase())
         );
         if (found && (found.avatarUrl || found.senderAvatar)) {
-          return {
-            id: u,
-            name: found.sender || u,
-            avatarUrl: found.avatarUrl || found.senderAvatar || null,
-          };
+          msgFoundAvatar = found.avatarUrl || found.senderAvatar || null;
+          msgFoundName = found.sender || null;
+          break;
         }
       }
 
-      if (usersById[u]) {
-        return {
-          id: u,
-          name: usersById[u].nickname || (usersById[u] as any).name || u,
-          avatarUrl: usersById[u].avatarUrl || null,
-        };
-      }
+      const resolvedAvatar =
+        userObj?.avatarUrl ||
+        directChat?.avatarUrl ||
+        profileAvatarCache.get(u) ||
+        msgFoundAvatar ||
+        matchedMember?.avatarUrl ||
+        (matchedMember as any)?.avatar_url ||
+        null;
 
-      const directChat = chats.find(
-        (c) =>
-          c.type === 'private' &&
-          (c.peerCode === u || c.id === u || c.name === u || (c.name && c.name.toLowerCase() === lowerU))
-      );
-      if (directChat) {
-        return {
-          id: u,
-          name: directChat.name || u,
-          avatarUrl: directChat.avatarUrl || null,
-        };
-      }
+      const resolvedName =
+        userObj?.nickname ||
+        (directChat?.name && directChat.name !== directChat.peerCode ? directChat.name : undefined) ||
+        msgFoundName ||
+        matchedMember?.nickname ||
+        (matchedMember as any)?.name ||
+        (u.length >= 24 ? 'Пользователь' : u);
 
-      const isLongHashOrCode = u.length >= 24;
       return {
         id: u,
-        name: isLongHashOrCode ? 'Пользователь' : u,
-        avatarUrl: profileAvatarCache.get(u) || null,
+        name: resolvedName,
+        avatarUrl: resolvedAvatar,
       };
     });
   }, [uniqueUsers, showNumber, maxAvatars, isChannel, myUserId, myCode, myNickname, myAvatarUrl, activeChat, chats, usersById]);

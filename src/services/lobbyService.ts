@@ -749,6 +749,30 @@ export class LobbyService {
       .eq('user_code', userCode);
   }
 
+  async updateMemberProfile(
+    userId: string,
+    userCode: string,
+    newNickname: string,
+    newAvatarUrl: string | null
+  ): Promise<void> {
+    const filters: string[] = [];
+    if (userId) filters.push(`user_code.eq.${userId}`);
+    if (userCode && userCode !== userId) filters.push(`user_code.eq.${userCode}`);
+    if (filters.length === 0) return;
+
+    const patch: { nickname?: string; avatar_url: string | null } = {
+      avatar_url: newAvatarUrl || null,
+    };
+    if (newNickname) patch.nickname = newNickname.trim();
+
+    try {
+      await this.client
+        .from('lobby_members')
+        .update(patch)
+        .or(filters.join(','));
+    } catch {}
+  }
+
   async toggleLobbyReaction(
     lobbyId: string,
     messageId: string,

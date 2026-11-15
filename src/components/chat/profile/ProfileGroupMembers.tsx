@@ -21,6 +21,7 @@ interface ProfileGroupMembersProps {
   onOpenDeleteGroup: () => void;
   onClose: () => void;
   setActiveChat: (chatId: string) => void;
+  hideMemberList?: boolean;
 }
 
 export const ProfileGroupMembers: React.FC<ProfileGroupMembersProps> = ({
@@ -34,15 +35,17 @@ export const ProfileGroupMembers: React.FC<ProfileGroupMembersProps> = ({
   onOpenDeleteGroup,
   onClose,
   setActiveChat,
+  hideMemberList = false,
 }) => {
   const { t } = useTranslation();
   const updateChat = useChatStore((s) => s.updateChat);
 
   return (
     <>
-      <div
-        style={{
-          backgroundColor: 'var(--md-surface, #211c2e)',
+      {!hideMemberList && (
+        <div
+          style={{
+            backgroundColor: 'var(--md-surface, #211c2e)',
           width: 'calc(100% - 20px)',
           margin: '0 10px 16px 10px',
           borderRadius: '16px',
@@ -382,6 +385,7 @@ export const ProfileGroupMembers: React.FC<ProfileGroupMembersProps> = ({
           })}
         </div>
       </div>
+      )}
 
       {isGroupOwner && (
         <div

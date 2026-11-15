@@ -186,6 +186,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
 
   const isChannel = chat?.type === 'channel';
   const isGroup = chat?.type === 'group';
+  const isLobby = Boolean(chat?.id && (chat.id.startsWith('lobby_') || (chat as any).isLobby));
   const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
   const [isDeleteGroupModalOpen, setIsDeleteGroupModalOpen] = useState(false);
   const [groupModalMode, setGroupModalMode] = useState<'delete' | 'leave'>('delete');
@@ -1109,6 +1110,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
           }}
           onClose={onClose}
           setActiveChat={setActiveChat}
+          hideMemberList={isLobby}
         />
       )}
 

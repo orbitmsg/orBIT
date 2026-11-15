@@ -3,6 +3,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useToastStore } from '../../store/useToastStore';
 import { supabaseService } from '../../services/supabaseService';
 import { groupService } from '../../services/groupService';
+import { lobbyService } from '../../services/lobbyService';
 import { ablyService } from '../../services/ablyService';
 import { getPusher, getGroupPusher } from '../../utils/pusher';
 import i18n from '../../i18n';
@@ -108,6 +109,7 @@ export const broadcastProfileUpdate = async (updates: ProfileUpdates): Promise<b
   }
 
   groupService.updateMemberProfile(currentUserId, myCode, finalNickname, finalAvatar).catch(() => {});
+  lobbyService.updateMemberProfile(currentUserId, myCode, finalNickname, finalAvatar).catch(() => {});
 
   const chats = useChatStore.getState().chats;
   chats.forEach((chat) => {

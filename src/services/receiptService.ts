@@ -95,9 +95,7 @@ class ReceiptQueue {
       const messageIds = Array.from(idSet);
       idSet.clear();
 
-      for (const mId of messageIds) {
-        ablyService.markMessageDelivered(chatId, mId);
-      }
+      ablyService.markMessagesDelivered(chatId, messageIds);
 
       try {
         const pusher = getPusher();
@@ -127,9 +125,7 @@ class ReceiptQueue {
       const messageIds = Array.from(idSet);
       idSet.clear();
 
-      for (const mId of messageIds) {
-        ablyService.markMessageRead(chatId, mId);
-      }
+      ablyService.markMessagesRead(chatId, messageIds);
 
       sendEncryptedReadReceipt(chatId, messageIds, now).catch(() => {});
       supabaseService.purgeServerMessages(chatId, messageIds);

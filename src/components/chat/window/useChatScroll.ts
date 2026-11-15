@@ -351,9 +351,7 @@ export const useChatScroll = ({
       else channel.bind('pusher:subscription_succeeded', sendRead);
     } catch {}
 
-    allIds.forEach((id) => {
-      ablyService.markMessageRead(activeChatId, id);
-    });
+    ablyService.markMessagesRead(activeChatId, allIds);
 
     ablyService.sendMessage(activeChatId, {
       type: 'read',
@@ -398,7 +396,6 @@ export const useChatScroll = ({
           if (m.id) {
             readMessageIdsRef.current.add(m.id);
             readIds.push(m.id);
-            ablyService.markMessageRead(activeChatId, m.id);
             latestReadMsg = { id: m.id, time: m.time };
           }
           return { ...m, read: true, status: 'read' as const };
@@ -478,7 +475,6 @@ export const useChatScroll = ({
                 readMessageIdsRef.current.add(msgId);
                 readIds.push(msgId);
                 hasChanges = true;
-                ablyService.markMessageRead(activeChatId, msgId);
                 latestReadMsg = { id: msgId, time: msg.time };
 
                 if (updatedMessages === currentMessages) updatedMessages = [...currentMessages];

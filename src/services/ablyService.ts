@@ -673,7 +673,12 @@ class AblyService {
   }
 
   markMessageDelivered(chatId: string, messageId: string): void {
-    if (!this.client || !this.isConnected || !this.userId || !chatId || !messageId) {
+    if (!messageId) return;
+    this.markMessagesDelivered(chatId, [messageId]);
+  }
+
+  markMessagesDelivered(chatId: string, messageIds: string[]): void {
+    if (!this.client || !this.isConnected || !this.userId || !chatId || !messageIds || messageIds.length === 0) {
       return;
     }
 
@@ -684,16 +689,20 @@ class AblyService {
 
     const channel = this.client.channels.get(`chat:${chatId}`);
     channel.publish('delivered', {
-      messageId,
+      messageId: messageIds[messageIds.length - 1],
+      messageIds,
       userId: this.userId,
       timestamp: Date.now(),
-    }).catch((err) => {
-      console.error('[Ably] Failed to mark delivered:', err);
-    });
+    }).catch(() => {});
   }
 
   markMessageRead(chatId: string, messageId: string): void {
-    if (!this.client || !this.isConnected || !this.userId || !chatId || !messageId) {
+    if (!messageId) return;
+    this.markMessagesRead(chatId, [messageId]);
+  }
+
+  markMessagesRead(chatId: string, messageIds: string[]): void {
+    if (!this.client || !this.isConnected || !this.userId || !chatId || !messageIds || messageIds.length === 0) {
       return;
     }
 
@@ -704,12 +713,11 @@ class AblyService {
 
     const channel = this.client.channels.get(`chat:${chatId}`);
     channel.publish('read', {
-      messageId,
+      messageId: messageIds[messageIds.length - 1],
+      messageIds,
       userId: this.userId,
       timestamp: Date.now(),
-    }).catch((err) => {
-      console.error('[Ably] Failed to mark read:', err);
-    });
+    }).catch(() => {});
   }
 
   subscribeToDeliveryUpdates(chatId: string, callback: DeliveryCallback): () => void {
@@ -768,23 +776,37 @@ class AblyService {
     this.deliverySubscriptions.set(chatId, channel);
 
     const deliveredHandler = (message: Ably.Message) => {
-      if (message.data && message.data.messageId && message.data.userId) {
+      if (message.data && message.data.userId) {
         const cbs = this.deliveryCallbacks.get(chatId);
         if (cbs) {
-          cbs.forEach((cb) =>
-            cb(message.data.messageId, message.data.userId, 'delivered', message.data.timestamp || Date.now())
-          );
+          const ids: string[] = Array.isArray(message.data.messageIds)
+            ? message.data.messageIds
+            : message.data.messageId
+            ? [message.data.messageId]
+            : [];
+          for (const id of ids) {
+            cbs.forEach((cb) =>
+              cb(id, message.data.userId, 'delivered', message.data.timestamp || Date.now())
+            );
+          }
         }
       }
     };
 
     const readHandler = (message: Ably.Message) => {
-      if (message.data && message.data.messageId && message.data.userId) {
+      if (message.data && message.data.userId) {
         const cbs = this.deliveryCallbacks.get(chatId);
         if (cbs) {
-          cbs.forEach((cb) =>
-            cb(message.data.messageId, message.data.userId, 'read', message.data.timestamp || Date.now())
-          );
+          const ids: string[] = Array.isArray(message.data.messageIds)
+            ? message.data.messageIds
+            : message.data.messageId
+            ? [message.data.messageId]
+            : [];
+          for (const id of ids) {
+            cbs.forEach((cb) =>
+              cb(id, message.data.userId, 'read', message.data.timestamp || Date.now())
+            );
+          }
         }
       }
     };

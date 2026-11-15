@@ -108,16 +108,34 @@ export const useChatStore = create<ChatState>()(
         set((state) => {
           if (!userId) return state;
           const current = state.usersById[userId] || { id: userId, nickname: '' };
+          const nextNickname = (isValidProfileString(profile.nickname) ? profile.nickname : current.nickname) ?? '';
+          const nextAvatarUrl = pickNonEmptyProfileValue(profile.avatarUrl, current.avatarUrl);
+          const nextBannerUrl = pickNonEmptyProfileValue(profile.bannerUrl, current.bannerUrl);
+          const nextUsername = pickNonEmptyProfileValue(profile.username, current.username);
+          const nextBio = pickNonEmptyProfileValue(profile.bio, current.bio);
+          const nextBirthday = pickNonEmptyProfileValue(profile.birthday, current.birthday);
+
+          if (
+            current.nickname === nextNickname &&
+            current.avatarUrl === nextAvatarUrl &&
+            current.bannerUrl === nextBannerUrl &&
+            current.username === nextUsername &&
+            current.bio === nextBio &&
+            current.birthday === nextBirthday
+          ) {
+            return state;
+          }
+
           const updatedUser: UserProfile = {
             ...current,
             ...profile,
             id: userId,
-            nickname: (isValidProfileString(profile.nickname) ? profile.nickname : current.nickname) ?? '',
-            avatarUrl: pickNonEmptyProfileValue(profile.avatarUrl, current.avatarUrl),
-            bannerUrl: pickNonEmptyProfileValue(profile.bannerUrl, current.bannerUrl),
-            username: pickNonEmptyProfileValue(profile.username, current.username),
-            bio: pickNonEmptyProfileValue(profile.bio, current.bio),
-            birthday: pickNonEmptyProfileValue(profile.birthday, current.birthday),
+            nickname: nextNickname,
+            avatarUrl: nextAvatarUrl,
+            bannerUrl: nextBannerUrl,
+            username: nextUsername,
+            bio: nextBio,
+            birthday: nextBirthday,
             updatedAt: Date.now(),
           };
           try {
@@ -632,7 +650,24 @@ export const useChatStore = create<ChatState>()(
 
           let hasChanges = false;
           for (const k of Object.keys(cleanUpdates)) {
-            if ((target as any)[k] !== (cleanUpdates as any)[k]) {
+            const incomingVal = (cleanUpdates as any)[k];
+            const targetVal = (target as any)[k];
+            if (k === 'members' && Array.isArray(incomingVal) && Array.isArray(targetVal)) {
+              if (incomingVal.length !== targetVal.length) {
+                hasChanges = true;
+                break;
+              }
+              const isDiff = incomingVal.some((im: any, idx: number) => {
+                const tm = targetVal[idx] as any;
+                return !tm || tm.userId !== im.userId || tm.userCode !== im.userCode || tm.nickname !== im.nickname || tm.role !== im.role || tm.avatarUrl !== im.avatarUrl;
+              });
+              if (isDiff) {
+                hasChanges = true;
+                break;
+              }
+              continue;
+            }
+            if (targetVal !== incomingVal) {
               hasChanges = true;
               break;
             }

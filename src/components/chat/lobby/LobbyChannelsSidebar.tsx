@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Hash,
@@ -64,6 +64,8 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [memberSearch, setMemberSearch] = useState('');
+  const onSelectChannelRef = useRef(onSelectChannel);
+  onSelectChannelRef.current = onSelectChannel;
 
   const loadMembers = useCallback(async () => {
     try {
@@ -78,10 +80,22 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
         lastSeen: m.lastSeen || Date.now(),
         avatarUrl: m.avatarUrl || null,
       }));
-      useChatStore.getState().updateChat(lobbyId, {
-        members: validMembers,
-        membersCount: validMembers.length,
-      });
+
+      const existingChat = useChatStore.getState().chats.find((c) => c.id === lobbyId);
+      const existingMembers = existingChat?.members || [];
+      const hasMembersChanged =
+        existingMembers.length !== validMembers.length ||
+        validMembers.some((vm, idx) => {
+          const em = existingMembers[idx] as any;
+          return !em || em.userId !== vm.userId || em.userCode !== vm.userCode || em.nickname !== vm.nickname || em.avatarUrl !== vm.avatarUrl || em.role !== vm.role;
+        });
+
+      if (hasMembersChanged) {
+        useChatStore.getState().updateChat(lobbyId, {
+          members: validMembers,
+          membersCount: validMembers.length,
+        });
+      }
 
       const currentMyCode = useChatStore.getState().myCode;
       const currentMyUid = useAuthStore.getState().userId;
@@ -112,7 +126,8 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
               });
             }
           }
-          if (code.length >= 6) {
+          const existingProfile = useChatStore.getState().usersById[code];
+          if ((!m.avatarUrl || !m.nickname) && (!existingProfile?.avatarUrl || !existingProfile?.nickname) && code.length >= 6) {
             supabaseService.lookupPublicProfile(code).then((p) => {
               if (p?.avatar_url || p?.nickname) {
                 useChatStore.getState().setUserProfile(code, {
@@ -204,11 +219,11 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
         setChannels((prev) => (prev.length === 0 ? cached : prev));
         if (!useChatStore.getState().activeChannelId) {
           const firstText = cached.find((c) => c.type === 'text') || cached[0];
-          onSelectChannel({ ...firstText, name: firstText.name === 'основной' ? 'Основной чат' : firstText.name });
+          onSelectChannelRef.current({ ...firstText, name: firstText.name === 'основной' ? 'Основной чат' : firstText.name });
         }
       }
     }).catch(() => {});
-  }, [lobbyId, onSelectChannel]);
+  }, [lobbyId]);
 
   useEffect(() => {
     loadMembers();
@@ -231,14 +246,14 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
       const finalList = textOnly.length > 0 ? textOnly : list;
       setChannels(finalList);
       sqliteStorage.setJson(`orbita_lobby_channels_${lobbyId}`, finalList).catch(() => {});
-      if (!activeChannelId && finalList.length > 0) {
+      if (!useChatStore.getState().activeChannelId && finalList.length > 0) {
         const firstText = finalList.find((c) => c.type === 'text') || finalList[0];
-        onSelectChannel({ ...firstText, name: firstText.name === 'основной' ? 'Основной чат' : firstText.name });
+        onSelectChannelRef.current({ ...firstText, name: firstText.name === 'основной' ? 'Основной чат' : firstText.name });
       }
     } catch (e) {
       console.error('Failed to load lobby channels:', e);
     }
-  }, [lobbyId, activeChannelId, onSelectChannel]);
+  }, [lobbyId]);
 
   useEffect(() => {
     loadChannels();

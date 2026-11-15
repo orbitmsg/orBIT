@@ -845,6 +845,31 @@ export const MainLayout = () => {
     useChatStore.getState().openSettings('main');
   };
 
+  const handleSelectLobbyChannel = useCallback((ch: any) => {
+    useChatStore.getState().setActiveChannel(ch.id, ch.name, ch.type);
+  }, []);
+
+  const handleOpenLobbyVoiceCall = useCallback((ch: any) => {
+    const curActive = useChatStore.getState().chats.find((c) => c.id === useChatStore.getState().activeChatId);
+    if (!curActive) return;
+    useChatStore.getState().setActiveChannel(ch.id, ch.name, ch.type);
+    const voiceRoom = `lobby-voice-${curActive.id}-${ch.id}`;
+    useCallStore.getState().startCall(curActive.id, 'audio', nickname || 'User', voiceRoom);
+    const currentMyCode = useChatStore.getState().myCode;
+    if (currentMyCode) {
+      lobbyService.setMemberVoiceChannel(curActive.id, currentMyCode, ch.id).catch(() => {});
+    }
+  }, [nickname]);
+
+  const handleDisconnectLobbyVoice = useCallback(() => {
+    useCallStore.getState().endCall();
+    const curActive = useChatStore.getState().chats.find((c) => c.id === useChatStore.getState().activeChatId);
+    const currentMyCode = useChatStore.getState().myCode;
+    if (curActive && currentMyCode) {
+      lobbyService.setMemberVoiceChannel(curActive.id, currentMyCode, null).catch(() => {});
+    }
+  }, []);
+
   const CHAT_BATCH_SIZE = 25;
   const [renderedChatCount, setRenderedChatCount] = useState<number>(CHAT_BATCH_SIZE);
 
@@ -1194,26 +1219,10 @@ export const MainLayout = () => {
                   lobbyName={activeChatObj.name}
                   isOwnerOrAdmin={Boolean(activeChatObj.isOwner || activeChatObj.role === 'owner' || activeChatObj.role === 'admin')}
                   activeChannelId={activeChannelId}
-                  onSelectChannel={(ch) => {
-                    useChatStore.getState().setActiveChannel(ch.id, ch.name, ch.type);
-                  }}
-                  onOpenVoiceCall={(ch) => {
-                    useChatStore.getState().setActiveChannel(ch.id, ch.name, ch.type);
-                    const voiceRoom = `lobby-voice-${activeChatObj.id}-${ch.id}`;
-                    useCallStore.getState().startCall(activeChatObj.id, 'audio', nickname || 'User', voiceRoom);
-                    const currentMyCode = useChatStore.getState().myCode;
-                    if (currentMyCode) {
-                      lobbyService.setMemberVoiceChannel(activeChatObj.id, currentMyCode, ch.id).catch(() => {});
-                    }
-                  }}
+                  onSelectChannel={handleSelectLobbyChannel}
+                  onOpenVoiceCall={handleOpenLobbyVoiceCall}
                   isVoiceActive={isVoiceActive}
-                  onDisconnectVoice={() => {
-                    useCallStore.getState().endCall();
-                    const currentMyCode = useChatStore.getState().myCode;
-                    if (currentMyCode) {
-                      lobbyService.setMemberVoiceChannel(activeChatObj.id, currentMyCode, null).catch(() => {});
-                    }
-                  }}
+                  onDisconnectVoice={handleDisconnectLobbyVoice}
                   onProfileClick={() => setActiveProfileChatId(activeChatObj.id)}
                   onOpenProfile={() => setIsMyProfileOpen(true)}
                   onOpenSettings={handleOpenSettings}

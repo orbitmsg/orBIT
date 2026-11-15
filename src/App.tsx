@@ -242,19 +242,22 @@ function App() {
   }, [nickname, avatarUrl]);
 
   const registeredAccountId = accounts.find((a) => a.id === activeAccountId && a.isRegistered)?.id || 'account_1';
-  const hasRegisteredAccount = accounts.some((a) => a.isRegistered && a.id === 'account_1') || (isHydrated && step === 'main');
+  const hasRegisteredAccount = Boolean(
+    isHydrated && isAccountInitialized && (accounts.some((a) => a.isRegistered) || step === 'main')
+  );
 
   const hydrateAndInitAccounts = () => {
     startupChainRef.current = startupChainRef.current.catch(() => {}).then(async () => {
-      await Promise.all([
-        Promise.resolve(useAuthStore.persist.rehydrate()),
-        Promise.resolve(useChatStore.persist.rehydrate()),
-      ]);
-      if (!useAuthStore.persist.hasHydrated() || !useChatStore.persist.hasHydrated()) {
-        return;
-      }
+      try {
+        await Promise.all([
+          Promise.resolve(useAuthStore.persist.rehydrate()),
+          Promise.resolve(useChatStore.persist.rehydrate()),
+        ]);
+      } catch {}
       setIsHydrated(true);
-      await useAccountStore.getState().init();
+      try {
+        await useAccountStore.getState().init();
+      } catch {}
       setIsAccountInitialized(true);
     });
     return startupChainRef.current;
@@ -365,6 +368,7 @@ function App() {
   }, [currentTheme, chatColor, themeTintId]);
 
   useEffect(() => {
+    if (!isHydrated) return;
     if (typeof window !== 'undefined' && window.orbita?.setAppIcon) {
       try {
         window.orbita.setAppIcon(appIcon);
@@ -373,9 +377,10 @@ function App() {
         console.warn('[App] Could not send app icon to Electron:', err);
       }
     }
-  }, [appIcon]);
+  }, [appIcon, isHydrated]);
 
   useEffect(() => {
+    if (!isHydrated) return;
     if (typeof window !== 'undefined' && window.orbita?.setNotificationIcon) {
       try {
         window.orbita.setNotificationIcon(notificationIcon);
@@ -384,7 +389,7 @@ function App() {
         console.warn('[App] Could not send notification icon to Electron:', err);
       }
     }
-  }, [notificationIcon]);
+  }, [notificationIcon, isHydrated]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.orbita?.setShowInSystemTray) {
@@ -596,7 +601,7 @@ function App() {
           </div>
         }>
           <div className="h-full w-full overflow-hidden relative">
-            {hasRegisteredAccount ? (
+            {!isHydrated || !isAccountInitialized ? null : hasRegisteredAccount ? (
               <>
                 <MainLayout key={registeredAccountId} />
                 <AuthFlowOverlay isElectron={isElectron} isOpen={step !== 'main' || isAddingSecondAccount} />

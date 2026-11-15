@@ -4099,7 +4099,8 @@ let activeAppliedAppIcon = '';
 ipcMain.on('orbita:set-app-icon', (_event, iconName: string) => {
   if (!iconName) return;
   const effectiveName = iconName === 'default' ? 'orbita1' : iconName;
-  if (activeAppliedAppIcon === effectiveName && currentAppIconName === effectiveName) {
+  if (activeAppliedAppIcon === effectiveName || currentAppIconName === effectiveName) {
+    activeAppliedAppIcon = effectiveName;
     return;
   }
   activeAppliedAppIcon = effectiveName;

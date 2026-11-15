@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, type Chat, type Message, type ChatAction } from '../../../store/useChatStore';
 import { useAuthStore } from '../../../store/useAuthStore';
@@ -6,12 +6,8 @@ import { useCallStore } from '../../../store/useCallStore';
 import { callSoundService } from '../../../services/callSoundService';
 import { getPusher, CLIENT_SESSION_ID } from '../../../utils/pusher';
 import { ablyService } from '../../../services/ablyService';
-import { groupService } from '../../../services/groupService';
-import { channelService } from '../../../services/channelService';
 import { supabaseService } from '../../../services/supabaseService';
 import { DoubleRatchet } from '../../../lib/double-ratchet';
-import { decryptMessage } from '../../../lib/crypto';
-import { deriveGroupKey, isValidGroupCode } from '../../../lib/groupCrypto';
 
 import { messageQueue } from '../../../lib/message-queue';
 import { showNotification } from '../../../utils/notification';
@@ -61,7 +57,11 @@ export const usePrivateChatSubscriptions = ({
   subscribeToGroupChat,
   subscribeToPublicChannel,
 }: UsePrivateChatSubscriptionsParams) => {
+  void subscribeToGroupChat;
+  void subscribeToPublicChannel;
   const { t } = useTranslation();
+  const tRef = useRef(t);
+  tRef.current = t;
 
   const startPingForChat = useCallback((chatId: string) => {
     
@@ -90,10 +90,11 @@ export const usePrivateChatSubscriptions = ({
       }
       const targetChatId = chat?.id || chatId;
       const myUserId = useAuthStore.getState().userId;
+      const currentNickname = useAuthStore.getState().nickname || nickname;
       const isSelf = Boolean(
         (myUserId && (data.senderUserId === myUserId || data.userId === myUserId || data.senderId === myUserId)) ||
         (myCode && (data.senderCode === myCode || data.senderId === myCode)) ||
-        (nickname && (data.sender === nickname || data.senderNickname === nickname)) ||
+        (currentNickname && (data.sender === currentNickname || data.senderNickname === currentNickname)) ||
         data.sender === 'YOU' ||
         (data.messageId && processedMessageIds.current.has(data.messageId))
       );
@@ -219,7 +220,7 @@ export const usePrivateChatSubscriptions = ({
             }
           }));
           updateChat(targetChatId, {
-            lastMsg: t('common.history_cleared'),
+            lastMsg: tRef.current('common.history_cleared'),
             unreadCount: 0,
             lastReadTimestamp: Date.now(),
           });
@@ -406,35 +407,35 @@ export const usePrivateChatSubscriptions = ({
                 messageData.mediaType === 'sticker' ||
                 (typeof notifBody === 'string' && (/^\[Sticker\]/i.test(notifBody.trim()) || /(\.stickers|\/stickers|stickers\/|bisquit)/i.test(notifBody)))
               ) {
-                notifBody = t('chatWindow.sticker') || 'Стикер';
+                notifBody = tRef.current('chatWindow.sticker') || 'Стикер';
               } else if (
                 messageData.mediaType === 'voice' ||
                 (typeof notifBody === 'string' && (/^\[Audio\]\s+voice_/i.test(notifBody.trim()) || /^voice_\d+/i.test(notifBody.trim()) || notifBody.includes('voice_')))
               ) {
-                notifBody = t('chatWindow.voice_message') || 'Голосовое сообщение';
+                notifBody = tRef.current('chatWindow.voice_message') || 'Голосовое сообщение';
               } else if (
                 messageData.mediaType === 'image' ||
                 messageData.mediaType === 'photo' ||
                 (typeof notifBody === 'string' && /^\[Photo\]/i.test(notifBody.trim()))
               ) {
-                notifBody = t('chatWindow.photo') || 'Фотография';
+                notifBody = tRef.current('chatWindow.photo') || 'Фотография';
               } else if (
                 messageData.mediaType === 'video' ||
                 (typeof notifBody === 'string' && /^\[Video\]/i.test(notifBody.trim()))
               ) {
-                notifBody = t('chatWindow.video') || 'Видео';
+                notifBody = tRef.current('chatWindow.video') || 'Видео';
               } else if (
                 messageData.mediaType === 'audio' ||
                 (typeof notifBody === 'string' && /^\[Audio\]/i.test(notifBody.trim()))
               ) {
-                notifBody = messageData.mediaName || t('chatWindow.audio') || 'Аудиозапись';
+                notifBody = messageData.mediaName || tRef.current('chatWindow.audio') || 'Аудиозапись';
               } else if (
                 messageData.mediaType === 'file' ||
                 (typeof notifBody === 'string' && /^\[File\]/i.test(notifBody.trim()))
               ) {
-                notifBody = messageData.mediaName || t('chatWindow.file') || 'Файл';
+                notifBody = messageData.mediaName || tRef.current('chatWindow.file') || 'Файл';
               } else if (!notifBody) {
-                notifBody = t('chatWindow.new_message') || 'Новое сообщение';
+                notifBody = tRef.current('chatWindow.new_message') || 'Новое сообщение';
               }
               const notifAvatar = chat.avatarUrl || null;
               showNotification(data.sender, notifBody, chatId, notifAvatar);
@@ -521,7 +522,7 @@ export const usePrivateChatSubscriptions = ({
             }
           }));
           updateChat(chatId, {
-            lastMsg: updated.length > 0 ? updated[updated.length - 1].text : t('common.history_cleared'),
+            lastMsg: updated.length > 0 ? updated[updated.length - 1].text : tRef.current('common.history_cleared'),
           });
         }
         return;
@@ -597,7 +598,7 @@ export const usePrivateChatSubscriptions = ({
             }
           }));
           updateChat(chatId, {
-            lastMsg: t('common.history_cleared'),
+            lastMsg: tRef.current('common.history_cleared'),
             unreadCount: 0,
             lastReadTimestamp: Date.now()
           });
@@ -744,7 +745,7 @@ export const usePrivateChatSubscriptions = ({
 
     startPingForChat(chatId);
     return channel;
-  }, [addMessage, updateChat, startPingForChat, nickname, t]);
+  }, [addMessage, updateChat, startPingForChat]);
 
   const subscribeToDeliveryUpdates = useCallback((chatId: string) => {
     if (deliveryUnsubscribes.current.has(chatId)) {
@@ -772,158 +773,31 @@ export const usePrivateChatSubscriptions = ({
     typingUnsubscribes.current.set(chatId, unsubscribe);
   }, []);
 
-  const syncedGroupChannelIds = useRef<Set<string>>(new Set());
+  const relevantChatIds = useMemo(() => {
+    return [
+      ...chats.map((c) => `${c.id}:${c.type}:${Boolean(c.sharedSecret)}`),
+      ...Object.keys(deletedChatSessions || {}),
+    ].join('|');
+  }, [chats, deletedChatSessions]);
+
   useEffect(() => {
     const allRelevantChats = [
       ...chats,
       ...Object.values(deletedChatSessions || {}),
     ];
-    allRelevantChats.forEach((chat) => {
-      if (!chat.id) return;
-      if (chat.id === 'notes') return;
-      if (chat.type !== 'channel') {
-        subscribeToTypingUpdates(chat.id);
-      }
+    for (const chat of allRelevantChats) {
+      if (!chat?.id || chat.id === 'notes') continue;
       if (!activeSubscriptions.current.has(chat.id)) {
-        if (chat.type === 'private') {
-          if (chat.sharedSecret) {
-            subscribeToChat(chat.id, chat.sharedSecret);
-            subscribeToDeliveryUpdates(chat.id);
-          }
+        if (chat.type === 'private' && chat.sharedSecret) {
+          subscribeToChat(chat.id, chat.sharedSecret);
+          subscribeToDeliveryUpdates(chat.id);
         }
       }
-
-      if (false && (chat.type === 'group' || chat.type === 'channel') && !syncedGroupChannelIds.current.has(chat.id)) {
-        syncedGroupChannelIds.current.add(chat.id);
-        const myUid = useAuthStore.getState().userId;
-        const myC = useChatStore.getState().myCode;
-
-        if (chat.type === 'group' && !chat.id.startsWith('lobby_') && !(chat as any).isLobby) {
-          groupService.fetchGroupMessages(chat.id, 30).then(async (fetched) => {
-            if (!Array.isArray(fetched) || fetched.length === 0) return;
-            const secret = chat.sharedSecret || (chat.inviteCode && isValidGroupCode(chat.inviteCode) ? deriveGroupKey(chat.inviteCode) : undefined);
-            const parsedMsgs: Message[] = [];
-            for (const row of fetched) {
-              let text = row.ciphertext || row.text || '';
-              let parsedData: any = null;
-              if (secret && row.ciphertext) {
-                try {
-                  const dec = await decryptMessage(row.ciphertext, secret);
-                  if (dec && dec !== '[ENCRYPTED MESSAGE]') {
-                    try { parsedData = JSON.parse(dec); } catch { parsedData = { text: dec }; }
-                  }
-                } catch {}
-              }
-              if (!parsedData && row.ciphertext) {
-                try { parsedData = JSON.parse(row.ciphertext); } catch {}
-              }
-              const isOutgoing = Boolean(
-                (myUid && (row.sender_id === myUid || row.sender_code === myUid)) ||
-                (myC && (row.sender_code === myC || row.sender_id === myC))
-              );
-              const mText = parsedData?.text !== undefined ? parsedData.text : (text || '');
-              const msgItem: Message = {
-                id: row.id || `gmsg_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-                sender: row.sender_nickname || row.sender_code || 'User',
-                senderId: row.sender_id || row.sender_code || undefined,
-                text: mText,
-                time: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
-                isOutgoing,
-                read: isOutgoing,
-                status: isOutgoing ? 'read' : 'delivered',
-                mediaType: parsedData?.mediaType || row.media_type || undefined,
-                mediaUrl: parsedData?.mediaUrl || row.media_url || undefined,
-                mediaName: parsedData?.mediaName || row.media_name || undefined,
-                mediaKey: parsedData?.mediaKey || row.media_key || undefined,
-                mime: parsedData?.mime || row.mime || undefined,
-                systemType: parsedData?.systemType || undefined,
-                actorNickname: parsedData?.actorNickname || undefined,
-                targetNickname: parsedData?.targetNickname || undefined,
-              };
-              parsedMsgs.push(msgItem);
-              try {
-                (window as any).orbita?.storageAddMessage?.(chat.id, msgItem.id, msgItem);
-              } catch {}
-            }
-
-            const existingList = useChatStore.getState().messagesByChatId[chat.id] || [];
-            const merged = [...existingList];
-            const seen = new Set(existingList.map((m) => m.id));
-            for (const pm of parsedMsgs) {
-              if (!seen.has(pm.id)) {
-                seen.add(pm.id);
-                merged.push(pm);
-              }
-            }
-            merged.sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0));
-
-            const lastTimestamp = chat.lastReadTimestamp || 0;
-            const unreadCount = merged.filter((m) => !m.isOutgoing && (Number(m.time) || 0) > lastTimestamp).length;
-            const lastMsg = merged.length > 0 ? (merged[merged.length - 1].text || '') : chat.lastMsg;
-
-            useChatStore.setState((state) => ({
-              messagesByChatId: {
-                ...state.messagesByChatId,
-                [chat.id]: merged,
-              },
-            }));
-            updateChat(chat.id, { unreadCount, lastMsg });
-          }).catch(() => {});
-        } else if (chat.type === 'channel') {
-          channelService.getChannelPosts(chat.id).then((posts) => {
-            if (!Array.isArray(posts) || posts.length === 0) return;
-            const lastTimestamp = chat.lastReadTimestamp || 0;
-            const isOwnerById = Boolean(
-              myUid && (chat.creatorId === myUid || (chat.isOwner && (!chat.creatorId || chat.creatorId === myUid)))
-            );
-            const channelMsgs: Message[] = posts.map((p) => {
-              if (isOwnerById && !p.senderId) {
-                p.senderId = myUid;
-              }
-              const isMine = Boolean(
-                (myUid && p.senderId === myUid) ||
-                (myC && p.senderId === myC)
-              );
-              return {
-                id: p.id,
-                sender: p.sender || 'Channel',
-                text: p.text || '',
-                time: p.time || Date.now(),
-                isOutgoing: isMine,
-                read: isMine,
-                status: isMine ? 'read' : 'delivered',
-                mediaType: p.mediaType || undefined,
-                mediaUrl: p.mediaUrl || undefined,
-                mediaName: p.mediaName || undefined,
-                mime: p.mime || undefined,
-              };
-            });
-
-            for (const cm of channelMsgs) {
-              try {
-                (window as any).orbita?.storageAddMessage?.(chat.id, cm.id, cm);
-              } catch {}
-            }
-
-            const unreadCount = channelMsgs.filter((m) => !m.isOutgoing && (Number(m.time) || 0) > lastTimestamp).length;
-            const lastMsg = channelMsgs.length > 0 ? (channelMsgs[channelMsgs.length - 1].text || '') : chat.lastMsg;
-
-            useChatStore.setState((state) => ({
-              messagesByChatId: {
-                ...state.messagesByChatId,
-                [chat.id]: channelMsgs,
-              },
-            }));
-            updateChat(chat.id, { unreadCount, lastMsg });
-          }).catch(() => {});
-        }
-      }
-    });
-  }, [chats, deletedChatSessions, subscribeToChat, subscribeToGroupChat, subscribeToPublicChannel, subscribeToDeliveryUpdates, subscribeToTypingUpdates, updateChat, nickname]);
+    }
+  }, [relevantChatIds, subscribeToChat, subscribeToDeliveryUpdates]);
 
   useEffect(() => {
     const handleAccountSwitched = () => {
-      syncedGroupChannelIds.current.clear();
       const pusher = getPusher();
       activeSubscriptions.current.forEach((sub) => { try { sub.channel.unbind_all(); pusher.unsubscribe(sub.channel.name); } catch {} });
       activeSubscriptions.current.clear();

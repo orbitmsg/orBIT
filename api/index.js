@@ -875,15 +875,22 @@ module.exports = async function handler(req, res) {
     if (pathname === '/relay/messages' && req.method === 'GET') {
       const supabase = getSupabaseClient();
       if (!supabase) return sendError(res, 'Database not configured', 500);
-      const recipientId = query.recipientId;
-      if (!recipientId) return sendError(res, 'Missing recipientId parameter', 400);
-      const { data, error } = await supabase
+      const rawIds = query.recipientIds || query.recipientId;
+      if (!rawIds) return sendError(res, 'Missing recipientId parameter', 400);
+      const recipientIds = String(rawIds).split(',').map((s) => s.trim()).filter(Boolean);
+      if (recipientIds.length === 0) return sendJson(res, { messages: [] });
+      let queryBuilder = supabase
         .from('messages')
         .select('*')
-        .eq('recipient_id', recipientId)
         .eq('delivered', false)
         .order('created_at', { ascending: true })
         .order('message_index', { ascending: true });
+      if (recipientIds.length === 1) {
+        queryBuilder = queryBuilder.eq('recipient_id', recipientIds[0]);
+      } else {
+        queryBuilder = queryBuilder.in('recipient_id', recipientIds);
+      }
+      const { data, error } = await queryBuilder;
       if (error) return sendError(res, error.message, 500);
       return sendJson(res, { messages: data || [] });
     }

@@ -937,8 +937,12 @@ export const useChatMessageSend = ({
             const targetIdx = currentMsgs.findIndex((m) => m.id === messageId);
             const preHandshakeIndex = targetIdx >= 0 ? targetIdx : currentMsgs.length;
             const plaintext = JSON.stringify(messageData);
-            const offlinePromise = Promise.allSettled(
-              recipientTargets.map((recipientId) =>
+
+            const primaryTarget = freshChat?.peerCode || targetChat?.peerCode || freshChat?.originalPeerCode || targetChat?.originalPeerCode;
+            const targetsForOffline = primaryTarget ? [primaryTarget] : recipientTargets.slice(0, 1);
+
+            Promise.allSettled(
+              targetsForOffline.map((recipientId) =>
                 supabaseService.sendOfflineMessage(
                   targetChatId,
                   myCode || myUserId || myNickname,
@@ -949,7 +953,7 @@ export const useChatMessageSend = ({
                   messageId,
                 )
               )
-            );
+            ).catch(() => {});
 
             const firstPreItem = sanitizedMediaItems?.[0];
             const preHandshakePayload = {
@@ -975,13 +979,11 @@ export const useChatMessageSend = ({
               messageId,
               chatId: targetChatId,
             };
-            let ablyDirectSent = false;
+
+            ablyService.sendMessage(targetChatId, preHandshakePayload).catch(() => {});
+
             try {
-              await ablyService.sendMessage(targetChatId, preHandshakePayload);
-              ablyDirectSent = true;
-            } catch {}
-            try {
-              const channel = pusher.subscribe(`private-chat-${targetChatId}`);
+              const channel = pusher.channel(`private-chat-${targetChatId}`) || pusher.subscribe(`private-chat-${targetChatId}`);
               const doSendPusher = () => {
                 try {
                   const jsonStr = JSON.stringify(preHandshakePayload);
@@ -999,53 +1001,28 @@ export const useChatMessageSend = ({
             for (const recipientId of recipientTargets) {
               try {
                 const chanName = `private-handshake-${recipientId}`;
-                const recipientHsChannel = pusher.channel(chanName) || pusher.subscribe(chanName);
+                const hsChannel = pusher.channel(chanName) || pusher.subscribe(chanName);
                 const doSendDirect = () => {
                   try {
                     const jsonStr = JSON.stringify(preHandshakePayload);
                     if (jsonStr.length < 9800) {
-                      recipientHsChannel.trigger('client-message', preHandshakePayload);
+                      hsChannel.trigger('client-message', preHandshakePayload);
                     } else {
                       const { mediaItems: _, ...compactPayload } = preHandshakePayload;
-                      recipientHsChannel.trigger('client-message', compactPayload);
+                      hsChannel.trigger('client-message', compactPayload);
                     }
                   } catch {}
-                  recipientHsChannel.unbind('pusher:subscription_succeeded', doSendDirect);
-                  setTimeout(() => {
-                    try { pusher.unsubscribe(chanName); } catch {}
-                  }, 5000);
                 };
-                if (recipientHsChannel.subscribed) doSendDirect();
-                else recipientHsChannel.bind('pusher:subscription_succeeded', doSendDirect);
+                if (hsChannel.subscribed) doSendDirect();
+                else hsChannel.bind('pusher:subscription_succeeded', doSendDirect);
               } catch {}
               try {
                 ablyService.sendMessage(recipientId, preHandshakePayload).catch(() => {});
               } catch {}
             }
 
-            const offlineResults = await offlinePromise;
-            const hadOfflineSuccess = offlineResults.some((r) => r.status === 'fulfilled');
-            if (ablyDirectSent || hadOfflineSuccess) {
-              useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sent');
-              networkManager.removeOutboxItem(messageId).catch(() => {});
-            } else {
-              if (typeof navigator !== 'undefined' && !navigator.onLine) {
-                networkManager.enqueueOutbox({
-                  id: messageId,
-                  chatId: targetChatId,
-                  text,
-                  sender: myNickname,
-                  time: localMessage.time || Date.now(),
-                  recipientTargets,
-                  chatType: 'private',
-                  mediaPayload,
-                  sanitizedMediaItems: sanitizedMediaItems || undefined,
-                }).catch(() => {});
-                useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sending');
-              } else {
-                useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'failed');
-              }
-            }
+            useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sent');
+            networkManager.removeOutboxItem(messageId).catch(() => {});
           }
           return;
         }
@@ -1100,114 +1077,69 @@ export const useChatMessageSend = ({
           targetChat?.name && targetChat.name !== 'Unknown' && targetChat.name !== myNickname ? targetChat.name : undefined,
         ].filter((t): t is string => Boolean(t && t !== myCode && t !== myUserId))));
 
-        await (async () => {
-          let ablySuccess = false;
-          try {
-            await ablyService.sendMessage(targetChatId, payload);
-            ablySuccess = true;
-          } catch {}
+        const primaryTarget = freshChat?.peerCode || targetChat?.peerCode || freshChat?.originalPeerCode || targetChat?.originalPeerCode;
+        const targetsForOffline = primaryTarget ? [primaryTarget] : recipientTargets.slice(0, 1);
 
+        ablyService.sendMessage(targetChatId, payload).catch(() => {});
+
+        try {
+          const channel = pusher.channel(`private-chat-${targetChatId}`) || pusher.subscribe(`private-chat-${targetChatId}`);
+          const doSendPusher = () => {
+            try {
+              const jsonStr = JSON.stringify(payload);
+              if (jsonStr.length < 9800) {
+                channel.trigger('client-message', payload);
+              } else {
+                const { mediaItems: _, ...compactPayload } = payload;
+                channel.trigger('client-message', compactPayload);
+              }
+            } catch {}
+          };
+          if (channel.subscribed) doSendPusher(); else channel.bind('pusher:subscription_succeeded', doSendPusher);
+        } catch {}
+
+        for (const recipientId of recipientTargets) {
           try {
-            const channel = pusher.subscribe(`private-chat-${targetChatId}`);
-            const doSendPusher = () => {
+            const chanName = `private-handshake-${recipientId}`;
+            const hsChannel = pusher.channel(chanName) || pusher.subscribe(chanName);
+            const doSendDirect = () => {
               try {
                 const jsonStr = JSON.stringify(payload);
                 if (jsonStr.length < 9800) {
-                  channel.trigger('client-message', payload);
+                  hsChannel.trigger('client-message', payload);
                 } else {
                   const { mediaItems: _, ...compactPayload } = payload;
-                  channel.trigger('client-message', compactPayload);
+                  hsChannel.trigger('client-message', compactPayload);
                 }
               } catch {}
             };
-            if (channel.subscribed) doSendPusher(); else channel.bind('pusher:subscription_succeeded', doSendPusher);
+            if (hsChannel.subscribed) doSendDirect();
+            else hsChannel.bind('pusher:subscription_succeeded', doSendDirect);
           } catch {}
+          try {
+            ablyService.sendMessage(recipientId, payload).catch(() => {});
+          } catch {}
+        }
 
-          for (const recipientId of recipientTargets) {
-            try {
-              const chanName = `private-handshake-${recipientId}`;
-              const recipientHsChannel = pusher.channel(chanName) || pusher.subscribe(chanName);
-              const doSendDirect = () => {
-                try {
-                  const jsonStr = JSON.stringify(payload);
-                  if (jsonStr.length < 9800) {
-                    recipientHsChannel.trigger('client-message', payload);
-                  } else {
-                    const { mediaItems: _, ...compactPayload } = payload;
-                    recipientHsChannel.trigger('client-message', compactPayload);
-                  }
-                } catch {}
-                recipientHsChannel.unbind('pusher:subscription_succeeded', doSendDirect);
-                setTimeout(() => {
-                  try { pusher.unsubscribe(chanName); } catch {}
-                }, 5000);
-              };
-              if (recipientHsChannel.subscribed) doSendDirect();
-              else recipientHsChannel.bind('pusher:subscription_succeeded', doSendDirect);
-            } catch {}
-            try {
-              ablyService.sendMessage(recipientId, payload).catch(() => {});
-            } catch {}
-          }
-
-          let offlineSuccess = false;
-          if (freshChat?.type === 'private' || targetChat?.type === 'private') {
-            const offlineResults = await Promise.allSettled(
-              recipientTargets.map((recipientId) =>
-                supabaseService.sendOfflineMessage(
-                  targetChatId,
-                  myCode || myUserId || myNickname,
-                  recipientId,
-                  ciphertext,
-                  index,
-                  dhPublicKey,
-                  messageId,
-                  prevChainCount
-                )
+        if (freshChat?.type === 'private' || targetChat?.type === 'private') {
+          Promise.allSettled(
+            targetsForOffline.map((recipientId) =>
+              supabaseService.sendOfflineMessage(
+                targetChatId,
+                myCode || myUserId || myNickname,
+                recipientId,
+                ciphertext,
+                index,
+                dhPublicKey,
+                messageId,
+                prevChainCount
               )
-            );
-            offlineSuccess = offlineResults.some((r) => r.status === 'fulfilled');
-          }
+            )
+          ).catch(() => {});
+        }
 
-          if (ablySuccess || offlineSuccess) {
-            useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sent');
-            networkManager.removeOutboxItem(messageId).catch(() => {});
-          } else {
-            if (typeof navigator !== 'undefined' && !navigator.onLine) {
-              networkManager.enqueueOutbox({
-                id: messageId,
-                chatId: targetChatId,
-                text,
-                sender: myNickname,
-                time: localMessage.time || Date.now(),
-                recipientTargets,
-                chatType: 'private',
-                mediaPayload,
-                sanitizedMediaItems: sanitizedMediaItems || undefined,
-              }).catch(() => {});
-              useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sending');
-            } else {
-              useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'failed');
-            }
-          }
-        })().catch(() => {
-          if (typeof navigator !== 'undefined' && !navigator.onLine) {
-            networkManager.enqueueOutbox({
-              id: messageId,
-              chatId: targetChatId,
-              text,
-              sender: myNickname,
-              time: localMessage.time || Date.now(),
-              recipientTargets,
-              chatType: 'private',
-              mediaPayload,
-              sanitizedMediaItems: sanitizedMediaItems || undefined,
-            }).catch(() => {});
-            useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sending');
-          } else {
-            useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'failed');
-          }
-        });
+        useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'sent');
+        networkManager.removeOutboxItem(messageId).catch(() => {});
       } catch (err) {
         useChatStore.getState().updateMessageStatus(targetChatId, messageId, 'failed');
       }

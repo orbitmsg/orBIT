@@ -630,19 +630,22 @@ export const useHandshakeListeners = ({
 
         if (data.senderCode || data.senderId) {
           const senderCode = data.senderCode || data.senderId;
-          try {
-            const pub = await supabaseService.lookupPublicProfile(senderCode);
+          senderNumericId = getInitialNumericId(senderCode);
+          supabaseService.lookupPublicProfile(senderCode).then((pub) => {
             if (pub) {
-              if (pub.nickname) senderNick = pub.nickname;
-              if (pub.avatar_url) senderAvatar = pub.avatar_url;
-              if (pub.banner_url) senderBanner = pub.banner_url;
-              if (pub.username) senderUsername = pub.username;
-              if (pub.bio) senderBio = pub.bio;
-              if (pub.birthday) senderBirthday = pub.birthday;
-              if (pub.numeric_id) senderNumericId = pub.numeric_id;
+              const updates: Partial<Chat> = {};
+              if (pub.nickname) updates.name = pub.nickname;
+              if (pub.avatar_url) updates.avatarUrl = pub.avatar_url;
+              if (pub.banner_url) updates.bannerUrl = pub.banner_url;
+              if (pub.username) updates.username = pub.username;
+              if (pub.bio) updates.description = pub.bio;
+              if (pub.birthday) updates.birthday = pub.birthday;
+              if (pub.numeric_id) updates.numericId = pub.numeric_id;
+              if (Object.keys(updates).length > 0) {
+                updateChat(data.chatId, updates);
+              }
             }
-          } catch {}
-          if (!senderNumericId) senderNumericId = getInitialNumericId(senderCode);
+          }).catch(() => {});
         }
 
         const newChatObj: Partial<Chat> = {

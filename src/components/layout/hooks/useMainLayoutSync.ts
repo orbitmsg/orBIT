@@ -748,15 +748,11 @@ export const useMainLayoutSync = ({
         }
       };
 
-      const allRecordsArrays = await Promise.all(
-        keysToCheck.map((key) => supabaseService.getPendingMessages(key).catch(() => []))
-      );
+      const rawRecords = await supabaseService.getPendingMessagesBatch(keysToCheck).catch(() => []);
       const recordsMap = new Map<string, OfflineMessageRecord>();
-      for (const recArr of allRecordsArrays) {
-        for (const record of recArr) {
-          if (!recordsMap.has(record.id)) {
-            recordsMap.set(record.id, record);
-          }
+      for (const record of rawRecords) {
+        if (!recordsMap.has(record.id)) {
+          recordsMap.set(record.id, record);
         }
       }
       const records = Array.from(recordsMap.values()).sort((a, b) => {
@@ -1661,7 +1657,7 @@ export const useMainLayoutSync = ({
     const syncAll = async (force = false) => {
       if (isDestroyed || isSyncingRef.current) return;
       const now = Date.now();
-      const minInterval = force ? 1000 : 5000;
+      const minInterval = force ? 500 : 2000;
       if (now - lastSyncTimeRef.current < minInterval) return;
       lastSyncTimeRef.current = now;
       isSyncingRef.current = true;
@@ -1766,7 +1762,7 @@ export const useMainLayoutSync = ({
     window.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('orbita:sync-now', handleSyncNow);
 
-    const interval = setInterval(() => syncAll(false), 5000);
+    const interval = setInterval(() => syncAll(false), 2500);
     const checkTimer = setInterval(() => {
       const navOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
       if (!navOnline) {

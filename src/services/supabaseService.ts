@@ -412,6 +412,62 @@ class SupabaseService {
     }
   }
 
+  async getPendingMessagesBatch(recipientIds: string[]): Promise<OfflineMessageRecord[]> {
+    if (!recipientIds || recipientIds.length === 0) return [];
+    const cleanIds = Array.from(new Set(recipientIds.map((id) => (id || '').trim()).filter(Boolean)));
+    if (cleanIds.length === 0) return [];
+
+    if (this.client) {
+      try {
+        let query = this.client
+          .from('messages')
+          .select('*')
+          .eq('delivered', false)
+          .order('created_at', { ascending: true })
+          .order('message_index', { ascending: true });
+
+        if (cleanIds.length === 1) {
+          query = query.eq('recipient_id', cleanIds[0]);
+        } else {
+          query = query.in('recipient_id', cleanIds);
+        }
+
+        const { data, error } = await query;
+        if (!error && Array.isArray(data)) {
+          return data;
+        }
+      } catch {}
+    }
+
+    const primaryRelay = relayRouter.getRelayForRecipient(cleanIds[0]);
+    const allRelays = [
+      primaryRelay,
+      ...relayRouter.getNodes().filter((n) => n.url !== primaryRelay.url),
+    ];
+
+    for (const relay of allRelays) {
+      const lastFail = this.failedRelays.get(relay.url) || 0;
+      if (Date.now() - lastFail < 10000) continue;
+
+      try {
+        const url = `${relay.url}/relay/messages?recipientIds=${encodeURIComponent(cleanIds.join(','))}`;
+        const res = await networkManager.safeFetch(url, undefined, 6000, 1);
+        if (res.ok) {
+          const data = (await res.json()) as { messages: OfflineMessageRecord[] };
+          if (Array.isArray(data.messages)) {
+            return data.messages;
+          }
+        } else {
+          this.failedRelays.set(relay.url, Date.now());
+        }
+      } catch {
+        this.failedRelays.set(relay.url, Date.now());
+      }
+    }
+
+    return [];
+  }
+
   async getPendingMessages(recipientId: string): Promise<OfflineMessageRecord[]> {
     const activeRelays = relayRouter.getActiveRelaysForMe(recipientId);
     const allMessages: OfflineMessageRecord[] = [];

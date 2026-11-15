@@ -11,6 +11,7 @@ import { gatewayManager } from '../services/gatewayManager';
 import { ablyService } from '../services/ablyService';
 import { groupService } from '../services/groupService';
 import { lobbyService } from '../services/lobbyService';
+import { deriveGroupKey } from '../lib/groupCrypto';
 import { generateKeyPair, generateChatId, getDirectChatId } from '../lib/crypto';
 import { sqliteStorage } from '../services/sqliteStorage';
 import i18n from '../i18n';
@@ -232,10 +233,14 @@ export const useCallStore = create<CallStore>((set, get) => {
 
       set({ statusMessage: i18n.t('call.connected') });
 
+      const chat = s.activeCall?.chatId ? useChatStore.getState().chats.find((c) => c.id === s.activeCall?.chatId) : null;
+      const isGroup = s.activeCall.chatType === 'group' || chat?.type === 'group';
       let emojis = s.activeCall.verificationEmojis;
-      if (!emojis && s.activeCall.verificationSecret && s.activeCall.verificationSalt) {
+      const targetSecret = s.activeCall.verificationSecret || chat?.sharedSecret || chat?.ratchetState?.rootKey || (s.activeCall.chatId ? deriveGroupKey(s.activeCall.chatId) : undefined);
+      const targetSalt = s.activeCall.verificationSalt || (isGroup ? `group-salt-${s.activeCall.chatId}` : s.activeCall.roomName);
+      if (!emojis && targetSecret && targetSalt) {
         try {
-          emojis = await generateCallVerificationEmojis(s.activeCall.verificationSecret + s.activeCall.verificationSalt);
+          emojis = await generateCallVerificationEmojis(targetSecret + targetSalt);
         } catch (err) { console.error(`${LOG_PREFIX} Emoji gen error:`, err); }
       }
 
@@ -247,8 +252,6 @@ export const useCallStore = create<CallStore>((set, get) => {
       callSoundService.stop();
       callSoundService.play('user_join');
 
-      const isGroup = stateAfterCrypto.activeCall.chatType === 'group' ||
-        useChatStore.getState().chats.find((c) => c.id === stateAfterCrypto.activeCall?.chatId)?.type === 'group';
       const svc = isGroup ? groupLiveKitService : liveKitService;
       svc.enableMicrophone().catch(() => {});
       if (stateAfterCrypto.isVideoEnabled || stateAfterCrypto.activeCall.callType === 'video') {
@@ -690,12 +693,12 @@ export const useCallStore = create<CallStore>((set, get) => {
       const isGroup = chat?.type === 'group';
       const isLobby = chatId.startsWith('lobby_');
       const roomName = customRoomName || (isLobby ? `lobby-voice-${chatId}` : (isGroup ? (chat?.activeCallRoom || `group-call-${chatId}`) : `call-${chatId}-${Date.now()}`));
-      const verificationSecret = chat?.sharedSecret || undefined;
+      const verificationSecret = chat?.sharedSecret || chat?.ratchetState?.rootKey || deriveGroupKey(chatId);
       const verificationSalt = isGroup ? `group-salt-${chatId}` : crypto.randomUUID().replace(/-/g, '');
       const isVideo = callType === 'video';
 
       let precomputedEmojis: string[] | undefined;
-      if (isGroup && verificationSecret && verificationSalt) {
+      if (verificationSecret && verificationSalt) {
         try {
           precomputedEmojis = await generateCallVerificationEmojis(verificationSecret + verificationSalt);
         } catch {}
@@ -823,7 +826,7 @@ export const useCallStore = create<CallStore>((set, get) => {
 
       set({
         myNickname,
-        activeCall: { chatId, roomName, direction: 'outgoing', callType, chatType: 'private', startTime: 0, participants: [], isMuted: false, isVideoEnabled: isVideo, isScreenSharing: false, connectionQuality: 'unknown', endedStatus: null, verificationSecret, verificationSalt, verificationEmojis: undefined },
+        activeCall: { chatId, roomName, direction: 'outgoing', callType, chatType: 'private', startTime: 0, participants: [], isMuted: false, isVideoEnabled: isVideo, isScreenSharing: false, connectionQuality: 'unknown', endedStatus: null, verificationSecret, verificationSalt, verificationEmojis: precomputedEmojis },
         callState: 'preparing', isMicEnabled: true, isVideoEnabled: isVideo, isScreenSharing: false, isScreenPickerOpen: false, remoteScreenShareTrack: null, remoteScreenShareIdentity: null, connectionQuality: 'unknown', duration: 0, statusMessage: '', isEnding: false,
       });
     },
@@ -900,8 +903,14 @@ export const useCallStore = create<CallStore>((set, get) => {
       const { chatId, roomName, verificationSalt, callType } = state.incomingCall;
       if (incomingAutoRejectTimer) { clearTimeout(incomingAutoRejectTimer); incomingAutoRejectTimer = null; }
       const chat = useChatStore.getState().chats.find((c) => c.id === chatId);
-      const verificationSecret = chat?.type === 'private' ? chat.sharedSecret : undefined;
+      const verificationSecret = chat?.sharedSecret || chat?.ratchetState?.rootKey || deriveGroupKey(chatId);
       const isVideo = callType === 'video';
+      let answeredEmojis: string[] | undefined;
+      if (verificationSecret && verificationSalt) {
+        try {
+          answeredEmojis = await generateCallVerificationEmojis(verificationSecret + verificationSalt);
+        } catch {}
+      }
       const { identity: myLivekitIdentity, name: myLivekitName } = getLivekitParticipantIdentity(myNickname);
       let initialToken: string | undefined = undefined;
       let initialUrl: string | undefined = undefined;
@@ -922,7 +931,7 @@ export const useCallStore = create<CallStore>((set, get) => {
           chatId, roomName, direction: 'incoming', callType: callType || 'audio', startTime: 0,
           participants: [], isMuted: false, isVideoEnabled: isVideo, isScreenSharing: false,
           connectionQuality: 'unknown', endedStatus: null, verificationSecret, verificationSalt,
-          verificationEmojis: undefined,
+          verificationEmojis: answeredEmojis,
           token: initialToken,
           url: initialUrl,
         },

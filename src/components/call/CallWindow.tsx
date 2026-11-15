@@ -788,7 +788,7 @@ export const CallWindow = () => {
 
       <div ref={remoteAudioContainerRef} style={{ display: 'none' }} />
 
-      {isConnected && !isGroupCall && activeCall?.verificationEmojis && activeCall.verificationEmojis.length === 4 && (
+      {isConnected && activeCall?.verificationEmojis && activeCall.verificationEmojis.length === 4 && (
         <div
           className="select-none flex items-stretch"
           style={{
@@ -805,6 +805,8 @@ export const CallWindow = () => {
             className="inline-flex items-center justify-center px-3 rounded-full shadow-md"
             style={{
               backgroundColor: 'var(--surface-muted, rgba(255, 255, 255, 0.08))',
+              border: 'none',
+              outline: 'none',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
             }}

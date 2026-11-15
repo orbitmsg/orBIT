@@ -11,6 +11,7 @@ import { groupLiveKitService } from '../../services/groupLiveKitService';
 import { gatewayManager } from '../../services/gatewayManager';
 import { callSoundService } from '../../services/callSoundService';
 import { generateCallVerificationEmojis } from '../../lib/call-verification';
+import { deriveGroupKey } from '../../lib/groupCrypto';
 import { useChatStore, FONT_MAP, type FontFamily } from '../../store/useChatStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { SignalStrengthIcon } from './SignalStrengthIcon';
@@ -886,8 +887,10 @@ export const CallWindowView = () => {
   }, [activeCall?.roomName, activeCall?.token]);
 
   useEffect(() => {
-    if (activeCall && !activeCall.verificationEmojis && activeCall.verificationSecret && activeCall.verificationSalt) {
-      generateCallVerificationEmojis(activeCall.verificationSecret + activeCall.verificationSalt)
+    const secret = activeCall?.verificationSecret || (activeCall?.chatId ? deriveGroupKey(activeCall.chatId) : undefined);
+    const salt = activeCall?.verificationSalt || (activeCall?.chatId ? `group-salt-${activeCall.chatId}` : undefined);
+    if (activeCall && !activeCall.verificationEmojis && secret && salt) {
+      generateCallVerificationEmojis(secret + salt)
         .then((emojis) => {
           if (emojis && emojis.length === 4) {
             setCallData((prev) => prev?.activeCall ? {
@@ -898,7 +901,7 @@ export const CallWindowView = () => {
         })
         .catch(() => {});
     }
-  }, [activeCall?.verificationSecret, activeCall?.verificationSalt, activeCall?.verificationEmojis]);
+  }, [activeCall?.verificationSecret, activeCall?.verificationSalt, activeCall?.verificationEmojis, activeCall?.chatId]);
 
   useEffect(() => {
     if (isRemoteScreenShareActive && remoteScreenShareRef.current) {
@@ -1278,14 +1281,15 @@ export const CallWindowView = () => {
       </div>
 
       <div className="flex items-center justify-center flex-shrink-0 relative z-30 py-1">
-        {isConnected && !isGroupCall && activeCall?.verificationEmojis && activeCall.verificationEmojis.length === 4 && (
+        {isConnected && activeCall?.verificationEmojis && activeCall.verificationEmojis.length === 4 && (
           <div className="flex items-stretch" style={{ gap: '10px' }}>
             <CallVerificationBadge emojis={activeCall.verificationEmojis} />
             <div
               className="inline-flex items-center justify-center px-3 rounded-full shadow-md"
               style={{
                 backgroundColor: 'var(--surface-container, var(--surface-muted, rgba(255, 255, 255, 0.08)))',
-                border: '1px solid var(--border-color, transparent)',
+                border: 'none',
+                outline: 'none',
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
               }}
@@ -1294,12 +1298,13 @@ export const CallWindowView = () => {
             </div>
           </div>
         )}
-        {isConnected && isGroupCall && (
+        {isConnected && isGroupCall && !activeCall?.verificationEmojis && (
           <div
             className="relative inline-flex flex-col items-center justify-center select-none px-4 py-1.5 rounded-full shadow-md"
             style={{
               backgroundColor: 'var(--surface-container, var(--surface-muted, rgba(255, 255, 255, 0.08)))',
-              border: '1px solid var(--border-color, transparent)',
+              border: 'none',
+              outline: 'none',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
               borderRadius: 9999,

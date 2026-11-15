@@ -131,6 +131,21 @@ extern "system" {
     fn ReleaseCapture() -> i32;
     fn SetWindowRgn(hWnd: isize, hRgn: isize, bRedraw: i32) -> i32;
     fn GetCursorPos(lpPoint: *mut POINT) -> i32;
+    fn SendMessageW(hWnd: isize, Msg: u32, wParam: usize, lParam: isize) -> isize;
+    fn LoadImageW(
+        hInst: isize,
+        name: *const u16,
+        type_: u32,
+        cx: i32,
+        cy: i32,
+        fuLoad: u32,
+    ) -> isize;
+    fn SetClassLongPtrW(hWnd: isize, nIndex: i32, dwNewLong: isize) -> isize;
+}
+
+#[link(name = "shell32")]
+extern "system" {
+    fn SHChangeNotify(wEventId: i32, uFlags: u32, dwItem1: *const std::ffi::c_void, dwItem2: *const std::ffi::c_void);
 }
 
 #[link(name = "gdi32")]
@@ -524,4 +539,52 @@ pub fn show_native_tray_menu(
     }
 
     Ok(SELECTED_INDEX.load(Ordering::SeqCst))
+}
+
+#[napi]
+pub fn rust_set_window_icon(hwnd_buf: Buffer, ico_path: String) -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        if hwnd_buf.len() < 8 {
+            return false;
+        }
+        let hwnd_val = isize::from_ne_bytes(hwnd_buf.as_ref()[..8].try_into().unwrap_or([0; 8]));
+        if hwnd_val == 0 {
+            return false;
+        }
+
+        let wide_path = to_wide(&ico_path);
+        const IMAGE_ICON: u32 = 1;
+        const LR_LOADFROMFILE: u32 = 0x00000010;
+        const LR_DEFAULTSIZE: u32 = 0x00000040;
+
+        unsafe {
+            let hicon_big = LoadImageW(0, wide_path.as_ptr(), IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+            let hicon_small = LoadImageW(0, wide_path.as_ptr(), IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
+            let hicon_def = LoadImageW(0, wide_path.as_ptr(), IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE);
+
+            let primary_big = if hicon_big != 0 { hicon_big } else { hicon_def };
+            let primary_small = if hicon_small != 0 { hicon_small } else { hicon_def };
+
+            if primary_big != 0 {
+                const WM_SETICON: u32 = 0x0080;
+                const ICON_SMALL: usize = 0;
+                const ICON_BIG: usize = 1;
+                const ICON_SMALL2: usize = 2;
+
+                SendMessageW(hwnd_val, WM_SETICON, ICON_BIG, primary_big);
+                SendMessageW(hwnd_val, WM_SETICON, ICON_SMALL, primary_small);
+                SendMessageW(hwnd_val, WM_SETICON, ICON_SMALL2, primary_small);
+
+                const GCLP_HICON: i32 = -14;
+                const GCLP_HICONSM: i32 = -34;
+                SetClassLongPtrW(hwnd_val, GCLP_HICON, primary_big);
+                SetClassLongPtrW(hwnd_val, GCLP_HICONSM, primary_small);
+
+                SHChangeNotify(0x08000000, 0, std::ptr::null(), std::ptr::null());
+                return true;
+            }
+        }
+    }
+    false
 }

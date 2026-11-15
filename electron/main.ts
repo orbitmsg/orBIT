@@ -3925,34 +3925,48 @@ function updateWindowsShortcutsAndTaskbar(iconName: string): void {
 
     const shortcutDirs = [
       path.join(app.getPath('appData'), 'Microsoft', 'Internet Explorer', 'Quick Launch', 'User Pinned', 'TaskBar'),
-      app.getPath('programs'),
+      path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs'),
+      path.join(process.env.ProgramData || 'C:\\ProgramData', 'Microsoft', 'Windows', 'Start Menu', 'Programs'),
       app.getPath('desktop'),
+      path.join(process.env.PUBLIC || 'C:\\Users\\Public', 'Desktop'),
     ];
+
+    const updateLnk = (lnkPath: string) => {
+      let updated = false;
+      try {
+        updated = shell.writeShortcutLink(lnkPath, 'update', {
+          icon: absIcoPath,
+          iconIndex: 0,
+          appUserModelId: appId,
+        });
+      } catch {}
+      if (!updated) {
+        try {
+          const escapedLnk = lnkPath.replace(/'/g, "''");
+          const escapedIco = absIcoPath.replace(/'/g, "''");
+          const psCmd = `$s=(New-Object -ComObject WScript.Shell).CreateShortcut('${escapedLnk}');$s.IconLocation='${escapedIco},0';$s.Save()`;
+          spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-Command', psCmd], { windowsHide: true, stdio: 'ignore' });
+        } catch {}
+      }
+    };
 
     for (const dir of shortcutDirs) {
       if (!fs.existsSync(dir)) continue;
       try {
-        const files = fs.readdirSync(dir);
-        for (const file of files) {
-          if (!file.toLowerCase().endsWith('.lnk')) continue;
-          if (file.toLowerCase().includes('orbit')) {
-            const lnkPath = path.join(dir, file);
-            let updated = false;
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          if (entry.isDirectory()) {
+            const subDir = path.join(dir, entry.name);
             try {
-              updated = shell.writeShortcutLink(lnkPath, 'update', {
-                icon: absIcoPath,
-                iconIndex: 0,
-                appUserModelId: appId,
-              });
+              const subFiles = fs.readdirSync(subDir);
+              for (const subFile of subFiles) {
+                if (subFile.toLowerCase().endsWith('.lnk') && subFile.toLowerCase().includes('orbit')) {
+                  updateLnk(path.join(subDir, subFile));
+                }
+              }
             } catch {}
-            if (!updated) {
-              try {
-                const escapedLnk = lnkPath.replace(/'/g, "''");
-                const escapedIco = absIcoPath.replace(/'/g, "''");
-                const psCmd = `$s=(New-Object -ComObject WScript.Shell).CreateShortcut('${escapedLnk}');$s.IconLocation='${escapedIco},0';$s.Save()`;
-                spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-Command', psCmd], { windowsHide: true, stdio: 'ignore' });
-              } catch {}
-            }
+          } else if (entry.isFile() && entry.name.toLowerCase().endsWith('.lnk') && entry.name.toLowerCase().includes('orbit')) {
+            updateLnk(path.join(dir, entry.name));
           }
         }
       } catch {}
@@ -4099,6 +4113,11 @@ ipcMain.on('orbita:set-app-icon', (_event, iconName: string) => {
       mainWindow.setIcon(icon);
     }
     if (process.platform === 'win32') {
+      if (nativeModule?.rustSetWindowIcon && absIcoPath) {
+        try {
+          nativeModule.rustSetWindowIcon(mainWindow.getNativeWindowHandle(), absIcoPath);
+        } catch {}
+      }
       try {
         mainWindow.setAppDetails({
           appId,
@@ -4113,6 +4132,11 @@ ipcMain.on('orbita:set-app-icon', (_event, iconName: string) => {
             mainWindow.setSkipTaskbar(false);
             if (icon && !icon.isEmpty()) {
               mainWindow.setIcon(icon);
+            }
+            if (nativeModule?.rustSetWindowIcon && absIcoPath) {
+              try {
+                nativeModule.rustSetWindowIcon(mainWindow.getNativeWindowHandle(), absIcoPath);
+              } catch {}
             }
           }
         }, 50);
@@ -5172,6 +5196,11 @@ function createMainWindow() {
   if (process.platform === 'win32') {
     const icoPath = getValidIcoPath(currentAppIconName);
     if (icoPath) {
+      if (nativeModule?.rustSetWindowIcon) {
+        try {
+          nativeModule.rustSetWindowIcon(mainWindow.getNativeWindowHandle(), icoPath);
+        } catch {}
+      }
       try {
         mainWindow.setAppDetails({
           appId: 'com.saizzi.orbit',
@@ -5685,7 +5714,7 @@ function registerWindowsAppIdentity(): void {
   if (process.platform !== 'win32') return;
   try {
     const targetIco = getValidIcoPath(currentAppIconName);
-    const programsPath = app.getPath('programs');
+    const programsPath = path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs');
     const appId = 'com.saizzi.orbit';
 
     const shortcutDetails = {
@@ -5896,6 +5925,14 @@ app.whenReady().then(async () => {
       mainWindow.focus();
       if (icon && !icon.isEmpty()) {
         mainWindow.setIcon(icon);
+      }
+      if (process.platform === 'win32' && nativeModule?.rustSetWindowIcon) {
+        const icoPath = getValidIcoPath(currentAppIconName);
+        if (icoPath) {
+          try {
+            nativeModule.rustSetWindowIcon(mainWindow.getNativeWindowHandle(), icoPath);
+          } catch {}
+        }
       }
       mainWindow.webContents.send('window:state-changed', mainWindow.isMaximized());
     }

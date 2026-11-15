@@ -9,6 +9,7 @@ import { supabaseService, type OfflineMessageRecord } from '../../../services/su
 import { gatewayManager } from '../../../services/gatewayManager';
 import { groupService } from '../../../services/groupService';
 import { channelService } from '../../../services/channelService';
+import { lobbyService } from '../../../services/lobbyService';
 import { generateKeyPair, deriveSharedSecret, deriveRootKey, derivePublicKey, encryptMessage, getDirectChatId } from '../../../lib/crypto';
 import { networkManager, type OutboxItem } from '../../../services/networkManager';
 import { isValidGroupCode, deriveGroupKey } from '../../../lib/groupCrypto';
@@ -1606,6 +1607,34 @@ export const useMainLayoutSync = ({
         }
       }).catch(() => {});
     }
+
+    const currentLobbies = useChatStore.getState().chats.filter((c) => c.id.startsWith('lobby_'));
+    for (const lob of currentLobbies) {
+      const lastCheck = lastProfileCheckTimeRef.current.get(lob.id) || 0;
+      if (now - lastCheck < PROFILE_TTL) {
+        continue;
+      }
+      lastProfileCheckTimeRef.current.set(lob.id, now);
+      const rawLobbyId = lob.id.replace(/^lobby_/, '');
+      lobbyService.getLobbyById(rawLobbyId).then(async (lobbyData) => {
+        if (!lobbyData) {
+          useChatStore.getState().deleteChat(lob.id);
+          return;
+        }
+        const myUid = useAuthStore.getState().userId;
+        const myC = useChatStore.getState().myCode;
+        if (lobbyData.creatorCode === myC || (myUid && lobbyData.creatorCode === myUid)) {
+          return;
+        }
+        const members = await lobbyService.getLobbyMembers(rawLobbyId);
+        const isStillMember = members.some((m) => {
+          return (myC && m.userCode === myC) || (myUid && (m as any).userId === myUid);
+        });
+        if (!isStillMember) {
+          useChatStore.getState().deleteChat(lob.id);
+        }
+      }).catch(() => {});
+    }
   }, [updateChat]);
 
   const loadPendingHandshakesRef = useRef(loadPendingHandshakes);
@@ -1763,6 +1792,16 @@ export const useMainLayoutSync = ({
       clearInterval(checkTimer);
     };
   }, [step, nickname, myCode]);
+
+  useEffect(() => {
+    if (!myCode) return;
+    const unsubKicks = lobbyService.subscribeToUserKicks(myCode, (kickedLobbyId) => {
+      useChatStore.getState().deleteChat(kickedLobbyId);
+    });
+    return () => {
+      unsubKicks();
+    };
+  }, [myCode]);
 
   useEffect(() => {
     const unsubOutbox = networkManager.registerOutboxExecutor(async (item: OutboxItem) => {

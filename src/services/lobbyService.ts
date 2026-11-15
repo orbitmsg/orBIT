@@ -645,7 +645,8 @@ export class LobbyService {
     lobbyId: string,
     sharedSecret?: string | null,
     limit = 50,
-    channelId?: string | null
+    channelId?: string | null,
+    isDefaultChannel = false
   ): Promise<LobbyMessage[]> {
     let query = this.client
       .from('lobby_messages')
@@ -653,7 +654,13 @@ export class LobbyService {
       .eq('lobby_id', lobbyId);
 
     if (channelId) {
-      query = query.or(`channel_id.eq.${channelId},channel_id.is.null`);
+      if (isDefaultChannel) {
+        query = query.or(`channel_id.eq.${channelId},channel_id.is.null`);
+      } else {
+        query = query.eq('channel_id', channelId);
+      }
+    } else {
+      query = query.is('channel_id', null);
     }
 
     const { data, error } = await query
@@ -928,6 +935,28 @@ export class LobbyService {
         { event: '*', schema: 'public', table: 'lobby_members', filter: `lobby_id=eq.${lobbyId}` },
         () => {
           onMemberChange?.();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      this.client.removeChannel(channel);
+    };
+  }
+
+  subscribeToUserKicks(userCode: string | null, onKicked: (lobbyId: string) => void): () => void {
+    if (!userCode) return () => {};
+    const channelName = `user_lobby_kicks_${userCode}_${Math.random().toString(36).slice(2, 7)}`;
+    const channel = this.client
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'lobby_members', filter: `user_code=eq.${userCode}` },
+        (payload) => {
+          const old = payload.old as any;
+          if (old?.lobby_id) {
+            onKicked(old.lobby_id);
+          }
         }
       )
       .subscribe();

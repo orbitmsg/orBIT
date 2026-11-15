@@ -34,6 +34,7 @@ export const useChatRealtime = ({
   setMemberAvatars,
 }: UseChatRealtimeProps) => {
   const activeChannelId = useChatStore((s) => s.activeChannelId);
+  const activeChannelName = useChatStore((s) => s.activeChannelName);
 
   useEffect(() => {
     if (!activeChatId) return;
@@ -42,7 +43,8 @@ export const useChatRealtime = ({
       useChatStore.getState().syncReactionsFromSupabase(activeChatId);
     }
 
-    const targetChatId = activeChatId;
+    const isLobby = Boolean(activeChatId?.startsWith('lobby_'));
+    const targetChatId = (isLobby && activeChannelId) ? `${activeChatId}:${activeChannelId}` : activeChatId;
     try {
       (window as any).orbita?.storageGetMessages?.(targetChatId).then(async (cached: any[]) => {
         if (useChatStore.getState().activeChatId !== targetChatId) return;
@@ -310,7 +312,13 @@ export const useChatRealtime = ({
         }
 
         try {
-          const lobbyMsgs = await lobbyService.getLobbyMessages(targetLobbyId, secret, 50, activeChannelId);
+          const isDefaultChannel = Boolean(
+            !activeChannelId ||
+            activeChannelName === 'Основной чат' ||
+            activeChannelName === 'основной' ||
+            (activeChannelId && activeChannelId.endsWith('_main'))
+          );
+          const lobbyMsgs = await lobbyService.getLobbyMessages(targetLobbyId, secret, 50, activeChannelId, isDefaultChannel);
           if (useChatStore.getState().activeChatId !== targetLobbyId) return;
           if (Array.isArray(lobbyMsgs) && lobbyMsgs.length > 0) {
             const current = useChatStore.getState().messagesByChatId[targetKey] || [];
@@ -337,32 +345,31 @@ export const useChatRealtime = ({
                 mediaItems: lm.mediaItems || undefined,
                 reactions: lm.reactions || undefined,
               }));
+            for (const lm of newOnes) {
+              try {
+                (window as any).orbita?.storageAddMessage?.(targetKey, lm.id, lm);
+              } catch {}
+            }
             if (newOnes.length > 0) {
               useChatStore.setState((state) => {
-                const mergeList = (existingList: Message[]) => {
-                  const map = new Map(existingList.map((m) => [m.id, m]));
-                  for (const fresh of newOnes) {
-                    const prev = map.get(fresh.id);
-                    if (prev) {
-                      map.set(fresh.id, {
-                        ...prev,
-                        ...fresh,
-                        reactions: fresh.reactions || prev.reactions,
-                      });
-                    } else {
-                      map.set(fresh.id, fresh);
-                    }
+                const map = new Map((state.messagesByChatId[targetKey] || []).map((m) => [m.id, m]));
+                for (const fresh of newOnes) {
+                  const prev = map.get(fresh.id);
+                  if (prev) {
+                    map.set(fresh.id, {
+                      ...prev,
+                      ...fresh,
+                      reactions: fresh.reactions || prev.reactions,
+                    });
+                  } else {
+                    map.set(fresh.id, fresh);
                   }
-                  return Array.from(map.values()).sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0));
-                };
-
+                }
+                const sorted = Array.from(map.values()).sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0));
                 return {
                   messagesByChatId: {
                     ...state.messagesByChatId,
-                    [targetKey]: mergeList(state.messagesByChatId[targetKey] || []),
-                    ...(targetKey !== targetLobbyId ? {
-                      [targetLobbyId]: mergeList(state.messagesByChatId[targetLobbyId] || []),
-                    } : {}),
+                    [targetKey]: sorted,
                   },
                 };
               });
@@ -396,14 +403,8 @@ export const useChatRealtime = ({
               reactions: msg.reactions || undefined,
             };
             useChatStore.getState().addMessage(msgTargetKey, newMsg);
-            if (msgTargetKey !== targetLobbyId) {
-              const baseList = useChatStore.getState().messagesByChatId[targetLobbyId] || [];
-              if (!baseList.some((m) => m.id === newMsg.id)) {
-                useChatStore.getState().addMessage(targetLobbyId, { ...newMsg, chatId: targetLobbyId });
-              }
-            }
             try {
-              (window as any).orbita?.storageAddMessage?.(targetLobbyId, msg.id, newMsg);
+              (window as any).orbita?.storageAddMessage?.(msgTargetKey, msg.id, newMsg);
             } catch {}
           },
           undefined,

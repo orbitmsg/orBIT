@@ -1959,29 +1959,50 @@ export const useChatStore = create<ChatState>()(
 
       deleteChat: (chatId) => {
         const state = get();
-        const targetChat = state.chats.find(c => c.id === chatId);
+        const targetChat = state.chats.find(c => c.id === chatId || (chatId.startsWith('lobby_') ? c.id === chatId.replace(/^lobby_/, '') : c.id === `lobby_${chatId}`));
         if (!targetChat) return;
+        const actualChatId = targetChat.id;
 
         set((s) => {
-          const { [chatId]: _, ...restMessages } = s.messagesByChatId;
-          const { [chatId]: __, ...restSessions } = s.deletedChatSessions || {};
+          const restMessages = Object.fromEntries(
+            Object.entries(s.messagesByChatId).filter(([k]) => k !== actualChatId && !k.startsWith(`${actualChatId}:`))
+          );
+          const { [actualChatId]: __, ...restSessions } = s.deletedChatSessions || {};
           return {
-            chats: s.chats.filter(c => c.id !== chatId),
-            activeChatId: s.activeChatId === chatId ? null : s.activeChatId,
-            activeProfileChatId: s.activeProfileChatId === chatId ? null : s.activeProfileChatId,
+            chats: s.chats.filter(c => c.id !== actualChatId),
+            activeChatId: (s.activeChatId === actualChatId || (s.activeChatId && s.activeChatId.startsWith(`${actualChatId}:`))) ? null : s.activeChatId,
+            activeProfileChatId: s.activeProfileChatId === actualChatId ? null : s.activeProfileChatId,
             messagesByChatId: restMessages,
-            pinnedChatIds: (s.pinnedChatIds || []).filter((id) => id !== chatId),
-            deletedChatIds: Array.from(new Set([...(s.deletedChatIds || []), chatId])),
+            pinnedChatIds: (s.pinnedChatIds || []).filter((id) => id !== actualChatId),
+            deletedChatIds: Array.from(new Set([...(s.deletedChatIds || []), actualChatId])),
             deletedChatSessions: restSessions,
           };
         });
 
-        mediaManager.deleteByChatId(chatId).catch(err => {
-          console.error('[ChatStore] Failed to delete media cache for chat:', chatId, err);
+        mediaManager.deleteByChatId(actualChatId).catch(err => {
+          console.error('[ChatStore] Failed to delete media cache for chat:', actualChatId, err);
         });
 
         if (typeof window !== 'undefined' && (window as any).orbita?.storageDeleteMessages) {
-          (window as any).orbita.storageDeleteMessages(chatId).catch(() => {});
+          (window as any).orbita.storageDeleteMessages(actualChatId).catch(() => {});
+        }
+
+        if (actualChatId.startsWith('lobby_')) {
+          sqliteStorage.getJson<any[]>(`orbita_lobby_channels_${actualChatId}`, []).then((channels) => {
+            if (Array.isArray(channels)) {
+              for (const ch of channels) {
+                if (ch && ch.id) {
+                  sqliteStorage.remove(`orbita_reactions_${actualChatId}:${ch.id}`).catch(() => {});
+                  if (typeof window !== 'undefined' && (window as any).orbita?.storageDeleteMessages) {
+                    (window as any).orbita.storageDeleteMessages(`${actualChatId}:${ch.id}`).catch(() => {});
+                  }
+                }
+              }
+            }
+            sqliteStorage.remove(`orbita_lobby_channels_${actualChatId}`).catch(() => {});
+            sqliteStorage.remove(`orbita_lobby_members_${actualChatId}`).catch(() => {});
+            sqliteStorage.remove(`orbita_reactions_${actualChatId}`).catch(() => {});
+          }).catch(() => {});
         }
         flushStorageSet();
       },

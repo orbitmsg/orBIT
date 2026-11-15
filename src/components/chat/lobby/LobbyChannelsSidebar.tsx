@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { lobbyService, type LobbyChannel, type LobbyMember } from '../../../services/lobbyService';
 import { supabaseService } from '../../../services/supabaseService';
+import { sqliteStorage } from '../../../services/sqliteStorage';
 import { useCallStore } from '../../../store/useCallStore';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { useChatStore } from '../../../store/useChatStore';
@@ -68,6 +69,7 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
     try {
       const list = await lobbyService.getLobbyMembers(lobbyId);
       setMembers(list);
+      sqliteStorage.setJson(`orbita_lobby_members_${lobbyId}`, list).catch(() => {});
       const validMembers = list.map((m) => ({
         userId: m.userCode || m.id,
         userCode: m.userCode,
@@ -192,6 +194,23 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
   }, [lobbyId, members, t]);
 
   useEffect(() => {
+    sqliteStorage.getJson<LobbyMember[]>(`orbita_lobby_members_${lobbyId}`, []).then((cached) => {
+      if (Array.isArray(cached) && cached.length > 0) {
+        setMembers((prev) => (prev.length === 0 ? cached : prev));
+      }
+    }).catch(() => {});
+    sqliteStorage.getJson<LobbyChannel[]>(`orbita_lobby_channels_${lobbyId}`, []).then((cached) => {
+      if (Array.isArray(cached) && cached.length > 0) {
+        setChannels((prev) => (prev.length === 0 ? cached : prev));
+        if (!useChatStore.getState().activeChannelId) {
+          const firstText = cached.find((c) => c.type === 'text') || cached[0];
+          onSelectChannel({ ...firstText, name: firstText.name === 'основной' ? 'Основной чат' : firstText.name });
+        }
+      }
+    }).catch(() => {});
+  }, [lobbyId, onSelectChannel]);
+
+  useEffect(() => {
     loadMembers();
     const unsub = lobbyService.subscribeToLobby(
       lobbyId,
@@ -209,9 +228,11 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
     try {
       const list = await lobbyService.getLobbyChannels(lobbyId);
       const textOnly = list.filter((c) => c.type === 'text');
-      setChannels(textOnly.length > 0 ? textOnly : list);
-      if (!activeChannelId && list.length > 0) {
-        const firstText = list.find((c) => c.type === 'text') || list[0];
+      const finalList = textOnly.length > 0 ? textOnly : list;
+      setChannels(finalList);
+      sqliteStorage.setJson(`orbita_lobby_channels_${lobbyId}`, finalList).catch(() => {});
+      if (!activeChannelId && finalList.length > 0) {
+        const firstText = finalList.find((c) => c.type === 'text') || finalList[0];
         onSelectChannel({ ...firstText, name: firstText.name === 'основной' ? 'Основной чат' : firstText.name });
       }
     } catch (e) {
@@ -237,6 +258,15 @@ export const LobbyChannelsSidebar: React.FC<LobbyChannelsSidebarProps> = ({
       await lobbyService.deleteLobbyChannel(channelId);
       const remaining = channels.filter((c) => c.id !== channelId);
       setChannels(remaining);
+      sqliteStorage.setJson(`orbita_lobby_channels_${lobbyId}`, remaining).catch(() => {});
+      sqliteStorage.remove(`orbita_reactions_${lobbyId}:${channelId}`).catch(() => {});
+      if (typeof window !== 'undefined' && (window as any).orbita?.storageDeleteMessages) {
+        (window as any).orbita.storageDeleteMessages(`${lobbyId}:${channelId}`).catch(() => {});
+      }
+      useChatStore.setState((s) => {
+        const { [`${lobbyId}:${channelId}`]: _, ...rest } = s.messagesByChatId;
+        return { messagesByChatId: rest };
+      });
       if (activeChannelId === channelId && remaining.length > 0) {
         onSelectChannel(remaining[0]);
       }

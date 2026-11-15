@@ -3975,10 +3975,6 @@ function updateWindowsShortcutsAndTaskbar(iconName: string): void {
         }
       } catch {}
     }
-
-    try {
-      spawn('ie4uinit.exe', ['-show'], { windowsHide: true, detached: true, stdio: 'ignore' });
-    } catch {}
   } catch {}
 }
 
@@ -4103,6 +4099,9 @@ let activeAppliedAppIcon = '';
 ipcMain.on('orbita:set-app-icon', (_event, iconName: string) => {
   if (!iconName) return;
   const effectiveName = iconName === 'default' ? 'orbita1' : iconName;
+  if (activeAppliedAppIcon === effectiveName && currentAppIconName === effectiveName) {
+    return;
+  }
   activeAppliedAppIcon = effectiveName;
   currentAppIconName = effectiveName;
   currentNotifIconName = effectiveName;
@@ -4129,22 +4128,6 @@ ipcMain.on('orbita:set-app-icon', (_event, iconName: string) => {
           appIconPath: absIcoPath || undefined,
           appIconIndex: 0,
         });
-      } catch {}
-      try {
-        mainWindow.setSkipTaskbar(true);
-        setTimeout(() => {
-          if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.setSkipTaskbar(false);
-            if (icon && !icon.isEmpty()) {
-              mainWindow.setIcon(icon);
-            }
-            if (nativeModule?.rustSetWindowIcon && absIcoPath) {
-              try {
-                nativeModule.rustSetWindowIcon(mainWindow.getNativeWindowHandle(), absIcoPath);
-              } catch {}
-            }
-          }
-        }, 50);
       } catch {}
     }
   }
@@ -4208,7 +4191,10 @@ function loadWindowSettings() {
         if (data.themeVars && typeof data.themeVars === 'object') currentThemeVars = data.themeVars;
         if (typeof data.themeId === 'string') currentThemeId = data.themeId;
         if (typeof data.language === 'string') currentLanguage = data.language;
-        if (typeof data.appIcon === 'string') currentAppIconName = data.appIcon;
+        if (typeof data.appIcon === 'string') {
+          currentAppIconName = data.appIcon;
+          activeAppliedAppIcon = data.appIcon;
+        }
       }
     }
   } catch {}
@@ -5103,7 +5089,7 @@ function createSplashWindow() {
     minimizable: false,
     center: true,
     alwaysOnTop: true,
-    skipTaskbar: false,
+    skipTaskbar: true,
     backgroundColor: '#00000000',
     hasShadow: true,
     show: false,
@@ -5118,17 +5104,6 @@ function createSplashWindow() {
 
   if (icon && !icon.isEmpty()) {
     splashWindow.setIcon(icon);
-  }
-
-  if (process.platform === 'win32') {
-    const icoPath = getValidIcoPath();
-    try {
-      splashWindow.setAppDetails({
-        appId: 'com.saizzi.orbit',
-        appIconPath: icoPath,
-        appIconIndex: 0,
-      });
-    } catch {}
   }
 
   if (isPackaged) {
@@ -5716,8 +5691,10 @@ function setupAutoUpdater() {
   }
 }
 
+let appIdentityRegistered = false;
 function registerWindowsAppIdentity(): void {
-  if (process.platform !== 'win32') return;
+  if (process.platform !== 'win32' || appIdentityRegistered) return;
+  appIdentityRegistered = true;
   try {
     const targetIco = getValidIcoPath(currentAppIconName);
     const programsPath = path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs');
@@ -5734,7 +5711,9 @@ function registerWindowsAppIdentity(): void {
     };
 
     const orbitLnk = path.join(programsPath, 'orBIT.lnk');
-    shell.writeShortcutLink(orbitLnk, 'create', shortcutDetails);
+    if (!fs.existsSync(orbitLnk)) {
+      shell.writeShortcutLink(orbitLnk, 'create', shortcutDetails);
+    }
 
     const oldLinks = [
       path.join(programsPath, 'Orbita.lnk'),
@@ -5743,31 +5722,17 @@ function registerWindowsAppIdentity(): void {
     for (const oldLink of oldLinks) {
       if (fs.existsSync(oldLink)) {
         try {
-          shell.writeShortcutLink(oldLink, 'create', shortcutDetails);
+          fs.unlinkSync(oldLink);
         } catch {}
       }
-    }
-
-    const regCommands = [
-      `reg delete "HKCU\\Software\\Classes\\AppUserModelId\\orBIT" /f`,
-      `reg delete "HKCU\\Software\\Classes\\AppUserModelId\\com.saizzi.orbita" /f`,
-      `reg add "HKCU\\Software\\Classes\\Applications\\electron.exe" /v FriendlyAppName /d "orBIT" /f`,
-      `reg add "HKCU\\Software\\Classes\\Applications\\electron.exe" /v ApplicationCompany /d "orBIT" /f`,
-      `reg add "HKCU\\Software\\Classes\\Applications\\electron.exe\\DefaultIcon" /ve /d "${targetIco},0" /f`,
-    ];
-
-    for (const cmd of regCommands) {
-      spawn('cmd.exe', ['/c', cmd], { windowsHide: true, stdio: 'ignore' });
     }
   } catch {}
 }
 
 app.whenReady().then(async () => {
   loadWindowSettings();
+  activeAppliedAppIcon = currentAppIconName || 'orbita1';
   registerWindowsAppIdentity();
-  if (process.platform === 'win32' && currentAppIconName) {
-    updateWindowsShortcutsAndTaskbar(currentAppIconName);
-  }
   if (!app.requestSingleInstanceLock()) {
     app.quit();
     return;
@@ -5929,9 +5894,6 @@ app.whenReady().then(async () => {
       }
       mainWindow.show();
       mainWindow.focus();
-      if (icon && !icon.isEmpty()) {
-        mainWindow.setIcon(icon);
-      }
       if (process.platform === 'win32' && nativeModule?.rustSetWindowIcon) {
         const icoPath = getValidIcoPath(currentAppIconName);
         if (icoPath) {

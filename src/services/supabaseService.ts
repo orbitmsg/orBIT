@@ -163,6 +163,55 @@ class SupabaseService {
     }
   }
 
+  async getPendingNonMessagesBatch(recipientIds: string[]): Promise<OfflineMessageRecord[]> {
+    if (!recipientIds || recipientIds.length === 0) return [];
+    const allRelays = relayRouter.getNodes();
+    const allNonMessages: OfflineMessageRecord[] = [];
+    const seenIds = new Set<string>();
+    const idsParam = recipientIds.map((id) => id.trim()).filter(Boolean).join(',');
+
+    for (const relay of allRelays) {
+      try {
+        const res = await fetch(`${relay.url}/relay/non-messages?recipientIds=${encodeURIComponent(idsParam)}`);
+        if (res.ok) {
+          const data = (await res.json()) as { non_messages: OfflineMessageRecord[] };
+          if (data?.non_messages && Array.isArray(data.non_messages)) {
+            for (const rec of data.non_messages) {
+              if (!seenIds.has(rec.id)) {
+                seenIds.add(rec.id);
+                allNonMessages.push(rec);
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+
+    if (allNonMessages.length > 0 || !this.client) {
+      return allNonMessages;
+    }
+
+    if (this.client) {
+      const { data, error } = await this.client
+        .from('non_messages')
+        .select('*')
+        .in('recipient_id', recipientIds)
+        .eq('delivered', false)
+        .order('created_at', { ascending: true });
+
+      if (!error && data) {
+        for (const rec of data) {
+          if (!seenIds.has(rec.id)) {
+            seenIds.add(rec.id);
+            allNonMessages.push(rec);
+          }
+        }
+      }
+    }
+
+    return allNonMessages;
+  }
+
   async getPendingNonMessages(recipientId: string): Promise<OfflineMessageRecord[]> {
     const allRelays = relayRouter.getNodes();
     for (const relay of allRelays) {

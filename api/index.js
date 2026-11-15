@@ -1002,13 +1002,15 @@ module.exports = async function handler(req, res) {
       const supabase = getSupabaseClient();
       if (!supabase) return sendError(res, 'Database not configured', 500);
       const recipientId = query.recipientId;
-      if (!recipientId) return sendError(res, 'Missing recipientId parameter', 400);
-      const { data, error } = await supabase
-        .from('non_messages')
-        .select('*')
-        .eq('recipient_id', recipientId)
-        .eq('delivered', false)
-        .order('created_at', { ascending: true });
+      const recipientIds = query.recipientIds ? query.recipientIds.split(',').map(s => s.trim()).filter(Boolean) : [];
+      if (!recipientId && recipientIds.length === 0) return sendError(res, 'Missing recipientId parameter', 400);
+      let queryBuilder = supabase.from('non_messages').select('*').eq('delivered', false).order('created_at', { ascending: true });
+      if (recipientIds.length > 0) {
+        queryBuilder = queryBuilder.in('recipient_id', recipientIds);
+      } else {
+        queryBuilder = queryBuilder.eq('recipient_id', recipientId);
+      }
+      const { data, error } = await queryBuilder;
       if (error) return sendError(res, error.message, 500);
       return sendJson(res, { non_messages: data || [] });
     }

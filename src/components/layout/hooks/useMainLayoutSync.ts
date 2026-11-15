@@ -187,10 +187,7 @@ export const useMainLayoutSync = ({
       }
 
       const confirmKeys = keysToCheck.map(k => `CONFIRM:${k}`);
-      const nestedConfirmations = await Promise.all(
-        confirmKeys.map(key => supabaseService.getPendingHandshakes(key).catch(() => []))
-      );
-      const confirmations = nestedConfirmations.flat();
+      const confirmations = await supabaseService.getPendingHandshakesBatch(confirmKeys).catch(() => []);
 
       for (const conf of confirmations) {
         const currentChats = useChatStore.getState().chats;
@@ -778,18 +775,7 @@ export const useMainLayoutSync = ({
       }
 
       try {
-        const allNonRecordsArrays = await Promise.all(
-          keysToCheck.map((key) => supabaseService.getPendingNonMessages(key).catch(() => []))
-        );
-        const nonRecordsMap = new Map<string, OfflineMessageRecord>();
-        for (const recArr of allNonRecordsArrays) {
-          for (const record of recArr) {
-            if (!nonRecordsMap.has(record.id)) {
-              nonRecordsMap.set(record.id, record);
-            }
-          }
-        }
-        const nonRecords = Array.from(nonRecordsMap.values());
+        const nonRecords = await supabaseService.getPendingNonMessagesBatch(keysToCheck).catch(() => []);
         const nonDeliveredIds: string[] = [];
         const nonBatchMessages: Array<{ chatId: string; message: any }> = [];
 
@@ -1407,6 +1393,9 @@ export const useMainLayoutSync = ({
     const PROFILE_TTL = 900000;
 
     for (const chat of privateChats) {
+      if (chat.name && chat.name !== 'Unknown' && chat.avatarUrl) {
+        continue;
+      }
       const lastCheck = lastProfileCheckTimeRef.current.get(chat.id) || 0;
       if (now - lastCheck < PROFILE_TTL) {
         continue;
@@ -1651,7 +1640,7 @@ export const useMainLayoutSync = ({
     const syncAll = async (force = false) => {
       if (isDestroyed || isSyncingRef.current) return;
       const now = Date.now();
-      const minInterval = force ? 500 : 2000;
+      const minInterval = force ? 2000 : 30000;
       if (now - lastSyncTimeRef.current < minInterval) return;
       lastSyncTimeRef.current = now;
       isSyncingRef.current = true;
@@ -1726,7 +1715,7 @@ export const useMainLayoutSync = ({
 
     const handleFocus = () => {
       const now = Date.now();
-      if (now - lastSyncTimeRef.current >= 4000) {
+      if (now - lastSyncTimeRef.current >= 30000) {
         syncAll(true);
       }
     };
@@ -1746,7 +1735,10 @@ export const useMainLayoutSync = ({
 
     const handleVisibility = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        syncAll(true);
+        const now = Date.now();
+        if (now - lastSyncTimeRef.current >= 30000) {
+          syncAll(false);
+        }
       }
     };
 
@@ -1756,7 +1748,7 @@ export const useMainLayoutSync = ({
     window.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('orbita:sync-now', handleSyncNow);
 
-    const interval = setInterval(() => syncAll(false), 30000);
+    const interval = setInterval(() => syncAll(false), 45000);
     const checkTimer = setInterval(() => {
       const navOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
       if (!navOnline) {

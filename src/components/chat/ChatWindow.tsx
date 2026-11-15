@@ -1327,6 +1327,7 @@ export const ChatWindow = memo(({ isMobileView = false, onBack }: ChatWindowProp
             ) : (
               <MessageList
                 messages={visibleMessages}
+                allMessages={messages}
                 startIndex={startIndex}
                 selectedIds={selection.selectedIds}
                 isSelectionMode={selection.isSelectionMode}

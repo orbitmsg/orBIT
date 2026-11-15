@@ -25,21 +25,19 @@ export const getOptimalMessageBatchSize = (): number => {
 };
 
 export const MessageRowWrapper = memo(
-  ({
-    index,
-    msg,
-    isSelected,
-    isSelectionMode,
-    renderFn,
-  }: {
+  (props: {
     index: number;
     msg: Message;
+    prevMsgId?: string | null;
+    nextMsgId?: string | null;
     isSelected: boolean;
     isSelectionMode: boolean;
     renderFn: (i: number, m: Message, isSelected: boolean, isSelectionMode: boolean) => React.ReactNode;
-  }) => renderFn(index, msg, isSelected, isSelectionMode) as React.ReactElement,
+  }) => props.renderFn(props.index, props.msg, props.isSelected, props.isSelectionMode) as React.ReactElement,
   (prev, next) =>
     prev.index === next.index &&
+    prev.prevMsgId === next.prevMsgId &&
+    prev.nextMsgId === next.nextMsgId &&
     prev.msg.id === next.msg.id &&
     prev.msg.status === next.msg.status &&
     prev.msg.text === next.msg.text &&
@@ -56,18 +54,21 @@ MessageRowWrapper.displayName = 'MessageRowWrapper';
 export const MessageList = memo(
   ({
     messages,
+    allMessages,
     startIndex,
     selectedIds,
     isSelectionMode,
     renderFn,
   }: {
     messages: Message[];
+    allMessages?: Message[];
     startIndex: number;
     selectedIds: Set<string>;
     isSelectionMode: boolean;
     renderFn: (i: number, m: Message, isSelected: boolean, isSelectionMode: boolean) => React.ReactNode;
   }) => {
     const virtualTopHeight = startIndex > 0 ? startIndex * 46 : 0;
+    const fullList = allMessages || messages;
     return (
       <>
         {virtualTopHeight > 0 ? (
@@ -76,12 +77,19 @@ export const MessageList = memo(
           <div style={{ flex: '1 1 auto', minHeight: '8px' }} />
         )}
         {messages.map((msg, idx) => {
+          const globalIdx = startIndex + idx;
+          const prevMsg = globalIdx > 0 ? fullList[globalIdx - 1] : null;
+          const nextMsg = globalIdx < fullList.length - 1 ? fullList[globalIdx + 1] : null;
+          const prevMsgId = prevMsg ? (prevMsg.id || `msg_${prevMsg.time}`) : null;
+          const nextMsgId = nextMsg ? (nextMsg.id || `msg_${nextMsg.time}`) : null;
           const isSelected = isSelectionMode && Boolean(msg.id && selectedIds.has(msg.id));
           return (
             <MessageRowWrapper
-              key={msg.id || `msg_${msg.time}_${startIndex + idx}`}
-              index={startIndex + idx}
+              key={msg.id || `msg_${msg.time}_${globalIdx}`}
+              index={globalIdx}
               msg={msg}
+              prevMsgId={prevMsgId}
+              nextMsgId={nextMsgId}
               isSelected={isSelected}
               isSelectionMode={isSelectionMode}
               renderFn={renderFn}
@@ -93,6 +101,7 @@ export const MessageList = memo(
   },
   (prev, next) =>
     prev.messages === next.messages &&
+    prev.allMessages === next.allMessages &&
     prev.startIndex === next.startIndex &&
     prev.selectedIds === next.selectedIds &&
     prev.isSelectionMode === next.isSelectionMode

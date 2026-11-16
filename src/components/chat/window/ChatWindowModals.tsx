@@ -1,22 +1,23 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, type Message } from '../../../store/useChatStore';
 import { mediaManager } from '../../../services/mediaManager';
-import { type ConfirmActionType } from '../../common/ActionConfirmModal';
+import { ActionConfirmModal, type ConfirmActionType } from '../../common/ActionConfirmModal';
 import { type MediaViewerItem } from '../TelegramMediaViewer';
-import { EmojiPicker } from '../EmojiPicker';
-import { DiscordFileLimitModal } from '../DiscordFileLimitModal';
-import { SendAsTxtModal } from '../SendAsTxtModal';
-import { FileAttachmentModal, type AttachedFile } from '../FileAttachmentModal';
-import { TelegramMediaViewer } from '../TelegramMediaViewer';
-import { ActionConfirmModal } from '../../common/ActionConfirmModal';
+import { type AttachedFile } from '../FileAttachmentModal';
 import { MessageContextMenu, type ContextMenuState } from '../MessageContextMenu';
-import { UnsafeLinkModal } from '../UnsafeLinkModal';
 import { AddGroupMemberModal } from '../AddGroupMemberModal';
-import { ForwardModal } from '../ForwardModal';
 import { parseMedia, decryptedUrlCache } from './chatWindowHelpers';
+
+const EmojiPicker = React.lazy(() => import('../EmojiPicker').then((m) => ({ default: m.EmojiPicker })));
+const DiscordFileLimitModal = React.lazy(() => import('../DiscordFileLimitModal').then((m) => ({ default: m.DiscordFileLimitModal })));
+const SendAsTxtModal = React.lazy(() => import('../SendAsTxtModal').then((m) => ({ default: m.SendAsTxtModal })));
+const FileAttachmentModal = React.lazy(() => import('../FileAttachmentModal').then((m) => ({ default: m.FileAttachmentModal })));
+const TelegramMediaViewer = React.lazy(() => import('../TelegramMediaViewer').then((m) => ({ default: m.TelegramMediaViewer })));
+const UnsafeLinkModal = React.lazy(() => import('../UnsafeLinkModal').then((m) => ({ default: m.UnsafeLinkModal })));
+const ForwardModal = React.lazy(() => import('../ForwardModal').then((m) => ({ default: m.ForwardModal })));
 
 export interface ChatWindowModalsProps {
   isDiscordFileLimitModalOpen: boolean;
@@ -167,67 +168,77 @@ export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
 
   return (
     <>
-      <DiscordFileLimitModal
-        isOpen={isDiscordFileLimitModalOpen}
-        onClose={() => setIsDiscordFileLimitModalOpen(false)}
-        maxMb={maxFileMb}
-      />
+      <Suspense fallback={null}>
+        {isDiscordFileLimitModalOpen && (
+          <DiscordFileLimitModal
+            isOpen={isDiscordFileLimitModalOpen}
+            onClose={() => setIsDiscordFileLimitModalOpen(false)}
+            maxMb={maxFileMb}
+          />
+        )}
 
-      <SendAsTxtModal
-        isOpen={isSendAsTxtModalOpen}
-        onClose={() => setIsSendAsTxtModalOpen(false)}
-        onSend={handleSendAsTxt}
-        textLength={inputTextLength}
-      />
+        {isSendAsTxtModalOpen && (
+          <SendAsTxtModal
+            isOpen={isSendAsTxtModalOpen}
+            onClose={() => setIsSendAsTxtModalOpen(false)}
+            onSend={handleSendAsTxt}
+            textLength={inputTextLength}
+          />
+        )}
 
-      <ActionConfirmModal
-        isOpen={confirmModal.isOpen}
-        type={confirmModal.type}
-        chatName={activeChatId === 'notes' ? t('connectModal.notes') : activeChat?.name}
-        avatarUrl={activeChat?.avatarUrl}
-        isNotes={Boolean(activeChatId === 'notes')}
-        selectedCount={confirmModal.selectedCount}
-        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false, type: null }))}
-        onConfirm={handleConfirmAction}
-      />
+        {confirmModal.isOpen && (
+          <ActionConfirmModal
+            isOpen={confirmModal.isOpen}
+            type={confirmModal.type}
+            chatName={activeChatId === 'notes' ? t('connectModal.notes') : activeChat?.name}
+            avatarUrl={activeChat?.avatarUrl}
+            isNotes={Boolean(activeChatId === 'notes')}
+            selectedCount={confirmModal.selectedCount}
+            onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false, type: null }))}
+            onConfirm={handleConfirmAction}
+          />
+        )}
 
-      {mediaViewerState.isOpen && (
-        <TelegramMediaViewer
-          key={`${mediaViewerState.customItems?.[0]?.url || chatMediaViewerItems[0]?.url || ''}_${mediaViewerState.initialIndex}`}
-          isOpen={mediaViewerState.isOpen}
-          items={mediaViewerState.customItems || chatMediaViewerItems}
-          initialIndex={mediaViewerState.initialIndex}
-          sharedSecret={sharedSecret ?? undefined}
-          onClose={() => setMediaViewerState((prev) => ({ ...prev, isOpen: false, customItems: [] }))}
-          onGoToMessage={handleMediaGoToMessage}
-          onForwardMessage={handleMediaForwardMessage}
-          onDeleteMessage={handleMediaDeleteMessage}
-          onOpenAllMedia={() => {
-            if (activeChatId) {
-              useChatStore.getState().setActiveProfileChatId(activeChatId);
-            }
-          }}
-        />
-      )}
+        {mediaViewerState.isOpen && (
+          <TelegramMediaViewer
+            key={`${mediaViewerState.customItems?.[0]?.url || chatMediaViewerItems[0]?.url || ''}_${mediaViewerState.initialIndex}`}
+            isOpen={mediaViewerState.isOpen}
+            items={mediaViewerState.customItems || chatMediaViewerItems}
+            initialIndex={mediaViewerState.initialIndex}
+            sharedSecret={sharedSecret ?? undefined}
+            onClose={() => setMediaViewerState((prev) => ({ ...prev, isOpen: false, customItems: [] }))}
+            onGoToMessage={handleMediaGoToMessage}
+            onForwardMessage={handleMediaForwardMessage}
+            onDeleteMessage={handleMediaDeleteMessage}
+            onOpenAllMedia={() => {
+              if (activeChatId) {
+                useChatStore.getState().setActiveProfileChatId(activeChatId);
+              }
+            }}
+          />
+        )}
 
-      <FileAttachmentModal
-        files={attachedFiles}
-        isOpen={isAttachmentModalOpen}
-        onClose={() => {
-          setAttachedFiles([]);
-          setIsAttachmentModalOpen(false);
-        }}
-        onAddFiles={handleAddMoreFiles}
-        onRemoveFile={(idx: number) => {
-          setAttachedFiles((prev) => {
-            const next = prev.filter((_, i) => i !== idx);
-            if (next.length === 0) setIsAttachmentModalOpen(false);
-            return next;
-          });
-        }}
-        onSend={handleSendFiles}
-        isSending={isSendingFiles}
-      />
+        {isAttachmentModalOpen && (
+          <FileAttachmentModal
+            files={attachedFiles}
+            isOpen={isAttachmentModalOpen}
+            onClose={() => {
+              setAttachedFiles([]);
+              setIsAttachmentModalOpen(false);
+            }}
+            onAddFiles={handleAddMoreFiles}
+            onRemoveFile={(idx: number) => {
+              setAttachedFiles((prev) => {
+                const next = prev.filter((_, i) => i !== idx);
+                if (next.length === 0) setIsAttachmentModalOpen(false);
+                return next;
+              });
+            }}
+            onSend={handleSendFiles}
+            isSending={isSendingFiles}
+          />
+        )}
+      </Suspense>
 
       <AnimatePresence>
         {isDragOver && (
@@ -340,12 +351,14 @@ export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
       }
 
       {isForwardModalOpen && (
-        <ForwardModal
-          isOpen={isForwardModalOpen}
-          onClose={() => setIsForwardModalOpen?.(false)}
-          messagesToForward={messagesToForward}
-          onForward={handleExecuteForward || (() => {})}
-        />
+        <Suspense fallback={null}>
+          <ForwardModal
+            isOpen={isForwardModalOpen}
+            onClose={() => setIsForwardModalOpen?.(false)}
+            messagesToForward={messagesToForward}
+            onForward={handleExecuteForward || (() => {})}
+          />
+        </Suspense>
       )}
 
       <style>{`
@@ -450,38 +463,44 @@ export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
       {typeof document !== 'undefined' && createPortal(
         <AnimatePresence>
           {isEmojiPanelOpen && (
-            <EmojiPicker
-              key="chat-emoji-picker"
-              anchorEl={emojiButtonRef.current}
-              headerEl={headerRef.current}
-              onSelect={handleEmojiSelect}
-              onSelectGif={handleSendGif}
-              onSelectSticker={handleSendSticker}
-              onClose={handleEmojiPanelClose}
-              recentEmojis={recentEmojis}
-              onRecentUpdate={addRecentEmoji}
-              onMouseEnter={handleEmojiMouseEnter}
-              onMouseLeave={handleEmojiMouseLeave}
-              onTabChange={setActivePickerTab}
-            />
+            <Suspense fallback={null}>
+              <EmojiPicker
+                key="chat-emoji-picker"
+                anchorEl={emojiButtonRef.current}
+                headerEl={headerRef.current}
+                onSelect={handleEmojiSelect}
+                onSelectGif={handleSendGif}
+                onSelectSticker={handleSendSticker}
+                onClose={handleEmojiPanelClose}
+                recentEmojis={recentEmojis}
+                onRecentUpdate={addRecentEmoji}
+                onMouseEnter={handleEmojiMouseEnter}
+                onMouseLeave={handleEmojiMouseLeave}
+                onTabChange={setActivePickerTab}
+              />
+            </Suspense>
           )}
         </AnimatePresence>,
         document.body
       )}
 
-      <UnsafeLinkModal
-        isOpen={unsafeLinkData.isOpen}
-        url={unsafeLinkData.url}
-        onClose={() => setUnsafeLinkData({ isOpen: false, url: '' })}
-      />
+      <Suspense fallback={null}>
+        {unsafeLinkData.isOpen && (
+          <UnsafeLinkModal
+            isOpen={unsafeLinkData.isOpen}
+            url={unsafeLinkData.url}
+            onClose={() => setUnsafeLinkData({ isOpen: false, url: '' })}
+          />
+        )}
 
-      {activeChat?.type === 'group' && (
-        <AddGroupMemberModal
-          isOpen={isAddMemberModalOpen}
-          onClose={() => setIsAddMemberModalOpen(false)}
-          group={activeChat}
-        />
-      )}
+        {activeChat?.type === 'group' && isAddMemberModalOpen && (
+          <AddGroupMemberModal
+            isOpen={isAddMemberModalOpen}
+            onClose={() => setIsAddMemberModalOpen(false)}
+            group={activeChat}
+          />
+        )}
+      </Suspense>
     </>
   );
 };

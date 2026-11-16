@@ -9,7 +9,7 @@ import {
   CustomMuteIcon,
   CustomUnmuteIcon,
   CustomClearHistoryIcon,
-} from '../../chat/ChatWindow';
+} from '../../chat/ChatIcons';
 
 export interface ChatContextMenuProps {
   chatContextMenu: { visible: boolean; x: number; y: number; chatId: string };

@@ -4778,12 +4778,22 @@ function initOrGetMediaWindow(initialPayload?: any): BrowserWindow {
     }
   });
 
-  mediaWindow.on('close', () => {
-    if (mediaWindow && !mediaWindow.isDestroyed()) {
+  mediaWindow.on('close', (e) => {
+    if (!isQuitting) {
+      e.preventDefault();
       saveMediaWindowState(mediaWindow, true);
+      currentMediaPayloadCache = null;
+      try {
+        mediaWindow.webContents.send('orbita:media-payload', null);
+      } catch {}
+      mediaWindow.hide();
+    } else {
+      if (mediaWindow && !mediaWindow.isDestroyed()) {
+        saveMediaWindowState(mediaWindow, true);
+      }
+      currentMediaPayloadCache = null;
+      mediaWindow = null;
     }
-    currentMediaPayloadCache = null;
-    mediaWindow = null;
   });
 
   mediaWindow.on('resize', () => {
@@ -4877,7 +4887,7 @@ function createOrShowMediaWindow(initialPayload?: any): BrowserWindow {
     }
   }
 
-  if (isExisting) {
+  if (isExisting && !win.webContents.isLoading()) {
     if (currentMediaPayloadCache && !win.isDestroyed()) {
       win.webContents.send('orbita:media-payload', currentMediaPayloadCache);
     }
@@ -4901,12 +4911,6 @@ function createOrShowMediaWindow(initialPayload?: any): BrowserWindow {
 }
 
 ipcMain.handle('orbita:open-media-window', (_event, payload?: any) => {
-  if (mediaWindow && !mediaWindow.isDestroyed() && payload) {
-    currentMediaPayloadCache = payload;
-    try {
-      mediaWindow.webContents.send('orbita:media-payload', payload);
-    } catch {}
-  }
   createOrShowMediaWindow(payload);
   return { success: true };
 });
@@ -4924,10 +4928,11 @@ ipcMain.handle('orbita:close-media-window', () => {
   if (mediaWindow && !mediaWindow.isDestroyed()) {
     saveMediaWindowState(mediaWindow, true);
     currentMediaPayloadCache = null;
-    mediaWindow.destroy();
-    mediaWindow = null;
+    try {
+      mediaWindow.webContents.send('orbita:media-payload', null);
+    } catch {}
+    mediaWindow.hide();
   }
-  trimAppMemory();
   return { success: true };
 });
 
@@ -4994,10 +4999,9 @@ ipcMain.handle('window:close', (event) => {
       saveMediaWindowState(mediaWindow, true);
       currentMediaPayloadCache = null;
       try {
-        mediaWindow.destroy();
+        mediaWindow.webContents.send('orbita:media-payload', null);
       } catch {}
-      mediaWindow = null;
-      trimAppMemory();
+      mediaWindow.hide();
     } else if (win === mainWindow) {
       if (showInTraySetting) {
         mainWindow.hide();
@@ -5441,6 +5445,14 @@ function createMainWindow() {
   } else {
     mainWindow.loadURL('http://127.0.0.1:5173');
   }
+
+  mainWindow.webContents.once('did-finish-load', () => {
+    setTimeout(() => {
+      if (!mediaWindow || mediaWindow.isDestroyed()) {
+        initOrGetMediaWindow();
+      }
+    }, 1500);
+  });
 
   mainWindow.on('minimize', () => {
     try {

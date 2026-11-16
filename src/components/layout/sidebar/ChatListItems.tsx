@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Archive } from 'lucide-react';
 import { DeveloperBadge } from '../../ui/DeveloperBadge';
 import { ActionIcon } from '../../chat/ChatHeader';
-import { CustomPinIcon } from '../../chat/ChatWindow';
+import { CustomPinIcon } from '../../chat/ChatIcons';
 import { ChannelMegaphoneIcon } from '../../common/ChannelMegaphoneIcon';
 import { GroupUsersIcon } from '../../common/GroupUsersIcon';
 import { Avatar } from '../../common/Avatar';

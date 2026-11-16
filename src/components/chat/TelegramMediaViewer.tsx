@@ -9,7 +9,6 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useDecryptedMedia } from '../../lib/media-utils';
-import { MD3CircularSpinner } from '../common/MD3CircularSpinner';
 import { mediaManager } from '../../services/mediaManager';
 import { arrayBufferToBase64 } from '../../utils/messageUtils';
 import { useToastStore } from '../../store/useToastStore';
@@ -1357,21 +1356,6 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                   zIndex: 2,
                 }}
               />
-              {!isCurrentMediaLoaded && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    pointerEvents: 'none',
-                    zIndex: 10,
-                  }}
-                >
-                  <MD3CircularSpinner size={60} color="var(--accent-color, #7C3AED)" />
-                </div>
-              )}
             </div>
           ) : isGif ? (
             displaySrc && (
@@ -1535,21 +1519,6 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 onDoubleClick={handleImageDoubleClick}
                 draggable={false}
               />
-              {!isCurrentMediaLoaded && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    pointerEvents: 'none',
-                    zIndex: 10,
-                  }}
-                >
-                  <MD3CircularSpinner size={60} color="var(--accent-color, #7C3AED)" />
-                </div>
-              )}
             </div>
           )
         ) : currentItem ? (
@@ -1605,19 +1574,6 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 />
               </div>
             )}
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                zIndex: 10,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                pointerEvents: 'none',
-              }}
-            >
-              <MD3CircularSpinner size={60} color="var(--accent-color, #7C3AED)" />
-            </div>
           </div>
         ) : null}
       </div>

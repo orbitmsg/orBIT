@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Forward } from 'lucide-react';
-import { CustomEditIcon, CustomReplyIcon } from '../ChatWindow';
+import { CustomEditIcon, CustomReplyIcon } from '../ChatIcons';
 import { ChannelMegaphoneIcon } from '../../common/ChannelMegaphoneIcon';
 import { markdownToHtml, formatPreviewText } from '../../../utils/messageUtils';
 import { Message } from '../../../store/useChatStore';

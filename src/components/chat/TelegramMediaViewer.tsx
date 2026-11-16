@@ -1372,30 +1372,6 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                   <MD3CircularSpinner size={60} color="var(--accent-color, #7C3AED)" />
                 </div>
               )}
-
-              <MediaViewerVideoControls
-                carouselItemsLength={carouselItems.length}
-                isPlaying={isPlaying}
-                areControlsVisible={areControlsVisible}
-                isVideoControlsHovered={isVideoControlsHovered}
-                isVideoProgressHovered={isVideoProgressHovered}
-                isMuted={isMuted}
-                volume={volume}
-                playbackRate={playbackRate}
-                currentTime={currentTime}
-                duration={duration}
-                videoProgressRef={videoProgressRef}
-                videoProgressFillRef={videoProgressFillRef}
-                videoTimeDisplayRef={videoTimeDisplayRef}
-                onTogglePlay={handleTogglePlay}
-                onToggleMute={handleToggleMute}
-                onVolumeChange={handleVolumeChange}
-                onSelectSpeed={handleSelectSpeed}
-                onProgressMouseDown={handleProgressMouseDown}
-                onProgressTouchStart={handleProgressTouchStart}
-                setIsVideoControlsHovered={setIsVideoControlsHovered}
-                setIsVideoProgressHovered={setIsVideoProgressHovered}
-              />
             </div>
           ) : isGif ? (
             displaySrc && (
@@ -1645,6 +1621,32 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
           </div>
         ) : null}
       </div>
+
+      {isVideo && (
+        <MediaViewerVideoControls
+          carouselItemsLength={carouselItems.length}
+          isPlaying={isPlaying}
+          areControlsVisible={areControlsVisible}
+          isVideoControlsHovered={isVideoControlsHovered}
+          isVideoProgressHovered={isVideoProgressHovered}
+          isMuted={isMuted}
+          volume={volume}
+          playbackRate={playbackRate}
+          currentTime={currentTime}
+          duration={duration}
+          videoProgressRef={videoProgressRef}
+          videoProgressFillRef={videoProgressFillRef}
+          videoTimeDisplayRef={videoTimeDisplayRef}
+          onTogglePlay={handleTogglePlay}
+          onToggleMute={handleToggleMute}
+          onVolumeChange={handleVolumeChange}
+          onSelectSpeed={handleSelectSpeed}
+          onProgressMouseDown={handleProgressMouseDown}
+          onProgressTouchStart={handleProgressTouchStart}
+          setIsVideoControlsHovered={setIsVideoControlsHovered}
+          setIsVideoProgressHovered={setIsVideoProgressHovered}
+        />
+      )}
 
       {currentItem && (
         <div

@@ -455,7 +455,7 @@ class AblyService {
       const now = Date.now();
       const activeMember = (members || []).find(
         (m) =>
-          (m.clientId === userId || !m.clientId || m.clientId === '') &&
+          (m.clientId === userId || (m.data && typeof m.data === 'object' && (m.data as any).userId === userId)) &&
           (m.data ? (typeof m.data === 'object' && 'status' in m.data ? m.data.status === 'online' : true) : true) &&
           (m.data && typeof m.data === 'object' && 'timestamp' in m.data ? (now - Number((m.data as any).timestamp)) < 90000 : true)
       );
@@ -465,7 +465,7 @@ class AblyService {
 
       if (!isOnline) {
         const sorted = (members || [])
-          .filter((m) => m.clientId === userId || !m.clientId)
+          .filter((m) => m.clientId === userId || (m.data && typeof m.data === 'object' && (m.data as any).userId === userId))
           .sort((a, b) => {
             const aTs = a.data && typeof a.data === 'object' && 'timestamp' in a.data ? (a.data as any).timestamp : 0;
             const bTs = b.data && typeof b.data === 'object' && 'timestamp' in b.data ? (b.data as any).timestamp : 0;
@@ -489,6 +489,9 @@ class AblyService {
     });
 
     const presenceHandler = (member: PresenceMessage) => {
+      if (member.clientId && member.clientId !== userId && !(member.data && typeof member.data === 'object' && (member.data as any).userId === userId)) {
+        return;
+      }
       const action = member.action;
       const cbs = this.presenceCallbacks.get(userId);
       if (!cbs || cbs.size === 0) return;

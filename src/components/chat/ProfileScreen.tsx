@@ -27,7 +27,7 @@ import { useChatStore, type Chat } from '../../store/useChatStore';
 import { useCallStore } from '../../store/useCallStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { MD3CircularSpinner } from '../common/MD3CircularSpinner';
-import { Avatar } from '../common/Avatar';
+import { Avatar, optimizeAvatarUrl } from '../common/Avatar';
 import { OnlineIndicator } from '../common/OnlineIndicator';
 import { NotesAvatar } from '../common/NotesAvatar';
 import { getOrbitaMediaUrl } from '../../lib/media-utils';
@@ -1004,6 +1004,8 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                 const avatarSenderId = isNotes ? myUserId : (chat.peerCode || (chat.id && chat.id.length === 36 ? chat.id : undefined));
                 const usersById = useChatStore.getState().usersById || {};
                 const actualSender = (avatarSenderId ? (avatarSenderId === myUserId ? myNickname : usersById[avatarSenderId]?.nickname) : undefined) || chat.name;
+                const avatarThumb = optimizeAvatarUrl(chat.avatarUrl, 128) || chat.avatarUrl;
+                const avatarBlur = optimizeAvatarUrl(chat.avatarUrl, 64) || chat.avatarUrl;
                 const avatarItems = [{
                   id: 'avatar',
                   url: chat.avatarUrl,
@@ -1013,6 +1015,9 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                   sender: actualSender,
                   senderId: avatarSenderId,
                   time: Date.now(),
+                  preview: avatarThumb,
+                  thumbnail: avatarThumb,
+                  blurPreview: avatarBlur,
                 }];
                 const orbita = (window as any).orbita;
                 if (orbita?.openMediaWindow) {

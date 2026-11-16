@@ -1152,8 +1152,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   preview={(msg.preview || (msg as any).thumbnail || (media.url?.startsWith('data:') || media.url?.startsWith('blob:') ? media.url : undefined)) || undefined}
                   thumbnail={(msg.thumbnail || msg.preview) || undefined}
                   blurPreview={(msg.blurPreview || msg.thumbnail) || undefined}
-                  isUploading={Boolean(msg.uploading)}
+                  isUploading={Boolean(msg.uploading && msg.status !== 'sent' && msg.status !== 'delivered' && msg.status !== 'read')}
                   onCancelUpload={() => {
+                    if (msg.status === 'sent' || msg.status === 'delivered' || msg.status === 'read') return;
                     cancelActiveMediaUpload((msg as any).chatId || (msg as any).chat_id || activeChatId, msg.id);
                   }}
                   timeNode={!(msg.text?.trim() && msg.text.trim().replace(/^\[(?:Photo|GIF|Sticker|Video)\]\s*https?:\/\/[^\s]+$/i, '').trim()) ? timeBadge(msg, isMessagePinned(msg)) : undefined}
@@ -1193,8 +1194,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                   preview={(msg.preview || (msg as any).thumbnail || (media.url?.startsWith('data:') && !media.url.startsWith('data:video') ? media.url : undefined)) || undefined}
                   thumbnail={(msg.thumbnail || msg.preview) || undefined}
                   blurPreview={(msg.blurPreview || msg.thumbnail) || undefined}
-                  isUploading={Boolean(msg.uploading)}
+                  isUploading={Boolean(msg.uploading && msg.status !== 'sent' && msg.status !== 'delivered' && msg.status !== 'read')}
                   onCancelUpload={() => {
+                    if (msg.status === 'sent' || msg.status === 'delivered' || msg.status === 'read') return;
                     cancelActiveMediaUpload((msg as any).chatId || (msg as any).chat_id || activeChatId, msg.id);
                   }}
                   timeNode={!(msg.text?.trim() && msg.text.trim().replace(/^\[(?:Photo|GIF|Sticker|Video)\]\s*https?:\/\/[^\s]+$/i, '').trim()) ? timeBadge(msg, isMessagePinned(msg)) : undefined}

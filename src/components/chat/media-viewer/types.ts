@@ -21,6 +21,7 @@ export interface MediaViewerItem {
   key?: string;
   sharedSecret?: string;
   thumbnail?: string;
+  preview?: string;
   blurPreview?: string;
   isOwn?: boolean;
 }

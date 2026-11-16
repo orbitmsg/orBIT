@@ -24,16 +24,14 @@ import type {
 class SupabaseService {
   private client: SupabaseClient | null = null;
   private failedRelays: Map<string, number> = new Map();
+  private presenceHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
-    const url = import.meta.env.VITE_SUPABASE_URL;
-    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    const url = import.meta.env.VITE_SUPABASE_URL || 'https://majmrtymawymomliowbz.supabase.co';
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ham1ydHltYXd5bW9tbGlvd2J6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzODQ5NzgsImV4cCI6MjA5OTk2MDk3OH0.VFyDYZdgRPm-_L-GObvfkKrilnE1GP7MJ2CWDW7-nRU';
 
     if (url && anonKey) {
       this.client = createClient(url, anonKey);
-      console.log('[SupabaseService] Initialized direct Supabase client fallback.');
-    } else {
-      console.log('[SupabaseService] Running in pure Relay/Worker mode (no client API keys needed).');
     }
   }
 
@@ -1880,6 +1878,101 @@ class SupabaseService {
       console.error('[Supabase] fetchPreKeyBundle error:', e);
       return null;
     }
+  }
+
+  async setUserPresence(userCode: string, isOnline: boolean): Promise<void> {
+    if (!userCode || !userCode.trim() || !this.client) return;
+    const cleanCode = userCode.trim();
+    const nowIso = new Date().toISOString();
+    const presenceTag = `<!--presence:${isOnline ? '1' : '0'}:${Date.now()}-->`;
+
+    try {
+      const { data: existing } = await this.client
+        .from('profile_updates')
+        .select('id, bio')
+        .or(`sender_code.eq.${cleanCode},chat_id.eq.${cleanCode}`)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        const row = existing[0];
+        const rawBio = row.bio || '';
+        const updatedBio = (rawBio.replace(/<!--presence:.*?-->/g, '').trim() + `\n${presenceTag}`).trim();
+        await this.client
+          .from('profile_updates')
+          .update({
+            bio: updatedBio,
+            updated_at: nowIso,
+          })
+          .eq('id', row.id);
+      } else {
+        await this.client
+          .from('profile_updates')
+          .insert({
+            chat_id: cleanCode,
+            sender_code: cleanCode,
+            bio: presenceTag,
+            updated_at: nowIso,
+          });
+      }
+    } catch {}
+  }
+
+  startPresenceHeartbeat(userCode: string): void {
+    this.stopPresenceHeartbeat(userCode);
+    if (!userCode || !userCode.trim()) return;
+    this.setUserPresence(userCode, true);
+    this.presenceHeartbeatTimer = setInterval(() => {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+      this.setUserPresence(userCode, true);
+    }, 40000);
+  }
+
+  stopPresenceHeartbeat(userCode?: string): void {
+    if (this.presenceHeartbeatTimer) {
+      clearInterval(this.presenceHeartbeatTimer);
+      this.presenceHeartbeatTimer = null;
+    }
+    if (userCode) {
+      this.setUserPresence(userCode, false);
+    }
+  }
+
+  async fetchPeersPresence(peerCodes: string[]): Promise<Map<string, { isOnline: boolean; lastSeen: number }>> {
+    const result = new Map<string, { isOnline: boolean; lastSeen: number }>();
+    if (!peerCodes || peerCodes.length === 0 || !this.client) return result;
+    const cleanCodes = Array.from(new Set(peerCodes.map((c) => c?.trim()).filter((c): c is string => Boolean(c))));
+    if (cleanCodes.length === 0) return result;
+
+    try {
+      const { data, error } = await this.client
+        .from('profile_updates')
+        .select('sender_code, chat_id, updated_at, bio')
+        .or(`sender_code.in.(${cleanCodes.join(',')}),chat_id.in.(${cleanCodes.join(',')})`);
+
+      if (!error && data && Array.isArray(data)) {
+        const now = Date.now();
+        for (const row of data) {
+          const key = row.sender_code || row.chat_id;
+          if (!key) continue;
+          const updatedTime = row.updated_at ? new Date(row.updated_at).getTime() : 0;
+          const bio = row.bio || '';
+          const match = bio.match(/<!--presence:(0|1):(\d+)-->/);
+          let isExplicitOnline = false;
+          let explicitTimestamp = updatedTime;
+          if (match) {
+            isExplicitOnline = match[1] === '1';
+            explicitTimestamp = Number(match[2]) || updatedTime;
+          }
+          const isFresh = (now - Math.max(updatedTime, explicitTimestamp)) < 90000;
+          const isOnline = isExplicitOnline && isFresh;
+          const lastSeen = isOnline ? now : Math.max(updatedTime, explicitTimestamp);
+          result.set(key, { isOnline, lastSeen });
+          if (row.sender_code) result.set(row.sender_code, { isOnline, lastSeen });
+          if (row.chat_id) result.set(row.chat_id, { isOnline, lastSeen });
+        }
+      }
+    } catch {}
+    return result;
   }
 }
 

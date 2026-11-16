@@ -1054,6 +1054,14 @@ export const useChatAudioAndFiles = ({
             return;
           }
 
+          const completedMediaItem: MediaItem = {
+            ...uploaded,
+            preview: file.preview || (file as any).thumbnail || uploaded.preview || file.blurPreview || null,
+            thumbnail: file.preview || (file as any).thumbnail || uploaded.thumbnail || file.blurPreview,
+            uploading: false,
+            senderId: senderUuid,
+          };
+
           try {
             await triggerMessage(
               postCaption,
@@ -1065,7 +1073,7 @@ export const useChatAudioAndFiles = ({
               },
               undefined,
               messageId,
-              undefined,
+              [completedMediaItem],
               undefined,
               targetChatId
             );

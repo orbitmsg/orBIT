@@ -1076,11 +1076,15 @@ export const useChatStore = create<ChatState>()(
           const currentRank = STATUS_RANK[currentStatus] || 1;
           const newRank = (status ? STATUS_RANK[status] : undefined) || 1;
           if (currentRank > newRank) return m;
+          const isDone = status === 'sent' || status === 'delivered' || status === 'read';
           return {
             ...m,
             status,
-            uploading: status === 'sent' || status === 'delivered' || status === 'read' ? false : m.uploading,
+            uploading: isDone ? false : m.uploading,
             read: status === 'read' ? true : m.read,
+            mediaItems: isDone && m.mediaItems
+              ? m.mediaItems.map((item: any) => ({ ...item, uploading: false }))
+              : m.mediaItems,
           };
         };
         const updated = messages.map(mapFn);
@@ -1857,17 +1861,20 @@ export const useChatStore = create<ChatState>()(
         if (typeof window !== 'undefined' && window.orbita?.setGhostMode) {
           window.orbita.setGhostMode(enabled).catch(() => {});
         }
-        if (typeof window !== 'undefined' && (window as any).ablyService) {
-          const authUserId = getAuthStoreState()?.userId;
-          const myId = authUserId || get().myCode;
-          if (myId) {
-            if (enabled) {
-              (window as any).ablyService.setOffline(myId);
-            } else {
-              (window as any).ablyService.setOnline(myId);
-            }
+        const authUserId = getAuthStoreState()?.userId;
+        const myId = authUserId || get().myCode;
+        if (myId) {
+          if (enabled) {
+            (window as any).ablyService?.setOffline(myId);
+            supabaseService.stopPresenceHeartbeat(myId);
+          } else {
+            (window as any).ablyService?.setOnline(myId);
+            supabaseService.startPresenceHeartbeat(myId);
           }
         }
+        import('../services/p2pDataService')
+          .then((m) => m.p2pDataService.broadcastPresence(!enabled))
+          .catch(() => {});
       },
       setReadReceiptsEnabled: (enabled) => set({ readReceiptsEnabled: enabled }),
       setTypingIndicatorsEnabled: (enabled) => set({ typingIndicatorsEnabled: enabled }),

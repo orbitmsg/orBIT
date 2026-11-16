@@ -724,32 +724,61 @@ export const useHandshakeListeners = ({
 
   useEffect(() => {
     const unsubscribes: (() => void)[] = [];
+    const privateChats = chats.filter((c) => c.type === 'private' && c.id !== 'notes');
+    const peerCodesToQuery: string[] = [];
 
-    chats.forEach((chat) => {
-      if (chat.type === 'private' && chat.id !== 'notes') {
-        const peerId = (chat.peerCode && chat.peerCode !== 'Unknown' && chat.peerCode.trim())
-          ? chat.peerCode.trim()
-          : (chat.id && chat.id.length === 36 && !chat.id.includes('-'))
-            ? chat.id.trim()
-            : null;
-        if (!peerId) return;
+    privateChats.forEach((chat) => {
+      const peerId = (chat.peerCode && chat.peerCode !== 'Unknown' && chat.peerCode.trim())
+        ? chat.peerCode.trim()
+        : (chat.id && chat.id.length === 36 && !chat.id.includes('-'))
+          ? chat.id.trim()
+          : null;
+      if (!peerId) return;
 
-        const unsubscribe = ablyService.subscribeToUserPresence(
-          peerId,
-          (isOnline, lastSeen) => {
-            const current = useChatStore.getState().chats.find(c => c.id === chat.id);
-            if (current && current.online === isOnline && (lastSeen ? current.lastSeen === lastSeen : true)) return;
-            updateChat(chat.id, {
-              online: isOnline,
-              ...(lastSeen ? { lastSeen } : {}),
-            });
-          }
-        );
-        unsubscribes.push(unsubscribe);
+      peerCodesToQuery.push(peerId);
+      if (chat.id && chat.id !== peerId) {
+        peerCodesToQuery.push(chat.id.trim());
       }
+
+      const unsubscribe = ablyService.subscribeToUserPresence(
+        peerId,
+        (isOnline, lastSeen) => {
+          const current = useChatStore.getState().chats.find((c) => c.id === chat.id);
+          if (current && current.online === isOnline && (lastSeen ? current.lastSeen === lastSeen : true)) return;
+          updateChat(chat.id, {
+            online: isOnline,
+            ...(lastSeen ? { lastSeen } : {}),
+          });
+        }
+      );
+      unsubscribes.push(unsubscribe);
     });
 
+    const syncDbPresence = async () => {
+      if (peerCodesToQuery.length === 0) return;
+      try {
+        const presenceMap = await supabaseService.fetchPeersPresence(peerCodesToQuery);
+        for (const chat of privateChats) {
+          const peerId = chat.peerCode?.trim();
+          const info = (peerId && presenceMap.get(peerId)) || presenceMap.get(chat.id);
+          if (info) {
+            const current = useChatStore.getState().chats.find((c) => c.id === chat.id);
+            if (current && (current.online !== info.isOnline || (info.lastSeen && current.lastSeen !== info.lastSeen))) {
+              updateChat(chat.id, {
+                online: info.isOnline,
+                lastSeen: info.lastSeen,
+              });
+            }
+          }
+        }
+      } catch {}
+    };
+
+    syncDbPresence();
+    const intervalId = setInterval(syncDbPresence, 45000);
+
     return () => {
+      clearInterval(intervalId);
       unsubscribes.forEach((unsubscribe) => unsubscribe());
     };
   }, [chatPresenceKey, updateChat]);

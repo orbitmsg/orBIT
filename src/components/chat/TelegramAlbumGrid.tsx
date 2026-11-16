@@ -98,8 +98,9 @@ const AlbumTile = memo(({
     (item.url && /\.(mp4|mov|avi|webm|mkv|m4v)(\?.*)?$/i.test(item.url))
   );
 
-  const isUploading = Boolean(item.uploading || (isOwn && (msg.uploading || msg.status === 'sending')));
-  const isFailed = Boolean(isOwn && msg.status === 'error');
+  const isDeliveredOrSent = msg.status === 'sent' || msg.status === 'delivered' || msg.status === 'read';
+  const isUploading = !isDeliveredOrSent && Boolean(item.uploading || (isOwn && (msg.uploading || msg.status === 'sending')));
+  const isFailed = Boolean(isOwn && (msg.status === 'error' || msg.status === 'failed'));
   const shouldAutoLoad = useChatStore((state) => state.shouldAutoLoadMedia(isVideo ? 'video' : 'photo', item.size, isOwn));
   const autoLoad = !isUploading && (isGif || shouldAutoLoad);
   const effectiveSecret = item.key || (item as any).mediaKey || (msg as any).mediaKey || (msg as any).key || (msg as any).mediaItems?.[itemIdx]?.key || sharedSecret;
@@ -114,8 +115,9 @@ const AlbumTile = memo(({
   );
 
   const handleCancelUpload = useCallback(() => {
+    if (isDeliveredOrSent) return;
     cancelActiveMediaUpload(chatId || (msg as any).chatId || (msg as any).chat_id, msg.id);
-  }, [msg.id, chatId, (msg as any).chatId, (msg as any).chat_id]);
+  }, [isDeliveredOrSent, msg.id, chatId, (msg as any).chatId, (msg as any).chat_id]);
 
   const handleCancelDownload = useCallback(() => {
     cancel();

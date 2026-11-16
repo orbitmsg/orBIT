@@ -143,11 +143,6 @@ extern "system" {
     fn SetClassLongPtrW(hWnd: isize, nIndex: i32, dwNewLong: isize) -> isize;
 }
 
-#[link(name = "shell32")]
-extern "system" {
-    fn SHChangeNotify(wEventId: i32, uFlags: u32, dwItem1: *const std::ffi::c_void, dwItem2: *const std::ffi::c_void);
-}
-
 #[link(name = "gdi32")]
 extern "system" {
     fn CreateSolidBrush(color: u32) -> isize;
@@ -580,8 +575,6 @@ pub fn rust_set_window_icon(hwnd_buf: Buffer, ico_path: String) -> bool {
                 const GCLP_HICONSM: i32 = -34;
                 SetClassLongPtrW(hwnd_val, GCLP_HICON, primary_big);
                 SetClassLongPtrW(hwnd_val, GCLP_HICONSM, primary_small);
-
-                SHChangeNotify(0x08000000, 0, std::ptr::null(), std::ptr::null());
                 return true;
             }
         }

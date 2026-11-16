@@ -4005,8 +4005,11 @@ function getValidIcoPath(iconName?: string): string {
   return process.execPath;
 }
 
+let lastUpdatedShortcutIcon = '';
 function updateWindowsShortcutsAndTaskbar(iconName: string): void {
   if (process.platform !== 'win32') return;
+  if (lastUpdatedShortcutIcon === iconName) return;
+  lastUpdatedShortcutIcon = iconName;
   try {
     const icoPath = getValidIcoPath(iconName);
     if (!icoPath || !fs.existsSync(icoPath)) return;
@@ -4017,8 +4020,6 @@ function updateWindowsShortcutsAndTaskbar(iconName: string): void {
       path.join(app.getPath('appData'), 'Microsoft', 'Internet Explorer', 'Quick Launch', 'User Pinned', 'TaskBar'),
       path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs'),
       path.join(process.env.ProgramData || 'C:\\ProgramData', 'Microsoft', 'Windows', 'Start Menu', 'Programs'),
-      app.getPath('desktop'),
-      path.join(process.env.PUBLIC || 'C:\\Users\\Public', 'Desktop'),
     ];
 
     const updateLnk = (lnkPath: string) => {

@@ -211,6 +211,14 @@ export const usePrivateChatSubscriptions = ({
         return;
       }
 
+      if (data.type === 'presence') {
+        updateChat(chatId, {
+          online: Boolean(data.isOnline),
+          lastSeen: data.timestamp || Date.now(),
+        });
+        return;
+      }
+
       if (data.type === 'system') {
         if (data.action === 'clear-history') {
           useChatStore.setState((state) => ({
@@ -586,6 +594,14 @@ export const usePrivateChatSubscriptions = ({
         if (useChatStore.getState().activeChatId === targetChatId) {
           useChatStore.getState().setActiveChat(null);
         }
+        return;
+      }
+
+      if (data.type === 'presence') {
+        updateChat(chatId, {
+          online: Boolean(data.isOnline),
+          lastSeen: data.timestamp || Date.now(),
+        });
         return;
       }
 

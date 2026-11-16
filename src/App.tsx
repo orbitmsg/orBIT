@@ -26,6 +26,7 @@ import { useAccountStore } from './services/accountManager';
 import { appVisibility } from './utils/appVisibility';
 import { initializeIdentityKeys } from './lib/identityKeys';
 import { optimizeAvatarUrl } from './components/common/Avatar';
+import { supabaseService } from './services/supabaseService';
 
 appVisibility.init();
 
@@ -531,11 +532,13 @@ function App() {
       ablyService.connect(clientId).catch((error) => {
         console.error('[App] Failed to connect to Ably:', error);
       });
+      supabaseService.startPresenceHeartbeat(clientId);
     }
     return () => {
       const activeId = myCode || userId;
       if (activeId) {
         ablyService.setOffline(activeId);
+        supabaseService.stopPresenceHeartbeat(activeId);
       }
       ablyService.disconnect();
     };
@@ -546,6 +549,7 @@ function App() {
       const clientId = myCode || userId;
       if (clientId) {
         ablyService.setOffline(clientId);
+        supabaseService.stopPresenceHeartbeat(clientId);
       }
       ablyService.disconnect();
     };
@@ -557,7 +561,7 @@ function App() {
       window.removeEventListener('beforeunload', handleUnload);
       window.removeEventListener('pagehide', handleUnload);
     };
-  }, [myCode, nickname]);
+  }, [myCode, userId, nickname]);
 
   if (!isHydrated) {
     return (

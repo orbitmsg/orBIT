@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useChatStore } from '../../store/useChatStore';
-import { Avatar } from '../common/Avatar';
+import { Avatar, optimizeAvatarUrl } from '../common/Avatar';
 import { DeveloperBadge, DeveloperToast } from '../ui/DeveloperBadge';
 import { LinkCopiedToast } from '../common/LinkCopiedToast';
 import { NicknameEditModal } from './SettingsScreen';
@@ -671,6 +671,8 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                                 const orbita = (window as any).orbita;
                                 const myUid = useAuthStore.getState().userId;
                                 const myNick = useAuthStore.getState().nickname || nickname;
+                                const avatarThumb = optimizeAvatarUrl(avatarUrl, 128) || avatarUrl;
+                                const avatarBlur = optimizeAvatarUrl(avatarUrl, 64) || avatarUrl;
                                 if (orbita?.openMediaWindow) {
                                   orbita.openMediaWindow({
                                     items: [{
@@ -683,6 +685,9 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                                       senderId: myUid,
                                       isOwn: true,
                                       time: Date.now(),
+                                      preview: avatarThumb,
+                                      thumbnail: avatarThumb,
+                                      blurPreview: avatarBlur,
                                     }],
                                     initialIndex: 0,
                                     usersById: useChatStore.getState().usersById,
@@ -1166,6 +1171,9 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                   senderId: useAuthStore.getState().userId,
                   isOwn: true,
                   time: Date.now(),
+                  preview: optimizeAvatarUrl(avatarUrl, 128) || avatarUrl,
+                  thumbnail: optimizeAvatarUrl(avatarUrl, 128) || avatarUrl,
+                  blurPreview: optimizeAvatarUrl(avatarUrl, 64) || avatarUrl,
                 }]}
                 initialIndex={0}
                 showCarouselAlways={false}

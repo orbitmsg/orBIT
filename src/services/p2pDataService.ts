@@ -214,9 +214,28 @@ class P2PDataService {
   private setupDataChannel(chatId: string, dc: RTCDataChannel): void {
     this.dataChannels.set(chatId, dc);
 
+    dc.onopen = () => {
+      const isOnline = !useChatStore.getState().ghostModeEnabled;
+      this.send(chatId, {
+        type: 'presence',
+        isOnline,
+        timestamp: Date.now(),
+      });
+      useChatStore.getState().updateChat(chatId, {
+        online: true,
+        lastSeen: Date.now(),
+      });
+    };
+
     dc.onmessage = (event) => {
       try {
         const parsed = JSON.parse(event.data);
+        if (parsed && parsed.type === 'presence') {
+          useChatStore.getState().updateChat(chatId, {
+            online: Boolean(parsed.isOnline),
+            lastSeen: parsed.timestamp || Date.now(),
+          });
+        }
         const listeners = this.messageListeners.get(chatId);
         if (listeners) {
           for (const cb of listeners) {
@@ -230,11 +249,42 @@ class P2PDataService {
 
     dc.onclose = () => {
       this.dataChannels.delete(chatId);
+      useChatStore.getState().updateChat(chatId, {
+        online: false,
+        lastSeen: Date.now(),
+      });
     };
 
     dc.onerror = () => {
       this.dataChannels.delete(chatId);
+      useChatStore.getState().updateChat(chatId, {
+        online: false,
+        lastSeen: Date.now(),
+      });
     };
+  }
+
+  public broadcastPresence(isOnline: boolean): void {
+    const payload = {
+      type: 'presence',
+      isOnline,
+      timestamp: Date.now(),
+    };
+    for (const dc of this.dataChannels.values()) {
+      if (dc && dc.readyState === 'open') {
+        try {
+          dc.send(JSON.stringify(payload));
+        } catch {}
+      }
+    }
+  }
+
+  public sendPresence(chatId: string, isOnline: boolean): boolean {
+    return this.send(chatId, {
+      type: 'presence',
+      isOnline,
+      timestamp: Date.now(),
+    });
   }
 
   public close(chatId: string): void {

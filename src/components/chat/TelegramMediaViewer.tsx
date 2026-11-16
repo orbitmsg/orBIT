@@ -9,7 +9,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useDecryptedMedia } from '../../lib/media-utils';
-import { AudioCoverWithPlay } from '../audio/AudioCoverWithPlay';
+import { MD3CircularSpinner } from '../common/MD3CircularSpinner';
 import { mediaManager } from '../../services/mediaManager';
 import { arrayBufferToBase64 } from '../../utils/messageUtils';
 import { useToastStore } from '../../store/useToastStore';
@@ -71,6 +71,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
   const [isVideoProgressHovered, setIsVideoProgressHovered] = useState(false);
   const isRepairingRef = useRef(false);
   const [videoFirstFrame, setVideoFirstFrame] = useState<string | null>(null);
+  const [isMediaLoaded, setIsMediaLoaded] = useState(false);
 
   const handleInstantClose = useCallback(() => {
     if (videoRef.current) {
@@ -274,7 +275,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
   const validDirectUrl = currentItem?.directUrl || null;
   const hasDirectReady = Boolean(validDirectUrl && (validDirectUrl.startsWith('blob:') || validDirectUrl.startsWith('data:') || validDirectUrl.startsWith('http')));
 
-  const { blobUrl, blob, progress, cancel, isLoading } = useDecryptedMedia(
+  const { blobUrl, blob } = useDecryptedMedia(
     currentItem?.url || null,
     effectiveSecret,
     currentItem?.name,
@@ -302,7 +303,12 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
   const validBlobUrl = blobUrl || null;
   const validCachedUrl = cachedDecrypted?.blobUrl || null;
   const displaySrc = fallbackBlobUrl || (hasDirectReady ? validDirectUrl : null) || validCachedUrl || validBlobUrl || (isPlaintextUrl ? currentItem?.url : null) || validDirectUrl;
-  const previewSrc = currentItem?.thumbnail || currentItem?.blurPreview || videoFirstFrame;
+  const previewSrc = currentItem?.thumbnail || currentItem?.blurPreview || (currentItem as any)?.preview || videoFirstFrame;
+  const placeholderSrc = previewSrc || currentItem?.thumbnail || currentItem?.blurPreview || (currentItem as any)?.preview || (isPhoto ? displaySrc || currentItem?.url : undefined);
+
+  useEffect(() => {
+    setIsMediaLoaded(false);
+  }, [currentIndex, displaySrc, currentItem?.id]);
 
   useEffect(() => {
     if (!isOpen || !isVideo || !displaySrc) return;
@@ -1162,6 +1168,37 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
               onMouseEnter={() => setIsVideoControlsHovered(true)}
               onMouseLeave={() => setIsVideoControlsHovered(false)}
             >
+              {placeholderSrc && !isMediaLoaded && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    pointerEvents: 'none',
+                    zIndex: 1,
+                  }}
+                >
+                  <img
+                    src={placeholderSrc}
+                    alt=""
+                    draggable={false}
+                    style={{
+                      maxWidth: '100%',
+                      maxHeight: '100%',
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      filter: 'blur(20px)',
+                      transform: 'scale(1.05)',
+                      pointerEvents: 'none',
+                      userSelect: 'none',
+                    }}
+                  />
+                </div>
+              )}
               <video
                 key={displaySrc || currentItem?.id || String(currentIndex)}
                 ref={videoRef}
@@ -1189,9 +1226,11 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                   }
                 }}
                 onLoadedData={() => {
+                  setIsMediaLoaded(true);
                   captureVideoFrame();
                 }}
                 onCanPlay={() => {
+                  setIsMediaLoaded(true);
                   captureVideoFrame();
                   if (videoRef.current && isPlaying && videoRef.current.paused) {
                     videoRef.current.play().catch(() => {});
@@ -1277,10 +1316,41 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                   display: 'block',
                   transform: (rotation !== 0 || zoomScale > 1 || panOffset.x !== 0 || panOffset.y !== 0)
                     ? `translate3d(${panOffset.x}px, ${panOffset.y}px, 0) rotate(${rotation}deg) scale(${zoomScale})`
-                    : 'none',
-                  transition: 'none',
+                    : (isMediaLoaded ? 'none' : 'scale(1.03)'),
+                  filter: isMediaLoaded ? 'blur(0px)' : 'blur(20px)',
+                  transition: isMediaLoaded ? 'filter 0.25s ease, transform 0.25s ease' : 'none',
+                  position: 'relative',
+                  zIndex: 2,
                 }}
               />
+              {!isMediaLoaded && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    pointerEvents: 'none',
+                    zIndex: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      background: 'rgba(15, 17, 26, 0.65)',
+                      backdropFilter: 'blur(8px)',
+                      padding: '12px',
+                      borderRadius: '50%',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <MD3CircularSpinner size="medium" color="var(--accent-color, #7C3AED)" />
+                  </div>
+                </div>
+              )}
 
               <MediaViewerVideoControls
                 carouselItemsLength={carouselItems.length}
@@ -1369,38 +1439,120 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
               />
             )
           ) : (
-            <img
-              src={displaySrc}
-              alt=""
-              decoding="async"
-              loading="eager"
-              onLoad={(e) => {
-                const img = e.currentTarget;
-                if (img.naturalWidth && img.naturalHeight) {
-                  setMediaDimensions({ width: img.naturalWidth, height: img.naturalHeight });
-                }
-              }}
+            <div
               style={{
+                position: 'relative',
                 maxWidth: zoomScale > 1 ? 'none' : '100%',
                 maxHeight: zoomScale > 1 ? 'none' : '100%',
                 width: zoomScale > 1 ? 'auto' : '100%',
                 height: zoomScale > 1 ? 'auto' : '100%',
-                objectFit: 'contain',
-                borderRadius: 0,
-                transform: (rotation !== 0 || zoomScale > 1 || panOffset.x !== 0 || panOffset.y !== 0)
-                  ? `translate3d(${panOffset.x}px, ${panOffset.y}px, 0) rotate(${rotation}deg) scale(${zoomScale})`
-                  : 'none',
-                transition: 'none',
-                cursor: areControlsVisible ? (zoomScale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default') : 'none',
-                pointerEvents: 'auto',
-                display: 'block',
-                userSelect: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
               }}
-              onClick={(e) => e.stopPropagation()}
-              onMouseDown={handleImageMouseDown}
-              onDoubleClick={handleImageDoubleClick}
-              draggable={false}
-            />
+            >
+              {placeholderSrc && !isMediaLoaded && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    pointerEvents: 'none',
+                    zIndex: 1,
+                  }}
+                >
+                  <img
+                    src={placeholderSrc}
+                    alt=""
+                    draggable={false}
+                    style={{
+                      maxWidth: '100%',
+                      maxHeight: '100%',
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      filter: 'blur(20px)',
+                      transform: 'scale(1.05)',
+                      pointerEvents: 'none',
+                      userSelect: 'none',
+                    }}
+                  />
+                </div>
+              )}
+              <img
+                ref={(el) => {
+                  if (el && el.complete && el.naturalWidth > 0 && !isMediaLoaded) {
+                    setIsMediaLoaded(true);
+                  }
+                }}
+                src={displaySrc}
+                alt=""
+                decoding="async"
+                loading="eager"
+                onLoad={(e) => {
+                  setIsMediaLoaded(true);
+                  const img = e.currentTarget;
+                  if (img.naturalWidth && img.naturalHeight) {
+                    setMediaDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+                  }
+                }}
+                style={{
+                  maxWidth: zoomScale > 1 ? 'none' : '100%',
+                  maxHeight: zoomScale > 1 ? 'none' : '100%',
+                  width: zoomScale > 1 ? 'auto' : '100%',
+                  height: zoomScale > 1 ? 'auto' : '100%',
+                  objectFit: 'contain',
+                  borderRadius: 0,
+                  transform: (rotation !== 0 || zoomScale > 1 || panOffset.x !== 0 || panOffset.y !== 0)
+                    ? `translate3d(${panOffset.x}px, ${panOffset.y}px, 0) rotate(${rotation}deg) scale(${zoomScale})`
+                    : (isMediaLoaded ? 'none' : 'scale(1.03)'),
+                  filter: isMediaLoaded ? 'blur(0px)' : 'blur(20px)',
+                  transition: isMediaLoaded ? 'filter 0.25s ease, transform 0.25s ease' : 'none',
+                  cursor: areControlsVisible ? (zoomScale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default') : 'none',
+                  pointerEvents: 'auto',
+                  display: 'block',
+                  userSelect: 'none',
+                  position: 'relative',
+                  zIndex: 2,
+                }}
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={handleImageMouseDown}
+                onDoubleClick={handleImageDoubleClick}
+                draggable={false}
+              />
+              {!isMediaLoaded && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    pointerEvents: 'none',
+                    zIndex: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      background: 'rgba(15, 17, 26, 0.65)',
+                      backdropFilter: 'blur(8px)',
+                      padding: '12px',
+                      borderRadius: '50%',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <MD3CircularSpinner size="medium" color="var(--accent-color, #7C3AED)" />
+                  </div>
+                </div>
+              )}
+            </div>
           )
         ) : currentItem ? (
           <div
@@ -1414,7 +1566,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
               pointerEvents: 'auto',
             }}
           >
-            {previewSrc && (
+            {placeholderSrc && (
               <div
                 style={{
                   position: 'absolute',
@@ -1427,7 +1579,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 }}
               >
                 <img
-                  src={previewSrc}
+                  src={placeholderSrc}
                   alt=""
                   style={{
                     aspectRatio: mediaDimensions ? `${mediaDimensions.width} / ${mediaDimensions.height}` : undefined,
@@ -1437,7 +1589,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                     height: '100%',
                     objectFit: 'contain',
                     filter: 'blur(20px)',
-                    transform: 'none',
+                    transform: 'scale(1.05)',
                     pointerEvents: 'none',
                     userSelect: 'none',
                   }}
@@ -1445,31 +1597,31 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 />
               </div>
             )}
-            {isLoading && !hasDirectReady && !previewSrc && (
+            <div
+              style={{
+                position: 'relative',
+                zIndex: 10,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                pointerEvents: 'auto',
+              }}
+            >
               <div
                 style={{
-                  position: 'relative',
-                  zIndex: 10,
+                  background: 'rgba(15, 17, 26, 0.65)',
+                  backdropFilter: 'blur(8px)',
+                  padding: '12px',
+                  borderRadius: '50%',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  pointerEvents: 'auto',
                 }}
               >
-                <AudioCoverWithPlay
-                  cover={null}
-                  size={54}
-                  state="downloading"
-                  progress={progress}
-                  customBg="rgba(15, 17, 26, 0.75)"
-                  onClick={() => {
-                    if (cancel) cancel();
-                  }}
-                  onCancel={cancel}
-                  ariaLabel={t('common.loading', 'Загрузка...')}
-                />
+                <MD3CircularSpinner size="medium" color="var(--accent-color, #7C3AED)" />
               </div>
-            )}
+            </div>
           </div>
         ) : null}
       </div>

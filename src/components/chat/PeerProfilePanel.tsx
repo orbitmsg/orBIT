@@ -8,7 +8,7 @@ import { supabaseService } from '../../services/supabaseService';
 import { SUPPORT_AVATAR_URL } from '../../services/supportService';
 import { formatLastSeen } from '../../utils/messageUtils';
 import { formatBirthday } from '../../utils/birthday';
-import { Avatar } from '../common/Avatar';
+import { Avatar, optimizeAvatarUrl } from '../common/Avatar';
 import { OnlineIndicator } from '../common/OnlineIndicator';
 import { VerifiedBadge } from '../common/VerifiedBadge';
 import { DeveloperBadge } from '../ui/DeveloperBadge';
@@ -217,6 +217,8 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
           : usersById[avatarSenderId]?.nickname
         : undefined) || effectiveChat.name;
 
+    const avatarThumb = optimizeAvatarUrl(avatarUrl, 128) || avatarUrl;
+    const avatarBlur = optimizeAvatarUrl(avatarUrl, 64) || avatarUrl;
     const avatarItems: MediaViewerItem[] = [
       {
         id: 'avatar',
@@ -227,6 +229,9 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
         sender: actualSender,
         senderId: avatarSenderId,
         time: Date.now(),
+        preview: avatarThumb,
+        thumbnail: avatarThumb,
+        blurPreview: avatarBlur,
       },
     ];
 

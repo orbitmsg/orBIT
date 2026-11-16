@@ -4,15 +4,24 @@ import { ActionConfirmModal, type ConfirmActionType } from '../common/ActionConf
 import type { ChannelInfo } from '../../services/channelService';
 import { useChatStore, type IncomingFriendRequest } from '../../store/useChatStore';
 
-const ConnectModal = lazy(() => import('./ConnectModal').then(m => ({ default: m.ConnectModal })));
-const MyProfileModal = lazy(() => import('../chat/MyProfileModal').then(m => ({ default: m.MyProfileModal })));
-const CallsModal = lazy(() => import('../call/CallsModal').then(m => ({ default: m.CallsModal })));
-const FriendRequestsModal = lazy(() => import('./FriendRequestsModal').then(m => ({ default: m.FriendRequestsModal })));
-const DeleteAccountModal = lazy(() => import('../common/DeleteAccountModal').then(m => ({ default: m.DeleteAccountModal })));
-const IncomingCallModal = lazy(() => import('../call/IncomingCallModal').then(m => ({ default: m.IncomingCallModal })));
-const CallWindow = lazy(() => import('../call/CallWindow').then(m => ({ default: m.CallWindow })));
-const DevicePermissionModal = lazy(() => import('../common/DevicePermissionModal').then(m => ({ default: m.DevicePermissionModal })));
-const GroupInviteModal = lazy(() => import('../chat/GroupInviteModal').then(m => ({ default: m.GroupInviteModal })));
+const lazyRetry = <T,>(fn: () => Promise<T>, retries = 2, interval = 500): Promise<T> => {
+  return fn().catch((err) => {
+    if (retries <= 0) throw err;
+    return new Promise((resolve) => setTimeout(resolve, interval)).then(() =>
+      lazyRetry(fn, retries - 1, interval)
+    );
+  });
+};
+
+const ConnectModal = lazy(() => lazyRetry(() => import('./ConnectModal')).then(m => ({ default: m.ConnectModal })));
+const MyProfileModal = lazy(() => lazyRetry(() => import('../chat/MyProfileModal')).then(m => ({ default: m.MyProfileModal })));
+const CallsModal = lazy(() => lazyRetry(() => import('../call/CallsModal')).then(m => ({ default: m.CallsModal })));
+const FriendRequestsModal = lazy(() => lazyRetry(() => import('./FriendRequestsModal')).then(m => ({ default: m.FriendRequestsModal })));
+const DeleteAccountModal = lazy(() => lazyRetry(() => import('../common/DeleteAccountModal')).then(m => ({ default: m.DeleteAccountModal })));
+const IncomingCallModal = lazy(() => lazyRetry(() => import('../call/IncomingCallModal')).then(m => ({ default: m.IncomingCallModal })));
+const CallWindow = lazy(() => lazyRetry(() => import('../call/CallWindow')).then(m => ({ default: m.CallWindow })));
+const DevicePermissionModal = lazy(() => lazyRetry(() => import('../common/DevicePermissionModal')).then(m => ({ default: m.DevicePermissionModal })));
+const GroupInviteModal = lazy(() => lazyRetry(() => import('../chat/GroupInviteModal')).then(m => ({ default: m.GroupInviteModal })));
 const ChannelInviteModal = lazy(() => import('../chat/ChannelInviteModal').then(m => ({ default: m.ChannelInviteModal })));
 
 export interface MainLayoutModalsProps {

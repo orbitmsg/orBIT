@@ -33,10 +33,17 @@ import { useShallow } from 'zustand/react/shallow';
 import { type ConfirmActionType } from '../common/ActionConfirmModal';
 import { useConnectionStore } from '../../store/useConnectionStore';
 import { InChatSidebarSearch } from './InChatSidebarSearch';
-const settingsPromise = import('../chat/SettingsScreen');
-const SettingsScreen = lazy(() => settingsPromise.then(m => ({ default: m.SettingsScreen })));
-const profilePromise = import('../chat/ProfileScreen');
-const ProfileScreen = lazy(() => profilePromise.then(m => ({ default: m.ProfileScreen })));
+const lazyRetry = <T,>(fn: () => Promise<T>, retries = 2, interval = 500): Promise<T> => {
+  return fn().catch((err) => {
+    if (retries <= 0) throw err;
+    return new Promise((resolve) => setTimeout(resolve, interval)).then(() =>
+      lazyRetry(fn, retries - 1, interval)
+    );
+  });
+};
+
+const SettingsScreen = lazy(() => lazyRetry(() => import('../chat/SettingsScreen')).then(m => ({ default: m.SettingsScreen })));
+const ProfileScreen = lazy(() => lazyRetry(() => import('../chat/ProfileScreen')).then(m => ({ default: m.ProfileScreen })));
 import { MainLayoutModals } from './MainLayoutModals';
 import { useAccountStore } from '../../services/accountManager';
 import { ChatListItem } from './sidebar/ChatListItems';

@@ -143,8 +143,8 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
   const [, setCacheTick] = useState(0);
 
   const { uniqueUsers, uniqueCount, hasReacted } = useMemo(
-    () => getReactionUniqueUsers(users, myUserId, myCode, myNickname),
-    [users, myUserId, myCode, myNickname]
+    () => getReactionUniqueUsers(users, myUserId, myCode, myNickname, activeChat),
+    [users, myUserId, myCode, myNickname, activeChat]
   );
 
   const prevCountRef = useRef(uniqueCount);
@@ -217,7 +217,7 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
     const lowerNick = myNickname ? myNickname.toLowerCase() : null;
     const allMsgs = useChatStore.getState().messagesByChatId;
 
-    return topUsers.map((u) => {
+    const rawList = topUsers.map((u) => {
       const lowerU = u.toLowerCase();
       const isMe =
         (myUserId && u === myUserId) ||
@@ -236,7 +236,7 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
           (myNickname && m.nickname === myNickname)
         );
         return {
-          id: u,
+          id: '__ME__',
           name: myNickname,
           avatarUrl: myAvatarUrl || selfMember?.avatarUrl || (selfMember as any)?.avatar_url || null,
         };
@@ -244,7 +244,7 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
 
       if (activeChat?.type === 'private') {
         return {
-          id: u,
+          id: activeChat.peerCode || activeChat.id || u,
           name: activeChat.name || u,
           avatarUrl: activeChat.avatarUrl || null,
         };
@@ -345,12 +345,42 @@ export const ReactionBadge: React.FC<ReactionBadgeProps> = React.memo(({
         msgFoundName ||
         (u.length >= 24 ? 'Пользователь' : u);
 
+      const resolvedId =
+        matchedMember?.userId ||
+        matchedMember?.userCode ||
+        userObj?.id ||
+        directChat?.peerCode ||
+        u;
+
       return {
-        id: u,
+        id: resolvedId,
         name: resolvedName,
         avatarUrl: resolvedAvatar,
       };
     });
+
+    const seenIds = new Set<string>();
+    const seenAvatars = new Set<string>();
+    const result: { id: string; name: string; avatarUrl: string | null }[] = [];
+
+    for (const item of rawList) {
+      const idKey = item.id.toLowerCase();
+      if (seenIds.has(idKey)) continue;
+
+      if (item.avatarUrl) {
+        if (seenAvatars.has(item.avatarUrl)) continue;
+        seenAvatars.add(item.avatarUrl);
+      } else {
+        const nameKey = `name_${item.name.toLowerCase()}`;
+        if (seenIds.has(nameKey)) continue;
+        seenIds.add(nameKey);
+      }
+
+      seenIds.add(idKey);
+      result.push(item);
+    }
+
+    return result;
   }, [uniqueUsers, showNumber, maxAvatars, isChannel, myUserId, myCode, myNickname, myAvatarUrl, activeChat, chats, usersById]);
 
   const handleClick = (e: React.MouseEvent) => {
@@ -468,6 +498,11 @@ export const MessageReactions: React.FC<MessageReactionsProps> = React.memo(({
   const myNickname = useAuthStore((s) => s.nickname) || 'YOU';
   const myUserId = useAuthStore((s) => s.userId);
   const myCode = useChatStore((s) => s.myCode);
+  const activeChat = useChatStore((s) => {
+    const rawCid = activeChatId || s.activeChatId;
+    const baseCid = rawCid?.split(':')[0];
+    return s.chats.find((c) => c.id === rawCid || (baseCid && c.id === baseCid));
+  });
 
   const entries = useMemo(() => {
     if (!reactions) return [];
@@ -489,16 +524,16 @@ export const MessageReactions: React.FC<MessageReactionsProps> = React.memo(({
     }
     if (reactionTypesCount === 2) {
       return entries.some(([_, users]) => {
-        const { uniqueCount } = getReactionUniqueUsers(users, myUserId, myCode, myNickname);
+        const { uniqueCount } = getReactionUniqueUsers(users, myUserId, myCode, myNickname, activeChat);
         return uniqueCount >= 4;
       });
     }
     if (reactionTypesCount === 1) {
-      const { uniqueCount } = getReactionUniqueUsers(entries[0][1], myUserId, myCode, myNickname);
+      const { uniqueCount } = getReactionUniqueUsers(entries[0][1], myUserId, myCode, myNickname, activeChat);
       return uniqueCount >= 5;
     }
     return false;
-  }, [entries, reactionTypesCount, myUserId, myCode, myNickname]);
+  }, [entries, reactionTypesCount, myUserId, myCode, myNickname, activeChat]);
 
   const maxAvatarsPerBadge = reactionTypesCount === 1 ? 4 : 3;
 

@@ -1176,12 +1176,83 @@ export const useChatStore = create<ChatState>()(
         const messages = state.messagesByChatId[chatId] || [];
         const targetStr = String(messageIndexOrId);
 
-        const aliases = new Set(userAliases || []);
-        if (state.myCode) aliases.add(state.myCode);
-        aliases.add('YOU');
+        const rawCid = chatId;
+        const baseCid = rawCid?.split(':')[0];
+        const chat = state.chats.find((c) => c.id === rawCid || (baseCid && c.id === baseCid));
+
+        const auth = getAuthStoreState();
+        const myUserId = auth?.userId;
+        const myNickname = auth?.nickname;
+        const myCode = state.myCode;
+
+        const isMe =
+          user === 'YOU' ||
+          (user && (
+            (Boolean(myUserId) && user.toLowerCase() === myUserId!.toLowerCase()) ||
+            (Boolean(myCode) && user.toLowerCase() === myCode!.toLowerCase()) ||
+            (Boolean(myNickname) && user.toLowerCase() === myNickname!.toLowerCase())
+          ));
+
+        const aliases = new Set<string>(userAliases || []);
         if (user) aliases.add(user);
 
-        const isTargetUser = (u: string) => aliases.has(u);
+        if (isMe) {
+          if (myCode) aliases.add(myCode);
+          if (myUserId) aliases.add(myUserId);
+          if (myNickname) aliases.add(myNickname);
+          aliases.add('YOU');
+          if (chat?.members) {
+            const searchKeys = [myUserId, myCode, myNickname, user]
+              .filter(Boolean)
+              .map((s) => (s as string).toLowerCase());
+            const member = chat.members.find((m) => {
+              const mKeys = [m.userId, m.userCode, m.nickname, m.user_code, m.user_id]
+                .filter(Boolean)
+                .map((s) => String(s).toLowerCase());
+              return searchKeys.some((sk) => mKeys.includes(sk));
+            });
+            if (member) {
+              if (member.userId) aliases.add(member.userId);
+              if (member.userCode) aliases.add(member.userCode);
+              if (member.nickname) aliases.add(member.nickname);
+              if (member.user_code) aliases.add(member.user_code);
+              if (member.user_id) aliases.add(member.user_id);
+            }
+          }
+        } else {
+          if (chat && chat.type === 'private') {
+            if (chat.peerCode) aliases.add(chat.peerCode);
+            if (chat.originalPeerCode) aliases.add(chat.originalPeerCode);
+            if (chat.name) aliases.add(chat.name);
+            if (chat.id) aliases.add(chat.id);
+            if (chat.username) aliases.add(chat.username);
+          }
+          if (chat?.members) {
+            const lowerUser = user ? user.toLowerCase() : '';
+            const member = chat.members.find(
+              (m) =>
+                (m.userId && (m.userId === user || m.userId.toLowerCase() === lowerUser)) ||
+                (m.userCode && (m.userCode === user || m.userCode.toLowerCase() === lowerUser)) ||
+                (m.nickname && (m.nickname === user || m.nickname.toLowerCase() === lowerUser)) ||
+                (m.user_code && (m.user_code === user || String(m.user_code).toLowerCase() === lowerUser)) ||
+                (m.user_id && (m.user_id === user || String(m.user_id).toLowerCase() === lowerUser))
+            );
+            if (member) {
+              if (member.userId) aliases.add(member.userId);
+              if (member.userCode) aliases.add(member.userCode);
+              if (member.nickname) aliases.add(member.nickname);
+              if (member.user_code) aliases.add(member.user_code);
+              if (member.user_id) aliases.add(member.user_id);
+            }
+          }
+        }
+
+        const lowerAliases = new Set<string>();
+        aliases.forEach((a) => {
+          if (a) lowerAliases.add(a.toLowerCase());
+        });
+
+        const isTargetUser = (u: string) => aliases.has(u) || (Boolean(u) && lowerAliases.has(u.toLowerCase()));
 
         let targetIdx = -1;
         if (typeof messageIndexOrId === 'number' && messageIndexOrId >= 0 && messageIndexOrId < messages.length) {
@@ -1203,7 +1274,7 @@ export const useChatStore = create<ChatState>()(
               const present = uList.some(isTargetUser);
               let nextUsers: string[];
               if (action === 'add') {
-                nextUsers = present ? uList : [...uList.filter((u) => !isTargetUser(u)), user];
+                nextUsers = [...uList.filter((u) => !isTargetUser(u)), user];
               } else if (action === 'remove') {
                 nextUsers = uList.filter((u) => !isTargetUser(u));
               } else {
@@ -1228,7 +1299,7 @@ export const useChatStore = create<ChatState>()(
             const present = uList.some(isTargetUser);
             let nextUsers: string[];
             if (action === 'add') {
-              nextUsers = present ? uList : [...uList.filter((u) => !isTargetUser(u)), user];
+              nextUsers = [...uList.filter((u) => !isTargetUser(u)), user];
             } else if (action === 'remove') {
               nextUsers = uList.filter((u) => !isTargetUser(u));
             } else {
@@ -1257,7 +1328,7 @@ export const useChatStore = create<ChatState>()(
         let resultingAction: 'add' | 'remove' = 'add';
         let newUsers: string[];
         if (action === 'add') {
-          newUsers = alreadyPresent ? usersForEmoji : [...usersForEmoji.filter((u) => !isTargetUser(u)), user];
+          newUsers = [...usersForEmoji.filter((u) => !isTargetUser(u)), user];
           resultingAction = 'add';
         } else if (action === 'remove') {
           newUsers = usersForEmoji.filter((u) => !isTargetUser(u));

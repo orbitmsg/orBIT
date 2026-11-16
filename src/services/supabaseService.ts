@@ -1937,24 +1937,29 @@ class SupabaseService {
     }
   }
 
-  async fetchPeersPresence(peerCodes: string[]): Promise<Map<string, { isOnline: boolean; lastSeen: number }>> {
+  async fetchPeersPresence(peerCodes: string[], excludeCodes?: string[]): Promise<Map<string, { isOnline: boolean; lastSeen: number }>> {
     const result = new Map<string, { isOnline: boolean; lastSeen: number }>();
     if (!peerCodes || peerCodes.length === 0 || !this.client) return result;
-    const cleanCodes = Array.from(new Set(peerCodes.map((c) => c?.trim()).filter((c): c is string => Boolean(c))));
+    const excludeSet = new Set((excludeCodes || []).map((c) => c?.trim()).filter(Boolean));
+    const cleanCodes = Array.from(new Set(
+      peerCodes
+        .map((c) => c?.trim())
+        .filter((c): c is string => Boolean(c && !excludeSet.has(c) && c !== 'notes'))
+    ));
     if (cleanCodes.length === 0) return result;
 
     try {
       const { data, error } = await this.client
         .from('profile_updates')
-        .select('sender_code, chat_id, updated_at, bio')
-        .or(`sender_code.in.(${cleanCodes.join(',')}),chat_id.in.(${cleanCodes.join(',')})`)
+        .select('sender_code, updated_at, bio')
+        .in('sender_code', cleanCodes)
         .order('updated_at', { ascending: false });
 
       if (!error && data && Array.isArray(data)) {
         const now = Date.now();
         for (const row of data) {
-          const key = row.sender_code || row.chat_id;
-          if (!key) continue;
+          const key = row.sender_code;
+          if (!key || excludeSet.has(key)) continue;
           const rawUpdatedTime = row.updated_at ? new Date(row.updated_at).getTime() : 0;
           const updatedTime = Number.isFinite(rawUpdatedTime) ? rawUpdatedTime : 0;
           const bio = row.bio || '';
@@ -1972,15 +1977,10 @@ class SupabaseService {
           const isFresh = recordTimestamp > 0 && (now - recordTimestamp) < 90000;
           const isOnline = Boolean(isExplicitOnline && isFresh);
           const lastSeen = isOnline ? now : (recordTimestamp > 0 ? recordTimestamp : 0);
-          const savePresence = (k: string) => {
-            const existing = result.get(k);
-            if (!existing || lastSeen > existing.lastSeen || (isOnline && !existing.isOnline)) {
-              result.set(k, { isOnline, lastSeen });
-            }
-          };
-          savePresence(key);
-          if (row.sender_code) savePresence(row.sender_code);
-          if (row.chat_id) savePresence(row.chat_id);
+          const existing = result.get(key);
+          if (!existing || lastSeen > existing.lastSeen || (isOnline && !existing.isOnline)) {
+            result.set(key, { isOnline, lastSeen });
+          }
         }
       }
     } catch {}

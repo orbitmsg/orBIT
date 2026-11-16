@@ -1020,6 +1020,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                   preview: avatarThumb,
                   thumbnail: avatarThumb,
                   blurPreview: avatarBlur,
+                  isAvatar: true,
                 }];
                 const orbita = (window as any).orbita;
                 if (orbita?.openMediaWindow) {

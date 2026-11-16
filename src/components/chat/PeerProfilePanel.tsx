@@ -234,6 +234,7 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
         preview: avatarThumb,
         thumbnail: avatarThumb,
         blurPreview: avatarBlur,
+        isAvatar: true,
       },
     ];
 

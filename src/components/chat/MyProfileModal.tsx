@@ -690,6 +690,7 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                                       preview: avatarThumb,
                                       thumbnail: avatarThumb,
                                       blurPreview: avatarBlur,
+                                      isAvatar: true,
                                     }],
                                     initialIndex: 0,
                                     usersById: useChatStore.getState().usersById,
@@ -1163,6 +1164,7 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
 
             {isAvatarViewerOpen && avatarUrl && (
               <TelegramMediaViewer
+                key={avatarUrl || 'my_avatar'}
                 isOpen={isAvatarViewerOpen}
                 items={[{
                   id: `my_avatar_${avatarUrl || ''}`,
@@ -1178,6 +1180,7 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                   preview: optimizeAvatarUrl(avatarUrl, 128) || avatarUrl,
                   thumbnail: optimizeAvatarUrl(avatarUrl, 128) || avatarUrl,
                   blurPreview: optimizeAvatarUrl(avatarUrl, 64) || avatarUrl,
+                  isAvatar: true,
                 }]}
                 initialIndex={0}
                 showCarouselAlways={false}

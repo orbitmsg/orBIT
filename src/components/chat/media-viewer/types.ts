@@ -24,6 +24,7 @@ export interface MediaViewerItem {
   preview?: string;
   blurPreview?: string;
   isOwn?: boolean;
+  isAvatar?: boolean;
 }
 
 export interface TelegramMediaViewerProps {

@@ -146,6 +146,15 @@ export function useDecryptedMedia(
       (url ? mediaManager.getCachedMedia(url, sharedSecret || '')?.blob : null) || null;
   });
 
+  const [activeCleanUrl, setActiveCleanUrl] = useState<string | null>(cleanUrl);
+  if (activeCleanUrl !== cleanUrl) {
+    setActiveCleanUrl(cleanUrl);
+    setBlobUrl(initialBlobUrl);
+    setBlob(cachedUrl ? (mediaManager.getCachedMedia(cleanUrl || '', sharedSecret || '')?.blob || null) : null);
+    setIsLoading(false);
+    setProgress(0);
+  }
+
   const targetProgressRef = useRef(0);
   const currentProgressRef = useRef(0);
   const progressAnimRef = useRef<number | null>(null);
@@ -298,8 +307,8 @@ export function useDecryptedMedia(
   }, [cleanUrl, sharedSecret]);
 
   return {
-    blobUrl,
-    blob,
+    blobUrl: activeCleanUrl === cleanUrl ? blobUrl : initialBlobUrl,
+    blob: activeCleanUrl === cleanUrl ? blob : null,
     load: loadMedia,
     cancel,
     isLoading,

@@ -259,6 +259,12 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
   };
 
   const currentItem: MediaViewerItem | undefined = items[currentIndex];
+  const isAvatar = Boolean(
+    (currentItem as any)?.isAvatar ||
+    currentItem?.id?.startsWith('avatar') ||
+    currentItem?.id?.startsWith('my_avatar') ||
+    currentItem?.name?.toLowerCase().includes('avatar')
+  );
   const [mediaDimensions, setMediaDimensions] = useState<{ width: number; height: number } | null>(null);
   const [activeItemKey, setActiveItemKey] = useState<string | null>(null);
   const currentItemKey = `${currentItem?.id || ''}_${currentItem?.url || ''}_${currentIndex}`;
@@ -271,6 +277,8 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
     setLoadedKey(null);
     if (currentItem?.width && currentItem?.height) {
       setMediaDimensions({ width: currentItem.width, height: currentItem.height });
+    } else if (isAvatar) {
+      setMediaDimensions({ width: 640, height: 640 });
     } else {
       setMediaDimensions(null);
     }
@@ -279,10 +287,12 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
   useEffect(() => {
     if (currentItem?.width && currentItem?.height) {
       setMediaDimensions({ width: currentItem.width, height: currentItem.height });
+    } else if (isAvatar) {
+      setMediaDimensions({ width: 640, height: 640 });
     } else {
       setMediaDimensions(null);
     }
-  }, [currentIndex, currentItem?.id, currentItem?.width, currentItem?.height]);
+  }, [currentIndex, currentItem?.id, currentItem?.width, currentItem?.height, isAvatar]);
 
   const effectiveSecret = currentItem?.key || currentItem?.sharedSecret || sharedSecret;
   const cachedDecrypted = useMemo(() => {
@@ -1471,11 +1481,11 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                maxWidth: zoomScale > 1 ? 'none' : '100%',
-                maxHeight: zoomScale > 1 ? 'none' : '100%',
-                width: zoomScale > 1 ? 'auto' : (mediaDimensions ? (mediaDimensions.width >= mediaDimensions.height ? 'min(100%, 100vw)' : 'auto') : '100%'),
-                height: zoomScale > 1 ? 'auto' : (mediaDimensions ? (mediaDimensions.height > mediaDimensions.width ? 'min(100%, 100vh)' : 'auto') : '100%'),
-                aspectRatio: mediaDimensions ? `${mediaDimensions.width} / ${mediaDimensions.height}` : undefined,
+                maxWidth: zoomScale > 1 ? 'none' : (isAvatar ? 'min(640px, 85vw, 85vh)' : '100%'),
+                maxHeight: zoomScale > 1 ? 'none' : (isAvatar ? 'min(640px, 85vw, 85vh)' : '100%'),
+                width: zoomScale > 1 ? 'auto' : (isAvatar ? 'min(640px, 85vw, 85vh)' : (mediaDimensions ? (mediaDimensions.width >= mediaDimensions.height ? 'min(100%, 100vw)' : 'auto') : 'auto')),
+                height: zoomScale > 1 ? 'auto' : (isAvatar ? 'min(640px, 85vw, 85vh)' : (mediaDimensions ? (mediaDimensions.height > mediaDimensions.width ? 'min(100%, 100vh)' : 'auto') : 'auto')),
+                aspectRatio: isAvatar ? '1 / 1' : (mediaDimensions ? `${mediaDimensions.width} / ${mediaDimensions.height}` : undefined),
                 overflow: zoomScale > 1 ? 'visible' : 'hidden',
                 clipPath: zoomScale > 1 ? 'none' : 'inset(0)',
               }}
@@ -1542,8 +1552,8 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                   }
                 }}
                 style={{
-                  maxWidth: zoomScale > 1 ? 'none' : '100%',
-                  maxHeight: zoomScale > 1 ? 'none' : '100%',
+                  maxWidth: zoomScale > 1 ? 'none' : (isAvatar ? 'min(640px, 85vw, 85vh)' : '100%'),
+                  maxHeight: zoomScale > 1 ? 'none' : (isAvatar ? 'min(640px, 85vw, 85vh)' : '100%'),
                   width: '100%',
                   height: '100%',
                   objectFit: 'contain',
@@ -1615,11 +1625,11 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  aspectRatio: mediaDimensions ? `${mediaDimensions.width} / ${mediaDimensions.height}` : undefined,
-                  maxWidth: '100%',
-                  maxHeight: '100%',
-                  width: mediaDimensions ? (mediaDimensions.width >= mediaDimensions.height ? 'min(100%, 100vw)' : 'auto') : '100%',
-                  height: mediaDimensions ? (mediaDimensions.height > mediaDimensions.width ? 'min(100%, 100vh)' : 'auto') : '100%',
+                  aspectRatio: isAvatar ? '1 / 1' : (mediaDimensions ? `${mediaDimensions.width} / ${mediaDimensions.height}` : undefined),
+                  maxWidth: isAvatar ? 'min(640px, 85vw, 85vh)' : '100%',
+                  maxHeight: isAvatar ? 'min(640px, 85vw, 85vh)' : '100%',
+                  width: isAvatar ? 'min(640px, 85vw, 85vh)' : (mediaDimensions ? (mediaDimensions.width >= mediaDimensions.height ? 'min(100%, 100vw)' : 'auto') : 'auto'),
+                  height: isAvatar ? 'min(640px, 85vw, 85vh)' : (mediaDimensions ? (mediaDimensions.height > mediaDimensions.width ? 'min(100%, 100vh)' : 'auto') : 'auto'),
                   overflow: 'hidden',
                   clipPath: 'inset(0)',
                   pointerEvents: 'none',

@@ -278,21 +278,19 @@ class P2PDataService {
     };
 
     dc.onclose = () => {
+      const wasOpen = this.isP2pReady(chatId);
       this.dataChannels.delete(chatId);
-      const resolvedChatId = useChatStore.getState().chats.find((c) => c.id === chatId || c.peerCode === chatId)?.id || chatId;
-      useChatStore.getState().updateChat(resolvedChatId, {
-        online: false,
-        lastSeen: Date.now(),
-      });
+      if (wasOpen) {
+        const resolvedChatId = useChatStore.getState().chats.find((c) => c.id === chatId || c.peerCode === chatId)?.id || chatId;
+        useChatStore.getState().updateChat(resolvedChatId, {
+          online: false,
+          lastSeen: Date.now(),
+        });
+      }
     };
 
     dc.onerror = () => {
       this.dataChannels.delete(chatId);
-      const resolvedChatId = useChatStore.getState().chats.find((c) => c.id === chatId || c.peerCode === chatId)?.id || chatId;
-      useChatStore.getState().updateChat(resolvedChatId, {
-        online: false,
-        lastSeen: Date.now(),
-      });
     };
   }
 

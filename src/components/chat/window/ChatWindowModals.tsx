@@ -193,11 +193,12 @@ export const ChatWindowModals: React.FC<ChatWindowModalsProps> = ({
 
       {mediaViewerState.isOpen && (
         <TelegramMediaViewer
+          key={`${mediaViewerState.customItems?.[0]?.url || chatMediaViewerItems[0]?.url || ''}_${mediaViewerState.initialIndex}`}
           isOpen={mediaViewerState.isOpen}
           items={mediaViewerState.customItems || chatMediaViewerItems}
           initialIndex={mediaViewerState.initialIndex}
           sharedSecret={sharedSecret ?? undefined}
-          onClose={() => setMediaViewerState((prev) => ({ ...prev, isOpen: false }))}
+          onClose={() => setMediaViewerState((prev) => ({ ...prev, isOpen: false, customItems: [] }))}
           onGoToMessage={handleMediaGoToMessage}
           onForwardMessage={handleMediaForwardMessage}
           onDeleteMessage={handleMediaDeleteMessage}

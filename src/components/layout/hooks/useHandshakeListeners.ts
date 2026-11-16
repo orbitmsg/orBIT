@@ -726,28 +726,25 @@ export const useHandshakeListeners = ({
     const unsubscribes: (() => void)[] = [];
     const privateChats = chats.filter((c) => c.type === 'private' && c.id !== 'notes');
     const peerCodesToQuery: string[] = [];
+    const currentMyCode = myCode?.trim();
+    const currentUserId = useAuthStore.getState().userId?.trim();
 
     privateChats.forEach((chat) => {
       const peerId = (chat.peerCode && chat.peerCode !== 'Unknown' && chat.peerCode.trim())
         ? chat.peerCode.trim()
         : (chat.originalPeerCode && chat.originalPeerCode !== 'Unknown' && chat.originalPeerCode.trim())
           ? chat.originalPeerCode.trim()
-          : (chat.id && chat.id.trim() && chat.id !== 'notes')
-            ? chat.id.trim()
-            : null;
-      if (!peerId) return;
+          : null;
+      if (!peerId || peerId === currentMyCode || peerId === currentUserId) return;
 
       if (!peerCodesToQuery.includes(peerId)) {
         peerCodesToQuery.push(peerId);
       }
-      if (chat.peerCode && chat.peerCode.trim() && !peerCodesToQuery.includes(chat.peerCode.trim())) {
+      if (chat.peerCode && chat.peerCode.trim() && chat.peerCode.trim() !== currentMyCode && chat.peerCode.trim() !== currentUserId && !peerCodesToQuery.includes(chat.peerCode.trim())) {
         peerCodesToQuery.push(chat.peerCode.trim());
       }
-      if (chat.originalPeerCode && chat.originalPeerCode.trim() && !peerCodesToQuery.includes(chat.originalPeerCode.trim())) {
+      if (chat.originalPeerCode && chat.originalPeerCode.trim() && chat.originalPeerCode.trim() !== currentMyCode && chat.originalPeerCode.trim() !== currentUserId && !peerCodesToQuery.includes(chat.originalPeerCode.trim())) {
         peerCodesToQuery.push(chat.originalPeerCode.trim());
-      }
-      if (chat.id && chat.id.trim() && chat.id !== 'notes' && !peerCodesToQuery.includes(chat.id.trim())) {
-        peerCodesToQuery.push(chat.id.trim());
       }
 
       const unsubscribe = ablyService.subscribeToUserPresence(
@@ -767,13 +764,13 @@ export const useHandshakeListeners = ({
     const syncDbPresence = async () => {
       if (peerCodesToQuery.length === 0) return;
       try {
-        const presenceMap = await supabaseService.fetchPeersPresence(peerCodesToQuery);
+        const excludeList = [currentMyCode, currentUserId].filter(Boolean) as string[];
+        const presenceMap = await supabaseService.fetchPeersPresence(peerCodesToQuery, excludeList);
         for (const chat of privateChats) {
           const peerId = chat.peerCode?.trim();
           const origPeerId = chat.originalPeerCode?.trim();
           const info = (peerId && presenceMap.get(peerId)) ||
-            (origPeerId && presenceMap.get(origPeerId)) ||
-            presenceMap.get(chat.id);
+            (origPeerId && presenceMap.get(origPeerId));
           if (info) {
             const current = useChatStore.getState().chats.find((c) => c.id === chat.id);
             if (current && (current.online !== info.isOnline || (info.lastSeen && current.lastSeen !== info.lastSeen))) {

@@ -213,13 +213,10 @@ export const usePrivateChatSubscriptions = ({
 
       if (data.type === 'presence') {
         if (typeof data.isOnline === 'boolean') {
-          const now = Date.now();
-          const validTimestamp = (typeof data.timestamp === 'number' && Number.isFinite(data.timestamp) && data.timestamp > 0)
-            ? data.timestamp
-            : now;
+          const hasValidTimestamp = typeof data.timestamp === 'number' && Number.isFinite(data.timestamp) && data.timestamp > 0;
           updateChat(targetChatId, {
             online: data.isOnline,
-            lastSeen: validTimestamp,
+            ...(data.isOnline ? { lastSeen: hasValidTimestamp ? data.timestamp : Date.now() } : (hasValidTimestamp ? { lastSeen: data.timestamp } : {})),
           });
         }
         return;
@@ -605,13 +602,10 @@ export const usePrivateChatSubscriptions = ({
 
       if (data.type === 'presence') {
         if (typeof data.isOnline === 'boolean') {
-          const now = Date.now();
-          const validTimestamp = (typeof data.timestamp === 'number' && Number.isFinite(data.timestamp) && data.timestamp > 0)
-            ? data.timestamp
-            : now;
+          const hasValidTimestamp = typeof data.timestamp === 'number' && Number.isFinite(data.timestamp) && data.timestamp > 0;
           updateChat(targetChatId, {
             online: data.isOnline,
-            lastSeen: validTimestamp,
+            ...(data.isOnline ? { lastSeen: hasValidTimestamp ? data.timestamp : Date.now() } : (hasValidTimestamp ? { lastSeen: data.timestamp } : {})),
           });
         }
         return;

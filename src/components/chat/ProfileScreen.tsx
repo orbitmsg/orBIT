@@ -1007,10 +1007,12 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                 const avatarThumb = optimizeAvatarUrl(chat.avatarUrl, 128) || chat.avatarUrl;
                 const avatarBlur = optimizeAvatarUrl(chat.avatarUrl, 64) || chat.avatarUrl;
                 const avatarItems = [{
-                  id: 'avatar',
+                  id: `avatar_${chat.id || ''}_${chat.avatarUrl || ''}`,
                   url: chat.avatarUrl,
                   directUrl: chat.avatarUrl,
                   type: 'photo' as const,
+                  width: 600,
+                  height: 600,
                   name: `${chat.name || 'Avatar'}.jpg`,
                   sender: actualSender,
                   senderId: avatarSenderId,
@@ -1624,12 +1626,13 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
 
       {viewerState.isOpen && (
         <TelegramMediaViewer
+          key={`${viewerState.items[0]?.url || viewerState.items[0]?.id || ''}_${chat.id || ''}_${viewerState.initialIndex || 0}`}
           isOpen={viewerState.isOpen}
           items={viewerState.items}
           initialIndex={viewerState.initialIndex}
           sharedSecret={chat.sharedSecret}
           showCarouselAlways={true}
-          onClose={() => setViewerState((prev) => ({ ...prev, isOpen: false }))}
+          onClose={() => setViewerState({ isOpen: false, items: [], initialIndex: 0 })}
         />
       )}
 

@@ -4914,13 +4914,12 @@ function createOrShowMediaWindow(initialPayload?: any): BrowserWindow {
 }
 
 ipcMain.handle('orbita:open-media-window', (_event, payload?: any) => {
-  console.log('[Main] orbita:open-media-window invoked with payload:', {
-    itemsCount: payload?.items?.length,
-    initialIndex: payload?.initialIndex,
-    hasSecret: Boolean(payload?.sharedSecret),
-    chatId: payload?.chatId,
-    items: payload?.items?.map((it: any) => ({ id: it.id, type: it.type, url: it.url, directUrl: it.directUrl })),
-  });
+  if (mediaWindow && !mediaWindow.isDestroyed() && payload) {
+    currentMediaPayloadCache = payload;
+    try {
+      mediaWindow.webContents.send('orbita:media-payload', payload);
+    } catch {}
+  }
   createOrShowMediaWindow(payload);
   return { success: true };
 });

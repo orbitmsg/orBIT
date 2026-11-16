@@ -676,10 +676,12 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
                                 if (orbita?.openMediaWindow) {
                                   orbita.openMediaWindow({
                                     items: [{
-                                      id: 'my-avatar',
+                                      id: `my_avatar_${avatarUrl || ''}`,
                                       url: avatarUrl,
                                       directUrl: avatarUrl,
                                       type: 'photo',
+                                      width: 600,
+                                      height: 600,
                                       name: `${myNick || 'Avatar'}.png`,
                                       sender: myNick || 'Я',
                                       senderId: myUid,
@@ -1163,9 +1165,11 @@ export const MyProfileModal: React.FC<MyProfileModalProps> = memo(({ isOpen, onC
               <TelegramMediaViewer
                 isOpen={isAvatarViewerOpen}
                 items={[{
-                  id: 'my-avatar',
+                  id: `my_avatar_${avatarUrl || ''}`,
                   url: avatarUrl,
                   type: 'photo',
+                  width: 600,
+                  height: 600,
                   name: `${nickname || 'Avatar'}.png`,
                   sender: nickname || 'Я',
                   senderId: useAuthStore.getState().userId,

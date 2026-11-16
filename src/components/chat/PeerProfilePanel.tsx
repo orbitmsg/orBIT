@@ -221,10 +221,12 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
     const avatarBlur = optimizeAvatarUrl(avatarUrl, 64) || avatarUrl;
     const avatarItems: MediaViewerItem[] = [
       {
-        id: 'avatar',
+        id: `avatar_${effectiveChat.id || ''}_${avatarUrl || ''}`,
         url: avatarUrl,
         directUrl: avatarUrl,
         type: 'photo',
+        width: 600,
+        height: 600,
         name: `${effectiveChat.name || 'Avatar'}.jpg`,
         sender: actualSender,
         senderId: avatarSenderId,
@@ -685,12 +687,13 @@ export const PeerProfilePanel: React.FC<PeerProfilePanelProps> = ({ chat, onOpen
 
     {avatarViewerState.isOpen && (
       <TelegramMediaViewer
+        key={`${avatarViewerState.items[0]?.url || avatarViewerState.items[0]?.id || ''}_${effectiveChat.id || ''}`}
         isOpen={avatarViewerState.isOpen}
         items={avatarViewerState.items}
         initialIndex={avatarViewerState.initialIndex}
         sharedSecret={effectiveChat.sharedSecret}
         showCarouselAlways={true}
-        onClose={() => setAvatarViewerState((prev) => ({ ...prev, isOpen: false }))}
+        onClose={() => setAvatarViewerState({ isOpen: false, items: [], initialIndex: 0 })}
       />
     )}
     </>

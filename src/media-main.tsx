@@ -121,19 +121,7 @@ export const MediaWindowView: React.FC = () => {
         return;
       }
       syncUsers(p.usersById, p.myUserId, p.myNickname);
-      setPayload((prev) => {
-        if (
-          prev &&
-          prev.chatId === p.chatId &&
-          prev.initialIndex === p.initialIndex &&
-          prev.items?.length === p.items?.length &&
-          prev.items[0]?.id === p.items[0]?.id &&
-          prev.items[0]?.directUrl === p.items[0]?.directUrl
-        ) {
-          return prev;
-        }
-        return p;
-      });
+      setPayload(p);
     };
 
     if (orbita?.getMediaPayload) {
@@ -188,13 +176,13 @@ export const MediaWindowView: React.FC = () => {
   }, []);
 
   const handleClose = () => {
+    setPayload(null);
     const orbita = (window as any).orbita;
     if (orbita?.closeMediaWindow) {
       orbita.closeMediaWindow();
     } else {
       window.close();
     }
-    setPayload(null);
   };
 
   const dispatchAction = (action: { type: string; messageId?: string; chatId?: string }) => {
@@ -254,7 +242,7 @@ export const MediaWindowView: React.FC = () => {
       <div className="w-full h-full absolute inset-0 overflow-hidden">
         {payload && payload.items && payload.items.length > 0 ? (
           <TelegramMediaViewer
-            key={payload.items[0]?.id || payload.chatId || String(payload.initialIndex || 0)}
+            key={`${payload.items[0]?.url || payload.items[0]?.directUrl || payload.items[0]?.id || ''}_${payload.chatId || ''}_${payload.initialIndex || 0}`}
             isOpen={true}
             isWindowMode={true}
             items={payload.items}

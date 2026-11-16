@@ -72,6 +72,9 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
   const isRepairingRef = useRef(false);
   const [videoFirstFrame, setVideoFirstFrame] = useState<string | null>(null);
   const [isMediaLoaded, setIsMediaLoaded] = useState(false);
+  const currentMediaKey = `${items[currentIndex]?.id || ''}_${items[currentIndex]?.url || ''}_${currentIndex}`;
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const isCurrentMediaLoaded = Boolean(isMediaLoaded && loadedKey === currentMediaKey);
 
   const handleInstantClose = useCallback(() => {
     if (videoRef.current) {
@@ -308,7 +311,8 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
 
   useEffect(() => {
     setIsMediaLoaded(false);
-  }, [currentIndex, displaySrc, currentItem?.id]);
+    setLoadedKey(null);
+  }, [currentIndex, displaySrc, currentItem?.id, currentItem?.url]);
 
   useEffect(() => {
     if (!isOpen || !isVideo || !displaySrc) return;
@@ -1163,12 +1167,13 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 maxHeight: mediaDimensions ? `${mediaDimensions.height}px` : '100%',
                 width: '100%',
                 height: '100%',
-                overflow: 'visible',
+                overflow: 'hidden',
+                clipPath: 'inset(0)',
               }}
               onMouseEnter={() => setIsVideoControlsHovered(true)}
               onMouseLeave={() => setIsVideoControlsHovered(false)}
             >
-              {placeholderSrc && !isMediaLoaded && (
+              {placeholderSrc && !isCurrentMediaLoaded && (
                 <div
                   style={{
                     position: 'absolute',
@@ -1177,6 +1182,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                     alignItems: 'center',
                     justifyContent: 'center',
                     overflow: 'hidden',
+                    clipPath: 'inset(0)',
                     pointerEvents: 'none',
                     zIndex: 1,
                   }}
@@ -1186,12 +1192,13 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                     alt=""
                     draggable={false}
                     style={{
-                      maxWidth: '100%',
-                      maxHeight: '100%',
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'contain',
-                      filter: 'blur(8px)',
+                      position: 'absolute',
+                      inset: '-20px',
+                      width: 'calc(100% + 40px)',
+                      height: 'calc(100% + 40px)',
+                      objectFit: 'cover',
+                      filter: 'blur(20px)',
+                      transform: 'scale(1.15)',
                       pointerEvents: 'none',
                       userSelect: 'none',
                     }}
@@ -1226,10 +1233,12 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 }}
                 onLoadedData={() => {
                   setIsMediaLoaded(true);
+                  setLoadedKey(currentMediaKey);
                   captureVideoFrame();
                 }}
                 onCanPlay={() => {
                   setIsMediaLoaded(true);
+                  setLoadedKey(currentMediaKey);
                   captureVideoFrame();
                   if (videoRef.current && isPlaying && videoRef.current.paused) {
                     videoRef.current.play().catch(() => {});
@@ -1322,7 +1331,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                   zIndex: 2,
                 }}
               />
-              {!isMediaLoaded && (
+              {!isCurrentMediaLoaded && (
                 <div
                   style={{
                     position: 'absolute',
@@ -1334,20 +1343,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                     zIndex: 10,
                   }}
                 >
-                  <div
-                    style={{
-                      background: 'rgba(15, 17, 26, 0.65)',
-                      backdropFilter: 'blur(8px)',
-                      padding: '12px',
-                      borderRadius: '50%',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <MD3CircularSpinner size="medium" color="var(--accent-color, #7C3AED)" />
-                  </div>
+                  <MD3CircularSpinner size="medium" color="var(--accent-color, #7C3AED)" />
                 </div>
               )}
 
@@ -1441,17 +1437,19 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
             <div
               style={{
                 position: 'relative',
-                maxWidth: zoomScale > 1 ? 'none' : '100%',
-                maxHeight: zoomScale > 1 ? 'none' : '100%',
-                width: zoomScale > 1 ? 'auto' : '100%',
-                height: zoomScale > 1 ? 'auto' : '100%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                overflow: 'hidden',
+                maxWidth: zoomScale > 1 ? 'none' : '100%',
+                maxHeight: zoomScale > 1 ? 'none' : '100%',
+                width: zoomScale > 1 ? 'auto' : (mediaDimensions ? (mediaDimensions.width >= mediaDimensions.height ? 'min(100%, 100vw)' : 'auto') : '100%'),
+                height: zoomScale > 1 ? 'auto' : (mediaDimensions ? (mediaDimensions.height > mediaDimensions.width ? 'min(100%, 100vh)' : 'auto') : '100%'),
+                aspectRatio: mediaDimensions ? `${mediaDimensions.width} / ${mediaDimensions.height}` : undefined,
+                overflow: zoomScale > 1 ? 'visible' : 'hidden',
+                clipPath: zoomScale > 1 ? 'none' : 'inset(0)',
               }}
             >
-              {placeholderSrc && !isMediaLoaded && (
+              {placeholderSrc && !isCurrentMediaLoaded && (
                 <div
                   style={{
                     position: 'absolute',
@@ -1460,6 +1458,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                     alignItems: 'center',
                     justifyContent: 'center',
                     overflow: 'hidden',
+                    clipPath: 'inset(0)',
                     pointerEvents: 'none',
                     zIndex: 1,
                   }}
@@ -1468,13 +1467,20 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                     src={placeholderSrc}
                     alt=""
                     draggable={false}
+                    onLoad={(e) => {
+                      const img = e.currentTarget;
+                      if (img.naturalWidth && img.naturalHeight) {
+                        setMediaDimensions((prev) => prev || { width: img.naturalWidth, height: img.naturalHeight });
+                      }
+                    }}
                     style={{
-                      maxWidth: '100%',
-                      maxHeight: '100%',
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'contain',
-                      filter: 'blur(8px)',
+                      position: 'absolute',
+                      inset: '-20px',
+                      width: 'calc(100% + 40px)',
+                      height: 'calc(100% + 40px)',
+                      objectFit: 'cover',
+                      filter: 'blur(20px)',
+                      transform: 'scale(1.15)',
                       pointerEvents: 'none',
                       userSelect: 'none',
                     }}
@@ -1482,9 +1488,14 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 </div>
               )}
               <img
+                key={currentMediaKey}
                 ref={(el) => {
-                  if (el && el.complete && el.naturalWidth > 0 && !isMediaLoaded) {
+                  if (el && el.complete && el.naturalWidth > 0 && !isCurrentMediaLoaded) {
                     setIsMediaLoaded(true);
+                    setLoadedKey(currentMediaKey);
+                    if (el.naturalWidth && el.naturalHeight) {
+                      setMediaDimensions({ width: el.naturalWidth, height: el.naturalHeight });
+                    }
                   }
                 }}
                 src={displaySrc}
@@ -1493,6 +1504,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 loading="eager"
                 onLoad={(e) => {
                   setIsMediaLoaded(true);
+                  setLoadedKey(currentMediaKey);
                   const img = e.currentTarget;
                   if (img.naturalWidth && img.naturalHeight) {
                     setMediaDimensions({ width: img.naturalWidth, height: img.naturalHeight });
@@ -1501,15 +1513,14 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 style={{
                   maxWidth: zoomScale > 1 ? 'none' : '100%',
                   maxHeight: zoomScale > 1 ? 'none' : '100%',
-                  width: zoomScale > 1 ? 'auto' : '100%',
-                  height: zoomScale > 1 ? 'auto' : '100%',
+                  width: '100%',
+                  height: '100%',
                   objectFit: 'contain',
                   borderRadius: 0,
                   transform: (rotation !== 0 || zoomScale > 1 || panOffset.x !== 0 || panOffset.y !== 0)
                     ? `translate3d(${panOffset.x}px, ${panOffset.y}px, 0) rotate(${rotation}deg) scale(${zoomScale})`
                     : 'none',
-                  filter: isMediaLoaded ? 'blur(0px)' : 'blur(8px)',
-                  transition: isMediaLoaded ? 'filter 0.15s ease' : 'none',
+                  opacity: isCurrentMediaLoaded ? 1 : 0,
                   cursor: areControlsVisible ? (zoomScale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default') : 'none',
                   pointerEvents: 'auto',
                   display: 'block',
@@ -1522,7 +1533,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 onDoubleClick={handleImageDoubleClick}
                 draggable={false}
               />
-              {!isMediaLoaded && (
+              {!isCurrentMediaLoaded && (
                 <div
                   style={{
                     position: 'absolute',
@@ -1534,20 +1545,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                     zIndex: 10,
                   }}
                 >
-                  <div
-                    style={{
-                      background: 'rgba(15, 17, 26, 0.65)',
-                      backdropFilter: 'blur(8px)',
-                      padding: '12px',
-                      borderRadius: '50%',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <MD3CircularSpinner size="medium" color="var(--accent-color, #7C3AED)" />
-                  </div>
+                  <MD3CircularSpinner size="medium" color="var(--accent-color, #7C3AED)" />
                 </div>
               )}
             </div>
@@ -1567,26 +1565,37 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
             {placeholderSrc && (
               <div
                 style={{
-                  position: 'absolute',
-                  inset: 0,
+                  position: 'relative',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  aspectRatio: mediaDimensions ? `${mediaDimensions.width} / ${mediaDimensions.height}` : undefined,
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  width: mediaDimensions ? (mediaDimensions.width >= mediaDimensions.height ? 'min(100%, 100vw)' : 'auto') : '100%',
+                  height: mediaDimensions ? (mediaDimensions.height > mediaDimensions.width ? 'min(100%, 100vh)' : 'auto') : '100%',
                   overflow: 'hidden',
+                  clipPath: 'inset(0)',
                   pointerEvents: 'none',
                 }}
               >
                 <img
                   src={placeholderSrc}
                   alt=""
+                  onLoad={(e) => {
+                    const img = e.currentTarget;
+                    if (img.naturalWidth && img.naturalHeight) {
+                      setMediaDimensions((prev) => prev || { width: img.naturalWidth, height: img.naturalHeight });
+                    }
+                  }}
                   style={{
-                    aspectRatio: mediaDimensions ? `${mediaDimensions.width} / ${mediaDimensions.height}` : undefined,
-                    maxWidth: '100%',
-                    maxHeight: '100%',
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                    filter: 'blur(8px)',
+                    position: 'absolute',
+                    inset: '-20px',
+                    width: 'calc(100% + 40px)',
+                    height: 'calc(100% + 40px)',
+                    objectFit: 'cover',
+                    filter: 'blur(20px)',
+                    transform: 'scale(1.15)',
                     pointerEvents: 'none',
                     userSelect: 'none',
                   }}
@@ -1596,28 +1605,16 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
             )}
             <div
               style={{
-                position: 'relative',
+                position: 'absolute',
+                inset: 0,
                 zIndex: 10,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                pointerEvents: 'auto',
+                pointerEvents: 'none',
               }}
             >
-              <div
-                style={{
-                  background: 'rgba(15, 17, 26, 0.65)',
-                  backdropFilter: 'blur(8px)',
-                  padding: '12px',
-                  borderRadius: '50%',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <MD3CircularSpinner size="medium" color="var(--accent-color, #7C3AED)" />
-              </div>
+              <MD3CircularSpinner size="medium" color="var(--accent-color, #7C3AED)" />
             </div>
           </div>
         ) : null}

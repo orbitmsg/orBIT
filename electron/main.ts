@@ -4784,6 +4784,9 @@ function initOrGetMediaWindow(initialPayload?: any): BrowserWindow {
       saveMediaWindowState(mediaWindow, true);
       currentMediaPayloadCache = null;
       try {
+        mediaWindow?.setOpacity(0);
+      } catch {}
+      try {
         mediaWindow?.webContents.send('orbita:media-payload', null);
       } catch {}
       mediaWindow?.webContents.setBackgroundThrottling(true);
@@ -4896,11 +4899,16 @@ function createOrShowMediaWindow(initialPayload?: any): BrowserWindow {
   }
 
   if (win.isMinimized()) win.restore();
-  win.setOpacity(1);
+  win.setOpacity(0);
   if (!win.isVisible()) {
     win.show();
   }
   win.focus();
+  setTimeout(() => {
+    if (win && !win.isDestroyed() && win.getOpacity() < 1) {
+      win.setOpacity(1);
+    }
+  }, 200);
 
   if (currentMediaPayloadCache && !win.isDestroyed() && win.webContents.isLoading()) {
     win.webContents.once('did-finish-load', () => {
@@ -4924,10 +4932,20 @@ ipcMain.handle('orbita:open-media-window', (_event, payload?: any) => {
   return { success: true };
 });
 
+ipcMain.handle('orbita:media-window-ready', () => {
+  if (mediaWindow && !mediaWindow.isDestroyed()) {
+    mediaWindow.setOpacity(1);
+  }
+  return { success: true };
+});
+
 ipcMain.handle('orbita:close-media-window', () => {
   if (mediaWindow && !mediaWindow.isDestroyed()) {
     saveMediaWindowState(mediaWindow, true);
     currentMediaPayloadCache = null;
+    try {
+      mediaWindow.setOpacity(0);
+    } catch {}
     try {
       mediaWindow.webContents.send('orbita:media-payload', null);
     } catch {}

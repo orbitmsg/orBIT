@@ -175,6 +175,17 @@ export const MediaWindowView: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (payload && payload.items && payload.items.length > 0) {
+      const orbita = (window as any).orbita;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          orbita?.mediaWindowReady?.();
+        });
+      });
+    }
+  }, [payload]);
+
   const handleClose = () => {
     setPayload(null);
     const orbita = (window as any).orbita;

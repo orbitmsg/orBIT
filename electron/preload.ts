@@ -186,6 +186,7 @@ contextBridge.exposeInMainWorld('orbita', {
 
   openMediaWindow: (payload?: any) => ipcRenderer.invoke('orbita:open-media-window', payload),
   closeMediaWindow: () => ipcRenderer.invoke('orbita:close-media-window'),
+  mediaWindowReady: () => ipcRenderer.invoke('orbita:media-window-ready'),
   repairVideoMedia: (url: string) => ipcRenderer.invoke('orbita:repair-video-media', url),
   getMediaPayload: () => ipcRenderer.invoke('orbita:get-media-payload'),
   onMediaPayload: (callback: (payload: any) => void) => {

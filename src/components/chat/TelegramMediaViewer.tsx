@@ -184,7 +184,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
     setPanOffset({ x: 0, y: 0 });
     setIsDragging(false);
     setFallbackBlobUrl(null);
-  }, [currentIndex]);
+  }, [currentIndex, items[currentIndex]?.id, items[currentIndex]?.url]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -260,6 +260,21 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
 
   const currentItem: MediaViewerItem | undefined = items[currentIndex];
   const [mediaDimensions, setMediaDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [activeItemKey, setActiveItemKey] = useState<string | null>(null);
+  const currentItemKey = `${currentItem?.id || ''}_${currentItem?.url || ''}_${currentIndex}`;
+
+  if (activeItemKey !== currentItemKey) {
+    setActiveItemKey(currentItemKey);
+    setFallbackBlobUrl(null);
+    setVideoFirstFrame(null);
+    setIsMediaLoaded(false);
+    setLoadedKey(null);
+    if (currentItem?.width && currentItem?.height) {
+      setMediaDimensions({ width: currentItem.width, height: currentItem.height });
+    } else {
+      setMediaDimensions(null);
+    }
+  }
 
   useEffect(() => {
     if (currentItem?.width && currentItem?.height) {
@@ -303,11 +318,12 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
   const isPhoto = !isVideo && !isGif;
 
   const isPlaintextUrl = Boolean(currentItem?.url && (currentItem.url.startsWith('blob:') || currentItem.url.startsWith('data:') || currentItem.url.includes('tenor.com') || currentItem.url.includes('giphy.com')));
-  const validBlobUrl = blobUrl || null;
+  const isBlobUrlForCurrent = Boolean(blobUrl && currentItem?.url);
+  const validBlobUrl = isBlobUrlForCurrent ? blobUrl : null;
   const validCachedUrl = cachedDecrypted?.blobUrl || null;
-  const displaySrc = fallbackBlobUrl || (hasDirectReady ? validDirectUrl : null) || validCachedUrl || validBlobUrl || (isPlaintextUrl ? currentItem?.url : null) || validDirectUrl;
+  const displaySrc = (hasDirectReady ? validDirectUrl : null) || validCachedUrl || fallbackBlobUrl || validBlobUrl || (isPlaintextUrl ? currentItem?.url : null) || validDirectUrl;
   const previewSrc = currentItem?.thumbnail || currentItem?.blurPreview || (currentItem as any)?.preview || videoFirstFrame;
-  const placeholderSrc = previewSrc || currentItem?.thumbnail || currentItem?.blurPreview || (currentItem as any)?.preview || (isPhoto ? displaySrc || currentItem?.url : undefined);
+  const placeholderSrc = previewSrc || (isPhoto ? (hasDirectReady ? validDirectUrl : (isPlaintextUrl ? currentItem?.url : null)) : undefined);
 
   useEffect(() => {
     setIsMediaLoaded(false);
@@ -1343,7 +1359,22 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                     zIndex: 10,
                   }}
                 >
-                  <MD3CircularSpinner size="medium" color="var(--accent-color, #7C3AED)" />
+                  <div
+                    style={{
+                      width: '84px',
+                      height: '84px',
+                      borderRadius: '50%',
+                      background: 'rgba(15, 17, 26, 0.65)',
+                      backdropFilter: 'blur(8px)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <MD3CircularSpinner size={80} color="var(--accent-color, #7C3AED)" />
+                  </div>
                 </div>
               )}
 
@@ -1545,7 +1576,22 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                     zIndex: 10,
                   }}
                 >
-                  <MD3CircularSpinner size="medium" color="var(--accent-color, #7C3AED)" />
+                  <div
+                    style={{
+                      width: '84px',
+                      height: '84px',
+                      borderRadius: '50%',
+                      background: 'rgba(15, 17, 26, 0.65)',
+                      backdropFilter: 'blur(8px)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <MD3CircularSpinner size={80} color="var(--accent-color, #7C3AED)" />
+                  </div>
                 </div>
               )}
             </div>
@@ -1614,7 +1660,22 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 pointerEvents: 'none',
               }}
             >
-              <MD3CircularSpinner size="medium" color="var(--accent-color, #7C3AED)" />
+              <div
+                style={{
+                  width: '84px',
+                  height: '84px',
+                  borderRadius: '50%',
+                  background: 'rgba(15, 17, 26, 0.65)',
+                  backdropFilter: 'blur(8px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
+                  flexShrink: 0,
+                }}
+              >
+                <MD3CircularSpinner size={80} color="var(--accent-color, #7C3AED)" />
+              </div>
             </div>
           </div>
         ) : null}

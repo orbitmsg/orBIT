@@ -581,3 +581,57 @@ pub fn rust_set_window_icon(hwnd_buf: Buffer, ico_path: String) -> bool {
     }
     false
 }
+
+#[napi]
+pub fn rust_show_window_instant(hwnd_buf: Buffer) -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        if hwnd_buf.len() < 8 {
+            return false;
+        }
+        let hwnd_val = isize::from_ne_bytes(hwnd_buf.as_ref()[..8].try_into().unwrap_or([0; 8]));
+        if hwnd_val == 0 {
+            return false;
+        }
+
+        const SW_SHOW: i32 = 5;
+
+        unsafe {
+            ShowWindow(hwnd_val, SW_SHOW);
+            SetForegroundWindow(hwnd_val);
+            SetFocus(hwnd_val);
+        }
+        true
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = hwnd_buf;
+        true
+    }
+}
+
+#[napi]
+pub fn rust_hide_window_instant(hwnd_buf: Buffer) -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        if hwnd_buf.len() < 8 {
+            return false;
+        }
+        let hwnd_val = isize::from_ne_bytes(hwnd_buf.as_ref()[..8].try_into().unwrap_or([0; 8]));
+        if hwnd_val == 0 {
+            return false;
+        }
+
+        const SW_HIDE: i32 = 0;
+
+        unsafe {
+            ShowWindow(hwnd_val, SW_HIDE);
+        }
+        true
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = hwnd_buf;
+        true
+    }
+}

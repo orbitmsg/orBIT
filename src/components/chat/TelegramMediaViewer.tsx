@@ -1371,19 +1371,19 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 >
                   <div
                     style={{
-                      width: '84px',
-                      height: '84px',
+                      width: '64px',
+                      height: '64px',
                       borderRadius: '50%',
-                      background: 'rgba(15, 17, 26, 0.65)',
+                      background: 'rgba(15, 17, 26, 0.2)',
                       backdropFilter: 'blur(8px)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
                       flexShrink: 0,
                     }}
                   >
-                    <MD3CircularSpinner size={80} color="var(--accent-color, #7C3AED)" />
+                    <MD3CircularSpinner size={60} color="var(--accent-color, #7C3AED)" />
                   </div>
                 </div>
               )}
@@ -1588,19 +1588,19 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                 >
                   <div
                     style={{
-                      width: '84px',
-                      height: '84px',
+                      width: '64px',
+                      height: '64px',
                       borderRadius: '50%',
-                      background: 'rgba(15, 17, 26, 0.65)',
+                      background: 'rgba(15, 17, 26, 0.2)',
                       backdropFilter: 'blur(8px)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
                       flexShrink: 0,
                     }}
                   >
-                    <MD3CircularSpinner size={80} color="var(--accent-color, #7C3AED)" />
+                    <MD3CircularSpinner size={60} color="var(--accent-color, #7C3AED)" />
                   </div>
                 </div>
               )}
@@ -1672,19 +1672,19 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
             >
               <div
                 style={{
-                  width: '84px',
-                  height: '84px',
+                  width: '64px',
+                  height: '64px',
                   borderRadius: '50%',
-                  background: 'rgba(15, 17, 26, 0.65)',
+                  background: 'rgba(15, 17, 26, 0.2)',
                   backdropFilter: 'blur(8px)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
                   flexShrink: 0,
                 }}
               >
-                <MD3CircularSpinner size={80} color="var(--accent-color, #7C3AED)" />
+                <MD3CircularSpinner size={60} color="var(--accent-color, #7C3AED)" />
               </div>
             </div>
           </div>

@@ -4778,29 +4778,12 @@ function initOrGetMediaWindow(initialPayload?: any): BrowserWindow {
     }
   });
 
-  mediaWindow.on('close', (e) => {
-    if (!isQuitting) {
-      e.preventDefault();
+  mediaWindow.on('close', () => {
+    if (mediaWindow && !mediaWindow.isDestroyed()) {
       saveMediaWindowState(mediaWindow, true);
-      currentMediaPayloadCache = null;
-      if (nativeModule?.rustHideWindowInstant) {
-        try {
-          nativeModule.rustHideWindowInstant(mediaWindow.getNativeWindowHandle());
-        } catch {}
-      }
-      mediaWindow.hide();
-      mediaWindow.webContents.setBackgroundThrottling(true);
-      try {
-        mediaWindow.webContents.send('orbita:media-payload', null);
-      } catch {}
-      trimAppMemory();
-    } else {
-      if (mediaWindow && !mediaWindow.isDestroyed()) {
-        saveMediaWindowState(mediaWindow, true);
-      }
-      currentMediaPayloadCache = null;
-      mediaWindow = null;
     }
+    currentMediaPayloadCache = null;
+    mediaWindow = null;
   });
 
   mediaWindow.on('resize', () => {
@@ -4894,18 +4877,22 @@ function createOrShowMediaWindow(initialPayload?: any): BrowserWindow {
     }
   }
 
-  win.webContents.setBackgroundThrottling(false);
-
-  if (isExisting && !win.webContents.isLoading()) {
+  if (isExisting) {
     if (currentMediaPayloadCache && !win.isDestroyed()) {
       win.webContents.send('orbita:media-payload', currentMediaPayloadCache);
     }
+    if (win.isMinimized()) win.restore();
+    if (!win.isVisible()) win.show();
+    win.focus();
   } else {
     win.webContents.once('did-finish-load', () => {
       if (win && !win.isDestroyed()) {
         if (currentMediaPayloadCache) {
           win.webContents.send('orbita:media-payload', currentMediaPayloadCache);
         }
+        if (win.isMinimized()) win.restore();
+        if (!win.isVisible()) win.show();
+        win.focus();
       }
     });
   }
@@ -4914,21 +4901,20 @@ function createOrShowMediaWindow(initialPayload?: any): BrowserWindow {
 }
 
 ipcMain.handle('orbita:open-media-window', (_event, payload?: any) => {
+  if (mediaWindow && !mediaWindow.isDestroyed() && payload) {
+    currentMediaPayloadCache = payload;
+    try {
+      mediaWindow.webContents.send('orbita:media-payload', payload);
+    } catch {}
+  }
   createOrShowMediaWindow(payload);
   return { success: true };
 });
 
 ipcMain.handle('orbita:media-window-ready', () => {
-  if (mediaWindow && !mediaWindow.isDestroyed()) {
+  if (mediaWindow && !mediaWindow.isDestroyed() && !mediaWindow.isVisible()) {
     if (mediaWindow.isMinimized()) mediaWindow.restore();
-    if (nativeModule?.rustShowWindowInstant) {
-      try {
-        nativeModule.rustShowWindowInstant(mediaWindow.getNativeWindowHandle());
-      } catch {}
-    }
-    if (!mediaWindow.isVisible()) {
-      mediaWindow.show();
-    }
+    mediaWindow.show();
     mediaWindow.focus();
   }
   return { success: true };
@@ -4938,16 +4924,8 @@ ipcMain.handle('orbita:close-media-window', () => {
   if (mediaWindow && !mediaWindow.isDestroyed()) {
     saveMediaWindowState(mediaWindow, true);
     currentMediaPayloadCache = null;
-    if (nativeModule?.rustHideWindowInstant) {
-      try {
-        nativeModule.rustHideWindowInstant(mediaWindow.getNativeWindowHandle());
-      } catch {}
-    }
-    mediaWindow.hide();
-    mediaWindow.webContents.setBackgroundThrottling(true);
-    try {
-      mediaWindow.webContents.send('orbita:media-payload', null);
-    } catch {}
+    mediaWindow.destroy();
+    mediaWindow = null;
   }
   trimAppMemory();
   return { success: true };
@@ -5015,16 +4993,10 @@ ipcMain.handle('window:close', (event) => {
     } else if (mediaWindow && win === mediaWindow) {
       saveMediaWindowState(mediaWindow, true);
       currentMediaPayloadCache = null;
-      if (nativeModule?.rustHideWindowInstant) {
-        try {
-          nativeModule.rustHideWindowInstant(mediaWindow.getNativeWindowHandle());
-        } catch {}
-      }
-      mediaWindow.hide();
-      mediaWindow.webContents.setBackgroundThrottling(true);
       try {
-        mediaWindow.webContents.send('orbita:media-payload', null);
+        mediaWindow.destroy();
       } catch {}
+      mediaWindow = null;
       trimAppMemory();
     } else if (win === mainWindow) {
       if (showInTraySetting) {
@@ -5469,14 +5441,6 @@ function createMainWindow() {
   } else {
     mainWindow.loadURL('http://127.0.0.1:5173');
   }
-
-  mainWindow.webContents.once('did-finish-load', () => {
-    setTimeout(() => {
-      if (!mediaWindow || mediaWindow.isDestroyed()) {
-        initOrGetMediaWindow();
-      }
-    }, 1200);
-  });
 
   mainWindow.on('minimize', () => {
     try {

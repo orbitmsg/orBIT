@@ -1191,8 +1191,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                       width: '100%',
                       height: '100%',
                       objectFit: 'contain',
-                      filter: 'blur(20px)',
-                      transform: 'scale(1.05)',
+                      filter: 'blur(8px)',
                       pointerEvents: 'none',
                       userSelect: 'none',
                     }}
@@ -1316,9 +1315,9 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                   display: 'block',
                   transform: (rotation !== 0 || zoomScale > 1 || panOffset.x !== 0 || panOffset.y !== 0)
                     ? `translate3d(${panOffset.x}px, ${panOffset.y}px, 0) rotate(${rotation}deg) scale(${zoomScale})`
-                    : (isMediaLoaded ? 'none' : 'scale(1.03)'),
-                  filter: isMediaLoaded ? 'blur(0px)' : 'blur(20px)',
-                  transition: isMediaLoaded ? 'filter 0.25s ease, transform 0.25s ease' : 'none',
+                    : 'none',
+                  filter: isMediaLoaded ? 'blur(0px)' : 'blur(8px)',
+                  transition: isMediaLoaded ? 'filter 0.15s ease' : 'none',
                   position: 'relative',
                   zIndex: 2,
                 }}
@@ -1475,8 +1474,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                       width: '100%',
                       height: '100%',
                       objectFit: 'contain',
-                      filter: 'blur(20px)',
-                      transform: 'scale(1.05)',
+                      filter: 'blur(8px)',
                       pointerEvents: 'none',
                       userSelect: 'none',
                     }}
@@ -1509,9 +1507,9 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                   borderRadius: 0,
                   transform: (rotation !== 0 || zoomScale > 1 || panOffset.x !== 0 || panOffset.y !== 0)
                     ? `translate3d(${panOffset.x}px, ${panOffset.y}px, 0) rotate(${rotation}deg) scale(${zoomScale})`
-                    : (isMediaLoaded ? 'none' : 'scale(1.03)'),
-                  filter: isMediaLoaded ? 'blur(0px)' : 'blur(20px)',
-                  transition: isMediaLoaded ? 'filter 0.25s ease, transform 0.25s ease' : 'none',
+                    : 'none',
+                  filter: isMediaLoaded ? 'blur(0px)' : 'blur(8px)',
+                  transition: isMediaLoaded ? 'filter 0.15s ease' : 'none',
                   cursor: areControlsVisible ? (zoomScale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default') : 'none',
                   pointerEvents: 'auto',
                   display: 'block',
@@ -1588,8 +1586,7 @@ export const TelegramMediaViewer: React.FC<TelegramMediaViewerProps> = ({
                     width: '100%',
                     height: '100%',
                     objectFit: 'contain',
-                    filter: 'blur(20px)',
-                    transform: 'scale(1.05)',
+                    filter: 'blur(8px)',
                     pointerEvents: 'none',
                     userSelect: 'none',
                   }}

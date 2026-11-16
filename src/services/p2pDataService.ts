@@ -11,6 +11,12 @@ const ICE_SERVERS: RTCConfiguration = {
   ],
 };
 
+export interface PresencePayload {
+  type: 'presence';
+  isOnline: boolean;
+  timestamp: number;
+}
+
 interface P2PSignalPayload {
   type: 'p2p-signal';
   subType: 'offer' | 'answer' | 'candidate';
@@ -97,7 +103,15 @@ class P2PDataService {
 
       pc.onconnectionstatechange = () => {
         if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+          const wasOpen = this.isP2pReady(chatId);
           this.close(chatId);
+          if (wasOpen) {
+            const resolvedChatId = useChatStore.getState().chats.find((c) => c.id === chatId || c.peerCode === chatId)?.id || chatId;
+            useChatStore.getState().updateChat(resolvedChatId, {
+              online: false,
+              lastSeen: Date.now(),
+            });
+          }
         }
       };
 
@@ -151,7 +165,15 @@ class P2PDataService {
 
         pc.onconnectionstatechange = () => {
           if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+            const wasOpen = this.isP2pReady(chatId);
             this.close(chatId);
+            if (wasOpen) {
+              const resolvedChatId = useChatStore.getState().chats.find((c) => c.id === chatId || c.peerCode === chatId)?.id || chatId;
+              useChatStore.getState().updateChat(resolvedChatId, {
+                online: false,
+                lastSeen: Date.now(),
+              });
+            }
           }
         };
 
@@ -216,12 +238,14 @@ class P2PDataService {
 
     dc.onopen = () => {
       const isOnline = !useChatStore.getState().ghostModeEnabled;
-      this.send(chatId, {
+      const payload: PresencePayload = {
         type: 'presence',
-        isOnline,
+        isOnline: Boolean(isOnline),
         timestamp: Date.now(),
-      });
-      useChatStore.getState().updateChat(chatId, {
+      };
+      this.send(chatId, payload);
+      const resolvedChatId = useChatStore.getState().chats.find((c) => c.id === chatId || c.peerCode === chatId)?.id || chatId;
+      useChatStore.getState().updateChat(resolvedChatId, {
         online: true,
         lastSeen: Date.now(),
       });
@@ -229,12 +253,18 @@ class P2PDataService {
 
     dc.onmessage = (event) => {
       try {
-        const parsed = JSON.parse(event.data);
+        const parsed = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
         if (parsed && parsed.type === 'presence') {
-          useChatStore.getState().updateChat(chatId, {
-            online: Boolean(parsed.isOnline),
-            lastSeen: parsed.timestamp || Date.now(),
-          });
+          if (typeof parsed.isOnline === 'boolean') {
+            const validTimestamp = (typeof parsed.timestamp === 'number' && Number.isFinite(parsed.timestamp) && parsed.timestamp > 0)
+              ? parsed.timestamp
+              : Date.now();
+            const resolvedChatId = useChatStore.getState().chats.find((c) => c.id === chatId || c.peerCode === chatId)?.id || chatId;
+            useChatStore.getState().updateChat(resolvedChatId, {
+              online: parsed.isOnline,
+              lastSeen: validTimestamp,
+            });
+          }
         }
         const listeners = this.messageListeners.get(chatId);
         if (listeners) {
@@ -249,7 +279,8 @@ class P2PDataService {
 
     dc.onclose = () => {
       this.dataChannels.delete(chatId);
-      useChatStore.getState().updateChat(chatId, {
+      const resolvedChatId = useChatStore.getState().chats.find((c) => c.id === chatId || c.peerCode === chatId)?.id || chatId;
+      useChatStore.getState().updateChat(resolvedChatId, {
         online: false,
         lastSeen: Date.now(),
       });
@@ -257,7 +288,8 @@ class P2PDataService {
 
     dc.onerror = () => {
       this.dataChannels.delete(chatId);
-      useChatStore.getState().updateChat(chatId, {
+      const resolvedChatId = useChatStore.getState().chats.find((c) => c.id === chatId || c.peerCode === chatId)?.id || chatId;
+      useChatStore.getState().updateChat(resolvedChatId, {
         online: false,
         lastSeen: Date.now(),
       });
@@ -265,9 +297,9 @@ class P2PDataService {
   }
 
   public broadcastPresence(isOnline: boolean): void {
-    const payload = {
+    const payload: PresencePayload = {
       type: 'presence',
-      isOnline,
+      isOnline: Boolean(isOnline),
       timestamp: Date.now(),
     };
     for (const dc of this.dataChannels.values()) {
@@ -280,11 +312,12 @@ class P2PDataService {
   }
 
   public sendPresence(chatId: string, isOnline: boolean): boolean {
-    return this.send(chatId, {
+    const payload: PresencePayload = {
       type: 'presence',
-      isOnline,
+      isOnline: Boolean(isOnline),
       timestamp: Date.now(),
-    });
+    };
+    return this.send(chatId, payload);
   }
 
   public close(chatId: string): void {

@@ -718,7 +718,7 @@ export const useHandshakeListeners = ({
   const chatPresenceKey = useMemo(() => {
     return chats
       .filter((c) => c.type === 'private' && c.id !== 'notes')
-      .map((c) => `${c.id}:${c.peerCode || ''}`)
+      .map((c) => `${c.id}:${c.peerCode || ''}:${c.originalPeerCode || ''}`)
       .join('|');
   }, [chats]);
 
@@ -730,13 +730,23 @@ export const useHandshakeListeners = ({
     privateChats.forEach((chat) => {
       const peerId = (chat.peerCode && chat.peerCode !== 'Unknown' && chat.peerCode.trim())
         ? chat.peerCode.trim()
-        : (chat.id && chat.id.length === 36 && !chat.id.includes('-'))
-          ? chat.id.trim()
-          : null;
+        : (chat.originalPeerCode && chat.originalPeerCode !== 'Unknown' && chat.originalPeerCode.trim())
+          ? chat.originalPeerCode.trim()
+          : (chat.id && chat.id.trim() && chat.id !== 'notes')
+            ? chat.id.trim()
+            : null;
       if (!peerId) return;
 
-      peerCodesToQuery.push(peerId);
-      if (chat.id && chat.id !== peerId) {
+      if (!peerCodesToQuery.includes(peerId)) {
+        peerCodesToQuery.push(peerId);
+      }
+      if (chat.peerCode && chat.peerCode.trim() && !peerCodesToQuery.includes(chat.peerCode.trim())) {
+        peerCodesToQuery.push(chat.peerCode.trim());
+      }
+      if (chat.originalPeerCode && chat.originalPeerCode.trim() && !peerCodesToQuery.includes(chat.originalPeerCode.trim())) {
+        peerCodesToQuery.push(chat.originalPeerCode.trim());
+      }
+      if (chat.id && chat.id.trim() && chat.id !== 'notes' && !peerCodesToQuery.includes(chat.id.trim())) {
         peerCodesToQuery.push(chat.id.trim());
       }
 
@@ -760,7 +770,10 @@ export const useHandshakeListeners = ({
         const presenceMap = await supabaseService.fetchPeersPresence(peerCodesToQuery);
         for (const chat of privateChats) {
           const peerId = chat.peerCode?.trim();
-          const info = (peerId && presenceMap.get(peerId)) || presenceMap.get(chat.id);
+          const origPeerId = chat.originalPeerCode?.trim();
+          const info = (peerId && presenceMap.get(peerId)) ||
+            (origPeerId && presenceMap.get(origPeerId)) ||
+            presenceMap.get(chat.id);
           if (info) {
             const current = useChatStore.getState().chats.find((c) => c.id === chat.id);
             if (current && (current.online !== info.isOnline || (info.lastSeen && current.lastSeen !== info.lastSeen))) {

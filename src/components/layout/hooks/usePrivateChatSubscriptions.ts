@@ -212,10 +212,16 @@ export const usePrivateChatSubscriptions = ({
       }
 
       if (data.type === 'presence') {
-        updateChat(chatId, {
-          online: Boolean(data.isOnline),
-          lastSeen: data.timestamp || Date.now(),
-        });
+        if (typeof data.isOnline === 'boolean') {
+          const now = Date.now();
+          const validTimestamp = (typeof data.timestamp === 'number' && Number.isFinite(data.timestamp) && data.timestamp > 0)
+            ? data.timestamp
+            : now;
+          updateChat(targetChatId, {
+            online: data.isOnline,
+            lastSeen: validTimestamp,
+          });
+        }
         return;
       }
 
@@ -598,10 +604,16 @@ export const usePrivateChatSubscriptions = ({
       }
 
       if (data.type === 'presence') {
-        updateChat(chatId, {
-          online: Boolean(data.isOnline),
-          lastSeen: data.timestamp || Date.now(),
-        });
+        if (typeof data.isOnline === 'boolean') {
+          const now = Date.now();
+          const validTimestamp = (typeof data.timestamp === 'number' && Number.isFinite(data.timestamp) && data.timestamp > 0)
+            ? data.timestamp
+            : now;
+          updateChat(targetChatId, {
+            online: data.isOnline,
+            lastSeen: validTimestamp,
+          });
+        }
         return;
       }
 

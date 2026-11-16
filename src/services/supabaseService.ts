@@ -1947,28 +1947,40 @@ class SupabaseService {
       const { data, error } = await this.client
         .from('profile_updates')
         .select('sender_code, chat_id, updated_at, bio')
-        .or(`sender_code.in.(${cleanCodes.join(',')}),chat_id.in.(${cleanCodes.join(',')})`);
+        .or(`sender_code.in.(${cleanCodes.join(',')}),chat_id.in.(${cleanCodes.join(',')})`)
+        .order('updated_at', { ascending: false });
 
       if (!error && data && Array.isArray(data)) {
         const now = Date.now();
         for (const row of data) {
           const key = row.sender_code || row.chat_id;
           if (!key) continue;
-          const updatedTime = row.updated_at ? new Date(row.updated_at).getTime() : 0;
+          const rawUpdatedTime = row.updated_at ? new Date(row.updated_at).getTime() : 0;
+          const updatedTime = Number.isFinite(rawUpdatedTime) ? rawUpdatedTime : 0;
           const bio = row.bio || '';
           const match = bio.match(/<!--presence:(0|1):(\d+)-->/);
           let isExplicitOnline = false;
           let explicitTimestamp = updatedTime;
           if (match) {
             isExplicitOnline = match[1] === '1';
-            explicitTimestamp = Number(match[2]) || updatedTime;
+            const parsedExplicit = Number(match[2]);
+            if (Number.isFinite(parsedExplicit) && parsedExplicit > 0) {
+              explicitTimestamp = parsedExplicit;
+            }
           }
-          const isFresh = (now - Math.max(updatedTime, explicitTimestamp)) < 90000;
-          const isOnline = isExplicitOnline && isFresh;
-          const lastSeen = isOnline ? now : Math.max(updatedTime, explicitTimestamp);
-          result.set(key, { isOnline, lastSeen });
-          if (row.sender_code) result.set(row.sender_code, { isOnline, lastSeen });
-          if (row.chat_id) result.set(row.chat_id, { isOnline, lastSeen });
+          const recordTimestamp = Math.max(updatedTime, explicitTimestamp);
+          const isFresh = recordTimestamp > 0 && (now - recordTimestamp) < 90000;
+          const isOnline = Boolean(isExplicitOnline && isFresh);
+          const lastSeen = isOnline ? now : (recordTimestamp > 0 ? recordTimestamp : 0);
+          const savePresence = (k: string) => {
+            const existing = result.get(k);
+            if (!existing || lastSeen > existing.lastSeen || (isOnline && !existing.isOnline)) {
+              result.set(k, { isOnline, lastSeen });
+            }
+          };
+          savePresence(key);
+          if (row.sender_code) savePresence(row.sender_code);
+          if (row.chat_id) savePresence(row.chat_id);
         }
       }
     } catch {}

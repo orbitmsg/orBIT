@@ -42,7 +42,8 @@ function getReactionUniqueUsers(
   users: string[],
   myUserId?: string | null,
   myCode?: string | null,
-  myNickname?: string | null
+  myNickname?: string | null,
+  activeChat?: any
 ): { uniqueUsers: string[]; uniqueCount: number; hasReacted: boolean } {
   const lowerUserId = myUserId ? myUserId.toLowerCase() : null;
   const lowerCode = myCode ? myCode.toLowerCase() : null;
@@ -51,7 +52,10 @@ function getReactionUniqueUsers(
   const list: string[] = [];
   let reacted = false;
 
+  const isPrivate = activeChat?.type === 'private' && activeChat.id !== 'notes';
+
   for (const u of users) {
+    if (!u) continue;
     const lowerU = u.toLowerCase();
     const isMe =
       (myUserId && u === myUserId) ||
@@ -63,17 +67,40 @@ function getReactionUniqueUsers(
       u === 'YOU' ||
       lowerU === 'you';
 
-    const key = isMe ? '__ME__' : lowerU;
+    let key: string;
+    if (isMe) {
+      key = '__ME__';
+      reacted = true;
+    } else if (isPrivate) {
+      key = '__PEER__';
+    } else if (activeChat?.members) {
+      const member = activeChat.members.find(
+        (m: any) =>
+          (m.userId && (m.userId === u || m.userId.toLowerCase() === lowerU)) ||
+          (m.userCode && (m.userCode === u || m.userCode.toLowerCase() === lowerU)) ||
+          (m.nickname && (m.nickname === u || m.nickname.toLowerCase() === lowerU)) ||
+          (m.user_code && (m.user_code === u || String(m.user_code).toLowerCase() === lowerU)) ||
+          (m.user_id && (m.user_id === u || String(m.user_id).toLowerCase() === lowerU))
+      );
+      if (member) {
+        const canonicalId = member.userId || member.userCode || member.user_code || member.nickname || lowerU;
+        key = `member_${String(canonicalId).toLowerCase()}`;
+      } else {
+        key = lowerU;
+      }
+    } else {
+      key = lowerU;
+    }
+
     if (!seen.has(key)) {
       seen.add(key);
       list.push(u);
     }
-    if (isMe) reacted = true;
   }
 
   return {
     uniqueUsers: list,
-    uniqueCount: Math.max(1, list.length),
+    uniqueCount: list.length > 0 ? list.length : 0,
     hasReacted: reacted,
   };
 }

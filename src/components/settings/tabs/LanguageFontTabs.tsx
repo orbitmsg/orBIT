@@ -218,7 +218,7 @@ export const LanguageTab = ({ language, setLanguage, languageDisplayOptions }: L
                 alignItems: 'center',
                 gap: 16,
                 padding: '12px 16px',
-                borderRadius: '12px',
+                borderRadius: '10px',
                 margin: '2px 6px',
                 cursor: 'pointer',
                 transition: 'background 150ms',
@@ -319,7 +319,7 @@ export const ChatBubblePreview: React.FC<ChatBubblePreviewProps> = ({
         gap: 10,
         padding: '14px 14px',
         backgroundColor: tintTokens.bgPrimary,
-        borderRadius: 12,
+        borderRadius: 10,
         border: `1px solid ${tintTokens.borderColor}`,
         transition: 'background-color 180ms ease, border-color 180ms ease',
       }}

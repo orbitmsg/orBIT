@@ -87,13 +87,16 @@ export const MyAccountTab = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              borderRadius: '20px',
+              overflow: 'hidden',
+              backgroundColor: '#232428',
             }}
           >
             <Avatar
               src={avatarUrl}
               alt={nickname || 'User'}
-              className="w-24 h-24 rounded-full"
-              style={{ width: '96px', height: '96px', backgroundColor: 'var(--settings-bg, var(--bg-secondary))' }}
+              className="w-24 h-24 rounded-[20px]"
+              style={{ width: '96px', height: '96px', borderRadius: '20px' }}
             />
           </div>
           <button
@@ -110,7 +113,7 @@ export const MyAccountTab = ({
               borderRadius: '50%',
               background: 'var(--accent-color)',
               color: 'var(--accent-on-color, #ffffff)',
-              border: '3.5px solid var(--settings-bg, var(--bg-secondary))',
+              border: '3.5px solid #232428',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -144,7 +147,7 @@ export const MyAccountTab = ({
                   top: menuPos.top + 'px',
                   left: menuPos.left + 'px',
                   backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
-                  borderRadius: '9px',
+                  borderRadius: '10px',
                   border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
                   boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3)',
                   padding: '0',
@@ -388,7 +391,7 @@ export const MyAccountTab = ({
           backgroundColor: MD3.surface,
           padding: '12px 16px',
           margin: '0 10px',
-          borderRadius: '16px',
+          borderRadius: '10px',
           fontSize: '13px',
           color: MD3.onSurfaceVar,
           lineHeight: '1.45',

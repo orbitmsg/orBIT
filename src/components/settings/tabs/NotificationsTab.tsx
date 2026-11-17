@@ -113,7 +113,7 @@ export const NotificationsTab = ({
             <div
               style={{
                 backgroundColor: 'var(--surface-container, var(--bg-secondary, #1c182a))',
-                borderRadius: '16px',
+                borderRadius: '10px',
                 padding: '12px 16px',
                 margin: '4px 10px 18px 10px',
                 width: 'calc(100% - 20px)',

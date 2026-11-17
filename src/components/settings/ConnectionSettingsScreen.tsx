@@ -152,7 +152,7 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
       <div
         style={{
           backgroundColor: 'var(--md-surface, var(--surface-container-soft, rgba(255,255,255,0.04)))',
-          borderRadius: '18px',
+          borderRadius: '10px',
           border: '1px solid var(--border-color, transparent)',
           boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
           padding: '14px 16px',
@@ -413,7 +413,7 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
           <div
             style={{
               backgroundColor: 'var(--md-surface, var(--surface-container-soft, rgba(255,255,255,0.04)))',
-              borderRadius: '18px',
+              borderRadius: '10px',
               border: '1px solid var(--border-color, transparent)',
               boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
               padding: '14px 16px',
@@ -496,7 +496,7 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
         <div
           style={{
             backgroundColor: 'var(--md-surface, var(--surface-container-soft, rgba(255,255,255,0.04)))',
-            borderRadius: '18px',
+            borderRadius: '10px',
             border: '1px solid var(--border-color, transparent)',
             boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
             overflow: 'visible',
@@ -824,7 +824,7 @@ export const ConnectionSettingsScreen: React.FC<ConnectionSettingsScreenProps> =
         <div
           style={{
             backgroundColor: 'var(--md-surface, var(--surface-container-soft, rgba(255,255,255,0.04)))',
-            borderRadius: '18px',
+            borderRadius: '10px',
             border: '1px solid var(--border-color, transparent)',
             boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
             overflow: 'hidden',

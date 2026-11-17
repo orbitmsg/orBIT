@@ -75,7 +75,7 @@ export const MainTab = ({
           width: 'calc(100% - 20px)',
           userSelect: 'none',
           cursor: 'pointer',
-          borderRadius: '16px',
+          borderRadius: '10px',
           boxSizing: 'border-box',
           transition: 'background 150ms',
         }}
@@ -86,8 +86,8 @@ export const MainTab = ({
           <Avatar
             src={avatarUrl}
             alt={nickname || '?'}
-            className="w-[66px] h-[66px] rounded-full"
-            style={{ width: '66px', height: '66px' }}
+            className="w-[66px] h-[66px] rounded-[16px]"
+            style={{ width: '66px', height: '66px', borderRadius: '16px' }}
           />
         </div>
 
@@ -131,7 +131,7 @@ export const MainTab = ({
             style={{
               background: 'transparent',
               border: 'none',
-              borderRadius: '12px',
+              borderRadius: '10px',
               color: MD3.onSurfaceVar,
               cursor: 'pointer',
               padding: '6px',

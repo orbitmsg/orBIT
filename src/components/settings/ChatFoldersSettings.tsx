@@ -204,7 +204,7 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
           <div
             style={{
               backgroundColor: 'var(--surface-container, rgba(255, 255, 255, 0.04))',
-              borderRadius: '16px',
+              borderRadius: '10px',
               padding: '16px 18px',
               margin: '0 10px 4px 10px',
               display: 'flex',
@@ -247,7 +247,7 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         padding: '12px 14px',
-                        borderRadius: '12px',
+                        borderRadius: '10px',
                         margin: '2px 6px',
                         cursor: 'pointer',
                         backgroundColor: isHovered ? 'var(--surface-hover, rgba(202,196,208,0.08))' : 'transparent',
@@ -350,7 +350,7 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
                   alignItems: 'center',
                   gap: 12,
                   padding: '12px 14px',
-                  borderRadius: '12px',
+                  borderRadius: '10px',
                   margin: '2px 6px',
                   backgroundColor: 'transparent',
                   border: 'none',
@@ -439,7 +439,7 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
                     alignItems: 'center',
                     gap: 8,
                     backgroundColor: 'var(--surface-container, rgba(255, 255, 255, 0.04))',
-                    borderRadius: '12px',
+                    borderRadius: '10px',
                     padding: '8px 12px',
                   }}
                 >
@@ -490,7 +490,7 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         padding: '8px 12px',
-                        borderRadius: '12px',
+                        borderRadius: '10px',
                         margin: '2px 6px',
                         cursor: 'pointer',
                         backgroundColor: isHovered ? 'var(--surface-hover, rgba(202,196,208,0.08))' : 'transparent',
@@ -559,7 +559,7 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
               style={{
                 flex: 1,
                 padding: '12px 16px',
-                borderRadius: '12px',
+                borderRadius: '10px',
                 border: 'none',
                 backgroundColor: folderName.trim() ? MD3.accent : 'var(--surface-muted, rgba(255, 255, 255, 0.08))',
                 color: folderName.trim() ? MD3.onPrimary : MD3.onSurfaceVar,
@@ -577,7 +577,7 @@ export const ChatFoldersSettings: React.FC<ChatFoldersSettingsProps> = () => {
               aria-label={t('common.cancel', 'Отмена')}
               style={{
                 padding: '12px 18px',
-                borderRadius: '12px',
+                borderRadius: '10px',
                 border: 'none',
                 backgroundColor: 'var(--surface-container-strong, rgba(255, 255, 255, 0.06))',
                 color: MD3.onSurface,

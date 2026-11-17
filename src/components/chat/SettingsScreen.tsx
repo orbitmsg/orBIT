@@ -984,7 +984,7 @@ export const SettingsScreen = () => {
             margin: 0,
             willChange: 'transform, opacity',
             marginTop: isMobileWidth ? '30px' : '0',
-            backgroundColor: MD3.bg,
+            backgroundColor: '#232428',
             borderRadius: isMobileWidth ? 0 : 10,
             border: 'none',
             color: MD3.onSurface,
@@ -1018,7 +1018,7 @@ export const SettingsScreen = () => {
               display: 'flex',
               flexDirection: 'column',
               position: 'relative',
-              backgroundColor: MD3.bg,
+              backgroundColor: '#232428',
             }}
           >
             <div
@@ -1028,7 +1028,7 @@ export const SettingsScreen = () => {
                 zIndex: 10,
                 height: isMobileWidth ? undefined : '52px',
                 padding: isMobileWidth ? '16px 20px' : '0 22px',
-                backgroundColor: MD3.bg,
+                backgroundColor: '#232428',
                 borderBottom: 'none',
                 flexShrink: 0,
                 userSelect: 'none',

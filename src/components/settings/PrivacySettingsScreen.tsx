@@ -166,7 +166,7 @@ export const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup, onOpenOrbi
             onClick={onOpenPassword}
             style={{
               padding: '14px 14px',
-              borderRadius: '12px',
+              borderRadius: '10px',
               margin: '2px 6px',
               display: 'flex',
               alignItems: 'center',
@@ -193,7 +193,7 @@ export const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup, onOpenOrbi
             onClick={onOpenOrbitaKey}
             style={{
               padding: '14px 14px',
-              borderRadius: '12px',
+              borderRadius: '10px',
               margin: '2px 6px',
               display: 'flex',
               alignItems: 'center',
@@ -259,7 +259,7 @@ export const PrivacySettingsScreen = ({ onOpenPassword, onOpenBackup, onOpenOrbi
             onClick={onOpenBackup}
             style={{
               padding: '14px 14px',
-              borderRadius: '12px',
+              borderRadius: '10px',
               margin: '2px 6px',
               display: 'flex',
               alignItems: 'center',

@@ -154,7 +154,7 @@ export const QuickEntry = ({ onStatusChange }: QuickEntryProps) => {
       style={{
         backgroundColor: 'var(--surface-container)',
         border: '1px solid var(--border-color)',
-        borderRadius: '16px',
+        borderRadius: '10px',
         padding: '20px 24px',
         width: '100%',
         maxWidth: '480px',
@@ -243,7 +243,7 @@ export const QuickEntry = ({ onStatusChange }: QuickEntryProps) => {
             style={{
               width: '180px',
               height: '180px',
-              borderRadius: '16px',
+              borderRadius: '10px',
               backgroundColor: 'var(--surface-container-strong)',
               display: 'flex',
               alignItems: 'center',
@@ -257,7 +257,7 @@ export const QuickEntry = ({ onStatusChange }: QuickEntryProps) => {
             style={{
               position: 'relative',
               padding: '12px',
-              borderRadius: '16px',
+              borderRadius: '10px',
               backgroundColor: '#ffffff',
               boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3)',
             }}
@@ -269,7 +269,7 @@ export const QuickEntry = ({ onStatusChange }: QuickEntryProps) => {
             style={{
               width: '180px',
               height: '180px',
-              borderRadius: '16px',
+              borderRadius: '10px',
               border: '2px dashed var(--border-color)',
               display: 'flex',
               alignItems: 'center',
@@ -378,7 +378,7 @@ export const QuickEntry = ({ onStatusChange }: QuickEntryProps) => {
               gap: '6px',
               flex: 1,
               padding: '10px 16px',
-              borderRadius: '12px',
+              borderRadius: '10px',
               backgroundColor: 'var(--surface-container-strong)',
               border: '1px solid var(--border-color)',
               color: 'var(--accent-text, var(--accent-color))',
@@ -407,7 +407,7 @@ export const QuickEntry = ({ onStatusChange }: QuickEntryProps) => {
               justifyContent: 'center',
               gap: '6px',
               padding: '10px 16px',
-              borderRadius: '12px',
+              borderRadius: '10px',
               backgroundColor: status.running ? 'rgba(239, 68, 68, 0.12)' : 'var(--accent-color)',
               border: status.running
                 ? '1px solid rgba(239, 68, 68, 0.35)'

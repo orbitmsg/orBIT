@@ -312,8 +312,8 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
         <Avatar
           src={avatarUrl}
           alt={nickname || '?'}
-          className="w-[38px] h-[38px] rounded-full shrink-0"
-          style={{ width: 38, height: 38, flexShrink: 0 }}
+          className="w-[38px] h-[38px] rounded-[10px] shrink-0"
+          style={{ width: 38, height: 38, flexShrink: 0, borderRadius: '10px' }}
         />
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
@@ -447,7 +447,6 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
                 style={{
                   fontSize: 11,
                   fontWeight: 700,
-                  textTransform: 'uppercase',
                   letterSpacing: '0.04em',
                   color: MD3.onSurfaceVar,
                   padding: '2px 10px 4px',

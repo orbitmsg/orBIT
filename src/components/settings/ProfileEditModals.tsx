@@ -331,7 +331,7 @@ export const UsernameEditModal = ({ open, onClose, currentUsername, onSave }: Us
             exit={{ opacity: 0 }}
             style={{
               backgroundColor: 'var(--bg-secondary)',
-              borderRadius: '16px',
+              borderRadius: '10px',
               padding: '24px',
               width: '100%',
               maxWidth: '400px',
@@ -683,7 +683,7 @@ export const BirthdayEditModal = ({ open, onClose, currentBirthday, onSave }: Bi
                     aria-label={t('common.delete', 'Удалить')}
                     style={{
                       padding: '8px 12px',
-                      borderRadius: '20px',
+                      borderRadius: '10px',
                       border: 'none',
                       backgroundColor: 'transparent',
                       color: 'var(--md-error, #ff595a)',

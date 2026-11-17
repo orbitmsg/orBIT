@@ -269,9 +269,9 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
           style={{
             width: '100%',
             maxWidth: '380px',
-            backgroundColor: 'var(--surface-container, #ffffff)',
+            backgroundColor: 'var(--surface-container-soft, rgba(0, 0, 0, 0.22))',
             border: '1px solid var(--border-color, rgba(255, 255, 255, 0.12))',
-            borderRadius: '12px',
+            borderRadius: '10px',
             padding: '14px 18px',
             display: 'grid',
             gridTemplateColumns: 'repeat(2, 1fr)',
@@ -358,7 +358,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
               style={{
                 flex: 1,
                 padding: '9px 16px',
-                borderRadius: '18px',
+                borderRadius: '10px',
                 border: '1px solid var(--border-color, rgba(255, 255, 255, 0.12))',
                 backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.06))',
                 color: 'var(--text-main, #ffffff)',
@@ -381,7 +381,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
             style={{
               flex: 1,
               padding: '9px 16px',
-              borderRadius: '18px',
+              borderRadius: '10px',
               border: 'none',
               backgroundColor: 'var(--accent-color, #6366f1)',
               color: 'var(--accent-on-color, #ffffff)',
@@ -435,17 +435,17 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
           <div
             onClick={onOpenCloud}
             style={{
-              backgroundColor: 'var(--md-surface, #2a253b)',
+              backgroundColor: 'var(--surface-container-soft, rgba(0, 0, 0, 0.22))',
               padding: '16px 18px',
-              borderRadius: '16px',
+              borderRadius: '10px',
               display: 'flex',
               flexDirection: 'column',
               gap: '12px',
               cursor: 'pointer',
               transition: 'background-color 0.15s ease',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--md-surface-var, #342e47)')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--md-surface, #2a253b)')}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(255, 255, 255, 0.08))')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-soft, rgba(0, 0, 0, 0.22))')}
           >
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
               <div
@@ -484,7 +484,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
                 aria-label={configVersion > 0 ? t('backup.manage_btn') : t('backup.setup_btn')}
                 style={{
                   padding: '6px 18px',
-                  borderRadius: '16px',
+                  borderRadius: '10px',
                   border: 'none',
                   backgroundColor: 'var(--accent-color, #9b7dd4)',
                   color: 'var(--accent-on-color, #ffffff)',
@@ -517,17 +517,17 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
           <div
             onClick={onOpenPc}
             style={{
-              backgroundColor: 'var(--md-surface, #2a253b)',
+              backgroundColor: 'var(--surface-container-soft, rgba(0, 0, 0, 0.22))',
               padding: '16px 18px',
-              borderRadius: '16px',
+              borderRadius: '10px',
               display: 'flex',
               flexDirection: 'column',
               gap: '12px',
               cursor: 'pointer',
               transition: 'background-color 0.15s ease',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--md-surface-var, #342e47)')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--md-surface, #2a253b)')}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(255, 255, 255, 0.08))')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-container-soft, rgba(0, 0, 0, 0.22))')}
           >
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
               <div
@@ -566,7 +566,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
                 aria-label={backupEnabled ? t('backup.manage_btn') : t('backup.enable_btn')}
                 style={{
                   padding: '6px 18px',
-                  borderRadius: '16px',
+                  borderRadius: '10px',
                   border: '1px solid var(--border-color, rgba(255, 255, 255, 0.16))',
                   backgroundColor: backupEnabled ? 'var(--surface-container-soft, rgba(255, 255, 255, 0.08))' : 'var(--surface-container-strong, rgba(255, 255, 255, 0.12))',
                   color: 'var(--text-main, #ffffff)',
@@ -617,7 +617,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
               aria-label={t('backup.enable_backup')}
               style={{
                 padding: '9px 24px',
-                borderRadius: '18px',
+                borderRadius: '10px',
                 border: 'none',
                 backgroundColor: 'var(--accent-color, #6366f1)',
                 color: 'var(--accent-on-color, #ffffff)',
@@ -648,7 +648,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
                 aria-label={t('backup.create_backup_btn')}
                 style={{
                   padding: '8px 20px',
-                  borderRadius: '18px',
+                  borderRadius: '10px',
                   border: 'none',
                   backgroundColor: 'var(--surface-container-strong, rgba(255, 255, 255, 0.12))',
                   color: 'var(--text-main, #ffffff)',
@@ -699,7 +699,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
                   aria-label={t('backup.show_in_folder')}
                   style={{
                     padding: '6px 14px',
-                    borderRadius: '16px',
+                    borderRadius: '10px',
                     border: 'none',
                     backgroundColor: 'var(--surface-container-strong, rgba(255, 255, 255, 0.1))',
                     color: 'var(--text-main, #ffffff)',
@@ -719,7 +719,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
                   aria-label={t('backup.change_folder')}
                   style={{
                     padding: '6px 14px',
-                    borderRadius: '16px',
+                    borderRadius: '10px',
                     border: 'none',
                     backgroundColor: 'var(--surface-container-soft, rgba(255, 255, 255, 0.06))',
                     color: 'var(--text-dim, rgba(255, 255, 255, 0.85))',
@@ -752,7 +752,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
                 aria-label={t('backup.view_key')}
                 style={{
                   padding: '6px 16px',
-                  borderRadius: '16px',
+                  borderRadius: '10px',
                   border: 'none',
                   backgroundColor: 'var(--surface-container-strong, rgba(255, 255, 255, 0.1))',
                   color: 'var(--text-main, #ffffff)',
@@ -775,7 +775,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
                 aria-label={t('backup.disable_btn')}
                 style={{
                   padding: '6px 16px',
-                  borderRadius: '16px',
+                  borderRadius: '10px',
                   border: 'none',
                   backgroundColor: 'var(--md-error-cont, rgba(239, 68, 68, 0.12))',
                   color: 'var(--md-error, #ef4444)',
@@ -978,7 +978,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
           style={{
             width: '100%',
             padding: '10px 18px',
-            borderRadius: '18px',
+            borderRadius: '10px',
             border: 'none',
             backgroundColor: 'var(--accent-color, #6366f1)',
             color: 'var(--accent-on-color, #ffffff)',
@@ -1019,7 +1019,7 @@ export const AccountBackupScreen: React.FC<AccountBackupScreenProps> = ({
             style={{
               width: '100%',
               padding: '10px 18px',
-              borderRadius: '18px',
+              borderRadius: '10px',
               border: 'none',
               backgroundColor: 'var(--md-error-cont, rgba(239, 68, 68, 0.12))',
               color: 'var(--md-error, #ef4444)',

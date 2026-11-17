@@ -52,8 +52,8 @@
 
 ### Установка зависимостей
 ```bash
-git clone https://github.com/orbitachat/orbita-desktop.git
-cd orbita-desktop
+git clone https://github.com/orbitmsg/orBIT.git
+cd orBIT
 npm install
 ```
 

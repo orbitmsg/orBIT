@@ -39,29 +39,31 @@ export const ProfileActionButtons: React.FC<ProfileActionButtonsProps> = ({
 }) => {
   const { t } = useTranslation();
 
+  const btnStyle: React.CSSProperties = {
+    flex: '1 1 0',
+    minWidth: '64px',
+    maxWidth: '86px',
+    height: '56px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '4px',
+    background: 'var(--surface-container, #282828)',
+    border: 'none',
+    borderRadius: '10px',
+    padding: '0',
+    color: 'var(--text-main)',
+    cursor: 'pointer',
+    outline: 'none',
+  };
+
   return (
     <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '20px', padding: '0 12px', width: '100%', boxSizing: 'border-box', flexWrap: 'wrap' }}>
       <button
         onClick={onChatClick}
         aria-label={t('profile.chat')}
-        style={{
-          flex: '1 1 0',
-          minWidth: '64px',
-          maxWidth: '92px',
-          height: '56px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '4px',
-          background: 'var(--surface-container, #282828)',
-          border: 'none',
-          borderRadius: '10px',
-          padding: '0',
-          color: 'var(--text-main)',
-          cursor: 'pointer',
-          outline: 'none',
-        }}
+        style={btnStyle}
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">
           <path fill="var(--text-dim, #8e8e93)" stroke="var(--text-dim, #8e8e93)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 21a9 9 0 1 0-7.605-4.185L3 21l4.185-1.395A8.96 8.96 0 0 0 12 21"/>
@@ -72,24 +74,7 @@ export const ProfileActionButtons: React.FC<ProfileActionButtonsProps> = ({
       <button
         onClick={onSoundClick}
         aria-label={t('profile.sound')}
-        style={{
-          flex: '1 1 0',
-          minWidth: '60px',
-          maxWidth: '80px',
-          height: '56px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '4px',
-          background: 'var(--surface-container, #282828)',
-          border: 'none',
-          borderRadius: '10px',
-          padding: '0',
-          color: 'var(--text-main)',
-          cursor: 'pointer',
-          outline: 'none',
-        }}
+        style={btnStyle}
       >
         <motion.div
           key={soundAnimTrigger}
@@ -157,24 +142,7 @@ export const ProfileActionButtons: React.FC<ProfileActionButtonsProps> = ({
             <button
               onClick={() => onOpenDeleteGroup(isGroupOwner ? 'delete' : 'leave')}
               aria-label={t('common.delete', 'Удалить')}
-              style={{
-                flex: '1 1 0',
-                minWidth: '60px',
-                maxWidth: '80px',
-                height: '56px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px',
-                background: 'var(--surface-container, #282828)',
-                border: 'none',
-                borderRadius: '10px',
-                padding: '0',
-                color: 'var(--text-main)',
-                cursor: 'pointer',
-                outline: 'none',
-              }}
+              style={btnStyle}
             >
               <Trash2 size={20} style={{ color: 'var(--text-dim, #8e8e93)' }} />
               <span style={{ fontSize: '11px', fontWeight: 500, lineHeight: 1.2 }}>{t('common.delete', 'Удалить')}</span>
@@ -185,23 +153,9 @@ export const ProfileActionButtons: React.FC<ProfileActionButtonsProps> = ({
               disabled={!voiceCallsEnabled}
               aria-label={t('profile.call')}
               style={{
-                flex: '1 1 0',
-                minWidth: '60px',
-                maxWidth: '80px',
-                height: '56px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px',
-                background: 'var(--surface-container, #282828)',
-                border: 'none',
-                borderRadius: '10px',
-                padding: '0',
-                color: 'var(--text-main)',
+                ...btnStyle,
                 cursor: !voiceCallsEnabled ? 'not-allowed' : 'pointer',
                 opacity: !voiceCallsEnabled ? 0.4 : 1,
-                outline: 'none',
               }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 42 42" fill="var(--text-dim, #8e8e93)">
@@ -214,24 +168,7 @@ export const ProfileActionButtons: React.FC<ProfileActionButtonsProps> = ({
           <button
             onClick={() => onOpenDeleteGroup('leave')}
             aria-label={t('groupSettings.leave', 'Покинуть')}
-            style={{
-              flex: '1 1 0',
-              minWidth: '60px',
-              maxWidth: '80px',
-              height: '56px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '4px',
-              background: 'var(--surface-container, #282828)',
-              border: 'none',
-              borderRadius: '10px',
-              padding: '0',
-              color: 'var(--text-main)',
-              cursor: 'pointer',
-              outline: 'none',
-            }}
+            style={btnStyle}
           >
             <LogOut size={20} style={{ color: 'var(--text-dim, #8e8e93)' }} />
             <span style={{ fontSize: '11px', fontWeight: 500, lineHeight: 1.2 }}>{t('groupSettings.leave', 'Покинуть')}</span>
@@ -241,24 +178,7 @@ export const ProfileActionButtons: React.FC<ProfileActionButtonsProps> = ({
         <button
           onClick={onCopyKey}
           aria-label={copiedKey ? 'Скопирован' : 'Ключ'}
-          style={{
-            flex: '1 1 0',
-            minWidth: '64px',
-            maxWidth: '92px',
-            height: '56px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '4px',
-            background: 'var(--surface-container, #282828)',
-            border: 'none',
-            borderRadius: '10px',
-            padding: '0',
-            color: 'var(--text-main)',
-            cursor: 'pointer',
-            outline: 'none',
-          }}
+          style={btnStyle}
         >
           {copiedKey ? (
             <Check size={20} style={{ color: 'var(--accent-color, #9b7dd4)' }} />
@@ -273,23 +193,9 @@ export const ProfileActionButtons: React.FC<ProfileActionButtonsProps> = ({
           disabled={!voiceCallsEnabled || chatId === 'notes'}
           aria-label={t('profile.call')}
           style={{
-            flex: '1 1 0',
-            minWidth: '64px',
-            maxWidth: '92px',
-            height: '56px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '4px',
-            background: 'var(--surface-container, #282828)',
-            border: 'none',
-            borderRadius: '10px',
-            padding: '0',
-            color: 'var(--text-main)',
+            ...btnStyle,
             cursor: (!voiceCallsEnabled || chatId === 'notes') ? 'not-allowed' : 'pointer',
             opacity: (!voiceCallsEnabled || chatId === 'notes') ? 0.4 : 1,
-            outline: 'none',
           }}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 42 42" fill="var(--text-dim, #8e8e93)">

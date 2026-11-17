@@ -156,6 +156,14 @@ export const MainLayout = () => {
   const [channelInviteData, setChannelInviteData] = useState<any | null>(null);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      import('../chat/ProfileScreen');
+      import('../chat/SettingsScreen');
+    }, 150);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
     const handleOpenInvite = (e: any) => {
       const u = e?.detail?.url;
       if (u) setGroupInviteUrl(u);

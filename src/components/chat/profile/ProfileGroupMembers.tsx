@@ -45,10 +45,10 @@ export const ProfileGroupMembers: React.FC<ProfileGroupMembersProps> = ({
       {!hideMemberList && (
         <div
           style={{
-            backgroundColor: 'var(--md-surface, #211c2e)',
-          width: 'calc(100% - 20px)',
-          margin: '0 10px 16px 10px',
-          borderRadius: '16px',
+            backgroundColor: 'var(--surface-container-soft, rgba(0, 0, 0, 0.22))',
+            width: 'calc(100% - 20px)',
+            margin: '0 10px 16px 10px',
+            borderRadius: '10px',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',

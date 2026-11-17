@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, memo, useMemo, useEffect, useLayoutEffect } from 'react';
+import { useState, useRef, useCallback, memo, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { channelService } from '../../services/channelService';
@@ -909,7 +909,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
           ? t('userStatus.online')
           : formatLastSeen(chat.lastSeen, t);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const updateAlign = () => {
       const parentW = profileScrollRef.current?.clientWidth || 420;
       const modalCenterX = Math.max(0, parentW / 2 - 20);
@@ -981,9 +981,9 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
             height: 96,
             marginBottom: 10,
             marginTop: 0,
-            borderRadius: '50%',
-            backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
-            boxShadow: effectiveBannerUrl ? '0 0 0 6px var(--settings-bg, var(--bg-secondary))' : 'none',
+            borderRadius: '20px',
+            backgroundColor: '#232428',
+            boxShadow: effectiveBannerUrl ? '0 0 0 6px #232428' : 'none',
             position: 'relative',
             flexShrink: 0,
           }}
@@ -993,10 +993,10 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
               width: 96,
               height: 96,
               cursor: chat.avatarUrl ? 'pointer' : 'default',
-              borderRadius: '50%',
+              borderRadius: '20px',
               overflow: 'hidden',
               flexShrink: 0,
-              backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
+              backgroundColor: '#232428',
             }}
             onClick={() => {
               if (chat.avatarUrl) {
@@ -1044,13 +1044,13 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
             }}
           >
             {chatId === 'notes' ? (
-              <NotesAvatar className="w-24 h-24" />
+              <NotesAvatar className="w-24 h-24" style={{ borderRadius: '20px' }} />
             ) : (
               <Avatar
                 src={chat.id === 'system_support' ? (chat.avatarUrl || SUPPORT_AVATAR_URL) : chat.avatarUrl}
                 alt={chat.name}
-                className="w-24 h-24 rounded-full"
-                style={{ backgroundColor: 'var(--settings-bg, var(--bg-secondary))' }}
+                className="w-24 h-24 rounded-[20px]"
+                style={{ borderRadius: '20px' }}
               />
             )}
           </div>
@@ -1059,7 +1059,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
               online={chat.online}
               showOffline={false}
               size="lg"
-              ringColor="var(--settings-bg, var(--bg-secondary))"
+              ringColor="#232428"
               ariaLabel={t('userStatus.online', 'В сети')}
             />
           )}
@@ -1124,12 +1124,12 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
 
       {availableSections.length > 0 && (
         <div style={{
-          backgroundColor: 'var(--md-surface, #211c2e)',
+          backgroundColor: 'var(--surface-container-soft, rgba(0, 0, 0, 0.22))',
           width: 'calc(100% - 20px)',
           margin: '0 10px 16px 10px',
           display: 'flex',
           flexDirection: 'column',
-          borderRadius: '16px',
+          borderRadius: '10px',
           overflow: 'hidden',
           padding: '4px 0',
           boxSizing: 'border-box',
@@ -1232,8 +1232,8 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
             flexDirection: 'column',
             margin: isMobileView ? '0' : '0 16px',
             marginTop: isMobileView ? '30px' : '0',
-            backgroundColor: 'var(--settings-bg, var(--bg-secondary))',
-            borderRadius: isMobileView ? 0 : 16,
+            backgroundColor: '#232428',
+            borderRadius: isMobileView ? 0 : 10,
             boxShadow: isMobileView ? 'none' : '0 20px 60px rgba(0,0,0,0.5)',
             color: 'var(--text-main, #fff)',
             overflow: 'hidden',
@@ -1336,7 +1336,7 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
                 zIndex: 30,
                 backgroundColor: subTab !== null
                   ? 'transparent'
-                  : `color-mix(in srgb, var(--settings-bg, var(--bg-secondary)) ${Math.min(100, Math.round((Math.max(0, scrollOffset - (effectiveBannerUrl ? 160 : 90)) / 22) * 100))}%, transparent)`,
+                  : `color-mix(in srgb, #232428 ${Math.min(100, Math.round((Math.max(0, scrollOffset - (effectiveBannerUrl ? 160 : 90)) / 22) * 100))}%, transparent)`,
                 borderBottom: 'none',
                 pointerEvents: 'none',
                 boxSizing: 'border-box',

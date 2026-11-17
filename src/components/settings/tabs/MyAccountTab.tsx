@@ -553,7 +553,7 @@ export const MyAccountTab = ({
           }}
         >
           <span style={{ fontSize: '14.5px', fontWeight: 500, color: MD3.onSurface }}>
-            {t('profile.birthday_label', 'День рождения')}
+            {t('profile.birthday', 'День рождения')}
           </span>
           <span
             onClick={() => setBirthdayEditOpen(true)}

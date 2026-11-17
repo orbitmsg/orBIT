@@ -686,7 +686,7 @@ export const DiscordSettingsSidebar: React.FC<DiscordSettingsSidebarProps> = ({
           userSelect: 'none',
         }}
       >
-        <span style={{ fontWeight: 700, letterSpacing: '0.06em' }}>ORBITA</span>
+        <span style={{ fontWeight: 700, letterSpacing: '0.06em' }}>orBIT</span>
         <span>v{appVersion || '0.1.996'}</span>
       </div>
     </aside>

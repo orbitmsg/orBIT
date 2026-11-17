@@ -175,7 +175,7 @@
       "image_saved_to_clipboard": "Image copied to clipboard",
       "dev_toast": "{{nickname}} is a developer of orBIT messenger",
       "open": "Open",
-      "orbita": "ORBITA",
+      "orbita": "orBIT",
       "online": "Online",
       "offline": "last seen recently",
       "connecting": "CONNECTING",
@@ -249,7 +249,16 @@
       "accept": "Accept",
       "decline": "Decline",
       "add": "Add",
-      "this_is_you": "This is you"
+      "this_is_you": "This is you",
+      "refresh": "Refresh",
+      "send": "Send",
+      "collapse": "Collapse",
+      "expand": "Expand",
+      "file": "File",
+      "from_clipboard": "From clipboard",
+      "reset": "Reset",
+      "rotate": "Rotate",
+      "flip": "Flip"
     },
     "titleBar": {
       "minimize": "Minimize",
@@ -583,7 +592,17 @@
       "lock_recording": "Lock recording",
       "link": "Link",
       "text": "Text",
-      "link_preview": "Link preview"
+      "link_preview": "Link preview",
+      "group": "Lobby",
+      "emoji": "Emoji",
+      "confirm_edit": "Save",
+      "send": "Send",
+      "image_copied": "Image copied",
+      "copy_image_failed": "Failed to copy image",
+      "new_message": "New message",
+      "you": "You",
+      "search_match_other": "matches",
+      "search_match": "matches"
     },
     "audioPlayer": {
       "reverse_order": "Reverse",
@@ -686,7 +705,8 @@
       "group_call_in_progress": "Lobby call in progress",
       "participants_1": "{{count}} participant",
       "participants_2_4": "{{count}} participants",
-      "participants_other": "{{count}} participants"
+      "participants_other": "{{count}} participants",
+      "disconnect": "Disconnect"
     },
     "permission": {
       "camera_title": "Allow access to your device camera?",
@@ -1095,7 +1115,9 @@
       "memory_management_desc": "Frees unused memory from messenger worker processes and triggers garbage collection.",
       "optimize_ram_action": "Optimize RAM",
       "current_ram_usage": "RAM usage: {{size}}",
-      "memory_freed_success": "Memory optimized successfully"
+      "memory_freed_success": "Memory optimized successfully",
+      "change_avatar": "Change avatar",
+      "voice_calls_disabled": "Voice calls are disabled in settings"
     },
     "groupSettings": {
       "title": "Lobby Settings",
@@ -1160,12 +1182,15 @@
       "admin_badge": "admin"
     },
     "group": {
-      "group_invitation": "Lobby Invitation",
+      "group_invitation": "Lobby invitation",
       "link_expired_or_revoked": "Link expired or revoked",
       "join": "Join",
       "cancel": "Cancel",
-      "already_member": "You are already a member of this group",
-      "open_chat": "Open chat"
+      "already_member": "Already in lobby",
+      "open_chat": "Open chat",
+      "link_expired": "Expired",
+      "link_revoked": "Access revoked",
+      "max_members_reached": "Lobby is full"
     },
     "groupCall": {
       "active_title": "Lobby call in progress",
@@ -1238,7 +1263,13 @@
       "channelCount_few": "{{count}} channels",
       "channelCount_many": "{{count}} channels",
       "and": "and",
-      "unreadCount": "{{count}} unread"
+      "unreadCount": "{{count}} unread",
+      "personalCount_other": "{{count}} personal chats",
+      "personalCount": "{{count}} personal chats",
+      "groupCount_other": "{{count}} lobbies",
+      "groupCount": "{{count}} lobbies",
+      "channelCount_other": "{{count}} channels",
+      "channelCount": "{{count}} channels"
     },
     "profile": {
       "title": "Profile",
@@ -1335,7 +1366,24 @@
       "delete_photo": "Delete photo",
       "birthday_invalid_year": "Enter a valid year",
       "birthday_invalid_date": "Invalid date",
-      "save_error": "Failed to save profile"
+      "save_error": "Failed to save profile",
+      "calls_not_available": "Calls are not available for notes",
+      "birthday_label": "Birthday",
+      "photos_count_other": "{{count}} photos",
+      "photos_count": "{{count}} photos",
+      "videos_count_other": "{{count}} videos",
+      "videos_count": "{{count}} videos",
+      "files_count_other": "{{count}} files",
+      "files_count": "{{count}} files",
+      "audio_files_count_other": "{{count}} audio files",
+      "audio_files_count": "{{count}} audio files",
+      "links_count_other": "{{count}} links",
+      "links_count": "{{count}} links",
+      "voice_messages_count_other": "{{count}} voice messages",
+      "voice_messages_count": "{{count}} voice messages",
+      "gif_count_other": "{{count}} GIFs",
+      "common_groups_count_other": "{{count}} shared lobbies",
+      "common_groups_count": "{{count}} shared lobbies"
     },
     "channel": {
       "edit_channel": "Edit Channel",
@@ -1360,7 +1408,10 @@
       "copied_id": "ID copied!",
       "channel_updated": "Channel updated successfully",
       "empty_description": "No description yet",
-      "orbita_updates_desc": "Official Orbita messenger channel. News, updates, and major announcements."
+      "orbita_updates_desc": "Official Orbita messenger channel. News, updates, and major announcements.",
+      "subscribers_none": "no subscribers yet",
+      "subscribers_other": "subscribers",
+      "subscribers_one": "subscriber"
     },
     "sound_settings": {
       "title": "Sound Settings",
@@ -1579,7 +1630,9 @@
       "delete_cloud_backup_err": "Failed to delete backup from server",
       "disable_cloud_backup_btn": "Disable Cloud Backup",
       "disable_cloud_backup_confirm": "Cloud backup disabled",
-      "disable_cloud_backup_err": "Failed to disable cloud backup"
+      "disable_cloud_backup_err": "Failed to disable cloud backup",
+      "create_title": "Create backup",
+      "create_desc": "Encrypt account, settings and chat list with a 12-word secret phrase."
     },
     "orbitos": {
       "name": "orBIT",
@@ -1640,7 +1693,8 @@
       "ticket_questions_count": "Messages in ticket: {{count}}",
       "select_ticket_to_reply": "Select a ticket to reply",
       "open_tickets_modal": "Support Tickets",
-      "open_tickets_badge": "Tickets"
+      "open_tickets_badge": "Tickets",
+      "admin_help": "Support administrator help"
     },
     "commands": {
       "start_desc": "Start the bot and show greeting",
@@ -1663,7 +1717,8 @@
       "support_admin_tickets_desc": "List all active tickets"
     },
     "search": {
-      "no_results": "No results found"
+      "no_results": "No results found",
+      "search_chats": "Search chats"
     },
     "mediaViewer": {
       "video": "Video",
@@ -1796,7 +1851,7 @@
       "template_study": "Study Group",
       "template_club": "School Club",
       "have_invite": "Have an invite already?",
-      "join_lobby": "Join a lobby",
+      "join_lobby": "Join lobby",
       "tell_about": "Tell us more about your lobby",
       "tell_subtitle": "In order to help you with your setup, is your lobby for just a few friends or a larger community?",
       "for_friends": "For me and my friends",
@@ -1820,7 +1875,6 @@
       "online_count": "online",
       "enter_lobby": "Join Lobby",
       "goto_lobby": "Go to lobby",
-      "join_lobby": "Join lobby",
       "members_section": "Members List",
       "role_owner": "Owner",
       "role_admin": "Admin",
@@ -1844,7 +1898,29 @@
       "tray_streamer_mode_disable": "Disable Streamer Mode",
       "tray_ghost_mode_enable": "Enable Ghost Mode",
       "tray_ghost_mode_disable": "Disable Ghost Mode",
-      "tray_quit": "Quit orBIT"
+      "tray_quit": "Quit orBIT",
+      "create_channel_btn": "Create channel",
+      "channels_sidebar": "Lobby channels",
+      "add_channel": "Add section",
+      "voice_connected": "Voice connected",
+      "disconnect_voice": "Disconnect"
+    },
+    "channel_settings": {
+      "subscribe": "Subscribe"
+    },
+    "window": {
+      "minimize": "Minimize",
+      "restore": "Restore",
+      "maximize": "Maximize"
+    },
+    "chat": {
+      "type_channel": "Channel",
+      "type_group": "Group",
+      "type_personal": "Direct message"
+    },
+    "status": {
+      "online": "online",
+      "offline": "offline"
     }
   }
 }

@@ -1022,7 +1022,22 @@
       "id_hidden": "ID скрыт",
       "bio": "О себе",
       "copy_id": "Скопировать ID",
-      "copied": "Скопирован"
+      "copied": "Скопирован",
+      "photos_count_other": "{{count}} фотографий",
+      "photos_count": "{{count}} фотографий",
+      "videos_count_other": "{{count}} видео",
+      "videos_count": "{{count}} видео",
+      "files_count_other": "{{count}} файлов",
+      "files_count": "{{count}} файлов",
+      "audio_files_count_other": "{{count}} аудиофайлов",
+      "audio_files_count": "{{count}} аудиофайлов",
+      "links_count_other": "{{count}} ссылок",
+      "links_count": "{{count}} ссылок",
+      "voice_messages_count_other": "{{count}} голосовых сообщений",
+      "voice_messages_count": "{{count}} голосовых сообщений",
+      "gif_count_other": "{{count}} GIF",
+      "common_groups_count_other": "{{count}} общих групп",
+      "common_groups_count": "{{count}} общих групп"
     },
     "channel": {
       "edit_channel": "Редактировать канал",

@@ -175,7 +175,7 @@
       "image_saved_to_clipboard": "Фото скопировано в буфер обмена",
       "dev_toast": "{{nickname}} является разработчиком мессенджера orBIT",
       "open": "Открыть",
-      "orbita": "ОРБИТА",
+      "orbita": "orBIT",
       "online": "В сети",
       "offline": "был(а) недавно",
       "connecting": "СОЕДИНЕНИЕ",
@@ -249,7 +249,16 @@
       "accept": "Принять",
       "decline": "Отклонить",
       "add": "Добавить",
-      "this_is_you": "Это вы"
+      "this_is_you": "Это вы",
+      "refresh": "Обновить",
+      "send": "Отправить",
+      "collapse": "Свернуть",
+      "expand": "Развернуть",
+      "file": "Файл",
+      "from_clipboard": "Из буфера обмена",
+      "reset": "Сбросить",
+      "rotate": "Повернуть",
+      "flip": "Отразить"
     },
     "titleBar": {
       "minimize": "Свернуть",
@@ -583,7 +592,15 @@
       "lock_recording": "Зафиксировать запись",
       "link": "Ссылка",
       "text": "Текст",
-      "link_preview": "Предпросмотр ссылки"
+      "link_preview": "Предпросмотр ссылки",
+      "group": "Лобби",
+      "emoji": "Эмодзи",
+      "confirm_edit": "Сохранить",
+      "send": "Отправить",
+      "image_copied": "Изображение скопировано",
+      "copy_image_failed": "Не удалось скопировать изображение",
+      "new_message": "Новое сообщение",
+      "you": "Вы"
     },
     "audioPlayer": {
       "reverse_order": "Обратный",
@@ -686,7 +703,8 @@
       "group_call_in_progress": "Идёт звонок в лобби",
       "participants_1": "{{count}} участник",
       "participants_2_4": "{{count}} участника",
-      "participants_other": "{{count}} участников"
+      "participants_other": "{{count}} участников",
+      "disconnect": "Отключиться"
     },
     "permission": {
       "camera_title": "Разрешить доступ к камере устройства?",
@@ -1095,7 +1113,9 @@
       "memory_management_desc": "Очистка неиспользуемой памяти рабочих процессов мессенджера.",
       "optimize_ram_action": "Очистить память",
       "current_ram_usage": "Используется RAM: {{size}}",
-      "memory_freed_success": "Память успешно оптимизирована"
+      "memory_freed_success": "Память успешно оптимизирована",
+      "change_avatar": "Изменить аватар",
+      "voice_calls_disabled": "Голосовые звонки отключены в настройках"
     },
     "groupSettings": {
       "title": "Настройки лобби",
@@ -1164,8 +1184,11 @@
       "link_expired_or_revoked": "Ссылка устарела или закрыта",
       "join": "Присоединиться",
       "cancel": "Отменить",
-      "already_member": "Вы уже состоите в этой группе",
-      "open_chat": "Перейти к чату"
+      "already_member": "Вы уже состоите в этом лобби",
+      "open_chat": "Перейти к чату",
+      "link_expired": "Срок истек",
+      "link_revoked": "Доступ закрыт",
+      "max_members_reached": "Лобби заполнено"
     },
     "groupCall": {
       "active_title": "Идёт звонок в лобби",
@@ -1335,7 +1358,24 @@
       "delete_photo": "Удалить фото",
       "birthday_invalid_year": "Укажите корректный год",
       "birthday_invalid_date": "Некорректная дата",
-      "save_error": "Не удалось сохранить профиль"
+      "save_error": "Не удалось сохранить профиль",
+      "calls_not_available": "Звонки недоступны для заметок",
+      "birthday_label": "День рождения",
+      "photos_count_other": "{{count}} фотографий",
+      "photos_count": "{{count}} фотографий",
+      "videos_count_other": "{{count}} видео",
+      "videos_count": "{{count}} видео",
+      "files_count_other": "{{count}} файлов",
+      "files_count": "{{count}} файлов",
+      "audio_files_count_other": "{{count}} аудиофайлов",
+      "audio_files_count": "{{count}} аудиофайлов",
+      "links_count_other": "{{count}} ссылок",
+      "links_count": "{{count}} ссылок",
+      "voice_messages_count_other": "{{count}} голосовых сообщений",
+      "voice_messages_count": "{{count}} голосовых сообщений",
+      "gif_count_other": "{{count}} GIF",
+      "common_groups_count_other": "{{count}} общих лобби",
+      "common_groups_count": "{{count}} общих лобби"
     },
     "channel": {
       "edit_channel": "Редактировать канал",
@@ -1360,7 +1400,8 @@
       "copied_id": "ID скопирован!",
       "channel_updated": "Канал успешно обновлен",
       "empty_description": "Здесь пока нет описания",
-      "orbita_updates_desc": "Официальный канал мессенджера Orbita. Новости, обновления и важные анонсы."
+      "orbita_updates_desc": "Официальный канал мессенджера Orbita. Новости, обновления и важные анонсы.",
+      "subscribers_none": "подписчиков пока нет"
     },
     "sound_settings": {
       "title": "Настройки звука",
@@ -1579,7 +1620,9 @@
       "delete_cloud_backup_err": "Не удалось удалить копию с сервера",
       "disable_cloud_backup_btn": "Отключить резервное копирование",
       "disable_cloud_backup_confirm": "Резервное копирование отключено",
-      "disable_cloud_backup_err": "Не удалось отключить резервное копирование"
+      "disable_cloud_backup_err": "Не удалось отключить резервное копирование",
+      "create_title": "Создать резервную копию",
+      "create_desc": "Зашифровать аккаунт, настройки и список чатов секретной фразой из 12 слов."
     },
     "orbitos": {
       "name": "orBIT",
@@ -1640,7 +1683,8 @@
       "ticket_questions_count": "Вопросов в обращении: {{count}}",
       "select_ticket_to_reply": "Выберите обращение для ответа",
       "open_tickets_modal": "Тикеты поддержки",
-      "open_tickets_badge": "Тикеты"
+      "open_tickets_badge": "Тикеты",
+      "admin_help": "Справка администратора поддержки"
     },
     "commands": {
       "start_desc": "Запустить бота и получить приветствие",
@@ -1663,7 +1707,8 @@
       "support_admin_tickets_desc": "Показать список открытых обращений"
     },
     "search": {
-      "no_results": "Ничего не найдено"
+      "no_results": "Ничего не найдено",
+      "search_chats": "Поиск чатов"
     },
     "mediaViewer": {
       "video": "Видео",
@@ -1820,7 +1865,6 @@
       "online_count": "в сети",
       "enter_lobby": "Присоединиться к лобби",
       "goto_lobby": "Перейти в лобби",
-      "join_lobby": "Присоединиться к лобби",
       "members_section": "Список участников",
       "role_owner": "Владелец",
       "role_admin": "Админ",
@@ -1844,7 +1888,29 @@
       "tray_streamer_mode_disable": "Выключить режим стримера",
       "tray_ghost_mode_enable": "Включить призрачный режим",
       "tray_ghost_mode_disable": "Выключить призрачный режим",
-      "tray_quit": "Закрыть orBIT"
+      "tray_quit": "Закрыть orBIT",
+      "create_channel_btn": "Создать канал",
+      "channels_sidebar": "Каналы лобби",
+      "add_channel": "Добавить раздел",
+      "voice_connected": "Голос подключен",
+      "disconnect_voice": "Отключиться"
+    },
+    "channel_settings": {
+      "subscribe": "Подписаться"
+    },
+    "window": {
+      "minimize": "Свернуть",
+      "restore": "Восстановить",
+      "maximize": "Развернуть"
+    },
+    "chat": {
+      "type_channel": "Канал",
+      "type_group": "Группа",
+      "type_personal": "Личный чат"
+    },
+    "status": {
+      "online": "в сети",
+      "offline": "не в сети"
     }
   }
 }

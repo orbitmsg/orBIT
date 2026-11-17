@@ -1022,7 +1022,22 @@
       "id_hidden": "ID hidden",
       "bio": "Bio",
       "copy_id": "Copy ID",
-      "copied": "Copied"
+      "copied": "Copied",
+      "photos_count_other": "{{count}} photos",
+      "photos_count": "{{count}} photos",
+      "videos_count_other": "{{count}} videos",
+      "videos_count": "{{count}} videos",
+      "files_count_other": "{{count}} files",
+      "files_count": "{{count}} files",
+      "audio_files_count_other": "{{count}} audio files",
+      "audio_files_count": "{{count}} audio files",
+      "links_count_other": "{{count}} links",
+      "links_count": "{{count}} links",
+      "voice_messages_count_other": "{{count}} voice messages",
+      "voice_messages_count": "{{count}} voice messages",
+      "gif_count_other": "{{count}} GIFs",
+      "common_groups_count_other": "{{count}} shared groups",
+      "common_groups_count": "{{count}} shared groups"
     },
     "channel": {
       "edit_channel": "Edit Channel",

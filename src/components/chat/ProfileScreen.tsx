@@ -1136,7 +1136,9 @@ export const ProfileScreen = memo(({ chatId, onClose, isMobileView = false, onLi
         }}>
           {availableSections.map((section) => {
             const Icon = section.icon;
-            const countLabel = t(`profile.${section.labelKey}`, { count: section.count });
+            const key = `profile.${section.labelKey}`;
+            const label = t(key, { count: section.count });
+            const countLabel = label === key ? `${section.count} ${section.id}` : label;
             return (
               <button
                 key={section.id}

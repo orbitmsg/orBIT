@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
 import { useToastStore } from '../../store/useToastStore';
-import { OrbitaBadgeIcon } from '../ui/DeveloperBadge';
+import { OrbitaBadgeIcon, DEV_BADGE_COLOR } from '../ui/DeveloperBadge';
 
 export const CenterToast: React.FC = () => {
   const { t } = useTranslation();
@@ -59,14 +59,14 @@ export const CenterToast: React.FC = () => {
                 style={{
                   width: 32,
                   height: 32,
-                  color: 'var(--accent-color, #c85f95)',
+                  color: DEV_BADGE_COLOR,
                   flexShrink: 0,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <OrbitaBadgeIcon size={36} color="var(--accent-color, #c85f95)" />
+                <OrbitaBadgeIcon size={28} color={DEV_BADGE_COLOR} />
               </div>
             )}
             {type === 'image' && (

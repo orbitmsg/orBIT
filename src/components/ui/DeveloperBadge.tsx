@@ -2,6 +2,9 @@ import React, { useEffect } from 'react';
 import { supabaseService } from '../../services/supabaseService';
 import { useToastStore } from '../../store/useToastStore';
 import { sqliteStorage } from '../../services/sqliteStorage';
+import { OrbitIcon } from '../common/OrbitBrand';
+
+export const DEV_BADGE_COLOR = '#917bbd';
 
 const STORAGE_KEY = 'orbita_cached_dev_codes_v2';
 const LAST_FETCH_KEY = 'orbita_dev_codes_last_fetch';
@@ -84,42 +87,12 @@ export const isDeveloper = (userId: string | undefined | null): boolean => {
   );
 };
 
-export const OrbitaBadgeIcon: React.FC<{ size?: number | string; color?: string }> = ({
+export const OrbitaBadgeIcon: React.FC<{ size?: number | string; color?: string; className?: string }> = ({
   size = '100%',
-  color = 'currentColor',
+  color = DEV_BADGE_COLOR,
+  className = '',
 }) => (
-  <svg viewBox="0 0 800 800" width={size} height={size} style={{ overflow: 'visible', display: 'block' }}>
-    <defs>
-      <clipPath id="front-clip-dev-global">
-        <rect x="-600" y="0" width="1200" height="600" />
-      </clipPath>
-      <mask id="back-ring-mask-dev-global">
-        <rect x="0" y="0" width="800" height="800" fill="white" />
-        <circle cx="400" cy="400" r="192" fill="black" />
-      </mask>
-      <mask id="planet-mask-dev-global">
-        <rect x="0" y="0" width="800" height="800" fill="white" />
-        <g transform="translate(400, 400) rotate(-26)">
-          <path d="M 224 0 A 224 59 0 0 1 -224 0 L -376 0 A 376 121 0 0 0 376 0 Z" fill="black" />
-        </g>
-      </mask>
-      <mask id="ring-hole-dev-global">
-        <rect x="-600" y="-600" width="1200" height="1200" fill="white" />
-        <ellipse cx="0" cy="0" rx="240" ry="75" fill="black" />
-      </mask>
-    </defs>
-    <g mask="url(#back-ring-mask-dev-global)">
-      <g transform="translate(400, 400) rotate(-26)">
-        <ellipse cx="0" cy="0" rx="360" ry="105" fill={color} mask="url(#ring-hole-dev-global)" />
-      </g>
-    </g>
-    <circle cx="400" cy="400" r="175" fill={color} mask="url(#planet-mask-dev-global)" />
-    <g transform="translate(400, 400) rotate(-26)">
-      <g clipPath="url(#front-clip-dev-global)">
-        <ellipse cx="0" cy="0" rx="360" ry="105" fill={color} mask="url(#ring-hole-dev-global)" />
-      </g>
-    </g>
-  </svg>
+  <OrbitIcon size={size} color={color} className={className} />
 );
 
 interface DeveloperBadgeProps {
@@ -182,11 +155,11 @@ export const DeveloperBadge: React.FC<DeveloperBadgeProps> = ({
         height: size,
         flexShrink: 0,
         verticalAlign: 'middle',
-        color: 'var(--accent-color, #917bbd)',
+        color: DEV_BADGE_COLOR,
         ...style,
       }}
     >
-      <OrbitaBadgeIcon size={size} color="var(--accent-color, #917bbd)" />
+      <OrbitaBadgeIcon size={size} color={DEV_BADGE_COLOR} />
     </span>
   );
 };

@@ -8,12 +8,13 @@ import {
   SectionHeader,
   M3Switch,
   TaskbarIcon,
-  TuxAvatar,
+  NotificationSenderAvatar,
   OrbitaLogoAvatar,
   TogglePill,
 } from '../SettingsShared';
 import { BubbleSlider } from '../AppearanceSettings';
 import type { NotificationPosition } from '../../../store/useChatStore';
+import { useAuthStore } from '../../../store/useAuthStore';
 
 export interface NotificationsTabProps {
   notificationsEnabled: boolean;
@@ -61,7 +62,8 @@ export const NotificationsTab = ({
   setNotificationPosition,
 }: NotificationsTabProps) => {
   const { t } = useTranslation();
-        return (
+  const userNickname = useAuthStore((s) => s.nickname);
+  return (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }}>
             <SectionHeader title={t('settings.general_settings') || 'Общие настройки'} />
             <Block style={{ marginBottom: 4 }}>
@@ -127,10 +129,10 @@ export const NotificationsTab = ({
                 fontFamily: 'var(--main-font), "Apple Color Emoji", "Segoe UI Emoji", sans-serif',
               }}
             >
-              {notificationShowName ? <TuxAvatar /> : <OrbitaLogoAvatar />}
+              {notificationShowName ? <NotificationSenderAvatar /> : <OrbitaLogoAvatar />}
               <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '3px' }}>
                 <div style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--text-main, #ffffff)', lineHeight: 1.25 }}>
-                  {notificationShowName ? (t('settings.preview_sender_name') || 'Saizzi') : (t('settings.hidden_name') || 'orBIT')}
+                  {notificationShowName ? (userNickname || t('settings.preview_sender_name') || 'Saizzi') : (t('settings.hidden_name') || 'orBIT')}
                 </div>
                 <div style={{ fontSize: '13px', color: 'var(--text-dim, #a89ec4)', marginTop: '2px', lineHeight: 1.35 }}>
                   {notificationShowText ? (t('settings.preview_message_text') || 'А ты любишь пингвинов?') : (t('settings.new_message') || 'Новое сообщение')}

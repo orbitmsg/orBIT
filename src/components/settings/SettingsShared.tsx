@@ -1,8 +1,10 @@
-import React, { useState, useRef, useEffect, memo, type ReactNode } from 'react';
+import React, { useState, useRef, useEffect, memo, useMemo, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../../store/useChatStore';
+import { useAuthStore } from '../../store/useAuthStore';
+import { Avatar } from '../common/Avatar';
 import { uiSounds } from '../../utils/uiSounds';
 export const QrCodeMiniIcon: React.FC<{ size?: number; color?: string }> = ({ size = 20, color = 'currentColor' }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={size} height={size}>
@@ -104,34 +106,86 @@ if (typeof document !== 'undefined' && !document.getElementById('orbita-settings
   document.head.appendChild(styleEl);
 }
 
-export const TuxAvatar = () => (
-  <div
-    style={{
-      width: '60px',
-      height: '60px',
-      borderRadius: '50%',
-      clipPath: 'circle(50% at 50% 50%)',
-      overflow: 'hidden',
-      flexShrink: 0,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#000000',
-    }}
-  >
-    <img
-      src="./tux.png"
-      alt="Tux"
+const RANDOM_MONKEY_COLORS = [
+  '#5865F2',
+  '#10B981',
+  '#3B82F6',
+  '#F97316',
+  '#EF4444',
+  '#EC4899',
+  '#8B5CF6',
+  '#06B6D4',
+  '#14B8A6',
+  '#6366F1',
+  '#EAB308',
+  '#84CC16',
+];
+
+export const NotificationSenderAvatar = ({
+  avatarUrl: propAvatarUrl,
+  nickname: propNickname,
+}: {
+  avatarUrl?: string | null;
+  nickname?: string;
+} = {}) => {
+  const storeAvatarUrl = useAuthStore((s) => s.avatarUrl);
+  const storeNickname = useAuthStore((s) => s.nickname);
+
+  const effectiveAvatar = propAvatarUrl !== undefined ? propAvatarUrl : storeAvatarUrl;
+  const effectiveNickname = propNickname !== undefined ? propNickname : storeNickname;
+
+  const randomBg = useMemo(() => {
+    const idx = Math.floor(Math.random() * RANDOM_MONKEY_COLORS.length);
+    return RANDOM_MONKEY_COLORS[idx];
+  }, []);
+
+  if (effectiveAvatar) {
+    return (
+      <div
+        style={{
+          width: '60px',
+          height: '60px',
+          borderRadius: '50%',
+          overflow: 'hidden',
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Avatar
+          src={effectiveAvatar}
+          alt={effectiveNickname || 'User'}
+          className="w-[60px] h-[60px] rounded-full"
+          style={{ width: '60px', height: '60px', borderRadius: '50%' }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
       style={{
-        width: '100%',
-        height: '100%',
-        objectFit: 'cover',
+        width: '60px',
+        height: '60px',
         borderRadius: '50%',
-        display: 'block',
+        backgroundColor: randomBg,
+        flexShrink: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '32px',
+        userSelect: 'none',
       }}
-    />
-  </div>
-);
+    >
+      <span role="img" aria-label="monkey" style={{ lineHeight: 1 }}>
+        🐵
+      </span>
+    </div>
+  );
+};
+
+export const TuxAvatar = NotificationSenderAvatar;
 
 export const OrbitaLogoAvatar = () => {
   const appIcon = useChatStore((s) => s.appIcon);

@@ -373,7 +373,7 @@ export interface InChatSearchState {
 
 export const TEXT_SCALE_MIN = 75;
 export const TEXT_SCALE_MAX = 200;
-export const MAX_MESSAGES_PER_CHAT = 100;
+export const MAX_MESSAGES_PER_CHAT = 1000000;
 
 export function clampTextScale(value: number): number {
   const n = Number.isFinite(value) ? Math.round(value) : 100;

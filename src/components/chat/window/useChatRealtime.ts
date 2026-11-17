@@ -40,11 +40,18 @@ export const useChatRealtime = ({
   useEffect(() => {
     if (!activeChatId) return;
 
+    let p2pTimer: ReturnType<typeof setTimeout> | null = null;
+    let reactionsTimer: ReturnType<typeof setTimeout> | null = null;
+
     if (activeChatId !== 'notes' && activeChat?.type !== 'channel') {
-      useChatStore.getState().syncReactionsFromSupabase(activeChatId);
+      reactionsTimer = setTimeout(() => {
+        useChatStore.getState().syncReactionsFromSupabase(activeChatId);
+      }, 600);
     }
     if (activeChat?.type === 'private') {
-      p2pDataService.initiate(activeChatId);
+      p2pTimer = setTimeout(() => {
+        p2pDataService.initiate(activeChatId);
+      }, 1200);
     }
 
     const isLobby = Boolean(activeChatId?.startsWith('lobby_'));
@@ -1139,6 +1146,8 @@ export const useChatRealtime = ({
     channel.bind('profile-update', handleClientMessage);
 
     return () => {
+      if (reactionsTimer) clearTimeout(reactionsTimer);
+      if (p2pTimer) clearTimeout(p2pTimer);
       if (activeChat?.type === 'private') {
         p2pDataService.close(activeChatId);
       }

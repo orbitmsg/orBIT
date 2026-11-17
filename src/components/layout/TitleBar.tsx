@@ -40,6 +40,9 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
     ? (activeChannelName.replace(/^#+/, '').trim() === 'основной' ? 'Основной чат' : activeChannelName.replace(/^#+/, '').trim())
     : 'Основной чат';
 
+  const isDirect = Boolean(activeChat && (activeChat.type === 'private' || (!activeChat.type && !isLobby)));
+  const isNotes = activeChat?.id === 'notes';
+
   const resolvedTitle = title
     ? title
     : currentView === 'settings'
@@ -48,12 +51,18 @@ export const TitleBar: React.FC<TitleBarProps> = ({ title, hideTitle, onClose, s
         ? t('sidebar.explore_treasures', 'Лобби')
         : activeChat
           ? isLobby
-            ? `${cleanChannelName} (${activeChat.name || 'Лобби'})`
-            : activeChat.type === 'group'
-              ? activeChannelName
-                ? `${cleanChannelName} (${activeChat.name})`
-                : activeChat.name || 'Группа'
-              : activeChat.name || (activeChat.type === 'channel' ? t('titleBar.community', 'Сообщество') : t('titleBar.direct_messages', 'Личные сообщения'))
+            ? t('titleBar.lobby_in', 'Лобби (в {{name}})', { name: activeChat.name || t('titleBar.lobby', 'Лобби') })
+            : isDirect
+              ? isNotes
+                ? activeChat.name || t('connectModal.notes', 'Избранное')
+                : activeChat.name
+                  ? t('titleBar.direct_messages_with', 'Личные сообщения (с {{name}})', { name: activeChat.name })
+                  : t('titleBar.direct_messages', 'Личные сообщения')
+              : activeChat.type === 'group'
+                ? activeChannelName
+                  ? `${cleanChannelName} (${activeChat.name})`
+                  : activeChat.name || 'Группа'
+                : activeChat.name || (activeChat.type === 'channel' ? t('titleBar.community', 'Сообщество') : t('titleBar.direct_messages', 'Личные сообщения'))
           : t('discord.friends', 'Друзья');
 
   useEffect(() => {

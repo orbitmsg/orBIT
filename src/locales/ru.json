@@ -257,6 +257,9 @@
       "restore": "Восстановить",
       "close": "Закрыть",
       "direct_messages": "Личные сообщения",
+      "direct_messages_with": "Личные сообщения (с {{name}})",
+      "lobby_in": "Лобби (в {{name}})",
+      "lobby": "Лобби",
       "community": "Сообщество",
       "group_chat": "Лобби",
       "help": "Помощь"

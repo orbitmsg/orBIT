@@ -1479,7 +1479,7 @@ export const useChatStore = create<ChatState>()(
         try {
           const orb = (window as any).orbita;
           if (!orb?.storageGetAllRecentMessages) return;
-          const recent = await orb.storageGetAllRecentMessages(30);
+          const recent = await orb.storageGetAllRecentMessages(50);
           if (recent && typeof recent === 'object' && Object.keys(recent).length > 0) {
             set((state) => {
               const updated = { ...state.messagesByChatId };

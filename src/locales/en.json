@@ -257,6 +257,9 @@
       "restore": "Restore",
       "close": "Close",
       "direct_messages": "Direct Messages",
+      "direct_messages_with": "Direct messages (with {{name}})",
+      "lobby_in": "Lobby (in {{name}})",
+      "lobby": "Lobby",
       "community": "Community",
       "group_chat": "Lobby",
       "help": "Help"
